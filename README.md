@@ -29,17 +29,17 @@ mise run apply
 ## Features
 
 - **1Password Integration**: All configuration and secrets in one place
-- **Multi-Platform**: Docker, Fly.io, Cloudflare Workers, Vercel
-- **Zero-Trust Networking**: Tailscale mesh with automatic DNS
 - **Automated Monitoring**: Gatus health checks and Homepage dashboard
 - **GitOps Ready**: GitHub Actions for automated deployments
+- **Multi-Platform**: Docker, Fly.io, Cloudflare Workers, Vercel
 - **State Management**: Encrypted state in Backblaze B2
+- **Zero-Trust Networking**: Tailscale mesh with automatic DNS
 
 ## Prerequisites
 
 - [1Password CLI](https://1password.com/downloads/command-line/) with service account
-- [OpenTofu](https://opentofu.org/) 1.6+
 - [mise](https://mise.jdx.dev/) for task management
+- [OpenTofu](https://opentofu.org/) 1.6+
 - Provider accounts (Cloudflare, Tailscale, B2, etc.)
 
 ## Project Structure
@@ -109,10 +109,11 @@ mise run validate
 ## Documentation
 
 - [Architecture](ARCHITECTURE.md) - System design and patterns
-- [Feature Matrix](FEATURE_MATRIX.md) - Complete configuration reference
-- [DNS Management](DNS_ARCHITECTURE.md) - DNS strategy and patterns
-- [Templates Guide](TEMPLATES.md) - Manual creation in 1Password
 - [Development Guide](CLAUDE.md) - Standards and guidelines
+- [DNS Management](DNS_ARCHITECTURE.md) - DNS strategy and patterns
+- [Feature Matrix](FEATURE_MATRIX.md) - Complete configuration reference
+- [Secrets Guide](SECRETS.md) - Required secrets configuration
+- [Templates Guide](TEMPLATES.md) - Manual creation in 1Password
 
 ## License
 
