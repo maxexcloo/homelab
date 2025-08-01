@@ -6,13 +6,10 @@ pre-commit = "latest"
 TF_CLI_ARGS_plan = "-compact-warnings"
 TF_CLI_ARGS_apply = "-compact-warnings"
 
-# Setup task
+# Setup task - now simpler and works with Touch ID
 [tasks.setup]
 description = "Initial project setup"
 run = """
-#!/usr/bin/env bash
-set -e
-
 echo "🔧 Setting up homelab project..."
 
 # Check 1Password CLI
@@ -22,55 +19,27 @@ if ! command -v op &> /dev/null; then
     exit 1
 fi
 
-# Check if signed in
-if ! op vault list &> /dev/null 2>&1; then
-    echo "🔑 Please sign in to 1Password first"
-    echo "👉 Run: op signin"
-    exit 1
-fi
+# Try to access 1Password - will trigger Touch ID if needed
+echo "🔑 Accessing 1Password (Touch ID may be required)..."
 
 # Create providers entry
-if ! op item get "providers" --vault "Infrastructure" &> /dev/null 2>&1; then
-    echo "📝 Creating providers entry..."
+echo "📝 Checking providers entry..."
+op item get "providers" --vault "Infrastructure" &> /dev/null || \
     op item create --category="Login" --title="providers" --vault="Infrastructure" \
         username="providers" password="not-used"
-fi
 
 # Create server template
-if ! op item get "template-server" --vault "Infrastructure" &> /dev/null 2>&1; then
-    echo "📋 Creating server template..."
+echo "📋 Checking server template..."
+op item get "template-server" --vault "Infrastructure" &> /dev/null || \
     op item create --category="Login" --title="template-server" --vault="Infrastructure" \
         --url="CHANGEME.REGION.excloo.dev" --tags="template" \
         username="root" --generate-password="24,letters,digits"
-    
-    # Add sections
-    op item edit "template-server" --vault="Infrastructure" \
-        'inputs.description[text]=CHANGEME Server Description' \
-        'inputs.parent[text]=REGION' \
-        'inputs.region[text]=REGION' \
-        'inputs.platform[text]=ubuntu' \
-        'inputs.type[text]=oci' \
-        'inputs.features.beszel[text]=true' \
-        'inputs.features.docker[text]=true' \
-        'inputs.features.homepage[text]=true'
-fi
 
-# Create service template
-if ! op item get "template-service" --vault "Services" &> /dev/null 2>&1; then
-    echo "📋 Creating service template..."
+# Create service template  
+echo "📋 Checking service template..."
+op item get "template-service" --vault "Services" &> /dev/null || \
     op item create --category="Login" --title="template-service" --vault="Services" \
         --tags="template" username="admin" --generate-password="24,letters,digits"
-    
-    # Add sections
-    op item edit "template-service" --vault="Services" \
-        'inputs.deployment[text]=all' \
-        'inputs.description[text]=CHANGEME Service Description' \
-        'inputs.dns.external[text]=true' \
-        'inputs.dns.internal[text]=true' \
-        'inputs.docker.image[text]=CHANGEME:latest' \
-        'inputs.docker.ports.0[text]=8080:8080' \
-        'inputs.features.auth_password[text]=true'
-fi
 
 # Create .mise.local.toml
 if [[ ! -f .mise.local.toml ]]; then
