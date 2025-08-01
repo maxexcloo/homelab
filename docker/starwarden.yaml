@@ -1,0 +1,11 @@
+services:
+  starwarden:
+    environment:
+      COLLECTION_ID: ${service.config.collection_id}
+      GITHUB_TOKEN: ${service.config.github_token}
+      GITHUB_USERNAME: ${service.config.github_username}
+      LINKWARDEN_TOKEN: ${service.config.linkwarden_token}
+      LINKWARDEN_URL: ${service.config.linkwarden_url}
+      OPT_TAG_LANGUAGE: ${service.config.opt_tag_language}
+    image: rtuszik/starwarden:latest
+    restart: unless-stopped

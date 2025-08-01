@@ -1,0 +1,46 @@
+alerting:
+  email:
+    default-alert:
+      description: ${gatus.title} Check Failed
+      failure-threshold: 5
+      send-on-resolved: true
+      success-threshold: 5
+    from: ${default.email}
+    host: ${terraform.resend.smtp_host}
+    password: $${RESEND_API_KEY}
+    port: ${terraform.resend.smtp_port}
+    to: ${default.email}
+    username: ${terraform.resend.smtp_username}
+endpoints:
+%{ for k, server in servers ~}
+  - alerts:
+      - type: email
+    conditions:
+      - "[CONNECTED] == true"
+    group: "${tags[server.tag]}"
+    name: "${k} (${server.title})"
+    url: "icmp://${k}"
+%{ endfor ~}
+%{ for service in services ~}
+%{ if try(service.enable_monitoring, true) && try(service.fqdn, null) != null && try(service.group, "Uncategorized") != "Default" && try(service.title, "Default") != "Default" ~}
+  - alerts:
+      - type: email
+%{ if try(service.enable_ssl_validation, true) == false ~}
+    client:
+      insecure: true
+%{ endif ~}
+    conditions:
+%{ if try(service.enable_ssl, true) && try(service.enable_ssl_validation, true) ~}
+      - "[CERTIFICATE_EXPIRATION] > 48h"
+%{ endif ~}
+      - "[RESPONSE_TIME] < 5000"
+      - "[STATUS] == any(200, 401)"
+    group: "Services (${try(service.group, "Uncategorized")})"
+    name: "${try(service.title, "Service")} (${try(service.server, null) != null ? service.server : try(service.platform, "unknown")})"
+    url: "${try(service.url, "")}"
+%{ endif ~}
+%{ endfor ~}
+ui:
+  description: ${gatus.description}
+  header: ${gatus.title}
+  title: ${gatus.title}

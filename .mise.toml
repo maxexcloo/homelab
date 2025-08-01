@@ -1,0 +1,202 @@
+[tools]
+opentofu = "latest"
+pre-commit = "latest"
+
+[env]
+TF_CLI_ARGS_plan = "-compact-warnings"
+TF_CLI_ARGS_apply = "-compact-warnings"
+
+# Setup task
+[tasks.setup]
+description = "Initial project setup"
+run = """
+#!/usr/bin/env bash
+set -e
+
+echo "🔧 Setting up homelab project..."
+
+# Check 1Password CLI
+if ! command -v op &> /dev/null; then
+    echo "❌ 1Password CLI not installed"
+    echo "👉 Install from: https://1password.com/downloads/command-line/"
+    exit 1
+fi
+
+# Check if signed in
+if ! op vault list &> /dev/null 2>&1; then
+    echo "🔑 Please sign in to 1Password first"
+    echo "👉 Run: op signin"
+    exit 1
+fi
+
+# Create providers entry
+if ! op item get "providers" --vault "Infrastructure" &> /dev/null 2>&1; then
+    echo "📝 Creating providers entry..."
+    op item create --category="Login" --title="providers" --vault="Infrastructure" \
+        username="providers" password="not-used"
+fi
+
+# Create server template
+if ! op item get "template-server" --vault "Infrastructure" &> /dev/null 2>&1; then
+    echo "📋 Creating server template..."
+    op item create --category="Login" --title="template-server" --vault="Infrastructure" \
+        --url="CHANGEME.REGION.excloo.dev" --tags="template" \
+        username="root" --generate-password="24,letters,digits"
+    
+    # Add sections
+    op item edit "template-server" --vault="Infrastructure" \
+        'inputs.description[text]=CHANGEME Server Description' \
+        'inputs.parent[text]=REGION' \
+        'inputs.region[text]=REGION' \
+        'inputs.platform[text]=ubuntu' \
+        'inputs.type[text]=oci' \
+        'inputs.features.beszel[text]=true' \
+        'inputs.features.docker[text]=true' \
+        'inputs.features.homepage[text]=true'
+fi
+
+# Create service template
+if ! op item get "template-service" --vault "Services" &> /dev/null 2>&1; then
+    echo "📋 Creating service template..."
+    op item create --category="Login" --title="template-service" --vault="Services" \
+        --tags="template" username="admin" --generate-password="24,letters,digits"
+    
+    # Add sections
+    op item edit "template-service" --vault="Services" \
+        'inputs.deployment[text]=all' \
+        'inputs.description[text]=CHANGEME Service Description' \
+        'inputs.dns.external[text]=true' \
+        'inputs.dns.internal[text]=true' \
+        'inputs.docker.image[text]=CHANGEME:latest' \
+        'inputs.docker.ports.0[text]=8080:8080' \
+        'inputs.features.auth_password[text]=true'
+fi
+
+# Create .mise.local.toml
+if [[ ! -f .mise.local.toml ]]; then
+    echo "📄 Creating .mise.local.toml..."
+    cat > .mise.local.toml << 'EOF'
+[env]
+OP_SERVICE_ACCOUNT_TOKEN = "REPLACE_ME"
+AWS_ACCESS_KEY_ID = "REPLACE_ME"
+AWS_SECRET_ACCESS_KEY = "REPLACE_ME"
+EOF
+fi
+
+echo "
+✅ Setup complete!
+
+Next steps:
+1. Add API keys to 'providers' in 1Password
+2. Create service account at: https://my.1password.com/integrations/active
+3. Update .mise.local.toml with your credentials
+4. Run: mise run init
+"
+"""
+
+# Initialize tasks
+[tasks.init]
+description = "Initialize OpenTofu"
+run = """
+cd infrastructure && tofu init -upgrade
+cd ../services && tofu init -upgrade
+pre-commit install
+"""
+
+# Plan and apply
+[tasks.plan]
+description = "Plan all changes"
+run = """
+echo "🔍 Planning infrastructure..."
+cd infrastructure && tofu plan
+echo "
+🔍 Planning services..."
+cd ../services && tofu plan
+"""
+
+[tasks.apply]
+description = "Apply all changes"
+run = """
+echo "⚠️  This will apply infrastructure changes!"
+echo -n "Type 'yes' to continue: "
+read -r response
+if [[ "$response" != "yes" ]]; then
+  echo "Cancelled."
+  exit 1
+fi
+cd infrastructure && tofu apply -auto-approve
+cd ../services && tofu apply -auto-approve
+"""
+
+# Helper tasks
+[tasks.fmt]
+description = "Format all files"
+run = "tofu fmt -recursive ."
+
+[tasks.validate]
+description = "Validate configuration"
+run = """
+cd infrastructure && tofu validate
+cd ../services && tofu validate
+"""
+
+[tasks.clean]
+description = "Clean up generated files"
+run = """
+find . -name '.terraform' -type d -exec rm -rf {} + 2>/dev/null || true
+find . -name '*.tfplan' -delete 2>/dev/null || true
+find . -name '.terraform.lock.hcl' -delete 2>/dev/null || true
+"""
+
+# Create entries in 1Password
+[tasks.server]
+description = "Create a server in 1Password"
+run = """
+#!/usr/bin/env bash
+if [[ $# -lt 2 ]]; then
+    echo "Usage: mise run server <region>-<name> <type>"
+    echo "Types: oci, proxmox, physical, vps"
+    echo "Example: mise run server au-hsp oci"
+    exit 1
+fi
+
+NAME="server-$1"
+TYPE=$2
+
+op item create --category="Login" --title="$NAME" --vault="Infrastructure" \
+    --url="${1//-/.}.excloo.dev" --tags="server,$TYPE" \
+    username="root" --generate-password="24,letters,digits"
+
+echo "✅ Created $NAME"
+"""
+
+[tasks.service]
+description = "Create a service in 1Password"
+run = """
+#!/usr/bin/env bash
+if [[ $# -lt 1 ]]; then
+    echo "Usage: mise run service <platform>-<name>"
+    echo "Platforms: docker, fly, vercel"
+    echo "Example: mise run service docker-grafana"
+    exit 1
+fi
+
+NAME=$1
+PLATFORM="${NAME%%-*}"
+
+op item create --category="Login" --title="$NAME" --vault="Services" \
+    --tags="$PLATFORM,service" \
+    username="admin" --generate-password="24,letters,digits"
+
+echo "✅ Created $NAME"
+"""
+
+[tasks.list]
+description = "List infrastructure"
+run = """
+echo "🖥️  Servers:"
+op item list --vault="Infrastructure" --tags="server" | grep "^server-" || echo "  None"
+echo ""
+echo "🚀 Services:"
+op item list --vault="Services" --tags="service" || echo "  None"
+"""

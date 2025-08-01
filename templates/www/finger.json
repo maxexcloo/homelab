@@ -1,0 +1,3 @@
+${default.email}:
+  name: ${default.name}
+  openid: ${default.oidc.url}

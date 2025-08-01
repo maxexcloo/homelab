@@ -1,0 +1,33 @@
+networks:
+  ${default.organisation}:
+    external: true
+services:
+  webtop:
+    devices:
+      - /dev/dri:/dev/dri
+    environment:  
+      CUSTOM_USER: ${service.username}
+      LC_ALL: en_AU.UTF-8
+      PASSWORD: ${service.password}
+      PGID: 568
+      PUID: 568
+      TZ: ${server.config.timezone}
+    image: linuxserver/webtop:${service.config.version}
+    labels:
+      caddy: ${service.fqdn}
+      caddy.import: ${service.zone}
+      caddy.reverse_proxy: "{{upstreams 3000}}"
+    networks:
+      - default
+      - ${default.organisation}
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    shm_size: "1gb"
+    volumes:
+      - data:/config
+%{ for path in server.user.paths ~}
+      - ${path}:${path}
+%{ endfor ~}
+volumes:
+  data:

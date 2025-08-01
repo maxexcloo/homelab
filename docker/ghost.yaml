@@ -1,0 +1,43 @@
+networks:
+  ${default.organisation}:
+    external: true
+services:
+  ghost:
+    environment:
+      database__client: mysql
+      database__connection__database: ${service.database.name}
+      database__connection__host: mariadb
+      database__connection__password: ${service.database.password}
+      database__connection__user: ${service.database.username}
+      mail__from: ${default.email}
+      mail__options__auth__pass: ${service.mail.password}
+      mail__options__auth__user: ${service.mail.username}
+      mail__options__host: ${service.mail.host}
+      mail__options__port: ${service.mail.port}
+      mail__options__secure: true
+      mail__transport: SMTP
+      url: ${service.url}
+    image: ghost:6.0.0-rc.0-alpine
+    labels:
+      caddy: ${service.fqdn}
+      caddy.import: ${service.zone}
+      caddy.reverse_proxy: "{{upstreams 2368}}"
+    networks:
+      - default
+      - ${default.organisation}
+    restart: unless-stopped
+    volumes:
+      - data:/var/lib/ghost/content
+  mariadb:
+    environment:
+      MARIADB_DATABASE: ${service.database.name}
+      MARIADB_PASSWORD: ${service.database.password}
+      MARIADB_RANDOM_ROOT_PASSWORD: 1
+      MARIADB_USER: ${service.database.username}
+    image: mariadb:11
+    restart: unless-stopped
+    volumes:
+      - mariadb:/var/lib/mysql
+volumes:
+  data:
+  mariadb:

@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.88.0
+    hooks:
+      - id: terraform_fmt
+        args:
+          - --args=-recursive
+      - id: terraform_validate
+        args:
+          - --init-args=-upgrade
+          - --tf-init-args=-upgrade
+
+  - repo: local
+    hooks:
+      - id: check-sorting
+        name: Check HCL sorting
+        entry: scripts/check-sorting.sh
+        language: script
+        files: '\.tf$'
+        pass_filenames: true
+
+      - id: no-secrets
+        name: Check for secrets
+        entry: scripts/check-secrets.sh
+        language: script
+        files: '\.tf$|\.tfvars$'
+        pass_filenames: true

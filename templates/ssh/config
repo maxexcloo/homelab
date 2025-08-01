@@ -1,0 +1,17 @@
+Include ~/.orbstack/ssh/config
+
+%{for k, device in devices ~}
+Host ${k}
+	HostName ${k}
+	Port ${device.port}
+	User ${device.username}
+	SetEnv TERM=xterm-256color
+%{ endfor ~}
+
+%{ for k, server in servers ~}
+Host ${k}
+	HostName ${k}
+	Port ${server.config.ssh_port}
+	User ${server.user.username}
+	SetEnv TERM=xterm-256color
+%{ endfor ~}

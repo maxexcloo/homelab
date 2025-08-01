@@ -1,0 +1,27 @@
+networks:
+  ${default.organisation}:
+    external: true
+services:
+  caddy:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    image: ghcr.io/maxexcloo/caddy:latest
+    labels:
+      caddy_0: (external)
+      caddy_0.tls: ${default.email}
+      caddy_1: (internal)
+      caddy_1.tls: ${default.email}
+      caddy_1.tls.dns: cloudflare ${service.cloudflare_account_token}
+      caddy_1.tls.resolvers: 1.1.1.1
+    networks:
+      - default
+      - ${default.organisation}
+    ports:
+      - 80:80
+      - 443:443
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - data:/data
+volumes:
+  data:

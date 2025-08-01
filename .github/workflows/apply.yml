@@ -1,0 +1,68 @@
+name: Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deployment target'
+        required: true
+        type: choice
+        options:
+          - infrastructure
+          - services
+          - both
+        default: both
+      confirm:
+        description: 'Type "apply" to confirm'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  
+jobs:
+  apply:
+    name: Apply Changes
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.actor == 'maxexcloo' && inputs.confirm == 'apply'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.8.4
+          
+      - name: Configure 1Password CLI
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          AWS_ACCESS_KEY_ID: op://Infrastructure/providers/b2/application_key_id
+          AWS_SECRET_ACCESS_KEY: op://Infrastructure/providers/b2/application_key
+          
+      - name: Apply Infrastructure
+        if: inputs.target == 'infrastructure' || inputs.target == 'both'
+        run: |
+          cd infrastructure
+          tofu init -no-color
+          tofu apply -auto-approve -no-color
+          
+      - name: Apply Services
+        if: inputs.target == 'services' || inputs.target == 'both'
+        run: |
+          cd services
+          tofu init -no-color
+          tofu apply -auto-approve -no-color
+          
+      - name: Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Target: ${{ inputs.target }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ✅ Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- Time: $(date)" >> $GITHUB_STEP_SUMMARY
