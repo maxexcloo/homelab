@@ -4,7 +4,7 @@ services:
     container_name: ${service.service}-service-${i}
     environment:
       ACCESS_TOKEN: ${service.config.access_token}
-      LABELS: ${server.location},${server.name},${service.platform},${service.service},${service.platform}-${server.name}-${i}
+      LABELS: ${server.region},${server.name},${service.platform},${service.service},${service.platform}-${server.name}-${i}
       ORG_NAME: ${default.organisation}
       RUNNER_NAME: ${service.platform}-${server.name}-${i}
       RUNNER_SCOPE: org

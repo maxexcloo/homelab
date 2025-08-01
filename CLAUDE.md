@@ -28,24 +28,25 @@
 
 ## Commands
 ```bash
-# Check
-mise run check           # Format, validate, and plan all layers
+# Setup
+mise run setup          # Initial project setup
 
-# Deploy
-mise run deploy-infra    # Deploy infrastructure layer
-mise run deploy-services # Deploy services layer
+# Initialize
+mise run init           # Initialize OpenTofu
 
-# Format
-mise run fmt             # Format all HCL files
+# Plan & Apply
+mise run plan           # Plan all changes
+mise run apply          # Apply all changes
 
-# Init
-mise run init            # Initialize OpenTofu for all layers
+# Utilities
+mise run fmt            # Format all files
+mise run validate       # Validate configuration
+mise run clean          # Clean up generated files
 
-# Plan
-mise run plan            # Plan changes for all layers
-
-# Validate
-mise run validate        # Validate all configurations
+# Create Resources
+mise run server <region>-<name> <type>  # Create server
+mise run service <platform>-<name>      # Create service
+mise run list                           # List infrastructure
 ```
 
 ## Development Guidelines
@@ -68,7 +69,7 @@ mise run validate        # Validate all configurations
 - **No Server Suffix**: Services are shared across deployments
 
 ### Server Entries (Infrastructure Vault)
-- **Naming**: `server-location-name` (e.g., server-au-hsp)
+- **Naming**: `server-region-name` (e.g., server-au-hsp)
 - **Sections**: inputs, type-specific (oci, proxmox), outputs
 - **Platform Field**: ubuntu, truenas, haos, pbs, mac, proxmox, pikvm
 
@@ -96,12 +97,11 @@ mise run validate        # Validate all configurations
 - **User-friendly output**: Clear explanation of what went wrong and next steps
 
 ### Required Development Tasks
-- **check**: Format, validate, and plan all layers
-- **deploy-infra**: Apply infrastructure changes with approval
-- **deploy-services**: Apply service changes with approval
+- **apply**: Apply all changes with confirmation
 - **fmt**: Format all HCL files recursively
 - **init**: Initialize OpenTofu backends and providers
 - **plan**: Generate plans for review
+- **setup**: Initial project setup with 1Password
 - **validate**: Validate HCL syntax and configuration
 
 ## Project Structure
@@ -112,7 +112,6 @@ mise run validate        # Validate all configurations
 - **.github/workflows/**: GitHub Actions for plan/apply workflows
 - **.mise.toml**: Local development task definitions
 - **ARCHITECTURE.md**: System design and data flows
-- **ARCHITECTURE_UPDATES.md**: Migration guide and changes
 - **DNS_ARCHITECTURE.md**: DNS management strategy
 - **FEATURE_MATRIX.md**: Complete feature and configuration reference
 

@@ -141,8 +141,8 @@ Multiple websites in 1Password entry:
 **Auto-Generated DNS:**
 - External: From Website field if `.net` domain
 - Internal: From Website fields if `.dev` domain
-- Server subdomain: `service.server.location.dev` auto-created
-- Wildcards: `*.server.location.domain` for dynamic services
+- Server subdomain: `service.server.region.dev` auto-created
+- Wildcards: `*.server.region.domain` for dynamic services
 
 **DNS Zone Management:**
 - Zones stored as `dns-domain-tld` entries in Infrastructure vault
