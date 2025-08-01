@@ -65,10 +65,10 @@ Create two vaults:
 ### Common Tasks
 
 ```bash
-# Create a new server
+# Create a new server (via CLI)
 mise run server au-web oci
 
-# Create a new service  
+# Create a new service (via CLI)
 mise run service docker-grafana
 
 # List all infrastructure
@@ -77,6 +77,8 @@ mise run list
 # Clean up generated files
 mise run clean
 ```
+
+**Manual Creation**: You can also duplicate the `template-server` or `template-service` entries in 1Password. See [TEMPLATES.md](TEMPLATES.md) for details.
 
 ### DNS Configuration
 
@@ -109,6 +111,7 @@ mise run validate
 - [Architecture](ARCHITECTURE.md) - System design and patterns
 - [Feature Matrix](FEATURE_MATRIX.md) - Complete configuration reference
 - [DNS Management](DNS_ARCHITECTURE.md) - DNS strategy and patterns
+- [Templates Guide](TEMPLATES.md) - Manual creation in 1Password
 - [Development Guide](CLAUDE.md) - Standards and guidelines
 
 ## License
