@@ -3,7 +3,6 @@ opentofu = "latest"
 pre-commit = "latest"
 
 [env]
-# OpenTofu CLI settings only - no variables
 TF_CLI_ARGS_init = "-upgrade"
 TF_CLI_ARGS_plan = "-compact-warnings"
 TF_CLI_ARGS_apply = "-compact-warnings -auto-approve"
@@ -12,7 +11,7 @@ TF_CLI_ARGS_apply = "-compact-warnings -auto-approve"
 [tasks.setup]
 description = "Initial project setup"
 run = """
-echo "🔧 Setting up homelab project..."
+echo "🔧 Setting up project..."
 
 # Check 1Password CLI
 if ! command -v op &> /dev/null; then
@@ -34,20 +33,35 @@ op item get "providers" --vault "Infrastructure" 2>/dev/null || \
         username="providers" password="not-used" 2>/dev/null || \
     echo "  ✅ Already exists"
 
+# Create comprehensive templates from JSON
+echo "📋 Creating templates..."
+
 # Create server template
-echo "📋 Checking server template..."
-op item get "template-server" --vault "Infrastructure" 2>/dev/null || \
-    op item create --category="Login" --title="template-server" --vault="Infrastructure" \
-        --url="CHANGEME.REGION.excloo.dev" --tags="template" \
-        username="root" --generate-password="24,letters,digits" 2>/dev/null || \
-    echo "  ✅ Already exists"
+if ! op item get "template-server" --vault "Infrastructure" 2>/dev/null; then
+    echo "  Creating server template..."
+    op item create --template="templates/1password/server-template.json" 2>/dev/null || \
+        echo "  ⚠️  Could not create server template"
+else
+    echo "  ✅ Server template exists"
+fi
 
 # Create service template  
-echo "📋 Checking service template..."
-op item get "template-service" --vault "Services" 2>/dev/null || \
-    op item create --category="Login" --title="template-service" --vault="Services" \
-        --tags="template" username="admin" --generate-password="24,letters,digits" 2>/dev/null || \
-    echo "  ✅ Already exists"
+if ! op item get "template-service" --vault "Services" 2>/dev/null; then
+    echo "  Creating service template..."
+    op item create --template="templates/1password/service-template.json" 2>/dev/null || \
+        echo "  ⚠️  Could not create service template"
+else
+    echo "  ✅ Service template exists"
+fi
+
+# Update providers with all sections
+echo "  Updating providers entry..."
+if op item get "providers" --vault "Infrastructure" &>/dev/null; then
+    # Delete and recreate to get all sections
+    op item delete "providers" --vault "Infrastructure" 2>/dev/null || true
+fi
+op item create --template="templates/1password/providers-template.json" 2>/dev/null || \
+    echo "  ✅ Providers entry exists"
 
 # Create .mise.local.toml
 if [[ ! -f .mise.local.toml ]]; then

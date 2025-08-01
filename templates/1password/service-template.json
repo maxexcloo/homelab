@@ -1,0 +1,150 @@
+{
+  "title": "template-service",
+  "category": "LOGIN",
+  "vault": {
+    "name": "Services"
+  },
+  "tags": ["template"],
+  "fields": [
+    {
+      "id": "username",
+      "type": "STRING",
+      "purpose": "USERNAME",
+      "label": "username",
+      "value": "admin"
+    },
+    {
+      "id": "password",
+      "type": "CONCEALED", 
+      "purpose": "PASSWORD",
+      "label": "password",
+      "generate": true,
+      "recipe": {
+        "length": 24,
+        "characterSets": ["LETTERS", "DIGITS"]
+      }
+    }
+  ],
+  "sections": [
+    {
+      "id": "inputs",
+      "label": "inputs",
+      "fields": [
+        {"type": "STRING", "label": "deployment", "value": "all"},
+        {"type": "STRING", "label": "description", "value": "CHANGEME Service Description"}
+      ]
+    },
+    {
+      "id": "inputs.dns",
+      "label": "inputs.dns",
+      "fields": [
+        {"type": "STRING", "label": "external", "value": "true"},
+        {"type": "STRING", "label": "internal", "value": "true"}
+      ]
+    },
+    {
+      "id": "inputs.dns.redirects",
+      "label": "inputs.dns.redirects",
+      "fields": [
+        {"type": "STRING", "label": "0", "value": ""},
+        {"type": "STRING", "label": "1", "value": ""}
+      ]
+    },
+    {
+      "id": "inputs.docker",
+      "label": "inputs.docker",
+      "fields": [
+        {"type": "STRING", "label": "image", "value": "CHANGEME:latest"},
+        {"type": "STRING", "label": "command", "value": ""},
+        {"type": "STRING", "label": "restart", "value": "unless-stopped"}
+      ]
+    },
+    {
+      "id": "inputs.docker.ports",
+      "label": "inputs.docker.ports",
+      "fields": [
+        {"type": "STRING", "label": "0", "value": "8080:80"},
+        {"type": "STRING", "label": "1", "value": ""}
+      ]
+    },
+    {
+      "id": "inputs.docker.volumes",
+      "label": "inputs.docker.volumes",
+      "fields": [
+        {"type": "STRING", "label": "0", "value": "data:/data"},
+        {"type": "STRING", "label": "1", "value": ""}
+      ]
+    },
+    {
+      "id": "inputs.docker.environment",
+      "label": "inputs.docker.environment",
+      "fields": [
+        {"type": "STRING", "label": "KEY1", "value": "value1"},
+        {"type": "STRING", "label": "KEY2", "value": "value2"}
+      ]
+    },
+    {
+      "id": "inputs.docker.networks",
+      "label": "inputs.docker.networks", 
+      "fields": [
+        {"type": "STRING", "label": "0", "value": "proxy"}
+      ]
+    },
+    {
+      "id": "inputs.fly",
+      "label": "inputs.fly",
+      "fields": [
+        {"type": "STRING", "label": "size", "value": "shared-cpu-1x"},
+        {"type": "STRING", "label": "min_instances", "value": "1"},
+        {"type": "STRING", "label": "max_instances", "value": "3"},
+        {"type": "STRING", "label": "auto_stop", "value": "true"},
+        {"type": "STRING", "label": "auto_start", "value": "true"}
+      ]
+    },
+    {
+      "id": "inputs.fly.regions",
+      "label": "inputs.fly.regions",
+      "fields": [
+        {"type": "STRING", "label": "0", "value": "syd"},
+        {"type": "STRING", "label": "1", "value": "sin"}
+      ]
+    },
+    {
+      "id": "inputs.vercel",
+      "label": "inputs.vercel",
+      "fields": [
+        {"type": "STRING", "label": "framework", "value": "nextjs"},
+        {"type": "STRING", "label": "build_command", "value": "npm run build"},
+        {"type": "STRING", "label": "output_directory", "value": ".next"},
+        {"type": "STRING", "label": "install_command", "value": "npm install"},
+        {"type": "STRING", "label": "dev_command", "value": "npm run dev"}
+      ]
+    },
+    {
+      "id": "inputs.features",
+      "label": "inputs.features",
+      "fields": [
+        {"type": "STRING", "label": "auth_basic", "value": "false"},
+        {"type": "STRING", "label": "auth_oauth", "value": "false"},
+        {"type": "STRING", "label": "auth_password", "value": "true"},
+        {"type": "STRING", "label": "auth_tailscale", "value": "false"},
+        {"type": "STRING", "label": "backup", "value": "true"},
+        {"type": "STRING", "label": "database", "value": "postgres"},
+        {"type": "STRING", "label": "mail", "value": "resend"},
+        {"type": "STRING", "label": "monitoring", "value": "true"},
+        {"type": "STRING", "label": "storage_cloud", "value": "b2"},
+        {"type": "STRING", "label": "storage_local", "value": "true"}
+      ]
+    },
+    {
+      "id": "outputs",
+      "label": "outputs",
+      "fields": [
+        {"type": "STRING", "label": "url", "value": ""},
+        {"type": "STRING", "label": "admin_password", "value": ""},
+        {"type": "STRING", "label": "api_key", "value": ""},
+        {"type": "STRING", "label": "webhook_url", "value": ""}
+      ]
+    }
+  ]
+}

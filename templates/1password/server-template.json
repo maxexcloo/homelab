@@ -1,0 +1,90 @@
+{
+  "title": "template-server",
+  "category": "LOGIN",
+  "vault": {
+    "name": "Infrastructure"
+  },
+  "tags": ["template"],
+  "fields": [
+    {
+      "id": "username",
+      "type": "STRING",
+      "purpose": "USERNAME",
+      "label": "username",
+      "value": "root"
+    },
+    {
+      "id": "password", 
+      "type": "CONCEALED",
+      "purpose": "PASSWORD",
+      "label": "password",
+      "generate": true,
+      "recipe": {
+        "length": 24,
+        "characterSets": ["LETTERS", "DIGITS"]
+      }
+    },
+    {
+      "id": "website",
+      "type": "URL",
+      "label": "website",
+      "value": "https://CHANGEME.REGION.excloo.dev"
+    }
+  ],
+  "sections": [
+    {
+      "id": "inputs",
+      "label": "inputs",
+      "fields": [
+        {"type": "STRING", "label": "description", "value": "CHANGEME Server Description"},
+        {"type": "STRING", "label": "parent", "value": "REGION"},
+        {"type": "STRING", "label": "region", "value": "REGION"},
+        {"type": "STRING", "label": "platform", "value": "ubuntu"},
+        {"type": "STRING", "label": "type", "value": "oci"}
+      ]
+    },
+    {
+      "id": "inputs.features",
+      "label": "inputs.features",
+      "fields": [
+        {"type": "STRING", "label": "beszel", "value": "true"},
+        {"type": "STRING", "label": "cloudflare_proxy", "value": "true"},
+        {"type": "STRING", "label": "docker", "value": "true"},
+        {"type": "STRING", "label": "homepage", "value": "true"}
+      ]
+    },
+    {
+      "id": "oci",
+      "label": "oci",
+      "fields": [
+        {"type": "STRING", "label": "boot_disk_size", "value": "128"},
+        {"type": "STRING", "label": "cpus", "value": "4"},
+        {"type": "STRING", "label": "memory", "value": "8"},
+        {"type": "STRING", "label": "shape", "value": "VM.Standard.A1.Flex"},
+        {"type": "STRING", "label": "compartment_id", "value": "CHANGEME"},
+        {"type": "STRING", "label": "availability_domain", "value": "CHANGEME"}
+      ]
+    },
+    {
+      "id": "proxmox",
+      "label": "proxmox",
+      "fields": [
+        {"type": "STRING", "label": "boot_disk_size", "value": "128"},
+        {"type": "STRING", "label": "cpus", "value": "4"},
+        {"type": "STRING", "label": "memory", "value": "8192"},
+        {"type": "STRING", "label": "node", "value": "proxmox-node"},
+        {"type": "STRING", "label": "vmid", "value": "auto"},
+        {"type": "STRING", "label": "template", "value": "ubuntu-22.04"}
+      ]
+    },
+    {
+      "id": "outputs",
+      "label": "outputs",
+      "fields": [
+        {"type": "STRING", "label": "public_ip", "value": ""},
+        {"type": "STRING", "label": "tailscale_ip", "value": ""},
+        {"type": "STRING", "label": "ssh_host_key", "value": ""}
+      ]
+    }
+  ]
+}

@@ -4,7 +4,7 @@ This guide explains how to manually create servers and services in 1Password usi
 
 ## Server Template
 
-The `template-server` entry in the Infrastructure vault contains all required fields for a server.
+The `template-server` entry in the Infrastructure vault contains all possible fields for a server.
 
 ### To create a new server manually:
 
@@ -13,30 +13,66 @@ The `template-server` entry in the Infrastructure vault contains all required fi
    - Click "..." → "Duplicate"
    - Rename to `server-REGION-NAME` (e.g., `server-au-web`)
 
-2. **Update the fields**
+2. **Update required fields**
    - **Title**: `server-REGION-NAME`
    - **URL**: `name.region.excloo.dev`
-   - **Tags**: Remove `template`, add appropriate tags (`server`, `oci`, `ubuntu`)
-   - **Sections → inputs**:
-     - `description`: Your server description
-     - `parent`: Parent region (e.g., `au`)
-     - `region`: Server region (e.g., `au`)
-     - `platform`: OS platform (`ubuntu`, `debian`, `alpine`)
-     - `type`: Server type (`oci`, `proxmox`, `physical`, `vps`)
-   - **Sections → inputs → features** (set to `true` or `false`):
-     - `beszel`: System monitoring
-     - `cloudflare_proxy`: Use Cloudflare proxy
-     - `docker`: Docker installed
-     - `homepage`: Show on homepage
-     - Additional features as needed
+   - **Username**: Server username (usually `root`)
+   - **Password**: Generate or set a secure password
+   - **Tags**: Remove `template`, add `server` and platform/type tags
 
-3. **Platform-specific fields** (add as needed):
-   - **OCI**: `oci.boot_disk_size`, `oci.cpus`, `oci.memory`, `oci.shape`
-   - **Proxmox**: `proxmox.boot_disk_size`, `proxmox.cpus`, `proxmox.memory`, `proxmox.node`
+3. **Update sections**
+
+#### inputs Section (Required)
+```yaml
+inputs:
+  description: "Your server description"
+  parent: "parent-region"  # e.g., "au" 
+  region: "server-region"  # e.g., "au"
+  platform: "ubuntu"       # ubuntu|debian|alpine|truenas|haos|pbs|mac|proxmox|pikvm
+  type: "oci"             # oci|proxmox|physical|vps
+  
+  features:              # Set to true/false as needed
+    beszel: true         # System monitoring
+    cloudflare_proxy: true
+    docker: true
+    homepage: true
+```
+
+#### Platform-Specific Sections (Use relevant one)
+
+**OCI Section** (Oracle Cloud):
+```yaml
+oci:
+  boot_disk_size: "128"      # GB
+  cpus: "4"                  # OCPUs
+  memory: "8"                # GB
+  shape: "VM.Standard.A1.Flex"
+  compartment_id: "ocid1.compartment..."
+  availability_domain: "AD-1"
+```
+
+**Proxmox Section**:
+```yaml
+proxmox:
+  boot_disk_size: "128"      # GB
+  cpus: "4"
+  memory: "8192"             # MB
+  node: "proxmox-node-name"
+  vmid: "auto"               # or specific number
+  template: "ubuntu-22.04"   # template name
+```
+
+#### outputs Section (Auto-populated)
+```yaml
+outputs:
+  public_ip: ""              # Set by OpenTofu
+  tailscale_ip: ""           # Set by OpenTofu
+  ssh_host_key: ""           # Set by OpenTofu
+```
 
 ## Service Template
 
-The `template-service` entry in the Services vault contains all required fields for a service.
+The `template-service` entry in the Services vault contains all possible fields for a service.
 
 ### To create a new service manually:
 
@@ -45,102 +81,211 @@ The `template-service` entry in the Services vault contains all required fields 
    - Click "..." → "Duplicate"
    - Rename to `PLATFORM-SERVICE` (e.g., `docker-grafana`)
 
-2. **Update the fields**
+2. **Update required fields**
    - **Title**: `PLATFORM-SERVICE`
-   - **URL**: `service.excloo.net` (if external DNS enabled)
-   - **Tags**: Remove `template`, add `PLATFORM`, `service`
-   - **Sections → inputs**:
-     - `deployment`: Deployment target (`all`, `none`, `tag:docker`, `server:au-hsp`)
-     - `description`: Service description
-   - **Sections → inputs → dns**:
-     - `external`: `true` for public access
-     - `internal`: `true` for internal access
-   - **Platform-specific configuration**:
-     - **Docker**: 
-       - `docker.image`: Docker image name
-       - `docker.ports.0`, `docker.ports.1`: Port mappings
-       - `docker.volumes.0`: Volume mounts
-       - `docker.environment.KEY`: Environment variables
-     - **Fly.io**:
-       - `fly.regions.0`: Deployment regions
-       - `fly.size`: Instance size
-     - **Vercel**:
-       - `vercel.framework`: Framework type
+   - **Username**: Service admin username
+   - **Password**: Generate or set a secure password
+   - **Tags**: Remove `template`, add platform tag and `service`
 
-3. **Common features** (in `inputs.features`):
-   - `auth_password`: Password authentication
-   - `database`: Database type (`postgres`, `mysql`)
-   - `mail`: Mail provider (`resend`)
-   - `storage_cloud`: Cloud storage (`b2`)
+3. **Update sections**
+
+#### inputs Section (Required)
+```yaml
+inputs:
+  deployment: "all"          # all|none|tag:X|server:X|region:X
+  description: "Service description"
+  
+  dns:
+    external: true           # Public access
+    internal: true           # Internal access
+    redirects:              # Optional redirect domains
+      - "old-domain.com"
+      - "legacy.example.com"
+```
+
+#### Platform-Specific Configuration
+
+**Docker Section**:
+```yaml
+docker:
+  image: "grafana/grafana:latest"
+  ports:
+    - "3000:3000"
+    - "3001:3001"
+  volumes:
+    - "data:/var/lib/grafana"
+    - "config:/etc/grafana"
+  environment:
+    GF_SECURITY_ADMIN_PASSWORD: "changeme"
+    GF_INSTALL_PLUGINS: "plugin1,plugin2"
+  networks:
+    - "proxy"
+  command: ""                # Optional override
+  restart: "unless-stopped"
+```
+
+**Fly.io Section**:
+```yaml
+fly:
+  regions:
+    - "syd"
+    - "sin"
+  size: "shared-cpu-1x"      # Instance size
+  min_instances: 1
+  max_instances: 3
+  auto_stop: true
+  auto_start: true
+```
+
+**Vercel Section**:
+```yaml
+vercel:
+  framework: "nextjs"        # nextjs|react|vue|svelte
+  build_command: "npm run build"
+  output_directory: ".next"
+  install_command: "npm install"
+  dev_command: "npm run dev"
+```
+
+#### features Section
+```yaml
+features:
+  auth_basic: false          # HTTP Basic Auth
+  auth_oauth: false          # OAuth2/OIDC
+  auth_password: true        # Password auth
+  auth_tailscale: false      # Tailscale ACL only
+  backup: true               # Automated backups
+  database: "postgres"       # postgres|mysql|none
+  mail: "resend"            # resend|smtp|none
+  monitoring: true           # Include in monitoring
+  storage_cloud: "b2"        # b2|s3|none
+  storage_local: true        # Local volumes
+```
+
+#### outputs Section (Auto-populated)
+```yaml
+outputs:
+  url: ""                    # Set by OpenTofu
+  admin_password: ""         # Set by OpenTofu
+  api_key: ""               # Set by OpenTofu
+  webhook_url: ""           # Set by OpenTofu
+```
+
+## Providers Entry
+
+The `providers` entry contains all API keys and configuration for external services.
+
+### Provider Sections
+
+```yaml
+b2:
+  application_key: "K002..."
+  application_key_id: "002..."
+
+cloudflare:
+  account_id: "abc123..."
+  api_token: "v1.0-e72..."
+
+github:
+  token: "ghp_..."
+  username: "your-username"
+
+oci:
+  fingerprint: "aa:bb:cc..."
+  private_key: "-----BEGIN PRIVATE KEY-----..."
+  region: "ap-sydney-1"
+  tenancy_ocid: "ocid1.tenancy..."
+  user_ocid: "ocid1.user..."
+
+onepassword:
+  service_account_token: "ops_..."
+
+proxmox:
+  api_token: "PVEAPIToken=..."
+  endpoint: "https://proxmox.example.com:8006"
+  username: "root@pam"
+
+resend:
+  api_key: "re_..."
+
+sftpgo:
+  host: "sftpgo.example.com"
+  password: "admin-password"
+  username: "admin"
+
+tailscale:
+  api_key: "tskey-api-..."
+  tailnet: "example.com"
+
+fly:
+  api_token: "fly_..."
+
+vercel:
+  api_token: "vercel_..."
+  team_id: "team_..."
+```
 
 ## Field Reference
 
-### Server Fields
-```yaml
-inputs:
-  description: "Server description"
-  parent: "parent-region"
-  region: "deployment-region"
-  platform: "ubuntu|debian|alpine"
-  type: "oci|proxmox|physical|vps"
-  features:
-    beszel: true
-    cloudflare_proxy: true
-    docker: true
-    homepage: true
-```
+### Required vs Optional
 
-### Service Fields
-```yaml
-inputs:
-  deployment: "all|none|tag:X|server:X"
-  description: "Service description"
-  dns:
-    external: true
-    internal: true
-  docker:
-    image: "image:tag"
-    ports:
-      - "8080:80"
-    environment:
-      KEY: "value"
-  features:
-    auth_password: true
-    database: "postgres"
-```
+- **Required**: Fields needed for basic functionality
+- **Optional**: Fields that enhance or customize behavior
+- **Conditional**: Required only for specific platforms/features
+
+### Field Types
+
+- `text`: Plain text values
+- `concealed`: Sensitive values (passwords, tokens)
+- `url`: Website URLs
+- Arrays: Use numbered keys (0, 1, 2...)
+- Objects: Use dot notation
 
 ## Tips
 
-1. **Use consistent naming**: 
-   - Servers: `server-REGION-NAME`
-   - Services: `PLATFORM-SERVICE`
-
-2. **Tag appropriately**: Tags help with filtering and organization
-
-3. **Keep passwords**: The generated passwords are used for server/service access
-
-4. **Update templates**: If you find yourself adding the same fields repeatedly, update the template
-
-5. **Verify before applying**: Always run `mise run plan` to verify changes
+1. **Start minimal**: Only fill in required fields first
+2. **Use templates as reference**: Keep templates to see all available options
+3. **Remove unused sections**: Delete sections you don't need
+4. **Test incrementally**: Add features one at a time
+5. **Keep passwords**: Generated passwords are your access credentials
 
 ## Common Patterns
 
-### Multi-server service
+### Development Service
 ```yaml
-deployment: "tag:docker"  # Deploy to all servers with docker tag
+deployment: "server:dev-box"     # Single server
+dns:
+  external: false                # Internal only
+  internal: true
+features:
+  auth_tailscale: true          # Network auth only
 ```
 
-### Region-specific service
+### Production Service
 ```yaml
-deployment: "region:au"  # Deploy only to AU region
+deployment: "tag:production"     # All prod servers
+dns:
+  external: true                # Public access
+  internal: true
+features:
+  auth_password: true           # Strong auth
+  backup: true                  # Automated backups
+  monitoring: true              # Health checks
 ```
 
-### Single server service
+### Multi-Region Service
 ```yaml
-deployment: "server:au-hsp"  # Deploy to specific server
+deployment: "all"               # All servers
+docker:
+  image: "app:latest"
+  environment:
+    REGION: "${server.region}"  # Region-aware
 ```
 
-### No deployment (manual/external)
-```yaml
-deployment: "none"  # Don't deploy automatically
-```
+## Validation
+
+Before using an entry:
+1. Ensure required fields are filled
+2. Remove any CHANGEME/REPLACE_ME values
+3. Verify platform-specific sections match server type
+4. Test with `mise run plan` before applying
