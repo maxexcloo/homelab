@@ -16,8 +16,8 @@ override.tf.json
 .env.local
 !terraform.tfvars.example
 
-# Don't ignore DNS configuration files
-!infrastructure/dns.auto.tfvars
+# Don't ignore configuration files  
+!*.auto.tfvars
 
 # IDE
 .idea/

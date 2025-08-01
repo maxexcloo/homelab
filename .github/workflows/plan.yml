@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'maxexcloo'
     
+    env:
+      # Minimal secrets - only what's absolutely required
+      OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,14 +30,6 @@ jobs:
         with:
           tofu_version: 1.8.4
           
-      - name: Configure 1Password CLI
-        uses: 1password/load-secrets-action@v2
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          AWS_ACCESS_KEY_ID: op://Infrastructure/providers/b2/application_key_id
-          AWS_SECRET_ACCESS_KEY: op://Infrastructure/providers/b2/application_key
           
       - name: Initialize Infrastructure
         run: |
