@@ -174,11 +174,7 @@ repos:
     hooks:
       - id: tofu-fmt
       - id: tofu-validate
-  - repo: local
-    hooks:
-      - id: check-sorting
-        name: Check HCL sorting
-        entry: scripts/check-sorting.sh
+  # Additional local hooks can be added here
 ```
 
 ## Deployment Workflow

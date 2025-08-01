@@ -1,416 +1,193 @@
 # Feature Matrix
 
-## Infrastructure Features
+Complete configuration reference for all infrastructure and service options.
+
+## Server Configuration
+
+### Server Entry Structure (1Password)
+```yaml
+Name: server-REGION-NAME
+Type: Login
+Tags: server, PLATFORM, TYPE
+
+Sections:
+  inputs:
+    description: "Server description"
+    parent: "parent-region"
+    region: "deployment-region"
+    platform: "ubuntu|debian|alpine|truenas|haos|pbs|mac|proxmox|pikvm"
+    type: "oci|proxmox|physical|vps"
+    features:
+      beszel: true|false      # System metrics
+      cloudflare_proxy: true|false
+      docker: true|false
+      homepage: true|false
+      
+  # Platform-specific fields
+  oci:
+    boot_disk_size: "128"
+    cpus: "4"
+    memory: "8"
+    shape: "VM.Standard.A1.Flex"
+    
+  proxmox:
+    boot_disk_size: "128"
+    cpus: "4" 
+    memory: "8192"
+    node: "proxmox-node-name"
+    
+  outputs:
+    public_ip: "x.x.x.x"
+    tailscale_ip: "100.x.x.x"
+```
 
 ### Server Types
-| Type | Provider | Configuration Fields | Notes |
-|------|----------|---------------------|-------|
-| `oci` | Oracle Cloud | `boot_disk_image_id`, `boot_disk_size`, `cpus`, `ingress_ports`, `memory`, `shape` | Free tier ARM instances |
-| `proxmox` | Proxmox VE | `boot_disk_size`, `cpus`, `memory`, `node`, `template`, `vmid` | On-premise virtualization |
-| `physical` | None | Manual configuration only | Existing hardware |
-| `vps` | Various | Provider-specific | Digital Ocean, Linode, etc. |
-| `router` | None | Gateway configuration | Network edge devices |
+
+| Type | Description | Platform Support |
+|------|-------------|------------------|
+| `oci` | Oracle Cloud Infrastructure | ubuntu, debian |
+| `proxmox` | Proxmox Virtual Environment | ubuntu, debian, alpine, truenas, haos, pbs |
+| `physical` | Physical hardware | Any |
+| `vps` | Virtual Private Server | ubuntu, debian, alpine |
+
+### Server Platforms
+
+| Platform | Description | Features |
+|----------|-------------|----------|
+| `ubuntu` | Ubuntu Server | docker, komodo, homepage |
+| `debian` | Debian Server | docker, komodo |
+| `alpine` | Alpine Linux | docker (lightweight) |
+| `truenas` | TrueNAS Scale | storage, apps |
+| `haos` | Home Assistant OS | home automation |
+| `pbs` | Proxmox Backup Server | backup |
+| `mac` | macOS | development |
+| `proxmox` | Proxmox VE Host | virtualization |
+| `pikvm` | PiKVM | remote management |
 
 ### Server Features
-| Feature | Description | Purpose |
-|---------|-------------|----------|
-| `beszel` | Beszel monitoring agent | System monitoring |
-| `cloudflare_proxy` | Enable Cloudflare tunnel | External access |
-| `docker` | Docker host | Container runtime |
-| `github_runner` | GitHub Actions runner | CI/CD |
-| `homepage` | Show on homepage | Dashboard visibility |
-| `portainer` | Portainer endpoint | Container management |
-| `unifi` | UniFi controller | Network management |
 
-### Platform Types
-| Platform | Description | Typical Features |
-|----------|-------------|------------------|
-| `ubuntu` | Ubuntu Linux | docker, homepage |
-| `truenas` | TrueNAS Scale | docker, portainer, storage |
-| `haos` | Home Assistant OS | homepage, automation |
-| `pbs` | Proxmox Backup Server | backup, monitoring |
-| `mac` | macOS | docker, development |
-| `proxmox` | Proxmox VE | virtualization, homepage |
-| `pikvm` | PiKVM | remote access |
-
-### Infrastructure Services
-| Service | Purpose | Configuration |
-|---------|---------|---------------|
-| Cloudflare | DNS zones, tunnels | API key, zones, tokens |
-| Tailscale | Zero-trust networking | Auth keys, ACLs |
-| B2 | State storage, backups | Application keys |
-| SFTPGO | Local file storage | Users, folders |
-| Resend | Email infrastructure | Domain verification |
-| GitHub | Runners, deployments | Tokens, secrets |
-| Proxmox | VM management | API credentials |
-
-## Service Features
-
-### Deployment Targets
-| Format | Example | Description |
-|--------|---------|-------------|
-| `all` | `deployment: "all"` | Deploy to all servers |
-| `none` | `deployment: "none"` | No deployment (config only) |
-| `tag:*` | `deployment: "tag:docker"` | Deploy to servers with feature |
-| `server:*` | `deployment: "server:au-hsp"` | Deploy to specific server |
-| `region:*` | `deployment: "region:au"` | Deploy to servers in region |
-
-### Service Features
-| Feature | Description | Resources Created |
-|---------|-------------|-------------------|
-| `auth_password` | Use 1Password entry password | Password passed to service |
-| `auth_secret_hash` | Generate bcrypt hash | Hash stored in outputs |
-| `database` | Database requirement | Connection string, credentials |
-| `mail` | Email sending capability | API keys, SMTP config |
-| `observability` | Logs, metrics, traces | Collector configuration |
-| `storage_cloud` | Cloud storage (B2) | Bucket, access keys |
-| `storage_sftp` | SFTP storage | User, folder, credentials |
-
-### Platform Support
-| Platform | Entry Prefix | Deployment Method | Config Section |
-|----------|--------------|-------------------|----------------|
-| Docker | `docker-*` | Komodo API | `inputs.docker` |
-| Fly.io | `fly-*` | Fly CLI/API | `inputs.fly` |
-| Vercel | `vercel-*` | Vercel API | `inputs.vercel` |
-
-## Service Naming Convention
-
-### Format: `platform-service` (No Server Suffix)
-
-| Platform | Example | Deployment |
-|----------|---------|------------|
-| `docker-*` | `docker-grafana` | Via deployment target |
-| `fly-*` | `fly-app` | Multi-region native |
-| `vercel-*` | `vercel-site` | Global CDN |
-
-### Multi-Server Services
-Services share the same 1Password entry with deployment targets:
-- Single entry: `docker-caddy`
-- Deployment: `tag:reverse_proxy` or `all`
-- Shared credentials across all instances
+| Feature | Description | Requirements |
+|---------|-------------|--------------|
+| `beszel` | Beszel monitoring agent | System metrics |
+| `cloudflare_proxy` | Use Cloudflare proxy | External DNS |
+| `docker` | Docker runtime | ubuntu, debian, alpine |
+| `homepage` | Homepage dashboard | docker |
 
 ## Service Configuration
 
-### Docker Configuration
+### Service Entry Structure (1Password)
 ```yaml
-inputs:
-  deployment: "server:au-hsp"  # or "tag:docker" or "region:au"
-  description: "Application Description"  # Pretty name for UI
-  icon: "app-icon"  # Homepage icon
-  docker:
-    image: "app:latest"
-    ports: ["3000:3000"]
-    volumes: 
-      - "data:/data"
-    environment:
-      KEY: "value"
-    networks: ["internal"]
-    depends_on: ["database"]
-  widgets:  # Homepage widgets
-    - widget:
-        type: "customapi"
-        url: "${url}/api/stats"
-        mappings:
-          - field: users
-            label: "Users"
-```
+Name: PLATFORM-SERVICE
+Type: Login
+Tags: PLATFORM, service
 
-### Fly.io Configuration
-```yaml
-inputs:
-  fly:
-    app_name: "my-app"
-    regions: ["syd", "lax"]
-    size: "shared-cpu-1x"
-    services:
-      - internal_port: 3000
-        protocol: "tcp"
-        ports:
-          - handlers: ["http"]
-            port: 80
-          - handlers: ["tls", "http"]
-            port: 443
-```
-
-### DNS Configuration
-Multiple websites in 1Password entry:
-- `Website`: Primary External URL (e.g., `https://service.excloo.net`)
-- `Website 2`: Internal URL (e.g., `https://service.excloo.dev`)
-- `Website 3+`: Legacy URLs (redirect to primary)
-
-**Auto-Generated DNS:**
-- External: From Website field if `.net` domain
-- Internal: From Website fields if `.dev` domain
-- Server subdomain: `service.server.region.dev` auto-created
-- Wildcards: `*.server.region.domain` for dynamic services
-
-**DNS Zone Management:**
-- Zones stored as `dns-domain-tld` entries in Infrastructure vault
-- Manual records in zone entry `records` section
-- Auto-sync from Cloudflare zones
-
-## SSL Certificate Management
-
-### Domain Structure
-- **External Domain**: `.net` (e.g., `excloo.net`)
-  - Resolves to public IPs or Cloudflare proxy
-  - SSL via Cloudflare proxy or Caddy with Let's Encrypt
-- **Internal Domain**: `.dev` (e.g., `excloo.dev`)
-  - Resolves to Tailscale IPs (IPv4 and IPv6)
-  - SSL via Caddy with Cloudflare DNS validation
-
-### DNS Patterns
-- **Server DNS**:
-  - External: `server.excloo.net` → Public IP
-  - Internal: `server.excloo.dev` → Tailscale IP
-- **Service DNS**:
-  - External: `service.excloo.net` → Cloudflare/Public
-  - Internal: `service.server.excloo.dev` → Tailscale IP
-  - Internal Alt: `service.excloo.dev` → Tailscale IP
-
-### SSL Implementation
-```hcl
-# External - Cloudflare Proxy
-resource "cloudflare_record" "external" {
-  zone_id = data.cloudflare_zone.external.id
-  name    = var.service_name
-  type    = "CNAME"
-  value   = "${var.server_name}.${var.external_domain}"
-  proxied = true  # Cloudflare SSL
-}
-
-# External - Caddy (port forwarding)
-resource "caddy_site" "external" {
-  address = "${var.service_name}.${var.external_domain}"
-  
-  tls {
-    # Let's Encrypt via HTTP challenge
-  }
-  
-  reverse_proxy {
-    to = "localhost:${var.service_port}"
-  }
-}
-
-# Internal - Caddy with DNS validation
-resource "caddy_site" "internal" {
-  address = "${var.service_name}.${var.server_name}.${var.internal_domain}"
-  
-  tls {
-    dns cloudflare {
-      api_token = var.cloudflare_api_token
-    }
-  }
-  
-  reverse_proxy {
-    to = "localhost:${var.service_port}"
-  }
-}
-```
-
-## Config Files in 1Password
-```yaml
-outputs:
-  files:
-    "gatus.yaml": |
-      endpoints:
-        - name: "Service Health"
-          url: "https://service.excloo.dev/health"
-          interval: 60s
-          conditions:
-            - "[STATUS] == 200"
-    "homepage_services.yaml": |
-      - Service:
-          icon: service.png
-          href: https://service.excloo.dev
-          description: Service description
-    "docker-compose.yml": |
-      version: "3.8"
-      services:
-        app:
-          image: app:latest
-```
-
-## Komodo Integration Options
-
-### Option 1: Direct API Integration (Recommended)
-- OpenTofu generates compose files from 1Password
-- Deploys directly via Komodo API
-- Handles updates and rollbacks
-
-### Option 2: GitOps Integration
-- OpenTofu commits compose files to git repo
-- Komodo watches repo for changes
-- Automatic deployment on commit
-
-### Option 3: Hybrid Approach
-- Critical configs in 1Password
-- Compose files in git for version control
-- Komodo syncs from both sources
-
-## Service Dependencies
-
-### Dependency Management
-```yaml
-inputs:
-  depends_on:
-    - "docker-postgres"  # Must be deployed first
-    - "docker-redis"     # Must be deployed first
-  
-outputs:
-  provides:
-    - "auth_endpoint"    # For other services to consume
-    - "api_base_url"     # For other services to consume
-```
-
-### Cross-Service Communication
-```yaml
-# Service A
-outputs:
-  provides:
-    database_url: "postgres://..."
-
-# Service B  
-inputs:
-  requires:
-    database_url: "${service.docker-postgres.outputs.database_url}"
-```
-
-## Automatic Rollback Strategy
-
-### Health Check Based Rollback
-```hcl
-# modules/service/rollback.tf
-resource "null_resource" "health_check" {
-  depends_on = [komodo_stack.service]
-  
-  provisioner "local-exec" {
-    command = <<-EOT
-      # Wait for service to start
-      sleep 30
-      
-      # Check health endpoint
-      for i in {1..5}; do
-        if curl -f https://${var.service_name}.${var.internal_domain}/health; then
-          echo "Health check passed"
-          exit 0
-        fi
-        sleep 10
-      done
-      
-      # Rollback if health check fails
-      echo "Health check failed, rolling back"
-      curl -X POST ${var.komodo_api}/stacks/${self.triggers.stack_id}/rollback
-    EOT
-  }
-  
-  triggers = {
-    stack_id = komodo_stack.service.id
-    version  = komodo_stack.service.version
-  }
-}
-```
-
-### Rollback Triggers
-- Failed health checks after deployment
-- Container restart loops (>3 in 5 minutes)
-- Memory/CPU threshold breaches (>90%)
-- Missing required dependencies
-- HTTP 5xx error rates >10%
-
-## Backup Testing Service
-
-### Automated Backup Verification
-```yaml
-# 1Password Entry: docker-backup-tester-au-hsp
-inputs:
-  deployment: "all"
-  docker:
-    image: "backup-tester:latest"
-    environment:
-      BACKUP_SOURCES: "b2://bucket/path,sftp://server/path"
-      ALERT_EMAIL: "alerts@excloo.com"
-      TEST_SCHEDULE: "0 0 * * 0"  # Weekly
-      RESTORE_TEST_SIZE: "100MB"  # Max size to test
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "test-restore:/restore"  # Temporary restore location
-```
-
-## Server Configuration Details
-
-### Server Inheritance
-
-Servers can inherit configuration from parent routers/servers:
-
-```yaml
-# Router entry (parent)
-Name: router-au
 Sections:
   inputs:
-    region: "au"
+    deployment: "all|none|tag:TAG|server:NAME|region:REGION"
+    description: "Service description"
+    dns:
+      external: true|false
+      internal: true|false
+    
+    # Platform-specific configuration
+    docker:
+      image: "image:tag"
+      ports:
+        - "8080:80"
+        - "8443:443"
+      volumes:
+        - "data:/data"
+      environment:
+        KEY: "value"
+        
+    fly:
+      regions:
+        - "syd"
+        - "sin"
+      size: "shared-cpu-1x"
+      
+    vercel:
+      framework: "nextjs|react|vue"
+      
     features:
-      homepage: true
-    networks:
-      - public_address: "au.dyndns.org"
-
-# Server entry (child)
-Name: server-au-hsp  
-Sections:
-  inputs:
-    parent: "au"  # Inherits from router-au
-    # Inherits: region, some features, network config
+      auth_password: true|false
+      database: "postgres|mysql"
+      mail: "resend"
+      storage_cloud: "b2"
+      
+  outputs:
+    url: "https://service.example.com"
+    admin_password: "generated"
 ```
 
-### User Configuration
-```yaml
-inputs:
-  user:
-    fullname: "Max Schaefer"
-    username: "max.schaefer"  # Overrides default
-    groups: ["docker", "sudo", "admin"]
-    paths:  # Platform-specific paths
-      - "/home/max.schaefer"  # Linux
-      - "/Users/max.schaefer"  # macOS
-      - "/Volumes"  # macOS external
-    shell: "/bin/bash"
+### Deployment Targets
+
+| Target | Description | Example |
+|--------|-------------|---------|
+| `all` | Deploy to all compatible servers | Default |
+| `none` | No automatic deployment | Manual only |
+| `tag:TAG` | Deploy to servers with tag | `tag:docker` |
+| `server:NAME` | Deploy to specific server | `server:au-hsp` |
+| `region:REGION` | Deploy to region | `region:au` |
+
+### Service Platforms
+
+| Platform | Description | Deployment |
+|----------|-------------|------------|
+| `docker` | Docker containers | Self-hosted |
+| `fly` | Fly.io applications | Cloud |
+| `vercel` | Vercel deployments | Cloud |
+
+### Service Features
+
+| Feature | Description | Configuration |
+|---------|-------------|---------------|
+| `auth_basic` | HTTP Basic Auth | Auto-generated |
+| `auth_oauth` | OAuth2/OIDC | Provider config |
+| `auth_password` | Password auth | Generated/custom |
+| `auth_tailscale` | Tailscale ACL | Network-based |
+| `backup` | Automated backups | B2 storage |
+| `database` | Database backend | postgres, mysql |
+| `mail` | Email sending | resend, smtp |
+| `storage_cloud` | Cloud storage | b2, s3 |
+| `storage_local` | Local volumes | Docker volumes |
+
+## DNS Configuration
+
+DNS is managed via `infrastructure/dns.auto.tfvars`:
+
+```hcl
+dns_zones = {
+  "example.com" = {
+    enabled = true
+    proxied_default = true
+    records = [
+      {
+        name     = "@"
+        type     = "MX"
+        content  = "mail.example.com"
+        priority = 10
+      },
+      {
+        name    = "_dmarc"
+        type    = "TXT"
+        content = "v=DMARC1; p=none;"
+      }
+    ]
+  }
+}
 ```
 
-### Network Configuration
-```yaml
-inputs:
-  networks:
-    - public_ipv4: "1.2.3.4"
-      public_ipv6: "2001:db8::1"
-      public_address: "server.dyndns.org"  # For routers
-    - vlan_id: 3  # Additional network
-      firewall: true
-```
+### Auto-Generated DNS
 
-### Server Services
-```yaml
-inputs:
-  services:  # Services running on the server itself
-    - service: "proxmox"
-      port: 8006
-      icon: "proxmox"
-      title: "Proxmox VE"
-      enable_ssl_validation: false
-      widgets:
-        - widget:
-            type: "proxmox"
-            url: "${url}"
-            username: "${username}@pam"
-            password: "${password}"
-    - service: "truenas"
-      port: 443
-      icon: "truenas"
-      title: "TrueNAS Scale"
-```
+- Server external: `server.region.external-domain.com`
+- Server internal: `server.region.internal-domain.dev`
+- Service external: From Website field if enabled
+- Service internal: From Website field if enabled
 
-## Monitoring & Alerting (Auto-Generated)
+## Monitoring & Dashboard Configuration (Auto-Generated)
 
-### Gatus Configuration
+### Gatus Health Checks
 ```hcl
 # Automatically generated from service definitions
 locals {
@@ -424,12 +201,6 @@ locals {
           "[STATUS] == 200",
           "[RESPONSE_TIME] < 1000"
         ]
-        alerts = [{
-          type        = "email"
-          enabled     = true
-          description = "${name} is down"
-          send_on_resolved = true
-        }]
       }
       if service.inputs.monitoring != false
     ]
@@ -447,7 +218,6 @@ locals {
       icon        = service.icon != null ? service.icon : "mdi-docker"
       href        = "https://${name}.${var.internal_domain}"
       description = service.description != null ? service.description : "${name} service"
-      server      = service.inputs.deployment
       widget      = service.widget != null ? service.widget : null
     }
     if service.inputs.homepage != false
@@ -455,30 +225,164 @@ locals {
 }
 ```
 
-## GitHub Actions Security
+### Homepage Examples
 
-### Option 1: Environment Protection Rules
 ```yaml
-jobs:
-  deploy:
-    environment: production  # Requires approval
-    if: github.actor == 'maxexcloo'  # Only you
+# Docker service widget
+widget:
+  type: container
+  server: "localhost"
+  container: "service-name"
+
+# Proxmox widget  
+widget:
+  type: proxmox
+  url: "https://proxmox.example.com:8006"
+  username: "viewer@pve"
+  password: "readonly-token"
 ```
 
-### Option 2: Repository Secrets + OIDC
-```yaml
-permissions:
-  id-token: write
-  contents: read
-  
-steps:
-  - uses: aws-actions/configure-aws-credentials@v4
-    with:
-      role-to-assume: ${{ secrets.AWS_ROLE }}
+## Template Hierarchy
+
+### Server Templates
+```
+router-REGION
+└── server-REGION-NAME
+    └── services (via deployment targeting)
 ```
 
-### Option 3: Private Actions in Public Repo (Recommended)
-- Use workflow conditions: `if: github.actor == 'maxexcloo'`
-- Store sensitive outputs as artifacts (private to repo)
-- Use environment secrets for credentials
-- Manual workflow dispatch only
+### Service Templates
+```
+PLATFORM-SERVICE
+├── docker-compose.yaml (generated)
+├── caddy config (if needed)
+└── homepage widget (if enabled)
+```
+
+## Common Patterns
+
+### Multi-Server Service
+```yaml
+deployment: "tag:docker"  # Deploy to all Docker servers
+```
+
+### Region-Specific Service
+```yaml
+deployment: "region:au"  # Deploy only to AU region
+```
+
+### Single Server Service
+```yaml
+deployment: "server:au-hsp"  # Deploy to specific server
+```
+
+### External-Only Service
+```yaml
+deployment: "none"  # Fly.io, Vercel, manual
+dns:
+  external: true
+  internal: false
+```
+
+## Configuration Files
+
+### Infrastructure
+- `infrastructure/terraform.auto.tfvars` - Main configuration
+- `infrastructure/dns.auto.tfvars` - DNS zones and records
+
+### Services  
+- `services/terraform.auto.tfvars` - Service defaults
+
+### Templates
+- `templates/cloud_config/` - Server initialization
+- `templates/docker/` - Docker compose templates
+- `templates/gatus/` - Health check configuration
+- `templates/homepage/` - Dashboard configuration
+- `templates/ssh/` - SSH client config
+
+## Deployment Workflow
+
+### Service Deployment
+Services are deployed based on their platform (Docker, Fly.io, Vercel) and deployment target configuration.
+
+### Rollback Strategy
+- Docker: Komodo handles container rollback
+- Fly.io: Platform handles deployment rollback
+- Configuration: Git revert and redeploy
+
+## Security Patterns
+
+### Network Security
+- All internal traffic over Tailscale
+- External access through Cloudflare proxy
+- Service-to-service via Tailscale DNS
+
+### Secret Management
+- All secrets in 1Password
+- Service accounts with minimal scope
+- Automatic password generation
+
+### Access Control
+- Tailscale ACLs for network access
+- Service-specific authentication
+- No shared credentials
+
+## Backup Strategy
+
+### Automated Backups
+```yaml
+features:
+  backup: true
+  storage_cloud: "b2"
+```
+
+Configures:
+- Daily snapshots to B2
+- 30-day retention
+- Automated restore testing
+
+### Manual Backups
+- Database dumps via scripts
+- File backups via restic
+- Configuration in Git
+
+## Migration Patterns
+
+### From Legacy Infrastructure
+1. Create server entries in 1Password
+2. Import existing services
+3. Update DNS records
+4. Migrate data
+
+### Between Servers
+1. Update deployment target
+2. Run apply
+3. Migrate persistent data
+4. Update DNS
+
+## Troubleshooting
+
+### Common Issues
+- Authentication failures: Check 1Password service account
+- DNS not resolving: Verify zone configuration
+- Service unreachable: Check Tailscale connection
+
+### Debug Mode
+```bash
+export TF_LOG=DEBUG
+mise run plan
+```
+
+## GitHub Actions
+
+### Manual Workflow
+The project uses manual GitHub Actions for safety:
+- Restricted to repository owner
+- Requires explicit confirmation
+- Plans saved as artifacts
+
+### Required Secrets
+Only three secrets needed:
+- `OP_SERVICE_ACCOUNT_TOKEN`
+- `AWS_ACCESS_KEY_ID` (B2)
+- `AWS_SECRET_ACCESS_KEY` (B2)

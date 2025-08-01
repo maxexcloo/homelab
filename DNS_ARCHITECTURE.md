@@ -162,7 +162,7 @@ locals {
 ## Migration from Legacy
 
 ```hcl
-# Legacy format in terraform.tfvars
+# Legacy format (old approach)
 dns = {
   "excloo.com" = [
     {
