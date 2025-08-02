@@ -34,22 +34,25 @@ provider "oci" {
 
 provider "onepassword" {}
 
+# Proxmox providers will be configured based on 1Password entries
+# Each proxmox-* section in the providers entry will create a provider instance
+# Format: proxmox-servername with fields: endpoint, username, password, insecure (optional)
+
+# Example configuration (uncomment and modify based on your proxmox-* sections):
 # provider "proxmox" {
-#   for_each = nonsensitive(var.terraform.proxmox)
-
-#   alias    = "by_host"
-#   endpoint = "https://${each.value.host}:${each.value.port}"
+#   alias    = "server1"
+#   endpoint = "https://proxmox1.example.com:8006"
 #   insecure = true
-#   password = each.value.password
-#   username = "${each.value.username}@pam"
-
+#   password = "password_from_1password"
+#   username = "root@pam"
+#
 #   ssh {
 #     agent    = true
-#     username = each.value.username
-
+#     username = "root"
+#
 #     node {
-#       address = each.value.host
-#       name    = each.key
+#       address = "proxmox1.example.com"
+#       name    = "server1"
 #     }
 #   }
 # }
