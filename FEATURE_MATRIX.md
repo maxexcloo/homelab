@@ -337,7 +337,7 @@ features:
 ```
 
 Configures:
-- Daily snapshots to B2
+- Daily snapshots to cloud storage
 - 30-day retention
 - Automated restore testing
 
@@ -384,5 +384,4 @@ The project uses manual GitHub Actions for safety:
 ### Required Secrets
 Only three secrets needed:
 - `OP_SERVICE_ACCOUNT_TOKEN`
-- `AWS_ACCESS_KEY_ID` (B2)
-- `AWS_SECRET_ACCESS_KEY` (B2)
+- `TF_TOKEN_app_terraform_io`

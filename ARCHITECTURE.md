@@ -181,7 +181,7 @@ repos:
 
 ### Local (mise)
 ```bash
-mise run init      # Initialize
+mise run init      # Initialize both
 mise run plan      # Review changes
 mise run apply     # Deploy
 ```

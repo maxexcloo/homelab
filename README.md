@@ -85,6 +85,11 @@ Create two vaults:
 ### Common Tasks
 
 ```bash
+# Initialize OpenTofu
+mise run init                    # Both
+mise run init:infrastructure     # Infrastructure only
+mise run init:services           # Services only
+
 # Format code
 mise run fmt
 

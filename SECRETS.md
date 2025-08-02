@@ -49,4 +49,4 @@ All other configuration is stored in version control:
 - Never commit `.mise.local.toml` 
 - All other provider credentials are stored in 1Password
 - The service account token only has access to specific vaults
-- B2 credentials are scoped to the state bucket only
+- HCP Terraform manages state securely with encryption at rest

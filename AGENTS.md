@@ -29,8 +29,10 @@
 ## Commands
 ```bash
 # Setup & Initialize
-mise run setup          # Initial project setup
-mise run init           # Initialize OpenTofu
+mise run setup                  # Initial project setup
+mise run init                   # Initialize OpenTofu
+mise run init:infrastructure    # Initialize infrastructure only
+mise run init:services          # Initialize services only
 
 # Development
 mise run check          # Format and validate
