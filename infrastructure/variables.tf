@@ -1,41 +1,34 @@
 variable "default_email" {
   description = "Default email for notifications and accounts"
   type        = string
-  # Set in terraform.tfvars or environment
 }
 
 variable "default_region" {
   description = "Default region for resources"
   type        = string
-  # Set in terraform.tfvars or environment
 }
 
-variable "enable_backups" {
-  description = "Enable automated backups"
-  type        = bool
-  default     = true
-}
-
-variable "enable_monitoring" {
-  description = "Enable monitoring and alerting"
-  type        = bool
-  default     = true
-}
-
-variable "external_domain" {
+variable "domain_external" {
   description = "External domain for public services"
   type        = string
-  # Set in terraform.tfvars or environment
 }
 
-variable "internal_domain" {
+variable "domain_internal" {
   description = "Internal domain for private services"
   type        = string
-  # Set in terraform.tfvars or environment
+}
+
+variable "onepassword_vault_infrastructure" {
+  description = "1Password Infrastructure vault"
+  type        = string
+}
+
+variable "onepassword_vault_services" {
+  description = "1Password Services vault"
+  type        = string
 }
 
 variable "organization" {
   description = "Organization name"
   type        = string
-  # Set in terraform.tfvars or environment
 }

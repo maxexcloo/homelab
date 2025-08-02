@@ -1,0 +1,75 @@
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      action:
+        default: plan
+        description: "Action to run"
+        options:
+          - apply
+          - plan
+        type: choice
+      target:
+        default: both
+        description: "Target to run against"
+        options:
+          - both
+          - infrastructure
+          - services
+        type: choice
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  MISE_YES: true
+  OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+  TF_TOKEN_app_terraform_io: ${{ secrets.TF_TOKEN_app_terraform_io }}
+
+jobs:
+  main:
+    if: github.actor == github.repository_owner
+    name: CI/CD
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+
+      - name: Setup
+        run: mise run init
+
+      - if: github.event_name == 'pull_request'
+        name: Check
+        run: mise run check
+
+      - if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'plan')
+        name: Plan
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            case "${{ inputs.target }}" in
+              infrastructure) mise run plan:infrastructure ;;
+              services) mise run plan:services ;;
+              *) mise run plan ;;
+            esac
+          else
+            mise run plan
+          fi
+
+      - if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+        name: Apply
+        run: |
+          case "${{ inputs.target }}" in
+            infrastructure) mise run apply:infrastructure ;;
+            services) mise run apply:services ;;
+            *) mise run apply ;;
+          esac
+
+      - if: github.event_name == 'schedule'
+        name: Refresh
+        run: mise run refresh

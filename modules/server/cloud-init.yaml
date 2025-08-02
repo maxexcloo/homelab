@@ -1,0 +1,59 @@
+#cloud-config
+hostname: ${hostname}
+fqdn: ${hostname}.${region}.excloo.dev
+
+users:
+  - default
+  - name: root
+    ssh_authorized_keys:
+      - ${try(config.inputs.ssh_public_key, "")}
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - wget
+  - htop
+  - vim
+  - git
+  - jq
+  - unzip
+
+write_files:
+  - path: /etc/motd
+    content: |
+      
+      ╔══════════════════════════════════════════════════════════════╗
+      ║                                                              ║
+      ║  Hostname: ${hostname}                                       ║
+      ║  Region: ${region}                                           ║
+      ║  Platform: ${try(config.inputs.platform, "ubuntu")}         ║
+      ║                                                              ║
+      ╚══════════════════════════════════════════════════════════════╝
+      
+
+runcmd:
+  # Install Tailscale
+  - curl -fsSL https://tailscale.com/install.sh | sh
+  
+  # Install Docker if enabled
+  %{ if try(config.inputs.features.docker, false) ~}
+  - curl -fsSL https://get.docker.com | sh
+  - systemctl enable docker
+  - systemctl start docker
+  %{ endif ~}
+  
+  # Install Beszel agent if enabled
+  %{ if try(config.inputs.features.beszel, false) ~}
+  - curl -fsSL https://raw.githubusercontent.com/henrygd/beszel/main/scripts/install-agent.sh | bash
+  %{ endif ~}
+  
+  # Set timezone
+  - timedatectl set-timezone UTC
+  
+  # Enable automatic security updates
+  - apt-get install -y unattended-upgrades
+  - dpkg-reconfigure -plow unattended-upgrades
+
+final_message: "Server ${hostname} is ready!"

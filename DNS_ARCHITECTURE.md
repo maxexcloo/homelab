@@ -8,27 +8,28 @@ DNS zones are configured in `infrastructure/dns.auto.tfvars` file for easy manag
 ### DNS Zone Configuration Structure
 ```hcl
 # infrastructure/dns.auto.tfvars
-dns_zones = {
-  "excloo.com" = {
-    enabled         = true
-    proxied_default = true  # Default proxy setting for records
-    
-    # Manual DNS records (MX, TXT, special CNAMEs, etc.)
-    records = [
-      {
-        name     = "@"
-        type     = "MX"
-        content  = "in1-smtp.messagingengine.com"
-        priority = 10
-      },
-      {
-        name    = "_github-pages-challenge-maxexcloo"
-        type    = "TXT"
-        content = "8140efead95e8b57bc46473cbddae9"
-      },
-      # ... more manual records
-    ]
-  }
+dns = {
+  "excloo.com" = [
+    {
+      content  = "hsp.au.excloo.net"
+      name     = "@"
+      proxied  = true      # Optional, defaults to false
+      type     = "CNAME"
+      wildcard = true      # Optional, creates *.domain.com
+    },
+    {
+      content  = "in1-smtp.messagingengine.com"
+      name     = "@"
+      priority = 10
+      type     = "MX"
+    },
+    {
+      content = "v=spf1 include:spf.messagingengine.com ?all"
+      name    = "@"
+      type    = "TXT"
+    }
+    # ... more records
+  ]
 }
 ```
 
@@ -53,11 +54,12 @@ dns_zones = {
 
 ### Manual DNS Records (From dns.auto.tfvars)
 
-Manual records defined in the `records` array of each zone are created as-is. This handles:
+Manual records defined in the `dns` variable are created as-is. This handles:
 - MX records for email
 - TXT records for verification (SPF, DKIM, domain verification)
 - CNAME records for external services
 - Special A/AAAA records
+- Wildcard records (when `wildcard = true`)
 
 ### DNS Patterns
 
@@ -84,25 +86,23 @@ locals {
 
 ### Zone Definition
 ```hcl
-# infrastructure/variables.tf
-variable "dns_zones" {
-  description = "DNS zone configuration"
-  type = map(object({
-    enabled         = bool
-    proxied_default = bool
-    records = list(object({
-      name     = string
-      type     = string
-      content  = string
-      priority = optional(number)
-      proxied  = optional(bool)
-    }))
-  }))
+# infrastructure/dns.tf
+variable "dns" {
+  description = "DNS records by zone"
+  type = map(list(object({
+    content  = string
+    name     = string
+    type     = string
+    priority = optional(number)
+    proxied  = optional(bool, false)    # Defaults to false
+    wildcard = optional(bool, false)    # Creates additional *.name record
+  })))
+  default = {}
 }
 
-# infrastructure/dns.tf
+# Get Cloudflare zones
 data "cloudflare_zones" "configured" {
-  for_each = { for k, v in var.dns_zones : k => v if v.enabled }
+  for_each = var.dns
   
   filter {
     name       = each.key
@@ -117,22 +117,38 @@ data "cloudflare_zones" "configured" {
 locals {
   all_dns_records = merge(
     local.manual_dns_records,    # From dns.auto.tfvars
+    local.wildcard_dns_records,  # Auto-generated wildcards
     local.server_dns_records,    # Auto-generated
     local.service_dns_records    # From service websites
   )
   
   manual_dns_records = merge([
-    for zone_name, zone in var.dns_zones : {
-      for idx, record in zone.records : 
+    for zone_name, records in var.dns : {
+      for idx, record in records : 
       "${zone_name}-manual-${record.type}-${idx}" => {
         zone_id  = data.cloudflare_zones.configured[zone_name].zones[0].id
         name     = record.name
         type     = record.type
-        content  = record.content
-        priority = try(record.priority, null)
-        proxied  = try(record.proxied, zone.proxied_default, false)
+        value    = record.type == "MX" ? "${record.priority} ${record.content}" : record.content
+        priority = record.type == "MX" ? record.priority : null
+        proxied  = record.proxied
       }
-    } if zone.enabled
+    }
+  ]...)
+  
+  # Wildcard records (when wildcard = true on CNAME records)
+  wildcard_dns_records = merge([
+    for zone_name, records in var.dns : {
+      for idx, record in records :
+      "${zone_name}-wildcard-${idx}" => {
+        zone_id  = data.cloudflare_zones.configured[zone_name].zones[0].id
+        name     = record.name == "@" ? "*" : "*.${record.name}"
+        type     = "CNAME"
+        value    = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
+        priority = null
+        proxied  = false  # Wildcards can't be proxied
+      } if record.wildcard && record.type == "CNAME"
+    }
   ]...)
 }
 ```
@@ -141,8 +157,8 @@ locals {
 
 1. **Zone Organization**
    - All zones defined in `infrastructure/dns.auto.tfvars`
-   - Simple structure: domain → settings → records
-   - No 1Password complexity for DNS management
+   - Simple structure: zone → list of records
+   - No redundant configuration (if it's in the config, it's managed)
 
 2. **Record Management**
    - Infrastructure DNS: Auto-generated from servers/services
@@ -150,44 +166,66 @@ locals {
    - Special records: In `dns.auto.tfvars` records array
 
 3. **Proxy Settings**
-   - External services: Usually proxied through Cloudflare
-   - Internal services: Direct to Tailscale IPs (not proxied)
-   - Configurable per-zone default
+   - Default: `proxied = false` (safer default)
+   - Explicitly set `proxied = true` for records that need Cloudflare proxy
+   - Wildcards cannot be proxied
 
 4. **SSL Certificates**
    - External (proxied): Cloudflare manages certificates
    - External (direct): Caddy with Let's Encrypt
    - Internal: Caddy with Cloudflare DNS validation
 
-## Migration from Legacy
+## Record Types
 
+### Standard Records
 ```hcl
-# Legacy format (old approach)
-dns = {
-  "excloo.com" = [
-    {
-      content  = "hsp.au.excloo.net"
-      name     = "@"
-      type     = "CNAME"
-      wildcard = true
-    },
-    # ... more records
-  ]
+# A/AAAA Records
+{
+  content = "192.168.1.1"
+  name    = "server"
+  type    = "A"
 }
 
-# New format in infrastructure/dns.auto.tfvars
-dns_zones = {
-  "excloo.com" = {
-    enabled         = true
-    proxied_default = true
-    records = [
-      {
-        name    = "@"
-        type    = "CNAME"
-        content = "hsp.au.excloo.net"
-      }
-    ]
-  }
+# CNAME Records
+{
+  content = "target.example.com"
+  name    = "alias"
+  type    = "CNAME"
+  proxied = true  # Enable Cloudflare proxy
+}
+
+# MX Records
+{
+  content  = "mail.example.com"
+  name     = "@"
+  priority = 10
+  type     = "MX"
+}
+
+# TXT Records
+{
+  content = "v=spf1 include:example.com ~all"
+  name    = "@"
+  type    = "TXT"
+}
+```
+
+### Wildcard Records
+```hcl
+# Root wildcard (*.example.com → example.com)
+{
+  content  = "target.example.com"
+  name     = "@"
+  type     = "CNAME"
+  wildcard = true  # Creates * → example.com
+}
+
+# Subdomain wildcard (*.sub.example.com → sub.example.com)
+{
+  content  = "target.example.com"
+  name     = "sub"
+  type     = "CNAME"
+  wildcard = true  # Creates *.sub → sub.example.com
 }
 ```
 
@@ -195,15 +233,20 @@ dns_zones = {
 
 1. **Simplicity**
    - All DNS configuration in one file
-   - No 1Password complexity for DNS records
+   - No redundant fields (enabled, proxied_default)
    - Easy to edit and version control
 
 2. **Flexibility**
-   - Edit records directly in `dns.auto.tfvars`
-   - Automatic records from server/service definitions
-   - Zone-level configuration (proxy defaults, etc.)
+   - Per-record proxy control
+   - Automatic wildcard generation
+   - Zone-level organization
 
 3. **Version Control**
    - All DNS changes tracked in Git
    - Clear separation between manual and automatic records
    - Easy to review changes in pull requests
+
+4. **Safety**
+   - Conservative defaults (proxied = false)
+   - Explicit configuration required for proxying
+   - Prevents accidental misconfiguration

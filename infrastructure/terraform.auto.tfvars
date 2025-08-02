@@ -6,12 +6,12 @@ default_email  = "max@excloo.com"
 default_region = "au"
 
 # Domain configuration
-external_domain = "excloo.net"
-internal_domain = "excloo.dev"
+domain_external = "excloo.net"
+domain_internal = "excloo.dev"
 
-# Feature flags
-enable_backups    = true
-enable_monitoring = true
+# 1Password vaults
+onepassword_vault_infrastructure = "Infrastructure"
+onepassword_vault_services       = "Services"
 
 # Organization settings
 organization = "excloo"

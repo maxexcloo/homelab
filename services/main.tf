@@ -10,15 +10,15 @@ locals {
   services = {
     for item in data.onepassword_vault.services.items :
     item.title => {
-      title   = item.title
-      id      = item.id
-      tags    = toset(item.tags)
-      url     = try(item.url, "")
-      
+      title = item.title
+      id    = item.id
+      tags  = toset(item.tags)
+      url   = try(item.url, "")
+
       # Extract platform and service name
       platform = split("-", item.title)[0]
       service  = join("-", slice(split("-", item.title), 1, length(split("-", item.title))))
-      
+
       # Service configuration will be loaded from 1Password
     } if can(regex("^(docker|fly|vercel)-", item.title)) && !contains(item.tags, "template")
   }

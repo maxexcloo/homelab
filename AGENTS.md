@@ -1,4 +1,4 @@
-# CLAUDE.md - Development Guide
+# AGENTS.md - Development Guide
 
 ## Project Overview
 **Purpose**: Unified homelab infrastructure and services management using OpenTofu with 1Password as single source of truth
@@ -28,25 +28,26 @@
 
 ## Commands
 ```bash
-# Setup
+# Setup & Initialize
 mise run setup          # Initial project setup
-
-# Initialize
 mise run init           # Initialize OpenTofu
 
-# Plan & Apply
-mise run plan           # Plan all changes
-mise run apply          # Apply all changes
-
-# Utilities
+# Development
+mise run check          # Format and validate
 mise run fmt            # Format all files
 mise run validate       # Validate configuration
-mise run clean          # Clean up generated files
 
-# Create Resources
-mise run server <region>-<name> <type>  # Create server
-mise run service <platform>-<name>      # Create service
-mise run list                           # List infrastructure
+# Plan & Apply
+mise run plan                    # Plan all changes
+mise run plan:infrastructure     # Plan infrastructure only
+mise run plan:services           # Plan services only
+mise run apply                   # Apply all changes
+mise run apply:infrastructure    # Apply infrastructure only
+mise run apply:services          # Apply services only
+
+# Maintenance
+mise run refresh        # Check for configuration drift
+mise run clean          # Clean up generated files
 ```
 
 ## Development Guidelines
@@ -57,26 +58,25 @@ mise run list                           # List infrastructure
 - **Feature Changes**: Update README.md and ARCHITECTURE.md when adding features
 
 ### Documentation Structure
+- **AGENTS.md**: Development standards and project guidelines
 - **ARCHITECTURE.md**: Technical design and implementation details
-- **CLAUDE.md**: Development standards and project guidelines
+- **DNS_ARCHITECTURE.md**: DNS management strategy
+- **FEATURE_MATRIX.md**: Complete feature and configuration reference
 - **README.md**: Tool overview and usage guide
+- **SECRETS.md**: Secret management documentation
+- **TEMPLATES.md**: 1Password template documentation
 
 ## 1Password Entry Standards
-
-### Service Entries (Services Vault)
-- **Naming**: `platform-service` (e.g., docker-grafana, fly-app)
-- **Sections**: inputs, platform-specific (docker, fly), outputs
-- **No Server Suffix**: Services are shared across deployments
 
 ### Server Entries (Infrastructure Vault)
 - **Naming**: `server-region-name` (e.g., server-au-hsp)
 - **Sections**: inputs, type-specific (oci, proxmox), outputs
 - **Platform Field**: ubuntu, truenas, haos, pbs, mac, proxmox, pikvm
 
-### DNS Zone Entries (Infrastructure Vault)
-- **Naming**: `dns-domain-tld` (e.g., dns-excloo-com)
-- **Sections**: inputs (zone config), records (manual DNS), outputs
-- **Auto-sync**: Zone IDs from Cloudflare
+### Service Entries (Services Vault)
+- **Naming**: `platform-service` (e.g., docker-grafana, fly-app)
+- **Sections**: inputs, platform-specific (docker, fly), outputs
+- **No Server Suffix**: Services are shared across deployments
 
 ### Sorting Rules
 - **Simple Before Complex**: Strings/numbers before arrays/objects
@@ -98,10 +98,13 @@ mise run list                           # List infrastructure
 
 ### Required Development Tasks
 - **apply**: Apply all changes with confirmation
+- **check**: Combined format and validate check
+- **clean**: Remove generated files (.terraform, *.tfplan, lock files)
 - **fmt**: Format all HCL files recursively
 - **init**: Initialize OpenTofu backends and providers
 - **plan**: Generate plans for review
-- **setup**: Initial project setup with 1Password
+- **refresh**: Check for infrastructure drift
+- **setup**: Initial project setup (creates providers entry in 1Password)
 - **validate**: Validate HCL syntax and configuration
 
 ## Project Structure
@@ -125,7 +128,7 @@ mise run list                           # List infrastructure
 ## Tech Stack
 - **IaC**: OpenTofu (Terraform-compatible)
 - **Secret Management**: 1Password with service accounts
-- **State Backend**: Backblaze B2 (S3-compatible)
+- **State Backend**: HCP Terraform (HashiCorp Cloud Platform)
 - **Container Orchestration**: Komodo (Docker management)
 - **Platforms**: Docker, Fly.io, Cloudflare Workers
 - **Monitoring**: Gatus (health checks), Homepage (dashboard)
@@ -133,4 +136,4 @@ mise run list                           # List infrastructure
 
 ---
 
-*Development guide for the [project-name] open source project.*
+*Development guide for the homelab infrastructure project.*

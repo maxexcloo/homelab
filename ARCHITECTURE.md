@@ -193,10 +193,11 @@ mise run apply     # Deploy
 
 ## State Management
 
-- Backend: B2 (S3 compatible)
-- Encryption: At rest in B2
-- Locking: Via S3 API
+- Backend: HCP Terraform (Terraform Cloud)
+- Encryption: At rest, managed by HashiCorp
+- Locking: Automatic with HCP Terraform
 - No local state files
+- Workspaces: homelab-infrastructure, homelab-services
 
 ## Migration Path
 

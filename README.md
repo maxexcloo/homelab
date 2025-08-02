@@ -26,13 +26,22 @@ mise run plan
 mise run apply
 ```
 
+### GitHub Actions
+
+Simple CI/CD workflow:
+
+- **Pull Requests**: Runs `mise run check` (format + validate)
+- **Push to main**: Runs `mise run plan`
+- **Daily schedule**: Runs `mise run refresh` (drift detection)
+- **Manual dispatch**: Choose action (`plan`/`apply`) and target (`both`/`infrastructure`/`services`)
+
 ## Features
 
 - **1Password Integration**: All configuration and secrets in one place
 - **Automated Monitoring**: Gatus health checks and Homepage dashboard
 - **GitOps Ready**: GitHub Actions for automated deployments
 - **Multi-Platform**: Docker, Fly.io, Cloudflare Workers, Vercel
-- **State Management**: Encrypted state in Backblaze B2
+- **State Management**: Secure remote state in HCP Terraform
 - **Zero-Trust Networking**: Tailscale mesh with automatic DNS
 
 ## Prerequisites
@@ -41,6 +50,17 @@ mise run apply
 - [mise](https://mise.jdx.dev/) for task management
 - [OpenTofu](https://opentofu.org/) 1.6+
 - Provider accounts (Cloudflare, Tailscale, B2, etc.)
+
+### Token Setup
+
+**Local**: Create `.mise.local.toml`:
+```toml
+[env]
+OP_SERVICE_ACCOUNT_TOKEN = "ops_..."
+TF_TOKEN_app_terraform_io = "..."
+```
+
+**GitHub**: Add as repository secrets in Settings → Secrets
 
 ## Project Structure
 
@@ -65,20 +85,28 @@ Create two vaults:
 ### Common Tasks
 
 ```bash
-# Create a new server (via CLI)
-mise run server au-web oci
+# Format code
+mise run fmt
 
-# Create a new service (via CLI)
-mise run service docker-grafana
+# Validate configuration
+mise run validate
 
-# List all infrastructure
-mise run list
+# Plan changes
+mise run plan                    # Both
+mise run plan:infrastructure      # Infrastructure only
+mise run plan:services           # Services only
+
+# Apply changes
+mise run apply                   # Both
+mise run apply:infrastructure    # Infrastructure only
+mise run apply:services          # Services only
+
+# Check for drift
+mise run refresh
 
 # Clean up generated files
 mise run clean
 ```
-
-**Manual Creation**: You can also duplicate the `template-server` or `template-service` entries in 1Password. See [TEMPLATES.md](TEMPLATES.md) for details.
 
 ### DNS Configuration
 

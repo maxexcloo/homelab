@@ -4,16 +4,15 @@ This project uses minimal secrets to maintain security while keeping configurati
 
 ## Local Development (.mise.local.toml)
 
-Only three secrets are required locally:
+Only two secrets are required locally:
 
 ```toml
 [env]
 # 1Password Service Account Token
 OP_SERVICE_ACCOUNT_TOKEN = "ops_..."
 
-# B2 State Backend Credentials  
-AWS_ACCESS_KEY_ID = "0021..."
-AWS_SECRET_ACCESS_KEY = "K002..."
+# HCP Terraform Token
+TF_TOKEN_app_terraform_io = "..."
 ```
 
 ### How to obtain these secrets:
@@ -23,20 +22,19 @@ AWS_SECRET_ACCESS_KEY = "K002..."
    - Create a service account with access to Infrastructure and Services vaults
    - Copy the token (starts with `ops_`)
 
-2. **AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY**
-   - These are Backblaze B2 credentials for Terraform state
-   - Create app keys: `b2 create-key --bucket homelab-terraform-state terraform-state listBuckets,readFiles,writeFiles,deleteFiles`
-   - Use the keyID and applicationKey values
+2. **TF_TOKEN_app_terraform_io**
+   - Go to https://app.terraform.io/settings/tokens
+   - Create a new API token
+   - Copy the token value
 
 ## GitHub Actions Secrets
 
-The same three secrets are required in GitHub:
+Only two secrets are required in GitHub:
 
 1. Go to Settings → Secrets and variables → Actions
 2. Add these repository secrets:
    - `OP_SERVICE_ACCOUNT_TOKEN`
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
+   - `TF_TOKEN_app_terraform_io`
 
 ## Non-Sensitive Configuration
 

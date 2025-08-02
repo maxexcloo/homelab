@@ -1,13 +1,12 @@
 [tools]
 opentofu = "latest"
-pre-commit = "latest"
 
 [env]
 TF_CLI_ARGS_init = "-upgrade"
 TF_CLI_ARGS_plan = "-compact-warnings"
-TF_CLI_ARGS_apply = "-compact-warnings -auto-approve"
+TF_CLI_ARGS_apply = "-compact-warnings"
 
-# Setup task - now simpler and works with Touch ID
+# Setup & Initialize
 [tasks.setup]
 description = "Initial project setup"
 run = """
@@ -20,178 +19,139 @@ if ! command -v op &> /dev/null; then
     exit 1
 fi
 
-# Suppress service account errors but continue
-export OP_SERVICE_ACCOUNT_TOKEN=""
-
-# Try to access 1Password - will trigger Touch ID if needed
-echo "🔑 Accessing 1Password (Touch ID may be required)..."
-
-# Create providers entry
-echo "📝 Checking providers entry..."
-op item get "providers" --vault "Infrastructure" 2>/dev/null || \
-    op item create --category="Login" --title="providers" --vault="Infrastructure" \
-        username="providers" password="not-used" 2>/dev/null || \
-    echo "  ✅ Already exists"
-
-# Create comprehensive templates from JSON
-echo "📋 Creating templates..."
-
-# Create server template
-if ! op item get "template-server" --vault "Infrastructure" 2>/dev/null; then
-    echo "  Creating server template..."
-    op item create --template="templates/1password/server-template.json" 2>/dev/null || \
-        echo "  ⚠️  Could not create server template"
-else
-    echo "  ✅ Server template exists"
-fi
-
-# Create service template  
-if ! op item get "template-service" --vault "Services" 2>/dev/null; then
-    echo "  Creating service template..."
-    op item create --template="templates/1password/service-template.json" 2>/dev/null || \
-        echo "  ⚠️  Could not create service template"
-else
-    echo "  ✅ Service template exists"
-fi
-
-# Update providers with all sections
-echo "  Updating providers entry..."
-if op item get "providers" --vault "Infrastructure" &>/dev/null; then
-    # Delete and recreate to get all sections
-    op item delete "providers" --vault "Infrastructure" 2>/dev/null || true
-fi
-op item create --template="templates/1password/providers-template.json" 2>/dev/null || \
-    echo "  ✅ Providers entry exists"
-
-# Create .mise.local.toml
+# Check for required tokens
 if [[ ! -f .mise.local.toml ]]; then
-    echo "📄 Creating .mise.local.toml..."
+    echo "📄 Creating .mise.local.toml template..."
     cat > .mise.local.toml << 'EOF'
-# Minimal secrets configuration - DO NOT COMMIT
 [env]
-# 1Password Service Account (required for OpenTofu)
+# 1Password Service Account Token
+# Create at: https://my.1password.com/integrations/active
 OP_SERVICE_ACCOUNT_TOKEN = "REPLACE_ME"
 
-# B2 State Backend (required for remote state)
-AWS_ACCESS_KEY_ID = "REPLACE_ME"
-AWS_SECRET_ACCESS_KEY = "REPLACE_ME"
+# HCP Terraform Token  
+# Create at: https://app.terraform.io/app/settings/tokens
+TF_TOKEN_app_terraform_io = "REPLACE_ME"
 EOF
+    echo "✅ Created .mise.local.toml - please add your tokens"
 fi
 
-echo "
-✅ Setup complete!
+# Create providers entry in 1Password if it doesn't exist
+echo "🔑 Checking providers entry..."
+if ! op item get "providers" --vault "Infrastructure" 2>/dev/null; then
+    echo "📝 Creating providers entry with all fields..."
+    op item create \
+        --category="Login" \
+        --title="providers" \
+        --vault="Infrastructure" || echo "❌ Failed to create providers entry"
+    
+    # Add all provider fields
+    echo "📋 Adding provider fields..."
+    op item edit --vault="Infrastructure" "providers" \
+        'b2.application_key[concealed]=REPLACE_ME' \
+        'b2.application_key_id[text]=REPLACE_ME' \
+        'cloudflare.account_id[text]=REPLACE_ME' \
+        'cloudflare.api_token[concealed]=REPLACE_ME' \
+        'github.token[concealed]=REPLACE_ME' \
+        'oci.fingerprint[text]=REPLACE_ME' \
+        'oci.private_key[concealed]=REPLACE_ME' \
+        'oci.region[text]=ap-sydney-1' \
+        'oci.tenancy_ocid[text]=REPLACE_ME' \
+        'oci.user_ocid[text]=REPLACE_ME' \
+        'proxmox-default.endpoint[text]=https://proxmox.example.com:8006' \
+        'proxmox-default.password[concealed]=REPLACE_ME' \
+        'proxmox-default.username[text]=root@pam' \
+        'resend.api_key[concealed]=REPLACE_ME' \
+        'tailscale.oauth_client_id[text]=REPLACE_ME' \
+        'tailscale.oauth_client_secret[concealed]=REPLACE_ME' \
+        'tailscale.tailnet[text]=REPLACE_ME' 2>/dev/null || echo "⚠️  Could not add all provider fields"
+else
+    echo "✅ Providers entry exists"
+fi
 
-Next steps:
-1. Add API keys to 'providers' in 1Password
-2. Create service account at: https://my.1password.com/integrations/active
-3. Update .mise.local.toml with your credentials
-4. Run: mise run init
-"
+echo "✅ Setup complete!"
 """
 
-# Initialize tasks
 [tasks.init]
 description = "Initialize OpenTofu"
-run = """
-cd infrastructure && tofu init -upgrade
-cd ../services && tofu init -upgrade
-pre-commit install
-"""
+depends = ["init:infrastructure", "init:services"]
 
-# Plan and apply
-[tasks.plan]
-description = "Plan all changes"
-run = """
-echo "🔍 Planning infrastructure..."
-cd infrastructure && tofu plan
-echo "
-🔍 Planning services..."
-cd ../services && tofu plan
-"""
+[tasks."init:infrastructure"]
+description = "Initialize infrastructure"
+run = "cd infrastructure && tofu init"
 
-[tasks.apply]
-description = "Apply all changes"
-run = """
-echo "⚠️  This will apply infrastructure changes!"
-echo -n "Type 'yes' to continue: "
-read -r response
-if [[ "$response" != "yes" ]]; then
-  echo "Cancelled."
-  exit 1
-fi
-cd infrastructure && tofu apply -auto-approve
-cd ../services && tofu apply -auto-approve
-"""
+[tasks."init:services"]
+description = "Initialize services"
+run = "cd services && tofu init"
 
-# Helper tasks
+# Development
+[tasks.check]
+description = "Format and validate"
+depends = ["fmt", "validate"]
+
 [tasks.fmt]
 description = "Format all files"
 run = "tofu fmt -recursive ."
 
 [tasks.validate]
-description = "Validate configuration"
+description = "Validate configurations"
 run = """
-cd infrastructure && tofu validate
-cd ../services && tofu validate
+cd infrastructure && tofu validate && cd ..
+cd services && tofu validate && cd ..
+"""
+
+# Plan & Apply
+[tasks.plan]
+description = "Plan all changes"
+depends = ["plan:infrastructure", "plan:services"]
+
+[tasks."plan:infrastructure"]
+description = "Plan infrastructure only"
+run = "cd infrastructure && tofu plan"
+
+[tasks."plan:services"]
+description = "Plan services only"
+run = "cd services && tofu plan"
+
+[tasks.apply]
+description = "Apply all changes"
+depends = ["apply:infrastructure", "apply:services"]
+
+[tasks."apply:infrastructure"]
+description = "Apply infrastructure only"
+run = """
+cd infrastructure
+if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
+  tofu apply -auto-approve
+els
+  tofu apply -auto-approve
+fi
+"""
+
+[tasks."apply:services"]
+description = "Apply services only"
+run = """
+cd services
+if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
+  tofu apply -auto-approve
+els
+  tofu apply -auto-approve
+fi
+"""
+
+# Maintenance
+[tasks.refresh]
+description = "Check for configuration drift"
+run = """
+echo "🔍 Checking for drift..."
+cd infrastructure && tofu refresh && cd ..
+cd services && tofu refresh && cd ..
 """
 
 [tasks.clean]
 description = "Clean up generated files"
 run = """
+find . -name '.terraform.lock.hcl' -delete 2>/dev/null || true
 find . -name '.terraform' -type d -exec rm -rf {} + 2>/dev/null || true
 find . -name '*.tfplan' -delete 2>/dev/null || true
-find . -name '.terraform.lock.hcl' -delete 2>/dev/null || true
-"""
-
-# Create entries in 1Password
-[tasks.server]
-description = "Create a server in 1Password"
-run = """
-#!/usr/bin/env bash
-if [[ $# -lt 2 ]]; then
-    echo "Usage: mise run server <region>-<name> <type>"
-    echo "Types: oci, proxmox, physical, vps"
-    echo "Example: mise run server au-hsp oci"
-    exit 1
-fi
-
-NAME="server-$1"
-TYPE=$2
-
-op item create --category="Login" --title="$NAME" --vault="Infrastructure" \
-    --url="${1//-/.}.excloo.dev" --tags="server,$TYPE" \
-    username="root" --generate-password="24,letters,digits"
-
-echo "✅ Created $NAME"
-"""
-
-[tasks.service]
-description = "Create a service in 1Password"
-run = """
-#!/usr/bin/env bash
-if [[ $# -lt 1 ]]; then
-    echo "Usage: mise run service <platform>-<name>"
-    echo "Platforms: docker, fly, vercel"
-    echo "Example: mise run service docker-grafana"
-    exit 1
-fi
-
-NAME=$1
-PLATFORM="${NAME%%-*}"
-
-op item create --category="Login" --title="$NAME" --vault="Services" \
-    --tags="$PLATFORM,service" \
-    username="admin" --generate-password="24,letters,digits"
-
-echo "✅ Created $NAME"
-"""
-
-[tasks.list]
-description = "List infrastructure"
-run = """
-echo "🖥️  Servers:"
-op item list --vault="Infrastructure" --tags="server" | grep "^server-" || echo "  None"
-echo ""
-echo "🚀 Services:"
-op item list --vault="Services" --tags="service" || echo "  None"
+echo "✅ Cleaned up generated files"
 """
