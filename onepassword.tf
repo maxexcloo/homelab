@@ -15,12 +15,31 @@ data "onepassword_vault" "services" {
 }
 
 locals {
-  onepassword_vault_homelab_items = {
+  onepassword_vault_homelab_items = merge(
+    local.onepassword_vault_homelab_items_routers,
+    local.onepassword_vault_homelab_items_servers
+  )
+
+  onepassword_vault_homelab_items_routers = {
     for item in jsondecode(data.external.onepassword_vault_homelab_items.result.stdout) : item.title => {
+      fqdn     = "${split("-", item.title)[1]}"
       id       = item.id
-      name     = replace(item.title, "/^[^-]*-/", "")
+      name     = replace(item.title, "/^[a-z]+-[a-z]+-/", "")
       platform = split("-", item.title)[0]
-    } if can(regex("^[a-z]+-", item.title))
+      region   = split("-", item.title)[1]
+      title    = replace(item.title, "/^[a-z]+-/", "")
+    } if can(regex("^[a-z]+-[a-z]+", item.title))
+  }
+
+  onepassword_vault_homelab_items_servers = {
+    for item in jsondecode(data.external.onepassword_vault_homelab_items.result.stdout) : item.title => {
+      fqdn     = "${replace(item.title, "/^[a-z]+-[a-z]+-/", "")}.${split("-", item.title)[1]}"
+      id       = item.id
+      name     = replace(item.title, "/^[a-z]+-[a-z]+-/", "")
+      platform = split("-", item.title)[0]
+      region   = split("-", item.title)[1]
+      title    = replace(item.title, "/^[a-z]+-[a-z]+-/", "")
+    } if can(regex("^[a-z]+-[a-z]+-", item.title))
   }
 
   onepassword_vault_services_items = {
@@ -64,6 +83,7 @@ resource "onepassword_item" "homelab" {
   for_each = local.onepassword_vault_homelab_items
 
   title    = data.onepassword_item.homelab[each.key].title
+  url      = "${each.value.fqdn}.${var.domain_internal}"
   username = data.onepassword_item.homelab[each.key].username
   vault    = data.onepassword_vault.homelab.uuid
 }
