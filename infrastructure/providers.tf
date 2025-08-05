@@ -1,5 +1,5 @@
 data "onepassword_item" "providers" {
-  vault = var.onepassword_vault_infrastructure
+  vault = var.onepassword_vault
   title = "providers"
 }
 
@@ -34,28 +34,25 @@ provider "oci" {
 
 provider "onepassword" {}
 
-# Proxmox providers will be configured based on 1Password entries
-# Each proxmox-* section in the providers entry will create a provider instance
-# Format: proxmox-servername with fields: endpoint, username, password, insecure (optional)
+provider "proxmox" {
+  for_each = var.proxmox_servers
 
-# Example configuration (uncomment and modify based on your proxmox-* sections):
-# provider "proxmox" {
-#   alias    = "server1"
-#   endpoint = "https://proxmox1.example.com:8006"
-#   insecure = true
-#   password = "password_from_1password"
-#   username = "root@pam"
-#
-#   ssh {
-#     agent    = true
-#     username = "root"
-#
-#     node {
-#       address = "proxmox1.example.com"
-#       name    = "server1"
-#     }
-#   }
-# }
+  alias    = "dynamic"
+  endpoint = each.value.endpoint
+  insecure = each.value.insecure == "true"
+  password = each.value.password
+  username = "${each.value.username}@pam"
+
+  ssh {
+    agent    = true
+    username = each.value.username
+
+    node {
+      address = regex("^https?://([^:]+)", each.value.endpoint)[0]
+      name    = each.key
+    }
+  }
+}
 
 provider "restapi" {
   alias                 = "resend"

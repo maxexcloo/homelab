@@ -57,9 +57,9 @@ if ! op item get "providers" --vault "Infrastructure" 2>/dev/null; then
         'oci.region[text]=ap-sydney-1' \
         'oci.tenancy_ocid[text]=REPLACE_ME' \
         'oci.user_ocid[text]=REPLACE_ME' \
-        'proxmox-default.endpoint[text]=https://proxmox.example.com:8006' \
+        'proxmox-default.endpoint[url]=https://proxmox.example.com:8006' \
         'proxmox-default.password[concealed]=REPLACE_ME' \
-        'proxmox-default.username[text]=root@pam' \
+        'proxmox-default.username[text]=root' \
         'resend.api_key[concealed]=REPLACE_ME' \
         'tailscale.oauth_client_id[text]=REPLACE_ME' \
         'tailscale.oauth_client_secret[concealed]=REPLACE_ME' \
@@ -105,11 +105,16 @@ description = "Plan all changes"
 depends = ["plan:infrastructure", "plan:services"]
 
 [tasks."plan:infrastructure"]
-description = "Plan infrastructure only"
-run = "cd infrastructure && tofu plan"
+description = "Plan infrastructure"
+run = """
+# Plan infrastructure
+TF_VAR_proxmox_servers=$(op item get providers --vault Infrastructure --format json | jq -c '[.fields[] | select(.section) | select(.section.label | startswith("proxmox-"))] | group_by(.section.label) | map({key: (.[0].section.label | sub("proxmox-"; "")), value: (map({(.label): .value}) | add) }) | from_entries')
+cd infrastructure
+tofu plan
+"""
 
 [tasks."plan:services"]
-description = "Plan services only"
+description = "Plan services"
 run = "cd services && tofu plan"
 
 [tasks.apply]
@@ -117,24 +122,26 @@ description = "Apply all changes"
 depends = ["apply:infrastructure", "apply:services"]
 
 [tasks."apply:infrastructure"]
-description = "Apply infrastructure only"
+description = "Apply infrastructure"
 run = """
+# Apply infrastructure
+TF_VAR_proxmox_servers=$(op item get providers --vault Infrastructure --format json | jq -c '[.fields[] | select(.section) | select(.section.label | startswith("proxmox-"))] | group_by(.section.label) | map({key: (.[0].section.label | sub("proxmox-"; "")), value: (map({(.label): .value}) | add) }) | from_entries')
 cd infrastructure
 if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
   tofu apply -auto-approve
-els
-  tofu apply -auto-approve
+else
+  tofu apply
 fi
 """
 
 [tasks."apply:services"]
-description = "Apply services only"
+description = "Apply services"
 run = """
 cd services
 if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
   tofu apply -auto-approve
-els
-  tofu apply -auto-approve
+else
+  tofu apply
 fi
 """
 

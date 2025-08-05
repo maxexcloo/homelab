@@ -8,6 +8,20 @@ variable "default_region" {
   type        = string
 }
 
+variable "dns" {
+  default     = {}
+  description = "DNS records by zone"
+
+  type = map(list(object({
+    content  = string
+    name     = string
+    priority = optional(number)
+    proxied  = optional(bool, false)
+    type     = string
+    wildcard = optional(bool, false)
+  })))
+}
+
 variable "domain_external" {
   description = "External domain for public services"
   type        = string
@@ -18,17 +32,24 @@ variable "domain_internal" {
   type        = string
 }
 
-variable "onepassword_vault_infrastructure" {
-  description = "1Password Infrastructure vault"
-  type        = string
-}
-
-variable "onepassword_vault_services" {
-  description = "1Password Services vault"
+variable "onepassword_vault" {
+  description = "1Password vault"
   type        = string
 }
 
 variable "organization" {
   description = "Organization name"
   type        = string
+}
+
+variable "proxmox_servers" {
+  default     = {}
+  description = "Proxmox server configurations (extracted from 1Password)"
+
+  type = map(object({
+    endpoint = string
+    insecure = optional(string, "true")
+    password = string
+    username = string
+  }))
 }

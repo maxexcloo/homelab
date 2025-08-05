@@ -1,22 +1,6 @@
-# DNS Zone and Record Management
-
-variable "dns" {
-  description = "DNS records by zone"
-  type = map(list(object({
-    content  = string
-    name     = string
-    type     = string
-    priority = optional(number)
-    proxied  = optional(bool, false)
-    wildcard = optional(bool, false)
-  })))
-  default = {}
-}
-
-# Get individual Cloudflare zones
 data "cloudflare_zone" "configured" {
   for_each = var.dns
-  
+
   filter = {
     name = each.key
   }
@@ -28,7 +12,7 @@ locals {
     for zone_name, records in var.dns : {
       for idx, record in records :
       "${zone_name}-manual-${record.type}-${idx}" => {
-        zone_id  = data.cloudflare_zone.configured[zone_name].id
+        zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
         name     = record.name
         type     = record.type
         value    = record.type == "MX" ? "${record.priority} ${record.content}" : record.content
@@ -43,7 +27,7 @@ locals {
     for zone_name, records in var.dns : {
       for idx, record in records :
       "${zone_name}-wildcard-${idx}" => {
-        zone_id  = data.cloudflare_zone.configured[zone_name].id
+        zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
         name     = record.name == "@" ? "*" : "*.${record.name}"
         type     = "CNAME"
         value    = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
@@ -77,7 +61,6 @@ locals {
   )
 }
 
-# Create all DNS records
 resource "cloudflare_dns_record" "all" {
   for_each = local.all_dns_records
 
@@ -94,26 +77,27 @@ resource "cloudflare_dns_record" "all" {
   }
 }
 
-# Output DNS information
-output "dns_zones" {
-  description = "Configured DNS zones"
-  value = {
-    for zone_name, records in var.dns :
-    zone_name => {
-      zone_id        = data.cloudflare_zone.configured[zone_name].id
-      name_servers   = data.cloudflare_zone.configured[zone_name].name_servers
-      manual_records = length(records)
-      total_records  = length([for k, v in local.all_dns_records : k if strcontains(k, zone_name)])
-    }
-  }
-}
-
 output "dns_records_summary" {
   description = "Summary of DNS records by type"
+
   value = {
     manual   = length(local.manual_dns_records)
     servers  = length(local.server_dns_records)
     services = length(local.service_dns_records)
     total    = length(local.all_dns_records)
+  }
+}
+
+output "dns_zones" {
+  description = "Configured DNS zones"
+
+  value = {
+    for zone_name, records in var.dns :
+    zone_name => {
+      zone_id        = data.cloudflare_zone.configured[zone_name].zone_id
+      name_servers   = data.cloudflare_zone.configured[zone_name].name_servers
+      manual_records = length(records)
+      total_records  = length([for k, v in local.all_dns_records : k if strcontains(k, zone_name)])
+    }
   }
 }
