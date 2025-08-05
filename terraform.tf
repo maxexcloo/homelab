@@ -22,6 +22,10 @@ terraform {
       source  = "1password/onepassword"
       version = "~> 2.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
     restapi = {
       source  = "mastercard/restapi"
       version = "~> 2.0"

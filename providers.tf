@@ -30,7 +30,7 @@ provider "restapi" {
   alias                 = "resend"
   create_returns_object = true
   rate_limit            = 1
-  uri                   = local.providers.resend.url
+  uri                   = "https://api.resend.com"
 
   headers = {
     "Authorization" = "Bearer ${local.providers.resend.api_key}",
