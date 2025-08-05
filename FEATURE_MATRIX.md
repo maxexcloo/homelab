@@ -154,7 +154,7 @@ Sections:
 
 ## DNS Configuration
 
-DNS is managed via `infrastructure/dns.auto.tfvars`:
+DNS is managed via `dns.auto.tfvars`:
 
 ```hcl
 dns_zones = {
@@ -286,12 +286,9 @@ dns:
 
 ## Configuration Files
 
-### Infrastructure
-- `infrastructure/terraform.auto.tfvars` - Main configuration
-- `infrastructure/dns.auto.tfvars` - DNS zones and records
-
-### Services  
-- `services/terraform.auto.tfvars` - Service defaults
+### Main Configuration
+- `terraform.auto.tfvars` - Main configuration settings
+- `dns.auto.tfvars` - DNS zones and records
 
 ### Templates
 - `templates/cloud_config/` - Server initialization

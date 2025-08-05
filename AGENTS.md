@@ -29,10 +29,8 @@
 ## Commands
 ```bash
 # Setup & Initialize
-mise run setup                  # Initial project setup
-mise run init                   # Initialize OpenTofu
-mise run init:infrastructure    # Initialize infrastructure only
-mise run init:services          # Initialize services only
+mise run setup          # Initial project setup
+mise run init           # Initialize OpenTofu
 
 # Development
 mise run check          # Format and validate
@@ -40,12 +38,8 @@ mise run fmt            # Format all files
 mise run validate       # Validate configuration
 
 # Plan & Apply
-mise run plan                    # Plan all changes
-mise run plan:infrastructure     # Plan infrastructure only
-mise run plan:services           # Plan services only
-mise run apply                   # Apply all changes
-mise run apply:infrastructure    # Apply infrastructure only
-mise run apply:services          # Apply services only
+mise run plan           # Plan all changes
+mise run apply          # Apply all changes
 
 # Maintenance
 mise run refresh        # Check for configuration drift
@@ -110,10 +104,8 @@ mise run clean          # Clean up generated files
 - **validate**: Validate HCL syntax and configuration
 
 ## Project Structure
-- **infrastructure/**: Server and infrastructure resource definitions
-- **modules/**: Reusable OpenTofu modules for servers, services, features
-- **services/**: Service deployment configurations
-- **templates/**: Configuration templates for services (docker-compose, etc.)
+- **Root directory**: All OpenTofu configuration files (*.tf)
+- **templates/**: Configuration templates for services (docker-compose, cloud-config, etc.)
 - **.github/workflows/**: GitHub Actions for plan/apply workflows
 - **.mise.toml**: Local development task definitions
 - **ARCHITECTURE.md**: System design and data flows

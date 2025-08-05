@@ -40,9 +40,8 @@ Only two secrets are required in GitHub:
 
 All other configuration is stored in version control:
 
-- **infrastructure/terraform.auto.tfvars** - Infrastructure settings
-- **infrastructure/dns.auto.tfvars** - DNS zones and records
-- **services/terraform.auto.tfvars** - Service defaults
+- **terraform.auto.tfvars** - Main configuration settings
+- **dns.auto.tfvars** - DNS zones and records
 
 ## Security Notes
 

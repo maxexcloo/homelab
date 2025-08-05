@@ -181,7 +181,7 @@ repos:
 
 ### Local (mise)
 ```bash
-mise run init      # Initialize both
+mise run init      # Initialize OpenTofu
 mise run plan      # Review changes
 mise run apply     # Deploy
 ```
@@ -197,7 +197,6 @@ mise run apply     # Deploy
 - Encryption: At rest, managed by HashiCorp
 - Locking: Automatic with HCP Terraform
 - No local state files
-- Workspaces: homelab-infrastructure, homelab-services
 
 ## Migration Path
 

@@ -33,7 +33,7 @@ Simple CI/CD workflow:
 - **Pull Requests**: Runs `mise run check` (format + validate)
 - **Push to main**: Runs `mise run plan`
 - **Daily schedule**: Runs `mise run refresh` (drift detection)
-- **Manual dispatch**: Choose action (`plan`/`apply`) and target (`both`/`infrastructure`/`services`)
+- **Manual dispatch**: Choose action (`plan`/`apply`)
 
 ## Features
 
@@ -66,9 +66,7 @@ TF_TOKEN_app_terraform_io = "..."
 
 ```
 homelab/
-├── infrastructure/     # Servers and core infrastructure
-├── services/          # Service deployments
-├── modules/           # Reusable OpenTofu modules
+├── *.tf               # OpenTofu configuration files
 ├── templates/         # Configuration templates
 ├── .github/           # GitHub Actions workflows
 └── .mise.toml        # Development tasks
@@ -86,9 +84,7 @@ Create two vaults:
 
 ```bash
 # Initialize OpenTofu
-mise run init                    # Both
-mise run init:infrastructure     # Infrastructure only
-mise run init:services           # Services only
+mise run init
 
 # Format code
 mise run fmt
@@ -97,14 +93,10 @@ mise run fmt
 mise run validate
 
 # Plan changes
-mise run plan                    # Both
-mise run plan:infrastructure      # Infrastructure only
-mise run plan:services           # Services only
+mise run plan
 
 # Apply changes
-mise run apply                   # Both
-mise run apply:infrastructure    # Infrastructure only
-mise run apply:services          # Services only
+mise run apply
 
 # Check for drift
 mise run refresh
@@ -115,7 +107,7 @@ mise run clean
 
 ### DNS Configuration
 
-Edit `infrastructure/dns.auto.tfvars` to manage DNS zones and manual records:
+Edit `dns.auto.tfvars` to manage DNS zones and manual records:
 
 ```hcl
 dns_zones = {

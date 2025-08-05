@@ -3,11 +3,11 @@
 ## DNS Zone Management
 
 ### Zone Configuration
-DNS zones are configured in `infrastructure/dns.auto.tfvars` file for easy management without 1Password complexity.
+DNS zones are configured in `dns.auto.tfvars` file for easy management without 1Password complexity.
 
 ### DNS Zone Configuration Structure
 ```hcl
-# infrastructure/dns.auto.tfvars
+# dns.auto.tfvars
 dns = {
   "excloo.com" = [
     {
@@ -86,7 +86,7 @@ locals {
 
 ### Zone Definition
 ```hcl
-# infrastructure/dns.tf
+# dns.tf
 variable "dns" {
   description = "DNS records by zone"
   type = map(list(object({
@@ -156,7 +156,7 @@ locals {
 ## Best Practices
 
 1. **Zone Organization**
-   - All zones defined in `infrastructure/dns.auto.tfvars`
+   - All zones defined in `dns.auto.tfvars`
    - Simple structure: zone → list of records
    - No redundant configuration (if it's in the config, it's managed)
 
