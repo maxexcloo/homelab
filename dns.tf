@@ -8,9 +8,48 @@ data "cloudflare_zone" "configured" {
 
 locals {
   dns_records_all = merge(
+    local.dns_records_homelab_internal_ipv4,
+    local.dns_records_homelab_internal_ipv6,
+    local.dns_records_homelab_internal_wildcard,
     local.dns_records_manual,
     local.dns_records_wildcard
   )
+
+  dns_records_homelab_internal_ipv4 = {
+    for server_key, server_data in local.onepassword_vault_homelab_servers : "${var.domain_internal}-homelab-ipv4-${server_data.name}" => {
+      content  = local.tailscale_devices[server_key].tailscale_ipv4
+      name     = "${server_data.name}.${var.domain_internal}"
+      priority = null
+      proxied  = false
+      type     = "A"
+      zone_id  = data.cloudflare_zone.configured[var.domain_internal].zone_id
+    }
+    if contains(keys(local.tailscale_devices), server_key) && local.tailscale_devices[server_key].tailscale_ipv4 != null
+  }
+
+  dns_records_homelab_internal_ipv6 = {
+    for server_key, server_data in local.onepassword_vault_homelab_servers : "${var.domain_internal}-homelab-ipv6-${server_data.name}" => {
+      content  = local.tailscale_devices[server_key].tailscale_ipv6
+      name     = "${server_data.name}.${var.domain_internal}"
+      priority = null
+      proxied  = false
+      type     = "AAAA"
+      zone_id  = data.cloudflare_zone.configured[var.domain_internal].zone_id
+    }
+    if contains(keys(local.tailscale_devices), server_key) && local.tailscale_devices[server_key].tailscale_ipv6 != null
+  }
+
+  dns_records_homelab_internal_wildcard = {
+    for server_key, server_data in local.onepassword_vault_homelab_servers : "${var.domain_internal}-homelab-wildcard-${server_data.name}" => {
+      content  = local.tailscale_devices[server_key].tailscale_ipv4
+      name     = "*.${server_data.name}.${var.domain_internal}"
+      priority = null
+      proxied  = false
+      type     = "A"
+      zone_id  = data.cloudflare_zone.configured[var.domain_internal].zone_id
+    }
+    if contains(keys(local.tailscale_devices), server_key) && local.tailscale_devices[server_key].tailscale_ipv4 != null
+  }
 
   dns_records_manual = merge([
     for zone_name, records in var.dns : {
@@ -30,7 +69,7 @@ locals {
       for idx, record in records : "${zone_name}-wildcard-${idx}" => {
         name     = record.name == "@" ? "*.${zone_name}" : "*.${record.name}"
         priority = null
-        proxied  = false # Wildcards can't be proxied
+        proxied  = false
         type     = "CNAME"
         content  = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
         zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
