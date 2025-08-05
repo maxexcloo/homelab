@@ -7,8 +7,12 @@ data "cloudflare_zone" "configured" {
 }
 
 locals {
-  # Manual DNS records from dns.auto.tfvars
-  manual_dns_records = merge([
+  dns_records_all = merge(
+    local.dns_records_manual,
+    local.dns_records_wildcard
+  )
+
+  dns_records_manual = merge([
     for zone_name, records in var.dns : {
       for idx, record in records : "${zone_name}-manual-${record.type}-${idx}" => {
         name     = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
@@ -21,8 +25,7 @@ locals {
     }
   ]...)
 
-  # Wildcard DNS records (create additional *.name records)
-  wildcard_dns_records = merge([
+  dns_records_wildcard = merge([
     for zone_name, records in var.dns : {
       for idx, record in records : "${zone_name}-wildcard-${idx}" => {
         name     = record.name == "@" ? "*.${zone_name}" : "*.${record.name}"
@@ -34,33 +37,10 @@ locals {
       } if record.wildcard && record.type == "CNAME"
     }
   ]...)
-
-  # TODO: Extract server details from 1Password items
-  server_details = {}
-
-  # TODO: Auto-generated server DNS records
-  server_dns_records = {}
-
-  # TODO: Service names extracted from 1Password items
-  service_names = {}
-
-  # TODO: Determine deployment servers for services (placeholder for Komodo integration)
-  service_deployment_servers = {}
-
-  # TODO: Auto-generated service DNS records
-  service_dns_records = {} # Services will be deployed via Komodo, DNS handled separately
-
-  # Merge all DNS records
-  all_dns_records = merge(
-    local.manual_dns_records,
-    local.wildcard_dns_records,
-    local.server_dns_records,
-    local.service_dns_records
-  )
 }
 
 resource "cloudflare_dns_record" "all" {
-  for_each = local.all_dns_records
+  for_each = local.dns_records_all
 
   content  = each.value.content
   name     = each.value.name
@@ -72,29 +52,5 @@ resource "cloudflare_dns_record" "all" {
 
   lifecycle {
     create_before_destroy = true
-  }
-}
-
-output "dns_records_summary" {
-  description = "Summary of DNS records by type"
-
-  value = {
-    manual   = length(local.manual_dns_records)
-    servers  = length(local.server_dns_records)
-    services = length(local.service_dns_records)
-    total    = length(local.all_dns_records)
-  }
-}
-
-output "dns_zones" {
-  description = "Configured DNS zones"
-
-  value = {
-    for zone_name, records in var.dns : zone_name => {
-      manual_records = length(records)
-      name_servers   = data.cloudflare_zone.configured[zone_name].name_servers
-      total_records  = length([for k, v in local.all_dns_records : k if strcontains(k, zone_name)])
-      zone_id        = data.cloudflare_zone.configured[zone_name].zone_id
-    }
   }
 }
