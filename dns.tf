@@ -10,14 +10,13 @@ locals {
   # Manual DNS records from dns.auto.tfvars
   manual_dns_records = merge([
     for zone_name, records in var.dns : {
-      for idx, record in records :
-      "${zone_name}-manual-${record.type}-${idx}" => {
-        zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
-        name     = record.name
-        type     = record.type
-        value    = record.type == "MX" ? "${record.priority} ${record.content}" : record.content
+      for idx, record in records : "${zone_name}-manual-${record.type}-${idx}" => {
+        name     = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
         priority = record.type == "MX" ? record.priority : null
         proxied  = record.proxied
+        type     = record.type
+        content  = record.content
+        zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
       }
     }
   ]...)
@@ -25,14 +24,13 @@ locals {
   # Wildcard DNS records (create additional *.name records)
   wildcard_dns_records = merge([
     for zone_name, records in var.dns : {
-      for idx, record in records :
-      "${zone_name}-wildcard-${idx}" => {
-        zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
-        name     = record.name == "@" ? "*" : "*.${record.name}"
-        type     = "CNAME"
-        value    = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
+      for idx, record in records : "${zone_name}-wildcard-${idx}" => {
+        name     = record.name == "@" ? "*.${zone_name}" : "*.${record.name}"
         priority = null
         proxied  = false # Wildcards can't be proxied
+        type     = "CNAME"
+        content  = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
+        zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
       } if record.wildcard && record.type == "CNAME"
     }
   ]...)
@@ -64,13 +62,13 @@ locals {
 resource "cloudflare_dns_record" "all" {
   for_each = local.all_dns_records
 
-  zone_id  = each.value.zone_id
+  content  = each.value.content
   name     = each.value.name
-  type     = each.value.type
-  content  = each.value.value
   priority = each.value.priority
   proxied  = each.value.proxied
   ttl      = each.value.proxied ? 1 : 300
+  type     = each.value.type
+  zone_id  = each.value.zone_id
 
   lifecycle {
     create_before_destroy = true
@@ -92,12 +90,11 @@ output "dns_zones" {
   description = "Configured DNS zones"
 
   value = {
-    for zone_name, records in var.dns :
-    zone_name => {
-      zone_id        = data.cloudflare_zone.configured[zone_name].zone_id
-      name_servers   = data.cloudflare_zone.configured[zone_name].name_servers
+    for zone_name, records in var.dns : zone_name => {
       manual_records = length(records)
+      name_servers   = data.cloudflare_zone.configured[zone_name].name_servers
       total_records  = length([for k, v in local.all_dns_records : k if strcontains(k, zone_name)])
+      zone_id        = data.cloudflare_zone.configured[zone_name].zone_id
     }
   }
 }

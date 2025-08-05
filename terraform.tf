@@ -18,17 +18,9 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.0"
     }
-    oci = {
-      source  = "oracle/oci"
-      version = "~> 7.0"
-    }
     onepassword = {
       source  = "1password/onepassword"
       version = "~> 2.0"
-    }
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "~> 0.81"
     }
     restapi = {
       source  = "mastercard/restapi"

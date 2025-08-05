@@ -32,24 +32,17 @@ variable "domain_internal" {
   type        = string
 }
 
-variable "onepassword_vault" {
-  description = "1Password vault"
+variable "onepassword_vault_homelab" {
+  description = "1Password homelab vault"
+  type        = string
+}
+
+variable "onepassword_vault_services" {
+  description = "1Password services vault"
   type        = string
 }
 
 variable "organization" {
   description = "Organization name"
   type        = string
-}
-
-variable "proxmox_servers" {
-  default     = {}
-  description = "Proxmox server configurations (extracted from 1Password)"
-
-  type = map(object({
-    endpoint = string
-    insecure = optional(string, "true")
-    password = string
-    username = string
-  }))
 }

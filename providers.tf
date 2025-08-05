@@ -1,5 +1,5 @@
 data "onepassword_item" "providers" {
-  vault = var.onepassword_vault
+  vault = var.onepassword_vault_homelab
   title = "providers"
 }
 
@@ -24,35 +24,7 @@ provider "github" {
   token = local.providers.github.token
 }
 
-provider "oci" {
-  fingerprint  = local.providers.oci.fingerprint
-  private_key  = local.providers.oci.private_key
-  region       = local.providers.oci.region
-  tenancy_ocid = local.providers.oci.tenancy_ocid
-  user_ocid    = local.providers.oci.user_ocid
-}
-
 provider "onepassword" {}
-
-provider "proxmox" {
-  for_each = var.proxmox_servers
-
-  alias    = "dynamic"
-  endpoint = each.value.endpoint
-  insecure = each.value.insecure == "true"
-  password = each.value.password
-  username = "${each.value.username}@pam"
-
-  ssh {
-    agent    = true
-    username = each.value.username
-
-    node {
-      address = regex("^https?://([^:]+)", each.value.endpoint)[0]
-      name    = each.key
-    }
-  }
-}
 
 provider "restapi" {
   alias                 = "resend"

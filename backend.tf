@@ -4,7 +4,7 @@ terraform {
     organization = "excloo"
 
     workspaces {
-      name = "homelab-infrastructure"
+      name = "homelab"
     }
   }
 }

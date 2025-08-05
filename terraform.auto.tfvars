@@ -9,8 +9,9 @@ default_region = "au"
 domain_external = "excloo.net"
 domain_internal = "excloo.dev"
 
-# 1Password vault
-onepassword_vault = "Infrastructure"
+# 1Password vaults
+onepassword_vault_homelab  = "Homelab"
+onepassword_vault_services = "Services"
 
 # Organization settings
 organization = "excloo"

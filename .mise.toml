@@ -52,14 +52,6 @@ if ! op item get "providers" --vault "Infrastructure" 2>/dev/null; then
         'cloudflare.account_id[text]=REPLACE_ME' \
         'cloudflare.api_token[concealed]=REPLACE_ME' \
         'github.token[concealed]=REPLACE_ME' \
-        'oci.fingerprint[text]=REPLACE_ME' \
-        'oci.private_key[concealed]=REPLACE_ME' \
-        'oci.region[text]=ap-sydney-1' \
-        'oci.tenancy_ocid[text]=REPLACE_ME' \
-        'oci.user_ocid[text]=REPLACE_ME' \
-        'proxmox-default.endpoint[url]=https://proxmox.example.com:8006' \
-        'proxmox-default.password[concealed]=REPLACE_ME' \
-        'proxmox-default.username[text]=root' \
         'resend.api_key[concealed]=REPLACE_ME' \
         'tailscale.oauth_client_id[text]=REPLACE_ME' \
         'tailscale.oauth_client_secret[concealed]=REPLACE_ME' \
@@ -73,15 +65,7 @@ echo "✅ Setup complete!"
 
 [tasks.init]
 description = "Initialize OpenTofu"
-depends = ["init:infrastructure", "init:services"]
-
-[tasks."init:infrastructure"]
-description = "Initialize infrastructure"
-run = "cd infrastructure && tofu init"
-
-[tasks."init:services"]
-description = "Initialize services"
-run = "cd services && tofu init"
+run = "tofu init"
 
 # Development
 [tasks.check]
@@ -94,50 +78,17 @@ run = "tofu fmt -recursive ."
 
 [tasks.validate]
 description = "Validate configurations"
-run = """
-cd infrastructure && tofu validate && cd ..
-cd services && tofu validate && cd ..
-"""
+run = "tofu validate"
 
 # Plan & Apply
 [tasks.plan]
 description = "Plan all changes"
-depends = ["plan:infrastructure", "plan:services"]
-
-[tasks."plan:infrastructure"]
-description = "Plan infrastructure"
-run = """
-# Plan infrastructure
-TF_VAR_proxmox_servers=$(op item get providers --vault Infrastructure --format json | jq -c '[.fields[] | select(.section) | select(.section.label | startswith("proxmox-"))] | group_by(.section.label) | map({key: (.[0].section.label | sub("proxmox-"; "")), value: (map({(.label): .value}) | add) }) | from_entries')
-cd infrastructure
-tofu plan
-"""
-
-[tasks."plan:services"]
-description = "Plan services"
-run = "cd services && tofu plan"
+run = "tofu plan"
 
 [tasks.apply]
 description = "Apply all changes"
-depends = ["apply:infrastructure", "apply:services"]
-
-[tasks."apply:infrastructure"]
-description = "Apply infrastructure"
 run = """
 # Apply infrastructure
-TF_VAR_proxmox_servers=$(op item get providers --vault Infrastructure --format json | jq -c '[.fields[] | select(.section) | select(.section.label | startswith("proxmox-"))] | group_by(.section.label) | map({key: (.[0].section.label | sub("proxmox-"; "")), value: (map({(.label): .value}) | add) }) | from_entries')
-cd infrastructure
-if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
-  tofu apply -auto-approve
-else
-  tofu apply
-fi
-"""
-
-[tasks."apply:services"]
-description = "Apply services"
-run = """
-cd services
 if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
   tofu apply -auto-approve
 else
@@ -146,14 +97,6 @@ fi
 """
 
 # Maintenance
-[tasks.refresh]
-description = "Check for configuration drift"
-run = """
-echo "🔍 Checking for drift..."
-cd infrastructure && tofu refresh && cd ..
-cd services && tofu refresh && cd ..
-"""
-
 [tasks.clean]
 description = "Clean up generated files"
 run = """
@@ -162,3 +105,7 @@ find . -name '.terraform' -type d -exec rm -rf {} + 2>/dev/null || true
 find . -name '*.tfplan' -delete 2>/dev/null || true
 echo "✅ Cleaned up generated files"
 """
+
+[tasks.refresh]
+description = "Check for configuration drift"
+run = "tofu refresh"
