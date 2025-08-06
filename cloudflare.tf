@@ -8,6 +8,7 @@ data "cloudflare_zone" "configured" {
 
 locals {
   dns_records_all = nonsensitive(merge(
+    local.dns_records_acme_challenge,
     local.dns_records_homelab_external_address,
     local.dns_records_homelab_external_ipv4,
     local.dns_records_homelab_external_ipv6,
@@ -18,6 +19,33 @@ locals {
     local.dns_records_manual,
     local.dns_records_wildcard
   ))
+
+  # Extract unique domains from all DNS records
+  dns_domains_all = toset([
+    for record_key, record_data in merge(
+      local.dns_records_homelab_external_address,
+      local.dns_records_homelab_external_ipv4,
+      local.dns_records_homelab_external_ipv6,
+      local.dns_records_homelab_external_wildcard,
+      local.dns_records_homelab_internal_ipv4,
+      local.dns_records_homelab_internal_ipv6,
+      local.dns_records_homelab_internal_wildcard,
+      local.dns_records_manual,
+      local.dns_records_wildcard
+    ) : regex("([^.]+\\.[^.]+)$", record_data.name)[0]
+  ])
+
+  dns_records_acme_challenge = {
+    for domain in local.dns_domains_all : "${domain}-acme-challenge" => {
+      content  = "_acme-challenge.${var.acme_domain}"
+      name     = "_acme-challenge.${domain}"
+      priority = null
+      proxied  = false
+      type     = "CNAME"
+      zone_id  = data.cloudflare_zone.configured[domain].zone_id
+    }
+    if contains(keys(data.cloudflare_zone.configured), domain)
+  }
 
   dns_records_homelab_external_ipv4 = {
     for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_external}-homelab-ipv4-${server_data.fqdn}" => {
@@ -43,7 +71,7 @@ locals {
       zone_id  = data.cloudflare_zone.configured[var.domain_external].zone_id
     }
     if contains(keys(local.onepassword_vault_homelab_sections), server_key) &&
-    try(local.onepassword_vault_homelab_sections[server_key].input.public_ipv6, "-") != "-" && 
+    try(local.onepassword_vault_homelab_sections[server_key].input.public_ipv6, "-") != "-" &&
     try(local.onepassword_vault_homelab_sections[server_key].input.public_address, "-") == "-"
   }
 
@@ -144,7 +172,7 @@ resource "cloudflare_dns_record" "all" {
   name     = each.value.name
   priority = each.value.priority
   proxied  = each.value.proxied
-  ttl      = each.value.proxied ? 1 : 300
+  ttl      = 1
   type     = each.value.type
   zone_id  = each.value.zone_id
 

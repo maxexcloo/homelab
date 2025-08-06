@@ -1,3 +1,8 @@
+variable "acme_domain" {
+  description = "Domain to use for ACME challenge validation"
+  type        = string
+}
+
 variable "default_email" {
   description = "Default email for notifications and accounts"
   type        = string

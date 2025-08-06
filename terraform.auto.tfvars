@@ -1,6 +1,9 @@
 # Non-sensitive infrastructure configuration
 # This file is safe to commit to version control
 
+# ACME configuration
+acme_domain = "excloo.org"
+
 # Default values
 default_email  = "max@excloo.com"
 default_region = "au"
