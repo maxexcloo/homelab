@@ -103,7 +103,7 @@ locals {
       name     = "*.${server_data.name}.${var.domain_internal}"
       priority = null
       proxied  = false
-      type     = "A"
+      type     = "CNAME"
       zone_id  = data.cloudflare_zone.configured[var.domain_internal].zone_id
     }
     if contains(keys(local.tailscale_devices), server_key) &&
