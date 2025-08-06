@@ -7,16 +7,74 @@ data "cloudflare_zone" "configured" {
 }
 
 locals {
-  dns_records_all = merge(
+  dns_records_all = nonsensitive(merge(
+    local.dns_records_homelab_external_address,
+    local.dns_records_homelab_external_ipv4,
+    local.dns_records_homelab_external_ipv6,
+    local.dns_records_homelab_external_wildcard,
     local.dns_records_homelab_internal_ipv4,
     local.dns_records_homelab_internal_ipv6,
     local.dns_records_homelab_internal_wildcard,
     local.dns_records_manual,
     local.dns_records_wildcard
-  )
+  ))
+
+  dns_records_homelab_external_ipv4 = {
+    for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_external}-homelab-ipv4-${server_data.fqdn}" => {
+      content  = local.onepassword_vault_homelab_sections[server_key].input.public_ipv4
+      name     = "${server_data.fqdn}.${var.domain_external}"
+      priority = null
+      proxied  = false
+      type     = "A"
+      zone_id  = data.cloudflare_zone.configured[var.domain_external].zone_id
+    }
+    if contains(keys(local.onepassword_vault_homelab_sections), server_key) &&
+    try(local.onepassword_vault_homelab_sections[server_key].input.public_ipv4, "-") != "-" &&
+    try(local.onepassword_vault_homelab_sections[server_key].input.public_address, "-") == "-"
+  }
+
+  dns_records_homelab_external_ipv6 = {
+    for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_external}-homelab-ipv6-${server_data.fqdn}" => {
+      content  = local.onepassword_vault_homelab_sections[server_key].input.public_ipv6
+      name     = "${server_data.fqdn}.${var.domain_external}"
+      priority = null
+      proxied  = false
+      type     = "AAAA"
+      zone_id  = data.cloudflare_zone.configured[var.domain_external].zone_id
+    }
+    if contains(keys(local.onepassword_vault_homelab_sections), server_key) &&
+    try(local.onepassword_vault_homelab_sections[server_key].input.public_ipv6, "-") != "-" && 
+    try(local.onepassword_vault_homelab_sections[server_key].input.public_address, "-") == "-"
+  }
+
+  dns_records_homelab_external_address = {
+    for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_external}-homelab-address-${server_data.fqdn}" => {
+      content  = local.onepassword_vault_homelab_sections[server_key].input.public_address
+      name     = "${server_data.fqdn}.${var.domain_external}"
+      priority = null
+      proxied  = false
+      type     = "CNAME"
+      zone_id  = data.cloudflare_zone.configured[var.domain_external].zone_id
+    }
+    if contains(keys(local.onepassword_vault_homelab_sections), server_key) &&
+    try(local.onepassword_vault_homelab_sections[server_key].input.public_address, "-") != "-"
+  }
+
+  dns_records_homelab_external_wildcard = {
+    for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_external}-homelab-wildcard-${server_data.fqdn}" => {
+      content  = "${server_data.fqdn}.${var.domain_external}"
+      name     = "*.${server_data.fqdn}.${var.domain_external}"
+      priority = null
+      proxied  = false
+      type     = "CNAME"
+      zone_id  = data.cloudflare_zone.configured[var.domain_external].zone_id
+    }
+    if contains(keys(local.onepassword_vault_homelab_sections), server_key) &&
+    (try(local.onepassword_vault_homelab_sections[server_key].input.public_address, "-") != "-" || try(local.onepassword_vault_homelab_sections[server_key].input.public_ipv4, "-") != "-")
+  }
 
   dns_records_homelab_internal_ipv4 = {
-    for server_key, server_data in local.onepassword_vault_homelab_servers : "${var.domain_internal}-homelab-ipv4-${server_data.name}" => {
+    for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_internal}-homelab-ipv4-${server_data.name}" => {
       content  = local.tailscale_devices[server_key].tailscale_ipv4
       name     = "${server_data.name}.${var.domain_internal}"
       priority = null
@@ -28,7 +86,7 @@ locals {
   }
 
   dns_records_homelab_internal_ipv6 = {
-    for server_key, server_data in local.onepassword_vault_homelab_servers : "${var.domain_internal}-homelab-ipv6-${server_data.name}" => {
+    for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_internal}-homelab-ipv6-${server_data.name}" => {
       content  = local.tailscale_devices[server_key].tailscale_ipv6
       name     = "${server_data.name}.${var.domain_internal}"
       priority = null
@@ -40,7 +98,7 @@ locals {
   }
 
   dns_records_homelab_internal_wildcard = {
-    for server_key, server_data in local.onepassword_vault_homelab_servers : "${var.domain_internal}-homelab-wildcard-${server_data.name}" => {
+    for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_internal}-homelab-wildcard-${server_data.name}" => {
       content  = local.tailscale_devices[server_key].tailscale_ipv4
       name     = "*.${server_data.name}.${var.domain_internal}"
       priority = null
@@ -48,7 +106,8 @@ locals {
       type     = "A"
       zone_id  = data.cloudflare_zone.configured[var.domain_internal].zone_id
     }
-    if contains(keys(local.tailscale_devices), server_key) && local.tailscale_devices[server_key].tailscale_ipv4 != null
+    if contains(keys(local.tailscale_devices), server_key) &&
+    (local.tailscale_devices[server_key].tailscale_ipv4 != null || local.tailscale_devices[server_key].tailscale_ipv6 != null)
   }
 
   dns_records_manual = merge([

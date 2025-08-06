@@ -71,22 +71,8 @@ dns = {
       type    = "TXT"
     }
   ]
-  "excloo.dev" = [
-    {
-      content  = "hsp.au.excloo.net"
-      name     = "@"
-      type     = "CNAME"
-      wildcard = true
-    }
-  ]
-  "excloo.net" = [
-    {
-      content  = "hsp.au.excloo.net"
-      name     = "@"
-      type     = "CNAME"
-      wildcard = true
-    }
-  ]
+  "excloo.dev" = []
+  "excloo.net" = []
   "excloo.org" = [
     {
       content  = "hsp.au.excloo.net"
