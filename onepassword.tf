@@ -111,56 +111,56 @@ resource "onepassword_item" "homelab" {
       id    = "input.description"
       label = "description"
       type  = "STRING"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.description, "-")
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.description, "-")
     }
 
     field {
       id    = "input.flags"
       label = "flags"
       type  = "STRING"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.flags, "-")
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.flags, "-")
     }
 
     field {
       id    = "input.parent"
       label = "parent"
       type  = "STRING"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.parent, "-")
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.parent, "-")
     }
 
     field {
       id    = "input.paths"
       label = "paths"
       type  = "STRING"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.paths, data.onepassword_item.homelab[each.key].username == "root" ? "/${data.onepassword_item.homelab[each.key].username}" : "/home/${data.onepassword_item.homelab[each.key].username}")
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.paths, data.onepassword_item.homelab[each.key].username == "root" ? "/${data.onepassword_item.homelab[each.key].username}" : "/home/${data.onepassword_item.homelab[each.key].username}")
+    }
+
+    field {
+      id    = "input.private_ipv4"
+      label = "private_ipv4"
+      type  = "URL"
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.private_ipv4, "-")
     }
 
     field {
       id    = "input.public_address"
       label = "public_address"
       type  = "URL"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.public_address, "-")
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.public_address, "-")
     }
 
     field {
       id    = "input.public_ipv4"
       label = "public_ipv4"
       type  = "URL"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.public_ipv4, "-")
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.public_ipv4, "-")
     }
 
     field {
       id    = "input.public_ipv6"
       label = "public_ipv6"
       type  = "URL"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.public_ipv6, "-")
-    }
-
-    field {
-      id    = "input.type"
-      label = "type"
-      type  = "STRING"
-      value = try(local.onepassword_vault_homelab_sections[each.key].inputs.type, "-")
+      value = try(local.onepassword_vault_homelab_sections[each.key].input.public_ipv6, "-")
     }
   }
 
@@ -224,15 +224,8 @@ resource "onepassword_item" "homelab" {
     }
 
     field {
-      id    = "output.public_ipv4"
-      label = "public_ipv4"
-      type  = "URL"
-      value = "-"
-    }
-
-    field {
-      id    = "output.public_ipv6"
-      label = "public_ipv6"
+      id    = "output.public_address"
+      label = "public_address"
       type  = "URL"
       value = "-"
     }
