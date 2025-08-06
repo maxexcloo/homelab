@@ -99,7 +99,7 @@ locals {
 
   dns_records_homelab_internal_wildcard = {
     for server_key, server_data in local.onepassword_vault_homelab_all : "${var.domain_internal}-homelab-wildcard-${server_data.name}" => {
-      content  = local.tailscale_devices[server_key].tailscale_ipv4
+      content  = "${server_data.name}.${var.domain_internal}"
       name     = "*.${server_data.name}.${var.domain_internal}"
       priority = null
       proxied  = false
