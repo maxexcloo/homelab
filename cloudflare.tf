@@ -1,3 +1,10 @@
+data "cloudflare_zero_trust_tunnel_cloudflared_token" "homelab" {
+  for_each = cloudflare_zero_trust_tunnel_cloudflared.homelab
+
+  account_id = local.providers.cloudflare.account_id
+  tunnel_id  = each.value.id
+}
+
 data "cloudflare_zone" "all" {
   for_each = var.dns
 
@@ -43,14 +50,7 @@ resource "cloudflare_dns_record" "all" {
 resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
   for_each = local.onepassword_vault_homelab
 
-  account_id    = local.providers.cloudflare.account_id
-  config_src    = "cloudflare"
-  name          = each.key
-  tunnel_secret = random_id.cloudflare_tunnel_homelab[each.key].b64_std
-}
-
-resource "random_id" "cloudflare_tunnel_homelab" {
-  for_each = local.onepassword_vault_homelab
-
-  byte_length = 32
+  account_id = local.providers.cloudflare.account_id
+  config_src = "cloudflare"
+  name       = each.key
 }

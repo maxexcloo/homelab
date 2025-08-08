@@ -12,7 +12,7 @@ locals {
         b2_bucket_name           = b2_bucket.homelab[k].bucket_name
         b2_endpoint              = replace(data.b2_account_info.default.s3_api_url, "https://", "")
         cloudflare_account_token = cloudflare_account_token.homelab[k].value
-        cloudflare_tunnel_token  = cloudflare_zero_trust_tunnel_cloudflared.homelab[k].tunnel_secret
+        cloudflare_tunnel_token  = data.cloudflare_zero_trust_tunnel_cloudflared_token.homelab[k].token
         fqdn_external            = "${v.fqdn}.${var.domain_external}"
         fqdn_internal            = "${v.fqdn}.${var.domain_internal}"
         resend_api_key           = jsondecode(restapi_object.resend_api_key_homelab[k].create_response).token
