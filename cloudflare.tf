@@ -10,14 +10,14 @@ resource "cloudflare_account_token" "homelab" {
   for_each = local.onepassword_vault_homelab
 
   account_id = local.providers.cloudflare.account_id
-  name       = "homelab-${each.key}-acme"
+  name       = "${each.key}-acme"
 
   policies = [
     {
       effect = "allow"
       permission_groups = [
         {
-          id = "4755a26eedb94da69e1066d98aa820be" # Zone - DNS:Edit
+          id = "4755a26eedb94da69e1066d98aa820be" # Zone - DNS: Edit
         }
       ]
       resources = {
@@ -38,4 +38,19 @@ resource "cloudflare_dns_record" "all" {
   ttl      = 1
   type     = each.value.type
   zone_id  = each.value.zone_id
+}
+
+resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
+  for_each = local.onepassword_vault_homelab
+
+  account_id    = local.providers.cloudflare.account_id
+  config_src    = "cloudflare"
+  name          = each.key
+  tunnel_secret = random_id.cloudflare_tunnel_homelab[each.key].b64_std
+}
+
+resource "random_id" "cloudflare_tunnel_homelab" {
+  for_each = local.onepassword_vault_homelab
+
+  byte_length = 32
 }
