@@ -8,7 +8,7 @@ locals {
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
         type    = "CNAME"
-        zone_id = data.cloudflare_zone.configured[var.domain_external].zone_id
+        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
       } if local.homelab[k].public_address != null
     },
     # External A records (for domains with IPv4 but no CNAME)
@@ -19,7 +19,7 @@ locals {
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
         type    = "A"
-        zone_id = data.cloudflare_zone.configured[var.domain_external].zone_id
+        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
       } if local.homelab[k].public_address == null && local.homelab[k].public_ipv4 != null
     },
     # External AAAA records (only valid IPv6)
@@ -30,7 +30,7 @@ locals {
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
         type    = "AAAA"
-        zone_id = data.cloudflare_zone.configured[var.domain_external].zone_id
+        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
       } if local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0))
     },
     # External wildcard records
@@ -41,7 +41,7 @@ locals {
         name    = "*.${v.fqdn}.${var.domain_external}"
         proxied = false
         type    = "CNAME"
-        zone_id = data.cloudflare_zone.configured[var.domain_external].zone_id
+        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
       } if local.homelab[k].public_address != null || local.homelab[k].public_ipv4 != null ||
       (local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0)))
     },
@@ -53,7 +53,7 @@ locals {
         name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
         type    = "A"
-        zone_id = data.cloudflare_zone.configured[var.domain_internal].zone_id
+        zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
       } if local.homelab[k].tailscale_ipv4 != null
     },
     # Tailscale AAAA records (only valid IPv6)
@@ -64,7 +64,7 @@ locals {
         name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
         type    = "AAAA"
-        zone_id = data.cloudflare_zone.configured[var.domain_internal].zone_id
+        zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
       } if local.homelab[k].tailscale_ipv6 != null && can(cidrhost("${local.homelab[k].tailscale_ipv6}/128", 0))
     },
     # Tailscale wildcard records
@@ -75,7 +75,7 @@ locals {
         name    = "*.${v.fqdn}.${var.domain_internal}"
         proxied = false
         type    = "CNAME"
-        zone_id = data.cloudflare_zone.configured[var.domain_internal].zone_id
+        zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
       } if local.homelab[k].tailscale_ipv4 != null ||
       (local.homelab[k].tailscale_ipv6 != null && can(cidrhost("${local.homelab[k].tailscale_ipv6}/128", 0)))
     },
@@ -87,7 +87,7 @@ locals {
         name    = "_acme-challenge.${subdomain}"
         proxied = false
         type    = "CNAME"
-        zone_id = data.cloudflare_zone.configured[zone].zone_id
+        zone_id = data.cloudflare_zone.all[zone].zone_id
       } if subdomain != var.domain_acme
     }
   )
@@ -120,7 +120,7 @@ locals {
           priority = record.type == "MX" ? record.priority : null
           proxied  = record.proxied
           type     = record.type
-          zone_id  = data.cloudflare_zone.configured[zone_name].zone_id
+          zone_id  = data.cloudflare_zone.all[zone_name].zone_id
         }
       }
     ]...),
@@ -132,7 +132,7 @@ locals {
           name    = record.name == "@" ? "*.${zone_name}" : "*.${record.name}.${zone_name}"
           proxied = false
           type    = "CNAME"
-          zone_id = data.cloudflare_zone.configured[zone_name].zone_id
+          zone_id = data.cloudflare_zone.all[zone_name].zone_id
         } if record.wildcard && record.type == "CNAME"
       }
     ]...),
@@ -143,7 +143,7 @@ locals {
         name    = "_acme-challenge.${subdomain}"
         proxied = false
         type    = "CNAME"
-        zone_id = data.cloudflare_zone.configured[zone].zone_id
+        zone_id = data.cloudflare_zone.all[zone].zone_id
       } if subdomain != var.domain_acme
     }
   )

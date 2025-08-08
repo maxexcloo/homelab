@@ -1,9 +1,29 @@
-data "cloudflare_zone" "configured" {
+data "cloudflare_zone" "all" {
   for_each = var.dns
 
   filter = {
     name = each.key
   }
+}
+
+resource "cloudflare_api_token" "homelab" {
+  for_each = local.onepassword_vault_homelab
+
+  name = "homelab-${each.key}-acme"
+
+  policies = [
+    {
+      effect = "allow"
+      permission_groups = [
+        {
+          id = "4755a26eedb94da69e1066d98aa820be" # Zone - DNS:Edit
+        }
+      ]
+      resources = {
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.domain_acme].zone_id}" = "*"
+      }
+    }
+  ]
 }
 
 resource "cloudflare_dns_record" "all" {

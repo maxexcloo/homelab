@@ -2,8 +2,8 @@ locals {
   # Complete homelab structure with inheritance and computed fields
   homelab = {
     for k, v in local.onepassword_vault_homelab : k => merge(
-      v,                       # Base metadata (fqdn, name, platform, region, title)
       local.homelab_fields[k], # 1Password fields
+      v,                       # Base metadata (fqdn, name, platform, region, title)
       # Computed fields
       {
         # Resource-generated fields
@@ -11,7 +11,7 @@ locals {
         b2_application_key_id    = b2_application_key.homelab[k].application_key_id
         b2_bucket_name           = b2_bucket.homelab[k].bucket_name
         b2_endpoint              = replace(data.b2_account_info.default.s3_api_url, "https://", "")
-        cloudflare_account_token = null # Placeholder
+        cloudflare_account_token = cloudflare_api_token.homelab[k].value
         cloudflare_tunnel_token  = null # Placeholder
         fqdn_external            = "${v.fqdn}.${var.domain_external}"
         fqdn_internal            = "${v.fqdn}.${var.domain_internal}"
