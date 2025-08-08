@@ -7,7 +7,7 @@ locals {
   }
 
   tailscale_devices = {
-    for k, v in local.onepassword_vault_homelab_all : k => {
+    for k, v in local.onepassword_vault_homelab : k => {
       tailscale_ipv4 = try([for address in local.tailscale_device_map[v.title].addresses : address if can(cidrhost("${address}/32", 0))][0], null)
       tailscale_ipv6 = try([for address in local.tailscale_device_map[v.title].addresses : address if can(cidrhost("${address}/128", 0))][0], null)
     }
@@ -17,7 +17,7 @@ locals {
 
 
 resource "tailscale_tailnet_key" "homelab" {
-  for_each = local.onepassword_vault_homelab_all
+  for_each = local.onepassword_vault_homelab
 
   description   = each.key
   preauthorized = true

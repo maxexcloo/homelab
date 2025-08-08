@@ -15,14 +15,25 @@ resource "b2_application_key" "homelab" {
 }
 
 resource "b2_bucket" "homelab" {
-  for_each = local.onepassword_vault_homelab_all
+  for_each = local.onepassword_vault_homelab
 
   bucket_name = "${each.key}-${random_string.b2_homelab[each.key].result}"
   bucket_type = "allPrivate"
+
+  default_server_side_encryption {
+    algorithm = "AES256"
+    mode      = "SSE-B2"
+  }
+
+  lifecycle_rules {
+    days_from_hiding_to_deleting  = 1
+    days_from_uploading_to_hiding = 0
+    file_name_prefix              = ""
+  }
 }
 
 resource "random_string" "b2_homelab" {
-  for_each = local.onepassword_vault_homelab_all
+  for_each = local.onepassword_vault_homelab
 
   length  = 6
   special = false

@@ -1,5 +1,5 @@
 resource "restapi_object" "resend_api_key_homelab" {
-  for_each = local.onepassword_vault_homelab_all
+  for_each = local.onepassword_vault_homelab
 
   data                      = jsonencode({ name = each.key })
   id_attribute              = "id"
