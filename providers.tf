@@ -17,7 +17,8 @@ provider "b2" {
 }
 
 provider "cloudflare" {
-  api_token = local.providers.cloudflare.api_token
+  api_key = local.providers.cloudflare.api_key
+  email   = local.providers.cloudflare.email
 }
 
 provider "github" {

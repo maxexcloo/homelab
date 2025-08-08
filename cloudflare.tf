@@ -6,10 +6,11 @@ data "cloudflare_zone" "all" {
   }
 }
 
-resource "cloudflare_api_token" "homelab" {
+resource "cloudflare_account_token" "homelab" {
   for_each = local.onepassword_vault_homelab
 
-  name = "homelab-${each.key}-acme"
+  account_id = local.providers.cloudflare.account_id
+  name       = "homelab-${each.key}-acme"
 
   policies = [
     {
