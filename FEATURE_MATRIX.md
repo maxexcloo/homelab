@@ -157,33 +157,39 @@ Sections:
 DNS is managed via `dns.auto.tfvars`:
 
 ```hcl
-dns_zones = {
-  "example.com" = {
-    enabled = true
-    proxied_default = true
-    records = [
-      {
-        name     = "@"
-        type     = "MX"
-        content  = "mail.example.com"
-        priority = 10
-      },
-      {
-        name    = "_dmarc"
-        type    = "TXT"
-        content = "v=DMARC1; p=none;"
-      }
-    ]
-  }
+dns = {
+  "example.com" = [
+    {
+      name     = "@"
+      type     = "MX"
+      content  = "mail.example.com"
+      priority = 10
+      proxied  = false
+      wildcard = false
+    },
+    {
+      name    = "_dmarc"
+      type    = "TXT"
+      content = "v=DMARC1; p=none;"
+      proxied = false
+      wildcard = false
+    }
+  ]
 }
 ```
 
 ### Auto-Generated DNS
 
-- Server external: `server.region.external-domain.com`
-- Server internal: `server.region.internal-domain.dev`
-- Service external: From Website field if enabled
-- Service internal: From Website field if enabled
+#### Homelab Records (from 1Password entries)
+- External: `fqdn.domain_external` (A/AAAA/CNAME based on public_address/public_ipv4/public_ipv6)
+- Internal: `name.domain_internal` (A/AAAA based on tailscale_ipv4/tailscale_ipv6)
+- Wildcards: `*.fqdn.domain_external` and `*.name.domain_internal` (auto-generated)
+- ACME challenges: `_acme-challenge.subdomain` → `_acme-challenge.domain_acme` (for SSL)
+
+#### Manual Records (from dns variable)
+- Direct records as specified in configuration
+- Wildcard records when `wildcard = true`
+- ACME challenges for all A/AAAA/CNAME records
 
 ## Monitoring & Dashboard Configuration (Auto-Generated)
 
@@ -289,6 +295,30 @@ dns:
 ### Main Configuration
 - `terraform.auto.tfvars` - Main configuration settings
 - `dns.auto.tfvars` - DNS zones and records
+
+### Core Infrastructure Files
+- `backend.tf` - HCP Terraform backend configuration
+- `providers.tf` - Provider configurations (reads from 1Password)
+- `terraform.tf` - OpenTofu version and provider requirements
+- `variables.tf` - Input variables and defaults
+
+### 1Password Integration
+- `onepassword_input.tf` - Data sources for reading from 1Password vaults
+- `onepassword_output.tf` - Resources for writing computed values back to 1Password
+- `locals_homelab.tf` - Core homelab data structure with inheritance logic
+
+### DNS Management
+- `cloudflare.tf` - Cloudflare zones and DNS record resources
+- `locals_dns.tf` - All DNS record generation logic including:
+  - Homelab DNS records (external/internal)
+  - Manual DNS records from variables
+  - ACME challenge records for SSL certificates
+  - Wildcard records
+
+### Service Providers
+- `b2.tf` - Backblaze B2 buckets and application keys
+- `resend.tf` - Resend email service configuration
+- `tailscale.tf` - Tailscale ACLs and DNS configuration
 
 ### Templates
 - `templates/cloud_config/` - Server initialization

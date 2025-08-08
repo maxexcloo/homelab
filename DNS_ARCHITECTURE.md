@@ -84,9 +84,17 @@ locals {
 
 ## Implementation
 
+### File Structure
+- `cloudflare.tf` - Cloudflare zone data sources and DNS record resources
+- `locals_dns.tf` - All DNS record generation logic:
+  - Homelab DNS records (from 1Password entries)
+  - Manual DNS records (from dns variable)
+  - ACME challenge records (for SSL certificates)
+  - Wildcard records
+
 ### Zone Definition
 ```hcl
-# dns.tf
+# variables.tf
 variable "dns" {
   description = "DNS records by zone"
   type = map(list(object({
@@ -100,58 +108,61 @@ variable "dns" {
   default = {}
 }
 
-# Get Cloudflare zones
-data "cloudflare_zones" "configured" {
+# cloudflare.tf
+data "cloudflare_zone" "configured" {
   for_each = var.dns
   
-  filter {
-    name       = each.key
-    account_id = local.providers.cloudflare.account_id
+  filter = {
+    name = each.key
   }
 }
 ```
 
 ### Record Processing
 ```hcl
-# Merge automatic and manual records
+# locals_dns.tf - All DNS record generation logic
+
 locals {
-  all_dns_records = merge(
-    local.manual_dns_records,    # From dns.auto.tfvars
-    local.wildcard_dns_records,  # Auto-generated wildcards
-    local.server_dns_records,    # Auto-generated
-    local.service_dns_records    # From service websites
+  # Homelab DNS records (from 1Password entries)
+  dns_records_homelab = merge(
+    # External records (CNAME, A, AAAA)
+    # Internal Tailscale records
+    # Wildcard records for services
+    # ACME challenge records
   )
   
-  manual_dns_records = merge([
-    for zone_name, records in var.dns : {
-      for idx, record in records : 
-      "${zone_name}-manual-${record.type}-${idx}" => {
-        zone_id  = data.cloudflare_zones.configured[zone_name].zones[0].id
-        name     = record.name
-        type     = record.type
-        value    = record.type == "MX" ? "${record.priority} ${record.content}" : record.content
-        priority = record.type == "MX" ? record.priority : null
-        proxied  = record.proxied
-      }
-    }
-  ]...)
+  # Manual DNS records (from dns variable)
+  dns_records_manual = merge(
+    # Direct records from configuration
+    # Wildcard records when wildcard = true
+    # ACME challenge records for SSL
+  )
+}
+
+# cloudflare.tf - DNS resource creation
+resource "cloudflare_dns_record" "all" {
+  for_each = nonsensitive(merge(
+    local.dns_records_homelab,
+    local.dns_records_manual
+  ))
   
-  # Wildcard records (when wildcard = true on CNAME records)
-  wildcard_dns_records = merge([
-    for zone_name, records in var.dns : {
-      for idx, record in records :
-      "${zone_name}-wildcard-${idx}" => {
-        zone_id  = data.cloudflare_zones.configured[zone_name].zones[0].id
-        name     = record.name == "@" ? "*" : "*.${record.name}"
-        type     = "CNAME"
-        value    = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
-        priority = null
-        proxied  = false  # Wildcards can't be proxied
-      } if record.wildcard && record.type == "CNAME"
-    }
-  ]...)
+  comment  = "OpenTofu Managed"
+  content  = each.value.content
+  name     = each.value.name
+  priority = try(each.value.priority, null)
+  proxied  = try(each.value.proxied, false)
+  ttl      = 1
+  type     = each.value.type
+  zone_id  = each.value.zone_id
 }
 ```
+
+### ACME Challenge Records
+ACME challenges are automatically generated for SSL certificate validation:
+- Generated for all homelab entries with public or Tailscale IPs
+- Generated for all manual A, AAAA, and CNAME records
+- Points to centralized ACME challenge domain for validation
+- Pattern: `_acme-challenge.subdomain` → `_acme-challenge.${domain_acme}`
 
 ## Best Practices
 

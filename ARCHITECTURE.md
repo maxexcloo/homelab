@@ -1,4 +1,4 @@
-# Homelab Architecture (Final)
+# Homelab Architecture
 
 ## Overview
 
@@ -197,6 +197,56 @@ mise run apply     # Deploy
 - Encryption: At rest, managed by HashiCorp
 - Locking: Automatic with HCP Terraform
 - No local state files
+
+## File Structure
+
+### Core Configuration Files
+- `backend.tf` - HCP Terraform backend configuration
+- `providers.tf` - Provider configurations (reads from 1Password)
+- `terraform.tf` - OpenTofu version and provider requirements
+- `variables.tf` - Input variables and defaults
+
+### 1Password Integration
+- `onepassword_input.tf` - Data sources for reading from 1Password vaults
+- `onepassword_output.tf` - Resources for writing computed values back to 1Password
+- `locals_homelab.tf` - Core homelab data structure with inheritance logic
+
+### DNS Management
+- `cloudflare.tf` - Cloudflare zones and DNS record resources
+- `locals_dns.tf` - All DNS record generation logic including:
+  - Homelab DNS records (external/internal)
+  - Manual DNS records from variables
+  - ACME challenge records for SSL certificates
+  - Wildcard records
+
+### Service Providers
+- `b2.tf` - Backblaze B2 buckets and application keys
+- `resend.tf` - Resend email service configuration
+- `tailscale.tf` - Tailscale ACLs and DNS configuration
+
+## Data Flow
+
+### 1Password → OpenTofu
+1. **Provider credentials** read from `providers` item
+2. **Homelab entries** parsed from Infrastructure vault
+3. **Service entries** parsed from Services vault
+4. **Inheritance** applied (routers → servers → VMs)
+
+### OpenTofu Processing
+1. **Locals computation** in `locals_homelab.tf`:
+   - Stage 1: Parse and structure 1Password data
+   - Stage 2: Apply inheritance and compute final values
+2. **DNS generation** in `locals_dns.tf`:
+   - Homelab records (A, AAAA, CNAME)
+   - Manual records from variables
+   - ACME challenges for all domains
+   - Wildcard records where needed
+
+### OpenTofu → Infrastructure
+1. **DNS records** created in Cloudflare
+2. **B2 buckets** provisioned with lifecycle rules
+3. **Tailscale ACLs** configured
+4. **Computed values** written back to 1Password
 
 ## Migration Path
 

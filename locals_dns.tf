@@ -48,9 +48,9 @@ locals {
     # Tailscale A records
     {
       for k, v in local.onepassword_vault_homelab :
-      "${var.domain_internal}-${v.name}-a" => {
+      "${var.domain_internal}-${v.fqdn}-a" => {
         content = local.homelab[k].tailscale_ipv4
-        name    = "${v.name}.${var.domain_internal}"
+        name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
         type    = "A"
         zone_id = data.cloudflare_zone.configured[var.domain_internal].zone_id
@@ -59,9 +59,9 @@ locals {
     # Tailscale AAAA records (only valid IPv6)
     {
       for k, v in local.onepassword_vault_homelab :
-      "${var.domain_internal}-${v.name}-aaaa" => {
+      "${var.domain_internal}-${v.fqdn}-aaaa" => {
         content = local.homelab[k].tailscale_ipv6
-        name    = "${v.name}.${var.domain_internal}"
+        name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
         type    = "AAAA"
         zone_id = data.cloudflare_zone.configured[var.domain_internal].zone_id
@@ -70,9 +70,9 @@ locals {
     # Tailscale wildcard records
     {
       for k, v in local.onepassword_vault_homelab :
-      "${var.domain_internal}-${v.name}-wildcard" => {
-        content = "${v.name}.${var.domain_internal}"
-        name    = "*.${v.name}.${var.domain_internal}"
+      "${var.domain_internal}-${v.fqdn}-wildcard" => {
+        content = "${v.fqdn}.${var.domain_internal}"
+        name    = "*.${v.fqdn}.${var.domain_internal}"
         proxied = false
         type    = "CNAME"
         zone_id = data.cloudflare_zone.configured[var.domain_internal].zone_id
@@ -104,7 +104,7 @@ locals {
     # Tailscale homelab subdomains
     {
       for k, v in local.onepassword_vault_homelab :
-      "${v.name}.${var.domain_internal}" => var.domain_internal
+      "${v.fqdn}.${var.domain_internal}" => var.domain_internal
       if local.homelab[k].tailscale_ipv4 != null ||
       (local.homelab[k].tailscale_ipv6 != null && can(cidrhost("${local.homelab[k].tailscale_ipv6}/128", 0)))
     }
