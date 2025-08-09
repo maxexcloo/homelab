@@ -2,8 +2,8 @@ locals {
   # Complete homelab structure with inheritance and computed fields
   homelab = {
     for k, v in local.onepassword_vault_homelab : k => merge(
-      local.homelab_fields[k], # 1Password fields
       v,                       # Base metadata (fqdn, name, platform, region, title)
+      local.homelab_fields[k], # 1Password fields
       # Computed fields
       {
         # Resource-generated fields
@@ -19,6 +19,7 @@ locals {
         tailscale_auth_key       = tailscale_tailnet_key.homelab[k].key
         tailscale_ipv4           = try(local.tailscale_devices[k].tailscale_ipv4, null)
         tailscale_ipv6           = try(local.tailscale_devices[k].tailscale_ipv6, null)
+        url                      = "${v.fqdn}.${var.domain_internal}${local.homelab_fields[k].management_port != null ? ":${local.homelab_fields[k].management_port}" : ""}"
 
         # Paths with default
         paths = try(

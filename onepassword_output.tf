@@ -1,14 +1,15 @@
 locals {
   homelab_field_types = {
     input = {
-      description    = "STRING"
-      flags          = "STRING"
-      parent         = "STRING"
-      paths          = "STRING"
-      private_ipv4   = "URL"
-      public_address = "URL"
-      public_ipv4    = "URL"
-      public_ipv6    = "URL"
+      description     = "STRING"
+      flags           = "STRING"
+      management_port = "STRING"
+      parent          = "STRING"
+      paths           = "STRING"
+      private_ipv4    = "URL"
+      public_address  = "URL"
+      public_ipv4     = "URL"
+      public_ipv6     = "URL"
     }
     output = {
       b2_application_key       = "CONCEALED"
@@ -33,7 +34,7 @@ resource "onepassword_item" "homelab" {
   for_each = local.onepassword_vault_homelab
 
   title    = data.onepassword_item.homelab[each.key].title
-  url      = try(local.homelab[each.key].fqdn_internal, "https://${each.value.fqdn}.${var.domain_internal}")
+  url      = local.homelab[each.key].url
   username = data.onepassword_item.homelab[each.key].username
   vault    = data.onepassword_vault.homelab.uuid
 
