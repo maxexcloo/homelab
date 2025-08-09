@@ -50,7 +50,9 @@ if ! op item get "providers" --vault "Infrastructure" 2>/dev/null; then
         'b2.application_key[concealed]=REPLACE_ME' \
         'b2.application_key_id[text]=REPLACE_ME' \
         'cloudflare.account_id[text]=REPLACE_ME' \
-        'cloudflare.api_token[concealed]=REPLACE_ME' \
+        'cloudflare.api_key[concealed]=REPLACE_ME' \
+        'cloudflare.email[text]=REPLACE_ME' \
+        'duckdns.token[concealed]=REPLACE_ME' \
         'github.token[concealed]=REPLACE_ME' \
         'resend.api_key[concealed]=REPLACE_ME' \
         'tailscale.oauth_client_id[text]=REPLACE_ME' \

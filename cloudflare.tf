@@ -17,7 +17,7 @@ resource "cloudflare_account_token" "homelab" {
   for_each = local.onepassword_vault_homelab
 
   account_id = local.providers.cloudflare.account_id
-  name       = "${each.key}-acme"
+  name       = each.key
 
   policies = [
     {
@@ -28,7 +28,8 @@ resource "cloudflare_account_token" "homelab" {
         }
       ]
       resources = {
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.domain_acme].zone_id}" = "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.domain_external].zone_id}" = "*",
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.domain_internal].zone_id}" = "*"
       }
     }
   ]

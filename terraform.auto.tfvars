@@ -6,7 +6,7 @@ default_email  = "max@excloo.com"
 default_region = "au"
 
 # Domain configuration
-domain_acme     = "excloo.org"
+domain_acme     = "excloo-acme.duckdns.org"
 domain_external = "excloo.net"
 domain_internal = "excloo.dev"
 

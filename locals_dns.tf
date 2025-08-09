@@ -75,7 +75,7 @@ locals {
     # ACME challenge records for homelab subdomains
     {
       for subdomain, zone in local.dns_records_homelab_acme : "acme-homelab-${replace(subdomain, ".", "-")}" => {
-        content = "_acme-challenge.${var.domain_acme}"
+        content = var.domain_acme
         name    = "_acme-challenge.${subdomain}"
         proxied = false
         type    = "CNAME"
@@ -129,7 +129,7 @@ locals {
     # ACME challenge records for manual subdomains
     {
       for subdomain, zone in local.dns_records_manual_acme : "acme-manual-${replace(subdomain, ".", "-")}" => {
-        content = "_acme-challenge.${var.domain_acme}"
+        content = var.domain_acme
         name    = "_acme-challenge.${subdomain}"
         proxied = false
         type    = "CNAME"

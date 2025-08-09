@@ -54,7 +54,7 @@ locals {
         for field in try(data.onepassword_item.homelab[k].section[index(try(data.onepassword_item.homelab[k].section[*].label, []), "input")].field, []) :
         field.label => field.value == "-" ? null : field.value
       },
-      # Extract output section fields  
+      # Extract output section fields
       {
         for field in try(data.onepassword_item.homelab[k].section[index(try(data.onepassword_item.homelab[k].section[*].label, []), "output")].field, []) :
         field.label => field.value == "-" ? null : field.value
