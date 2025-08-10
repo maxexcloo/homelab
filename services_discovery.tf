@@ -2,6 +2,8 @@
 
 data "external" "services_item_list" {
   program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_vault_services}' | jq -c '{stdout: (. | tostring)}'"]
+
+  depends_on = [random_id.services_refresh_trigger]
 }
 
 data "onepassword_item" "services_details" {
@@ -9,6 +11,8 @@ data "onepassword_item" "services_details" {
 
   title = each.key
   vault = data.onepassword_vault.services.uuid
+
+  depends_on = [random_id.services_refresh_trigger]
 }
 
 data "onepassword_vault" "services" {
@@ -36,4 +40,13 @@ locals {
 output "services_discovered" {
   value     = keys(local.services_discovered)
   sensitive = false
+}
+
+# Force refresh of data sources on every run
+resource "random_id" "services_refresh_trigger" {
+  byte_length = 8
+
+  keepers = {
+    timestamp = timestamp()
+  }
 }

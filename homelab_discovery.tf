@@ -2,6 +2,8 @@
 
 data "external" "homelab_item_list" {
   program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_vault_homelab}' | jq -c '{stdout: (. | tostring)}'"]
+
+  depends_on = [random_id.homelab_refresh_trigger]
 }
 
 data "onepassword_item" "homelab_details" {
@@ -9,6 +11,8 @@ data "onepassword_item" "homelab_details" {
 
   title = each.key
   vault = data.onepassword_vault.homelab.uuid
+
+  depends_on = [random_id.homelab_refresh_trigger]
 }
 
 data "onepassword_vault" "homelab" {
@@ -47,4 +51,13 @@ locals {
 output "homelab_discovered" {
   value     = keys(local.homelab_discovered)
   sensitive = false
+}
+
+# Force refresh of data sources on every run
+resource "random_id" "homelab_refresh_trigger" {
+  byte_length = 8
+
+  keepers = {
+    timestamp = timestamp()
+  }
 }
