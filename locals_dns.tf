@@ -2,7 +2,7 @@ locals {
   dns_records_homelab = merge(
     # External CNAME records (for domains with public addresses)
     {
-      for k, v in local.onepassword_vault_homelab : "${var.domain_external}-${v.fqdn}-cname" => {
+      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-cname" => {
         content = local.homelab[k].public_address
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -12,7 +12,7 @@ locals {
     },
     # External A records (for domains with IPv4 but no CNAME)
     {
-      for k, v in local.onepassword_vault_homelab : "${var.domain_external}-${v.fqdn}-a" => {
+      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-a" => {
         content = local.homelab[k].public_ipv4
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -22,7 +22,7 @@ locals {
     },
     # External AAAA records (only valid IPv6)
     {
-      for k, v in local.onepassword_vault_homelab : "${var.domain_external}-${v.fqdn}-aaaa" => {
+      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-aaaa" => {
         content = local.homelab[k].public_ipv6
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -32,7 +32,7 @@ locals {
     },
     # External wildcard records
     {
-      for k, v in local.onepassword_vault_homelab : "${var.domain_external}-${v.fqdn}-wildcard" => {
+      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-wildcard" => {
         content = "${v.fqdn}.${var.domain_external}"
         name    = "*.${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -43,7 +43,7 @@ locals {
     },
     # Tailscale A records
     {
-      for k, v in local.onepassword_vault_homelab : "${var.domain_internal}-${v.fqdn}-a" => {
+      for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-a" => {
         content = local.homelab[k].tailscale_ipv4
         name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
@@ -53,7 +53,7 @@ locals {
     },
     # Tailscale AAAA records (only valid IPv6)
     {
-      for k, v in local.onepassword_vault_homelab : "${var.domain_internal}-${v.fqdn}-aaaa" => {
+      for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-aaaa" => {
         content = local.homelab[k].tailscale_ipv6
         name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
@@ -63,7 +63,7 @@ locals {
     },
     # Tailscale wildcard records
     {
-      for k, v in local.onepassword_vault_homelab : "${var.domain_internal}-${v.fqdn}-wildcard" => {
+      for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-wildcard" => {
         content = "${v.fqdn}.${var.domain_internal}"
         name    = "*.${v.fqdn}.${var.domain_internal}"
         proxied = false
@@ -88,13 +88,13 @@ locals {
   dns_records_homelab_acme = merge(
     # External homelab subdomains
     {
-      for k, v in local.onepassword_vault_homelab : "${v.fqdn}.${var.domain_external}" => var.domain_external
+      for k, v in local.homelab_discovered : "${v.fqdn}.${var.domain_external}" => var.domain_external
       if local.homelab[k].public_address != null || local.homelab[k].public_ipv4 != null ||
       (local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0)))
     },
     # Tailscale homelab subdomains
     {
-      for k, v in local.onepassword_vault_homelab : "${v.fqdn}.${var.domain_internal}" => var.domain_internal
+      for k, v in local.homelab_discovered : "${v.fqdn}.${var.domain_internal}" => var.domain_internal
       if local.homelab[k].tailscale_ipv4 != null ||
       (local.homelab[k].tailscale_ipv6 != null && can(cidrhost("${local.homelab[k].tailscale_ipv6}/128", 0)))
     }

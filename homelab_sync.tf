@@ -1,5 +1,7 @@
+# Sync phase - Write homelab values back to 1Password
+
 locals {
-  homelab_field_types = {
+  homelab_field_schema = {
     input = {
       description     = "STRING"
       flags           = "STRING"
@@ -30,16 +32,16 @@ locals {
   }
 }
 
-resource "onepassword_item" "homelab" {
-  for_each = local.onepassword_vault_homelab
+resource "onepassword_item" "homelab_sync" {
+  for_each = local.homelab_discovered
 
-  title    = data.onepassword_item.homelab[each.key].title
+  title    = data.onepassword_item.homelab_details[each.key].title
   url      = local.homelab[each.key].url
-  username = data.onepassword_item.homelab[each.key].username
+  username = data.onepassword_item.homelab_details[each.key].username
   vault    = data.onepassword_vault.homelab.uuid
 
   dynamic "section" {
-    for_each = local.homelab_field_types
+    for_each = local.homelab_field_schema
 
     content {
       label = section.key
@@ -51,22 +53,17 @@ resource "onepassword_item" "homelab" {
           id    = "${section.key}.${field.key}"
           label = field.key
           type  = field.value
-          value = section.key == "input" ? coalesce(
-            try([for s in data.onepassword_item.homelab[each.key].section :
-              [for f in s.field : f.value if s.label == section.key && f.label == field.key][0]
-            if s.label == section.key][0], null),
+
+          # Logic: preserve input fields from 1Password, update output fields with computed values
+          value = section.key == "input" ? try(
+            local.homelab_onepassword_fields[each.key][field.key],
             "-"
-          ) : coalesce(try(local.homelab[each.key][field.key], null), "-")
+            ) : try(
+            local.homelab[each.key][field.key],
+            "-"
+          )
         }
       }
     }
   }
-}
-
-resource "onepassword_item" "services" {
-  for_each = local.onepassword_vault_services
-
-  title    = data.onepassword_item.services[each.key].title
-  username = data.onepassword_item.services[each.key].username
-  vault    = data.onepassword_vault.services.uuid
 }

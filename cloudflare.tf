@@ -14,7 +14,7 @@ data "cloudflare_zone" "all" {
 }
 
 resource "cloudflare_account_token" "homelab" {
-  for_each = local.onepassword_vault_homelab
+  for_each = local.homelab_discovered
 
   account_id = local.providers.cloudflare.account_id
   name       = each.key
@@ -49,7 +49,7 @@ resource "cloudflare_dns_record" "all" {
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
-  for_each = local.onepassword_vault_homelab
+  for_each = local.homelab_discovered
 
   account_id = local.providers.cloudflare.account_id
   config_src = "cloudflare"
