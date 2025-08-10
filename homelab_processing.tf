@@ -1,29 +1,6 @@
 # Processing phase - Extract fields and compute final values
 
 locals {
-  # Extract 1Password fields for each homelab item
-  homelab_onepassword_fields = {
-    for k, v in local.homelab_discovered : k => merge(
-      # Extract input section fields (convert "-" to null for consistent processing)
-      {
-        for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "input")].field, []) :
-        field.label => field.value == "-" ? null : field.value
-      },
-      # Extract output section fields (convert "-" to null for consistent processing)
-      {
-        for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "output")].field, []) :
-        field.label => field.value == "-" ? null : field.value
-      }
-    ) if try(data.onepassword_item.homelab_details[k], null) != null
-  }
-
-  # Keep track of original input field values for sync
-  homelab_onepassword_fields_input_raw = {
-    for k, v in local.homelab_discovered : k => {
-      for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "input")].field, []) : field.label => field.value
-    } if try(data.onepassword_item.homelab_details[k], null) != null
-  }
-
   # Complete homelab structure with inheritance and computed fields
   homelab = {
     for k, v in local.homelab_discovered : k => merge(
@@ -71,5 +48,28 @@ locals {
         )
       }
     ) if contains(keys(local.homelab_onepassword_fields), k)
+  }
+
+  # Extract 1Password fields for each homelab item
+  homelab_onepassword_fields = {
+    for k, v in local.homelab_discovered : k => merge(
+      # Extract input section fields (convert "-" to null for consistent processing)
+      {
+        for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "input")].field, []) :
+        field.label => field.value == "-" ? null : field.value
+      },
+      # Extract output section fields (convert "-" to null for consistent processing)
+      {
+        for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "output")].field, []) :
+        field.label => field.value == "-" ? null : field.value
+      }
+    ) if try(data.onepassword_item.homelab_details[k], null) != null
+  }
+
+  # Keep track of original input field values for sync
+  homelab_onepassword_fields_input_raw = {
+    for k, v in local.homelab_discovered : k => {
+      for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "input")].field, []) : field.label => field.value
+    } if try(data.onepassword_item.homelab_details[k], null) != null
   }
 }
