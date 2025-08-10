@@ -17,6 +17,14 @@ locals {
     ) if try(data.onepassword_item.services_details[k], null) != null
   }
 
+  # Keep track of original input field values for sync
+  services_onepassword_fields_input_raw = {
+    for k, v in local.services_discovered : k => {
+      for field in try(data.onepassword_item.services_details[k].section[index(try(data.onepassword_item.services_details[k].section[*].label, []), "input")].field, []) :
+      field.label => field.value
+    } if try(data.onepassword_item.services_details[k], null) != null
+  }
+
   # Complete services structure with computed fields
   services = {
     for k, v in local.services_discovered : k => merge(

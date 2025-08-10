@@ -17,6 +17,13 @@ locals {
     ) if try(data.onepassword_item.homelab_details[k], null) != null
   }
 
+  # Keep track of original input field values for sync
+  homelab_onepassword_fields_input_raw = {
+    for k, v in local.homelab_discovered : k => {
+      for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "input")].field, []) : field.label => field.value
+    } if try(data.onepassword_item.homelab_details[k], null) != null
+  }
+
   # Complete homelab structure with inheritance and computed fields
   homelab = {
     for k, v in local.homelab_discovered : k => merge(

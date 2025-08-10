@@ -35,9 +35,9 @@ resource "onepassword_item" "services_sync" {
           type  = field.value
 
           # Logic: 
-          # - Input fields: preserve existing values from 1Password (null becomes "-")
+          # - Input fields: preserve existing raw values from 1Password (including "-")
           # - Output fields: always update with computed values (null becomes "-")
-          value = section.key == "input" ? coalesce(try(local.services_onepassword_fields[each.key][field.key], null), "-") : coalesce(try(local.services[each.key][field.key], null), "-")
+          value = section.key == "input" ? try(local.services_onepassword_fields_input_raw[each.key][field.key], "-") : coalesce(try(local.services[each.key][field.key], null), "-")
         }
       }
     }
