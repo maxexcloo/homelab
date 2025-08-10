@@ -12,6 +12,7 @@ locals {
       enable_resend     = "STRING"
       flags             = "STRING"
       icon              = "STRING"
+      port              = "STRING"
       secret_hash       = "CONCEALED"
       server            = "STRING"
       service           = "STRING"
@@ -23,7 +24,7 @@ locals {
       b2_endpoint           = "URL"
       fqdn_external         = "URL"
       fqdn_internal         = "URL"
-      platform        = "STRING"
+      platform              = "STRING"
       resend_api_key        = "CONCEALED"
     }
   }

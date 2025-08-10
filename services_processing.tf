@@ -13,8 +13,8 @@ locals {
         b2_application_key_id = null
         b2_bucket_name        = null
         b2_endpoint           = replace(data.b2_account_info.default.s3_api_url, "https://", "")
-        fqdn_external         = "${v.fqdn}.${var.domain_external}"
-        fqdn_internal         = "${v.fqdn}.${var.domain_internal}"
+        fqdn_external         = null
+        fqdn_internal         = null
         resend_api_key        = null
       }
     ) if contains(keys(local.services_onepassword_fields), k)
