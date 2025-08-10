@@ -51,7 +51,12 @@ resource "onepassword_item" "homelab" {
           id    = "${section.key}.${field.key}"
           label = field.key
           type  = field.value
-          value = coalesce(try(local.homelab[each.key][field.key], null), "-")
+          value = section.key == "input" ? coalesce(
+            try([for s in data.onepassword_item.homelab[each.key].section :
+              [for f in s.field : f.value if s.label == section.key && f.label == field.key][0]
+            if s.label == section.key][0], null),
+            "-"
+          ) : coalesce(try(local.homelab[each.key][field.key], null), "-")
         }
       }
     }
