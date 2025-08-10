@@ -38,7 +38,7 @@ resource "cloudflare_account_token" "homelab" {
 resource "cloudflare_dns_record" "all" {
   for_each = nonsensitive(merge(local.dns_records_homelab, local.dns_records_manual))
 
-  comment  = "OpenTofu Managed"
+  comment  = each.value.comment
   content  = each.value.content
   name     = each.value.name
   priority = try(each.value.priority, null)

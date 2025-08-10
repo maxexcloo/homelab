@@ -54,14 +54,10 @@ resource "onepassword_item" "homelab_sync" {
           label = field.key
           type  = field.value
 
-          # Logic: preserve input fields from 1Password, update output fields with computed values
-          value = section.key == "input" ? try(
-            local.homelab_onepassword_fields[each.key][field.key],
-            "-"
-            ) : try(
-            local.homelab[each.key][field.key],
-            "-"
-          )
+          # Logic: 
+          # - Input fields: preserve existing values from 1Password (null becomes "-")
+          # - Output fields: always update with computed values (null becomes "-")
+          value = section.key == "input" ? coalesce(try(local.homelab_onepassword_fields[each.key][field.key], null), "-") : coalesce(try(local.homelab[each.key][field.key], null), "-")
         }
       }
     }

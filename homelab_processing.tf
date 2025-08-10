@@ -4,12 +4,12 @@ locals {
   # Extract 1Password fields for each homelab item
   homelab_onepassword_fields = {
     for k, v in local.homelab_discovered : k => merge(
-      # Extract input section fields
+      # Extract input section fields (convert "-" to null for consistent processing)
       {
         for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "input")].field, []) :
         field.label => field.value == "-" ? null : field.value
       },
-      # Extract output section fields
+      # Extract output section fields (convert "-" to null for consistent processing)
       {
         for field in try(data.onepassword_item.homelab_details[k].section[index(try(data.onepassword_item.homelab_details[k].section[*].label, []), "output")].field, []) :
         field.label => field.value == "-" ? null : field.value
@@ -46,6 +46,7 @@ locals {
         )
 
         # Network fields with inheritance
+        # If field has a value (not null), use it; otherwise try to inherit from parent
         public_address = try(
           local.homelab_onepassword_fields[k].public_address,
           local.homelab_onepassword_fields["router-${local.homelab_onepassword_fields[k].parent}"].public_address,

@@ -3,8 +3,10 @@
 locals {
   services_field_schema = {
     input = {
-      description = "STRING"
-      flags       = "STRING"
+      description   = "STRING"
+      enable_b2     = "STRING"
+      enable_resend = "STRING"
+      flags         = "STRING"
     }
     output = {
       # Output fields will be populated as services are implemented
@@ -40,14 +42,10 @@ resource "onepassword_item" "services_sync" {
           label = field.key
           type  = field.value
 
-          # Logic: preserve input fields from 1Password, update output fields with computed values
-          value = section.key == "input" ? try(
-            local.services_onepassword_fields[each.key][field.key],
-            "-"
-            ) : try(
-            local.services[each.key][field.key],
-            "-"
-          )
+          # Logic: 
+          # - Input fields: preserve existing values from 1Password (null becomes "-")
+          # - Output fields: always update with computed values (null becomes "-")
+          value = section.key == "input" ? coalesce(try(local.services_onepassword_fields[each.key][field.key], null), "-") : coalesce(try(local.services[each.key][field.key], null), "-")
         }
       }
     }

@@ -3,6 +3,7 @@ locals {
     # External CNAME records (for domains with public addresses)
     {
       for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-cname" => {
+        comment = "OpenTofu Homelab (public_address)"
         content = local.homelab[k].public_address
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -13,6 +14,7 @@ locals {
     # External A records (for domains with IPv4 but no CNAME)
     {
       for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-a" => {
+        comment = "OpenTofu Homelab (public_ipv4)"
         content = local.homelab[k].public_ipv4
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -23,6 +25,7 @@ locals {
     # External AAAA records (only valid IPv6)
     {
       for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-aaaa" => {
+        comment = "OpenTofu Homelab (public_ipv6)"
         content = local.homelab[k].public_ipv6
         name    = "${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -33,6 +36,7 @@ locals {
     # External wildcard records
     {
       for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-wildcard" => {
+        comment = "OpenTofu Homelab (Wildcard)"
         content = "${v.fqdn}.${var.domain_external}"
         name    = "*.${v.fqdn}.${var.domain_external}"
         proxied = false
@@ -44,6 +48,7 @@ locals {
     # Tailscale A records
     {
       for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-a" => {
+        comment = "OpenTofu Homelab (tailscale_ipv4)"
         content = local.homelab[k].tailscale_ipv4
         name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
@@ -54,6 +59,7 @@ locals {
     # Tailscale AAAA records (only valid IPv6)
     {
       for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-aaaa" => {
+        comment = "OpenTofu Homelab (tailscale_ipv6)"
         content = local.homelab[k].tailscale_ipv6
         name    = "${v.fqdn}.${var.domain_internal}"
         proxied = false
@@ -64,6 +70,7 @@ locals {
     # Tailscale wildcard records
     {
       for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-wildcard" => {
+        comment = "OpenTofu Homelab (Wildcard)"
         content = "${v.fqdn}.${var.domain_internal}"
         name    = "*.${v.fqdn}.${var.domain_internal}"
         proxied = false
@@ -75,6 +82,7 @@ locals {
     # ACME challenge records for homelab subdomains
     {
       for subdomain, zone in local.dns_records_homelab_acme : "acme-homelab-${replace(subdomain, ".", "-")}" => {
+        comment = "OpenTofu Homelab (ACME)"
         content = var.domain_acme
         name    = "_acme-challenge.${subdomain}"
         proxied = false
@@ -92,7 +100,7 @@ locals {
       if local.homelab[k].public_address != null || local.homelab[k].public_ipv4 != null ||
       (local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0)))
     },
-    # Tailscale homelab subdomains
+    # Internal homelab subdomains
     {
       for k, v in local.homelab_discovered : "${v.fqdn}.${var.domain_internal}" => var.domain_internal
       if local.homelab[k].tailscale_ipv4 != null ||
@@ -105,6 +113,7 @@ locals {
     merge([
       for zone_name, records in var.dns : {
         for idx, record in records : "${zone_name}-manual-${record.type}-${idx}" => {
+          comment  = "OpenTofu Manual"
           content  = record.content
           name     = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
           priority = record.type == "MX" ? record.priority : null
@@ -118,6 +127,7 @@ locals {
     merge([
       for zone_name, records in var.dns : {
         for idx, record in records : "${zone_name}-wildcard-${idx}" => {
+          comment = "OpenTofu Manual (Wildcard)"
           content = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
           name    = record.name == "@" ? "*.${zone_name}" : "*.${record.name}.${zone_name}"
           proxied = false
@@ -129,6 +139,7 @@ locals {
     # ACME challenge records for manual subdomains
     {
       for subdomain, zone in local.dns_records_manual_acme : "acme-manual-${replace(subdomain, ".", "-")}" => {
+        comment = "OpenTofu Manual (ACME)"
         content = var.domain_acme
         name    = "_acme-challenge.${subdomain}"
         proxied = false

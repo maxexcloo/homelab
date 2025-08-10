@@ -12,6 +12,11 @@ dns = {
   ]
   "excloo.com" = [
     {
+      content = "103.168.172.65"
+      name    = "mail"
+      type    = "A"
+    },
+    {
       content  = "hsp.au.excloo.net"
       name     = "@"
       type     = "CNAME"
@@ -33,6 +38,11 @@ dns = {
       type    = "CNAME"
     },
     {
+      content = "mesmtp.excloo.com.dkim.fmhosted.com"
+      name    = "mesmtp._domainkey"
+      type    = "CNAME"
+    },
+    {
       content  = "in1-smtp.messagingengine.com"
       name     = "@"
       priority = 10
@@ -45,29 +55,13 @@ dns = {
       type     = "MX"
     },
     {
-      content  = "feedback-smtp.us-east-1.amazonses.com"
-      name     = "send"
-      priority = 10
-      type     = "MX"
-    },
-    {
-      content = "\"v=spf1 include:spf.messagingengine.com ?all\""
+      content = "\"v=DMARC1; p=none;\""
       name    = "@"
       type    = "TXT"
     },
     {
-      content = "\"8140efead95e8b57bc46473cbddae9\""
-      name    = "_github-pages-challenge-maxexcloo"
-      type    = "TXT"
-    },
-    {
-      content = "\"p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDdgw27bzhJ1V0FrqOpjq/ZuxwIzr24Mp2fktwTkgy0Yr51ii/HKerJ0KtC5GYznPJLeq6QSwO67dQV7++3OuMjWVRtxQPAQarHcYIcwSH4QizUih3qvTjxgdqhzFt46eiW4orLJ5W0D2nv16C9fmbpfIeNXzfUPuf3grjaF0MqUQIDAQAB\""
-      name    = "resend._domainkey"
-      type    = "TXT"
-    },
-    {
-      content = "\"v=spf1 include:amazonses.com ~all\""
-      name    = "send"
+      content = "\"v=spf1 include:spf.messagingengine.com ?all\""
+      name    = "@"
       type    = "TXT"
     }
   ]
@@ -91,6 +85,11 @@ dns = {
   ]
   "schaefer.au" = [
     {
+      content = "103.168.172.65"
+      name    = "mail"
+      type    = "A"
+    },
+    {
       content  = "hsp.au.excloo.net"
       name     = "@"
       type     = "CNAME"
@@ -112,6 +111,11 @@ dns = {
       type    = "CNAME"
     },
     {
+      content = "mesmtp.schaefer.au.dkim.fmhosted.com"
+      name    = "mesmtp._domainkey"
+      type    = "CNAME"
+    },
+    {
       content  = "in1-smtp.messagingengine.com"
       name     = "@"
       priority = 10
@@ -122,6 +126,11 @@ dns = {
       name     = "@"
       priority = 20
       type     = "MX"
+    },
+    {
+      content = "\"v=DMARC1; p=none;\""
+      name    = "@"
+      type    = "TXT"
     },
     {
       content = "\"v=spf1 include:spf.messagingengine.com ?all\""

@@ -4,12 +4,12 @@ locals {
   # Extract 1Password fields for each service item
   services_onepassword_fields = {
     for k, v in local.services_discovered : k => merge(
-      # Extract input section fields
+      # Extract input section fields (convert "-" to null for consistent processing)
       {
         for field in try(data.onepassword_item.services_details[k].section[index(try(data.onepassword_item.services_details[k].section[*].label, []), "input")].field, []) :
         field.label => field.value == "-" ? null : field.value
       },
-      # Extract output section fields
+      # Extract output section fields (convert "-" to null for consistent processing)
       {
         for field in try(data.onepassword_item.services_details[k].section[index(try(data.onepassword_item.services_details[k].section[*].label, []), "output")].field, []) :
         field.label => field.value == "-" ? null : field.value
