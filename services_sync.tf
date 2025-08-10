@@ -8,13 +8,7 @@ locals {
       enable_resend = "STRING"
       flags         = "STRING"
     }
-    output = {
-      # Output fields will be populated as services are implemented
-      # Examples:
-      # api_key     = "CONCEALED"
-      # endpoint    = "URL"
-      # status      = "STRING"
-    }
+    output = {}
   }
 }
 
@@ -22,11 +16,9 @@ resource "onepassword_item" "services_sync" {
   for_each = local.services_discovered
 
   title    = data.onepassword_item.services_details[each.key].title
+  url      = try(local.services[each.key].url, null)
   username = data.onepassword_item.services_details[each.key].username
   vault    = data.onepassword_vault.services.uuid
-
-  # URL field if available in computed services
-  url = try(local.services[each.key].url, null)
 
   dynamic "section" {
     for_each = local.services_field_schema
