@@ -8,13 +8,14 @@ locals {
       local.services_onepassword_fields[k], # 1Password fields
       # Computed fields can be added here as needed
       {
-        # URL field for 1Password item
-        url = try(local.services_onepassword_fields[k].url, null)
-
-        # Example computed fields for services (uncomment as needed):
-        # endpoint = "https://${v.name}.${var.domain_external}"
-        # api_key  = random_password.service_api_key[k].result
-        # status   = "active"
+        # Resource-generated fields
+        b2_application_key    = null
+        b2_application_key_id = null
+        b2_bucket_name        = null
+        b2_endpoint           = replace(data.b2_account_info.default.s3_api_url, "https://", "")
+        fqdn_external         = "${v.fqdn}.${var.domain_external}"
+        fqdn_internal         = "${v.fqdn}.${var.domain_internal}"
+        resend_api_key        = null
       }
     ) if contains(keys(local.services_onepassword_fields), k)
   }

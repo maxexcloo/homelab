@@ -3,12 +3,29 @@
 locals {
   services_field_schema = {
     input = {
-      description   = "STRING"
-      enable_b2     = "STRING"
-      enable_resend = "STRING"
-      flags         = "STRING"
+      api_key           = "CONCEALED"
+      database_password = "CONCEALED"
+      description       = "STRING"
+      dns               = "STRING"
+      enable_b2         = "STRING"
+      enable_monitoring = "STRING"
+      enable_resend     = "STRING"
+      flags             = "STRING"
+      icon              = "STRING"
+      secret_hash       = "CONCEALED"
+      server            = "STRING"
+      service           = "STRING"
     }
-    output = {}
+    output = {
+      b2_application_key    = "CONCEALED"
+      b2_application_key_id = "STRING"
+      b2_bucket_name        = "STRING"
+      b2_endpoint           = "URL"
+      fqdn_external         = "URL"
+      fqdn_internal         = "URL"
+      platform        = "STRING"
+      resend_api_key        = "CONCEALED"
+    }
   }
 }
 
