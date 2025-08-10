@@ -65,7 +65,29 @@ dns = {
       type    = "TXT"
     }
   ]
-  "excloo.dev" = []
+  "excloo.dev" = [
+    {
+      content  = "feedback-smtp.ap-northeast-1.amazonses.com"
+      name     = "resend"
+      priority = 10
+      type     = "MX"
+    },
+    {
+      content = "\"v=DMARC1; p=none;\""
+      name    = "_dmarc"
+      type    = "TXT"
+    },
+    {
+      content = "\"v=spf1 include:amazonses.com ~all\""
+      name    = "resend"
+      type    = "TXT"
+    },
+    {
+      content = "\"p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCxe6Q7J4m+QlXFTyLNSE8Dwzv8sI9K1KLcqOnnS+SUUP0mKagFqRzgUZgd8+3sfVJIqrJcEg/Y+dfdTtCJE78ryTq5WVpxOEmss1mkbIJlNPFRZHji9w6iQ3AdMOlM3GlFYdY5TK/tCW4zd7a0RLd3YzcY/S+TcpZ3GEeydDukewIDAQAB\""
+      name    = "resend._domainkey"
+      type    = "TXT"
+    }
+  ]
   "excloo.net" = []
   "excloo.org" = [
     {
