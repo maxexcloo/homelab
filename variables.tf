@@ -3,6 +3,22 @@ variable "default_email" {
   type        = string
 }
 
+variable "default_organization" {
+  description = "Default organization name"
+  type        = string
+}
+
+variable "default_platform_resources" {
+  description = "Default resources to create for each platform type"
+  type        = map(list(string))
+
+  default = {
+    router = ["tailscale"]
+    server = ["b2", "cloudflare", "resend", "tailscale"]
+    vm     = ["b2", "cloudflare", "resend", "tailscale"]
+  }
+}
+
 variable "dns" {
   default     = {}
   description = "DNS records by zone"
@@ -32,7 +48,7 @@ variable "domain_internal" {
   type        = string
 }
 
-variable "onepassword_item_homelab_field_schema" {
+variable "onepassword_homelab_field_schema" {
   description = "Field schema for homelab 1Password items"
 
   default = {
@@ -71,13 +87,20 @@ variable "onepassword_item_homelab_field_schema" {
   })
 }
 
-variable "onepassword_item_services_field_schema" {
+variable "onepassword_homelab_vault" {
+  default     = "Homelab"
+  description = "1Password homelab vault"
+  type        = string
+}
+
+variable "onepassword_services_field_schema" {
   description = "Field schema for services 1Password items"
 
   default = {
     input = {
       api_key           = "CONCEALED"
       database_password = "CONCEALED"
+      deploy_to         = "STRING"
       description       = "STRING"
       dns               = "STRING"
       enable_b2         = "STRING"
@@ -87,8 +110,8 @@ variable "onepassword_item_services_field_schema" {
       icon              = "STRING"
       port              = "STRING"
       secret_hash       = "CONCEALED"
-      server            = "STRING"
       service           = "STRING"
+      url               = "URL"
     }
     output = {
       b2_application_key    = "CONCEALED"
@@ -108,19 +131,14 @@ variable "onepassword_item_services_field_schema" {
   })
 }
 
-variable "onepassword_vault_homelab" {
-  default     = "Homelab"
-  description = "1Password homelab vault"
-  type        = string
-}
-
-variable "onepassword_vault_services" {
+variable "onepassword_services_vault" {
   default     = "Services"
   description = "1Password services vault"
   type        = string
 }
 
-variable "organization" {
-  description = "Organization name"
-  type        = string
+variable "resources" {
+  default     = ["b2", "cloudflare", "resend", "tailscale"]
+  description = "List of all available resources that can be enabled via flags"
+  type        = list(string)
 }

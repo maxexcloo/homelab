@@ -33,7 +33,10 @@ resource "b2_bucket" "homelab" {
 }
 
 resource "random_string" "b2_homelab" {
-  for_each = local.homelab_discovered
+  for_each = {
+    for k, v in local.homelab_discovered : k => v
+    if contains(local.homelab_flags[k].resources, "b2")
+  }
 
   length  = 6
   special = false

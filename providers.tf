@@ -1,5 +1,5 @@
 data "onepassword_item" "providers" {
-  vault = var.onepassword_vault_homelab
+  vault = var.onepassword_homelab_vault
   title = "providers"
 }
 

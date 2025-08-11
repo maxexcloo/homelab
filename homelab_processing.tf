@@ -8,17 +8,17 @@ locals {
       local.homelab_onepassword_fields[k], # 1Password fields
       # Computed fields
       {
-        # Resource-generated fields
-        b2_application_key       = b2_application_key.homelab[k].application_key
-        b2_application_key_id    = b2_application_key.homelab[k].application_key_id
-        b2_bucket_name           = b2_bucket.homelab[k].bucket_name
-        b2_endpoint              = replace(data.b2_account_info.default.s3_api_url, "https://", "")
-        cloudflare_account_token = cloudflare_account_token.homelab[k].value
-        cloudflare_tunnel_token  = data.cloudflare_zero_trust_tunnel_cloudflared_token.homelab[k].token
+        # Resource-generated fields (conditional based on flags)
+        b2_application_key       = contains(local.homelab_flags[k].resources, "b2") ? b2_application_key.homelab[k].application_key : null
+        b2_application_key_id    = contains(local.homelab_flags[k].resources, "b2") ? b2_application_key.homelab[k].application_key_id : null
+        b2_bucket_name           = contains(local.homelab_flags[k].resources, "b2") ? b2_bucket.homelab[k].bucket_name : null
+        b2_endpoint              = contains(local.homelab_flags[k].resources, "b2") ? replace(data.b2_account_info.default.s3_api_url, "https://", "") : null
+        cloudflare_account_token = contains(local.homelab_flags[k].resources, "cloudflare") ? cloudflare_account_token.homelab[k].value : null
+        cloudflare_tunnel_token  = contains(local.homelab_flags[k].resources, "cloudflare") ? data.cloudflare_zero_trust_tunnel_cloudflared_token.homelab[k].token : null
         fqdn_external            = "${v.fqdn}.${var.domain_external}"
         fqdn_internal            = "${v.fqdn}.${var.domain_internal}"
-        resend_api_key           = jsondecode(restapi_object.resend_api_key_homelab[k].create_response).token
-        tailscale_auth_key       = tailscale_tailnet_key.homelab[k].key
+        resend_api_key           = contains(local.homelab_flags[k].resources, "resend") ? jsondecode(restapi_object.resend_api_key_homelab[k].create_response).token : null
+        tailscale_auth_key       = contains(local.homelab_flags[k].resources, "tailscale") ? tailscale_tailnet_key.homelab[k].key : null
         tailscale_ipv4           = try(local.tailscale_devices[k].tailscale_ipv4, null)
         tailscale_ipv6           = try(local.tailscale_devices[k].tailscale_ipv6, null)
         url                      = "${v.fqdn}.${var.domain_internal}${local.homelab_onepassword_fields[k].management_port != null ? ":${local.homelab_onepassword_fields[k].management_port}" : ""}"
@@ -48,6 +48,26 @@ locals {
         )
       }
     ) if contains(keys(local.homelab_onepassword_fields), k)
+  }
+
+  # Parse flags for each homelab item to determine resources and tags
+  homelab_flags = {
+    for k, v in local.homelab_discovered : k => {
+      # Use explicit resource flags if present, otherwise use platform defaults
+      resources = length([
+        for flag in compact(split(",", replace(nonsensitive(try(local.homelab_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
+        flag if contains(var.resources, flag)
+        ]) > 0 ? [
+        for flag in compact(split(",", replace(nonsensitive(try(local.homelab_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
+        flag if contains(var.resources, flag)
+      ] : try(var.default_platform_resources[v.platform], [])
+
+      # Tags are flags that aren't resources
+      tags = [
+        for flag in compact(split(",", replace(nonsensitive(try(local.homelab_onepassword_fields_input_raw[k].flags, "")), " ", ""))) : flag
+        if !contains(var.resources, flag)
+      ]
+    }
   }
 
   # Extract 1Password fields for each homelab item

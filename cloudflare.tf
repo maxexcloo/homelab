@@ -14,7 +14,10 @@ data "cloudflare_zone" "all" {
 }
 
 resource "cloudflare_account_token" "homelab" {
-  for_each = local.homelab_discovered
+  for_each = {
+    for k, v in local.homelab_discovered : k => v
+    if contains(local.homelab_flags[k].resources, "cloudflare")
+  }
 
   account_id = local.providers.cloudflare.account_id
   name       = each.key
@@ -36,7 +39,7 @@ resource "cloudflare_account_token" "homelab" {
 }
 
 resource "cloudflare_dns_record" "all" {
-  for_each = nonsensitive(merge(local.dns_records_homelab, local.dns_records_manual))
+  for_each = nonsensitive(merge(local.dns_records_homelab, local.dns_records_services, local.dns_records_manual))
 
   comment  = each.value.comment
   content  = each.value.content
@@ -49,7 +52,10 @@ resource "cloudflare_dns_record" "all" {
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
-  for_each = local.homelab_discovered
+  for_each = {
+    for k, v in local.homelab_discovered : k => v
+    if contains(local.homelab_flags[k].resources, "cloudflare")
+  }
 
   account_id = local.providers.cloudflare.account_id
   config_src = "cloudflare"

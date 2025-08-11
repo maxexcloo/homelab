@@ -1,7 +1,7 @@
 # Discovery phase - List and fetch service items from 1Password
 
 data "external" "services_item_list" {
-  program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_vault_services}' | jq -c '{stdout: (. | tostring)}'"]
+  program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_services_vault}' | jq -c '{stdout: (. | tostring)}'"]
 }
 
 data "onepassword_item" "services_details" {
@@ -12,7 +12,7 @@ data "onepassword_item" "services_details" {
 }
 
 data "onepassword_vault" "services" {
-  name = var.onepassword_vault_services
+  name = var.onepassword_services_vault
 }
 
 import {

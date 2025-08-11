@@ -17,7 +17,10 @@ locals {
 
 
 resource "tailscale_tailnet_key" "homelab" {
-  for_each = local.homelab_discovered
+  for_each = {
+    for k, v in local.homelab_discovered : k => v
+    if contains(local.homelab_flags[k].resources, "tailscale")
+  }
 
   description   = each.key
   preauthorized = true

@@ -108,6 +108,101 @@ locals {
     }
   )
 
+  # Service DNS records - automatically created based on deployments
+  dns_records_services = merge(
+    # External service subdomains (service.server.domain.com)
+    {
+      for item in flatten([
+        for service_key, service in local.services : [
+          for target in local.services_deployments[service_key].targets : {
+            key     = "${var.domain_external}-${service.name}-${target}-subdomain"
+            comment = "OpenTofu Service Subdomain (${service_key} on ${target})"
+            content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
+            name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
+            proxied = false
+            type    = "CNAME"
+            zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
+          }
+        ] if length(local.services_deployments[service_key].targets) > 0
+        ]) : item.key => {
+        comment = item.comment
+        content = item.content
+        name    = item.name
+        proxied = item.proxied
+        type    = item.type
+        zone_id = item.zone_id
+      }
+    },
+    # Internal service subdomains (service.server.domain.net)
+    {
+      for item in flatten([
+        for service_key, service in local.services : [
+          for target in local.services_deployments[service_key].targets : {
+            key     = "${var.domain_internal}-${service.name}-${target}-subdomain"
+            comment = "OpenTofu Service Subdomain (${service_key} on ${target})"
+            content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
+            name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
+            proxied = false
+            type    = "CNAME"
+            zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
+          }
+        ] if length(local.services_deployments[service_key].targets) > 0
+        ]) : item.key => {
+        comment = item.comment
+        content = item.content
+        name    = item.name
+        proxied = item.proxied
+        type    = item.type
+        zone_id = item.zone_id
+      }
+    },
+    # Main URL records from services (if URL field is set and zone is managed)
+    {
+      for service_key, service in local.services :
+      "${local.services_url_zone[service_key]}-${service_key}-main" => {
+        comment = "OpenTofu Service Main URL (${service_key})"
+        content = local.services_url_target[service_key]
+        name    = local.services_url_name[service_key]
+        proxied = contains(local.services_flags[service_key].tags, "proxied")
+        type    = "CNAME"
+        zone_id = data.cloudflare_zone.all[local.services_url_zone[service_key]].zone_id
+      } if local.services_url_zone[service_key] != null && local.services_url_target[service_key] != null
+    }
+  )
+
+  # Determine zone for each service URL
+  services_url_zone = {
+    for k, v in local.services : k => try(
+      # Find matching zone from managed zones
+      [for zone in keys(var.dns) : zone
+        if v.url != null && v.url != "-" && v.url != "" &&
+        endswith(regex("^(?:https?://)?([^/:]+)", v.url)[0], zone)
+      ][0],
+      null
+    )
+  }
+
+  # Determine the subdomain name for the URL
+  services_url_name = {
+    for k, v in local.services : k => try(
+      v.url != null && v.url != "-" && v.url != "" && local.services_url_zone[k] != null ?
+      regex("^(?:https?://)?([^/:]+)", v.url)[0] : null,
+      null
+    )
+  }
+
+  # Determine target for main URL (first deployment target's FQDN)
+  services_url_target = {
+    for k, v in local.services : k => try(
+      length(local.services_deployments[k].targets) > 0 ?
+      "${v.name}.${local.homelab_discovered[local.services_deployments[k].targets[0]].fqdn}.${
+        contains(local.services_flags[k].tags, "external") ?
+        var.domain_external : var.domain_internal
+      }" : null,
+      null
+    )
+  }
+
   dns_records_manual = merge(
     # Manual DNS records from var.dns
     merge([

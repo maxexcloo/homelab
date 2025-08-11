@@ -9,7 +9,7 @@ resource "onepassword_item" "homelab_sync" {
   vault    = data.onepassword_vault.homelab.uuid
 
   dynamic "section" {
-    for_each = var.onepassword_item_homelab_field_schema
+    for_each = var.onepassword_homelab_field_schema
 
     content {
       label = section.key
@@ -28,6 +28,20 @@ resource "onepassword_item" "homelab_sync" {
           value = section.key == "input" ? try(local.homelab_onepassword_fields_input_raw[each.value][field.key], "-") : coalesce(try(local.homelab[each.value][field.key], null), "-")
         }
       }
+    }
+  }
+
+  lifecycle {
+    # Validate parent exists if specified
+    precondition {
+      condition     = try(local.homelab_onepassword_fields[each.value].parent == null || contains(keys(local.homelab_discovered), "router-${local.homelab_onepassword_fields[each.value].parent}"), true)
+      error_message = "Parent '${try(coalesce(local.homelab_onepassword_fields[each.value].parent, "none"), "unknown")}' does not exist for ${each.value}. Expected format: router-{region}"
+    }
+
+    # Validate title format
+    precondition {
+      condition     = can(regex("^[a-z]+-[a-z]+-[a-z0-9]+$", each.value)) || can(regex("^router-[a-z]+$", each.value))
+      error_message = "Item ${each.value} must follow pattern: platform-region-name (e.g., vm-au-hsp) or router-region (e.g., router-au)"
     }
   }
 }
