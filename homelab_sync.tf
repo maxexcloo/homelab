@@ -1,47 +1,15 @@
 # Sync phase - Write homelab values back to 1Password
 
-locals {
-  homelab_field_schema = {
-    input = {
-      description     = "STRING"
-      flags           = "STRING"
-      management_port = "STRING"
-      parent          = "STRING"
-      paths           = "STRING"
-      private_ipv4    = "URL"
-      public_address  = "URL"
-      public_ipv4     = "URL"
-      public_ipv6     = "URL"
-    }
-    output = {
-      b2_application_key       = "CONCEALED"
-      b2_application_key_id    = "STRING"
-      b2_bucket_name           = "STRING"
-      b2_endpoint              = "URL"
-      cloudflare_account_token = "CONCEALED"
-      cloudflare_tunnel_token  = "CONCEALED"
-      fqdn_external            = "URL"
-      fqdn_internal            = "URL"
-      public_address           = "URL"
-      region                   = "STRING"
-      resend_api_key           = "CONCEALED"
-      tailscale_auth_key       = "CONCEALED"
-      tailscale_ipv4           = "URL"
-      tailscale_ipv6           = "URL"
-    }
-  }
-}
-
 resource "onepassword_item" "homelab_sync" {
-  for_each = local.homelab_discovered
+  for_each = local.homelab_id_to_title
 
-  title    = data.onepassword_item.homelab_details[each.key].title
-  url      = local.homelab[each.key].url
-  username = data.onepassword_item.homelab_details[each.key].username
+  title    = data.onepassword_item.homelab_details[each.value].title
+  url      = local.homelab[each.value].url
+  username = data.onepassword_item.homelab_details[each.value].username
   vault    = data.onepassword_vault.homelab.uuid
 
   dynamic "section" {
-    for_each = local.homelab_field_schema
+    for_each = var.onepassword_item_homelab_field_schema
 
     content {
       label = section.key
@@ -57,7 +25,7 @@ resource "onepassword_item" "homelab_sync" {
           # Logic: 
           # - Input fields: preserve existing raw values from 1Password (including "-")
           # - Output fields: always update with computed values (null becomes "-")
-          value = section.key == "input" ? try(local.homelab_onepassword_fields_input_raw[each.key][field.key], "-") : coalesce(try(local.homelab[each.key][field.key], null), "-")
+          value = section.key == "input" ? try(local.homelab_onepassword_fields_input_raw[each.value][field.key], "-") : coalesce(try(local.homelab[each.value][field.key], null), "-")
         }
       }
     }

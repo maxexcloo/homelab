@@ -16,9 +16,9 @@ data "onepassword_vault" "services" {
 }
 
 import {
-  for_each = local.services_discovered
+  for_each = local.services_id_to_title
 
-  id = "vaults/${data.onepassword_vault.services.uuid}/items/${each.value.id}"
+  id = "vaults/${data.onepassword_vault.services.uuid}/items/${each.key}"
   to = onepassword_item.services_sync[each.key]
 }
 
@@ -30,6 +30,11 @@ locals {
       name     = replace(item.title, "/^[^-]*-/", "")
       platform = split("-", item.title)[0]
     } if can(regex("^[a-z]+-", item.title))
+  }
+
+  # Simple ID to title mapping for 1Password sync resources
+  services_id_to_title = {
+    for title, item in local.services_discovered : item.id => title
   }
 }
 

@@ -16,9 +16,9 @@ data "onepassword_vault" "homelab" {
 }
 
 import {
-  for_each = local.homelab_discovered
+  for_each = local.homelab_id_to_title
 
-  id = "vaults/${data.onepassword_vault.homelab.uuid}/items/${each.value.id}"
+  id = "vaults/${data.onepassword_vault.homelab.uuid}/items/${each.key}"
   to = onepassword_item.homelab_sync[each.key]
 }
 
@@ -41,6 +41,11 @@ locals {
         replace(item.title, "/^[a-z]+-/", "")
       )
     } if can(regex("^[a-z]+-[a-z]+", item.title))
+  }
+
+  # Simple ID to title mapping for 1Password sync resources
+  homelab_id_to_title = {
+    for title, item in local.homelab_discovered : item.id => title
   }
 }
 
