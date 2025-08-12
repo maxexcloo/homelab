@@ -78,9 +78,9 @@ locals {
         # Otherwise, point to the service subdomain
         content = contains(local.services_flags[service_key].tags, "proxied") && contains(local.homelab_flags[local.services_deployments[service_key].targets[0]].resources, "cloudflare") ? "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[service_key].targets[0]].id}.cfargotunnel.com" : "${service.name}.${local.homelab_discovered[local.services_deployments[service_key].targets[0]].fqdn}.${contains(local.services_flags[service_key].tags, "external") ? var.domain_external : var.domain_internal}"
         name    = service.url
+        proxied = contains(local.services_flags[service_key].tags, "proxied")
         type    = "CNAME"
         zone    = [for zone in keys(var.dns) : zone if endswith(service.url, zone)][0]
-        proxied = contains(local.services_flags[service_key].tags, "proxied")
       } if service.url != null && length(local.services_deployments[service_key].targets) > 0 && length([for zone in keys(var.dns) : zone if endswith(service.url, zone)]) > 0
     },
     # Manual DNS records from var.dns
@@ -90,8 +90,9 @@ locals {
           content  = record.content
           name     = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
           priority = record.type == "MX" ? record.priority : null
-          proxied  = try(record.proxied, false)
+          proxied  = record.proxied
           type     = record.type
+          wildcard = record.wildcard
           zone     = zone_name
         }
       }
@@ -108,6 +109,7 @@ locals {
         comment  = "OpenTofu Managed"
         priority = null
         proxied  = false
+        wildcard = true
       },
       v,
       {
@@ -143,7 +145,7 @@ locals {
     for k, v in local.dns_records : {
       name = v.name
       zone = v.zone
-    } if contains(["A", "AAAA", "CNAME"], v.type) && v.name != v.zone
+    } if contains(["A", "AAAA", "CNAME"], v.type) && try(v.wildcard, true)
   ])
 
   # Create wildcard records for each unique subdomain

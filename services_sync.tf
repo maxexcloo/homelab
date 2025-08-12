@@ -42,7 +42,7 @@ resource "onepassword_item" "services_sync" {
         can(regex("^(platform|region|tag):", local.services_onepassword_fields[each.value].deploy_to)),
         true
       )
-      error_message = "Invalid deploy_to '${try(coalesce(local.services_onepassword_fields[each.value].deploy_to, "none"), "unknown")}' for service ${each.value}. Must be a server name or platform:x, region:x, tag:x"
+      error_message = "Invalid deploy_to '${nonsensitive(try(coalesce(local.services_onepassword_fields[each.value].deploy_to, "none"), "unknown"))}' for service ${each.value}. Must be a server name or platform:x, region:x, tag:x"
     }
   }
 }

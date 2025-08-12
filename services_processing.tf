@@ -26,7 +26,6 @@ locals {
           local.homelab[local.services_deployments[k].targets[0]].fqdn_internal : null,
           null
         )
-
       }
     ) if contains(keys(local.services_onepassword_fields), k)
   }
@@ -38,30 +37,20 @@ locals {
 
       targets = try(
         # If no deploy_to, no targets
-        local.services_onepassword_fields[service_key].deploy_to == null || local.services_onepassword_fields[service_key].deploy_to == "-" ? [] :
-
+        local.services_onepassword_fields[service_key].deploy_to == null || local.services_onepassword_fields[service_key].deploy_to == "-" ?
+        [] :
         # Direct server reference (e.g., "vm-au-hsp")
         contains(keys(local.homelab_discovered), local.services_onepassword_fields[service_key].deploy_to) ?
         [local.services_onepassword_fields[service_key].deploy_to] :
-
         # Platform match (e.g., "platform:vm")
-        startswith(local.services_onepassword_fields[service_key].deploy_to, "platform:") ? [
-          for k, v in local.homelab_discovered : k
-          if v.platform == trimprefix(local.services_onepassword_fields[service_key].deploy_to, "platform:")
-        ] :
-
+        startswith(local.services_onepassword_fields[service_key].deploy_to, "platform:") ?
+        [for k, v in local.homelab_discovered : k if v.platform == trimprefix(local.services_onepassword_fields[service_key].deploy_to, "platform:")] :
         # Region match (e.g., "region:au")
-        startswith(local.services_onepassword_fields[service_key].deploy_to, "region:") ? [
-          for k, v in local.homelab_discovered : k
-          if v.region == trimprefix(local.services_onepassword_fields[service_key].deploy_to, "region:")
-        ] :
-
+        startswith(local.services_onepassword_fields[service_key].deploy_to, "region:") ?
+        [for k, v in local.homelab_discovered : k if v.region == trimprefix(local.services_onepassword_fields[service_key].deploy_to, "region:")] :
         # Tag match using flags field (e.g., "tag:production")
-        startswith(local.services_onepassword_fields[service_key].deploy_to, "tag:") ? [
-          for k, v in local.homelab_discovered : k
-          if contains(local.homelab_flags[k].tags, trimprefix(local.services_onepassword_fields[service_key].deploy_to, "tag:"))
-        ] :
-
+        startswith(local.services_onepassword_fields[service_key].deploy_to, "tag:") ?
+        [for k, v in local.homelab_discovered : k if contains(local.homelab_flags[k].tags, trimprefix(local.services_onepassword_fields[service_key].deploy_to, "tag:"))] :
         # Default to empty if no match
         [],
         []

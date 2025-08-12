@@ -35,7 +35,7 @@ resource "onepassword_item" "homelab_sync" {
     # Validate parent exists if specified
     precondition {
       condition     = try(local.homelab_onepassword_fields[each.value].parent == null || contains(keys(local.homelab_discovered), "router-${local.homelab_onepassword_fields[each.value].parent}"), true)
-      error_message = "Parent '${try(coalesce(local.homelab_onepassword_fields[each.value].parent, "none"), "unknown")}' does not exist for ${each.value}. Expected format: router-{region}"
+      error_message = "Parent '${nonsensitive(try(coalesce(local.homelab_onepassword_fields[each.value].parent, "none"), "unknown"))}' does not exist for ${each.value}. Expected format: router-{region}"
     }
 
     # Validate title format
