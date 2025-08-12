@@ -1,281 +1,163 @@
-# Homelab Architecture
+# Architecture
 
-## Overview
+## System Design
 
-Unified homelab infrastructure and services management using OpenTofu with 1Password as the single source of truth.
-
-## Core Principles
-
-- **KISS**: Keep It Simple, Stupid - prefer simple solutions
-- **Single Source of Truth**: 1Password stores all configuration
-- **Infrastructure as Code**: All resources managed via OpenTofu
-- **No Lock-in**: Avoid vendor-specific features where possible
-
-## 1Password Structure
+OpenTofu reads 1Password entries and provisions infrastructure resources automatically.
 
 ```
-Infrastructure/
-├── dns-excloo-com      # DNS zones
-├── dns-excloo-dev
-├── dns-excloo-net
-├── providers           # All provider credentials
-├── router-au           # Routers by region
-├── server-au-hsp       # Servers by region-name
-├── server-au-pie
-└── server-us-west
-
-Services/
-├── docker-grafana      # Services by platform-name
-├── docker-homepage
-├── fly-app
-└── cf-worker
+1Password → OpenTofu → Providers → Resources
+    ↑          ↓
+    └── Sync ←─┘
 ```
-
-## Server Configuration
-
-```yaml
-Name: server-au-hsp
-Username: root
-Password: [generated]
-URL: hsp.au.excloo.dev
-
-Sections:
-  inputs:
-    description: "Sydney HSP Server"
-    parent: "au"       # Parent router/server (inherits config)
-    region: "au"       # Region for deployment targeting
-    platform: "ubuntu"  # ubuntu|truenas|haos|pbs|mac|proxmox|pikvm
-    type: "oci"         # oci|proxmox|physical|vps
-    features:
-      beszel: true          # Monitoring
-      cloudflare_proxy: true  # CF tunnel
-      docker: true          # Container host
-      homepage: true        # Dashboard
-    
-  oci:  # Type-specific config
-    boot_disk_image_id: "..."
-    boot_disk_size: 128
-    cpus: 4
-    memory: 8
-    
-  outputs:
-    cloudflare_tunnel_token: "..."
-    tailscale_auth_key: "..."
-    tailscale_ip: "100.64.0.1"
-```
-
-## Service Configuration
-
-```yaml
-Name: docker-grafana
-Username: admin
-Password: [shared across deployments]
-Website: https://grafana.excloo.net      # External
-Website 2: https://grafana.excloo.dev    # Internal
-Website 3: https://metrics.excloo.com    # Redirect
-
-Sections:
-  inputs:
-    deployment: "tag:docker"  # all|none|tag:X|server:X|region:X
-    description: "Grafana Metrics"
-    dns:
-      external: true     # Auto-create external DNS
-      internal: true     # Auto-create internal DNS
-      redirects:         # Additional domains (301 redirect)
-        - "metrics.excloo.com"
-        - "monitoring.excloo.net"
-    features:
-      auth_password: true     # Use 1Password creds
-      database: "postgres"
-      mail: "resend"
-      observability:          # Per-service observability
-        logs: true
-        metrics: true
-        traces: true
-      storage_cloud: "b2"
-    config:  # Arbitrary env vars
-      CUSTOM_KEY: "value"
-    docker:
-      image: "grafana/grafana:latest"
-      ports: ["3000:3000"]
-      
-  outputs:
-    database_url: "postgres://..."
-    mail_api_key: "re_..."
-    files:
-      "gatus.yaml": |
-        endpoints:
-          - name: Grafana
-            url: https://grafana.excloo.dev/health
-```
-
-## DNS Management
-
-### Simplified DNS Configuration
-```yaml
-# Service inputs
-dns:
-  external: true      # Creates service.excloo.net
-  internal: true      # Creates service.excloo.dev
-  redirects:          # Creates redirects to primary
-    - "old-name.excloo.com"
-    - "legacy.excloo.net"
-```
-
-### DNS Zone Entries
-```yaml
-Name: dns-excloo-com
-
-Sections:
-  inputs:
-    zone: "excloo.com"
-    
-  records:  # Manual DNS records only
-    - name: "@"
-      type: "MX"
-      content: "mail.server.com"
-      priority: 10
-```
-
-## Observability Options
-
-### Simple Per-Service Config
-```yaml
-# In service inputs
-observability:
-  logs: true      # Ship to Loki
-  metrics: true   # Prometheus metrics
-  traces: true    # OpenTelemetry traces
-```
-
-### Auto-instrumentation
-- Docker services get OTEL sidecar if enabled
-- Fly apps get environment variables
-- All use unified collector endpoint
-
-## Security & Secrets
-
-### Tailscale Integration
-- Auth keys auto-renewed before expiry
-- ACLs managed in code
-- No vendor lock-in (can switch to WireGuard)
-
-### SSL/TLS
-- External: Cloudflare proxy OR Caddy
-- Internal: Caddy with CF DNS validation
-- Auto-generated for all services
-
-## Pre-commit Hooks
-
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: https://github.com/opentofu/opentofu
-    hooks:
-      - id: tofu-fmt
-      - id: tofu-validate
-  # Additional local hooks can be added here
-```
-
-## Deployment Workflow
-
-### Local (mise)
-```bash
-mise run init      # Initialize OpenTofu
-mise run plan      # Review changes
-mise run apply     # Deploy
-```
-
-### GitHub Actions
-- Manual dispatch only
-- Restricted to your user
-- Plans as artifacts (hidden from public)
-
-## State Management
-
-- Backend: HCP Terraform (Terraform Cloud)
-- Encryption: At rest, managed by HashiCorp
-- Locking: Automatic with HCP Terraform
-- No local state files
-
-## File Structure
-
-### Core Configuration Files
-- `backend.tf` - HCP Terraform backend configuration
-- `providers.tf` - Provider configurations (reads from 1Password)
-- `terraform.tf` - OpenTofu version and provider requirements
-- `variables.tf` - Input variables and defaults
-
-### 1Password Integration
-- `onepassword_input.tf` - Data sources for reading from 1Password vaults
-- `onepassword_output.tf` - Resources for writing computed values back to 1Password
-- `locals_homelab.tf` - Core homelab data structure with inheritance logic
-
-### DNS Management
-- `cloudflare.tf` - Cloudflare zones and DNS record resources
-- `locals_dns.tf` - All DNS record generation logic including:
-  - Homelab DNS records (external/internal)
-  - Manual DNS records from variables
-  - ACME challenge records for SSL certificates
-  - Wildcard records
-
-### Service Providers
-- `b2.tf` - Backblaze B2 buckets and application keys
-- `resend.tf` - Resend email service configuration
-- `tailscale.tf` - Tailscale ACLs and DNS configuration
 
 ## Data Flow
 
-### 1Password → OpenTofu
-1. **Provider credentials** read from `providers` item
-2. **Homelab entries** parsed from Infrastructure vault
-3. **Service entries** parsed from Services vault
-4. **Inheritance** applied (routers → servers → VMs)
+1. **Discovery**: Read entries from 1Password vaults
+2. **Processing**: Generate resource configurations  
+3. **Provisioning**: Create resources via providers
+4. **Sync**: Write credentials back to 1Password
 
-### OpenTofu Processing
-1. **Locals computation** in `locals_homelab.tf`:
-   - Stage 1: Parse and structure 1Password data
-   - Stage 2: Apply inheritance and compute final values
-2. **DNS generation** in `locals_dns.tf`:
-   - Homelab records (A, AAAA, CNAME)
-   - Manual records from variables
-   - ACME challenges for all domains
-   - Wildcard records where needed
+## Module Structure
 
-### OpenTofu → Infrastructure
-1. **DNS records** created in Cloudflare
-2. **B2 buckets** provisioned with lifecycle rules
-3. **Tailscale ACLs** configured
-4. **Computed values** written back to 1Password
+```
+homelab_*.tf:
+  discovery → processing → sync
+  
+services_*.tf:
+  discovery → processing → sync
 
-## Migration Path
+Supporting:
+  b2.tf         - Backup buckets
+  cloudflare.tf - DNS and tunnels
+  locals_dns.tf - DNS record generation
+  resend.tf     - Email services
+  tailscale.tf  - Zero-trust networking
+```
 
-1. **Phase 1**: Infrastructure
-   - Create 1Password structure
-   - Define all servers
-   - Set up networking
+## Field Reference
 
-2. **Phase 2**: Services  
-   - Migrate service definitions
-   - Set up Komodo integration
-   - Configure monitoring
+### Server Input Fields
 
-3. **Phase 3**: Cleanup
-   - Remove legacy resources
-   - Archive old repos
+| Field | Description | Example |
+|-------|-------------|---------|
+| `description` | Human-readable description | Any text |
+| `flags` | Resources to create (comma-separated) | `b2,cloudflare,resend,tailscale` |
+| `management_port` | SSH/management port | `22` |
+| `parent` | Parent router region (optional) | `au` |
+| `paths` | Backup paths (comma-separated) | `/data,/config` |
+| `platform` | Operating system | `ubuntu`, `truenas`, `proxmox`, etc. |
+| `private_ipv4` | LAN IP address | `10.0.0.1` |
+| `public_address` | Public hostname or IP | `server.example.com` or `1.2.3.4` |
+| `public_ipv4` | Public IPv4 (optional) | `1.2.3.4` |
+| `public_ipv6` | Public IPv6 (optional) | `2001:db8::1` |
 
-## Key Decisions
+### Server Output Fields (Auto-Generated)
 
-1. **No Kubernetes**: Docker only for now
-2. **No Service Mesh**: Tailscale for networking
-3. **Simple Monitoring**: Gatus + Homepage
-4. **Manual Secrets**: Rotate in 1Password UI
-5. **Direct API**: Komodo API, not GitOps
+| Field | Description |
+|-------|-------------|
+| `b2_application_key` | Bucket-specific API key |
+| `b2_application_key_id` | Bucket-specific key ID |
+| `b2_bucket_name` | Unique bucket name |
+| `b2_endpoint` | S3-compatible endpoint |
+| `cloudflare_account_token` | Scoped API token |
+| `cloudflare_tunnel_token` | Tunnel credential |
+| `fqdn_external` | External DNS name |
+| `fqdn_internal` | Internal DNS name |
+| `public_address` | Resolved public address |
+| `region` | Extracted region code |
+| `resend_api_key` | Email API key |
+| `tailscale_auth_key` | Device auth key (90-day) |
+| `tailscale_ipv4` | Assigned Tailscale IPv4 |
+| `tailscale_ipv6` | Assigned Tailscale IPv6 |
 
-## Benefits
+### Service Input Fields
 
-- **Simple**: One entry per service, clear patterns
-- **Flexible**: Multi-platform, multi-region
-- **Secure**: Zero-trust networking, encrypted state
-- **Observable**: Optional logs/metrics/traces
-- **Maintainable**: Clear separation of concerns
+| Field | Description |
+|-------|-------------|
+| `deploy_to` | Deployment target |
+| `description` | Service description |
+| `docker.compose` | Full docker-compose.yaml content |
+| `fly.*` | Fly.io configuration |
+
+### Deployment Targets
+
+- `all` - Deploy to all compatible servers
+- `none` - No automatic deployment
+- `platform:NAME` - Servers with specific platform
+- `region:NAME` - Servers in specific region
+- `server:NAME` - Specific server only
+
+## Resource Flags
+
+| Flag | Creates |
+|------|---------|
+| `b2` | Bucket + application key |
+| `cloudflare` | Tunnel + API token |
+| `resend` | Email API key |
+| `tailscale` | Auth key + device |
+
+## DNS Management
+
+### Automatic Records
+
+- **ACME**: `_acme-challenge.*.DOMAIN`
+- **Servers**: `NAME.REGION.INTERNAL_DOMAIN`
+- **Services**: `SERVICE.EXTERNAL_DOMAIN`
+
+### Manual Records (dns.auto.tfvars)
+
+```hcl
+dns = {
+  "domain.com" = [
+    { name = "@", type = "A", content = "1.2.3.4", proxied = true },
+    { name = "@", type = "MX", content = "mail.server", priority = 10 }
+  ]
+}
+```
+
+## Generated Templates
+
+```
+templates/
+├── cloud_config/    # Server bootstrap
+├── docker/          # Service compose files
+├── gatus/           # Health checks
+├── homepage/        # Dashboard
+├── ssh/             # SSH config
+└── www/             # Finger protocol
+```
+
+## Important Notes
+
+### Naming Conventions
+- **Routers**: `router-REGION` (e.g., `router-au`)
+- **Servers**: `server-REGION-NAME` (e.g., `server-au-web`)
+- **Services**: `PLATFORM-SERVICE` (e.g., `docker-grafana`)
+
+### Parent Relationships
+- Servers can have a parent router via the `parent` field
+- Parent must exist before child can be created
+- Used for network topology and inheritance
+
+### Resource Creation
+- Only creates resources specified in `flags` field
+- Reduces costs and complexity
+- Add/remove flags to control resources
+
+### Secret Rotation
+- Tailscale keys auto-renew 30 days before expiry
+- Other secrets can be manually rotated
+- Credentials stored in 1Password outputs
+
+### Workflow
+1. Create 1Password entry with just name/title
+2. Run `tofu apply` to create input/output sections
+3. Fill in input fields in 1Password
+4. Run `tofu apply` again to provision resources
+
+## Security Model
+
+- **Rotation**: Tailscale keys auto-renewed
+- **Secrets**: 1Password service accounts
+- **State**: HCP Terraform encrypted backend
+- **Zero-trust**: Tailscale or Cloudflare Tunnels only

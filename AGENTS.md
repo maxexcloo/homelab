@@ -1,9 +1,10 @@
 # AGENTS.md - Development Guide
 
 ## Project Overview
-**Purpose**: Unified homelab infrastructure and services management using OpenTofu with 1Password as single source of truth
-**Status**: Active
-**Language**: HCL (OpenTofu/Terraform)
+
+**Purpose**: Unified homelab infrastructure and services management using OpenTofu with 1Password as single source of truth  
+**Status**: Active  
+**Language**: HCL (OpenTofu 1.8+)
 
 ## Code Standards
 
@@ -13,71 +14,57 @@
 - **Files**: Alphabetical in documentation and directories
 - **Functions**: Group by purpose, alphabetical within groups
 - **Variables**: Alphabetical within scope
-- **HCL Blocks**: Simple values first (alphabetically), then complex blocks (alphabetically)
-- **1Password Entries**: Inputs/outputs sections with recursive alphabetical sorting
 
 ### Quality
 - **Comments**: Minimal - only for complex business logic
-- **Documentation**: Update ARCHITECTURE.md, FEATURE_MATRIX.md, and README.md with every feature change
-- **Error handling**: Graceful degradation with informative error messages
+- **Documentation**: Update ARCHITECTURE.md and README.md with every feature change
+- **Error handling**: Use `nonsensitive()` for secrets, include resource names
 - **Formatting**: Run `mise run fmt` before commits
 - **KISS principle**: Keep it simple - prefer readable code over clever code
 - **Naming**: snake_case for all HCL resources and variables
-- **Testing**: `tofu validate` and `tofu plan` before all commits
+- **Testing**: Run `tofu validate` and `tofu plan` before commits
 - **Trailing newlines**: Required in all files
 
 ## Commands
+
 ```bash
-# Setup & Initialize
-mise run setup          # Initial project setup
-mise run init           # Initialize OpenTofu
+# Setup
+mise run setup           # Create providers entry in 1Password
+mise run init            # Initialize OpenTofu providers and backend
 
 # Development
-mise run check          # Format and validate
-mise run fmt            # Format all files
-mise run validate       # Validate configuration
+mise run check           # All validation (fmt + validate)
+mise run fmt             # Format HCL files recursively
+mise run validate        # Validate OpenTofu configuration
 
-# Plan & Apply
-mise run plan           # Plan all changes
-mise run apply          # Apply all changes
+# Deployment
+mise run plan            # Review infrastructure changes
+mise run apply           # Apply infrastructure changes
+mise run refresh         # Check for configuration drift
 
 # Maintenance
-mise run refresh        # Check for configuration drift
-mise run clean          # Clean up generated files
+mise run clean           # Remove generated files and caches
 ```
 
 ## Development Guidelines
 
 ### Contribution Standards
-- **Code Changes**: Follow sorting rules and maintain [specific requirements]
+- **Code Changes**: Follow alphabetical sorting and maintain field schemas
 - **Documentation**: Keep all docs synchronized and cross-referenced
 - **Feature Changes**: Update README.md and ARCHITECTURE.md when adding features
 
 ### Documentation Structure
 - **AGENTS.md**: Development standards and project guidelines
-- **ARCHITECTURE.md**: Technical design and implementation details
-- **DNS_ARCHITECTURE.md**: DNS management strategy
-- **FEATURE_MATRIX.md**: Complete feature and configuration reference
+- **ARCHITECTURE.md**: Technical design and field reference
 - **README.md**: Tool overview and usage guide
-- **SECRETS.md**: Secret management documentation
-- **TEMPLATES.md**: 1Password template documentation
+- **SECRETS.md**: Credential setup and management
 
-## 1Password Entry Standards
+## OpenTofu Standards
 
-### Server Entries (Infrastructure Vault)
-- **Naming**: `server-region-name` (e.g., server-au-hsp)
-- **Sections**: inputs, type-specific (oci, proxmox), outputs
-- **Platform Field**: ubuntu, truenas, haos, pbs, mac, proxmox, pikvm
-
-### Service Entries (Services Vault)
-- **Naming**: `platform-service` (e.g., docker-grafana, fly-app)
-- **Sections**: inputs, platform-specific (docker, fly), outputs
-- **No Server Suffix**: Services are shared across deployments
-
-### Sorting Rules
-- **Simple Before Complex**: Strings/numbers before arrays/objects
-- **Alphabetical**: Within each complexity level
-- **Recursive**: Apply to all nested structures
+- **Resource naming**: Use `for_each` over `count` for all resources
+- **State management**: Never manipulate state manually except for imports
+- **Sensitive data**: Mark all secrets as sensitive in outputs
+- **Validation**: Use preconditions for input validation
 
 ## Development Workflow Standards
 
@@ -86,47 +73,60 @@ mise run clean          # Clean up generated files
 - Define common tasks as mise scripts in `.mise.toml`
 - Pin tool versions in `.mise.toml`
 
+### 1Password Workflow
+1. Create entry with proper naming convention
+2. Run `apply` to generate input/output sections
+3. Fill in input fields
+4. Run `apply` again to provision resources
+
 ## Error Handling Standards
-- **Contextual errors**: Include resource name and operation in error messages
+
+- **Contextual errors**: Include resource name and operation in messages
 - **Graceful degradation**: Continue with other resources if one fails
 - **Informative messages**: Suggest fixes for common issues
-- **User-friendly output**: Clear explanation of what went wrong and next steps
+- **User-friendly output**: Use `nonsensitive()` wrapper for error messages with secrets
 
 ### Required Development Tasks
-- **apply**: Apply all changes with confirmation
-- **check**: Combined format and validate check
-- **clean**: Remove generated files (.terraform, *.tfplan, lock files)
+- **apply**: Apply infrastructure changes with auto-approve
+- **check**: All validation (fmt + validate)
+- **clean**: Remove .terraform, *.tfplan, and lock files
 - **fmt**: Format all HCL files recursively
-- **init**: Initialize OpenTofu backends and providers
-- **plan**: Generate plans for review
-- **refresh**: Check for infrastructure drift
-- **setup**: Initial project setup (creates providers entry in 1Password)
-- **validate**: Validate HCL syntax and configuration
+- **init**: Initialize OpenTofu with backend config
+- **plan**: Generate and review execution plan
+- **refresh**: Detect drift from desired state
+- **setup**: Create initial providers entry in 1Password
+- **validate**: Validate configuration syntax
 
 ## Project Structure
-- **Root directory**: All OpenTofu configuration files (*.tf)
-- **templates/**: Configuration templates for services (docker-compose, cloud-config, etc.)
-- **.github/workflows/**: GitHub Actions for plan/apply workflows
-- **.mise.toml**: Local development task definitions
-- **ARCHITECTURE.md**: System design and data flows
-- **DNS_ARCHITECTURE.md**: DNS management strategy
-- **FEATURE_MATRIX.md**: Complete feature and configuration reference
+
+- **homelab_*.tf**: Infrastructure discovery, processing, and sync
+- **services_*.tf**: Service discovery, processing, and sync
+- **b2.tf**: Backblaze B2 storage resources
+- **cloudflare.tf**: DNS and tunnel management
+- **locals_dns.tf**: DNS record generation logic
+- **providers.tf**: Provider configurations
+- **resend.tf**: Email service resources
+- **tailscale.tf**: Zero-trust networking
+- **terraform.tf**: Backend configuration
+- **variables.tf**: Variable definitions
+- **templates/**: Generated configuration files
 
 ## README Guidelines
-- **Badges**: Include relevant status badges (license, status, docker, language)
-- **Code examples**: Always include working examples in code blocks
-- **Installation**: Provide copy-paste commands that work
+
+- **Badges**: Include license, status, and OpenTofu version
+- **Code examples**: Always include working commands
+- **Installation**: Provide copy-paste setup commands
 - **Quick Start**: Get users running in under 5 minutes
-- **Structure**: Title → Badges → Description → Quick Start → Features → Installation → Usage → Contributing
+- **Structure**: Title → Badges → Description → Quick Start → Workflow → Documentation
 
 ## Tech Stack
-- **IaC**: OpenTofu (Terraform-compatible)
-- **Secret Management**: 1Password with service accounts
-- **State Backend**: HCP Terraform (HashiCorp Cloud Platform)
-- **Container Orchestration**: Komodo (Docker management)
-- **Platforms**: Docker, Fly.io, Cloudflare Workers
-- **Monitoring**: Gatus (health checks), Homepage (dashboard)
-- **Networking**: Tailscale (zero-trust mesh), Cloudflare (DNS/tunnels)
+
+- **IaC**: OpenTofu 1.8+
+- **Secrets**: 1Password CLI
+- **State**: HCP Terraform
+- **Providers**: Cloudflare, Tailscale, Backblaze B2, Resend
+- **Task Runner**: mise
+- **Version Control**: Git
 
 ---
 
