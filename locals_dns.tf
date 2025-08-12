@@ -136,7 +136,7 @@ locals {
         name    = "_acme-challenge.${subdomain.name}"
         type    = "CNAME"
         zone    = subdomain.zone
-      } if subdomain.name != var.domain_acme
+      } if subdomain.name != subdomain.zone && subdomain.name != var.domain_acme
     }
   )
 
