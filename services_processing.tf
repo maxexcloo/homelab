@@ -8,8 +8,12 @@ locals {
       local.services_onepassword_fields[k], # 1Password fields
       # Computed fields
       {
-        # URL from 1Password (for main service URL)
-        url = try(local.services_onepassword_fields[k].url, null)
+        # Resource-generated fields (conditional based on service flags)
+        b2_application_key    = null
+        b2_application_key_id = null
+        b2_bucket_name        = null
+        b2_endpoint           = contains(try(local.services_flags[k].tags, []), "b2") ? replace(data.b2_account_info.default.s3_api_url, "https://", "") : null
+        resend_api_key        = null
 
         # Service FQDNs (subdomains of first deployment target)
         fqdn_external = try(
@@ -23,12 +27,6 @@ locals {
           null
         )
 
-        # Resource-generated fields (conditional based on service flags)
-        b2_application_key    = null
-        b2_application_key_id = null
-        b2_bucket_name        = null
-        b2_endpoint           = contains(try(local.services_flags[k].tags, []), "b2") ? replace(data.b2_account_info.default.s3_api_url, "https://", "") : null
-        resend_api_key        = null
       }
     ) if contains(keys(local.services_onepassword_fields), k)
   }

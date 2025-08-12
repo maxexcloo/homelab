@@ -39,13 +39,13 @@ resource "cloudflare_account_token" "homelab" {
 }
 
 resource "cloudflare_dns_record" "all" {
-  for_each = nonsensitive(merge(local.dns_records_homelab, local.dns_records_services, local.dns_records_manual))
+  for_each = nonsensitive(local.dns_records_all)
 
   comment  = each.value.comment
   content  = each.value.content
   name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, false)
+  priority = each.value.priority
+  proxied  = each.value.proxied
   ttl      = 1
   type     = each.value.type
   zone_id  = each.value.zone_id

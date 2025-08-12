@@ -1,262 +1,158 @@
 locals {
-  dns_records_homelab = merge(
-    # External CNAME records (for domains with public addresses)
+  dns_records = merge(
+    # Homelab records - one per server per domain
     {
-      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-cname" => {
-        comment = "OpenTofu Homelab (public_address)"
-        content = local.homelab[k].public_address
-        name    = "${v.fqdn}.${var.domain_external}"
-        proxied = false
-        type    = "CNAME"
-        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
-      } if local.homelab[k].public_address != null
-    },
-    # External A records (for domains with IPv4 but no CNAME)
-    {
-      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-a" => {
-        comment = "OpenTofu Homelab (public_ipv4)"
-        content = local.homelab[k].public_ipv4
-        name    = "${v.fqdn}.${var.domain_external}"
-        proxied = false
-        type    = "A"
-        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
-      } if local.homelab[k].public_address == null && local.homelab[k].public_ipv4 != null
-    },
-    # External AAAA records (only valid IPv6)
-    {
-      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-aaaa" => {
-        comment = "OpenTofu Homelab (public_ipv6)"
-        content = local.homelab[k].public_ipv6
-        name    = "${v.fqdn}.${var.domain_external}"
-        proxied = false
-        type    = "AAAA"
-        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
-      } if local.homelab[k].public_address == null && local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0))
-    },
-    # External wildcard records
-    {
-      for k, v in local.homelab_discovered : "${var.domain_external}-${v.fqdn}-wildcard" => {
-        comment = "OpenTofu Homelab (Wildcard)"
-        content = "${v.fqdn}.${var.domain_external}"
-        name    = "*.${v.fqdn}.${var.domain_external}"
-        proxied = false
-        type    = "CNAME"
-        zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
-      } if local.homelab[k].public_address != null || local.homelab[k].public_ipv4 != null ||
-      (local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0)))
-    },
-    # Tailscale A records
-    {
-      for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-a" => {
-        comment = "OpenTofu Homelab (tailscale_ipv4)"
-        content = local.homelab[k].tailscale_ipv4
-        name    = "${v.fqdn}.${var.domain_internal}"
-        proxied = false
-        type    = "A"
-        zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
-      } if local.homelab[k].tailscale_ipv4 != null
-    },
-    # Tailscale AAAA records (only valid IPv6)
-    {
-      for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-aaaa" => {
-        comment = "OpenTofu Homelab (tailscale_ipv6)"
-        content = local.homelab[k].tailscale_ipv6
-        name    = "${v.fqdn}.${var.domain_internal}"
-        proxied = false
-        type    = "AAAA"
-        zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
-      } if local.homelab[k].tailscale_ipv6 != null && can(cidrhost("${local.homelab[k].tailscale_ipv6}/128", 0))
-    },
-    # Tailscale wildcard records
-    {
-      for k, v in local.homelab_discovered : "${var.domain_internal}-${v.fqdn}-wildcard" => {
-        comment = "OpenTofu Homelab (Wildcard)"
-        content = "${v.fqdn}.${var.domain_internal}"
-        name    = "*.${v.fqdn}.${var.domain_internal}"
-        proxied = false
-        type    = "CNAME"
-        zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
-      } if local.homelab[k].tailscale_ipv4 != null ||
-      (local.homelab[k].tailscale_ipv6 != null && can(cidrhost("${local.homelab[k].tailscale_ipv6}/128", 0)))
-    },
-    # ACME challenge records for homelab subdomains
-    {
-      for subdomain, zone in local.dns_records_homelab_acme : "acme-homelab-${replace(subdomain, ".", "-")}" => {
-        comment = "OpenTofu Homelab (ACME)"
-        content = var.domain_acme
-        name    = "_acme-challenge.${subdomain}"
-        proxied = false
-        type    = "CNAME"
-        zone_id = data.cloudflare_zone.all[zone].zone_id
-      } if subdomain != var.domain_acme
-    }
-  )
-
-  # Collect homelab subdomains that need ACME challenges
-  dns_records_homelab_acme = merge(
-    # External homelab subdomains
-    {
-      for k, v in local.homelab_discovered : "${v.fqdn}.${var.domain_external}" => var.domain_external
-      if local.homelab[k].public_address != null || local.homelab[k].public_ipv4 != null ||
-      (local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0)))
-    },
-    # Internal homelab subdomains
-    {
-      for k, v in local.homelab_discovered : "${v.fqdn}.${var.domain_internal}" => var.domain_internal
-      if local.homelab[k].tailscale_ipv4 != null ||
-      (local.homelab[k].tailscale_ipv6 != null && can(cidrhost("${local.homelab[k].tailscale_ipv6}/128", 0)))
-    }
-  )
-
-  # Service DNS records - automatically created based on deployments
-  dns_records_services = merge(
-    # External service subdomains (service.server.domain.com)
-    {
-      for item in flatten([
-        for service_key, service in local.services : [
-          for target in local.services_deployments[service_key].targets : {
-            key     = "${var.domain_external}-${service.name}-${target}-subdomain"
-            comment = "OpenTofu Service Subdomain (${service_key} on ${target})"
-            content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
-            name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
-            proxied = false
+      for record in flatten([
+        for k, v in local.homelab_discovered : flatten([
+          # External domain
+          # CNAME takes precedence if public_address is set
+          local.homelab[k].public_address != null ? [{
+            content = local.homelab[k].public_address
+            key     = "${var.domain_external}-${k}-cname"
+            name    = "${v.fqdn}.${var.domain_external}"
             type    = "CNAME"
-            zone_id = data.cloudflare_zone.all[var.domain_external].zone_id
-          }
-        ] if length(local.services_deployments[service_key].targets) > 0
-        ]) : item.key => {
-        comment = item.comment
-        content = item.content
-        name    = item.name
-        proxied = item.proxied
-        type    = item.type
-        zone_id = item.zone_id
-      }
+            zone    = var.domain_external
+            }] : flatten([
+            # A record for IPv4 (if no CNAME and IPv4 exists)
+            local.homelab[k].public_ipv4 != null && can(cidrhost("${local.homelab[k].public_ipv4}/32", 0)) ? [{
+              content = local.homelab[k].public_ipv4
+              key     = "${var.domain_external}-${k}-a"
+              name    = "${v.fqdn}.${var.domain_external}"
+              type    = "A"
+              zone    = var.domain_external
+            }] : [],
+            # AAAA record for IPv6 (if no CNAME and IPv6 exists)
+            local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0)) ? [{
+              content = local.homelab[k].public_ipv6
+              key     = "${var.domain_external}-${k}-aaaa"
+              name    = "${v.fqdn}.${var.domain_external}"
+              type    = "AAAA"
+              zone    = var.domain_external
+            }] : []
+          ]),
+          # Internal domain - both IPv4 and IPv6 can coexist
+          local.homelab[k].tailscale_ipv4 != null ? [{
+            content = local.homelab[k].tailscale_ipv4
+            key     = "${var.domain_internal}-${k}-a"
+            name    = "${v.fqdn}.${var.domain_internal}"
+            type    = "A"
+            zone    = var.domain_internal
+          }] : [],
+          local.homelab[k].tailscale_ipv6 != null ? [{
+            content = local.homelab[k].tailscale_ipv6
+            key     = "${var.domain_internal}-${k}-aaaa"
+            name    = "${v.fqdn}.${var.domain_internal}"
+            type    = "AAAA"
+            zone    = var.domain_internal
+          }] : []
+        ])
+      ]) : record.key => record
     },
-    # Internal service subdomains (service.server.domain.net)
+    # Service records - subdomains pointing to homelab servers
     {
-      for item in flatten([
-        for service_key, service in local.services : [
-          for target in local.services_deployments[service_key].targets : {
-            key     = "${var.domain_internal}-${service.name}-${target}-subdomain"
-            comment = "OpenTofu Service Subdomain (${service_key} on ${target})"
-            content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
-            name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
-            proxied = false
-            type    = "CNAME"
-            zone_id = data.cloudflare_zone.all[var.domain_internal].zone_id
-          }
-        ] if length(local.services_deployments[service_key].targets) > 0
-        ]) : item.key => {
-        comment = item.comment
-        content = item.content
-        name    = item.name
-        proxied = item.proxied
-        type    = item.type
-        zone_id = item.zone_id
-      }
+      for record in flatten([
+        for service_key, service in local.services : flatten([
+          for target in local.services_deployments[service_key].targets : [
+            {
+              content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
+              key     = "${var.domain_external}-${service_key}-${target}"
+              name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
+              type    = "CNAME"
+              zone    = var.domain_external
+            },
+            {
+              content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
+              key     = "${var.domain_internal}-${service_key}-${target}"
+              name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
+              type    = "CNAME"
+              zone    = var.domain_internal
+            }
+          ]
+        ]) if length(local.services_deployments[service_key].targets) > 0
+      ]) : record.key => record
     },
-    # Main URL records from services (if URL field is set and zone is managed)
+    # Custom service URLs from 1Password
     {
-      for service_key, service in local.services :
-      "${local.services_url_zone[service_key]}-${service_key}-main" => {
-        comment = "OpenTofu Service Main URL (${service_key})"
-        content = local.services_url_target[service_key]
-        name    = local.services_url_name[service_key]
+      for service_key, service in local.services : "${service_key}-url" => {
+        # If proxied flag is set and the target server has a Cloudflare tunnel, use the tunnel
+        # Otherwise, point to the service subdomain
+        content = contains(local.services_flags[service_key].tags, "proxied") && contains(local.homelab_flags[local.services_deployments[service_key].targets[0]].resources, "cloudflare") ? "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[service_key].targets[0]].id}.cfargotunnel.com" : "${service.name}.${local.homelab_discovered[local.services_deployments[service_key].targets[0]].fqdn}.${contains(local.services_flags[service_key].tags, "external") ? var.domain_external : var.domain_internal}"
+        name    = service.url
+        type    = "CNAME"
+        zone    = [for zone in keys(var.dns) : zone if endswith(service.url, zone)][0]
         proxied = contains(local.services_flags[service_key].tags, "proxied")
-        type    = "CNAME"
-        zone_id = data.cloudflare_zone.all[local.services_url_zone[service_key]].zone_id
-      } if local.services_url_zone[service_key] != null && local.services_url_target[service_key] != null
-    }
-  )
-
-  # Determine zone for each service URL
-  services_url_zone = {
-    for k, v in local.services : k => try(
-      # Find matching zone from managed zones
-      [for zone in keys(var.dns) : zone
-        if v.url != null && v.url != "-" && v.url != "" &&
-        endswith(regex("^(?:https?://)?([^/:]+)", v.url)[0], zone)
-      ][0],
-      null
-    )
-  }
-
-  # Determine the subdomain name for the URL
-  services_url_name = {
-    for k, v in local.services : k => try(
-      v.url != null && v.url != "-" && v.url != "" && local.services_url_zone[k] != null ?
-      regex("^(?:https?://)?([^/:]+)", v.url)[0] : null,
-      null
-    )
-  }
-
-  # Determine target for main URL (first deployment target's FQDN)
-  services_url_target = {
-    for k, v in local.services : k => try(
-      length(local.services_deployments[k].targets) > 0 ?
-      "${v.name}.${local.homelab_discovered[local.services_deployments[k].targets[0]].fqdn}.${
-        contains(local.services_flags[k].tags, "external") ?
-        var.domain_external : var.domain_internal
-      }" : null,
-      null
-    )
-  }
-
-  dns_records_manual = merge(
+      } if service.url != null && length(local.services_deployments[service_key].targets) > 0 && length([for zone in keys(var.dns) : zone if endswith(service.url, zone)]) > 0
+    },
     # Manual DNS records from var.dns
     merge([
       for zone_name, records in var.dns : {
         for idx, record in records : "${zone_name}-manual-${record.type}-${idx}" => {
-          comment  = "OpenTofu Manual"
           content  = record.content
           name     = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
           priority = record.type == "MX" ? record.priority : null
-          proxied  = record.proxied
+          proxied  = try(record.proxied, false)
           type     = record.type
-          zone_id  = data.cloudflare_zone.all[zone_name].zone_id
+          zone     = zone_name
         }
       }
-    ]...),
-    # Manual wildcard records
-    merge([
-      for zone_name, records in var.dns : {
-        for idx, record in records : "${zone_name}-wildcard-${idx}" => {
-          comment = "OpenTofu Manual (Wildcard)"
-          content = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
-          name    = record.name == "@" ? "*.${zone_name}" : "*.${record.name}.${zone_name}"
-          proxied = false
-          type    = "CNAME"
-          zone_id = data.cloudflare_zone.all[zone_name].zone_id
-        } if record.wildcard && record.type == "CNAME"
+    ]...)
+  )
+
+  dns_records_all = {
+    for k, v in merge(
+      local.dns_records,
+      local.dns_records_acme,
+      local.dns_records_wildcards
+      ) : k => merge(
+      {
+        comment  = "OpenTofu Managed"
+        priority = null
+        proxied  = false
+      },
+      v,
+      {
+        zone_id = data.cloudflare_zone.all[v.zone].zone_id
       }
-    ]...),
-    # ACME challenge records for manual subdomains
+    )
+  }
+
+  # Create ACME challenge records for each unique subdomain (plus root domains)
+  dns_records_acme = merge(
+    # ACME for root domains
     {
-      for subdomain, zone in local.dns_records_manual_acme : "acme-manual-${replace(subdomain, ".", "-")}" => {
-        comment = "OpenTofu Manual (ACME)"
+      for zone in distinct([for k, v in local.dns_records : v.zone]) : "${zone}-acme" => {
         content = var.domain_acme
-        name    = "_acme-challenge.${subdomain}"
-        proxied = false
+        name    = "_acme-challenge.${zone}"
         type    = "CNAME"
-        zone_id = data.cloudflare_zone.all[zone].zone_id
-      } if subdomain != var.domain_acme
+        zone    = zone
+      } if zone != var.domain_acme
+    },
+    # ACME for subdomains
+    {
+      for idx, subdomain in local.dns_records_unique : "${subdomain.zone}-acme-${idx}" => {
+        content = var.domain_acme
+        name    = "_acme-challenge.${subdomain.name}"
+        type    = "CNAME"
+        zone    = subdomain.zone
+      } if subdomain.name != var.domain_acme
     }
   )
 
-  # Collect manual subdomains that need ACME challenges
-  dns_records_manual_acme = merge(
-    # Manual record subdomains (A, AAAA, CNAME only)
-    merge([
-      for zone_name, records in var.dns : {
-        for record in records : record.name == "@" ? zone_name : "${record.name}.${zone_name}" => zone_name
-        if contains(["A", "AAAA", "CNAME"], record.type)
-      }
-    ]...),
-    # Root domains
-    {
-      for domain in keys(var.dns) : domain => domain
-      if domain != var.domain_acme
+  # Get all unique subdomains
+  dns_records_unique = distinct([
+    for k, v in local.dns_records : {
+      name = v.name
+      zone = v.zone
+    } if contains(["A", "AAAA", "CNAME"], v.type) && v.name != v.zone
+  ])
+
+  # Create wildcard records for each unique subdomain
+  dns_records_wildcards = {
+    for idx, subdomain in local.dns_records_unique : "${subdomain.zone}-wildcard-${idx}" => {
+      content = subdomain.name
+      name    = "*.${subdomain.name}"
+      type    = "CNAME"
+      zone    = subdomain.zone
     }
-  )
+  }
 }
