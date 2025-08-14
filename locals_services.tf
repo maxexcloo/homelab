@@ -59,28 +59,6 @@ locals {
     }
   }
 
-  # Parse resources for each services item to determine which resources to create
-  services_resources = {
-    for k, v in local.services_discovered : k => merge(
-      # Create a boolean flag for each possible resource type
-      {
-        for resource in var.resources_services : resource => contains(
-          # Parse the resources field, validate against allowed resources, and use defaults if empty
-          length([
-            for r in split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].resources, "")), " ", "")) :
-            r if contains(var.resources_services, r)
-            ]) > 0 ? [
-            for r in split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].resources, "")), " ", "")) :
-            r if contains(var.resources_services, r)
-          ] : try(var.default_services_resources[v.platform], []),
-          resource
-        )
-      }
-    )
-  }
-
-
-
   # Extract 1Password fields for each service item
   services_onepassword_fields = {
     for k, v in local.services_discovered : k => merge(
@@ -103,5 +81,25 @@ locals {
       for field in try(data.onepassword_item.services_details[k].section[index(try(data.onepassword_item.services_details[k].section[*].label, []), "input")].field, []) :
       field.label => field.value
     } if try(data.onepassword_item.services_details[k], null) != null
+  }
+
+  # Parse resources for each services item to determine which resources to create
+  services_resources = {
+    for k, v in local.services_discovered : k => merge(
+      # Create a boolean flag for each possible resource type
+      {
+        for resource in var.resources_services : resource => contains(
+          # Parse the resources field, validate against allowed resources, and use defaults if empty
+          length([
+            for r in split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].resources, "")), " ", "")) :
+            r if contains(var.resources_services, r)
+            ]) > 0 ? [
+            for r in split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].resources, "")), " ", "")) :
+            r if contains(var.resources_services, r)
+          ] : try(var.default_services_resources[v.platform], []),
+          resource
+        )
+      }
+    )
   }
 }
