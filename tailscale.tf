@@ -15,7 +15,6 @@ locals {
   }
 }
 
-
 resource "tailscale_tailnet_key" "homelab" {
   for_each = {
     for k, v in local.homelab_discovered : k => v

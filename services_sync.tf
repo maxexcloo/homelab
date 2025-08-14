@@ -1,5 +1,3 @@
-# Sync phase - Write service values back to 1Password
-
 resource "onepassword_item" "services_sync" {
   for_each = local.services_id_to_title
 
@@ -43,6 +41,12 @@ resource "onepassword_item" "services_sync" {
         true
       )
       error_message = "Invalid deploy_to '${nonsensitive(try(coalesce(local.services_onepassword_fields[each.value].deploy_to, "none"), "unknown"))}' for service ${each.value}. Must be a server name or platform:x, region:x, tag:x"
+    }
+
+    # Validate title format
+    precondition {
+      condition     = can(regex("^[a-z]+-[a-z]+", each.value))
+      error_message = "Item ${each.value} must follow pattern: platform-name"
     }
   }
 }

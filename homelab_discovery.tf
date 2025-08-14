@@ -1,5 +1,3 @@
-# Discovery phase - List and fetch homelab items from 1Password
-
 data "external" "homelab_item_list" {
   program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_homelab_vault}' | jq -c '{stdout: (. | tostring)}'"]
 }

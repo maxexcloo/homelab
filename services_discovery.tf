@@ -1,5 +1,3 @@
-# Discovery phase - List and fetch service items from 1Password
-
 data "external" "services_item_list" {
   program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_services_vault}' | jq -c '{stdout: (. | tostring)}'"]
 }

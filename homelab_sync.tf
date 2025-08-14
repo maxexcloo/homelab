@@ -1,5 +1,3 @@
-# Sync phase - Write homelab values back to 1Password
-
 resource "onepassword_item" "homelab_sync" {
   for_each = local.homelab_id_to_title
 

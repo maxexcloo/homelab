@@ -21,6 +21,10 @@ provider "cloudflare" {
   email   = local.providers.cloudflare.email
 }
 
+provider "desec" {
+  api_token = local.providers.desec.api_token
+}
+
 provider "github" {
   token = local.providers.github.token
 }

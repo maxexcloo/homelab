@@ -10,6 +10,10 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
+    desec = {
+      source  = "valodim/desec"
+      version = "~> 0.6"
+    }
     external = {
       source  = "hashicorp/external"
       version = "~> 2.0"

@@ -34,7 +34,7 @@ variable "dns" {
 }
 
 variable "domain_acme" {
-  description = "Domain to use for ACME challenge validation"
+  description = "Subdomain to use for ACME challenge validation, must be in a Cloudflare managed zone"
   type        = string
 }
 

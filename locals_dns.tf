@@ -86,7 +86,7 @@ locals {
     # Manual DNS records from var.dns
     merge([
       for zone_name, records in var.dns : {
-        for idx, record in records : "${zone_name}-manual-${record.type}-${idx}" => {
+        for i, record in records : "${zone_name}-manual-${record.type}-${i}" => {
           content  = record.content
           name     = record.name == "@" ? zone_name : "${record.name}.${zone_name}"
           priority = record.type == "MX" ? record.priority : null
@@ -123,20 +123,20 @@ locals {
     # ACME for root domains
     {
       for zone in distinct([for k, v in local.dns_records : v.zone]) : "${zone}-acme" => {
-        content = var.domain_acme
+        content = "${replace(zone, ".", "-")}.${var.domain_acme}"
         name    = "_acme-challenge.${zone}"
         type    = "CNAME"
         zone    = zone
-      } if zone != var.domain_acme
+      }
     },
     # ACME for subdomains
     {
-      for idx, subdomain in local.dns_records_unique : "${subdomain.zone}-acme-${idx}" => {
-        content = var.domain_acme
+      for subdomain in local.dns_records_unique : "${subdomain.name}-acme" => {
+        content = "${replace(subdomain.name, ".", "-")}.${var.domain_acme}"
         name    = "_acme-challenge.${subdomain.name}"
         type    = "CNAME"
         zone    = subdomain.zone
-      } if subdomain.name != subdomain.zone && subdomain.name != var.domain_acme
+      } if subdomain.name != subdomain.zone
     }
   )
 
@@ -150,7 +150,7 @@ locals {
 
   # Create wildcard records for each unique subdomain
   dns_records_wildcards = {
-    for idx, subdomain in local.dns_records_unique : "${subdomain.zone}-wildcard-${idx}" => {
+    for subdomain in local.dns_records_unique : "${subdomain.name}-wildcard" => {
       content = subdomain.name
       name    = "*.${subdomain.name}"
       type    = "CNAME"
