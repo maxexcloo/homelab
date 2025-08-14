@@ -8,12 +8,13 @@ locals {
       local.services_onepassword_fields[k], # 1Password fields
       # Computed fields
       {
-        # Resource-generated fields (conditional based on service flags)
+        # Resource-generated fields (conditional based on service resources)
         b2_application_key    = null
         b2_application_key_id = null
         b2_bucket_name        = null
-        b2_endpoint           = contains(try(local.services_flags[k].tags, []), "b2") ? replace(data.b2_account_info.default.s3_api_url, "https://", "") : null
+        b2_endpoint           = local.services_resources[k].b2 ? replace(data.b2_account_info.default.s3_api_url, "https://", "") : null
         resend_api_key        = null
+        tags                  = split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].tags, "")), " ", ""))
 
         # Service FQDNs (subdomains of first deployment target)
         fqdn_external = try(
@@ -48,9 +49,9 @@ locals {
         # Region match (e.g., "region:au")
         startswith(local.services_onepassword_fields[service_key].deploy_to, "region:") ?
         [for k, v in local.homelab_discovered : k if v.region == trimprefix(local.services_onepassword_fields[service_key].deploy_to, "region:")] :
-        # Tag match using flags field (e.g., "tag:production")
+        # Tag match using tags field (e.g., "tag:production")
         startswith(local.services_onepassword_fields[service_key].deploy_to, "tag:") ?
-        [for k, v in local.homelab_discovered : k if contains(local.homelab_flags[k].tags, trimprefix(local.services_onepassword_fields[service_key].deploy_to, "tag:"))] :
+        [for k, v in local.homelab_discovered : k if contains(local.homelab[k].tags, trimprefix(local.services_onepassword_fields[service_key].deploy_to, "tag:"))] :
         # Default to empty if no match
         [],
         []
@@ -58,25 +59,27 @@ locals {
     }
   }
 
-  # Parse flags for each services item to determine resources and tags
-  services_flags = {
-    for k, v in local.services_discovered : k => {
-      # Use explicit resource flags if present, otherwise use platform defaults
-      resources = length([
-        for flag in compact(split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
-        flag if contains(var.resources_services, flag)
-        ]) > 0 ? [
-        for flag in compact(split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
-        flag if contains(var.resources_services, flag)
-      ] : try(var.default_services_resources[v.platform], [])
-
-      # Tags are flags that aren't resources
-      tags = [
-        for flag in compact(split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].flags, "")), " ", ""))) : flag
-        if !contains(var.resources_services, flag)
-      ]
-    }
+  # Parse resources for each services item to determine which resources to create
+  services_resources = {
+    for k, v in local.services_discovered : k => merge(
+      # Create a boolean flag for each possible resource type
+      {
+        for resource in var.resources_services : resource => contains(
+          # Parse the resources field, validate against allowed resources, and use defaults if empty
+          length([
+            for r in split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].resources, "")), " ", "")) :
+            r if contains(var.resources_services, r)
+            ]) > 0 ? [
+            for r in split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].resources, "")), " ", "")) :
+            r if contains(var.resources_services, r)
+          ] : try(var.default_services_resources[v.platform], []),
+          resource
+        )
+      }
+    )
   }
+
+
 
   # Extract 1Password fields for each service item
   services_onepassword_fields = {

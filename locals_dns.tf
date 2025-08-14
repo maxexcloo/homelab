@@ -76,9 +76,9 @@ locals {
       for service_key, service in local.services : "${service_key}-url" => {
         # If proxied flag is set and the target server has a Cloudflare tunnel, use the tunnel
         # Otherwise, point to the service subdomain
-        content = contains(local.services_flags[service_key].tags, "proxied") && contains(local.homelab_flags[local.services_deployments[service_key].targets[0]].resources, "cloudflare") ? "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[service_key].targets[0]].id}.cfargotunnel.com" : "${service.name}.${local.homelab_discovered[local.services_deployments[service_key].targets[0]].fqdn}.${contains(local.services_flags[service_key].tags, "external") ? var.domain_external : var.domain_internal}"
+        content = contains(local.services[service_key].tags, "proxied") && local.homelab_resources[local.services_deployments[service_key].targets[0]].cloudflare ? "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[service_key].targets[0]].id}.cfargotunnel.com" : "${service.name}.${local.homelab_discovered[local.services_deployments[service_key].targets[0]].fqdn}.${contains(local.services[service_key].tags, "external") ? var.domain_external : var.domain_internal}"
         name    = service.url
-        proxied = contains(local.services_flags[service_key].tags, "proxied")
+        proxied = contains(local.services[service_key].tags, "proxied")
         type    = "CNAME"
         zone    = [for zone in keys(var.dns) : zone if endswith(service.url, zone)][0]
       } if service.url != null && length(local.services_deployments[service_key].targets) > 0 && length([for zone in keys(var.dns) : zone if endswith(service.url, zone)]) > 0

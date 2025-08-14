@@ -16,7 +16,7 @@ data "cloudflare_zone" "all" {
 resource "cloudflare_account_token" "homelab" {
   for_each = {
     for k, v in local.homelab_discovered : k => v
-    if contains(local.homelab_flags[k].resources, "cloudflare")
+    if local.homelab_resources[k].cloudflare
   }
 
   account_id = local.providers.cloudflare.account_id
@@ -65,7 +65,7 @@ resource "cloudflare_dns_record" "domain_acme" {
 resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
   for_each = {
     for k, v in local.homelab_discovered : k => v
-    if contains(local.homelab_flags[k].resources, "cloudflare")
+    if local.homelab_resources[k].cloudflare
   }
 
   account_id = local.providers.cloudflare.account_id

@@ -13,9 +13,9 @@ variable "default_homelab_resources" {
   type        = map(list(string))
 
   default = {
-    router = ["desec", "tailscale"]
-    server = ["b2", "cloudflare", "desec", "resend", "tailscale"]
-    vm     = ["b2", "cloudflare", "desec", "resend", "tailscale"]
+    router = ["tailscale"]
+    server = ["b2", "cloudflare", "resend", "tailscale"]
+    vm     = ["b2", "cloudflare", "resend", "tailscale"]
   }
 }
 
@@ -64,7 +64,6 @@ variable "onepassword_homelab_field_schema" {
   default = {
     input = {
       description     = "STRING"
-      flags           = "STRING"
       management_port = "STRING"
       parent          = "STRING"
       paths           = "STRING"
@@ -72,6 +71,8 @@ variable "onepassword_homelab_field_schema" {
       public_address  = "URL"
       public_ipv4     = "URL"
       public_ipv6     = "URL"
+      resources       = "STRING"
+      tags            = "STRING"
     }
     output = {
       b2_application_key       = "CONCEALED"
@@ -80,11 +81,8 @@ variable "onepassword_homelab_field_schema" {
       b2_endpoint              = "URL"
       cloudflare_account_token = "CONCEALED"
       cloudflare_tunnel_token  = "CONCEALED"
-      desec_token              = "CONCEALED"
       fqdn_external            = "URL"
       fqdn_internal            = "URL"
-      public_address           = "URL"
-      region                   = "STRING"
       resend_api_key           = "CONCEALED"
       tailscale_auth_key       = "CONCEALED"
       tailscale_ipv4           = "URL"
@@ -113,12 +111,12 @@ variable "onepassword_services_field_schema" {
       database_password = "CONCEALED"
       deploy_to         = "STRING"
       description       = "STRING"
-      flags             = "STRING"
       icon              = "STRING"
       port              = "STRING"
       secret_hash       = "CONCEALED"
       service           = "STRING"
-      url               = "URL"
+      resources         = "STRING"
+      tags              = "STRING"
     }
     output = {
       b2_application_key    = "CONCEALED"
@@ -127,7 +125,6 @@ variable "onepassword_services_field_schema" {
       b2_endpoint           = "URL"
       fqdn_external         = "URL"
       fqdn_internal         = "URL"
-      platform              = "STRING"
       resend_api_key        = "CONCEALED"
     }
   }
@@ -145,13 +142,13 @@ variable "onepassword_services_vault" {
 }
 
 variable "resources_homelab" {
-  default     = ["b2", "cloudflare", "desec", "resend", "tailscale"]
-  description = "List of all available homelab resources that can be enabled via flags"
+  default     = ["b2", "cloudflare", "resend", "tailscale"]
+  description = "List of all available homelab resources that can be enabled via the resources input"
   type        = list(string)
 }
 
 variable "resources_services" {
   default     = ["b2", "resend", "tailscale"]
-  description = "List of all available services resources that can be enabled via flags"
+  description = "List of all available services resources that can be enabled via the resources input"
   type        = list(string)
 }

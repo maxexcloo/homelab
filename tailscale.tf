@@ -18,7 +18,7 @@ locals {
 resource "tailscale_tailnet_key" "homelab" {
   for_each = {
     for k, v in local.homelab_discovered : k => v
-    if contains(local.homelab_flags[k].resources, "tailscale")
+    if local.homelab_resources[k].tailscale
   }
 
   description   = each.key
