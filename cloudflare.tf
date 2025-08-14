@@ -56,7 +56,7 @@ resource "cloudflare_dns_record" "domain_acme" {
 
   comment = "OpenTofu Managed"
   content = each.key
-  name    = split(".", var.domain_acme)[0]
+  name    = var.domain_acme
   ttl     = 1
   type    = "NS"
   zone_id = data.cloudflare_zone.all[replace(var.domain_acme, "/^[a-z]+./", "")].zone_id

@@ -13,9 +13,9 @@ variable "default_platform_resources" {
   type        = map(list(string))
 
   default = {
-    router = ["tailscale"]
-    server = ["b2", "cloudflare", "resend", "tailscale"]
-    vm     = ["b2", "cloudflare", "resend", "tailscale"]
+    router = ["desec", "tailscale"]
+    server = ["b2", "cloudflare", "desec", "resend", "tailscale"]
+    vm     = ["b2", "cloudflare", "desec", "resend", "tailscale"]
   }
 }
 
@@ -70,6 +70,7 @@ variable "onepassword_homelab_field_schema" {
       b2_endpoint              = "URL"
       cloudflare_account_token = "CONCEALED"
       cloudflare_tunnel_token  = "CONCEALED"
+      desec_token              = "CONCEALED"
       fqdn_external            = "URL"
       fqdn_internal            = "URL"
       public_address           = "URL"

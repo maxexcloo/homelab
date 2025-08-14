@@ -15,6 +15,7 @@ locals {
         b2_endpoint              = contains(local.homelab_flags[k].resources, "b2") ? replace(data.b2_account_info.default.s3_api_url, "https://", "") : null
         cloudflare_account_token = contains(local.homelab_flags[k].resources, "cloudflare") ? cloudflare_account_token.homelab[k].value : null
         cloudflare_tunnel_token  = contains(local.homelab_flags[k].resources, "cloudflare") ? data.cloudflare_zero_trust_tunnel_cloudflared_token.homelab[k].token : null
+        desec_token              = contains(local.homelab_flags[k].resources, "desec") ? desec_token.homelab[k].token : null
         fqdn_external            = "${v.fqdn}.${var.domain_external}"
         fqdn_internal            = "${v.fqdn}.${var.domain_internal}"
         resend_api_key           = contains(local.homelab_flags[k].resources, "resend") ? jsondecode(restapi_object.resend_api_key_homelab[k].create_response).token : null
