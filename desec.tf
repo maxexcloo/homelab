@@ -9,4 +9,8 @@ resource "desec_token" "homelab" {
   }
 
   name = each.key
+
+  lifecycle {
+    ignore_changes = all
+  }
 }

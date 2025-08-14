@@ -57,16 +57,16 @@ locals {
       # Use explicit resource flags if present, otherwise use platform defaults
       resources = length([
         for flag in compact(split(",", replace(nonsensitive(try(local.homelab_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
-        flag if contains(var.resources, flag)
+        flag if contains(var.resources_homelab, flag)
         ]) > 0 ? [
         for flag in compact(split(",", replace(nonsensitive(try(local.homelab_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
-        flag if contains(var.resources, flag)
-      ] : try(var.default_platform_resources[v.platform], [])
+        flag if contains(var.resources_homelab, flag)
+      ] : try(var.default_homelab_resources[v.platform], [])
 
       # Tags are flags that aren't resources
       tags = [
         for flag in compact(split(",", replace(nonsensitive(try(local.homelab_onepassword_fields_input_raw[k].flags, "")), " ", ""))) : flag
-        if !contains(var.resources, flag)
+        if !contains(var.resources_homelab, flag)
       ]
     }
   }

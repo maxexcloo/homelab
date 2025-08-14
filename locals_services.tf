@@ -58,11 +58,23 @@ locals {
     }
   }
 
-  # Parse flags for services
+  # Parse flags for each services item to determine resources and tags
   services_flags = {
     for k, v in local.services_discovered : k => {
-      # Tags are all flags (services don't have resources like homelab items)
-      tags = compact(split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].flags, "")), " ", "")))
+      # Use explicit resource flags if present, otherwise use platform defaults
+      resources = length([
+        for flag in compact(split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
+        flag if contains(var.resources_services, flag)
+        ]) > 0 ? [
+        for flag in compact(split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].flags, "")), " ", ""))) :
+        flag if contains(var.resources_services, flag)
+      ] : try(var.default_services_resources[v.platform], [])
+
+      # Tags are flags that aren't resources
+      tags = [
+        for flag in compact(split(",", replace(nonsensitive(try(local.services_onepassword_fields_input_raw[k].flags, "")), " ", ""))) : flag
+        if !contains(var.resources_services, flag)
+      ]
     }
   }
 

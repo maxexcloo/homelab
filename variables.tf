@@ -8,14 +8,24 @@ variable "default_organization" {
   type        = string
 }
 
-variable "default_platform_resources" {
-  description = "Default resources to create for each platform type"
+variable "default_homelab_resources" {
+  description = "Default resources to create for each homelab platform type"
   type        = map(list(string))
 
   default = {
     router = ["desec", "tailscale"]
     server = ["b2", "cloudflare", "desec", "resend", "tailscale"]
     vm     = ["b2", "cloudflare", "desec", "resend", "tailscale"]
+  }
+}
+
+variable "default_services_resources" {
+  description = "Default resources to create for each services platform type"
+  type        = map(list(string))
+
+  default = {
+    docker  = []
+    truenas = []
   }
 }
 
@@ -103,10 +113,6 @@ variable "onepassword_services_field_schema" {
       database_password = "CONCEALED"
       deploy_to         = "STRING"
       description       = "STRING"
-      dns               = "STRING"
-      enable_b2         = "STRING"
-      enable_monitoring = "STRING"
-      enable_resend     = "STRING"
       flags             = "STRING"
       icon              = "STRING"
       port              = "STRING"
@@ -138,8 +144,14 @@ variable "onepassword_services_vault" {
   type        = string
 }
 
-variable "resources" {
-  default     = ["b2", "cloudflare", "resend", "tailscale"]
-  description = "List of all available resources that can be enabled via flags"
+variable "resources_homelab" {
+  default     = ["b2", "cloudflare", "desec", "resend", "tailscale"]
+  description = "List of all available homelab resources that can be enabled via flags"
+  type        = list(string)
+}
+
+variable "resources_services" {
+  default     = ["b2", "resend", "tailscale"]
+  description = "List of all available services resources that can be enabled via flags"
   type        = list(string)
 }
