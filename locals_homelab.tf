@@ -22,7 +22,7 @@ locals {
         tailscale_auth_key       = local.homelab_resources[k].tailscale ? tailscale_tailnet_key.homelab[k].key : null
         tailscale_ipv4           = try(local.tailscale_devices[k].tailscale_ipv4, null)
         tailscale_ipv6           = try(local.tailscale_devices[k].tailscale_ipv6, null)
-        url                      = "${v.fqdn}.${var.domain_internal}${local.homelab_onepassword_fields[k].management_port != null ? ":${local.homelab_onepassword_fields[k].management_port}" : ""}"
+        url                      = "${v.fqdn}.${var.domain_internal}${try(local.homelab_onepassword_fields[k].management_port, null) != null ? ":${local.homelab_onepassword_fields[k].management_port}" : ""}"
 
         # Paths with default
         paths = try(
