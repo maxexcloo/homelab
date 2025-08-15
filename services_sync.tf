@@ -23,7 +23,7 @@ resource "onepassword_item" "services_sync" {
           # Logic: 
           # - Input fields: preserve existing raw values from 1Password (including "-")
           # - Output fields: always update with computed values (null becomes "-")
-          value = section.key == "input" ? try(local.services_onepassword_fields_input_raw[each.value][field.key], "-") : coalesce(try(local.services[each.value][field.key], null), "-")
+          value = section.key == "input" ? try(local.services_onepassword[each.value].input_raw[field.key], "-") : coalesce(try(local.services[each.value][field.key], null), "-")
         }
       }
     }
@@ -33,14 +33,14 @@ resource "onepassword_item" "services_sync" {
     # Validate deploy_to references
     precondition {
       condition = try(
-        local.services_onepassword_fields[each.value].deploy_to == null ||
+        local.services_onepassword[each.value].fields.deploy_to == null ||
         # Direct server reference
-        contains(keys(local.homelab_discovered), local.services_onepassword_fields[each.value].deploy_to) ||
+        contains(keys(local.homelab_discovered), local.services_onepassword[each.value].fields.deploy_to) ||
         # Platform/region/tag reference
-        can(regex("^(platform|region|tag):", local.services_onepassword_fields[each.value].deploy_to)),
+        can(regex("^(platform|region|tag):", local.services_onepassword[each.value].fields.deploy_to)),
         true
       )
-      error_message = "Invalid deploy_to '${nonsensitive(try(coalesce(local.services_onepassword_fields[each.value].deploy_to, "none"), "unknown"))}' for service ${each.value}. Must be a server name or platform:x, region:x, tag:x"
+      error_message = "Invalid deploy_to '${try(nonsensitive(coalesce(local.services_onepassword[each.value].fields.deploy_to, "none")), "unknown")}' for service ${each.value}. Must be a server name or platform:x, region:x, tag:x"
     }
 
     # Validate title format

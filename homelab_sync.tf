@@ -23,7 +23,7 @@ resource "onepassword_item" "homelab_sync" {
           # Logic: 
           # - Input fields: preserve existing raw values from 1Password (including "-")
           # - Output fields: always update with computed values (null becomes "-")
-          value = section.key == "input" ? try(local.homelab_onepassword_fields_input_raw[each.value][field.key], "-") : coalesce(try(local.homelab[each.value][field.key], null), "-")
+          value = section.key == "input" ? try(local.homelab_onepassword[each.value].input_raw[field.key], "-") : coalesce(try(local.homelab[each.value][field.key], null), "-")
         }
       }
     }
@@ -32,8 +32,8 @@ resource "onepassword_item" "homelab_sync" {
   lifecycle {
     # Validate parent exists if specified
     precondition {
-      condition     = try(local.homelab_onepassword_fields[each.value].parent == null || contains(keys(local.homelab_discovered), "router-${local.homelab_onepassword_fields[each.value].parent}"), true)
-      error_message = "Parent '${nonsensitive(try(coalesce(local.homelab_onepassword_fields[each.value].parent, "none"), "unknown"))}' does not exist for ${each.value}. Expected format: router-{region}"
+      condition     = try(local.homelab_onepassword[each.value].fields.parent == null || contains(keys(local.homelab_discovered), "router-${local.homelab_onepassword[each.value].fields.parent}"), true)
+      error_message = "Parent '${nonsensitive(try(coalesce(local.homelab_onepassword[each.value].fields.parent, "none"), "unknown"))}' does not exist for ${each.value}. Expected format: router-{region}"
     }
 
     # Validate title format
