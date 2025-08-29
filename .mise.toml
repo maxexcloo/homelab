@@ -1,4 +1,5 @@
 [tools]
+1password = "latest"
 opentofu = "latest"
 
 [env]
@@ -6,53 +7,36 @@ TF_CLI_ARGS_init = "-upgrade"
 TF_CLI_ARGS_plan = "-compact-warnings -parallelism=20"
 TF_CLI_ARGS_apply = "-compact-warnings -parallelism=20"
 
-# Setup & Initialize
+# Setup
 [tasks.setup]
 description = "Initial project setup"
 run = """
 echo "🔧 Setting up project..."
 
-# Check 1Password CLI
-if ! command -v op &> /dev/null; then
-    echo "❌ 1Password CLI not installed"
-    echo "👉 Install from: https://1password.com/downloads/command-line/"
-    exit 1
-fi
-
 # Check for required tokens
 if [[ ! -f .mise.local.toml ]]; then
     echo "📄 Creating .mise.local.toml template..."
-    cat > .mise.local.toml << 'EOF'
-[env]
-# 1Password Service Account Token
-# Create at: https://my.1password.com/integrations/active
-OP_SERVICE_ACCOUNT_TOKEN = "REPLACE_ME"
-
-# HCP Terraform Token  
-# Create at: https://app.terraform.io/app/settings/tokens
-TF_TOKEN_app_terraform_io = "REPLACE_ME"
-EOF
+    cp .mise.local.toml.default .mise.local.toml
     echo "✅ Created .mise.local.toml - please add your tokens"
+    exit 1
 fi
 
 # Create providers entry in 1Password if it doesn't exist
 echo "🔑 Checking providers entry..."
-if ! op item get "providers" --vault "Infrastructure" 2>/dev/null; then
-    echo "📝 Creating providers entry with all fields..."
+if ! op item get --vault "Homelab" "providers" 2> /dev/null; then
+    echo "📝 Creating providers entry..."
     op item create \
         --category="Login" \
         --title="providers" \
-        --vault="Infrastructure" || echo "❌ Failed to create providers entry"
-    
-    # Add all provider fields
+        --vault="Homelab" || echo "❌ Failed to create providers entry"
+
     echo "📋 Adding provider fields..."
-    op item edit --vault="Infrastructure" "providers" \
+    op item edit --vault="Homelab" "providers" \
         'b2.application_key[concealed]=REPLACE_ME' \
         'b2.application_key_id[text]=REPLACE_ME' \
         'cloudflare.account_id[text]=REPLACE_ME' \
         'cloudflare.api_key[concealed]=REPLACE_ME' \
         'cloudflare.email[text]=REPLACE_ME' \
-        'desec.api_token[concealed]=REPLACE_ME' \
         'github.token[concealed]=REPLACE_ME' \
         'resend.api_key[concealed]=REPLACE_ME' \
         'tailscale.oauth_client_id[text]=REPLACE_ME' \
@@ -76,13 +60,17 @@ depends = ["fmt", "validate"]
 
 [tasks.fmt]
 description = "Format all files"
-run = "tofu fmt -recursive ."
+run = "tofu fmt -recursive"
 
 [tasks.validate]
 description = "Validate configurations"
 run = "tofu validate"
 
-# Plan & Apply
+# Deployment
+[tasks.refresh]
+description = "Check for configuration drift"
+run = "tofu refresh"
+
 [tasks.plan]
 description = "Plan all changes"
 run = "tofu plan"
@@ -90,24 +78,10 @@ run = "tofu plan"
 [tasks.apply]
 description = "Apply all changes"
 run = """
-# Apply infrastructure
+# Apply all changes
 if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
   tofu apply -auto-approve
 else
   tofu apply
 fi
 """
-
-# Maintenance
-[tasks.clean]
-description = "Clean up generated files"
-run = """
-find . -name '.terraform.lock.hcl' -delete 2>/dev/null || true
-find . -name '.terraform' -type d -exec rm -rf {} + 2>/dev/null || true
-find . -name '*.tfplan' -delete 2>/dev/null || true
-echo "✅ Cleaned up generated files"
-"""
-
-[tasks.refresh]
-description = "Check for configuration drift"
-run = "tofu refresh"

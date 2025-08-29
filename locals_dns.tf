@@ -99,25 +99,6 @@ locals {
     ]...)
   )
 
-  dns_records_all = {
-    for k, v in merge(
-      local.dns_records,
-      local.dns_records_acme,
-      local.dns_records_wildcards
-      ) : k => merge(
-      {
-        comment  = "OpenTofu Managed"
-        priority = null
-        proxied  = false
-        wildcard = true
-      },
-      v,
-      {
-        zone_id = data.cloudflare_zone.all[v.zone].zone_id
-      }
-    )
-  }
-
   # Create ACME challenge records for each unique subdomain (plus root domains)
   dns_records_acme = merge(
     # ACME for root domains
@@ -139,6 +120,25 @@ locals {
       } if subdomain.name != subdomain.zone
     }
   )
+
+  dns_records_all = {
+    for k, v in merge(
+      local.dns_records,
+      local.dns_records_acme,
+      local.dns_records_wildcards
+      ) : k => merge(
+      {
+        comment  = "OpenTofu Managed"
+        priority = null
+        proxied  = false
+        wildcard = true
+      },
+      v,
+      {
+        zone_id = data.cloudflare_zone.all[v.zone].zone_id
+      }
+    )
+  }
 
   # Get all unique subdomains
   dns_records_unique = distinct([

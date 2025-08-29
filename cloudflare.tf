@@ -51,17 +51,6 @@ resource "cloudflare_dns_record" "all" {
   zone_id  = each.value.zone_id
 }
 
-resource "cloudflare_dns_record" "domain_acme" {
-  for_each = toset(["ns1.desec.io", "ns2.desec.org"])
-
-  comment = "OpenTofu Managed"
-  content = each.key
-  name    = var.domain_acme
-  ttl     = 1
-  type    = "NS"
-  zone_id = data.cloudflare_zone.all[replace(var.domain_acme, "/^[a-z]+./", "")].zone_id
-}
-
 resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
   for_each = {
     for k, v in local.homelab_discovered : k => v

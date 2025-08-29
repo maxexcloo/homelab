@@ -38,12 +38,9 @@ mise run fmt             # Format HCL files recursively
 mise run validate        # Validate OpenTofu configuration
 
 # Deployment
+mise run refresh         # Check for configuration drift
 mise run plan            # Review infrastructure changes
 mise run apply           # Apply infrastructure changes
-mise run refresh         # Check for configuration drift
-
-# Maintenance
-mise run clean           # Remove generated files and caches
 ```
 
 ## Development Guidelines
@@ -59,25 +56,18 @@ mise run clean           # Remove generated files and caches
 - **README.md**: Tool overview and usage guide
 - **SECRETS.md**: Credential setup and management
 
-## OpenTofu Standards
-
-- **Resource naming**: Use `for_each` over `count` for all resources
-- **State management**: Never manipulate state manually except for imports
-- **Sensitive data**: Mark all secrets as sensitive in outputs
-- **Validation**: Use preconditions for input validation
-
 ## Development Workflow Standards
-
-### Environment Management
-- Use **mise** for consistent development environments
-- Define common tasks as mise scripts in `.mise.toml`
-- Pin tool versions in `.mise.toml`
 
 ### 1Password Workflow
 1. Create entry with proper naming convention
 2. Run `apply` to generate input/output sections
 3. Fill in input fields
 4. Run `apply` again to provision resources
+
+### Environment Management
+- Define common tasks as mise scripts in `.mise.toml`
+- Pin tool versions in `.mise.toml`
+- Use **mise** for consistent development environments
 
 ## Error Handling Standards
 
@@ -86,30 +76,26 @@ mise run clean           # Remove generated files and caches
 - **Informative messages**: Suggest fixes for common issues
 - **User-friendly output**: Use `nonsensitive()` wrapper for error messages with secrets
 
-### Required Development Tasks
-- **apply**: Apply infrastructure changes with auto-approve
-- **check**: All validation (fmt + validate)
-- **clean**: Remove .terraform, *.tfplan, and lock files
-- **fmt**: Format all HCL files recursively
-- **init**: Initialize OpenTofu with backend config
-- **plan**: Generate and review execution plan
-- **refresh**: Detect drift from desired state
-- **setup**: Create initial providers entry in 1Password
-- **validate**: Validate configuration syntax
+## OpenTofu Standards
+
+- **Resource naming**: Use `for_each` over `count` for all resources
+- **Sensitive data**: Mark all secrets as sensitive in outputs
+- **State management**: Never manipulate state manually except for imports
+- **Validation**: Use preconditions for input validation
 
 ## Project Structure
 
-- **homelab_*.tf**: Infrastructure discovery, processing, and sync
-- **services_*.tf**: Service discovery, processing, and sync
 - **b2.tf**: Backblaze B2 storage resources
 - **cloudflare.tf**: DNS and tunnel management
+- **homelab_*.tf**: Infrastructure discovery, processing, and sync
 - **locals_dns.tf**: DNS record generation logic
 - **providers.tf**: Provider configurations
 - **resend.tf**: Email service resources
+- **services_*.tf**: Service discovery, processing, and sync
 - **tailscale.tf**: Zero-trust networking
+- **templates/**: Configuration files
 - **terraform.tf**: Backend configuration
 - **variables.tf**: Variable definitions
-- **templates/**: Generated configuration files
 
 ## README Guidelines
 
@@ -123,8 +109,6 @@ mise run clean           # Remove generated files and caches
 
 - **IaC**: OpenTofu 1.8+
 - **Secrets**: 1Password CLI
-- **State**: HCP Terraform
-- **Providers**: Cloudflare, Tailscale, Backblaze B2, Resend
 - **Task Runner**: mise
 - **Version Control**: Git
 

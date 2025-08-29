@@ -12,11 +12,6 @@ dns = {
   ]
   "excloo.com" = [
     {
-      content = "103.168.172.65"
-      name    = "mail"
-      type    = "A"
-    },
-    {
       content  = "hsp.au.excloo.net"
       name     = "@"
       type     = "CNAME"
@@ -106,11 +101,6 @@ dns = {
     }
   ]
   "schaefer.au" = [
-    {
-      content = "103.168.172.65"
-      name    = "mail"
-      type    = "A"
-    },
     {
       content  = "hsp.au.excloo.net"
       name     = "@"

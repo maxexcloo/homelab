@@ -20,7 +20,7 @@ resource "onepassword_item" "services_sync" {
           label = field.key
           type  = field.value
 
-          # Logic: 
+          # Logic:
           # - Input fields: preserve existing raw values from 1Password (including "-")
           # - Output fields: always update with computed values (null becomes "-")
           value = section.key == "input" ? try(local.services_onepassword[each.value].input_raw[field.key], "-") : coalesce(try(local.services[each.value][field.key], null), "-")
