@@ -39,7 +39,7 @@ resource "cloudflare_account_token" "homelab" {
 }
 
 resource "cloudflare_dns_record" "all" {
-  for_each = nonsensitive(local.dns_records_all)
+  for_each = nonsensitive(local.dns_records)
 
   comment  = each.value.comment
   content  = each.value.content
