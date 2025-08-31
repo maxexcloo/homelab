@@ -15,7 +15,7 @@ locals {
         public_address = try(
           coalesce(
             local.homelab_fields[k].input.public_address,
-            local.homelab_fields[local.homelab_parent_routers[k]].input.public_address
+            try(local.homelab_fields[local.homelab_parent_routers[k]].input.public_address, null)
           ),
           null
         )
@@ -23,7 +23,7 @@ locals {
         public_ipv4 = try(
           coalesce(
             local.homelab_fields[k].input.public_ipv4,
-            local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv4
+            try(local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv4, null)
           ),
           null
         )
@@ -31,7 +31,7 @@ locals {
         public_ipv6 = try(
           coalesce(
             local.homelab_fields[k].input.public_ipv6,
-            local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv6
+            try(local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv6, null)
           ),
           null
         )
