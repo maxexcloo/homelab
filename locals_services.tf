@@ -1,84 +1,10 @@
+# Extract fields from 1Password sections
 locals {
-  # Extract and normalize 1Password fields for each service
-  services_onepassword = {
+  _extract_onepassword_fields_services = {
     for k, v in local.services_discovered : k => {
-      # Merged fields with schema defaults (all fields guaranteed to exist)
-      fields = merge(
-        # Start with all schema fields set to null
-        {
-          for field_name, field_type in merge(
-            var.onepassword_services_field_schema.input,
-            var.onepassword_services_field_schema.output
-          ) : field_name => null
-        },
-        # Override with actual input values (convert "-" to null)
-        {
-          for field in try(data.onepassword_item.services_details[k].section[
-            index(try(data.onepassword_item.services_details[k].section[*].label, []), "input")
-          ].field, []) : field.label => field.value == "-" ? null : field.value
-        },
-        # Override with actual output values (convert "-" to null)
-        {
-          for field in try(data.onepassword_item.services_details[k].section[
-            index(try(data.onepassword_item.services_details[k].section[*].label, []), "output")
-          ].field, []) : field.label => field.value == "-" ? null : field.value
-        }
-      )
-
-      # Raw input fields for sync back to 1Password (preserves "-" values)
-      input_raw = {
-        for field in try(data.onepassword_item.services_details[k].section[
-          index(try(data.onepassword_item.services_details[k].section[*].label, []), "input")
-        ].field, []) : field.label => field.value
-      }
+      input_section  = try([for s in data.onepassword_item.services_details[k].section : s if s.label == "input"][0], null)
+      output_section = try([for s in data.onepassword_item.services_details[k].section : s if s.label == "output"][0], null)
     } if try(data.onepassword_item.services_details[k], null) != null
-  }
-
-  # Determine where each service should be deployed
-  services_deployments = {
-    for k, v in local.services_discovered : k => {
-      # Store the raw deploy_to value for validation
-      deploy_to = try(local.services_onepassword[k].fields.deploy_to, null)
-
-      # Parse deployment targets based on deploy_to syntax
-      targets = (
-        # No deployment if deploy_to is null or empty
-        local.services_onepassword[k].fields.deploy_to == null ? [] :
-
-        # Direct server reference (e.g., "vm-au-hsp")
-        contains(keys(local.homelab_discovered), local.services_onepassword[k].fields.deploy_to) ?
-        [local.services_onepassword[k].fields.deploy_to] :
-
-        # Platform match (e.g., "platform:vm")
-        startswith(local.services_onepassword[k].fields.deploy_to, "platform:") ?
-        [for h_key, h_val in local.homelab_discovered : h_key
-        if h_val.platform == trimprefix(local.services_onepassword[k].fields.deploy_to, "platform:")] :
-
-        # Region match (e.g., "region:au")
-        startswith(local.services_onepassword[k].fields.deploy_to, "region:") ?
-        [for h_key, h_val in local.homelab_discovered : h_key
-        if h_val.region == trimprefix(local.services_onepassword[k].fields.deploy_to, "region:")] :
-
-        # Tag match (e.g., "tag:production")
-        startswith(local.services_onepassword[k].fields.deploy_to, "tag:") ?
-        [for h_key, h_val in local.homelab : h_key
-        if contains(h_val.tags, trimprefix(local.services_onepassword[k].fields.deploy_to, "tag:"))] :
-
-        # Default to empty if no match
-        []
-      )
-    } if contains(keys(local.services_onepassword), k)
-  }
-
-  # Determine which resources to create for each service
-  # TODO: Parse from 1Password resources field once sensitive value limitation is resolved
-  services_resources = {
-    for k, v in local.services_discovered : k => {
-      for resource in var.resources_services : resource => contains(
-        try(var.default_services_resources[v.platform], []),
-        resource
-      )
-    }
   }
 
   # Complete services data with all fields merged and computed
@@ -93,40 +19,78 @@ locals {
       # Layer 2: Computed fields
       {
         # Parse tags from comma-separated string
-        tags = (
-          local.services_onepassword[k].fields.tags != null ?
-          split(",", replace(nonsensitive(local.services_onepassword[k].fields.tags), " ", "")) :
-          []
-        )
+        tags = try(split(",", replace(local.services_onepassword[k].fields.tags, " ", "")), [])
 
         # Service FQDNs (inherit from first deployment target)
-        fqdn_external = try(
-          length(local.services_deployments[k].targets) > 0 ?
-          "${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_external}" :
-          null,
-          null
-        )
-
-        fqdn_internal = try(
-          length(local.services_deployments[k].targets) > 0 ?
-          "${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_internal}" :
-          null,
-          null
-        )
+        fqdn_external = try("${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_external}", null)
+        fqdn_internal = try("${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_internal}", null)
       },
 
-      # Layer 3: Resource-generated credentials (only if resource is enabled)
+      # Layer 3: Resource-generated credentials
       # TODO: Implement service-specific resources when needed
-      {
-        # Backblaze B2 (placeholder - resources not yet implemented)
-        b2_application_key    = null
-        b2_application_key_id = null
-        b2_bucket_name        = null
-        b2_endpoint           = local.services_resources[k].b2 ? replace(data.b2_account_info.default.s3_api_url, "https://", "") : null
+      local.services_resources[k].b2 ? {
+        b2_endpoint = replace(data.b2_account_info.default.s3_api_url, "https://", "")
+      } : {}
+    ) if try(local.services_onepassword[k], null) != null
+  }
 
-        # Resend (placeholder - resources not yet implemented)
-        resend_api_key = null
+  # Determine where each service should be deployed
+  services_deployments = {
+    for k, v in local.services_discovered : k => {
+      # Store the raw deploy_to value for validation
+      deploy_to = try(local.services_onepassword[k].fields.deploy_to, null)
+
+      # Parse deployment targets based on deploy_to syntax
+      targets = try(
+        local.services_onepassword[k].fields.deploy_to == null ? [] :
+        # Direct server reference
+        lookup(local.homelab_discovered, local.services_onepassword[k].fields.deploy_to, null) != null ? [local.services_onepassword[k].fields.deploy_to] :
+        # Platform/region/tag matches
+        [for h_key, h_val in local.homelab_discovered : h_key
+          if(startswith(local.services_onepassword[k].fields.deploy_to, "platform:") && h_val.platform == trimprefix(local.services_onepassword[k].fields.deploy_to, "platform:")) ||
+          (startswith(local.services_onepassword[k].fields.deploy_to, "region:") && h_val.region == trimprefix(local.services_onepassword[k].fields.deploy_to, "region:")) ||
+          (startswith(local.services_onepassword[k].fields.deploy_to, "tag:") && contains(try(local.homelab[h_key].tags, []), trimprefix(local.services_onepassword[k].fields.deploy_to, "tag:")))
+        ],
+        []
+      )
+    } if try(local.services_onepassword[k], null) != null
+  }
+
+  # Extract and normalize 1Password fields for each service
+  services_onepassword = {
+    for k, v in local._extract_onepassword_fields_services : k => {
+      # Merged fields with schema defaults (all fields guaranteed to exist)
+      fields = merge(
+        # Start with all schema fields set to null
+        {
+          for field_name, field_type in merge(
+            var.onepassword_services_field_schema.input,
+            var.onepassword_services_field_schema.output
+          ) : field_name => null
+        },
+        # Override with actual values (convert "-" to null)
+        {
+          for field in try(v.input_section.field, []) : field.label => field.value == "-" ? null : field.value
+        },
+        {
+          for field in try(v.output_section.field, []) : field.label => field.value == "-" ? null : field.value
+        }
+      )
+
+      # Raw input fields for sync back to 1Password (preserves "-" values)
+      input_raw = {
+        for field in try(v.input_section.field, []) : field.label => field.value
       }
-    ) if contains(keys(local.services_onepassword), k)
+    }
+  }
+}
+
+# Determine which resources to create for each service
+locals {
+  services_resources = {
+    for k, v in local.services_discovered : k => {
+      for resource in var.resources_services : resource =>
+      contains(try(var.default_services_resources[v.platform], []), resource)
+    }
   }
 }

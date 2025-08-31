@@ -1,17 +1,12 @@
 data "tailscale_devices" "default" {}
 
 locals {
-  tailscale_device_map = {
-    for device in data.tailscale_devices.default.devices : split(".", device.name)[0] => device
-    if length(split(".", device.name)) > 0
-  }
-
-  tailscale_devices = {
-    for k, v in local.homelab_discovered : k => {
-      tailscale_ipv4 = try([for address in local.tailscale_device_map[v.title].addresses : address if can(cidrhost("${address}/32", 0))][0], null)
-      tailscale_ipv6 = try([for address in local.tailscale_device_map[v.title].addresses : address if can(cidrhost("${address}/128", 0))][0], null)
+  # Create a map of device addresses indexed by device name
+  tailscale_device_addresses = {
+    for device in data.tailscale_devices.default.devices : split(".", device.name)[0] => {
+      ipv4 = try([for a in device.addresses : a if can(cidrhost("${a}/32", 0))][0], null)
+      ipv6 = try([for a in device.addresses : a if can(cidrhost("${a}/128", 0))][0], null)
     }
-    if contains(keys(local.tailscale_device_map), v.title)
   }
 }
 

@@ -20,14 +20,22 @@ import {
   to = onepassword_item.services_sync[each.key]
 }
 
+# Parse raw items from 1Password
 locals {
-  # Parse services vault items - extract metadata from naming convention
-  services_discovered = {
+  _services_raw = {
     for item in jsondecode(data.external.services_item_list.result.stdout) : item.title => {
+      id    = item.id
+      parts = split("-", item.title)
+    } if can(regex("^[a-z]+-[a-z]+", item.title))
+  }
+
+  # Extract metadata from naming convention
+  services_discovered = {
+    for title, item in local._services_raw : title => {
       id       = item.id
-      name     = replace(item.title, "/^[^-]*-/", "")
-      platform = split("-", item.title)[0]
-    } if can(regex("^[a-z]+-", item.title))
+      name     = join("-", slice(item.parts, 1, length(item.parts)))
+      platform = item.parts[0]
+    }
   }
 
   # Simple ID to title mapping for 1Password sync resources
