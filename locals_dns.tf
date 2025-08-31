@@ -1,5 +1,5 @@
 locals {
-  # Get unique subdomains that need ACME and wildcard records
+  # Get unique subdomains that need ACME and wildcard records with server mapping
   _dns_unique = distinct(flatten([
     [
       for k, v in merge(
@@ -10,15 +10,10 @@ locals {
         local.dns_records_services_internal,
         local.dns_records_services_urls
         ) : {
-        name = v.name
-        zone = v.zone
+        name   = v.name
+        server = try(v.server, null)
+        zone   = v.zone
       } if contains(["A", "AAAA", "CNAME"], v.type) && try(v.wildcard, true)
-    ],
-    [
-      for zone in keys(var.dns) : {
-        name = zone
-        zone = zone
-      }
     ]
   ]))
 
@@ -47,14 +42,14 @@ locals {
     )
   }
 
-  # ACME challenge records for all unique subdomains
+  # ACME challenge records for server-specific subdomains only
   dns_records_acme = {
     for subdomain in local._dns_unique : "${subdomain.name}-acme" => {
-      content = var.domain_acme
+      content = local.acme_dns_homelab_registrations[subdomain.server].subdomain
       name    = "_acme-challenge.${subdomain.name}"
       type    = "CNAME"
       zone    = subdomain.zone
-    }
+    } if subdomain.server != null
   }
 
   # Homelab external DNS records
@@ -64,6 +59,7 @@ locals {
       for k, v in local.homelab_discovered : "${var.domain_external}-${k}-cname" => {
         content = local.homelab[k].public_address
         name    = "${v.fqdn}.${var.domain_external}"
+        server  = k
         type    = "CNAME"
         zone    = var.domain_external
       } if local.homelab[k].public_address != null
@@ -73,6 +69,7 @@ locals {
       for k, v in local.homelab_discovered : "${var.domain_external}-${k}-a" => {
         content = local.homelab[k].public_ipv4
         name    = "${v.fqdn}.${var.domain_external}"
+        server  = k
         type    = "A"
         zone    = var.domain_external
       } if local.homelab[k].public_address == null && local.homelab[k].public_ipv4 != null && can(cidrhost("${local.homelab[k].public_ipv4}/32", 0))
@@ -82,6 +79,7 @@ locals {
       for k, v in local.homelab_discovered : "${var.domain_external}-${k}-aaaa" => {
         content = local.homelab[k].public_ipv6
         name    = "${v.fqdn}.${var.domain_external}"
+        server  = k
         type    = "AAAA"
         zone    = var.domain_external
       } if local.homelab[k].public_address == null && local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0))
@@ -94,6 +92,7 @@ locals {
       for k, v in local.homelab_discovered : "${var.domain_internal}-${k}-a" => {
         content = local.homelab[k].tailscale_ipv4
         name    = "${v.fqdn}.${var.domain_internal}"
+        server  = k
         type    = "A"
         zone    = var.domain_internal
       } if local.homelab[k].tailscale_ipv4 != null
@@ -102,6 +101,7 @@ locals {
       for k, v in local.homelab_discovered : "${var.domain_internal}-${k}-aaaa" => {
         content = local.homelab[k].tailscale_ipv6
         name    = "${v.fqdn}.${var.domain_internal}"
+        server  = k
         type    = "AAAA"
         zone    = var.domain_internal
       } if local.homelab[k].tailscale_ipv6 != null
@@ -129,6 +129,7 @@ locals {
       for target in local.services_deployments[k].targets : "${var.domain_external}-${k}-${target}" => {
         content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
         name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
+        server  = target
         type    = "CNAME"
         zone    = var.domain_external
       }
@@ -141,6 +142,7 @@ locals {
       for target in local.services_deployments[k].targets : "${var.domain_internal}-${k}-${target}" => {
         content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
         name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
+        server  = target
         type    = "CNAME"
         zone    = var.domain_internal
       }
@@ -157,6 +159,7 @@ locals {
       )
       name    = service.url
       proxied = contains(local.services[k].tags, "proxied")
+      server  = local.services_deployments[k].targets[0]
       type    = "CNAME"
       zone    = try([for zone in keys(var.dns) : zone if endswith(service.url, zone)][0], null)
     } if service.url != null && length(local.services_deployments[k].targets) > 0 && try([for zone in keys(var.dns) : zone if endswith(service.url, zone)][0], null) != null

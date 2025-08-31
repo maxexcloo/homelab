@@ -15,7 +15,7 @@ locals {
         public_address = try(
           coalesce(
             local.homelab_fields[k].input.public_address,
-            try(local.homelab_fields[local.homelab_parent_routers[k]].input.public_address, null)
+            try(local.homelab_fields[local.homelab_parent[k]].input.public_address, null)
           ),
           null
         )
@@ -23,7 +23,7 @@ locals {
         public_ipv4 = try(
           coalesce(
             local.homelab_fields[k].input.public_ipv4,
-            try(local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv4, null)
+            try(local.homelab_fields[local.homelab_parent[k]].input.public_ipv4, null)
           ),
           null
         )
@@ -31,7 +31,7 @@ locals {
         public_ipv6 = try(
           coalesce(
             local.homelab_fields[k].input.public_ipv6,
-            try(local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv6, null)
+            try(local.homelab_fields[local.homelab_parent[k]].input.public_ipv6, null)
           ),
           null
         )
@@ -56,6 +56,13 @@ locals {
       },
 
       # Layer 2: Resource-generated credentials
+      # ACME DNS
+      {
+        acme_dns_password  = local.acme_dns_homelab_registrations[k].password
+        acme_dns_subdomain = local.acme_dns_homelab_registrations[k].subdomain
+        acme_dns_username  = local.acme_dns_homelab_registrations[k].username
+      },
+
       # Backblaze B2
       local.homelab_resources[k].b2 ? {
         b2_application_key    = b2_application_key.homelab[k].application_key
@@ -83,7 +90,7 @@ locals {
   }
 
   # Extract parent router references for network inheritance
-  homelab_parent_routers = {
+  homelab_parent = {
     for k, v in local.homelab_discovered : k => "router-${local.homelab_fields[k].input.parent}"
     if try(local.homelab_fields[k].input.parent, null) != null
   }

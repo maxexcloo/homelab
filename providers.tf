@@ -28,6 +28,17 @@ provider "github" {
 provider "onepassword" {}
 
 provider "restapi" {
+  alias                 = "acme_dns"
+  create_returns_object = true
+  rate_limit            = 1
+  uri                   = var.acme_dns_server
+
+  headers = {
+    "Content-Type" = "application/json"
+  }
+}
+
+provider "restapi" {
   alias                 = "resend"
   create_returns_object = true
   rate_limit            = 1

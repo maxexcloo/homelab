@@ -6,6 +6,5 @@ default_email        = "max@excloo.com"
 default_organization = "excloo"
 
 # Domain configuration
-domain_acme     = "acme.excloo.dev"
 domain_external = "excloo.net"
 domain_internal = "excloo.dev"

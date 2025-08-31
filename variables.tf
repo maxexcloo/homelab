@@ -1,3 +1,9 @@
+variable "acme_dns_server" {
+  default     = "https://auth.acme-dns.io"
+  description = "ACME DNS server URL for challenge validation"
+  type        = string
+}
+
 variable "default_email" {
   description = "Default email for notifications and accounts"
   type        = string
@@ -43,11 +49,6 @@ variable "dns" {
   })))
 }
 
-variable "domain_acme" {
-  description = "Subdomain to use for ACME challenge validation, must be in a Cloudflare managed zone"
-  type        = string
-}
-
 variable "domain_external" {
   description = "External domain for public services"
   type        = string
@@ -75,6 +76,9 @@ variable "onepassword_homelab_field_schema" {
       tags            = "STRING"
     }
     output = {
+      acme_dns_password        = "CONCEALED"
+      acme_dns_subdomain       = "STRING"
+      acme_dns_username        = "STRING"
       b2_application_key       = "CONCEALED"
       b2_application_key_id    = "STRING"
       b2_bucket_name           = "STRING"
