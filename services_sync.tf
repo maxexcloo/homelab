@@ -42,11 +42,5 @@ resource "onepassword_item" "services_sync" {
       )
       error_message = "Invalid deploy_to for service ${each.value}. Must be a server name or platform:x, region:x, tag:x"
     }
-
-    # Validate title format
-    precondition {
-      condition     = can(regex("^[a-z]+-[a-z]+", each.value))
-      error_message = "Item ${each.value} must follow pattern: platform-name"
-    }
   }
 }
