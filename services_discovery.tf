@@ -2,7 +2,7 @@ data "external" "services_item_list" {
   program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_services_vault}' | jq -c '{stdout: (. | tostring)}'"]
 }
 
-data "onepassword_item" "services_details" {
+data "onepassword_item" "service" {
   for_each = local.services_discovered
 
   title = each.key
@@ -20,9 +20,9 @@ import {
   to = onepassword_item.services_sync[each.key]
 }
 
-# Parse raw items from 1Password
 locals {
-  _services_raw = {
+  # Parse raw items from 1Password
+  _services_item_list = {
     for item in jsondecode(data.external.services_item_list.result.stdout) : item.title => {
       id    = item.id
       parts = split("-", item.title)
@@ -31,7 +31,7 @@ locals {
 
   # Extract metadata from naming convention
   services_discovered = {
-    for title, item in local._services_raw : title => {
+    for title, item in local._services_item_list : title => {
       id       = item.id
       name     = join("-", slice(item.parts, 1, length(item.parts)))
       platform = item.parts[0]

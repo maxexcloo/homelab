@@ -1,10 +1,10 @@
 # Extract fields from 1Password sections
 locals {
-  _extract_onepassword_fields_services = {
+  _services_fields = {
     for k, v in local.services_discovered : k => {
-      input_section  = try([for s in data.onepassword_item.services_details[k].section : s if s.label == "input"][0], null)
-      output_section = try([for s in data.onepassword_item.services_details[k].section : s if s.label == "output"][0], null)
-    } if try(data.onepassword_item.services_details[k], null) != null
+      input_section  = try([for s in data.onepassword_item.service[k].section : s if s.label == "input"][0], null)
+      output_section = try([for s in data.onepassword_item.service[k].section : s if s.label == "output"][0], null)
+    } if try(data.onepassword_item.service[k], null) != null
   }
 
   # Complete services data with all fields merged and computed
@@ -58,7 +58,7 @@ locals {
 
   # Extract and normalize 1Password fields for each service
   services_onepassword = {
-    for k, v in local._extract_onepassword_fields_services : k => {
+    for k, v in local._services_fields : k => {
       # Merged fields with schema defaults (all fields guaranteed to exist)
       fields = merge(
         # Start with all schema fields set to null
@@ -83,10 +83,8 @@ locals {
       }
     }
   }
-}
 
-# Determine which resources to create for each service
-locals {
+  # Determine which resources to create for each service
   services_resources = {
     for k, v in local.services_discovered : k => {
       for resource in var.resources_services : resource =>

@@ -1,10 +1,10 @@
 locals {
   # Extract fields from 1Password sections
-  _extract_onepassword_fields = {
+  _homelab_fields = {
     for k, v in local.homelab_discovered : k => {
-      input_section  = try([for s in data.onepassword_item.homelab_details[k].section : s if s.label == "input"][0], null)
-      output_section = try([for s in data.onepassword_item.homelab_details[k].section : s if s.label == "output"][0], null)
-    } if try(data.onepassword_item.homelab_details[k], null) != null
+      input_section  = try([for s in data.onepassword_item.homelab[k].section : s if s.label == "input"][0], null)
+      output_section = try([for s in data.onepassword_item.homelab[k].section : s if s.label == "output"][0], null)
+    } if try(data.onepassword_item.homelab[k], null) != null
   }
 
   # Complete homelab data with all fields merged and computed
@@ -46,7 +46,7 @@ locals {
         # Path defaults based on username
         paths = try(
           coalesce(local.homelab_onepassword[k].fields.paths),
-          data.onepassword_item.homelab_details[k].username == "root" ? "/root" : "/home/${data.onepassword_item.homelab_details[k].username}"
+          data.onepassword_item.homelab[k].username == "root" ? "/root" : "/home/${data.onepassword_item.homelab[k].username}"
         )
 
         # Computed URLs and domains
@@ -91,7 +91,7 @@ locals {
 
   # Extract and normalize 1Password fields for each homelab item
   homelab_onepassword = {
-    for k, v in local._extract_onepassword_fields : k => {
+    for k, v in local._homelab_fields : k => {
       # Merged fields with schema defaults (all fields guaranteed to exist)
       fields = merge(
         # Start with all schema fields set to null
@@ -119,8 +119,7 @@ locals {
 
   # Extract parent router references for network inheritance
   homelab_parent_routers = {
-    for k, v in local.homelab_discovered : k =>
-    "router-${local.homelab_onepassword[k].fields.parent}"
+    for k, v in local.homelab_discovered : k => "router-${local.homelab_onepassword[k].fields.parent}"
     if try(local.homelab_onepassword[k].fields.parent, null) != null
   }
 

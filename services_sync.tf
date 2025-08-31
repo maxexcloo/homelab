@@ -1,9 +1,9 @@
 resource "onepassword_item" "services_sync" {
   for_each = local.services_id_to_title
 
-  title    = data.onepassword_item.services_details[each.value].title
+  title    = data.onepassword_item.service[each.value].title
   url      = try(local.services[each.value].url, null)
-  username = data.onepassword_item.services_details[each.value].username
+  username = data.onepassword_item.service[each.value].username
   vault    = data.onepassword_vault.services.uuid
 
   dynamic "section" {

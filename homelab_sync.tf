@@ -1,9 +1,9 @@
 resource "onepassword_item" "homelab_sync" {
   for_each = local.homelab_id_to_title
 
-  title    = data.onepassword_item.homelab_details[each.value].title
+  title    = data.onepassword_item.homelab[each.value].title
   url      = local.homelab[each.value].url
-  username = data.onepassword_item.homelab_details[each.value].username
+  username = data.onepassword_item.homelab[each.value].username
   vault    = data.onepassword_vault.homelab.uuid
 
   dynamic "section" {

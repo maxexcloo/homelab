@@ -2,7 +2,7 @@ data "external" "homelab_item_list" {
   program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_homelab_vault}' | jq -c '{stdout: (. | tostring)}'"]
 }
 
-data "onepassword_item" "homelab_details" {
+data "onepassword_item" "homelab" {
   for_each = local.homelab_discovered
 
   title = each.key
@@ -22,7 +22,7 @@ import {
 
 locals {
   # Parse raw items from 1Password
-  _homelab_raw = {
+  _homelab_item_list = {
     for item in jsondecode(data.external.homelab_item_list.result.stdout) : item.title => {
       id        = item.id
       parts     = split("-", item.title)
@@ -32,7 +32,7 @@ locals {
 
   # Extract metadata from naming convention
   homelab_discovered = {
-    for title, item in local._homelab_raw : title => {
+    for title, item in local._homelab_item_list : title => {
       fqdn     = item.name_part != null ? "${item.name_part}.${item.parts[1]}" : item.parts[1]
       id       = item.id
       name     = item.name_part != null ? item.name_part : item.parts[1]
