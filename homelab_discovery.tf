@@ -21,25 +21,47 @@ import {
 }
 
 locals {
-  # Parse raw items from 1Password
-  _homelab_item_list = {
+  # Parse raw items from 1Password and extract metadata from naming convention
+  homelab_discovered = {
     for item in jsondecode(data.external.homelab_item_list.result.stdout) : item.title => {
-      id        = item.id
-      parts     = split("-", item.title)
-      name_part = length(split("-", item.title)) > 2 ? join("-", slice(split("-", item.title), 2, length(split("-", item.title)))) : null
+      fqdn     = length(split("-", item.title)) > 2 ? "${join("-", slice(split("-", item.title), 2, length(split("-", item.title))))}.${split("-", item.title)[1]}" : split("-", item.title)[1]
+      id       = item.id
+      name     = length(split("-", item.title)) > 2 ? join("-", slice(split("-", item.title), 2, length(split("-", item.title)))) : split("-", item.title)[1]
+      platform = split("-", item.title)[0]
+      region   = split("-", item.title)[1]
+      title    = replace(item.title, "/^[a-z]+-/", "")
     } if can(regex("^[a-z]+-[a-z]+-[a-z]+$", item.title)) || can(regex("^router-[a-z]+$", item.title))
   }
 
-  # Extract metadata from naming convention
-  homelab_discovered = {
-    for title, item in local._homelab_item_list : title => {
-      fqdn     = item.name_part != null ? "${item.name_part}.${item.parts[1]}" : item.parts[1]
-      id       = item.id
-      name     = item.name_part != null ? item.name_part : item.parts[1]
-      platform = item.parts[0]
-      region   = item.parts[1]
-      title    = replace(title, "/^[a-z]+-/", "")
-    }
+  # Process 1Password fields separately to avoid circular dependency
+  homelab_fields = {
+    for k, v in local.homelab_discovered : k => merge(
+      # Input fields with defaults from schema
+      {
+        input = merge(
+          # Start with all schema input fields set to null
+          {
+            for field_name, field_type in var.onepassword_homelab_field_schema.input : field_name => null
+          },
+          # Override with actual values from 1Password (when item exists), converting "-" to null
+          try(data.onepassword_item.homelab[k], null) != null ? {
+            for field in try([for s in data.onepassword_item.homelab[k].section : s if s.label == "input"][0].field, []) : field.label => field.value == "-" ? null : field.value
+          } : {}
+        )
+
+        # Output fields with defaults from schema
+        output = merge(
+          # Start with all schema output fields set to null
+          {
+            for field_name, field_type in var.onepassword_homelab_field_schema.output : field_name => null
+          },
+          # Override with actual values from 1Password (when item exists), converting "-" to null
+          try(data.onepassword_item.homelab[k], null) != null ? {
+            for field in try([for s in data.onepassword_item.homelab[k].section : s if s.label == "output"][0].field, []) : field.label => field.value == "-" ? null : field.value
+          } : {}
+        )
+      }
+    )
   }
 
   # Simple ID to title mapping for 1Password sync resources

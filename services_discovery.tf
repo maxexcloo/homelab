@@ -21,21 +21,45 @@ import {
 }
 
 locals {
-  # Parse raw items from 1Password
-  _services_item_list = {
+  # Parse raw items from 1Password and extract metadata from naming convention
+  services_discovered = {
     for item in jsondecode(data.external.services_item_list.result.stdout) : item.title => {
-      id    = item.id
-      parts = split("-", item.title)
+      # Discovery metadata (split per field)
+      id       = item.id
+      name     = join("-", slice(split("-", item.title), 1, length(split("-", item.title))))
+      platform = split("-", item.title)[0]
     } if can(regex("^[a-z]+-[a-z]+", item.title))
   }
 
-  # Extract metadata from naming convention
-  services_discovered = {
-    for title, item in local._services_item_list : title => {
-      id       = item.id
-      name     = join("-", slice(item.parts, 1, length(item.parts)))
-      platform = item.parts[0]
-    }
+  # Process 1Password fields separately to avoid circular dependency
+  services_fields = {
+    for k, v in local.services_discovered : k => merge(
+      # Input fields with defaults from schema
+      {
+        input = merge(
+          # Start with all schema input fields set to null
+          {
+            for field_name, field_type in var.onepassword_services_field_schema.input : field_name => null
+          },
+          # Override with actual values from 1Password (when item exists), converting "-" to null
+          try(data.onepassword_item.service[k], null) != null ? {
+            for field in try([for s in data.onepassword_item.service[k].section : s if s.label == "input"][0].field, []) : field.label => field.value == "-" ? null : field.value
+          } : {}
+        )
+
+        # Output fields with defaults from schema
+        output = merge(
+          # Start with all schema output fields set to null
+          {
+            for field_name, field_type in var.onepassword_services_field_schema.output : field_name => null
+          },
+          # Override with actual values from 1Password (when item exists), converting "-" to null
+          try(data.onepassword_item.service[k], null) != null ? {
+            for field in try([for s in data.onepassword_item.service[k].section : s if s.label == "output"][0].field, []) : field.label => field.value == "-" ? null : field.value
+          } : {}
+        )
+      }
+    )
   }
 
   # Simple ID to title mapping for 1Password sync resources

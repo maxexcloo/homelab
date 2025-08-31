@@ -1,68 +1,61 @@
 locals {
-  # Extract fields from 1Password sections
-  _homelab_fields = {
-    for k, v in local.homelab_discovered : k => {
-      input_section  = try([for s in data.onepassword_item.homelab[k].section : s if s.label == "input"][0], null)
-      output_section = try([for s in data.onepassword_item.homelab[k].section : s if s.label == "output"][0], null)
-    } if try(data.onepassword_item.homelab[k], null) != null
-  }
-
   # Complete homelab data with all fields merged and computed
   homelab = {
     for k, v in local.homelab_discovered : k => merge(
       # Base: Discovery metadata
       v,
 
-      # Layer 1: All 1Password fields (guaranteed to exist with nulls)
-      try(local.homelab_onepassword[k].fields, {}),
+      # 1Password fields (flattened from input/output sections)
+      local.homelab_fields[k].input,
+      local.homelab_fields[k].output,
 
-      # Layer 2: Computed and inherited fields
+      # Layer 1: Computed and inherited fields
       {
         # Network inheritance (child inherits from parent router if not set)
         public_address = try(
           coalesce(
-            local.homelab_onepassword[k].fields.public_address,
-            local.homelab_onepassword[local.homelab_parent_routers[k]].fields.public_address
+            local.homelab_fields[k].input.public_address,
+            local.homelab_fields[local.homelab_parent_routers[k]].input.public_address
           ),
           null
         )
 
         public_ipv4 = try(
           coalesce(
-            local.homelab_onepassword[k].fields.public_ipv4,
-            local.homelab_onepassword[local.homelab_parent_routers[k]].fields.public_ipv4
+            local.homelab_fields[k].input.public_ipv4,
+            local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv4
           ),
           null
         )
 
         public_ipv6 = try(
           coalesce(
-            local.homelab_onepassword[k].fields.public_ipv6,
-            local.homelab_onepassword[local.homelab_parent_routers[k]].fields.public_ipv6
+            local.homelab_fields[k].input.public_ipv6,
+            local.homelab_fields[local.homelab_parent_routers[k]].input.public_ipv6
           ),
           null
         )
 
         # Path defaults based on username
         paths = try(
-          coalesce(local.homelab_onepassword[k].fields.paths),
+          coalesce(local.homelab_fields[k].input.paths),
           data.onepassword_item.homelab[k].username == "root" ? "/root" : "/home/${data.onepassword_item.homelab[k].username}"
         )
 
         # Computed URLs and domains
         fqdn_external = "${v.fqdn}.${var.domain_external}"
         fqdn_internal = "${v.fqdn}.${var.domain_internal}"
-        url           = "${v.fqdn}.${var.domain_internal}${try(":${local.homelab_onepassword[k].fields.management_port}", "")}"
+        url           = "${v.fqdn}.${var.domain_internal}${try(":${local.homelab_fields[k].input.management_port}", "")}"
 
         # Parse tags from comma-separated string
-        tags = try(split(",", replace(local.homelab_onepassword[k].fields.tags, " ", "")), [])
+        tags = try(split(",", replace(coalesce(local.homelab_fields[k].input.tags, ""), " ", "")), [])
 
         # Tailscale device IPs (from device lookup)
         tailscale_ipv4 = try(local.tailscale_device_addresses[v.title].ipv4, null)
         tailscale_ipv6 = try(local.tailscale_device_addresses[v.title].ipv6, null)
       },
 
-      # Layer 3: Resource-generated credentials
+      # Layer 2: Resource-generated credentials
       # Backblaze B2
       local.homelab_resources[k].b2 ? {
         b2_application_key    = b2_application_key.homelab[k].application_key
@@ -86,41 +79,13 @@ locals {
       local.homelab_resources[k].tailscale ? {
         tailscale_auth_key = tailscale_tailnet_key.homelab[k].key
       } : {}
-    ) if try(local.homelab_onepassword[k], null) != null
-  }
-
-  # Extract and normalize 1Password fields for each homelab item
-  homelab_onepassword = {
-    for k, v in local._homelab_fields : k => {
-      # Merged fields with schema defaults (all fields guaranteed to exist)
-      fields = merge(
-        # Start with all schema fields set to null
-        {
-          for field_name, field_type in merge(
-            var.onepassword_homelab_field_schema.input,
-            var.onepassword_homelab_field_schema.output
-          ) : field_name => null
-        },
-        # Override with actual values (convert "-" to null)
-        {
-          for field in try(v.input_section.field, []) : field.label => field.value == "-" ? null : field.value
-        },
-        {
-          for field in try(v.output_section.field, []) : field.label => field.value == "-" ? null : field.value
-        }
-      )
-
-      # Raw input fields for sync back to 1Password (preserves "-" values)
-      input_raw = {
-        for field in try(v.input_section.field, []) : field.label => field.value
-      }
-    }
+    ) if try(local.homelab_fields[k].input, null) != null
   }
 
   # Extract parent router references for network inheritance
   homelab_parent_routers = {
-    for k, v in local.homelab_discovered : k => "router-${local.homelab_onepassword[k].fields.parent}"
-    if try(local.homelab_onepassword[k].fields.parent, null) != null
+    for k, v in local.homelab_discovered : k => "router-${local.homelab_fields[k].input.parent}"
+    if try(local.homelab_fields[k].input.parent, null) != null
   }
 
   # Determine which resources to create for each homelab item

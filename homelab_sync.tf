@@ -21,9 +21,9 @@ resource "onepassword_item" "homelab_sync" {
           type  = field.value
 
           # Logic:
-          # - Input fields: preserve existing raw values from 1Password (including "-")
+          # - Input fields: preserve existing values from 1Password (including "-")
           # - Output fields: always update with computed values (null becomes "-")
-          value = section.key == "input" ? try(local.homelab_onepassword[each.value].input_raw[field.key], "-") : coalesce(try(local.homelab[each.value][field.key], null), "-")
+          value = section.key == "input" ? coalesce(local.homelab_fields[each.value].input[field.key], "-") : coalesce(try(local.homelab[each.value][field.key], null), "-")
         }
       }
     }
@@ -32,14 +32,8 @@ resource "onepassword_item" "homelab_sync" {
   lifecycle {
     # Validate parent exists if specified
     precondition {
-      condition     = try(local.homelab_onepassword[each.value].fields.parent == null || contains(keys(local.homelab_discovered), "router-${local.homelab_onepassword[each.value].fields.parent}"), true)
+      condition     = try(local.homelab_fields[each.value].input.parent == null || contains(keys(local.homelab_discovered), "router-${local.homelab_fields[each.value].input.parent}"), true)
       error_message = "Parent router does not exist for ${each.value}. Expected format: router-{region}"
-    }
-
-    # Validate title format
-    precondition {
-      condition     = can(regex("^[a-z]+-[a-z]+-[a-z0-9]+$", each.value)) || can(regex("^router-[a-z]+$", each.value))
-      error_message = "Item ${each.value} must follow pattern: platform-region-name (e.g., vm-au-hsp) or router-region (e.g., router-au)"
     }
   }
 }
