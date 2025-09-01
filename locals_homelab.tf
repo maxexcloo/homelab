@@ -58,9 +58,9 @@ locals {
       # Layer 2: Resource-generated credentials
       # ACME DNS
       {
-        acme_dns_password  = local.acme_dns_homelab_registrations[k].password
-        acme_dns_subdomain = local.acme_dns_homelab_registrations[k].subdomain
-        acme_dns_username  = local.acme_dns_homelab_registrations[k].username
+        acme_dns_password  = local.acme_dns_homelab[k].password
+        acme_dns_subdomain = local.acme_dns_homelab[k].subdomain
+        acme_dns_username  = local.acme_dns_homelab[k].username
       },
 
       # Backblaze B2

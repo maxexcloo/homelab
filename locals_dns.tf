@@ -45,7 +45,7 @@ locals {
   # ACME challenge records for server-specific subdomains only
   dns_records_acme = {
     for subdomain in local._dns_unique : "${subdomain.name}-acme" => {
-      content = local.acme_dns_homelab_registrations[subdomain.server].subdomain
+      content = local.acme_dns_homelab[subdomain.server].subdomain
       name    = "_acme-challenge.${subdomain.name}"
       type    = "CNAME"
       zone    = subdomain.zone
