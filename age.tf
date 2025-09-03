@@ -9,6 +9,6 @@ resource "shell_script" "age_homelab" {
       PUBLIC_KEY=$(echo "$KEYPAIR" | grep "# public key:" | sed "s/# public key: //" | head -n1)
       jq -n --arg private "$PRIVATE_KEY" --arg public "$PUBLIC_KEY" '{"private_key": $private, "public_key": $public}'
     EOF
-    delete = "echo 'Age keypair deleted'"
+    delete = "true"
   }
 }

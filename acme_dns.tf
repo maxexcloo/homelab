@@ -3,6 +3,6 @@ resource "shell_script" "acme_dns_homelab" {
 
   lifecycle_commands {
     create = "curl -s -X POST '${var.acme_dns_server}/register'"
-    delete = "echo 'ACME DNS registration is write-only; no delete action required.'"
+    delete = "true"
   }
 }
