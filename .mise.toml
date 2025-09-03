@@ -1,6 +1,8 @@
 [tools]
 1password = "latest"
+age = "latest"
 opentofu = "latest"
+sops = "latest"
 
 [env]
 TF_CLI_ARGS_init = "-upgrade"

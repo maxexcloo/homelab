@@ -14,6 +14,12 @@ variable "default_organization" {
   type        = string
 }
 
+variable "default_timezone" {
+  default     = "Australia/Sydney"
+  description = "Default timezone for services and servers"
+  type        = string
+}
+
 variable "default_homelab_resources" {
   description = "Default resources to create for each homelab platform type"
   type        = map(list(string))
@@ -59,6 +65,12 @@ variable "domain_internal" {
   type        = string
 }
 
+variable "komodo_repository" {
+  default     = "komodo"
+  description = "GitHub repository for Komodo configuration deployment"
+  type        = string
+}
+
 variable "onepassword_homelab_field_schema" {
   description = "Field schema for homelab 1Password items"
 
@@ -79,6 +91,8 @@ variable "onepassword_homelab_field_schema" {
       acme_dns_password        = "CONCEALED"
       acme_dns_subdomain       = "STRING"
       acme_dns_username        = "STRING"
+      age_private_key          = "CONCEALED"
+      age_public_key           = "STRING"
       b2_application_key       = "CONCEALED"
       b2_application_key_id    = "STRING"
       b2_bucket_name           = "STRING"

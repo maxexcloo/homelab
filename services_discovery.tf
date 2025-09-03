@@ -1,5 +1,6 @@
-data "external" "services_item_list" {
-  program = ["sh", "-c", "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op item list --format=json --vault='${var.onepassword_services_vault}' | jq -c '{stdout: (. | tostring)}'"]
+# Get all items from vault using 1Password Connect API via mise
+data "external" "services_items" {
+  program = ["sh", "-c", "mise exec -- sh -c 'curl -s -H \"Authorization: Bearer $OP_CONNECT_TOKEN\" \"$OP_CONNECT_HOST/v1/vaults/${data.onepassword_vault.services.uuid}/items\" | jq -c \"[.[] | {id, title}] | {items: (. | tostring)}\" || echo \"{\\\"items\\\":\\\"[]\\\"}\"'"]
 }
 
 data "onepassword_item" "service" {
@@ -21,9 +22,9 @@ import {
 }
 
 locals {
-  # Parse raw items from 1Password and extract metadata from naming convention
+  # Parse raw items from 1Password Connect API and extract metadata from naming convention
   services_discovered = {
-    for item in jsondecode(data.external.services_item_list.result.stdout) : item.title => {
+    for item in jsondecode(data.external.services_items.result.items) : item.title => {
       id       = item.id
       name     = join("-", slice(split("-", item.title), 1, length(split("-", item.title))))
       platform = split("-", item.title)[0]

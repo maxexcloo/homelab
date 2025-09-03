@@ -1,5 +1,6 @@
-data "external" "homelab_item_list" {
-  program = ["sh", "-c", "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op item list --format=json --vault='${var.onepassword_homelab_vault}' | jq -c '{stdout: (. | tostring)}'"]
+# Get all items from vault using 1Password Connect API via mise
+data "external" "homelab_items" {
+  program = ["sh", "-c", "mise exec -- sh -c 'curl -s -H \"Authorization: Bearer $OP_CONNECT_TOKEN\" \"$OP_CONNECT_HOST/v1/vaults/${data.onepassword_vault.homelab.uuid}/items\" | jq -c \"[.[] | {id, title}] | {items: (. | tostring)}\" || echo \"{\\\"items\\\":\\\"[]\\\"}\"'"]
 }
 
 data "onepassword_item" "homelab" {
@@ -21,9 +22,9 @@ import {
 }
 
 locals {
-  # Parse raw items from 1Password and extract metadata from naming convention
+  # Parse raw items from 1Password Connect API and extract metadata from naming convention
   homelab_discovered = {
-    for item in jsondecode(data.external.homelab_item_list.result.stdout) : item.title => {
+    for item in jsondecode(data.external.homelab_items.result.items) : item.title => {
       fqdn     = length(split("-", item.title)) > 2 ? "${join("-", slice(split("-", item.title), 2, length(split("-", item.title))))}.${split("-", item.title)[1]}" : split("-", item.title)[1]
       id       = item.id
       name     = length(split("-", item.title)) > 2 ? join("-", slice(split("-", item.title), 2, length(split("-", item.title)))) : split("-", item.title)[1]

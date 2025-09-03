@@ -1,0 +1,221 @@
+# locals {
+#   # Get all unique deployment targets (servers) from services
+#   komodo_servers = {
+#     for server_key in distinct(flatten([
+#       for k, v in local.komodo_services : v.targets
+#     ])) : server_key => local.homelab[server_key]
+#   }
+
+#   # Filter services that should be deployed via Docker
+#   komodo_services = {
+#     for k, v in local.services : k => v
+#     if length(v.targets) > 0 && v.platform == "docker"
+#   }
+
+#   # Render docker-compose templates with minimal template variables (KISS approach)
+#   komodo_rendered_templates = {
+#     for k, v in local.komodo_services : k => templatefile("${path.module}/docker/${k}/docker-compose.yaml",
+#       {
+#         # Default values (non-secrets only)
+#         default = {
+#           email        = var.default_email
+#           organisation = var.default_organization
+#           timezone     = var.default_timezone
+#         }
+
+#         # Service values (including secrets for SOPS encryption)
+#         service = {
+#           # Core identifiers
+#           fqdn     = coalesce(v.fqdn_external, v.fqdn_internal, "${k}.${var.domain_internal}")
+#           title    = title(replace(k, "-", " "))
+#           url      = "https://${coalesce(v.fqdn_external, v.fqdn_internal, "${k}.${var.domain_internal}")}"
+#           username = try(v.username, "admin")
+#           zone     = v.fqdn_external != null ? "external" : "internal"
+
+#           # Server-inherited secrets (will be encrypted by SOPS)
+#           resend_api_key        = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].resend_api_key : "", "")
+#           b2_bucket_name        = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_bucket_name : "", "")
+#           b2_application_key    = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_application_key : "", "")
+#           b2_application_key_id = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_application_key_id : "", "")
+#           b2_endpoint           = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_endpoint : "", "")
+#         }
+#       }
+#     )
+#   }
+# }
+
+# # Encrypt docker-compose files using shell provider with SOPS
+# resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
+#   for_each = local.komodo_services
+
+#   environment = {
+#     AGE_PUBLIC_KEY  = try(local.homelab[each.value.targets[0]].age_public_key, "")
+#     COMPOSE_CONTENT = local.komodo_rendered_templates[each.key]
+#   }
+
+#   lifecycle_commands {
+#     create = <<-EOF
+#       # Create temporary file with docker-compose content
+#       echo "$COMPOSE_CONTENT" > /tmp/compose-${each.key}.yaml
+
+#       # Encrypt using SOPS with age
+#       echo "age: $AGE_PUBLIC_KEY" | sops -e --input-type yaml --output-type yaml /tmp/compose-${each.key}.yaml
+
+#       # Cleanup
+#       rm -f /tmp/compose-${each.key}.yaml
+#     EOF
+
+#     read = <<-EOF
+#       # Create temporary file with docker-compose content
+#       echo "$COMPOSE_CONTENT" > /tmp/compose-${each.key}.yaml
+
+#       # Encrypt using SOPS with age
+#       echo "age: $AGE_PUBLIC_KEY" | sops -e --input-type yaml --output-type yaml /tmp/compose-${each.key}.yaml
+
+#       # Cleanup
+#       rm -f /tmp/compose-${each.key}.yaml
+#     EOF
+
+#     delete = "true" # No cleanup needed
+#     update = <<-EOF
+#       # Create temporary file with docker-compose content
+#       echo "$COMPOSE_CONTENT" > /tmp/compose-${each.key}.yaml
+
+#       # Encrypt using SOPS with age
+#       echo "age: $AGE_PUBLIC_KEY" | sops -e --input-type yaml --output-type yaml /tmp/compose-${each.key}.yaml
+
+#       # Cleanup
+#       rm -f /tmp/compose-${each.key}.yaml
+#     EOF
+#   }
+
+#   triggers = {
+#     content_hash = sha256(local.komodo_rendered_templates[each.key])
+#     age_key_hash = sha256(try(local.homelab[each.value.targets[0]].age_public_key, ""))
+#   }
+# }
+
+# # Commit encrypted docker-compose files to GitHub
+# resource "github_repository_file" "komodo_service_compose" {
+#   for_each = local.komodo_services
+
+#   repository          = var.komodo_repository
+#   branch              = "main"
+#   file                = "docker/${each.key}/docker-compose.yaml"
+#   commit_message      = "Update ${each.key} SOPS-encrypted docker-compose"
+#   commit_author       = var.default_email
+#   commit_email        = var.default_email
+#   overwrite_on_create = true
+
+#   # Use the encrypted content from shell script output
+#   content = shell_sensitive_script.komodo_service_compose_encrypt[each.key].output["stdout"]
+# }
+
+# # Generate servers.toml with all deployment targets
+# resource "github_repository_file" "komodo_servers" {
+#   repository          = var.komodo_repository
+#   branch              = "main"
+#   file                = "servers.toml"
+#   commit_message      = "Update Komodo server configurations"
+#   commit_author       = var.default_email
+#   commit_email        = var.default_email
+#   overwrite_on_create = true
+
+#   content = join("\n\n", [
+#     "# Komodo Server Configurations",
+#     "# Generated by OpenTofu homelab infrastructure",
+#     "",
+#     join("\n\n", [
+#       for k, v in local.komodo_servers : <<-EOT
+#         [[server]]
+#         name = "${k}"
+#         description = "${coalesce(v.description, "Homelab server: ${title(replace(k, "-", " "))}")}"
+#         tags = [${join(", ", [for tag in v.tags : "\"${tag}\""])}]
+
+#         [server.config]
+#         address = "http://${v.private_ipv4}:8120"
+#         region = "${v.region}"
+#         enabled = true
+#       EOT
+#     ])
+#   ])
+# }
+
+# # Generate variables.toml for shared configuration
+# resource "github_repository_file" "komodo_variables" {
+#   repository          = var.komodo_repository
+#   branch              = "main"
+#   file                = "variables.toml"
+#   commit_message      = "Update Komodo variable configurations"
+#   commit_author       = var.default_email
+#   commit_email        = var.default_email
+#   overwrite_on_create = true
+
+#   content = join("\n\n", [
+#     "# Komodo Variable Configurations",
+#     "# Generated by OpenTofu homelab infrastructure",
+#     "",
+#     join("\n\n", [
+#       <<-EOT
+#         [[variable]]
+#         name = "DEFAULT_EMAIL"
+#         value = "${var.default_email}"
+
+#         [[variable]]
+#         name = "DEFAULT_ORGANIZATION" 
+#         value = "${var.default_organization}"
+
+#         [[variable]]
+#         name = "DEFAULT_TIMEZONE"
+#         value = "${var.default_timezone}"
+
+#         [[variable]]
+#         name = "DOMAIN_EXTERNAL"
+#         value = "${var.domain_external}"
+
+#         [[variable]]
+#         name = "DOMAIN_INTERNAL"
+#         value = "${var.domain_internal}"
+#       EOT
+#     ])
+#   ])
+# }
+
+# # Generate Komodo Stack configurations for each service (replaces ResourceSync)
+# resource "github_repository_file" "komodo_stacks" {
+#   repository          = var.komodo_repository
+#   branch              = "main"
+#   file                = "stacks.toml"
+#   commit_message      = "Update Komodo stack configurations"
+#   commit_author       = var.default_email
+#   commit_email        = var.default_email
+#   overwrite_on_create = true
+
+#   content = join("\n\n", [
+#     "# Komodo Stack Configurations",
+#     "# Generated by OpenTofu homelab infrastructure",
+#     "# Uses SOPS/age encryption for secrets",
+#     "",
+#     join("\n\n", [
+#       for k, v in local.komodo_services : <<-EOT
+#         [[stack]]
+#         name = "${k}"
+#         description = "${coalesce(v.description, "Service: ${title(replace(k, "-", " "))}")}"
+#         tags = [${join(", ", [for tag in concat(v.tags, [v.platform]) : "\"${tag}\""])}]
+
+#         [stack.config]
+#         server = "${v.targets[0]}"
+#         poll_for_updates = true
+#         auto_update = true
+#         repo = "${var.komodo_repository}"
+#         run_directory = "docker/${k}"
+
+#         [stack.config.pre_deploy]
+#         command = """
+#         # Decrypt SOPS secrets using server's age key
+#         sops -d -i docker-compose.yaml
+#         """
+#       EOT
+#     ])
+#   ])
+# }

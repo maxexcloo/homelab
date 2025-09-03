@@ -4,7 +4,7 @@
 [![OpenTofu](https://img.shields.io/badge/OpenTofu-1.8+-blue)](https://opentofu.org/)
 [![Status](https://img.shields.io/badge/status-active-success)](https://github.com/maxexcloo/homelab)
 
-Infrastructure as code for homelab management using OpenTofu and 1Password.
+Infrastructure as code for homelab management using OpenTofu, 1Password, and SOPS/age encryption.
 
 ## Quick Start
 
@@ -27,6 +27,8 @@ mise run apply  # Apply changes
 - [1Password CLI](https://1password.com/downloads/command-line/) with service account
 - [mise](https://mise.jdx.dev/) for task management
 - [OpenTofu](https://opentofu.org/) 1.8+
+- [SOPS](https://github.com/getsops/sops) for secret encryption
+- [age](https://age-encryption.org/) for key management
 
 Create `.mise.local.toml`:
 ```toml
@@ -48,8 +50,8 @@ TF_TOKEN_app_terraform_io = "..."        # From HCP Terraform
 
 1. **Create entry** in 1Password Services vault (e.g., `docker-grafana`)
 2. **Run apply** - OpenTofu creates input/output sections
-3. **Fill inputs** in 1Password (deploy_to, docker compose, etc.)
-4. **Run apply** again - Templates are generated
+3. **Fill inputs** in 1Password (deploy_to, resources, secrets, etc.)
+4. **Run apply** again - SOPS-encrypted docker-compose files are generated
 
 ## Configuration
 
@@ -58,9 +60,10 @@ TF_TOKEN_app_terraform_io = "..."        # From HCP Terraform
 ```hcl
 default_email        = "admin@example.com"
 default_organization = "My Homelab"
-domain_acme         = "acme.duckdns.org"
-domain_external     = "example.com"
-domain_internal     = "internal.example"
+default_timezone     = "Australia/Sydney"
+domain_external      = "example.com"
+domain_internal      = "internal.example"
+komodo_repository    = "username/komodo-config"
 ```
 
 ### DNS Records (dns.auto.tfvars)
@@ -98,6 +101,10 @@ PLATFORM-SERVICE:  # e.g., docker-grafana
   username: admin
   password: (shared across deployments)
   inputs:  # Created on first apply, then fill these
+    deploy_to: server-au-web    # Server targeting
+    resources: b2,resend        # Required server resources
+    database_password: secret   # Service-specific secrets
+    oidc_client_id: client_id   # Service configuration
   outputs: # Auto-generated URLs
 ```
 
@@ -116,6 +123,17 @@ mise run refresh   # Check drift
 - [AGENTS.md](AGENTS.md) - Development guide
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System design and field reference
 - [SECRETS.md](SECRETS.md) - Secret setup
+
+## Secret Management
+
+This project uses **SOPS with age encryption** for secure docker-compose secrets:
+
+- **Age keypairs** generated per server and stored in 1Password
+- **SOPS encryption** of docker-compose files with server-specific keys
+- **Pre-deploy decryption** on Komodo servers using age private keys
+- **No external dependencies** - secrets encrypted directly in git repository
+
+See generated `ENCRYPTION.md` in the Komodo repository for detailed documentation.
 
 ## License
 

@@ -2,8 +2,8 @@
 
 ## Project Overview
 
-**Purpose**: Unified homelab infrastructure and services management using OpenTofu with 1Password as single source of truth  
-**Status**: Active  
+**Purpose**: Unified homelab infrastructure and services management using OpenTofu with 1Password as single source of truth
+**Status**: Active
 **Language**: HCL (OpenTofu 1.8+)
 
 ## Code Standards
@@ -108,7 +108,7 @@ mise run apply           # Apply infrastructure changes
 ## Tech Stack
 
 - **IaC**: OpenTofu 1.8+
-- **Secrets**: 1Password CLI
+- **Secrets**: 1Password CLI + SOPS/age encryption
 - **Task Runner**: mise
 - **Version Control**: Git
 

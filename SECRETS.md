@@ -4,6 +4,7 @@
 
 These are created automatically per server:
 
+- `age_*` - SOPS encryption keypairs for docker-compose secrets
 - `b2_*` - Backup credentials
 - `cloudflare_*` - Tunnel and API tokens
 - `resend_api_key` - Email API key
@@ -38,6 +39,9 @@ Run `mise run setup` again to create providers entry, then update entry with val
 
 ### Manual
 ```bash
+# Regenerate age keypair and re-encrypt all service secrets
+tofu apply -replace='data.external.age_homelab["server-name"]'
+
 # Regenerate Cloudflare tunnel
 tofu apply -replace='cloudflare_zero_trust_tunnel_cloudflared.homelab["server-name"]'
 
@@ -45,15 +49,43 @@ tofu apply -replace='cloudflare_zero_trust_tunnel_cloudflared.homelab["server-na
 tofu apply -target='tailscale_tailnet_key.homelab["server-name"]'
 ```
 
+## SOPS/age Integration
+
+### Server Setup (One-time)
+Each Komodo server needs the age private key as an environment variable:
+
+```bash
+# Get age private key from 1Password
+AGE_KEY=$(op item get "server-name" --vault="Homelab" --fields="age_private_key")
+
+# Set environment variable for Komodo
+export AGE_SECRET_KEY="$AGE_KEY"
+```
+
+### Local Development
+To decrypt SOPS files locally for debugging:
+
+```bash
+# Export age key from 1Password
+export AGE_SECRET_KEY=$(op item get "server-name" --vault="Homelab" --fields="age_private_key")
+
+# Decrypt docker-compose file
+sops -d docker/grafana/docker-compose.yaml
+```
+
 ## Troubleshooting
 
 ```bash
-# Check token
+# Check tokens
 echo $OP_SERVICE_ACCOUNT_TOKEN
+echo $AGE_SECRET_KEY
 
 # Test 1Password
 op vault list
 
 # Verify provider credentials
 op item get providers --vault="Homelab"
+
+# Test SOPS decryption
+sops -d --extract '["services"]["grafana"]["environment"]["GF_SECURITY_ADMIN_PASSWORD"]' docker/grafana/docker-compose.yaml
 ```

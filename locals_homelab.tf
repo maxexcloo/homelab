@@ -58,9 +58,15 @@ locals {
       # Layer 2: Resource-generated credentials
       # ACME DNS
       {
-        acme_dns_password  = local.acme_dns_homelab[k].password
-        acme_dns_subdomain = local.acme_dns_homelab[k].subdomain
-        acme_dns_username  = local.acme_dns_homelab[k].username
+        acme_dns_password  = shell_script.acme_dns_homelab[k].output.password
+        acme_dns_subdomain = shell_script.acme_dns_homelab[k].output.subdomain
+        acme_dns_username  = shell_script.acme_dns_homelab[k].output.username
+      },
+
+      # Age encryption keys for SOPS
+      {
+        age_private_key = resource.shell_script.age_homelab[k].output.private_key
+        age_public_key  = resource.shell_script.age_homelab[k].output.public_key
       },
 
       # Backblaze B2

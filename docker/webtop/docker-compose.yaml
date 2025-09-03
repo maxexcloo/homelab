@@ -5,7 +5,7 @@ services:
   webtop:
     devices:
       - /dev/dri:/dev/dri
-    environment:  
+    environment:
       CUSTOM_USER: ${service.username}
       LC_ALL: en_AU.UTF-8
       PASSWORD: ${service.password}
