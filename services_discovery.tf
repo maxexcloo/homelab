@@ -24,7 +24,6 @@ locals {
   # Parse raw items from 1Password and extract metadata from naming convention
   services_discovered = {
     for item in jsondecode(data.external.services_item_list.result.stdout) : item.title => {
-      # Discovery metadata (split per field)
       id       = item.id
       name     = join("-", slice(split("-", item.title), 1, length(split("-", item.title))))
       platform = split("-", item.title)[0]
