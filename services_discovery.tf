@@ -1,5 +1,5 @@
 data "external" "services_item_list" {
-  program = ["sh", "-c", "op item list --format=json --vault='${var.onepassword_services_vault}' | jq -c '{stdout: (. | tostring)}'"]
+  program = ["sh", "-c", "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op item list --format=json --vault='${var.onepassword_services_vault}' | jq -c '{stdout: (. | tostring)}'"]
 }
 
 data "onepassword_item" "service" {

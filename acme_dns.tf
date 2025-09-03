@@ -1,16 +1,14 @@
 locals {
   acme_dns_homelab = {
-    for k, v in restapi_object.acme_dns_homelab : k => jsondecode(v.create_response)
+    for k, v in shell_script.acme_dns_homelab : k => v.output
   }
 }
 
-resource "restapi_object" "acme_dns_homelab" {
+resource "shell_script" "acme_dns_homelab" {
   for_each = local.homelab_discovered
 
-  data                      = jsonencode({})
-  id_attribute              = "username"
-  ignore_all_server_changes = true
-  object_id                 = each.key
-  path                      = "/register"
-  provider                  = restapi.acme_dns
+  lifecycle_commands {
+    create = "curl -s -X POST '${var.acme_dns_server}/register'"
+    delete = "echo 'ACME DNS registration is write-only; no delete action required.'"
+  }
 }

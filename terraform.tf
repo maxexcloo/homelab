@@ -30,6 +30,10 @@ terraform {
       source  = "mastercard/restapi"
       version = "~> 2.0"
     }
+    shell = {
+      source  = "linyinfeng/shell"
+      version = "~> 1.0"
+    }
     tailscale = {
       source  = "tailscale/tailscale"
       version = "~> 0.21"
