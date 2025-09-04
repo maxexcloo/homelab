@@ -11,19 +11,10 @@ locals {
 
       # Layer 1: Computed fields
       {
-        # Parse tags from comma-separated string
-        tags = try(split(",", replace(coalesce(local.services_fields[k].input.tags, ""), " ", "")), [])
-
-        # Service FQDNs (inherit from first deployment target)
         fqdn_external = try("${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_external}", null)
         fqdn_internal = try("${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_internal}", null)
-      },
-
-      # Layer 2: Resource-generated credentials
-      # TODO: Implement service-specific resources when needed
-      local.services_resources[k].b2 ? {
-        b2_endpoint = replace(data.b2_account_info.default.s3_api_url, "https://", "")
-      } : {}
+        tags          = try(split(",", replace(coalesce(local.services_fields[k].input.tags, ""), " ", "")), [])
+      }
     ) if try(local.services_fields[k].input, null) != null
   }
 
@@ -52,8 +43,14 @@ locals {
   # Determine which resources to create for each service
   services_resources = {
     for k, v in local.services_discovered : k => {
-      for resource in var.resources_services : resource =>
-      contains(try(var.default_services_resources[v.platform], []), resource)
+      for resource in var.resources_services : resource => contains(try(var.resources_services_defaults[v.platform], []), resource)
+    }
+  }
+
+  # Determine which tags to create for each service
+  services_tags = {
+    for k, v in local.services_discovered : k => {
+      for tag in var.resources_services : tag => true
     }
   }
 }

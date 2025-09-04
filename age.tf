@@ -1,4 +1,3 @@
-# Generate age keypair for each homelab server using shell_script resource
 resource "shell_script" "age_homelab" {
   for_each = local.homelab_discovered
 

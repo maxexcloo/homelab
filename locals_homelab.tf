@@ -11,6 +11,19 @@ locals {
 
       # Layer 1: Computed and inherited fields
       {
+        fqdn_external  = "${v.fqdn}.${var.domain_external}"
+        fqdn_internal  = "${v.fqdn}.${var.domain_internal}"
+        tags           = try(split(",", replace(coalesce(local.homelab_fields[k].input.tags, ""), " ", "")), [])
+        tailscale_ipv4 = try(local.tailscale_device_addresses[v.title].ipv4, null)
+        tailscale_ipv6 = try(local.tailscale_device_addresses[v.title].ipv6, null)
+        url            = "${v.fqdn}.${var.domain_internal}${try(":${local.homelab_fields[k].input.management_port}", "")}"
+
+        # Path defaults based on username
+        paths = try(
+          coalesce(local.homelab_fields[k].input.paths),
+          data.onepassword_item.homelab[k].username == "root" ? "/root" : "/home/${data.onepassword_item.homelab[k].username}"
+        )
+
         # Network inheritance (child inherits from parent router if not set)
         public_address = try(
           coalesce(
@@ -35,24 +48,6 @@ locals {
           ),
           null
         )
-
-        # Path defaults based on username
-        paths = try(
-          coalesce(local.homelab_fields[k].input.paths),
-          data.onepassword_item.homelab[k].username == "root" ? "/root" : "/home/${data.onepassword_item.homelab[k].username}"
-        )
-
-        # Computed URLs and domains
-        fqdn_external = "${v.fqdn}.${var.domain_external}"
-        fqdn_internal = "${v.fqdn}.${var.domain_internal}"
-        url           = "${v.fqdn}.${var.domain_internal}${try(":${local.homelab_fields[k].input.management_port}", "")}"
-
-        # Parse tags from comma-separated string
-        tags = try(split(",", replace(coalesce(local.homelab_fields[k].input.tags, ""), " ", "")), [])
-
-        # Tailscale device IPs (from device lookup)
-        tailscale_ipv4 = try(local.tailscale_device_addresses[v.title].ipv4, null)
-        tailscale_ipv6 = try(local.tailscale_device_addresses[v.title].ipv6, null)
       },
 
       # Layer 2: Resource-generated credentials
@@ -104,8 +99,14 @@ locals {
   # Determine which resources to create for each homelab item
   homelab_resources = {
     for k, v in local.homelab_discovered : k => {
-      for resource in var.resources_homelab : resource =>
-      contains(try(var.default_homelab_resources[v.platform], []), resource)
+      for resource in var.resources_homelab : resource => contains(try(var.resources_homelab_defaults[v.platform], []), resource)
+    }
+  }
+
+  # Determine which tags to create for each homelab item
+  homelab_tags = {
+    for k, v in local.homelab_discovered : k => {
+      for tag in var.tags_homelab : tag => true
     }
   }
 }

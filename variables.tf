@@ -20,27 +20,6 @@ variable "default_timezone" {
   type        = string
 }
 
-variable "default_homelab_resources" {
-  description = "Default resources to create for each homelab platform type"
-  type        = map(list(string))
-
-  default = {
-    router = ["tailscale"]
-    server = ["b2", "cloudflare", "resend", "tailscale"]
-    vm     = ["b2", "cloudflare", "resend", "tailscale"]
-  }
-}
-
-variable "default_services_resources" {
-  description = "Default resources to create for each services platform type"
-  type        = map(list(string))
-
-  default = {
-    docker  = []
-    truenas = []
-  }
-}
-
 variable "dns" {
   default     = {}
   description = "DNS records by zone"
@@ -165,8 +144,41 @@ variable "resources_homelab" {
   type        = list(string)
 }
 
+variable "resources_homelab_defaults" {
+  description = "Default resources to create for each homelab platform type"
+  type        = map(list(string))
+
+  default = {
+    router = ["tailscale"]
+    server = ["b2", "cloudflare", "resend", "tailscale"]
+    vm     = ["b2", "cloudflare", "resend", "tailscale"]
+  }
+}
+
 variable "resources_services" {
   default     = ["b2", "resend", "tailscale"]
   description = "List of all available services resources that can be enabled via the resources input"
+  type        = list(string)
+}
+
+variable "resources_services_defaults" {
+  description = "Default resources to create for each services platform type"
+  type        = map(list(string))
+
+  default = {
+    docker  = []
+    truenas = []
+  }
+}
+
+variable "tags_homelab" {
+  default     = []
+  description = "List of all available homelab tags that can be enabled via the tags input"
+  type        = list(string)
+}
+
+variable "tags_services" {
+  default     = []
+  description = "List of all available services tags that can be enabled via the tags input"
   type        = list(string)
 }
