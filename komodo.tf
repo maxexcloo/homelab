@@ -1,9 +1,8 @@
 locals {
   # Get all unique deployment targets from services
   komodo_homelab = {
-    for server_key in distinct(flatten([
-      for k, v in local.komodo_services : v.targets
-    ])) : server_key => local.homelab[server_key]
+    for k, v in local.homelab : k => v
+    if contains(v.tags, "komodo")
   }
 
   komodo_services = {
@@ -66,6 +65,27 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   }
 }
 
+# Generate ResourceSync configuration for Komodo
+resource "github_repository_file" "komodo_resource_sync" {
+  commit_message      = "Update Komodo ResourceSync configuration"
+  file                = "resource_sync.toml"
+  overwrite_on_create = true
+  repository          = var.komodo_repository
+
+  content = <<-EOT
+    [[resource_sync]]
+    name = "komodo"
+
+    [resource_sync.config]
+    delete = true
+    git_account = "${data.github_user.default.login}"
+    include_variables = true
+    managed = true
+    repo = "${data.github_user.default.login}/${var.komodo_repository}"
+    resource_path = ["."]
+  EOT
+}
+
 # Generate servers.toml with all deployment targets
 resource "github_repository_file" "komodo_servers" {
   commit_message      = "Update Komodo server configurations"
@@ -76,12 +96,12 @@ resource "github_repository_file" "komodo_servers" {
   content = join("\n\n", [
     for k, v in local.komodo_homelab : <<-EOT
       [[server]]
-      description = "${coalesce(v.description, "Homelab server: ${title(replace(k, "-", " "))}")}"
+      description = "${v.description}"
       name = "${k}"
       tags = [${join(", ", [for tag in v.tags : "\"${tag}\""])}]
 
       [server.config]
-      address = "http://${v.private_ipv4}:8120"
+      address = "http://${v.fqdn_internal}:8120"
       enabled = true
       region = "${v.region}"
     EOT
@@ -98,14 +118,13 @@ resource "github_repository_file" "komodo_stacks" {
   content = join("\n\n", [
     for k, v in local.komodo_services : <<-EOT
       [[stack]]
-      description = "${coalesce(v.description, "Service: ${title(replace(k, "-", " "))}")}"
+      description = "${v.description}"
       name = "${k}"
       tags = [${join(", ", [for tag in concat(v.tags, [v.platform]) : "\"${tag}\""])}]
 
       [stack.config]
       auto_update = true
-      poll_for_updates = true
-      repo = "${var.komodo_repository}"
+      repo = "${data.github_user.default.login}${var.komodo_repository}"
       run_directory = "${k}"
       server = "${v.targets[0]}"
 

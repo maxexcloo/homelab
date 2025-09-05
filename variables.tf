@@ -170,15 +170,3 @@ variable "resources_services_defaults" {
     truenas = []
   }
 }
-
-variable "tags_homelab" {
-  default     = []
-  description = "List of all available homelab tags that can be enabled via the tags input"
-  type        = list(string)
-}
-
-variable "tags_services" {
-  default     = []
-  description = "List of all available services tags that can be enabled via the tags input"
-  type        = list(string)
-}

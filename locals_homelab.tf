@@ -102,11 +102,4 @@ locals {
       for resource in var.resources_homelab : resource => contains(try(var.resources_homelab_defaults[v.platform], []), resource)
     }
   }
-
-  # Determine which tags to create for each homelab item
-  homelab_tags = {
-    for k, v in local.homelab_discovered : k => {
-      for tag in var.tags_homelab : tag => true
-    }
-  }
 }
