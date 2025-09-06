@@ -60,5 +60,14 @@ resource "onepassword_item" "services_sync" {
       )
       error_message = "Invalid deploy_to for service ${each.value}. Must be all, a server title, or platform:x, region:x, tag:x"
     }
+
+    # Validate services with custom URLs deploy to exactly one server
+    precondition {
+      condition = (
+        local.services[each.value].url == null ||
+        length(local.services_deployments[each.value]) == 1
+      )
+      error_message = "Service ${each.value} has a custom URL but deploys to ${length(local.services_deployments[each.value])} servers. Services with custom URLs must deploy to exactly one server."
+    }
   }
 }
