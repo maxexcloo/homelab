@@ -9,15 +9,10 @@ locals {
           for target in local.services_deployments[k] : "output-${target}" => merge(
             # Computed values for this target
             {
-              b2_application_key    = null
-              b2_application_key_id = null
-              b2_bucket_name        = null
-              b2_endpoint           = null
-              database_password     = try(v.input.database_password, null)
-              fqdn_external         = "${k}.${local.homelab[target].output.fqdn_external}"
-              fqdn_internal         = "${k}.${local.homelab[target].output.fqdn_internal}"
-              resend_api_key        = null
-              secret_hash           = try(v.input.secret_hash, null)
+              database_password = try(v.input.database_password, null)
+              fqdn_external     = "${v.name}.${local.homelab[target].output.fqdn_external}"
+              fqdn_internal     = "${v.name}.${local.homelab[target].output.fqdn_internal}"
+              secret_hash       = try(v.input.secret_hash, null)
             }
           )
         } : {}

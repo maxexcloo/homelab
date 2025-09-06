@@ -135,7 +135,7 @@ locals {
         type    = "CNAME"
         zone    = var.domain_external
       }
-    } if length(local.services_deployments[k]) > 0
+    } if length(local.services_deployments[k]) > 0 && !contains(local.services_tags[k], "no_dns")
   ]...)
 
   # Service internal DNS records
@@ -148,7 +148,7 @@ locals {
         type    = "CNAME"
         zone    = var.domain_internal
       }
-    } if length(local.services_deployments[k]) > 0
+    } if length(local.services_deployments[k]) > 0 && !contains(local.services_tags[k], "no_dns")
   ]...)
 
   # Service custom URL DNS records

@@ -26,7 +26,7 @@ resource "onepassword_item" "services_sync" {
     }
   }
 
-  # Output sections (per-target)
+  # Output sections (per-target, always present)
   dynamic "section" {
     for_each = local.services[each.value].output
 
@@ -34,13 +34,16 @@ resource "onepassword_item" "services_sync" {
       label = section.key
 
       dynamic "field" {
-        for_each = var.onepassword_services_field_schema.output
+        for_each = {
+          for k, v in var.onepassword_services_field_schema.output : k => v
+          if lookup(section.value, k, null) != null
+        }
 
         content {
           id    = "${section.key}.${field.key}"
           label = field.key
           type  = field.value
-          value = coalesce(lookup(section.value, field.key, null), "-")
+          value = section.value[field.key]
         }
       }
     }

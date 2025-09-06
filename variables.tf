@@ -129,15 +129,10 @@ variable "onepassword_services_field_schema" {
     output = {
       # Per-target output sections will be created dynamically
       # Format: output-{target-name}
-      b2_application_key    = "CONCEALED"
-      b2_application_key_id = "STRING"
-      b2_bucket_name        = "STRING"
-      b2_endpoint           = "URL"
-      database_password     = "CONCEALED"
-      fqdn_external         = "URL"
-      fqdn_internal         = "URL"
-      resend_api_key        = "CONCEALED"
-      secret_hash           = "CONCEALED"
+      database_password = "CONCEALED"
+      fqdn_external     = "URL"
+      fqdn_internal     = "URL"
+      secret_hash       = "CONCEALED"
     }
   }
 

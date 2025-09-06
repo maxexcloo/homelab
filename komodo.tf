@@ -7,47 +7,25 @@ locals {
 
   komodo_services = {
     for k, v in local.services : k => v
-    if length(local.services_deployments[k]) > 0 && v.platform == "docker"
+    if length(local.services_deployments[k]) > 0 && v.platform == "docker" && fileexists("${path.module}/docker/${k}/docker-compose.yaml")
   }
 
-  # Render docker-compose templates with minimal template variables (KISS approach)
+  # Render docker-compose templates with raw objects (KISS approach)
   komodo_services_templates = {
     for k, v in local.komodo_services : k => templatefile("${path.module}/docker/${k}/docker-compose.yaml",
       {
-        # Default values (non-secrets only)
+        # Default values
         default = {
           email        = var.default_email
           organisation = var.default_organization
           timezone     = var.default_timezone
         }
 
-        # Service values (including secrets for SOPS encryption)
-        service = merge(
-          {
-            # Core identifiers
-            fqdn     = coalesce(v.output.fqdn_external, v.output.fqdn_internal, "${k}.${var.domain_internal}")
-            title    = title(replace(k, "-", " "))
-            username = coalesce(v.input.username, "admin")
-            zone     = v.output.fqdn_external != null ? "external" : "internal"
-          },
-          {
-            url = "https://${coalesce(v.output.fqdn_external, v.output.fqdn_internal, "${k}.${var.domain_internal}")}"
-          },
-          # Server-inherited secrets (will be encrypted by SOPS)
-          length(local.services_deployments[k]) > 0 ? {
-            b2_application_key    = local.homelab[local.services_deployments[k][0]].output.b2_application_key
-            b2_application_key_id = local.homelab[local.services_deployments[k][0]].output.b2_application_key_id
-            b2_bucket_name        = local.homelab[local.services_deployments[k][0]].output.b2_bucket_name
-            b2_endpoint           = local.homelab[local.services_deployments[k][0]].output.b2_endpoint
-            resend_api_key        = local.homelab[local.services_deployments[k][0]].output.resend_api_key
-            } : {
-            b2_application_key    = ""
-            b2_application_key_id = ""
-            b2_bucket_name        = ""
-            b2_endpoint           = ""
-            resend_api_key        = ""
-          }
-        )
+        # Raw service object from local.services
+        service = v
+
+        # Deployment server object from local.homelab
+        server = length(local.services_deployments[k]) > 0 ? local.homelab[local.services_deployments[k][0]] : null
       }
     )
   }

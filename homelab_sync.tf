@@ -6,8 +6,9 @@ resource "onepassword_item" "homelab_sync" {
   username = local.homelab[each.value].username
   vault    = data.onepassword_vault.homelab.uuid
 
+  # Input section (always present)
   dynamic "section" {
-    for_each = var.onepassword_homelab_field_schema
+    for_each = { input = var.onepassword_homelab_field_schema.input }
 
     content {
       label = section.key
@@ -19,7 +20,30 @@ resource "onepassword_item" "homelab_sync" {
           id    = "${section.key}.${field.key}"
           label = field.key
           type  = field.value
-          value = coalesce(lookup(lookup(local.homelab[each.value], section.key, {}), field.key, null), "-")
+          value = coalesce(lookup(local.homelab[each.value].input, field.key, null), "-")
+        }
+      }
+    }
+  }
+
+  # Output section (always present)
+  dynamic "section" {
+    for_each = { output = var.onepassword_homelab_field_schema.output }
+
+    content {
+      label = section.key
+
+      dynamic "field" {
+        for_each = {
+          for k, v in section.value : k => v
+          if lookup(local.homelab[each.value].output, k, null) != null
+        }
+
+        content {
+          id    = "${section.key}.${field.key}"
+          label = field.key
+          type  = field.value
+          value = local.homelab[each.value].output[field.key]
         }
       }
     }
