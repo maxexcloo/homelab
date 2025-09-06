@@ -51,18 +51,12 @@ locals {
   # Determine which resources to create for each service
   services_resources = {
     for k, v in local.services_discovered : k => {
-      for resource in var.resources_services : resource => contains(
-        split(",", replace(try(v.input.resources, ""), " ", "")),
-        resource
-      )
+      for resource in var.resources_services : resource => contains(try(split(",", replace(v.input.resources, " ", "")), []), resource)
     }
   }
 
-  # Parse tags from space-separated input to array
+  # Parse tags from input field
   services_tags = {
-    for k, v in local.services_discovered : k => try(
-      v.input.tags != null ? split(",", replace(v.input.tags, " ", "")) : [],
-      []
-    )
+    for k, v in local.services_discovered : k => try(split(",", replace(v.input.tags, " ", "")), [])
   }
 }

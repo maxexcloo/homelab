@@ -31,18 +31,22 @@ import {
 }
 
 locals {
+  # Helper to parse JSON data once per item
+  _homelab_item_data = {
+    for title, item in data.http.homelab_item : title => jsondecode(item.response_body)
+  }
+
   # Build complete discovered items directly from individual item data sources
   homelab_discovered = {
-    for title, item_data in data.http.homelab_item : title => merge(
-      # Base metadata from title parsing
+    for title, item in local._homelab_item_data : title => merge(
+      # Standardized naming conventions
       {
         fqdn     = length(split("-", title)) > 2 ? "${join("-", slice(split("-", title), 2, length(split("-", title))))}.${split("-", title)[1]}" : split("-", title)[1]
-        id       = jsondecode(item_data.response_body).id
+        id       = item.id
         name     = length(split("-", title)) > 2 ? join("-", slice(split("-", title), 2, length(split("-", title)))) : split("-", title)[1]
         platform = split("-", title)[0]
         region   = split("-", title)[1]
-        title    = replace(title, "/^[a-z]+-/", "")
-        username = try([for field in jsondecode(item_data.response_body).fields : field.value if field.purpose == "USERNAME"][0], null)
+        username = try([for field in item.fields : field.value if field.purpose == "USERNAME"][0], null)
       },
       # Input fields nested under 'input' key
       {
@@ -53,11 +57,12 @@ locals {
           },
           # Add platform-specific resource defaults
           {
-            resources = join(",", lookup(var.resources_homelab_defaults, split("-", title)[0], []))
+            resources = length(lookup(var.resources_homelab_defaults, split("-", title)[0], [])) > 0 ? join(",", lookup(var.resources_homelab_defaults, split("-", title)[0], [])) : ""
           },
           # Override with actual values from 1Password
           {
-            for field in try([for s in jsondecode(item_data.response_body).sections : s if s.label == "input"][0].fields, []) : field.label => field.value == "-" ? null : field.value
+            for field in item.fields : field.label => field.value == "-" || field.value == "" ? null : field.value
+            if try(field.section.label, "") == "input"
           }
         )
       }

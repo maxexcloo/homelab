@@ -18,10 +18,11 @@ locals {
             fqdn_external      = "${v.fqdn}.${var.domain_external}"
             fqdn_internal      = "${v.fqdn}.${var.domain_internal}"
             paths              = try(v.input.paths, null)
+
             public_address = try(
               coalesce(
                 v.input.public_address,
-                try(local.homelab_discovered["router-${v.input.parent}"].input.public_address, null)
+                try(local.homelab_discovered[v.input.parent].input.public_address, null)
               ),
               null
             )
@@ -29,7 +30,7 @@ locals {
             public_ipv4 = try(
               coalesce(
                 v.input.public_ipv4,
-                try(local.homelab_discovered["router-${v.input.parent}"].input.public_ipv4, null)
+                try(local.homelab_discovered[v.input.parent].input.public_ipv4, null)
               ),
               null
             )
@@ -37,7 +38,7 @@ locals {
             public_ipv6 = try(
               coalesce(
                 v.input.public_ipv6,
-                try(local.homelab_discovered["router-${v.input.parent}"].input.public_ipv6, null)
+                try(local.homelab_discovered[v.input.parent].input.public_ipv6, null)
               ),
               null
             )
@@ -95,18 +96,12 @@ locals {
   # Determine which resources to create for each homelab item
   homelab_resources = {
     for k, v in local.homelab_discovered : k => {
-      for resource in var.resources_homelab : resource => contains(
-        split(",", replace(try(v.input.resources, ""), " ", "")),
-        resource
-      )
+      for resource in var.resources_homelab : resource => contains(try(split(",", replace(v.input.resources, " ", "")), []), resource)
     }
   }
 
-  # Parse tags from space-separated input to array
+  # Parse tags from input field
   homelab_tags = {
-    for k, v in local.homelab_discovered : k => try(
-      v.input.tags != null ? split(",", replace(v.input.tags, " ", "")) : [],
-      []
-    )
+    for k, v in local.homelab_discovered : k => try(split(",", replace(v.input.tags, " ", "")), [])
   }
 }

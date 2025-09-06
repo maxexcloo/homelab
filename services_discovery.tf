@@ -31,15 +31,20 @@ import {
 }
 
 locals {
+  # Helper to parse JSON data once per item
+  _services_item_data = {
+    for title, item in data.http.service_item : title => jsondecode(item.response_body)
+  }
+
   # Build complete discovered items directly from individual item data sources
   services_discovered = {
-    for title, item_data in data.http.service_item : title => merge(
-      # Base metadata from title parsing
+    for title, item in data.http.service_item : title => merge(
+      # Standardized naming conventions
       {
-        id       = jsondecode(item_data.response_body).id
+        id       = local._services_item_data[title].id
         name     = join("-", slice(split("-", title), 1, length(split("-", title))))
         platform = split("-", title)[0]
-        username = try([for field in jsondecode(item_data.response_body).fields : field.value if field.purpose == "USERNAME"][0], null)
+        username = try([for field in local._services_item_data[title].fields : field.value if field.purpose == "USERNAME"][0], null)
       },
       # Input fields nested under 'input' key
       {
@@ -50,11 +55,12 @@ locals {
           },
           # Add platform-specific resource defaults
           {
-            resources = join(",", lookup(var.resources_services_defaults, split("-", title)[0], []))
+            resources = length(lookup(var.resources_services_defaults, split("-", title)[0], [])) > 0 ? join(",", lookup(var.resources_services_defaults, split("-", title)[0], [])) : ""
           },
           # Override with actual values from 1Password
           {
-            for field in try([for s in jsondecode(item_data.response_body).sections : s if s.label == "input"][0].fields, []) : field.label => field.value == "-" ? null : field.value
+            for field in local._services_item_data[title].fields : field.label => field.value == "-" || field.value == "" ? null : field.value
+            if try(field.section.label, "") == "input"
           }
         )
       }

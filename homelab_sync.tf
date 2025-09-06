@@ -28,8 +28,8 @@ resource "onepassword_item" "homelab_sync" {
   lifecycle {
     # Validate parent exists if specified
     precondition {
-      condition     = local.homelab[each.value].input.parent == null || contains(keys(local.homelab_discovered), "router-${local.homelab[each.value].input.parent}")
-      error_message = "Parent router does not exist for ${each.value}. Expected format: router-{region}"
+      condition     = local.homelab_discovered[each.value].input.parent == null || contains(keys(local.homelab_discovered), local.homelab_discovered[each.value].input.parent)
+      error_message = "Parent does not exist for ${each.value}."
     }
   }
 }

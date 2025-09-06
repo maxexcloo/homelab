@@ -58,7 +58,7 @@ resource "onepassword_item" "services_sync" {
         # Platform/region/tag reference
         can(regex("^(platform|region|tag):", local.services[each.value].input.deploy_to))
       )
-      error_message = "Invalid deploy_to for service ${each.value}. Must be all, a server name, or platform:x, region:x, tag:x"
+      error_message = "Invalid deploy_to for service ${each.value}. Must be all, a server title, or platform:x, region:x, tag:x"
     }
   }
 }
