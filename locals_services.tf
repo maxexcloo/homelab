@@ -1,56 +1,68 @@
 locals {
-  # Complete services data with all fields merged and computed
+  # Resolve deployment targets from deploy_to input
+  services_deployments = {
+    for k, v in local.services_discovered : k => (
+      try(v.input.deploy_to, null) == null ? [] :
+      # Deploy to all servers
+      v.input.deploy_to == "all" ? keys(local.homelab_discovered) :
+      # Direct server reference
+      contains(keys(local.homelab_discovered), v.input.deploy_to) ? [v.input.deploy_to] :
+      # Pattern-based matches
+      [
+        for h_key, h_val in local.homelab_discovered : h_key
+        if(
+          startswith(v.input.deploy_to, "platform:") && h_val.platform == trimprefix(v.input.deploy_to, "platform:") ||
+          startswith(v.input.deploy_to, "region:") && h_val.region == trimprefix(v.input.deploy_to, "region:") ||
+          startswith(v.input.deploy_to, "tag:") && contains(try(local.homelab_tags[h_key], []), trimprefix(v.input.deploy_to, "tag:"))
+        )
+      ]
+    )
+  }
+
+  # Complete services data with structured input/output sections
   services = {
     for k, v in local.services_discovered : k => merge(
-      # Base: Discovery metadata
       v,
-
-      # 1Password fields (flattened from input/output sections)
-      local.services_fields[k].input,
-      local.services_fields[k].output,
-
-      # Layer 1: Computed fields
       {
-        fqdn_external = try("${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_external}", null)
-        fqdn_internal = try("${k}.${local.homelab[local.services_deployments[k].targets[0]].fqdn_internal}", null)
-        tags          = try(split(",", replace(coalesce(local.services_fields[k].input.tags, ""), " ", "")), [])
+        url = length(local.services_deployments[k]) > 0 ? "https://${k}.${local.homelab[local.services_deployments[k][0]].output.fqdn_external}" : null
+
+        input = v.input
+        output = length(local.services_deployments[k]) > 0 ? {
+          for target in local.services_deployments[k] : "output-${target}" => merge(
+            # Computed values for this target
+            {
+              b2_application_key    = null
+              b2_application_key_id = null
+              b2_bucket_name        = null
+              b2_endpoint           = null
+              database_password     = try(v.input.database_password, null)
+              fqdn_external         = "${k}.${local.homelab[target].output.fqdn_external}"
+              fqdn_internal         = "${k}.${local.homelab[target].output.fqdn_internal}"
+              resend_api_key        = null
+              secret_hash           = try(v.input.secret_hash, null)
+            }
+          )
+        } : {}
       }
-    ) if try(local.services_fields[k].input, null) != null
+    )
   }
 
-  # Determine where each service should be deployed
-  services_deployments = {
-    for k, v in local.services_discovered : k => {
-      # Store the raw deploy_to value for validation
-      deploy_to = try(local.services_fields[k].input.deploy_to, null)
-
-      # Parse deployment targets based on deploy_to syntax
-      targets = try(
-        local.services_fields[k].input.deploy_to == null ? [] :
-        # Direct server reference
-        lookup(local.homelab_discovered, local.services_fields[k].input.deploy_to, null) != null ? [local.services_fields[k].input.deploy_to] :
-        # Platform/region/tag matches
-        [for h_key, h_val in local.homelab_discovered : h_key
-          if(startswith(local.services_fields[k].input.deploy_to, "platform:") && h_val.platform == trimprefix(local.services_fields[k].input.deploy_to, "platform:")) ||
-          (startswith(local.services_fields[k].input.deploy_to, "region:") && h_val.region == trimprefix(local.services_fields[k].input.deploy_to, "region:")) ||
-          (startswith(local.services_fields[k].input.deploy_to, "tag:") && contains(try(local.homelab[h_key].tags, []), trimprefix(local.services_fields[k].input.deploy_to, "tag:")))
-        ],
-        []
-      )
-    } if try(local.services_fields[k].input, null) != null
-  }
 
   # Determine which resources to create for each service
   services_resources = {
     for k, v in local.services_discovered : k => {
-      for resource in var.resources_services : resource => contains(try(var.resources_services_defaults[v.platform], []), resource)
+      for resource in var.resources_services : resource => contains(
+        split(",", replace(try(v.input.resources, ""), " ", "")),
+        resource
+      )
     }
   }
 
-  # Determine which tags to create for each service
+  # Parse tags from space-separated input to array
   services_tags = {
-    for k, v in local.services_discovered : k => {
-      for tag in var.resources_services : tag => true
-    }
+    for k, v in local.services_discovered : k => try(
+      v.input.tags != null ? split(",", replace(v.input.tags, " ", "")) : [],
+      []
+    )
   }
 }

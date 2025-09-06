@@ -10,6 +10,19 @@ locals {
   }
 }
 
+resource "tailscale_tailnet_key" "caddy" {
+  for_each = {
+    for k, v in local.homelab_discovered : k => v
+    if local.homelab_resources[k].docker
+  }
+
+  description   = "${each.key}-caddy"
+  ephemeral     = true
+  preauthorized = true
+  reusable      = true
+  tags          = ["tag:ephemeral"]
+}
+
 resource "tailscale_tailnet_key" "homelab" {
   for_each = {
     for k, v in local.homelab_discovered : k => v

@@ -57,54 +57,56 @@ locals {
     # CNAME records (take precedence)
     {
       for k, v in local.homelab_discovered : "${var.domain_external}-${k}-cname" => {
-        content = local.homelab[k].public_address
+        content = v.input.public_address
         name    = "${v.fqdn}.${var.domain_external}"
         server  = k
         type    = "CNAME"
         zone    = var.domain_external
-      } if local.homelab[k].public_address != null
+      } if v.input.public_address != null
     },
     # A records (only if no CNAME)
     {
       for k, v in local.homelab_discovered : "${var.domain_external}-${k}-a" => {
-        content = local.homelab[k].public_ipv4
+        content = v.input.public_ipv4
         name    = "${v.fqdn}.${var.domain_external}"
         server  = k
         type    = "A"
         zone    = var.domain_external
-      } if local.homelab[k].public_address == null && local.homelab[k].public_ipv4 != null && can(cidrhost("${local.homelab[k].public_ipv4}/32", 0))
+      } if v.input.public_address == null && v.input.public_ipv4 != null && can(cidrhost("${v.input.public_ipv4}/32", 0))
     },
     # AAAA records (only if no CNAME)
     {
       for k, v in local.homelab_discovered : "${var.domain_external}-${k}-aaaa" => {
-        content = local.homelab[k].public_ipv6
+        content = v.input.public_ipv6
         name    = "${v.fqdn}.${var.domain_external}"
         server  = k
         type    = "AAAA"
         zone    = var.domain_external
-      } if local.homelab[k].public_address == null && local.homelab[k].public_ipv6 != null && can(cidrhost("${local.homelab[k].public_ipv6}/128", 0))
+      } if v.input.public_address == null && v.input.public_ipv6 != null && can(cidrhost("${v.input.public_ipv6}/128", 0))
     }
   )
 
   # Homelab internal DNS records
   dns_records_homelab_internal = merge(
+    # A records for direct IP access
     {
       for k, v in local.homelab_discovered : "${var.domain_internal}-${k}-a" => {
-        content = local.homelab[k].tailscale_ipv4
+        content = local.homelab[k].output.tailscale_ipv4
         name    = "${v.fqdn}.${var.domain_internal}"
         server  = k
         type    = "A"
         zone    = var.domain_internal
-      } if local.homelab[k].tailscale_ipv4 != null
+      } if local.homelab[k].output.tailscale_ipv4 != null
     },
+    # AAAA records for direct IPv6 access
     {
       for k, v in local.homelab_discovered : "${var.domain_internal}-${k}-aaaa" => {
-        content = local.homelab[k].tailscale_ipv6
+        content = local.homelab[k].output.tailscale_ipv6
         name    = "${v.fqdn}.${var.domain_internal}"
         server  = k
         type    = "AAAA"
         zone    = var.domain_internal
-      } if local.homelab[k].tailscale_ipv6 != null
+      } if local.homelab[k].output.tailscale_ipv6 != null
     }
   )
 
@@ -126,43 +128,43 @@ locals {
   # Service external DNS records
   dns_records_services_external = merge([
     for k, service in local.services : {
-      for target in local.services_deployments[k].targets : "${var.domain_external}-${k}-${target}" => {
+      for target in service.targets : "${var.domain_external}-${k}-${target}" => {
         content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
         name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
         server  = target
         type    = "CNAME"
         zone    = var.domain_external
       }
-    } if length(local.services_deployments[k].targets) > 0
+    } if length(local.services_deployments[k]) > 0
   ]...)
 
   # Service internal DNS records
   dns_records_services_internal = merge([
     for k, service in local.services : {
-      for target in local.services_deployments[k].targets : "${var.domain_internal}-${k}-${target}" => {
+      for target in service.targets : "${var.domain_internal}-${k}-${target}" => {
         content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
         name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
         server  = target
         type    = "CNAME"
         zone    = var.domain_internal
       }
-    } if length(local.services_deployments[k].targets) > 0
+    } if length(local.services_deployments[k]) > 0
   ]...)
 
   # Service custom URL DNS records
   dns_records_services_urls = {
     for k, service in local.services : "${k}-url" => {
       content = (
-        contains(local.services[k].tags, "proxied") && local.homelab_resources[local.services_deployments[k].targets[0]].cloudflare ?
-        "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[k].targets[0]].id}.cfargotunnel.com" :
-        "${service.name}.${local.homelab_discovered[local.services_deployments[k].targets[0]].fqdn}.${contains(local.services[k].tags, "external") ? var.domain_external : var.domain_internal}"
+        contains(local.services_tags[k], "proxied") && local.homelab_resources[local.services_deployments[k][0]].cloudflare ?
+        "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[k][0]].id}.cfargotunnel.com" :
+        "${service.name}.${local.homelab_discovered[local.services_deployments[k][0]].fqdn}.${contains(local.services_tags[k], "external") ? var.domain_external : var.domain_internal}"
       )
-      name    = service.url
-      proxied = contains(local.services[k].tags, "proxied")
-      server  = local.services_deployments[k].targets[0]
+      name    = service.input.url
+      proxied = contains(local.services_tags[k], "proxied")
+      server  = local.services_deployments[k][0]
       type    = "CNAME"
-      zone    = try([for zone in keys(var.dns) : zone if endswith(service.url, zone)][0], null)
-    } if service.url != null && length(local.services_deployments[k].targets) > 0 && try([for zone in keys(var.dns) : zone if endswith(service.url, zone)][0], null) != null
+      zone    = [for zone in keys(var.dns) : zone if endswith(service.input.url, zone)][0]
+    } if service.input.url != null && length(local.services_deployments[k]) > 0 && length([for zone in keys(var.dns) : zone if endswith(service.input.url, zone)]) > 0
   }
 
   # Wildcard DNS records for all unique subdomains

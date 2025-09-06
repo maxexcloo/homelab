@@ -2,12 +2,12 @@ locals {
   # Get all unique deployment targets from services
   komodo_homelab = {
     for k, v in local.homelab : k => v
-    if contains(v.tags, "komodo")
+    if contains(local.homelab_tags[k], "komodo")
   }
 
   komodo_services = {
     for k, v in local.services : k => v
-    if length(v.targets) > 0 && v.platform == "docker"
+    if length(local.services_deployments[k]) > 0 && v.platform == "docker"
   }
 
   # Render docker-compose templates with minimal template variables (KISS approach)
@@ -22,21 +22,32 @@ locals {
         }
 
         # Service values (including secrets for SOPS encryption)
-        service = {
-          # Core identifiers
-          fqdn     = coalesce(v.fqdn_external, v.fqdn_internal, "${k}.${var.domain_internal}")
-          title    = title(replace(k, "-", " "))
-          url      = "https://${coalesce(v.fqdn_external, v.fqdn_internal, "${k}.${var.domain_internal}")}"
-          username = try(v.username, "admin")
-          zone     = v.fqdn_external != null ? "external" : "internal"
-
+        service = merge(
+          {
+            # Core identifiers
+            fqdn     = coalesce(v.output.fqdn_external, v.output.fqdn_internal, "${k}.${var.domain_internal}")
+            title    = title(replace(k, "-", " "))
+            username = coalesce(v.input.username, "admin")
+            zone     = v.output.fqdn_external != null ? "external" : "internal"
+          },
+          {
+            url = "https://${coalesce(v.output.fqdn_external, v.output.fqdn_internal, "${k}.${var.domain_internal}")}"
+          },
           # Server-inherited secrets (will be encrypted by SOPS)
-          b2_application_key    = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_application_key : "", "")
-          b2_application_key_id = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_application_key_id : "", "")
-          b2_bucket_name        = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_bucket_name : "", "")
-          b2_endpoint           = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].b2_endpoint : "", "")
-          resend_api_key        = try(length(v.targets) > 0 ? local.homelab[v.targets[0]].resend_api_key : "", "")
-        }
+          length(local.services_deployments[k]) > 0 ? {
+            b2_application_key    = local.homelab[local.services_deployments[k][0]].output.b2_application_key
+            b2_application_key_id = local.homelab[local.services_deployments[k][0]].output.b2_application_key_id
+            b2_bucket_name        = local.homelab[local.services_deployments[k][0]].output.b2_bucket_name
+            b2_endpoint           = local.homelab[local.services_deployments[k][0]].output.b2_endpoint
+            resend_api_key        = local.homelab[local.services_deployments[k][0]].output.resend_api_key
+            } : {
+            b2_application_key    = ""
+            b2_application_key_id = ""
+            b2_bucket_name        = ""
+            b2_endpoint           = ""
+            resend_api_key        = ""
+          }
+        )
       }
     )
   }
@@ -47,20 +58,20 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   for_each = nonsensitive(toset(keys(local.komodo_services)))
 
   environment = {
-    AGE_PUBLIC_KEY = local.homelab[local.komodo_services[each.value].targets[0]].age_public_key
+    AGE_PUBLIC_KEY = local.homelab[local.services_deployments[each.value][0]].output.age_public_key
     CONTENT        = base64encode(local.komodo_services_templates[each.value])
   }
 
   lifecycle_commands {
-    create = "echo '$CONTENT | base64 -d | sops -e --input-type yaml --output-type yaml --age '$AGE_PUBLIC_KEY' /dev/stdin"
+    create = "echo '$CONTENT | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
     delete = "true"
-    read   = "echo '$CONTENT | base64 -d | sops -e --input-type yaml --output-type yaml --age '$AGE_PUBLIC_KEY' /dev/stdin"
-    update = "echo '$CONTENT | base64 -d | sops -e --input-type yaml --output-type yaml --age '$AGE_PUBLIC_KEY' /dev/stdin"
+    read   = "echo '$CONTENT | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
+    update = "echo '$CONTENT | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
 
   }
 
   triggers = {
-    age_public_key_hash = sha256(local.homelab[local.komodo_services[each.value].targets[0]].age_public_key)
+    age_public_key_hash = sha256(local.homelab[local.services_deployments[each.value][0]].output.age_public_key)
     content_hash        = sha256(local.komodo_services_templates[each.value])
   }
 }
@@ -96,12 +107,12 @@ resource "github_repository_file" "komodo_servers" {
   content = join("\n\n", [
     for k, v in local.komodo_homelab : <<-EOT
       [[server]]
-      description = "${v.description}"
+      description = "${v.input.description}"
       name = "${k}"
-      tags = [${join(", ", [for tag in v.tags : "\"${tag}\""])}]
+      tags = [${join(", ", [for tag in local.homelab_tags[k] : "\"${tag}\""])}]
 
       [server.config]
-      address = "http://${v.fqdn_internal}:8120"
+      address = "http://${v.output.fqdn_internal}:8120"
       enabled = true
       region = "${v.region}"
     EOT
@@ -118,18 +129,18 @@ resource "github_repository_file" "komodo_stacks" {
   content = join("\n\n", [
     for k, v in local.komodo_services : <<-EOT
       [[stack]]
-      description = "${v.description}"
+      description = "${v.input.description}"
       name = "${k}"
-      tags = [${join(", ", [for tag in concat(v.tags, [v.platform]) : "\"${tag}\""])}]
+      tags = [${join(", ", [for tag in concat(local.services_tags[k], [v.platform]) : "\"${tag}\""])}]
 
       [stack.config]
       auto_update = true
       repo = "${data.github_user.default.login}${var.komodo_repository}"
       run_directory = "${k}"
-      server = "${v.targets[0]}"
+      server = "${local.services_deployments[k][0]}"
 
       [stack.config.pre_deploy]
-      command = "sops -d -i docker-compose.yaml"
+      command = "sops decrypt -i docker-compose.yaml"
     EOT
   ])
 }

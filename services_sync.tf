@@ -1,13 +1,14 @@
 resource "onepassword_item" "services_sync" {
   for_each = local.services_id_to_title
 
-  title    = data.onepassword_item.service[each.value].title
-  url      = try(local.services[each.value].url, null)
-  username = data.onepassword_item.service[each.value].username
+  title    = each.value
+  url      = local.services[each.value].url
+  username = local.services[each.value].username
   vault    = data.onepassword_vault.services.uuid
 
+  # Input section (always present)
   dynamic "section" {
-    for_each = var.onepassword_services_field_schema
+    for_each = { input = var.onepassword_services_field_schema.input }
 
     content {
       label = section.key
@@ -19,11 +20,27 @@ resource "onepassword_item" "services_sync" {
           id    = "${section.key}.${field.key}"
           label = field.key
           type  = field.value
+          value = coalesce(lookup(local.services[each.value].input, field.key, null), "-")
+        }
+      }
+    }
+  }
 
-          # Logic:
-          # - Input fields: preserve existing values from 1Password (including "-")
-          # - Output fields: always update with computed values (null becomes "-")
-          value = section.key == "input" ? coalesce(local.services_fields[each.value].input[field.key], "-") : coalesce(try(local.services[each.value][field.key], null), "-")
+  # Output sections (per-target)
+  dynamic "section" {
+    for_each = local.services[each.value].output
+
+    content {
+      label = section.key
+
+      dynamic "field" {
+        for_each = var.onepassword_services_field_schema.output
+
+        content {
+          id    = "${section.key}.${field.key}"
+          label = field.key
+          type  = field.value
+          value = coalesce(lookup(section.value, field.key, null), "-")
         }
       }
     }
@@ -32,15 +49,16 @@ resource "onepassword_item" "services_sync" {
   lifecycle {
     # Validate deploy_to references
     precondition {
-      condition = try(
-        local.services_fields[each.value].input.deploy_to == null ||
+      condition = (
+        local.services[each.value].input.deploy_to == null ||
+        # Deploy to all
+        local.services[each.value].input.deploy_to == "all" ||
         # Direct server reference
-        contains(keys(local.homelab_discovered), local.services_fields[each.value].input.deploy_to) ||
+        contains(keys(local.homelab_discovered), local.services[each.value].input.deploy_to) ||
         # Platform/region/tag reference
-        can(regex("^(platform|region|tag):", local.services_fields[each.value].input.deploy_to)),
-        true
+        can(regex("^(platform|region|tag):", local.services[each.value].input.deploy_to))
       )
-      error_message = "Invalid deploy_to for service ${each.value}. Must be a server name or platform:x, region:x, tag:x"
+      error_message = "Invalid deploy_to for service ${each.value}. Must be all, a server name, or platform:x, region:x, tag:x"
     }
   }
 }

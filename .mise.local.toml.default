@@ -1,9 +1,9 @@
 [env]
-# 1Password Connect
-# Create at: https://my.1password.com/integrations/active
-OP_CONNECT_HOST = "REPLACE_ME"
-OP_CONNECT_TOKEN = "REPLACE_ME"
-
-# HCP Terraform Token
+# Terraform Cloud
 # Create at: https://app.terraform.io/app/settings/tokens
 TF_TOKEN_app_terraform_io = "REPLACE_ME"
+
+# 1Password Connect
+# Create at: https://my.1password.com/integrations/active
+TF_VAR_onepassword_connect_host = "REPLACE_ME"
+TF_VAR_onepassword_connect_token = "REPLACE_ME"

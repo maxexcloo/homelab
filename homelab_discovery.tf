@@ -1,13 +1,22 @@
-# Get all items from vault using 1Password Connect API via mise
-data "external" "homelab_items" {
-  program = ["sh", "-c", "mise exec -- sh -c 'curl -s -H \"Authorization: Bearer $OP_CONNECT_TOKEN\" \"$OP_CONNECT_HOST/v1/vaults/${data.onepassword_vault.homelab.uuid}/items\" | jq -c \"[.[] | {id, title}] | {items: (. | tostring)}\" || echo \"{\\\"items\\\":\\\"[]\\\"}\"'"]
+data "http" "homelab_item" {
+  for_each = {
+    for item in jsondecode(data.http.homelab_vault.response_body) : item.title => item.id
+    if can(regex("^[a-z]+-[a-z]+-[a-z]+$", item.title)) || can(regex("^router-[a-z]+$", item.title))
+  }
+
+  url = "${var.onepassword_connect_host}/v1/vaults/${data.onepassword_vault.homelab.uuid}/items/${each.value}"
+
+  request_headers = {
+    Authorization = "Bearer ${var.onepassword_connect_token}"
+  }
 }
 
-data "onepassword_item" "homelab" {
-  for_each = local.homelab_discovered
+data "http" "homelab_vault" {
+  url = "${var.onepassword_connect_host}/v1/vaults/${data.onepassword_vault.homelab.uuid}/items"
 
-  title = each.key
-  vault = data.onepassword_vault.homelab.uuid
+  request_headers = {
+    Authorization = "Bearer ${var.onepassword_connect_token}"
+  }
 }
 
 data "onepassword_vault" "homelab" {
@@ -22,44 +31,34 @@ import {
 }
 
 locals {
-  # Parse raw items from 1Password Connect API and extract metadata from naming convention
+  # Build complete discovered items directly from individual item data sources
   homelab_discovered = {
-    for item in jsondecode(data.external.homelab_items.result.items) : item.title => {
-      fqdn     = length(split("-", item.title)) > 2 ? "${join("-", slice(split("-", item.title), 2, length(split("-", item.title))))}.${split("-", item.title)[1]}" : split("-", item.title)[1]
-      id       = item.id
-      name     = length(split("-", item.title)) > 2 ? join("-", slice(split("-", item.title), 2, length(split("-", item.title)))) : split("-", item.title)[1]
-      platform = split("-", item.title)[0]
-      region   = split("-", item.title)[1]
-      title    = replace(item.title, "/^[a-z]+-/", "")
-    } if can(regex("^[a-z]+-[a-z]+-[a-z]+$", item.title)) || can(regex("^router-[a-z]+$", item.title))
-  }
-
-  # Process 1Password fields separately to avoid circular dependency
-  homelab_fields = {
-    for k, v in local.homelab_discovered : k => merge(
-      # Input fields with defaults from schema
+    for title, item_data in data.http.homelab_item : title => merge(
+      # Base metadata from title parsing
+      {
+        fqdn     = length(split("-", title)) > 2 ? "${join("-", slice(split("-", title), 2, length(split("-", title))))}.${split("-", title)[1]}" : split("-", title)[1]
+        id       = jsondecode(item_data.response_body).id
+        name     = length(split("-", title)) > 2 ? join("-", slice(split("-", title), 2, length(split("-", title)))) : split("-", title)[1]
+        platform = split("-", title)[0]
+        region   = split("-", title)[1]
+        title    = replace(title, "/^[a-z]+-/", "")
+        username = try([for field in jsondecode(item_data.response_body).fields : field.value if field.purpose == "USERNAME"][0], null)
+      },
+      # Input fields nested under 'input' key
       {
         input = merge(
-          # Start with all schema input fields set to null
+          # Start with schema defaults
           {
             for field_name, field_type in var.onepassword_homelab_field_schema.input : field_name => null
           },
-          # Override with actual values from 1Password (when item exists), converting "-" to null
-          try(data.onepassword_item.homelab[k], null) != null ? {
-            for field in try([for s in data.onepassword_item.homelab[k].section : s if s.label == "input"][0].field, []) : field.label => field.value == "-" ? null : field.value
-          } : {}
-        )
-
-        # Output fields with defaults from schema
-        output = merge(
-          # Start with all schema output fields set to null
+          # Add platform-specific resource defaults
           {
-            for field_name, field_type in var.onepassword_homelab_field_schema.output : field_name => null
+            resources = join(",", lookup(var.resources_homelab_defaults, split("-", title)[0], []))
           },
-          # Override with actual values from 1Password (when item exists), converting "-" to null
-          try(data.onepassword_item.homelab[k], null) != null ? {
-            for field in try([for s in data.onepassword_item.homelab[k].section : s if s.label == "output"][0].field, []) : field.label => field.value == "-" ? null : field.value
-          } : {}
+          # Override with actual values from 1Password
+          {
+            for field in try([for s in jsondecode(item_data.response_body).sections : s if s.label == "input"][0].fields, []) : field.label => field.value == "-" ? null : field.value
+          }
         )
       }
     )

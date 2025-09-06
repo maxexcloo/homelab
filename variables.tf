@@ -93,6 +93,17 @@ variable "onepassword_homelab_field_schema" {
   })
 }
 
+variable "onepassword_connect_host" {
+  description = "1Password Connect server host URL"
+  type        = string
+}
+
+variable "onepassword_connect_token" {
+  description = "1Password Connect server access token"
+  sensitive   = true
+  type        = string
+}
+
 variable "onepassword_homelab_vault" {
   default     = "Homelab"
   description = "1Password homelab vault"
@@ -100,7 +111,7 @@ variable "onepassword_homelab_vault" {
 }
 
 variable "onepassword_services_field_schema" {
-  description = "Field schema for services 1Password items"
+  description = "Field schema for services 1Password items with per-target output sections"
 
   default = {
     input = {
@@ -116,13 +127,17 @@ variable "onepassword_services_field_schema" {
       tags              = "STRING"
     }
     output = {
+      # Per-target output sections will be created dynamically
+      # Format: output-{target-name}
       b2_application_key    = "CONCEALED"
       b2_application_key_id = "STRING"
       b2_bucket_name        = "STRING"
       b2_endpoint           = "URL"
+      database_password     = "CONCEALED"
       fqdn_external         = "URL"
       fqdn_internal         = "URL"
       resend_api_key        = "CONCEALED"
+      secret_hash           = "CONCEALED"
     }
   }
 
@@ -139,7 +154,7 @@ variable "onepassword_services_vault" {
 }
 
 variable "resources_homelab" {
-  default     = ["b2", "cloudflare", "resend", "tailscale"]
+  default     = ["b2", "cloudflare", "docker", "resend", "tailscale"]
   description = "List of all available homelab resources that can be enabled via the resources input"
   type        = list(string)
 }
@@ -150,8 +165,8 @@ variable "resources_homelab_defaults" {
 
   default = {
     router = ["tailscale"]
-    server = ["b2", "cloudflare", "resend", "tailscale"]
-    vm     = ["b2", "cloudflare", "resend", "tailscale"]
+    server = ["b2", "cloudflare", "docker", "resend", "tailscale"]
+    vm     = ["b2", "cloudflare", "docker", "resend", "tailscale"]
   }
 }
 

@@ -1,13 +1,22 @@
-# Get all items from vault using 1Password Connect API via mise
-data "external" "services_items" {
-  program = ["sh", "-c", "mise exec -- sh -c 'curl -s -H \"Authorization: Bearer $OP_CONNECT_TOKEN\" \"$OP_CONNECT_HOST/v1/vaults/${data.onepassword_vault.services.uuid}/items\" | jq -c \"[.[] | {id, title}] | {items: (. | tostring)}\" || echo \"{\\\"items\\\":\\\"[]\\\"}\"'"]
+data "http" "service_item" {
+  for_each = {
+    for item in jsondecode(data.http.services_vault.response_body) : item.title => item.id
+    if can(regex("^[a-z]+-[a-z]+", item.title))
+  }
+
+  url = "${var.onepassword_connect_host}/v1/vaults/${data.onepassword_vault.services.uuid}/items/${each.value}"
+
+  request_headers = {
+    Authorization = "Bearer ${var.onepassword_connect_token}"
+  }
 }
 
-data "onepassword_item" "service" {
-  for_each = local.services_discovered
+data "http" "services_vault" {
+  url = "${var.onepassword_connect_host}/v1/vaults/${data.onepassword_vault.services.uuid}/items"
 
-  title = each.key
-  vault = data.onepassword_vault.services.uuid
+  request_headers = {
+    Authorization = "Bearer ${var.onepassword_connect_token}"
+  }
 }
 
 data "onepassword_vault" "services" {
@@ -22,41 +31,31 @@ import {
 }
 
 locals {
-  # Parse raw items from 1Password Connect API and extract metadata from naming convention
+  # Build complete discovered items directly from individual item data sources
   services_discovered = {
-    for item in jsondecode(data.external.services_items.result.items) : item.title => {
-      id       = item.id
-      name     = join("-", slice(split("-", item.title), 1, length(split("-", item.title))))
-      platform = split("-", item.title)[0]
-    } if can(regex("^[a-z]+-[a-z]+", item.title))
-  }
-
-  # Process 1Password fields separately to avoid circular dependency
-  services_fields = {
-    for k, v in local.services_discovered : k => merge(
-      # Input fields with defaults from schema
+    for title, item_data in data.http.service_item : title => merge(
+      # Base metadata from title parsing
+      {
+        id       = jsondecode(item_data.response_body).id
+        name     = join("-", slice(split("-", title), 1, length(split("-", title))))
+        platform = split("-", title)[0]
+        username = try([for field in jsondecode(item_data.response_body).fields : field.value if field.purpose == "USERNAME"][0], null)
+      },
+      # Input fields nested under 'input' key
       {
         input = merge(
-          # Start with all schema input fields set to null
+          # Start with schema defaults
           {
             for field_name, field_type in var.onepassword_services_field_schema.input : field_name => null
           },
-          # Override with actual values from 1Password (when item exists), converting "-" to null
-          try(data.onepassword_item.service[k], null) != null ? {
-            for field in try([for s in data.onepassword_item.service[k].section : s if s.label == "input"][0].field, []) : field.label => field.value == "-" ? null : field.value
-          } : {}
-        )
-
-        # Output fields with defaults from schema
-        output = merge(
-          # Start with all schema output fields set to null
+          # Add platform-specific resource defaults
           {
-            for field_name, field_type in var.onepassword_services_field_schema.output : field_name => null
+            resources = join(",", lookup(var.resources_services_defaults, split("-", title)[0], []))
           },
-          # Override with actual values from 1Password (when item exists), converting "-" to null
-          try(data.onepassword_item.service[k], null) != null ? {
-            for field in try([for s in data.onepassword_item.service[k].section : s if s.label == "output"][0].field, []) : field.label => field.value == "-" ? null : field.value
-          } : {}
+          # Override with actual values from 1Password
+          {
+            for field in try([for s in jsondecode(item_data.response_body).sections : s if s.label == "input"][0].fields, []) : field.label => field.value == "-" ? null : field.value
+          }
         )
       }
     )

@@ -10,13 +10,13 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
-    external = {
-      source  = "hashicorp/external"
-      version = "~> 2.0"
-    }
     github = {
       source  = "integrations/github"
       version = "~> 6.0"
+    }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
     }
     onepassword = {
       source  = "1password/onepassword"

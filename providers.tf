@@ -5,7 +5,7 @@ data "onepassword_item" "providers" {
 
 locals {
   providers = {
-    for section in try(data.onepassword_item.providers.section, []) : section.label => {
+    for section in lookup(data.onepassword_item.providers, "section", []) : section.label => {
       for field in section.field : field.label => field.value
     }
   }
@@ -25,7 +25,10 @@ provider "github" {
   token = local.providers.github.token
 }
 
-provider "onepassword" {}
+provider "onepassword" {
+  token = var.onepassword_connect_token
+  url   = var.onepassword_connect_host
+}
 
 provider "restapi" {
   alias                 = "resend"
