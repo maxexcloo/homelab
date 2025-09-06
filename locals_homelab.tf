@@ -44,18 +44,12 @@ locals {
             )
 
             tailscale_ipv4 = try(
-              local.tailscale_device_addresses[v.title].ipv4,
-              local.tailscale_device_addresses[k].ipv4,
-              local.tailscale_device_addresses[v.name].ipv4,
-              local.tailscale_device_addresses["${v.platform}-${v.region}"].ipv4,
+              local.tailscale_device_addresses[v.slug].ipv4,
               null
             )
 
             tailscale_ipv6 = try(
-              local.tailscale_device_addresses[v.title].ipv6,
-              local.tailscale_device_addresses[k].ipv6,
-              local.tailscale_device_addresses[v.name].ipv6,
-              local.tailscale_device_addresses["${v.platform}-${v.region}"].ipv6,
+              local.tailscale_device_addresses[v.slug].ipv6,
               null
             )
           },

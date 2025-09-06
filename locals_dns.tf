@@ -128,7 +128,7 @@ locals {
   # Service external DNS records
   dns_records_services_external = merge([
     for k, service in local.services : {
-      for target in service.targets : "${var.domain_external}-${k}-${target}" => {
+      for target in local.services_deployments[k] : "${var.domain_external}-${k}-${target}" => {
         content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
         name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
         server  = target
@@ -141,7 +141,7 @@ locals {
   # Service internal DNS records
   dns_records_services_internal = merge([
     for k, service in local.services : {
-      for target in service.targets : "${var.domain_internal}-${k}-${target}" => {
+      for target in local.services_deployments[k] : "${var.domain_internal}-${k}-${target}" => {
         content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
         name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
         server  = target
@@ -152,20 +152,21 @@ locals {
   ]...)
 
   # Service custom URL DNS records
-  dns_records_services_urls = {
-    for k, service in local.services : "${k}-url" => {
-      content = (
-        contains(local.services_tags[k], "proxied") && local.homelab_resources[local.services_deployments[k][0]].cloudflare ?
-        "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[k][0]].id}.cfargotunnel.com" :
-        "${service.name}.${local.homelab_discovered[local.services_deployments[k][0]].fqdn}.${contains(local.services_tags[k], "external") ? var.domain_external : var.domain_internal}"
-      )
-      name    = service.input.url
-      proxied = contains(local.services_tags[k], "proxied")
-      server  = local.services_deployments[k][0]
-      type    = "CNAME"
-      zone    = [for zone in keys(var.dns) : zone if endswith(service.input.url, zone)][0]
-    } if service.input.url != null && length(local.services_deployments[k]) > 0 && length([for zone in keys(var.dns) : zone if endswith(service.input.url, zone)]) > 0
-  }
+  dns_records_services_urls = {}
+  # dns_records_services_urls = {
+  #   for k, service in local.services : "${k}-url" => {
+  #     content = (
+  #       contains(local.services_tags[k], "proxied") && local.homelab_resources[local.services_deployments[k][0]].cloudflare ?
+  #       "${cloudflare_zero_trust_tunnel_cloudflared.homelab[local.services_deployments[k][0]].id}.cfargotunnel.com" :
+  #       "${service.name}.${local.homelab_discovered[local.services_deployments[k][0]].fqdn}.${contains(local.services_tags[k], "external") ? var.domain_external : var.domain_internal}"
+  #     )
+  #     name    = service.url
+  #     proxied = contains(local.services_tags[k], "proxied")
+  #     server  = local.services_deployments[k][0]
+  #     type    = "CNAME"
+  #     zone    = [for zone in keys(var.dns) : zone if endswith(service.url, zone)][0]
+  #   } if service.url != null && length(local.services_deployments[k]) > 0 && length([for zone in keys(var.dns) : zone if endswith(service.url, zone)]) > 0
+  # }
 
   # Wildcard DNS records for all unique subdomains
   dns_records_wildcards = {

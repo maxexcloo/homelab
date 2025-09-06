@@ -46,6 +46,7 @@ locals {
         name     = length(split("-", title)) > 2 ? join("-", slice(split("-", title), 2, length(split("-", title)))) : split("-", title)[1]
         platform = split("-", title)[0]
         region   = split("-", title)[1]
+        slug     = length(split("-", title)) > 2 ? join("-", slice(split("-", title), 1, length(split("-", title)))) : split("-", title)[1]
         username = try([for field in item.fields : field.value if field.purpose == "USERNAME"][0], null)
       },
       # Input fields nested under 'input' key
