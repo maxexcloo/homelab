@@ -38,14 +38,14 @@ locals {
 
   # Build complete discovered items directly from individual item data sources
   services_discovered = {
-    for title, item in data.http.service_item : title => merge(
+    for title, item in local._services_item_data : title => merge(
       # Standardized naming conventions
       {
-        id       = local._services_item_data[title].id
+        id       = item.id
         name     = join("-", slice(split("-", title), 1, length(split("-", title))))
         platform = split("-", title)[0]
-        username = try([for field in local._services_item_data[title].fields : field.value if try(field.purpose, null) == "USERNAME"][0], null)
-        url      = try([for field in local._services_item_data[title].fields : field.value if try(field.purpose, null) == "WEBSITE"][0], null)
+        username = try([for field in item.fields : field.value if try(field.purpose, null) == "USERNAME"][0], null)
+        url      = try(item.urls[0].href, null)
       },
       # Input fields nested under 'input' key
       {
@@ -60,7 +60,7 @@ locals {
           },
           # Override with actual values from 1Password
           {
-            for field in local._services_item_data[title].fields : field.label => field.value == "-" || field.value == "" ? null : field.value
+            for field in item.fields : field.label => field.value == "-" || field.value == "" ? null : field.value
             if try(field.section.label, "") == "input"
           }
         )
