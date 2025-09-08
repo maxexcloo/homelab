@@ -44,8 +44,8 @@ locals {
         id       = local._services_item_data[title].id
         name     = join("-", slice(split("-", title), 1, length(split("-", title))))
         platform = split("-", title)[0]
-        username = try([for field in local._services_item_data[title].fields : field.value if field.purpose == "USERNAME"][0], null)
-        url      = try([for field in local._services_item_data[title].fields : field.value if field.purpose == "WEBSITE"][0], null)
+        username = try([for field in local._services_item_data[title].fields : field.value if try(field.purpose, null) == "USERNAME"][0], null)
+        url      = try([for field in local._services_item_data[title].fields : field.value if try(field.purpose, null) == "WEBSITE"][0], null)
       },
       # Input fields nested under 'input' key
       {
