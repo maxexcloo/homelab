@@ -1,21 +1,20 @@
 locals {
   komodo_servers = {
     for k, v in local.homelab : k => v
-    if contains(local.homelab_tags[k], "komodo")
+    if local.homelab_resources[k].docker
   }
 
   komodo_stacks = merge([
-    for service_key, service in local.services : (
-      service.platform == "docker" &&
-      try(service.input.service, null) != null &&
-      fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
-      ) ? {
+    for service_key, service in local.services : {
       for target in local.services_deployments[service_key] : "${service_key}-${target}" => {
         service_key = service_key
         service     = service
         target      = target
       }
-    } : {}
+      if local.homelab_resources[target].docker
+    } if service.platform == "docker" &&
+    try(service.input.service, null) != null &&
+    fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
   ]...)
 
   komodo_stacks_templates = {
@@ -40,22 +39,10 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   }
 
   lifecycle_commands {
-    create = <<-EOT
-      set -eu
-      content="$(printf '%s' "$CONTENT" | base64 -d | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type yaml --output-type yaml /dev/stdin)"
-      jq --null-input --arg content "$content" '{"content": $content}'
-    EOT
+    create = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
     delete = "true"
-    read   = <<-EOT
-      set -eu
-      content="$(printf '%s' "$CONTENT" | base64 -d | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type yaml --output-type yaml /dev/stdin)"
-      jq --null-input --arg content "$content" '{"content": $content}'
-    EOT
-    update = <<-EOT
-      set -eu
-      content="$(printf '%s' "$CONTENT" | base64 -d | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type yaml --output-type yaml /dev/stdin)"
-      jq --null-input --arg content "$content" '{"content": $content}'
-    EOT
+    read   = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
+    update = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
 
   }
 
@@ -91,15 +78,14 @@ resource "github_repository_file" "komodo_servers" {
   overwrite_on_create = true
   repository          = var.komodo_repository
 
-  content = join("\n\n", [
+  content = join("\n", [
     for k, v in local.komodo_servers : <<-EOT
       [[server]]
-      description = "${v.input.description}"
+      description = "${v.input.description}${try(" (${local.homelab[v.input.parent].input.description})", "")}"
       name = "${k}"
       tags = [${join(", ", [for tag in compact(local.homelab_tags[k]) : "\"${tag}\""])}]
-
       [server.config]
-      address = "http://${v.output.fqdn_internal}:8120"
+      address = "${v.output.fqdn_internal}:8120"
       enabled = true
       region = "${v.region}"
     EOT
@@ -112,19 +98,17 @@ resource "github_repository_file" "komodo_stacks" {
   overwrite_on_create = true
   repository          = var.komodo_repository
 
-  content = join("\n\n", [
+  content = join("\n", [
     for stack_id, stack in local.komodo_stacks : <<-EOT
       [[stack]]
-      description = "${stack.service.input.description}"
+      description = "${stack.service.input.description} (${stack.target})"
       name = "${stack_id}"
       tags = [${join(", ", [for tag in compact(concat(try(local.services_tags[stack.service_key], []), [stack.service.platform])) : "\"${tag}\""])}]
-
       [stack.config]
       auto_update = true
       repo = "${data.github_user.default.login}/${var.komodo_repository}"
       run_directory = "${stack_id}"
       server = "${stack.target}"
-
       [stack.config.pre_deploy]
       command = "sops decrypt -i docker-compose.yaml"
     EOT
