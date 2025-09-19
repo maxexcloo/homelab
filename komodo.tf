@@ -29,7 +29,6 @@ locals {
   }
 }
 
-# Encrypt docker-compose files using shell provider with SOPS (no temp files)
 resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   for_each = local.komodo_stacks
 
@@ -43,7 +42,6 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
     delete = "true"
     read   = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
     update = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
-
   }
 
   triggers = {
@@ -81,7 +79,7 @@ resource "github_repository_file" "komodo_servers" {
   content = join("\n", [
     for k, v in local.komodo_servers : <<-EOT
       [[server]]
-      description = "${v.input.description}${try(" (${local.homelab[v.input.parent].input.description})", "")}"
+      description = "${v.input.description} (${upper(v.region)})"
       name = "${k}"
       tags = [${join(", ", [for tag in compact(local.homelab_tags[k]) : "\"${tag}\""])}]
       [server.config]
@@ -103,7 +101,7 @@ resource "github_repository_file" "komodo_stacks" {
       [[stack]]
       description = "${stack.service.input.description} (${stack.target})"
       name = "${stack_id}"
-      tags = [${join(", ", [for tag in compact(concat(try(local.services_tags[stack.service_key], []), [stack.service.platform])) : "\"${tag}\""])}]
+      tags = [${join(", ", [for tag in local.services_tags[stack.service_key] : "\"${tag}\""])}]
       [stack.config]
       auto_update = true
       repo = "${data.github_user.default.login}/${var.komodo_repository}"
