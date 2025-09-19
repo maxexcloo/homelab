@@ -1,7 +1,7 @@
 data "http" "homelab_item" {
   for_each = {
     for item in jsondecode(data.http.homelab_vault.response_body) : item.title => item.id
-    if can(regex("^[a-z]+-[a-z]+-[a-z]+$", item.title)) || can(regex("^router-[a-z]+$", item.title))
+    if can(regex("^[a-z0-9]+-[a-z0-9]+(?:-[a-z0-9-]+)?$", item.title))
   }
 
   url = "${var.onepassword_connect_host}/v1/vaults/${data.onepassword_vault.homelab.uuid}/items/${each.value}"

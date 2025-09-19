@@ -4,7 +4,7 @@ locals {
     for k, v in local.homelab_discovered : k => merge(
       v,
       {
-        url = "${v.fqdn}.${var.domain_internal}${v.input.management_port != null ? ":${v.input.management_port}" : "")}"
+        url = "${v.fqdn}.${var.domain_internal}${v.input.management_port != null ? ":${v.input.management_port}" : ""}"
 
         input = v.input
         output = merge(
