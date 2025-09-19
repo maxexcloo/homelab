@@ -13,8 +13,8 @@ locals {
             acme_dns_password  = shell_script.acme_dns_homelab[k].output.password
             acme_dns_subdomain = shell_script.acme_dns_homelab[k].output.subdomain
             acme_dns_username  = shell_script.acme_dns_homelab[k].output.username
-            age_private_key    = resource.shell_script.age_homelab[k].output.private_key
-            age_public_key     = resource.shell_script.age_homelab[k].output.public_key
+            age_private_key    = shell_script.age_homelab[k].output.private_key
+            age_public_key     = shell_script.age_homelab[k].output.public_key
             fqdn_external      = "${v.fqdn}.${var.domain_external}"
             fqdn_internal      = "${v.fqdn}.${var.domain_internal}"
 

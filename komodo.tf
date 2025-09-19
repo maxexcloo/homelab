@@ -1,16 +1,16 @@
 locals {
-  komodo_homelab = {
+  komodo_servers = {
     for k, v in local.homelab : k => v
     if contains(local.homelab_tags[k], "komodo")
   }
 
-  komodo_services = {
+  komodo_stacks = {
     for k, v in local.services : k => v
     if length(local.services_deployments[k]) > 0 && v.platform == "docker" && fileexists("${path.module}/docker/${v.service}/docker-compose.yaml")
   }
 
-  komodo_stack_templates = {
-    for k, v in local.komodo_services : k => templatefile("${path.module}/docker/${v.service}/docker-compose.yaml",
+  komodo_stacks_templates = {
+    for k, v in local.komodo_stacks : k => templatefile("${path.module}/docker/${v.service}/docker-compose.yaml",
       {
         server = length(local.services_deployments[k]) > 0 ? local.homelab[local.services_deployments[k][0]] : null
         service = v
@@ -21,24 +21,24 @@ locals {
 
 # Encrypt docker-compose files using shell provider with SOPS (no temp files)
 resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
-  for_each = nonsensitive(toset(keys(local.komodo_services)))
+  for_each = nonsensitive(toset(keys(local.komodo_stacks)))
 
   environment = {
     AGE_PUBLIC_KEY = local.homelab[local.services_deployments[each.value][0]].output.age_public_key
-    CONTENT        = base64encode(local.komodo_stack_templates[each.value])
+    CONTENT        = base64encode(local.komodo_stacks_templates[each.value])
   }
 
   lifecycle_commands {
-    create = "echo '$CONTENT | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
+    create = "echo '$CONTENT' | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
     delete = "true"
-    read   = "echo '$CONTENT | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
-    update = "echo '$CONTENT | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
+    read   = "echo '$CONTENT' | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
+    update = "echo '$CONTENT' | base64 -d | sops encrypt --age '$AGE_PUBLIC_KEY' --input-type yaml --output-type yaml /dev/stdin"
 
   }
 
   triggers = {
     age_public_key_hash = sha256(local.homelab[local.services_deployments[each.value][0]].output.age_public_key)
-    content_hash        = sha256(local.komodo_stack_templates[each.value])
+    content_hash        = sha256(local.komodo_stacks_templates[each.value])
   }
 }
 
@@ -69,7 +69,7 @@ resource "github_repository_file" "komodo_servers" {
   repository          = var.komodo_repository
 
   content = join("\n\n", [
-    for k, v in local.komodo_homelab : <<-EOT
+    for k, v in local.komodo_servers : <<-EOT
       [[server]]
       description = "${v.input.description}"
       name = "${k}"
@@ -90,7 +90,7 @@ resource "github_repository_file" "komodo_stacks" {
   repository          = var.komodo_repository
 
   content = join("\n\n", [
-    for k, v in local.komodo_services : <<-EOT
+    for k, v in local.komodo_stacks : <<-EOT
       [[stack]]
       description = "${v.input.description}"
       name = "${k}"
@@ -98,7 +98,7 @@ resource "github_repository_file" "komodo_stacks" {
 
       [stack.config]
       auto_update = true
-      repo = "${data.github_user.default.login}${var.komodo_repository}"
+      repo = "${data.github_user.default.login}/${var.komodo_repository}"
       run_directory = "${k}"
       server = "${local.services_deployments[k][0]}"
 
@@ -109,7 +109,7 @@ resource "github_repository_file" "komodo_stacks" {
 }
 
 resource "github_repository_file" "komodo_stacks_docker_compose" {
-  for_each = nonsensitive(toset(keys(local.komodo_services)))
+  for_each = nonsensitive(toset(keys(local.komodo_stacks)))
 
   commit_message      = "Update ${each.value} SOPS-encrypted docker-compose"
   content             = shell_sensitive_script.komodo_service_compose_encrypt[each.value].output
