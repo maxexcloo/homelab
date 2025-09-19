@@ -1,5 +1,4 @@
 locals {
-  # Get all unique deployment targets from services
   komodo_homelab = {
     for k, v in local.homelab : k => v
     if contains(local.homelab_tags[k], "komodo")
@@ -7,25 +6,14 @@ locals {
 
   komodo_services = {
     for k, v in local.services : k => v
-    if length(local.services_deployments[k]) > 0 && v.platform == "docker" && fileexists("${path.module}/docker/${k}/docker-compose.yaml")
+    if length(local.services_deployments[k]) > 0 && v.platform == "docker" && fileexists("${path.module}/docker/${v.service}/docker-compose.yaml")
   }
 
-  # Render docker-compose templates with raw objects (KISS approach)
-  komodo_services_templates = {
-    for k, v in local.komodo_services : k => templatefile("${path.module}/docker/${k}/docker-compose.yaml",
+  komodo_stack_templates = {
+    for k, v in local.komodo_services : k => templatefile("${path.module}/docker/${v.service}/docker-compose.yaml",
       {
-        # Default values
-        default = {
-          email        = var.default_email
-          organisation = var.default_organization
-          timezone     = var.default_timezone
-        }
-
-        # Raw service object from local.services
-        service = v
-
-        # Deployment server object from local.homelab
         server = length(local.services_deployments[k]) > 0 ? local.homelab[local.services_deployments[k][0]] : null
+        service = v
       }
     )
   }
@@ -37,7 +25,7 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
 
   environment = {
     AGE_PUBLIC_KEY = local.homelab[local.services_deployments[each.value][0]].output.age_public_key
-    CONTENT        = base64encode(local.komodo_services_templates[each.value])
+    CONTENT        = base64encode(local.komodo_stack_templates[each.value])
   }
 
   lifecycle_commands {
@@ -50,11 +38,10 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
 
   triggers = {
     age_public_key_hash = sha256(local.homelab[local.services_deployments[each.value][0]].output.age_public_key)
-    content_hash        = sha256(local.komodo_services_templates[each.value])
+    content_hash        = sha256(local.komodo_stack_templates[each.value])
   }
 }
 
-# Generate ResourceSync configuration for Komodo
 resource "github_repository_file" "komodo_resource_sync" {
   commit_message      = "Update Komodo ResourceSync configuration"
   file                = "resource_sync.toml"
@@ -75,7 +62,6 @@ resource "github_repository_file" "komodo_resource_sync" {
   EOT
 }
 
-# Generate servers.toml with all deployment targets
 resource "github_repository_file" "komodo_servers" {
   commit_message      = "Update Komodo server configurations"
   file                = "servers.toml"
@@ -87,7 +73,7 @@ resource "github_repository_file" "komodo_servers" {
       [[server]]
       description = "${v.input.description}"
       name = "${k}"
-      tags = [${join(", ", [for tag in local.homelab_tags[k] : "\"${tag}\""])}]
+      tags = [${v.input.tags}]
 
       [server.config]
       address = "http://${v.output.fqdn_internal}:8120"
@@ -97,7 +83,6 @@ resource "github_repository_file" "komodo_servers" {
   ])
 }
 
-# Generate Komodo Stack configurations for each service
 resource "github_repository_file" "komodo_stacks" {
   commit_message      = "Update Komodo stack configurations"
   file                = "stacks.toml"
@@ -109,7 +94,7 @@ resource "github_repository_file" "komodo_stacks" {
       [[stack]]
       description = "${v.input.description}"
       name = "${k}"
-      tags = [${join(", ", [for tag in concat(local.services_tags[k], [v.platform]) : "\"${tag}\""])}]
+      tags = [${v.input.tags}]
 
       [stack.config]
       auto_update = true
@@ -123,7 +108,6 @@ resource "github_repository_file" "komodo_stacks" {
   ])
 }
 
-# Commit encrypted docker-compose files to GitHub
 resource "github_repository_file" "komodo_stacks_docker_compose" {
   for_each = nonsensitive(toset(keys(local.komodo_services)))
 
@@ -134,7 +118,6 @@ resource "github_repository_file" "komodo_stacks_docker_compose" {
   repository          = var.komodo_repository
 }
 
-# Generate variables.toml for shared configuration
 resource "github_repository_file" "komodo_variables" {
   commit_message      = "Update Komodo variable configurations"
   file                = "variables.toml"
