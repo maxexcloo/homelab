@@ -6,7 +6,7 @@ resource "onepassword_item" "homelab_sync" {
   username = local.homelab[each.value].username
   vault    = data.onepassword_vault.homelab.uuid
 
-  # Input section (always present)
+  # Input Section
   dynamic "section" {
     for_each = { input = var.onepassword_homelab_field_schema.input }
 
@@ -26,7 +26,7 @@ resource "onepassword_item" "homelab_sync" {
     }
   }
 
-  # Output section (always present)
+  # Output Section
   dynamic "section" {
     for_each = { output = var.onepassword_homelab_field_schema.output }
 

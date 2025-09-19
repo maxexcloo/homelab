@@ -6,7 +6,7 @@ resource "onepassword_item" "services_sync" {
   username = local.services[each.value].username
   vault    = data.onepassword_vault.services.uuid
 
-  # Input section (always present)
+  # Input Section
   dynamic "section" {
     for_each = { input = var.onepassword_services_field_schema.input }
 
@@ -26,7 +26,7 @@ resource "onepassword_item" "services_sync" {
     }
   }
 
-  # Output sections (per-target, always present)
+  # Output Sections (Per Target)
   dynamic "section" {
     for_each = local.services[each.value].output
 

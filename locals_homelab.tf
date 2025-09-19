@@ -4,7 +4,7 @@ locals {
     for k, v in local.homelab_discovered : k => merge(
       v,
       {
-        url = "${v.fqdn}.${var.domain_internal}${try(v.input.management_port != null ? ":${v.input.management_port}" : "", "")}"
+        url = "${v.fqdn}.${var.domain_internal}${v.input.management_port != null ? ":${v.input.management_port}" : "")}"
 
         input = v.input
         output = merge(
@@ -17,7 +17,6 @@ locals {
             age_public_key     = resource.shell_script.age_homelab[k].output.public_key
             fqdn_external      = "${v.fqdn}.${var.domain_external}"
             fqdn_internal      = "${v.fqdn}.${var.domain_internal}"
-            paths              = try(v.input.paths, null)
 
             public_address = try(
               coalesce(
