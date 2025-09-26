@@ -14,23 +14,6 @@ locals {
     if try(candidate.server, null) != null
   }
 
-  dns_services_url_zone = {
-    for key, service in local.services : key => (
-      service.url == null ?
-      null :
-      try(
-        split(
-          reverse(sort([
-            for zone_name in local.dns_zones : format("%04d:%s", length(zone_name), zone_name)
-            if endswith(service.url, zone_name)
-          ]))[0],
-          ":"
-        )[1],
-        null
-      )
-    )
-  }
-
   dns_records_acme = {
     for key, group in local.dns_acme_groups : "${group[0].name}-acme" => {
       content = nonsensitive(shell_sensitive_script.acme_dns_homelab[group[0].server].output.subdomain)
@@ -162,6 +145,23 @@ locals {
       type    = "CNAME"
       zone    = group[0].zone
     }
+  }
+
+  dns_services_url_zone = {
+    for key, service in local.services : key => (
+      service.url == null ?
+      null :
+      try(
+        split(
+          reverse(sort([
+            for zone_name in local.dns_zones : format("%04d:%s", length(zone_name), zone_name)
+            if endswith(service.url, zone_name)
+          ]))[0],
+          ":"
+        )[1],
+        null
+      )
+    )
   }
 
   dns_zones = keys(var.dns)
