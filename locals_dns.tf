@@ -1,8 +1,12 @@
 locals {
   _dns_challenge_candidates = [
-    for record in flatten([
-      for records_map in local._dns_record_sets_challenge : values(records_map)
-      ]) : {
+    for record in concat(
+      values(local.dns_records_homelab_external),
+      values(local.dns_records_homelab_internal),
+      values(local.dns_records_manual),
+      values(local.dns_records_services_external),
+      values(local.dns_records_services_internal)
+      ) : {
       name   = record.name
       zone   = record.zone
       server = try(record.server, null)
@@ -11,54 +15,18 @@ locals {
   ]
 
   _dns_challenge_grouped = {
-    for candidate in local._dns_challenge_candidates :
-    "${candidate.zone}|${candidate.name}|${candidate.server != null ? candidate.server : ""}" => candidate...
+    for candidate in local._dns_challenge_candidates : "${candidate.zone}|${candidate.name}|${candidate.server != null ? candidate.server : ""}" => candidate...
   }
-
-  _dns_record_sets_challenge = [
-    local.dns_records_homelab_external,
-    local.dns_records_homelab_internal,
-    local.dns_records_manual,
-    local.dns_records_services_external,
-    local.dns_records_services_internal
-  ]
 
   _dns_service_primary_target = {
     for key in keys(local._dns_services_with_url) : key => local.services_deployments[key][0]
   }
 
-  _dns_service_records = flatten([
-    for key, service in local._dns_services_with_dns : [
-      for target in local.services_deployments[key] : [
-        {
-          key = "${var.domain_external}-${key}-${target}"
-          value = {
-            content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
-            name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
-            server  = target
-            type    = "CNAME"
-            zone    = var.domain_external
-          }
-        },
-        {
-          key = "${var.domain_internal}-${key}-${target}"
-          value = {
-            content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
-            name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
-            server  = target
-            type    = "CNAME"
-            zone    = var.domain_internal
-          }
-        }
-      ]
-    ]
-  ])
-
   _dns_service_url_context = {
-    for key in keys(local._dns_services_with_url) : key => {
-      target  = local._dns_service_primary_target[key]
+    for key, target in local._dns_service_primary_target : key => {
+      target  = target
+      proxied = contains(local.homelab_tags[target], "proxied")
       zone    = local._dns_service_url_zone[key]
-      proxied = contains(local.homelab_tags[local._dns_service_primary_target[key]], "proxied")
     }
   }
 
@@ -93,8 +61,7 @@ locals {
   }
 
   _dns_wildcard_grouped = {
-    for candidate in local._dns_challenge_candidates :
-    "${candidate.zone}|${candidate.name}" => candidate...
+    for candidate in local._dns_challenge_candidates : "${candidate.zone}|${candidate.name}" => candidate...
   }
 
   _dns_zones = keys(var.dns)
@@ -104,7 +71,11 @@ locals {
       local.dns_records_acme,
       local.dns_records_wildcards,
       local.dns_records_services_urls,
-      merge(local._dns_record_sets_challenge...)
+      local.dns_records_homelab_external,
+      local.dns_records_homelab_internal,
+      local.dns_records_manual,
+      local.dns_records_services_external,
+      local.dns_records_services_internal
       ) : key => merge(
       {
         comment  = "OpenTofu Managed"
@@ -120,8 +91,7 @@ locals {
   }
 
   dns_records_acme = {
-    for key, group in local._dns_challenge_grouped :
-    "${group[0].name}-acme" => {
+    for key, group in local._dns_challenge_grouped : "${group[0].name}-acme" => {
       content = nonsensitive(shell_sensitive_script.acme_dns_homelab[group[0].server].output.subdomain)
       name    = "_acme-challenge.${group[0].name}"
       type    = "CNAME"
@@ -130,65 +100,61 @@ locals {
     if group[0].server != null
   }
 
-  dns_records_homelab_external = flatten([
-    for key, server in local.homelab_discovered : concat(
-      server.input.public_address != null ? [{
-        key = "${var.domain_external}-${key}-cname"
-        value = {
-          content = server.input.public_address
-          name    = "${server.fqdn}.${var.domain_external}"
-          server  = key
-          type    = "CNAME"
-          zone    = var.domain_external
-        }
-      }] : [],
-      server.input.public_address == null && server.input.public_ipv4 != null && can(cidrhost("${server.input.public_ipv4}/32", 0)) ? [{
-        key = "${var.domain_external}-${key}-a"
-        value = {
-          content = server.input.public_ipv4
-          name    = "${server.fqdn}.${var.domain_external}"
-          server  = key
-          type    = "A"
-          zone    = var.domain_external
-        }
-      }] : [],
-      server.input.public_address == null && server.input.public_ipv6 != null && can(cidrhost("${server.input.public_ipv6}/128", 0)) ? [{
-        key = "${var.domain_external}-${key}-aaaa"
-        value = {
-          content = server.input.public_ipv6
-          name    = "${server.fqdn}.${var.domain_external}"
-          server  = key
-          type    = "AAAA"
-          zone    = var.domain_external
-        }
-      }] : []
-    )
-  ])
+  dns_records_homelab_external = merge(
+    {
+      for key, server in local.homelab_discovered : "${var.domain_external}-${key}-cname" => {
+        content = server.input.public_address
+        name    = "${server.fqdn}.${var.domain_external}"
+        server  = key
+        type    = "CNAME"
+        zone    = var.domain_external
+      }
+      if server.input.public_address != null
+    },
+    {
+      for key, server in local.homelab_discovered : "${var.domain_external}-${key}-a" => {
+        content = server.input.public_ipv4
+        name    = "${server.fqdn}.${var.domain_external}"
+        server  = key
+        type    = "A"
+        zone    = var.domain_external
+      }
+      if server.input.public_address == null && server.input.public_ipv4 != null && can(cidrhost("${server.input.public_ipv4}/32", 0))
+    },
+    {
+      for key, server in local.homelab_discovered : "${var.domain_external}-${key}-aaaa" => {
+        content = server.input.public_ipv6
+        name    = "${server.fqdn}.${var.domain_external}"
+        server  = key
+        type    = "AAAA"
+        zone    = var.domain_external
+      }
+      if server.input.public_address == null && server.input.public_ipv6 != null && can(cidrhost("${server.input.public_ipv6}/128", 0))
+    }
+  )
 
-  dns_records_homelab_internal = flatten([
-    for key, server in local.homelab_discovered : concat(
-      local.homelab[key].output.tailscale_ipv4 != null ? [{
-        key = "${var.domain_internal}-${key}-a"
-        value = {
-          content = local.homelab[key].output.tailscale_ipv4
-          name    = "${server.fqdn}.${var.domain_internal}"
-          server  = key
-          type    = "A"
-          zone    = var.domain_internal
-        }
-      }] : [],
-      local.homelab[key].output.tailscale_ipv6 != null ? [{
-        key = "${var.domain_internal}-${key}-aaaa"
-        value = {
-          content = local.homelab[key].output.tailscale_ipv6
-          name    = "${server.fqdn}.${var.domain_internal}"
-          server  = key
-          type    = "AAAA"
-          zone    = var.domain_internal
-        }
-      }] : []
-    )
-  ])
+  dns_records_homelab_internal = merge(
+    {
+      for key, server in local.homelab_discovered : "${var.domain_internal}-${key}-a" => {
+        content = local.homelab[key].output.tailscale_ipv4
+        name    = "${server.fqdn}.${var.domain_internal}"
+        server  = key
+        type    = "A"
+        zone    = var.domain_internal
+      }
+      if local.homelab[key].output.tailscale_ipv4 != null
+    },
+    {
+      for key, server in local.homelab_discovered : "${var.domain_internal}-${key}-aaaa" => {
+        content = local.homelab[key].output.tailscale_ipv6
+        name    = "${server.fqdn}.${var.domain_internal}"
+        server  = key
+        type    = "AAAA"
+        zone    = var.domain_internal
+      }
+      if local.homelab[key].output.tailscale_ipv6 != null
+    }
+  )
 
   dns_records_manual = merge([
     for zone, records in var.dns : {
@@ -204,15 +170,29 @@ locals {
     }
   ]...)
 
-  dns_records_services_external = {
-    for item in local._dns_service_records : item.key => item.value
-    if item.value.zone == var.domain_external
-  }
+  dns_records_services_external = merge([
+    for key, service in local._dns_services_with_dns : {
+      for target in local.services_deployments[key] : "${var.domain_external}-${key}-${target}" => {
+        content = "${local.homelab_discovered[target].fqdn}.${var.domain_external}"
+        name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_external}"
+        server  = target
+        type    = "CNAME"
+        zone    = var.domain_external
+      }
+    }
+  ]...)
 
-  dns_records_services_internal = {
-    for item in local._dns_service_records : item.key => item.value
-    if item.value.zone == var.domain_internal
-  }
+  dns_records_services_internal = merge([
+    for key, service in local._dns_services_with_dns : {
+      for target in local.services_deployments[key] : "${var.domain_internal}-${key}-${target}" => {
+        content = "${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
+        name    = "${service.name}.${local.homelab_discovered[target].fqdn}.${var.domain_internal}"
+        server  = target
+        type    = "CNAME"
+        zone    = var.domain_internal
+      }
+    }
+  ]...)
 
   dns_records_services_urls = {
     for key, service in local._dns_services_with_url : "${key}-url" => {
@@ -231,8 +211,7 @@ locals {
   }
 
   dns_records_wildcards = {
-    for key, group in local._dns_wildcard_grouped :
-    "${group[0].name}-wildcard" => {
+    for key, group in local._dns_wildcard_grouped : "${group[0].name}-wildcard" => {
       content = group[0].name
       name    = "*.${group[0].name}"
       type    = "CNAME"
