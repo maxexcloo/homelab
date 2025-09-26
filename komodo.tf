@@ -29,9 +29,7 @@ locals {
 
     plaintext="$(printf '%s' "$CONTENT" | base64 -d)"
 
-    if [ -n "$${CONTENT_HASH:-}" ]; then
-      hash="$CONTENT_HASH"
-    elif command -v sha256sum >/dev/null 2>&1; then
+    if command -v sha256sum >/dev/null 2>&1; then
       hash="$(printf '%s' "$plaintext" | sha256sum | awk '{print $1}')"
     else
       hash="$(printf '%s' "$plaintext" | shasum -a 256 | awk '{print $1}')"
@@ -48,7 +46,7 @@ locals {
 
   komodo_stacks_templates = {
     for stack_id, stack in local.komodo_stacks : stack_id => templatefile(
-      "${path.module}/docker/${stack.service.input.service}/compose.yaml",
+      "${path.module}/docker/${stack.service.input.service}/docker-compose.yaml",
       {
         server  = local.homelab[stack.target]
         service = stack.service
