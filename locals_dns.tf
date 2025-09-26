@@ -3,7 +3,8 @@ locals {
     for record in concat(
       values(local.dns_records_homelab),
       values(local.dns_records_manual),
-      values(local.dns_records_services)
+      values(local.dns_records_services),
+      values(local.dns_records_services_urls)
     ) : record
     if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
   ]
