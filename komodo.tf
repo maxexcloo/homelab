@@ -14,7 +14,7 @@ locals {
       if local.homelab_resources[target].docker
     } if service.platform == "docker" &&
     try(service.input.service, null) != null &&
-    fileexists("${path.module}/docker/${service.input.service}/compose.yaml")
+    fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
   ]...)
 
   komodo_stacks_encrypt_script = <<-EOT
