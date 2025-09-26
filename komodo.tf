@@ -17,6 +17,35 @@ locals {
     fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
   ]...)
 
+  komodo_stacks_encrypt_script = <<-EOT
+    set -euo pipefail
+
+    previous_data=""
+    if [ ! -t 0 ]; then
+      previous_data="$(cat || true)"
+    fi
+
+    previous_hash="$(printf '%s' "$previous_data" | jq -r '.hash // ""' 2>/dev/null || true)"
+
+    plaintext="$(printf '%s' "$CONTENT" | base64 -d)"
+
+    if [ -n "$${CONTENT_HASH:-}" ]; then
+      hash="$CONTENT_HASH"
+    elif command -v sha256sum >/dev/null 2>&1; then
+      hash="$(printf '%s' "$plaintext" | sha256sum | awk '{print $1}')"
+    else
+      hash="$(printf '%s' "$plaintext" | shasum -a 256 | awk '{print $1}')"
+    fi
+
+    if [ -n "$previous_data" ] && [ "$previous_hash" = "$hash" ]; then
+      printf '%s' "$previous_data"
+      exit 0
+    fi
+
+    encrypted_content="$(printf '%s' "$plaintext" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type yaml --output-type yaml /dev/stdin)"
+    jq -n --arg content "$encrypted_content" --arg hash "$hash" '{content: $content, hash: $hash}'
+  EOT
+
   komodo_stacks_templates = {
     for stack_id, stack in local.komodo_stacks : stack_id => templatefile(
       "${path.module}/docker/${stack.service.input.service}/docker-compose.yaml",
@@ -38,10 +67,10 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   }
 
   lifecycle_commands {
-    create = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
+    create = local.komodo_stacks_encrypt_script
     delete = "true"
-    read   = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
-    update = "echo \"$CONTENT\" | base64 -d | sops encrypt --age \"$AGE_PUBLIC_KEY\" --input-type yaml --output-type yaml /dev/stdin | jq -R --slurp '{content: .}'"
+    read   = local.komodo_stacks_encrypt_script
+    update = local.komodo_stacks_encrypt_script
   }
 
   triggers = {

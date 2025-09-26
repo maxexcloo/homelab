@@ -1,4 +1,4 @@
-resource "shell_script" "acme_dns_homelab" {
+resource "shell_sensitive_script" "acme_dns_homelab" {
   for_each = local.homelab_discovered
 
   lifecycle_commands {

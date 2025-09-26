@@ -10,11 +10,11 @@ locals {
         output = merge(
           # Computed values
           {
-            acme_dns_password  = shell_script.acme_dns_homelab[k].output.password
-            acme_dns_subdomain = shell_script.acme_dns_homelab[k].output.subdomain
-            acme_dns_username  = shell_script.acme_dns_homelab[k].output.username
-            age_private_key    = shell_script.age_homelab[k].output.private_key
-            age_public_key     = shell_script.age_homelab[k].output.public_key
+            acme_dns_password  = nonsensitive(shell_sensitive_script.acme_dns_homelab[k].output.password)
+            acme_dns_subdomain = nonsensitive(shell_sensitive_script.acme_dns_homelab[k].output.subdomain)
+            acme_dns_username  = nonsensitive(shell_sensitive_script.acme_dns_homelab[k].output.username)
+            age_private_key    = nonsensitive(shell_sensitive_script.age_homelab[k].output.private_key)
+            age_public_key     = nonsensitive(shell_sensitive_script.age_homelab[k].output.public_key)
             fqdn_external      = "${v.fqdn}.${var.domain_external}"
             fqdn_internal      = "${v.fqdn}.${var.domain_internal}"
 

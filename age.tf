@@ -1,4 +1,4 @@
-resource "shell_script" "age_homelab" {
+resource "shell_sensitive_script" "age_homelab" {
   for_each = local.homelab_discovered
 
   lifecycle_commands {
