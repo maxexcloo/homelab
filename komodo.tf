@@ -14,7 +14,7 @@ locals {
       if local.homelab_resources[target].docker
     } if service.platform == "docker" &&
     try(service.input.service, null) != null &&
-    fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
+    fileexists("${path.module}/docker/${service.input.service}/compose.yaml")
   ]...)
 
   komodo_stacks_encrypt_script = <<-EOT
@@ -48,7 +48,7 @@ locals {
 
   komodo_stacks_templates = {
     for stack_id, stack in local.komodo_stacks : stack_id => templatefile(
-      "${path.module}/docker/${stack.service.input.service}/docker-compose.yaml",
+      "${path.module}/docker/${stack.service.input.service}/compose.yaml",
       {
         server  = local.homelab[stack.target]
         service = stack.service
@@ -137,7 +137,7 @@ resource "github_repository_file" "komodo_stacks" {
       run_directory = "${stack_id}"
       server = "${stack.target}"
       [stack.config.pre_deploy]
-      command = "sops decrypt -i docker-compose.yaml"
+      command = "sops decrypt -i compose.yaml"
     EOT
   ])
 }
@@ -145,9 +145,9 @@ resource "github_repository_file" "komodo_stacks" {
 resource "github_repository_file" "komodo_stacks_docker_compose" {
   for_each = local.komodo_stacks
 
-  commit_message      = "Update ${each.key} SOPS-encrypted docker-compose"
+  commit_message      = "Update ${each.key} SOPS-encrypted compose"
   content             = shell_sensitive_script.komodo_service_compose_encrypt[each.key].output["content"]
-  file                = "${each.key}/docker-compose.yaml"
+  file                = "${each.key}/compose.yaml"
   overwrite_on_create = true
   repository          = var.komodo_repository
 }
