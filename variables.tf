@@ -149,7 +149,7 @@ variable "onepassword_services_vault" {
 }
 
 variable "resources_homelab" {
-  default     = ["b2", "cloudflare", "docker", "resend", "tailscale"]
+  default     = ["b2", "cloudflare", "docker", "komodo", "resend", "tailscale"]
   description = "List of all available homelab resources that can be enabled via the resources input"
   type        = list(string)
 }
