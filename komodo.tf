@@ -105,7 +105,7 @@ resource "github_repository_file" "komodo_stacks" {
       run_directory = "${stack_id}"
       server = "${stack.target}"
       [stack.config.pre_deploy]
-      command = "SOPS_AGE_KEY=[[AGE_SECRET_KEY]] sops decrypt -i compose.yaml"
+      command = "SOPS_AGE_KEY=[[AGE_SECRET_KEY]] $PERIPHERY_ROOT_DIRECTORY/sops decrypt -i compose.yaml"
     EOT
   ])
 }
