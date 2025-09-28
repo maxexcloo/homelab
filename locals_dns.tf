@@ -1,5 +1,5 @@
 locals {
-  dns_acme_candidates = [
+  _dns_acme_candidates = [
     for record in concat(
       values(local.dns_records_homelab),
       values(local.dns_records_manual),
@@ -9,13 +9,30 @@ locals {
     if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
   ]
 
-  dns_acme_groups = {
-    for candidate in local.dns_acme_candidates : "${candidate.zone}|${candidate.name}|${try(candidate.server, "")}" => candidate...
+  _dns_acme_groups = {
+    for candidate in local._dns_acme_candidates : "${candidate.zone}|${candidate.name}|${try(candidate.server, "")}" => candidate...
     if try(candidate.server, null) != null
   }
 
+  _dns_services_url_zone = {
+    for key, service in local.services : key => (
+      service.url == null ?
+      null :
+      try(
+        split(
+          reverse(sort([
+            for zone_name in local.dns_zones : format("%04d:%s", length(zone_name), zone_name)
+            if endswith(service.url, zone_name)
+          ]))[0],
+          ":"
+        )[1],
+        null
+      )
+    )
+  }
+
   dns_records_acme = {
-    for key, group in local.dns_acme_groups : "${group[0].name}-acme" => {
+    for key, group in local._dns_acme_groups : "${group[0].name}-acme" => {
       content = nonsensitive(shell_sensitive_script.acme_dns_homelab[group[0].server].output.subdomain)
       name    = "_acme-challenge.${group[0].name}"
       type    = "CNAME"
@@ -129,39 +146,22 @@ locals {
       proxied = contains(local.homelab_tags[local.services_deployments[key][0]], "proxied")
       server  = local.services_deployments[key][0]
       type    = "CNAME"
-      zone    = local.dns_services_url_zone[key]
+      zone    = local._dns_services_url_zone[key]
     }
     if service.url != null &&
     length(local.services_deployments[key]) == 1 &&
-    local.dns_services_url_zone[key] != null
+    local._dns_services_url_zone[key] != null
   }
 
   dns_records_wildcards = {
     for key, group in {
-      for candidate in local.dns_acme_candidates : "${candidate.zone}|${candidate.name}" => candidate...
+      for candidate in local._dns_acme_candidates : "${candidate.zone}|${candidate.name}" => candidate...
       } : "${group[0].name}-wildcard" => {
       content = group[0].name
       name    = "*.${group[0].name}"
       type    = "CNAME"
       zone    = group[0].zone
     }
-  }
-
-  dns_services_url_zone = {
-    for key, service in local.services : key => (
-      service.url == null ?
-      null :
-      try(
-        split(
-          reverse(sort([
-            for zone_name in local.dns_zones : format("%04d:%s", length(zone_name), zone_name)
-            if endswith(service.url, zone_name)
-          ]))[0],
-          ":"
-        )[1],
-        null
-      )
-    )
   }
 
   dns_zones = keys(var.dns)

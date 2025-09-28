@@ -41,27 +41,25 @@ resource "cloudflare_account_token" "homelab" {
 resource "cloudflare_dns_record" "acme" {
   for_each = nonsensitive(local.dns_records_acme)
 
-  comment  = "OpenTofu Managed"
-  content  = each.value.content
-  name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, false)
-  ttl      = 1
-  type     = each.value.type
-  zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
+  comment = "OpenTofu Managed"
+  content = each.value.content
+  name    = each.value.name
+  proxied = false
+  ttl     = 1
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_dns_record" "homelab" {
   for_each = nonsensitive(local.dns_records_homelab)
 
-  comment  = "OpenTofu Managed"
-  content  = each.value.content
-  name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, false)
-  ttl      = 1
-  type     = each.value.type
-  zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
+  comment = "OpenTofu Managed"
+  content = each.value.content
+  name    = each.value.name
+  proxied = false
+  ttl     = 1
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_dns_record" "manual" {
@@ -80,40 +78,37 @@ resource "cloudflare_dns_record" "manual" {
 resource "cloudflare_dns_record" "services" {
   for_each = nonsensitive(local.dns_records_services)
 
-  comment  = "OpenTofu Managed"
-  content  = each.value.content
-  name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, false)
-  ttl      = 1
-  type     = each.value.type
-  zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
+  comment = "OpenTofu Managed"
+  content = each.value.content
+  name    = each.value.name
+  proxied = false
+  ttl     = 1
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_dns_record" "services_urls" {
   for_each = nonsensitive(local.dns_records_services_urls)
 
-  comment  = "OpenTofu Managed"
-  content  = each.value.content
-  name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, false)
-  ttl      = 1
-  type     = each.value.type
-  zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
+  comment = "OpenTofu Managed"
+  content = each.value.content
+  name    = each.value.name
+  proxied = try(each.value.proxied, false)
+  ttl     = 1
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_dns_record" "wildcards" {
   for_each = nonsensitive(local.dns_records_wildcards)
 
-  comment  = "OpenTofu Managed"
-  content  = each.value.content
-  name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, false)
-  ttl      = 1
-  type     = each.value.type
-  zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
+  comment = "OpenTofu Managed"
+  content = each.value.content
+  name    = each.value.name
+  proxied = false
+  ttl     = 1
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
