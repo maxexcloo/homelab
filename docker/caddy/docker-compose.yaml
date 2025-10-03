@@ -1,21 +1,31 @@
 networks:
-  test:
+  $${DEFAULT_ORGANIZATION}:
     external: true
 services:
   caddy:
+    environment:
+      ACME_DNS_PASSWORD: ${server.output.acme_dns_password}
+      ACME_DNS_SUBDOMAIN: ${server.output.acme_dns_subdomain}
+      ACME_DNS_USERNAME: ${server.output.acme_dns_username}
+      TS_AUTHKEY: ${server.output.tailscale_caddy_key}
     extra_hosts:
       - host.docker.internal:host-gateway
     image: ghcr.io/maxexcloo/caddy:latest
     labels:
-      caddy_0: (external)
-      caddy_0.tls: default.email
-      caddy_1: (internal)
-      caddy_1.tls: default.email
-      caddy_1.tls.dns: cloudflare service.cloudflare_account_token
-      caddy_1.tls.resolvers: 1.1.1.1
+      caddy.email: $${DEFAULT_EMAIL}
+      caddy_0: (defaults)
+      caddy_0.@is_tailscale: host tailscale/*
+      caddy_0.handle: "@is_tailscale"
+      caddy_0.handle.reverse_proxy: "{args[0]}"
+      caddy_0.handle.tls.dns: acmedns
+      caddy_0.handle.tls.dns.acmedns.password: "{env.ACME_DNS_PASSWORD}"
+      caddy_0.handle.tls.dns.acmedns.subdomain: "{env.ACME_DNS_SUBDOMAIN}"
+      caddy_0.handle.tls.dns.acmedns.username: "{env.ACME_DNS_USERNAME}"
+      caddy_0.handle_1:
+      caddy_0.handle_1.reverse_proxy: "{args[0]}"
     networks:
       - default
-      - test
+      - $${DEFAULT_ORGANIZATION}
     ports:
       - 80:80
       - 443:443
