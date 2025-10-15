@@ -33,6 +33,11 @@ dns = {
       type    = "CNAME"
     },
     {
+      content = "2deabc39cdacdb79.vercel-dns-017.com"
+      name    = "github-readme-stats"
+      type    = "CNAME"
+    },
+    {
       content = "mesmtp.excloo.com.dkim.fmhosted.com"
       name    = "mesmtp._domainkey"
       type    = "CNAME"

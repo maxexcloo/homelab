@@ -33,7 +33,7 @@ locals {
 
   dns_records_acme = {
     for key, group in local._dns_acme_groups : "${group[0].name}-acme" => {
-      content = nonsensitive(shell_sensitive_script.acme_dns_homelab[group[0].server].output.subdomain)
+      content = nonsensitive(shell_sensitive_script.acme_dns_homelab[group[0].server].output.fulldomain)
       name    = "_acme-challenge.${group[0].name}"
       type    = "CNAME"
       zone    = group[0].zone
