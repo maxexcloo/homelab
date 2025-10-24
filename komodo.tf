@@ -6,7 +6,7 @@ locals {
 
   komodo_stacks = merge([
     for service_key, service in local.services : {
-      for target in local.services_deployments[service_key] : "${service_key}-${target}" => {
+      for target in local.services_deployments[service_key] : "${service.name}-${target}" => {
         service_key = service_key
         service     = service
         target      = target
@@ -42,6 +42,14 @@ locals {
       {
         server  = local.homelab[stack.target]
         service = stack.service
+
+        default = {
+          domain_external = var.domain_external
+          domain_internal = var.domain_internal
+          email           = var.default_email
+          organization    = var.default_organization
+          timezone        = var.default_timezone
+        }
       }
     )
   }
