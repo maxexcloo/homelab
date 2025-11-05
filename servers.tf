@@ -83,7 +83,7 @@ locals {
 
           # Cloudflare resources
           local.servers_resources[k].cloudflare ? {
-            cloudflare_account_token_sensitive = cloudflare_account_token.server[k]
+            cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
             cloudflare_tunnel_token_sensitive  = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
           } : {},
 
