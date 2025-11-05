@@ -13,14 +13,11 @@ echo "$CURRENT_ITEM" | jq \
 --argjson outputsJson "$OUTPUTS_JSON" \
 --argjson urlsJson "$URLS_JSON" \
 '
-  # Update URLs
   .urls = ($urlsJson | map(select(. != null) | {href: .})) |
-  # Rebuild sections array: keep all non-output sections, then add the output section
   .sections = (
     [.sections[]? | select(.label != "output")] + 
     [{"id": $outputSectionId, "label": "output"}]
   ) |
-  # Rebuild fields array
   .fields = (
     # Keep all existing fields that are NOT in the output section
     [.fields[]? | select(
