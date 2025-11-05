@@ -17,27 +17,28 @@ jq -n \
     ) as $urlsTemplate |
 
     # 2. Build the "fields" array (all sections)
-    # --- Built-in Username/Password/Notes ---
-    [
-      {
-        "label": "username",
-        "value": $username,
-        "purpose": "USERNAME",
-        "type": "STRING"
-      },
-      {
-        "label": "password",
-        "value": $password,
-        "purpose": "PASSWORD",
-        "type": "CONCEALED"
-      },
-      {
-        "label": "notesPlain",
-        "value": $notes,
-        "purpose": "NOTES",
-        "type": "STRING"
-      }
-    ] +
+    # --- Conditionally add built-in fields *only if they have a value* ---
+    (
+      []
+      | if $username != "" then . + [{
+          "label": "username",
+          "value": $username,
+          "purpose": "USERNAME",
+          "type": "STRING"
+        }] else . end
+      | if $password != "" then . + [{
+          "label": "password",
+          "value": $password,
+          "purpose": "PASSWORD",
+          "type": "CONCEALED"
+        }] else . end
+      | if $notes != "" then . + [{
+          "label": "notesPlain",
+          "value": $notes,
+          "purpose": "NOTES",
+          "type": "STRING"
+        }] else . end
+    ) +
     
     # --- "add more" (input) section ---
     (
