@@ -88,6 +88,7 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
     ID           = each.value.id
     INPUTS_JSON  = jsonencode(each.value.input)
     NOTES        = each.value.notes
+    OTP          = each.value.otp
     OUTPUTS_JSON = jsonencode(each.value.output)
     PASSWORD     = each.value.password
     URLS_JSON    = jsonencode(local.services_urls[each.key])
@@ -104,6 +105,7 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
   triggers = {
     inputs_hash   = sha256(jsonencode(each.value.input))
     notes_hash    = sha256(each.value.notes)
+    otp_hash      = sha256(each.value.otp)
     outputs_hash  = sha256(jsonencode(each.value.output))
     password_hash = sha256(each.value.password)
     urls_hash     = sha256(jsonencode(local.services_urls[each.key]))

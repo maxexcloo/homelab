@@ -38,7 +38,8 @@ while IFS= read -r ITEM_TITLE; do
       {id: .id, title: .title}
       + {username: ( .fields[] | select(.purpose == "USERNAME") | .value ) // ""}
       + {password: ( .fields[] | select(.purpose == "PASSWORD") | .value ) // ""}
-      + {notes: ( .fields[] | select(.purpose == "NOTES") | .value ) // "" }
+      + {otp: ( .fields[] | select(.type == "OTP") | .value ) // "" }
+      + {urls: [.urls[]?.href] | map(select(. != null))}
       + {input: (
           .fields
           | map(select(.section.id == "add more"))
@@ -50,7 +51,7 @@ while IFS= read -r ITEM_TITLE; do
             })
           | add
         ) // {} }
-      + {urls: [.urls[]?.href] | map(select(. != null))}
+      + {notes: ( .fields[] | select(.purpose == "NOTES") | .value ) // "" }
       + {tags: .tags // []}
     ) | tojson
   ')

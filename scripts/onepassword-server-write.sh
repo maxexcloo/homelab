@@ -5,6 +5,7 @@ set -e
 # It uses ID to be robust against name changes.
 jq -n \
   --arg notes "$NOTES" \
+  --arg otp "$OTP" \
   --arg password "$PASSWORD" \
   --arg username "$USERNAME" \
   --argjson inputsJson "$INPUTS_JSON" \
@@ -34,6 +35,13 @@ jq -n \
           "value": $notes
         }
       ] +
+
+      | if $otp != "" then . + [{
+          "label": "one-time password",
+          "type": "OTP",
+          "value": $otp
+        }] else . end
+      +
       
       # --- "input" section ("add more") ---
       (
