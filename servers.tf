@@ -36,28 +36,28 @@ locals {
             age_public_key              = nonsensitive(age_secret_key.server[k].public_key)
             fqdn_external               = "${v.fqdn}.${var.defaults.domain_external}"
             fqdn_internal               = "${v.fqdn}.${var.defaults.domain_internal}"
-            private_ipv4                = v.input.private_ipv4
+            private_ipv4                = v.input.private_ipv4.value
 
             public_address = try(
               coalesce(
-                v.input.public_address,
-                try(local._servers[v.input.parent].input.public_address, null)
+                v.input.public_address.value,
+                try(local._servers[v.input.parent.value].input.public_address.value, null)
               ),
               null
             )
 
             public_ipv4 = try(
               coalesce(
-                v.input.public_ipv4,
-                try(local._servers[v.input.parent].input.public_ipv4, null)
+                v.input.public_ipv4.value,
+                try(local._servers[v.input.parent.value].input.public_ipv4.value, null)
               ),
               null
             )
 
             public_ipv6 = try(
               coalesce(
-                v.input.public_ipv6,
-                try(local._servers[v.input.parent].input.public_ipv6, null)
+                v.input.public_ipv6.value,
+                try(local._servers[v.input.parent.value].input.public_ipv6.value, null)
               ),
               null
             )
@@ -108,7 +108,7 @@ locals {
 
   servers_resources = {
     for k, v in local._servers : k => {
-      for resource in var.server_resources : resource => contains(try(split(",", v.input.resources), []), resource)
+      for resource in var.server_resources : resource => contains(try(split(",", v.input.resources.value), []), resource)
     }
   }
 
@@ -123,7 +123,7 @@ locals {
         v.output.public_ipv6,
         v.output.tailscale_ipv4,
         v.output.tailscale_ipv6
-      ] : "${url}${v.input.management_port != null ? ":${v.input.management_port}" : ""}"
+      ] : "${url}${v.input.management_port.value != null ? ":${v.input.management_port.value}" : ""}"
       if url != null
     ]
   }
@@ -138,23 +138,31 @@ resource "shell_sensitive_script" "onepassword_server_sync" {
   for_each = local.servers
 
   environment = {
-    ITEM_NAME    = each.key
-    ITEM_VAULT   = var.onepassword_servers_vault
+    ID           = each.value.id
+    INPUTS_JSON  = jsonencode(each.value.input)
+    NOTES        = each.value.notes
     OUTPUTS_JSON = jsonencode(each.value.output)
+    PASSWORD     = each.value.password
     URLS_JSON    = jsonencode(local.servers_urls[each.key])
+    USERNAME     = each.value.username
+    VAULT        = var.onepassword_servers_vault
   }
 
   lifecycle_commands {
     create = "${path.module}/scripts/onepassword-server-write.sh"
     delete = "true"
-    read   = "${path.module}/scripts/onepassword-server-read.sh"
-    update = "${path.module}/scripts/onepassword-server-write.sh"
+    read   = "echo {}"
   }
 
   triggers = {
-    outputs_hash      = sha256(jsonencode(each.value.output))
-    script_read_hash  = filemd5("${path.module}/scripts/onepassword-server-read.sh")
+    inputs_hash   = sha256(jsonencode(each.value.input))
+    notes_hash    = sha256(each.value.notes)
+    outputs_hash  = sha256(jsonencode(each.value.output))
+    password_hash = sha256(each.value.password)
+    urls_hash     = sha256(jsonencode(local.servers_urls[each.key]))
+    username_hash = sha256(each.value.username)
+
+    script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
     script_write_hash = filemd5("${path.module}/scripts/onepassword-server-write.sh")
-    urls_hash         = sha256(jsonencode(local.servers_urls[each.key]))
   }
 }

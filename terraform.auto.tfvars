@@ -13,24 +13,24 @@ defaults = {
 }
 
 server_defaults = {
-  description     = null
-  management_port = null
-  parent          = null
-  private_ipv4    = null
-  public_address  = null
-  public_ipv4     = null
-  public_ipv6     = null
-  resources       = null
+  description     = { type = "STRING", value = null }
+  management_port = { type = "STRING", value = null }
+  parent          = { type = "STRING", value = null }
+  private_ipv4    = { type = "STRING", value = null }
+  public_address  = { type = "STRING", value = null }
+  public_ipv4     = { type = "STRING", value = null }
+  public_ipv6     = { type = "STRING", value = null }
+  resources       = { type = "STRING", value = null }
 }
 
 service_defaults = {
-  api_key           = null
-  database_password = null
-  deploy_to         = null
-  description       = null
-  icon              = null
-  port              = null
-  resources         = null
-  secret_hash       = null
-  service           = null
+  api_key           = { type = "CONCEALED", value = null }
+  database_password = { type = "CONCEALED", value = null }
+  deploy_to         = { type = "STRING", value = null }
+  description       = { type = "STRING", value = null }
+  icon              = { type = "STRING", value = null }
+  port              = { type = "STRING", value = null }
+  resources         = { type = "STRING", value = null }
+  secret_hash       = { type = "CONCEALED", value = null }
+  service           = { type = "STRING", value = null }
 }

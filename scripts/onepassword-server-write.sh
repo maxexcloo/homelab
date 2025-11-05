@@ -1,23 +1,83 @@
 #!/bin/bash
 set -e
 
-# Build assignments for the 'output' section (handles _sensitive)
-OUTPUT_ASSIGNMENTS=$(echo "$OUTPUTS_JSON" | jq -r '
-  to_entries | .[] |
-  .value |= (if . == null then "" else . end) |
-  if .key | endswith("_sensitive") then
-    "output.\(.key | rtrimstr("_sensitive"))[concealed]=\(.value)"
-  else
-    "output.\(.key)[text]=\(.value)"
-  end
-')
+# This script builds a *complete* JSON template and pipes it to 'op item edit -'
+# It uses ID to be robust against name changes.
+jq -n \
+  --arg notes "$NOTES" \
+  --arg password "$PASSWORD" \
+  --arg username "$USERNAME" \
+  --argjson inputsJson "$INPUTS_JSON" \
+  --argjson outputsJson "$OUTPUTS_JSON" \
+  --argjson urlsJson "$URLS_JSON" \
+  '
+    # 1. Build the "urls" array
+    (
+      $urlsJson | map(select(. != null) | {href: .})
+    ) as $urlsTemplate |
 
-# Build assignments for the 'urls' array
-URL_ASSIGNMENTS=$(echo "$URLS_JSON" | jq -r '
-  to_entries | .[] |
-  .value |= (if . == null then "" else . end) |
-  "urls[\(.key)].href=\(.value)"
-')
+    # 2. Build the "fields" array (all sections)
+    # --- Built-in Username/Password/Notes ---
+    [
+      {
+        "label": "username",
+        "value": $username,
+        "purpose": "USERNAME",
+        "type": "STRING"
+      },
+      {
+        "label": "password",
+        "value": $password,
+        "purpose": "PASSWORD",
+        "type": "CONCEALED"
+      },
+      {
+        "label": "notesPlain",
+        "value": $notes,
+        "purpose": "NOTES",
+        "type": "STRING"
+      }
+    ] +
+    
+    # --- "add more" (input) section ---
+    (
+      $inputsJson | to_entries | map(
+        .value.value |= (if . == null then "" else . end) | # Handle nulls
+        {
+          "section": { "label": "add more" },
+          "label": .key,
+          "value": .value.value,
+          "type": .value.type
+        }
+      )
+    ) +
 
-# Run ONE command with all assignments
-op item edit "$ITEM_NAME" --vault "$ITEM_VAULT" $OUTPUT_ASSIGNMENTS $URL_ASSIGNMENTS
+    # --- "output" section ---
+    (
+      $outputsJson | to_entries | map(
+        .value |= (if . == null then "" else . end) |
+        if .key | endswith("_sensitive") then
+          {
+            "section": { "label": "output" },
+            "label": (.key | rtrimstr("_sensitive")),
+            "value": .value,
+            "type": "CONCEALED"
+          }
+        else
+          {
+            "section": { "label": "output" },
+            "label": .key,
+            "value": .value,
+            "type": "STRING"
+          }
+        end
+      )
+    )
+    as $fieldsTemplate |
+
+    # 3. Combine into the final template object
+    {
+      "urls": $urlsTemplate,
+      "fields": $fieldsTemplate
+    }
+  ' | op item edit "$ID" --vault "$VAULT" -

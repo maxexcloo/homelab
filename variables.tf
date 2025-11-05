@@ -55,16 +55,10 @@ variable "onepassword_services_vault" {
 variable "server_defaults" {
   description = "List of all server defaults"
 
-  type = object({
-    description     = string
-    management_port = string
-    parent          = string
-    private_ipv4    = string
-    public_address  = string
-    public_ipv4     = string
-    public_ipv6     = string
-    resources       = string
-  })
+  type = map(object({
+    type  = string
+    value = any
+  }))
 }
 
 variable "server_resources" {
@@ -75,17 +69,10 @@ variable "server_resources" {
 variable "service_defaults" {
   description = "List of all service defaults"
 
-  type = object({
-    api_key           = string
-    database_password = string
-    deploy_to         = string
-    description       = string
-    icon              = string
-    port              = string
-    resources         = string
-    secret_hash       = string
-    service           = string
-  })
+  type = map(object({
+    type  = string
+    value = any
+  }))
 }
 
 variable "service_resources" {

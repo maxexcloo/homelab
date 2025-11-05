@@ -12,7 +12,7 @@ locals {
         target      = target
       }
       if local.servers_resources[target].docker
-    } if service.platform == "docker" && service.input.service != null && fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
+    } if service.platform == "docker" && service.input.service.value != null && fileexists("${path.module}/docker/${service.input.service.value}/docker-compose.yaml")
   ]...)
 
   komodo_stacks_encrypt_script = <<-EOT
@@ -38,7 +38,7 @@ locals {
 
   komodo_stacks_templates = {
     for stack_id, stack in local.komodo_stacks : stack_id => templatefile(
-      "${path.module}/docker/${stack.service.input.service}/docker-compose.yaml",
+      "${path.module}/docker/${stack.service.input.service.value}/docker-compose.yaml",
       {
         defaults = var.defaults
         server   = local.servers[stack.target]
@@ -76,7 +76,7 @@ resource "github_repository_file" "komodo_servers" {
   content = join("\n", [
     for k, v in local.komodo_servers : <<-EOT
       [[server]]
-      description = "${v.input.description != null ? v.input.description : k} (${upper(v.region)})"
+      description = "${v.input.description.value != null ? v.input.description.value : k} (${upper(v.region)})"
       name = "${k}"
       tags = [${join(", ", [for tag in v.tags : "\"${tag}\""])}]
       [server.config]
@@ -96,7 +96,7 @@ resource "github_repository_file" "komodo_stacks" {
   content = join("\n", [
     for stack_id, stack in local.komodo_stacks : <<-EOT
       [[stack]]
-      description = "${stack.service.input.description != null ? stack.service.input.description : stack.service_key} (${stack.target})"
+      description = "${stack.service.input.description.value != null ? stack.service.input.description.value : stack.service_key} (${stack.target})"
       name = "${stack_id}"
       tags = [${join(", ", [for tag in stack.service.tags : "\"${tag}\""])}]
       [stack.config]
