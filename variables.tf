@@ -7,6 +7,11 @@ variable "acme_dns_server" {
 variable "cloudflare_account_id" {
   description = "Cloudflare account ID"
   type        = string
+
+  validation {
+    condition     = can(regex("^[a-f0-9]{32}$", var.cloudflare_account_id))
+    error_message = "Cloudflare account ID must be a 32-character hex string."
+  }
 }
 
 variable "defaults" {
