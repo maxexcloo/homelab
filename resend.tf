@@ -1,7 +1,7 @@
-resource "restapi_object" "resend_api_key_homelab" {
+resource "restapi_object" "resend_api_key_server" {
   for_each = {
-    for k, v in local.homelab_discovered : k => v
-    if local.homelab_resources[k].resend
+    for k, v in local._servers : k => v
+    if local.servers_resources[k].resend
   }
 
   data                      = jsonencode({ name = each.key })

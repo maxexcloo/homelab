@@ -12,8 +12,8 @@ locals {
 
 resource "tailscale_tailnet_key" "caddy" {
   for_each = {
-    for k, v in local.homelab_discovered : k => v
-    if local.homelab_resources[k].docker
+    for k, v in local._servers : k => v
+    if local.servers_resources[k].docker
   }
 
   description   = "${each.key}-caddy"
@@ -23,10 +23,10 @@ resource "tailscale_tailnet_key" "caddy" {
   tags          = ["tag:ephemeral"]
 }
 
-resource "tailscale_tailnet_key" "homelab" {
+resource "tailscale_tailnet_key" "server" {
   for_each = {
-    for k, v in local.homelab_discovered : k => v
-    if local.homelab_resources[k].tailscale
+    for k, v in local._servers : k => v
+    if local.servers_resources[k].tailscale
   }
 
   description   = each.key

@@ -1,7 +1,7 @@
-data "cloudflare_zero_trust_tunnel_cloudflared_token" "homelab" {
-  for_each = cloudflare_zero_trust_tunnel_cloudflared.homelab
+data "cloudflare_zero_trust_tunnel_cloudflared_token" "server" {
+  for_each = cloudflare_zero_trust_tunnel_cloudflared.server
 
-  account_id = local.providers.cloudflare.account_id
+  account_id = var.cloudflare_account_id
   tunnel_id  = each.value.id
 }
 
@@ -13,13 +13,13 @@ data "cloudflare_zone" "all" {
   }
 }
 
-resource "cloudflare_account_token" "homelab" {
+resource "cloudflare_account_token" "server" {
   for_each = {
-    for k, v in local.homelab_discovered : k => v
-    if local.homelab_resources[k].cloudflare
+    for k, v in local._servers : k => v
+    if local.servers_resources[k].cloudflare
   }
 
-  account_id = local.providers.cloudflare.account_id
+  account_id = var.cloudflare_account_id
   name       = each.key
 
   policies = [
@@ -31,8 +31,8 @@ resource "cloudflare_account_token" "homelab" {
         }
       ]
       resources = {
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.domain_external].zone_id}" = "*",
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.domain_internal].zone_id}" = "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.defaults.domain_external].zone_id}" = "*",
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.defaults.domain_internal].zone_id}" = "*"
       }
     }
   ]
@@ -40,18 +40,6 @@ resource "cloudflare_account_token" "homelab" {
 
 resource "cloudflare_dns_record" "acme" {
   for_each = nonsensitive(local.dns_records_acme)
-
-  comment = "OpenTofu Managed"
-  content = each.value.content
-  name    = each.value.name
-  proxied = false
-  ttl     = 1
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
-}
-
-resource "cloudflare_dns_record" "homelab" {
-  for_each = nonsensitive(local.dns_records_homelab)
 
   comment = "OpenTofu Managed"
   content = each.value.content
@@ -75,7 +63,19 @@ resource "cloudflare_dns_record" "manual" {
   zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
-resource "cloudflare_dns_record" "services" {
+resource "cloudflare_dns_record" "server" {
+  for_each = nonsensitive(local.dns_records_servers)
+
+  comment = "OpenTofu Managed"
+  content = each.value.content
+  name    = each.value.name
+  proxied = false
+  ttl     = 1
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
+}
+
+resource "cloudflare_dns_record" "service" {
   for_each = nonsensitive(local.dns_records_services)
 
   comment = "OpenTofu Managed"
@@ -87,7 +87,7 @@ resource "cloudflare_dns_record" "services" {
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
-resource "cloudflare_dns_record" "services_urls" {
+resource "cloudflare_dns_record" "service_url" {
   for_each = nonsensitive(local.dns_records_services_urls)
 
   comment = "OpenTofu Managed"
@@ -99,7 +99,7 @@ resource "cloudflare_dns_record" "services_urls" {
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
-resource "cloudflare_dns_record" "wildcards" {
+resource "cloudflare_dns_record" "wildcard" {
   for_each = nonsensitive(local.dns_records_wildcards)
 
   comment = "OpenTofu Managed"
@@ -111,13 +111,13 @@ resource "cloudflare_dns_record" "wildcards" {
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
-resource "cloudflare_zero_trust_tunnel_cloudflared" "homelab" {
+resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
   for_each = {
-    for k, v in local.homelab_discovered : k => v
-    if local.homelab_resources[k].cloudflare
+    for k, v in local._servers : k => v
+    if local.servers_resources[k].cloudflare
   }
 
-  account_id = local.providers.cloudflare.account_id
+  account_id = var.cloudflare_account_id
   config_src = "cloudflare"
   name       = each.key
 }

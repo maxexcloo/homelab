@@ -1,7 +1,7 @@
 data "b2_account_info" "default" {}
 
-resource "b2_application_key" "homelab" {
-  for_each = b2_bucket.homelab
+resource "b2_application_key" "server" {
+  for_each = b2_bucket.server
 
   bucket_id = each.value.id
   key_name  = each.key
@@ -14,8 +14,8 @@ resource "b2_application_key" "homelab" {
   ]
 }
 
-resource "b2_bucket" "homelab" {
-  for_each = random_string.b2_homelab
+resource "b2_bucket" "server" {
+  for_each = random_string.b2_server
 
   bucket_name = "${each.key}-${each.value.result}"
   bucket_type = "allPrivate"
@@ -32,10 +32,10 @@ resource "b2_bucket" "homelab" {
   }
 }
 
-resource "random_string" "b2_homelab" {
+resource "random_string" "b2_server" {
   for_each = {
-    for k, v in local.homelab_discovered : k => v
-    if local.homelab_resources[k].b2
+    for k, v in local._servers : k => v
+    if local.servers_resources[k].b2
   }
 
   length  = 6

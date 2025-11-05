@@ -1,7 +1,7 @@
 locals {
   komodo_servers = {
-    for k, v in local.homelab : k => v
-    if local.homelab_resources[k].docker
+    for k, v in local.servers : k => v
+    if local.servers_resources[k].docker
   }
 
   komodo_stacks = merge([
@@ -11,8 +11,8 @@ locals {
         service     = service
         target      = target
       }
-      if local.homelab_resources[target].docker
-    } if service.platform == "docker" && fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
+      if local.servers_resources[target].docker
+    } if service.platform == "docker" && service.input.service != null && fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
   ]...)
 
   komodo_stacks_encrypt_script = <<-EOT
@@ -40,16 +40,9 @@ locals {
     for stack_id, stack in local.komodo_stacks : stack_id => templatefile(
       "${path.module}/docker/${stack.service.input.service}/docker-compose.yaml",
       {
-        server  = local.homelab[stack.target]
-        service = stack.service
-
-        default = {
-          domain_external = var.domain_external
-          domain_internal = var.domain_internal
-          email           = var.default_email
-          organization    = var.default_organization
-          timezone        = var.default_timezone
-        }
+        defaults = var.defaults
+        server   = local.servers[stack.target]
+        service  = stack.service
       }
     )
   }
@@ -68,7 +61,6 @@ resource "github_repository_file" "komodo_resource_sync" {
     [resource_sync.config]
     delete = true
     git_account = "${data.github_user.default.login}"
-    include_variables = true
     managed = true
     repo = "${data.github_user.default.login}/${var.komodo_repository}"
     resource_path = ["."]
@@ -84,11 +76,11 @@ resource "github_repository_file" "komodo_servers" {
   content = join("\n", [
     for k, v in local.komodo_servers : <<-EOT
       [[server]]
-      description = "${v.input.description} (${upper(v.region)})"
+      description = "${v.input.description != null ? v.input.description : k} (${upper(v.region)})"
       name = "${k}"
-      tags = [${join(", ", [for tag in compact(local.homelab_tags[k]) : "\"${tag}\""])}]
+      tags = [${join(", ", [for tag in v.tags : "\"${tag}\""])}]
       [server.config]
-      address = "https://${local.homelab_resources[k].komodo ? "periphery" : v.output.fqdn_internal}:8120"
+      address = "https://${local.servers_resources[k].komodo ? "periphery" : v.output.fqdn_internal}:8120"
       enabled = true
       region = "${v.region}"
     EOT
@@ -104,9 +96,9 @@ resource "github_repository_file" "komodo_stacks" {
   content = join("\n", [
     for stack_id, stack in local.komodo_stacks : <<-EOT
       [[stack]]
-      description = "${stack.service.input.description} (${stack.target})"
+      description = "${stack.service.input.description != null ? stack.service.input.description : stack.service_key} (${stack.target})"
       name = "${stack_id}"
-      tags = [${join(", ", [for tag in local.services_tags[stack.service_key] : "\"${tag}\""])}]
+      tags = [${join(", ", [for tag in stack.service.tags : "\"${tag}\""])}]
       [stack.config]
       auto_update = true
       repo = "${data.github_user.default.login}/${var.komodo_repository}"
@@ -128,40 +120,11 @@ resource "github_repository_file" "komodo_stacks_compose" {
   repository          = var.komodo_repository
 }
 
-resource "github_repository_file" "komodo_variables" {
-  commit_message      = "Update Komodo variable configurations"
-  file                = "variables.toml"
-  overwrite_on_create = true
-  repository          = var.komodo_repository
-
-  content = <<-EOT
-    [[variable]]
-    name = "DEFAULT_EMAIL"
-    value = "${var.default_email}"
-
-    [[variable]]
-    name = "DEFAULT_ORGANIZATION" 
-    value = "${var.default_organization}"
-
-    [[variable]]
-    name = "DEFAULT_TIMEZONE"
-    value = "${var.default_timezone}"
-
-    [[variable]]
-    name = "DOMAIN_EXTERNAL"
-    value = "${var.domain_external}"
-
-    [[variable]]
-    name = "DOMAIN_INTERNAL"
-    value = "${var.domain_internal}"
-  EOT
-}
-
 resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   for_each = local.komodo_stacks
 
   environment = {
-    AGE_PUBLIC_KEY = local.homelab[each.value.target].output.age_public_key
+    AGE_PUBLIC_KEY = local.servers[each.value.target].output.age_public_key
     CONTENT        = base64encode(local.komodo_stacks_templates[each.key])
   }
 
@@ -173,7 +136,7 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(local.homelab[each.value.target].output.age_public_key)
+    age_public_key_hash = sha256(local.servers[each.value.target].output.age_public_key)
     content_hash        = sha256(local.komodo_stacks_templates[each.key])
   }
 }

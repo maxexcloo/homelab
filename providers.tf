@@ -1,34 +1,10 @@
-data "onepassword_item" "providers" {
-  vault = var.onepassword_homelab_vault
-  title = "providers"
-}
+provider "age" {}
 
-locals {
-  providers = {
-    for section in lookup(data.onepassword_item.providers, "section", []) : section.label => {
-      for field in section.field : field.label => field.value
-    }
-  }
-}
+provider "b2" {}
 
-provider "b2" {
-  application_key    = local.providers.b2.application_key
-  application_key_id = local.providers.b2.application_key_id
-}
+provider "cloudflare" {}
 
-provider "cloudflare" {
-  api_key = local.providers.cloudflare.api_key
-  email   = local.providers.cloudflare.email
-}
-
-provider "github" {
-  token = local.providers.github.token
-}
-
-provider "onepassword" {
-  token = var.onepassword_connect_token
-  url   = var.onepassword_connect_host
-}
+provider "github" {}
 
 provider "restapi" {
   alias                 = "resend"
@@ -37,15 +13,11 @@ provider "restapi" {
   uri                   = "https://api.resend.com"
 
   headers = {
-    "Authorization" = "Bearer ${local.providers.resend.api_key}",
+    "Authorization" = "Bearer ${var.resend_api_key}",
     "Content-Type"  = "application/json"
   }
 }
 
 provider "shell" {}
 
-provider "tailscale" {
-  oauth_client_id     = local.providers.tailscale.oauth_client_id
-  oauth_client_secret = local.providers.tailscale.oauth_client_secret
-  tailnet             = local.providers.tailscale.tailnet
-}
+provider "tailscale" {}

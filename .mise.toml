@@ -13,42 +13,13 @@ TF_CLI_ARGS_apply = "-compact-warnings -parallelism=20"
 [tasks.setup]
 description = "Initial project setup"
 run = """
-echo "🔧 Setting up project..."
-
-# Check for required tokens
+# Setting up project...
 if [[ ! -f .mise.local.toml ]]; then
-    echo "📄 Creating .mise.local.toml template..."
-    cp .mise.local.toml.default .mise.local.toml
-    echo "✅ Created .mise.local.toml - please add your tokens"
-    exit 1
+  echo "📄 Creating .mise.local.toml template..."
+  cp .mise.local.toml.default .mise.local.toml
+  echo "✅ Created .mise.local.toml - please add your tokens"
+  exit 1
 fi
-
-# Create providers entry in 1Password if it doesn't exist
-echo "🔑 Checking providers entry..."
-if ! op item get --vault "Homelab" "providers" 2> /dev/null; then
-    echo "📝 Creating providers entry..."
-    op item create \
-        --category="Login" \
-        --title="providers" \
-        --vault="Homelab" || echo "❌ Failed to create providers entry"
-
-    echo "📋 Adding provider fields..."
-    op item edit --vault="Homelab" "providers" \
-        'b2.application_key[concealed]=REPLACE_ME' \
-        'b2.application_key_id[text]=REPLACE_ME' \
-        'cloudflare.account_id[text]=REPLACE_ME' \
-        'cloudflare.api_key[concealed]=REPLACE_ME' \
-        'cloudflare.email[text]=REPLACE_ME' \
-        'github.token[concealed]=REPLACE_ME' \
-        'resend.api_key[concealed]=REPLACE_ME' \
-        'tailscale.oauth_client_id[text]=REPLACE_ME' \
-        'tailscale.oauth_client_secret[concealed]=REPLACE_ME' \
-        'tailscale.tailnet[text]=REPLACE_ME' 2>/dev/null || echo "⚠️  Could not add all provider fields"
-else
-    echo "✅ Providers entry exists"
-fi
-
-echo "✅ Setup complete!"
 """
 
 [tasks.init]

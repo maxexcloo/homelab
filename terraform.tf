@@ -2,9 +2,13 @@ terraform {
   required_version = ">= 1.10"
 
   required_providers {
+    age = {
+      source  = "clementblaise/age"
+      version = "~> 0.0"
+    }
     b2 = {
       source  = "backblaze/b2"
-      version = "~> 0.10"
+      version = "~> 0.0"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
@@ -17,10 +21,6 @@ terraform {
     http = {
       source  = "hashicorp/http"
       version = "~> 3.0"
-    }
-    onepassword = {
-      source  = "1password/onepassword"
-      version = "~> 2.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -36,7 +36,7 @@ terraform {
     }
     tailscale = {
       source  = "tailscale/tailscale"
-      version = "~> 0.21"
+      version = "~> 0.0"
     }
   }
 }

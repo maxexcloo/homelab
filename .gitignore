@@ -1,6 +1,8 @@
+.claude
 .mise.local.toml
 .terraform
 .terraform.lock.hcl
+*.cache.*.json
 *.tfplan
 *.tfstate
 *.tfstate.*
