@@ -120,9 +120,9 @@ locals {
         v.output.private_ipv4,
         v.output.public_address,
         v.output.public_ipv4,
-        v.output.public_ipv6,
+        "[${v.output.public_ipv6}]",
         v.output.tailscale_ipv4,
-        v.output.tailscale_ipv6
+        "[${v.output.tailscale_ipv6}]",
       ] : "${url}${v.input.management_port != null ? ":${v.input.management_port}" : ""}"
       if url != null
     ]
