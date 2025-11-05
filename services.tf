@@ -54,6 +54,15 @@ locals {
     )
   }
 
+  services_outputs_filtered = {
+    for k, v in local.services : k => {
+      for target, output in v.output : target => {
+        for output_key, output_value in output : output_key => output_value
+        if !contains(var.url_fields, output_key)
+      }
+    }
+  }
+
   services_resources = {
     for k, v in local._services : k => {
       for resource in var.service_resources : resource => contains(try(split(",", replace(v.input.resources, " ", "")), []), resource)
@@ -61,18 +70,25 @@ locals {
   }
 
   services_urls = {
-    for k, v in local.services : k => [
-      for url in distinct(concat(
-        [try(v.urls[0], null)],
-        flatten([
-          for output in values(v.output) : [
-            output.fqdn_external,
-            output.fqdn_internal
-          ]
-        ])
-      )) : url
-      if url != null
-    ]
+    for k, v in local.services : k => concat(
+      v.url != null ? [
+        {
+          href    = v.url
+          label   = "url"
+          primary = true
+        }
+      ] : [],
+      flatten([
+        for target, output in v.output : [
+          for field in var.url_fields : {
+            href    = output[field]
+            label   = "${field}_${target}"
+            primary = field == "fqdn_internal" && v.url == null && target == keys(v.output)[0]
+          }
+          if contains(keys(output), field) && output[field] != null
+        ]
+      ])
+    )
   }
 }
 
@@ -86,7 +102,7 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
 
   environment = {
     ID           = each.value.id
-    OUTPUTS_JSON = jsonencode(each.value.output)
+    OUTPUTS_JSON = jsonencode(local.services_outputs_filtered[each.key])
     URLS_JSON    = jsonencode(local.services_urls[each.key])
     VAULT        = var.onepassword_services_vault
   }
@@ -97,7 +113,7 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
   }
 
   triggers = {
-    outputs_hash      = sha256(jsonencode(each.value.output))
+    outputs_hash      = sha256(jsonencode(local.services_outputs_filtered[each.key]))
     script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
     script_write_hash = filemd5("${path.module}/scripts/onepassword-service-write.sh")
     urls_hash         = sha256(jsonencode(local.services_urls[each.key]))

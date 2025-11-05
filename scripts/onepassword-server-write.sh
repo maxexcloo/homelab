@@ -13,9 +13,15 @@ echo "$CURRENT_ITEM" | jq \
 --argjson outputsJson "$OUTPUTS_JSON" \
 --argjson urlsJson "$URLS_JSON" \
 '
-  .urls = ($urlsJson | map(select(. != null) | {href: .})) |
+  .urls = (
+    $urlsJson | map({
+      href: .href,
+      label: .label,
+      primary: (.primary // false)
+    })
+  ) |
   .sections = (
-    [.sections[]? | select(.label != "output")] + 
+    [.sections[]? | select(.label != "output")] +
     [{"id": $outputSectionId, "label": "output"}]
   ) |
   .fields = (
@@ -26,7 +32,7 @@ echo "$CURRENT_ITEM" | jq \
     )] +
     # Add new output fields from OUTPUTS_JSON (excluding null/empty values)
     [
-      $outputsJson | to_entries[] | 
+      $outputsJson | to_entries[] |
       select(.value != null and .value != "") |
       if .key | endswith("_sensitive") then
         {

@@ -6,7 +6,7 @@ CURRENT_ITEM=$(op item get "$ID" --vault "$VAULT" --format json)
 
 # Get all existing output-* section IDs as a JSON object
 OUTPUT_SECTIONS=$(echo "$CURRENT_ITEM" | jq -r '
-  [.sections[]? | select(.label | startswith("output-")) | {label: .label, id: .id}] | 
+  [.sections[]? | select(.label | startswith("output-")) | {label: .label, id: .id}] |
   map({(.label): .id}) | add // {}
 ')
 
@@ -16,7 +16,13 @@ echo "$CURRENT_ITEM" | jq \
 --argjson outputsJson "$OUTPUTS_JSON" \
 --argjson urlsJson "$URLS_JSON" \
 '
-  .urls = ($urlsJson | map(select(. != null) | {href: .})) |
+  .urls = (
+    $urlsJson | map({
+      href: .href,
+      label: .label,
+      primary: (.primary // false)
+    })
+  ) |
   .sections = (
     # Keep all non-output-* sections
     [.sections[]? | select(.label | startswith("output-") | not)] +

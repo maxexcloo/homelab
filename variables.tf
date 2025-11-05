@@ -104,3 +104,19 @@ variable "resend_api_key" {
   description = "Resend API key"
   type        = string
 }
+
+variable "url_fields" {
+  description = "URL fields to filter"
+  type        = list(string)
+
+  default = [
+    "fqdn_external",
+    "fqdn_internal",
+    "private_ipv4",
+    "public_address",
+    "public_ipv4",
+    "public_ipv6",
+    "tailscale_ipv4",
+    "tailscale_ipv6"
+  ]
+}

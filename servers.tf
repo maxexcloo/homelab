@@ -106,6 +106,13 @@ locals {
     )
   }
 
+  servers_outputs_filtered = {
+    for k, v in local.servers : k => {
+      for output_key, output_value in v.output : output_key => output_value
+      if !contains(var.url_fields, output_key)
+    }
+  }
+
   servers_resources = {
     for k, v in local._servers : k => {
       for resource in var.server_resources : resource => contains(try(split(",", v.input.resources), []), resource)
@@ -114,21 +121,21 @@ locals {
 
   servers_urls = {
     for k, v in local.servers : k => [
-      for url in [
-        v.output.fqdn_external,
-        v.output.fqdn_internal,
-        v.output.private_ipv4,
-        v.output.public_address,
-        v.output.public_ipv4,
-        "[${v.output.public_ipv6}]",
-        v.output.tailscale_ipv4,
-        "[${v.output.tailscale_ipv6}]",
-      ] : "${url}${v.input.management_port != null ? ":${v.input.management_port}" : ""}"
-      if url != null
+      for key in sort(keys(v.output)) : merge(
+        {
+          href = format(
+            "%s%s",
+            can(cidrhost("${v.output[key]}/128", 0)) ? "[${v.output[key]}]" : v.output[key],
+            v.input.management_port != null ? ":${v.input.management_port}" : ""
+          )
+          label = key
+        },
+        key == "fqdn_internal" ? { primary = true } : {}
+      )
+      if contains(var.url_fields, key) && v.output[key] != null
     ]
   }
 }
-
 
 output "servers" {
   value     = keys(local._servers)
@@ -136,11 +143,11 @@ output "servers" {
 }
 
 resource "shell_sensitive_script" "onepassword_server_sync" {
-  for_each = local.servers
+  for_each = local._servers
 
   environment = {
     ID           = each.value.id
-    OUTPUTS_JSON = jsonencode(each.value.output)
+    OUTPUTS_JSON = jsonencode(local.servers_outputs_filtered[each.key])
     URLS_JSON    = jsonencode(local.servers_urls[each.key])
     VAULT        = var.onepassword_servers_vault
   }
@@ -151,7 +158,7 @@ resource "shell_sensitive_script" "onepassword_server_sync" {
   }
 
   triggers = {
-    outputs_hash      = sha256(jsonencode(each.value.output))
+    outputs_hash      = sha256(jsonencode(local.servers_outputs_filtered[each.key]))
     script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
     script_write_hash = filemd5("${path.module}/scripts/onepassword-server-write.sh")
     urls_hash         = sha256(jsonencode(local.servers_urls[each.key]))
