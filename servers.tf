@@ -116,6 +116,7 @@ locals {
       for url in [
         v.output.fqdn_external,
         v.output.fqdn_internal,
+        v.output.private_ipv4,
         v.output.public_address,
         v.output.public_ipv4,
         v.output.public_ipv6,
