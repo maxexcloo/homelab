@@ -99,7 +99,9 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
   }
 
   triggers = {
-    outputs_hash = sha256(jsonencode(each.value.output))
-    urls_hash    = sha256(jsonencode(local.services_urls[each.key]))
+    outputs_hash      = sha256(jsonencode(each.value.output))
+    script_read_hash  = filemd5("${path.module}/scripts/onepassword-service-read.sh")
+    script_write_hash = filemd5("${path.module}/scripts/onepassword-service-write.sh")
+    urls_hash         = sha256(jsonencode(local.services_urls[each.key]))
   }
 }
