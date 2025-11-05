@@ -16,7 +16,7 @@ OUTPUT_ASSIGNMENTS=$(echo "$OUTPUTS_JSON" | jq -r '
 URL_ASSIGNMENTS=$(echo "$URLS_JSON" | jq -r '
   to_entries | .[] |
   .value |= (if . == null then "" else . end) |
-  "urls.\(.key)\\.href=\(.value)"
+  "urls[\(.key)].href=\(.value)"
 ')
 
 # Run ONE command with all assignments
