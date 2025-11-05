@@ -62,11 +62,15 @@ locals {
 
   services_urls = {
     for k, v in local.services : k => [
-      for url in [
-        try(v.urls[0], null),
-        v.output.fqdn_external,
-        v.output.fqdn_internal
-      ] : url
+      for url in distinct(concat(
+        [try(v.urls[0], null)],
+        flatten([
+          for output in values(v.output) : [
+            output.fqdn_external,
+            output.fqdn_internal
+          ]
+        ])
+      )) : url
       if url != null
     ]
   }

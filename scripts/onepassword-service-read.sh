@@ -16,6 +16,6 @@ jq -r '
       | if length > 0 then add else {} end
       | with_entries( .key |= ltrimstr("output-") )
     ) // {},
-    urls: ( .urls | map({(tostring): .href}) | add ) // {}
+    urls: ( [.urls[].href] | map(select(. != null)) ) // []
   }
 '

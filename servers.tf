@@ -36,6 +36,7 @@ locals {
             age_public_key              = nonsensitive(age_secret_key.server[k].public_key)
             fqdn_external               = "${v.fqdn}.${var.defaults.domain_external}"
             fqdn_internal               = "${v.fqdn}.${var.defaults.domain_internal}"
+            private_ipv4                = v.input.private_ipv4
 
             public_address = try(
               coalesce(
