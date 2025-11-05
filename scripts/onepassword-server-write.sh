@@ -1,92 +1,39 @@
 #!/bin/bash
 set -e
 
-# This script builds a *complete* JSON template and pipes it to 'op item edit -'
-# It uses ID to be robust against name changes.
-jq -n \
-  --arg notes "$NOTES" \
-  --arg otp "$OTP" \
-  --arg password "$PASSWORD" \
-  --arg username "$USERNAME" \
-  --argjson inputsJson "$INPUTS_JSON" \
+# Get current item structure
+CURRENT_ITEM=$(op item get "$ID" --vault "$VAULT" --format json)
+
+# Only update URLs and output section, preserve everything else
+echo "$CURRENT_ITEM" | jq \
   --argjson outputsJson "$OUTPUTS_JSON" \
   --argjson urlsJson "$URLS_JSON" \
   '
-    # Build the "fields" array (all sections)
-    (
-      # --- Built-in Username/Password/Notes ---
-      [
+  # Update URLs
+  .urls = ($urlsJson | map(select(. != null) | {href: .})) |
+
+  # Keep all existing fields except output section
+  .fields = [
+    # Keep all non-output fields as-is
+    (.fields[] | select(.section.id != "output" and .section.label != "output")),
+
+    # Add new output fields
+    ($outputsJson | to_entries[] |
+      if .key | endswith("_sensitive") then
         {
-          "label": "username",
-          "purpose": "USERNAME",
-          "type": "STRING",
-          "value": $username
-        },
-        {
-          "label": "password",
-          "purpose": "PASSWORD",
-          "type": "CONCEALED",
-          "value": $password
-        },
-        {
-          "label": "notesPlain",
-          "purpose": "NOTES",
-          "type": "STRING",
-          "value": $notes
+          label: (.key | rtrimstr("_sensitive")),
+          section: {id: "output"},
+          type: "CONCEALED",
+          value: (.value // "")
         }
-      ] +
-
-      (if $otp != "" then [{
-          "label": "one-time password",
-          "type": "OTP",
-          "value": $otp
-        }] else [] end) +
-
-      # --- "input" section ("add more") ---
-      (
-        $inputsJson | to_entries | map(
-          .value.value |= (if . == null then "" else . end) |
-          {
-            "label": .key,
-            "section": { "label": "add more" },
-            "type": .value.type,
-            "value": .value.value
-          }
-        )
-      ) +
-
-      # --- "output" section ---
-      (
-        $outputsJson | to_entries | map(
-          .value |= (if . == null then "" else . end) |
-          if .key | endswith("_sensitive") then
-            {
-              "label": (.key | rtrimstr("_sensitive")),
-              "section": { "label": "output" },
-              "type": "CONCEALED",
-              "value": .value
-            }
-          else
-            {
-              "label": .key,
-              "section": { "label": "output" },
-              "type": "STRING",
-              "value": .value
-            }
-          end
-        )
-      )
+      else
+        {
+          label: .key,
+          section: {id: "output"},
+          type: "STRING",
+          value: (.value // "")
+        }
+      end
     )
-    as $fieldsTemplate |
-
-    # Build the "urls" array
-    (
-      $urlsJson | map(select(. != null) | {href: .})
-    ) as $urlsTemplate |
-
-    # Combine into the final template object
-    {
-      "fields": $fieldsTemplate,
-      "urls": $urlsTemplate
-    }
+  ]
   ' | op item edit "$ID" --vault "$VAULT" -

@@ -36,28 +36,28 @@ locals {
             age_public_key              = nonsensitive(age_secret_key.server[k].public_key)
             fqdn_external               = "${v.fqdn}.${var.defaults.domain_external}"
             fqdn_internal               = "${v.fqdn}.${var.defaults.domain_internal}"
-            private_ipv4                = v.input.private_ipv4.value
+            private_ipv4                = v.input.private_ipv4
 
             public_address = try(
               coalesce(
-                v.input.public_address.value,
-                try(local._servers[v.input.parent.value].input.public_address.value, null)
+                v.input.public_address,
+                try(local._servers[v.input.parent].input.public_address, null)
               ),
               null
             )
 
             public_ipv4 = try(
               coalesce(
-                v.input.public_ipv4.value,
-                try(local._servers[v.input.parent.value].input.public_ipv4.value, null)
+                v.input.public_ipv4,
+                try(local._servers[v.input.parent].input.public_ipv4, null)
               ),
               null
             )
 
             public_ipv6 = try(
               coalesce(
-                v.input.public_ipv6.value,
-                try(local._servers[v.input.parent.value].input.public_ipv6.value, null)
+                v.input.public_ipv6,
+                try(local._servers[v.input.parent].input.public_ipv6, null)
               ),
               null
             )
@@ -83,7 +83,7 @@ locals {
 
           # Cloudflare resources
           local.servers_resources[k].cloudflare ? {
-            cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
+            cloudflare_account_token_sensitive = cloudflare_account_token.server[k]
             cloudflare_tunnel_token_sensitive  = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
           } : {},
 
@@ -108,7 +108,7 @@ locals {
 
   servers_resources = {
     for k, v in local._servers : k => {
-      for resource in var.server_resources : resource => contains(try(split(",", v.input.resources.value), []), resource)
+      for resource in var.server_resources : resource => contains(try(split(",", v.input.resources), []), resource)
     }
   }
 
@@ -123,11 +123,12 @@ locals {
         v.output.public_ipv6,
         v.output.tailscale_ipv4,
         v.output.tailscale_ipv6
-      ] : "${url}${v.input.management_port.value != null ? ":${v.input.management_port.value}" : ""}"
+      ] : "${url}${v.input.management_port != null ? ":${v.input.management_port}" : ""}"
       if url != null
     ]
   }
 }
+
 
 output "servers" {
   value     = keys(local._servers)
@@ -139,13 +140,8 @@ resource "shell_sensitive_script" "onepassword_server_sync" {
 
   environment = {
     ID           = each.value.id
-    INPUTS_JSON  = jsonencode(each.value.input)
-    NOTES        = each.value.notes
-    OTP          = each.value.otp
     OUTPUTS_JSON = jsonencode(each.value.output)
-    PASSWORD     = each.value.password
     URLS_JSON    = jsonencode(local.servers_urls[each.key])
-    USERNAME     = each.value.username
     VAULT        = var.onepassword_servers_vault
   }
 
@@ -156,15 +152,8 @@ resource "shell_sensitive_script" "onepassword_server_sync" {
   }
 
   triggers = {
-    inputs_hash   = sha256(jsonencode(each.value.input))
-    notes_hash    = sha256(each.value.notes)
-    otp_hash      = sha256(each.value.otp)
-    outputs_hash  = sha256(jsonencode(each.value.output))
-    password_hash = sha256(each.value.password)
-    urls_hash     = sha256(jsonencode(local.servers_urls[each.key]))
-    username_hash = sha256(each.value.username)
-
-    script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
-    script_write_hash = filemd5("${path.module}/scripts/onepassword-server-write.sh")
+    outputs_hash = sha256(jsonencode(each.value.output))
+    script_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
+    urls_hash    = sha256(jsonencode(local.servers_urls[each.key]))
   }
 }

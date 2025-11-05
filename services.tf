@@ -26,10 +26,10 @@ locals {
       {
         output = length(local.services_deployments[k]) > 0 ? {
           for target in local.services_deployments[k] : target => {
-            database_password_sensitive = try(v.input.database_password.value, null)
+            database_password_sensitive = try(v.input.database_password, null)
             fqdn_external               = "${v.name}.${local.servers[target].output.fqdn_external}"
             fqdn_internal               = "${v.name}.${local.servers[target].output.fqdn_internal}"
-            secret_hash_sensitive       = try(v.input.secret_hash.value, null)
+            secret_hash_sensitive       = try(v.input.secret_hash, null)
           }
         } : {}
       }
@@ -38,17 +38,17 @@ locals {
 
   services_deployments = {
     for k, v in local._services : k => (
-      v.input.deploy_to.value == null ? [] :
+      v.input.deploy_to == null ? [] :
       # Deploy to all servers
-      v.input.deploy_to.value == "all" ? keys(local._servers) :
+      v.input.deploy_to == "all" ? keys(local._servers) :
       # Direct server reference
-      contains(keys(local._servers), v.input.deploy_to.value) ? [v.input.deploy_to.value] :
+      contains(keys(local._servers), v.input.deploy_to) ? [v.input.deploy_to] :
       # Pattern-based matches
       [
         for h_key, h_val in local._servers : h_key
         if(
-          startswith(v.input.deploy_to.value, "platform:") && h_val.platform == trimprefix(v.input.deploy_to.value, "platform:") ||
-          startswith(v.input.deploy_to.value, "region:") && h_val.region == trimprefix(v.input.deploy_to.value, "region:")
+          startswith(v.input.deploy_to, "platform:") && h_val.platform == trimprefix(v.input.deploy_to, "platform:") ||
+          startswith(v.input.deploy_to, "region:") && h_val.region == trimprefix(v.input.deploy_to, "region:")
         )
       ]
     )
@@ -56,7 +56,7 @@ locals {
 
   services_resources = {
     for k, v in local._services : k => {
-      for resource in var.service_resources : resource => contains(try(split(",", replace(v.input.resources.value, " ", "")), []), resource)
+      for resource in var.service_resources : resource => contains(try(split(",", replace(v.input.resources, " ", "")), []), resource)
     }
   }
 
@@ -86,13 +86,8 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
 
   environment = {
     ID           = each.value.id
-    INPUTS_JSON  = jsonencode(each.value.input)
-    NOTES        = each.value.notes
-    OTP          = each.value.otp
     OUTPUTS_JSON = jsonencode(each.value.output)
-    PASSWORD     = each.value.password
     URLS_JSON    = jsonencode(local.services_urls[each.key])
-    USERNAME     = each.value.username
     VAULT        = var.onepassword_services_vault
   }
 
@@ -103,15 +98,8 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
   }
 
   triggers = {
-    inputs_hash   = sha256(jsonencode(each.value.input))
-    notes_hash    = sha256(each.value.notes)
-    otp_hash      = sha256(each.value.otp)
-    outputs_hash  = sha256(jsonencode(each.value.output))
-    password_hash = sha256(each.value.password)
-    urls_hash     = sha256(jsonencode(local.services_urls[each.key]))
-    username_hash = sha256(each.value.username)
-
-    script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
-    script_write_hash = filemd5("${path.module}/scripts/onepassword-service-write.sh")
+    outputs_hash = sha256(jsonencode(each.value.output))
+    script_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
+    urls_hash    = sha256(jsonencode(local.services_urls[each.key]))
   }
 }

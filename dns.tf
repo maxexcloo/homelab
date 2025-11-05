@@ -57,33 +57,33 @@ locals {
   dns_records_servers = merge(
     {
       for key, server in local._servers : "${var.defaults.domain_external}-${key}-cname" => {
-        content = server.input.public_address.value
+        content = server.input.public_address
         name    = "${server.fqdn}.${var.defaults.domain_external}"
         server  = key
         type    = "CNAME"
         zone    = var.defaults.domain_external
       }
-      if server.input.public_address.value != null
+      if server.input.public_address != null
     },
     {
       for key, server in local._servers : "${var.defaults.domain_external}-${key}-a" => {
-        content = server.input.public_ipv4.value
+        content = server.input.public_ipv4
         name    = "${server.fqdn}.${var.defaults.domain_external}"
         server  = key
         type    = "A"
         zone    = var.defaults.domain_external
       }
-      if server.input.public_address.value == null && server.input.public_ipv4.value != null && can(cidrhost("${server.input.public_ipv4.value}/32", 0))
+      if server.input.public_address == null && server.input.public_ipv4 != null && can(cidrhost("${server.input.public_ipv4}/32", 0))
     },
     {
       for key, server in local._servers : "${var.defaults.domain_external}-${key}-aaaa" => {
-        content = server.input.public_ipv6.value
+        content = server.input.public_ipv6
         name    = "${server.fqdn}.${var.defaults.domain_external}"
         server  = key
         type    = "AAAA"
         zone    = var.defaults.domain_external
       }
-      if server.input.public_address.value == null && server.input.public_ipv6.value != null && can(cidrhost("${server.input.public_ipv6.value}/128", 0))
+      if server.input.public_address == null && server.input.public_ipv6 != null && can(cidrhost("${server.input.public_ipv6}/128", 0))
     },
     {
       for key, server in local._servers : "${var.defaults.domain_internal}-${key}-a" => {

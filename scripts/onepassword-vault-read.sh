@@ -38,20 +38,15 @@ while IFS= read -r ITEM_TITLE; do
       {id: .id, title: .title}
       + {username: ( .fields[] | select(.purpose == "USERNAME") | .value ) // ""}
       + {password: ( .fields[] | select(.purpose == "PASSWORD") | .value ) // ""}
-      + {otp: ( .fields[] | select(.type == "OTP") | .value ) // "" }
       + {urls: [.urls[]?.href] | map(select(. != null))}
       + {input: (
           .fields
           | map(select(.section.id == "add more"))
           | map({
-              (.label): {
-                "value": (if .value == "" or .value == "-" then null else .value end),
-                "type": .type
-              }
+              (.label): (if .value == "" or .value == "-" then null else .value end)
             })
           | add
         ) // {} }
-      + {notes: ( .fields[] | select(.purpose == "NOTES") | .value ) // "" }
       + {tags: .tags // []}
     ) | tojson
   ')
