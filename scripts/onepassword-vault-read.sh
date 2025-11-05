@@ -58,3 +58,4 @@ done <<< "$ITEM_TITLES"
 # --- Write to cache AND print to stdout ---
 echo "$OUTPUT_JSON" > "$CACHE_FILE"
 echo "$OUTPUT_JSON"
+chmod 600 "$CACHE_FILE"
