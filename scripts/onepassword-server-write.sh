@@ -36,13 +36,12 @@ jq -n \
         }
       ] +
 
-      | if $otp != "" then . + [{
+      (if $otp != "" then [{
           "label": "one-time password",
           "type": "OTP",
           "value": $otp
-        }] else . end
-      +
-      
+        }] else [] end) +
+
       # --- "input" section ("add more") ---
       (
         $inputsJson | to_entries | map(
