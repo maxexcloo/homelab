@@ -94,12 +94,12 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
   lifecycle_commands {
     create = "${path.module}/scripts/onepassword-service-write.sh"
     delete = "true"
-    read   = "echo {}"
   }
 
   triggers = {
-    outputs_hash = sha256(jsonencode(each.value.output))
-    script_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
-    urls_hash    = sha256(jsonencode(local.services_urls[each.key]))
+    outputs_hash      = sha256(jsonencode(each.value.output))
+    script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
+    script_write_hash = filemd5("${path.module}/scripts/onepassword-service-write.sh")
+    urls_hash         = sha256(jsonencode(local.services_urls[each.key]))
   }
 }

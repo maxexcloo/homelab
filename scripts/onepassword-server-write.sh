@@ -1,41 +1,51 @@
 #!/bin/bash
 set -e
 
-# Get current item structure
+# Get current item as JSON
 CURRENT_ITEM=$(op item get "$ID" --vault "$VAULT" --format json)
 
-# Only update URLs and output section, preserve everything else
+# Get existing output section ID, or use "output_section" as default for new sections
+OUTPUT_SECTION_ID=$(echo "$CURRENT_ITEM" | jq -r '(.sections[]? | select(.label == "output") | .id) // "output_section"')
+
+# Update the item with new URLs and output fields
 echo "$CURRENT_ITEM" | jq \
-  --argjson outputsJson "$OUTPUTS_JSON" \
-  --argjson urlsJson "$URLS_JSON" \
-  '
-    # 1. Update URLs
-    .urls = ($urlsJson | map(select(. != null) | {href: .})) |
-    # 2. Re-build the .fields array by concatenating two lists
-    .fields = (
-      # List 1: All fields that are NOT "output"
-      [
-        .fields[] | select(.section.label? // "" != "output")
-      ]
-      +
-      # List 2: All the new "output" fields
-      [
-        $outputsJson | to_entries[] |
-          if .key | endswith("_sensitive") then
-            {
-              "label": (.key | rtrimstr("_sensitive")),
-              "section": { "label": "output" },
-              "type": "CONCEALED",
-              "value": (.value // "")
-            }
-          else
-            {
-              "label": .key,
-              "section": { "label": "output" },
-              "type": "STRING",
-              "value": (.value // "")
-            }
-          end
-      ]
-    )
-  ' | op item edit "$ID" --vault "$VAULT" -
+--arg outputSectionId "$OUTPUT_SECTION_ID" \
+--argjson outputsJson "$OUTPUTS_JSON" \
+--argjson urlsJson "$URLS_JSON" \
+'
+  # Update URLs
+  .urls = ($urlsJson | map(select(. != null) | {href: .})) |
+  # Rebuild sections array: keep all non-output sections, then add the output section
+  .sections = (
+    [.sections[]? | select(.label != "output")] + 
+    [{"id": $outputSectionId, "label": "output"}]
+  ) |
+  # Rebuild fields array
+  .fields = (
+    # Keep all existing fields that are NOT in the output section
+    [.fields[]? | select(
+      .section.label? != "output" and
+      .section.id? != $outputSectionId
+    )] +
+    # Add new output fields from OUTPUTS_JSON (excluding null/empty values)
+    [
+      $outputsJson | to_entries[] | 
+      select(.value != null and .value != "") |
+      if .key | endswith("_sensitive") then
+        {
+          "label": (.key | rtrimstr("_sensitive")),
+          "section": {"id": $outputSectionId},
+          "type": "CONCEALED",
+          "value": .value
+        }
+      else
+        {
+          "label": .key,
+          "section": {"id": $outputSectionId},
+          "type": "STRING",
+          "value": .value
+        }
+      end
+    ]
+  )
+' | op item edit "$ID" --vault "$VAULT" -
