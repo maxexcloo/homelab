@@ -11,77 +11,78 @@ jq -n \
   --argjson outputsJson "$OUTPUTS_JSON" \
   --argjson urlsJson "$URLS_JSON" \
   '
-    # 1. Build the "urls" array
+    # Build the "fields" array (all sections)
+    (
+      # --- Built-in Username/Password/Notes ---
+      [
+        {
+          "label": "username",
+          "purpose": "USERNAME",
+          "type": "STRING",
+          "value": $username
+        },
+        {
+          "label": "password",
+          "purpose": "PASSWORD",
+          "type": "CONCEALED",
+          "value": $password
+        },
+        {
+          "label": "notesPlain",
+          "purpose": "NOTES",
+          "type": "STRING",
+          "value": $notes
+        }
+      ] +
+      
+      # --- "input" section ("add more") ---
+      (
+        $inputsJson | to_entries | map(
+          .value.value |= (if . == null then "" else . end) |
+          {
+            "label": .key,
+            "section": { "label": "add more" },
+            "type": .value.type,
+            "value": .value.value
+          }
+        )
+      ) +
+
+      # --- "output-SERVERNAME" sections ---
+      (
+        $outputsJson | to_entries | map(
+          .key as $server_name | "output-\($server_name)" as $section_label |
+          .value | to_entries | map(
+            .value |= (if . == null then "" else . end) |
+            if .key | endswith("_sensitive") then
+              {
+                "label": (.key | rtrimstr("_sensitive")),
+                "section": { "label": $section_label },
+                "type": "CONCEALED",
+                "value": .value
+              }
+            else
+              {
+                "label": .key,
+                "section": { "label": $section_label },
+                "type": "STRING",
+                "value": .value
+              }
+            end
+          )
+        ) | flatten
+      )
+    )
+    as $fieldsTemplate |
+
+    # Build the "urls" array
     (
       $urlsJson | map(select(. != null) | {href: .})
     ) as $urlsTemplate |
 
-    # 2. Build the "fields" array (all sections)
-    # --- Conditionally add built-in fields *only if they have a value* ---
-    (
-      []
-      | if $username != "" then . + [{
-          "label": "username",
-          "value": $username,
-          "purpose": "USERNAME",
-          "type": "STRING"
-        }] else . end
-      | if $password != "" then . + [{
-          "label": "password",
-          "value": $password,
-          "purpose": "PASSWORD",
-          "type": "CONCEALED"
-        }] else . end
-      | if $notes != "" then . + [{
-          "label": "notesPlain",
-          "value": $notes,
-          "purpose": "NOTES",
-          "type": "STRING"
-        }] else . end
-    ) +
-    
-    # --- "add more" (input) section ---
-    (
-      $inputsJson | to_entries | map(
-        .value.value |= (if . == null then "" else . end) | # Handle nulls
-        {
-          "section": { "label": "add more" },
-          "label": .key,
-          "value": .value.value,
-          "type": .value.type
-        }
-      )
-    ) +
-
-    # --- "output-SERVERNAME" sections ---
-    (
-      $outputsJson | to_entries | map(
-        .key as $server_name | "output-\($server_name)" as $section_label |
-        .value | to_entries | map(
-          .value |= (if . == null then "" else . end) |
-          if .key | endswith("_sensitive") then
-            {
-              "section": { "label": $section_label },
-              "label": (.key | rtrimstr("_sensitive")),
-              "value": .value,
-              "type": "CONCEALED"
-            }
-          else
-            {
-              "section": { "label": $section_label },
-              "label": .key,
-              "value": .value,
-              "type": "STRING"
-            }
-          end
-        )
-      ) | flatten
-    )
-    as $fieldsTemplate |
-
-    # 3. Combine into the final template object
+    # Combine into the final template object
     {
-      "urls": $urlsTemplate,
-      "fields": $fieldsTemplate
+      "fields": $fieldsTemplate,
+      "urls": $urlsTemplate
     }
   ' | op item edit "$ID" --vault "$VAULT" -
