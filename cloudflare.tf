@@ -39,9 +39,9 @@ resource "cloudflare_account_token" "server" {
 }
 
 resource "cloudflare_dns_record" "acme" {
-  for_each = nonsensitive(local.dns_records_acme)
+  for_each = local.dns_records_acme
 
-  comment = "OpenTofu Managed"
+  comment = var.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = false
@@ -51,22 +51,22 @@ resource "cloudflare_dns_record" "acme" {
 }
 
 resource "cloudflare_dns_record" "manual" {
-  for_each = nonsensitive(local.dns_records_manual)
+  for_each = local.dns_records_manual
 
-  comment  = "OpenTofu Managed"
+  comment  = var.defaults.managed_comment
   content  = each.value.content
   name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, false)
-  ttl      = 1
+  priority = each.value.priority
+  proxied  = each.value.proxied
+  ttl      = each.value.ttl
   type     = each.value.type
   zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_dns_record" "server" {
-  for_each = nonsensitive(local.dns_records_servers)
+  for_each = local.dns_records_servers
 
-  comment = "OpenTofu Managed"
+  comment = var.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = false
@@ -76,21 +76,21 @@ resource "cloudflare_dns_record" "server" {
 }
 
 resource "cloudflare_dns_record" "service" {
-  for_each = nonsensitive(local.dns_records_services)
+  for_each = local.dns_records_services
 
-  comment = "OpenTofu Managed"
+  comment = var.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
-  proxied = false
+  proxied = try(each.value.proxied, false)
   ttl     = 1
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_dns_record" "service_url" {
-  for_each = nonsensitive(local.dns_records_services_urls)
+  for_each = local.dns_records_services_urls
 
-  comment = "OpenTofu Managed"
+  comment = var.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = try(each.value.proxied, false)
@@ -100,9 +100,9 @@ resource "cloudflare_dns_record" "service_url" {
 }
 
 resource "cloudflare_dns_record" "wildcard" {
-  for_each = nonsensitive(local.dns_records_wildcards)
+  for_each = local.dns_records_wildcards
 
-  comment = "OpenTofu Managed"
+  comment = var.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = false

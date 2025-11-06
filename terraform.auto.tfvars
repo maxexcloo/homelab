@@ -8,6 +8,7 @@ defaults = {
   domain_external = "excloo.net"
   domain_internal = "excloo.dev"
   email           = "max@excloo.com"
+  managed_comment = "OpenTofu Managed"
   organization    = "excloo"
   timezone        = "Australia/Sydney"
 }

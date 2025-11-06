@@ -20,6 +20,7 @@ variable "defaults" {
     domain_external = string
     domain_internal = string
     email           = string
+    managed_comment = string
     organization    = string
     timezone        = string
   })
