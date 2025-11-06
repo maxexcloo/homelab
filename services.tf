@@ -111,6 +111,7 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
     create = "${path.module}/scripts/onepassword-service-write.sh"
     delete = "true"
     read   = "true"
+    update = "${path.module}/scripts/onepassword-service-write.sh"
   }
 
   triggers = {
