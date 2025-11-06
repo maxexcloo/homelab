@@ -17,7 +17,6 @@ resource "tailscale_tailnet_key" "caddy" {
   }
 
   description   = "${each.key}-caddy"
-  ephemeral     = true
   preauthorized = true
   reusable      = true
   tags          = ["tag:ephemeral"]

@@ -40,10 +40,10 @@ locals {
         content  = record.content
         name     = record.name == "@" ? zone : "${record.name}.${zone}"
         priority = try(record.priority, null)
-        proxied  = try(record.proxied, false)
-        ttl      = try(record.ttl, 1)
+        proxied  = record.proxied
+        ttl      = record.ttl
         type     = record.type
-        wildcard = try(record.wildcard, true)
+        wildcard = record.wildcard
         zone     = zone
       }
     }

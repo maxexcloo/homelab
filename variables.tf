@@ -35,6 +35,7 @@ variable "dns" {
     name     = string
     priority = optional(number)
     proxied  = optional(bool, false)
+    ttl      = optional(number, 1)
     type     = string
     wildcard = optional(bool, false)
   })))
