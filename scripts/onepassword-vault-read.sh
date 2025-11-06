@@ -1,12 +1,15 @@
 #!/bin/bash
 set -e
 
+# Get vault item IDs
 ITEMS=$(op item list --vault "$1" --format json | \
               jq -r '.[] | .title' | \
               grep -E '^[a-z0-9]+-[a-z0-9]+(?:-[a-z0-9-]+)?$' || true)
 
+# Prepare output map
 OUTPUT_JSON="{}"
 
+# Loop over vault items
 while IFS= read -r ITEM; do
   # If the title is empty (from an empty vault), skip the loop.
   if [ -z "$ITEM" ]; then
@@ -39,5 +42,5 @@ while IFS= read -r ITEM; do
   OUTPUT_JSON=$(echo "$OUTPUT_JSON" | jq --arg key "$ITEM" --arg value "$ITEM_STRING" '. + {($key): $value}')
 done <<< "$ITEMS"
 
-# --- Print to stdout ---
+# Print output map to stdout
 echo "$OUTPUT_JSON"

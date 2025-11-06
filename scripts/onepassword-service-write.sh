@@ -2,16 +2,16 @@
 set -e
 
 # Get current item as JSON
-CURRENT_ITEM=$(op item get "$ID" --vault "$VAULT" --format json)
+ITEM_JSON=$(op item get "$ID" --vault "$VAULT" --format json)
 
 # Get all existing output-* section IDs as a JSON object
-OUTPUT_SECTIONS=$(echo "$CURRENT_ITEM" | jq -r '
+OUTPUT_SECTIONS=$(echo "$ITEM_JSON" | jq -r '
   [.sections[]? | select(.label | startswith("output-")) | {label: .label, id: .id}] |
   map({(.label): .id}) | add // {}
 ')
 
 # Update the item with new URLs and output fields
-echo "$CURRENT_ITEM" | jq \
+echo "$ITEM_JSON" | jq \
 --argjson outputSections "$OUTPUT_SECTIONS" \
 --argjson outputsJson "$OUTPUTS_JSON" \
 --argjson urlsJson "$URLS_JSON" \
