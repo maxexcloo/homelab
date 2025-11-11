@@ -115,7 +115,7 @@ locals {
 
   servers_resources = {
     for k, v in local._servers : k => {
-      for resource in var.server_resources : resource => contains(try(split(",", v.input.resources), []), resource)
+      for resource in var.server_resources : resource => contains(try(split(",", replace(v.input.resources, " ", "")), []), resource)
     }
   }
 
