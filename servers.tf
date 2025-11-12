@@ -63,12 +63,12 @@ locals {
             )
 
             tailscale_ipv4 = try(
-              local.tailscale_device_addresses["${v.region}-${v.name}"].ipv4,
+              local.tailscale_device_addresses[v.platform == "router" ? v.name : "${v.region}-${v.name}"].ipv4,
               null
             )
 
             tailscale_ipv6 = try(
-              local.tailscale_device_addresses["${v.region}-${v.name}"].ipv6,
+              local.tailscale_device_addresses[v.platform == "router" ? v.name : "${v.region}-${v.name}"].ipv6,
               null
             )
           },
