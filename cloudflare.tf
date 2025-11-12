@@ -14,10 +14,7 @@ data "cloudflare_zone" "all" {
 }
 
 resource "cloudflare_account_token" "server" {
-  for_each = {
-    for k, v in local._servers : k => v
-    if local.servers_resources[k].cloudflare
-  }
+  for_each = local._servers
 
   account_id = var.cloudflare_account_id
   name       = each.key

@@ -29,14 +29,15 @@ locals {
         output = merge(
           # Base computed values
           {
-            acme_dns_password_sensitive = shell_sensitive_script.acme_dns_server[k].output.password
-            acme_dns_subdomain          = shell_sensitive_script.acme_dns_server[k].output.subdomain
-            acme_dns_username           = shell_sensitive_script.acme_dns_server[k].output.username
-            age_private_key_sensitive   = age_secret_key.server[k].secret_key
-            age_public_key              = age_secret_key.server[k].public_key
-            fqdn_external               = "${v.fqdn}.${var.defaults.domain_external}"
-            fqdn_internal               = "${v.fqdn}.${var.defaults.domain_internal}"
-            private_ipv4                = v.input.private_ipv4
+            acme_dns_password_sensitive        = shell_sensitive_script.acme_dns_server[k].output.password
+            acme_dns_subdomain                 = shell_sensitive_script.acme_dns_server[k].output.subdomain
+            acme_dns_username                  = shell_sensitive_script.acme_dns_server[k].output.username
+            age_private_key_sensitive          = age_secret_key.server[k].secret_key
+            age_public_key                     = age_secret_key.server[k].public_key
+            cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
+            fqdn_external                      = "${v.fqdn}.${var.defaults.domain_external}"
+            fqdn_internal                      = "${v.fqdn}.${var.defaults.domain_internal}"
+            private_ipv4                       = v.input.private_ipv4
 
             public_address = try(
               coalesce(
@@ -83,8 +84,7 @@ locals {
 
           # Cloudflare resources
           local.servers_resources[k].cloudflare ? {
-            cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
-            cloudflare_tunnel_token_sensitive  = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
+            cloudflare_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
           } : {},
 
           # Docker resources
