@@ -155,8 +155,6 @@ resource "shell_sensitive_script" "onepassword_server_sync" {
   lifecycle_commands {
     create = "${path.module}/scripts/onepassword-server-write.sh"
     delete = "true"
-    read   = "true"
-    update = "${path.module}/scripts/onepassword-server-write.sh"
   }
 
   triggers = {
