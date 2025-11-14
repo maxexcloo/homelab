@@ -1,33 +1,47 @@
 #cloud-config
-groups: ${jsonencode(server.user.groups)}
 hostname: ${server.name}
-locale: ${server.config.locale}
+locale: ${defaults.locale}
 package_reboot_if_required: true
 package_update: true
 package_upgrade: true
-packages: ${jsonencode(server.config.packages)}
-ssh_pwauth: ${server.config.enable_ssh_password_auth}
-timezone: ${server.config.timezone}
+packages: [curl, sudo]
+ssh_pwauth: false
+timezone: ${defaults.timezone}
+groups:
+%{ if server.resources.docker ~}
+  - docker
+%{ endif ~}
+  - sudo
 runcmd:
-%{ for init_command in init_commands ~}
-  - sh -c "${init_command}"
-%{ endfor ~}
+  - sysctl --system
+%{ if server.resources.docker ~}
+  - curl -fsLS https://get.docker.com | sh
+%{ endif ~}
+%{ if server.resources.cloudflared ~}
+  - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
+  - cloudflared service install ${server.output.cloudflared_tunnel_token_sensitive}
+%{ endif ~}
+%{ if server.resources.tailscale ~}
+  - curl -fsLS https://tailscale.com/install.sh | sh
+  - tailscale up --advertise-exit-node --authkey ${server.output.tailscale_auth_key_sensitive} --hostname ${server.platform == "router" ? server.name : "${server.region}-${server.name}"}
+%{ endif ~}
 users:
-  - name: ${server.user.username}
-    gecos: ${server.user.fullname}
-    groups: ${jsonencode(server.user.groups)}
-    hashed_passwd: ${password_hash}
+  - name: ${server.username}
+    hashed_passwd: ${server.password_hash}
     lock_passwd: false
-    shell: ${server.user.shell}
-    ssh_authorized_keys: ${jsonencode(ssh_keys)}
+    shell: ${defaults.shell}
+    ssh_authorized_keys: ${jsonencode(server.ssh_keys)}
+    groups:
+%{ if server.resources.docker ~}
+      - docker
+%{ endif ~}
+      - sudo
 write_files:
-%{ if contains(server.flags, "ubuntu") ~}
   - path: /etc/networkd-dispatcher/routable.d/50-network
     permissions: "0755"
     content: |
       #!/bin/sh
       ethtool -K $(ip -o route get 1.1.1.1 | cut -d " " -f 5) rx-gro-list off rx-udp-gro-forwarding on
-%{ endif ~}
   - path: /etc/sysctl.d/50-network.conf
     content: |
       net.core.rmem_max=8388608

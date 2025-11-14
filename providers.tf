@@ -1,11 +1,3 @@
-provider "age" {}
-
-provider "b2" {}
-
-provider "cloudflare" {}
-
-provider "github" {}
-
 provider "restapi" {
   alias                 = "resend"
   create_returns_object = true
@@ -17,7 +9,3 @@ provider "restapi" {
     "Content-Type"  = "application/json"
   }
 }
-
-provider "shell" {}
-
-provider "tailscale" {}

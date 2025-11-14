@@ -26,18 +26,18 @@ locals {
     for k, v in local._servers : k => merge(
       v,
       {
+        password_hash = htpasswd_password.server[k].sha512
+        resources     = local.servers_resources[k]
+        ssh_keys      = data.github_user.default.ssh_keys
         output = merge(
-          # Base computed values
+          # Base resources
           {
-            acme_dns_password_sensitive        = shell_sensitive_script.acme_dns_server[k].output.password
-            acme_dns_subdomain                 = shell_sensitive_script.acme_dns_server[k].output.subdomain
-            acme_dns_username                  = shell_sensitive_script.acme_dns_server[k].output.username
-            age_private_key_sensitive          = age_secret_key.server[k].secret_key
-            age_public_key                     = age_secret_key.server[k].public_key
-            cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
-            fqdn_external                      = "${v.fqdn}.${var.defaults.domain_external}"
-            fqdn_internal                      = "${v.fqdn}.${var.defaults.domain_internal}"
-            private_ipv4                       = v.input.private_ipv4
+            acme_dns_password_sensitive = shell_sensitive_script.acme_dns_server[k].output.password
+            acme_dns_subdomain          = shell_sensitive_script.acme_dns_server[k].output.subdomain
+            acme_dns_username           = shell_sensitive_script.acme_dns_server[k].output.username
+            fqdn_external               = "${v.fqdn}.${var.defaults.domain_external}"
+            fqdn_internal               = "${v.fqdn}.${var.defaults.domain_internal}"
+            private_ipv4                = v.input.private_ipv4
 
             public_address = try(
               coalesce(
@@ -84,12 +84,23 @@ locals {
 
           # Cloudflare resources
           local.servers_resources[k].cloudflare ? {
-            cloudflare_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
+            cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
+          } : {},
+
+          # Cloudflared resources
+          local.servers_resources[k].cloudflared ? {
+            cloudflared_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
           } : {},
 
           # Docker resources
           local.servers_resources[k].docker ? {
             tailscale_caddy_key_sensitive = tailscale_tailnet_key.caddy[k].key
+          } : {},
+
+          # Komodo resources
+          local.servers_resources[k].komodo ? {
+            age_private_key_sensitive = age_secret_key.server[k].secret_key
+            age_public_key            = age_secret_key.server[k].public_key
           } : {},
 
           # Resend resources

@@ -6,7 +6,7 @@ ITEM_JSON=$(op item get "$ID" --vault "$VAULT" --format json)
 
 # Get all existing output-* section IDs as a JSON object
 OUTPUT_SECTIONS=$(echo "$ITEM_JSON" | jq -r '
-  [.sections[]? | select(.label | startswith("output-")) | {label: .label, id: .id}] |
+  [.sections[]? | select((.label? // "") | startswith("output-")) | {label: .label, id: .id}] |
   map({(.label): .id}) | add // {}
 ')
 
@@ -25,7 +25,7 @@ echo "$ITEM_JSON" | jq \
   ) |
   .sections = (
     # Keep all non-output-* sections
-    [.sections[]? | select(.label | startswith("output-") | not)] +
+    [.sections[]? | select((( .label? // "" ) | startswith("output-")) | not)] +
     # Add output-* sections for each server with non-empty outputs
     [
       $outputsJson | to_entries[] |

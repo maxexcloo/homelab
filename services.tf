@@ -24,6 +24,7 @@ locals {
     for k, v in local._services : k => merge(
       v,
       {
+        url = try(v.urls[0], null)
         output = length(local.services_deployments[k]) > 0 ? {
           for target in local.services_deployments[k] : target => {
             database_password_sensitive = try(v.input.database_password, null)
