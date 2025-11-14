@@ -1,10 +1,11 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
-# Get vault item IDs
-ITEMS=$(op item list --vault "$1" --format json | \
-              jq -r '.[] | .title' | \
-              grep -E '^[a-z0-9]+-[a-z0-9]+(?:-[a-z0-9-]+)?$' || true)
+# Get raw JSON from 1Password
+OP_OUTPUT=$(op item list --vault "$1" --format json)
+ITEMS=$(echo "$OP_OUTPUT" | \
+        jq -r '.[] | .title' | \
+        grep -E '^[a-z0-9]+-[a-z0-9]+(?:-[a-z0-9-]+)?$' || true)
 
 # Prepare output map
 OUTPUT_JSON="{}"
