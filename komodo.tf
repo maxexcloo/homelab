@@ -80,7 +80,7 @@ resource "github_repository_file" "komodo_servers" {
       name = "${k}"
       tags = [${join(", ", [for tag in v.tags : "\"${tag}\""])}]
       [server.config]
-      address = "https://${local.servers_resources[k].komodo ? "periphery" : v.output.fqdn_internal}:8120"
+      address = "https://${v.output.fqdn_internal}:8120"
       enabled = true
       region = "${v.region}"
     EOT
