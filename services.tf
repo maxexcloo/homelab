@@ -27,10 +27,8 @@ locals {
         url = try(v.urls[0], null)
         output = length(local.services_deployments[k]) > 0 ? {
           for target in local.services_deployments[k] : target => {
-            database_password_sensitive = try(v.input.database_password, null)
-            fqdn_external               = "${v.name}.${local.servers[target].output.fqdn_external}"
-            fqdn_internal               = "${v.name}.${local.servers[target].output.fqdn_internal}"
-            secret_hash_sensitive       = try(v.input.secret_hash, null)
+            fqdn_external = "${v.name}.${local.servers[target].output.fqdn_external}"
+            fqdn_internal = "${v.name}.${local.servers[target].output.fqdn_internal}"
           }
         } : {}
       }
