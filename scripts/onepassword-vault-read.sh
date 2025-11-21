@@ -7,9 +7,8 @@ function op_get() {
 }
 
 # 1. Set variables
-eval "$(jq -r '@sh "CONNECT_HOST=\(.connect_host) CONNECT_TOKEN=\(.connect_token)"')"
+eval "$(jq -r '@sh "CONNECT_HOST=\(.connect_host) CONNECT_TOKEN=\(.connect_token) VAULT=\(.vault)"')"
 OUTPUT_JSON="{}"
-VAULT="$1"
 
 # 2. Resolve vault ID
 VAULT_ID=$(op_get "/v1/vaults" | jq -r --arg v "$VAULT" '.[] | select(.name == $v or .id == $v) | .id')

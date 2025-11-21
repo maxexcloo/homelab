@@ -1,48 +1,21 @@
 locals {
-  komodo_servers = {
-    for k, v in local.servers : k => v
-    if local.servers_resources[k].docker
-  }
-
   komodo_stacks = merge([
-    for service_key, service in local.services : {
-      for target in local.services_deployments[service_key] : "${service.name}-${target}" => {
-        service_key = service_key
-        service     = service
-        target      = target
+    for k, service in local.services : {
+      for target in local.services_deployments[k] : "${service.name}-${target}" => {
+        service = service
+        target  = target
       }
       if local.servers_resources[target].docker
-    } if service.platform == "docker" && service.input.service != null && fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
+    } if service.input.service != null && service.platform == "docker" && fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
   ]...)
 
-  komodo_stacks_encrypt_script = <<-EOT
-    set -euo pipefail
-
-    PREVIOUS_DATA=""
-    if [ ! -t 0 ]; then
-      PREVIOUS_DATA="$(cat || true)"
-    fi
-
-    PREVIOUS_HASH="$(printf '%s' "$PREVIOUS_DATA" | jq -r '.hash // ""' 2>/dev/null || true)"
-    PLAINTEXT="$(printf '%s' "$CONTENT" | base64 -d)"
-    HASH="$(printf '%s' "$PLAINTEXT" | sha256sum | awk '{print $1}')"
-
-    if [ -n "$PREVIOUS_DATA" ] && [ "$PREVIOUS_HASH" = "$HASH" ]; then
-      printf '%s' "$PREVIOUS_DATA"
-      exit 0
-    fi
-
-    ENCRYPTED_CONTENT="$(printf '%s' "$PLAINTEXT" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type yaml --output-type yaml /dev/stdin)"
-    jq -n --arg encrypted_content "$ENCRYPTED_CONTENT" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
-  EOT
-
   komodo_stacks_templates = {
-    for stack_id, stack in local.komodo_stacks : stack_id => templatefile(
-      "${path.module}/docker/${stack.service.input.service}/docker-compose.yaml",
+    for k, v in local.komodo_stacks : k => templatefile(
+      "${path.module}/docker/${v.service.input.service}/docker-compose.yaml",
       {
         defaults = var.defaults
-        server   = local.servers[stack.target]
-        service  = stack.service
+        server   = local.servers[v.target]
+        service  = v.service
       }
     )
   }
@@ -74,7 +47,7 @@ resource "github_repository_file" "komodo_servers" {
   repository          = var.komodo_repository
 
   content = join("\n", [
-    for k, v in local.komodo_servers : <<-EOT
+    for k, v in local.servers : <<-EOT
       [[server]]
       description = "${v.input.description != null ? v.input.description : k} (${upper(v.region)})"
       name = "${k}"
@@ -84,6 +57,7 @@ resource "github_repository_file" "komodo_servers" {
       enabled = true
       region = "${v.region}"
     EOT
+    if local.servers_resources[k].docker
   ])
 }
 
@@ -94,16 +68,16 @@ resource "github_repository_file" "komodo_stacks" {
   repository          = var.komodo_repository
 
   content = join("\n", [
-    for stack_id, stack in local.komodo_stacks : <<-EOT
+    for k, v in local.komodo_stacks : <<-EOT
       [[stack]]
-      description = "${stack.service.input.description != null ? stack.service.input.description : stack.service_key} (${stack.target})"
-      name = "${stack_id}"
-      tags = [${join(", ", [for tag in stack.service.tags : "\"${tag}\""])}]
+      description = "${v.service.input.description != null ? v.service.input.description : v.service.name} (${v.target})"
+      name = "${k}"
+      tags = [${join(", ", [for tag in v.service.tags : "\"${tag}\""])}]
       [stack.config]
       auto_update = true
       repo = "${data.github_user.default.login}/${var.komodo_repository}"
-      run_directory = "${stack_id}"
-      server = "${stack.target}"
+      run_directory = "${k}"
+      server = "${v.target}"
       [stack.config.pre_deploy]
       command = "SOPS_AGE_KEY=[[AGE_SECRET_KEY]] sops decrypt -i compose.yaml"
     EOT
@@ -129,14 +103,15 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   }
 
   lifecycle_commands {
-    create = local.komodo_stacks_encrypt_script
+    create = "${path.module}/scripts/komodo-encrypt.sh"
     delete = "true"
-    read   = local.komodo_stacks_encrypt_script
-    update = local.komodo_stacks_encrypt_script
+    read   = "${path.module}/scripts/komodo-encrypt.sh"
+    update = "${path.module}/scripts/komodo-encrypt.sh"
   }
 
   triggers = {
     age_public_key_hash = sha256(local.servers[each.value.target].output.age_public_key)
     content_hash        = sha256(local.komodo_stacks_templates[each.key])
+    script_hash         = filemd5("${path.module}/scripts/komodo-encrypt.sh")
   }
 }

@@ -1,12 +1,10 @@
 data "external" "onepassword_servers" {
-  program = [
-    "${path.module}/scripts/onepassword-vault-read.sh",
-    var.onepassword_servers_vault
-  ]
+  program = ["${path.module}/scripts/onepassword-vault-read.sh"]
 
   query = {
     connect_host  = var.onepassword_connect_host
     connect_token = var.onepassword_connect_token
+    vault         = var.onepassword_servers_vault
   }
 }
 
