@@ -1,4 +1,8 @@
 [env]
+# 1Password Connect
+TF_VAR_onepassword_connect_host = "REPLACE_ME"
+TF_VAR_onepassword_connect_token = "REPLACE_ME"
+
 # B2
 B2_APPLICATION_KEY = "REPLACE_ME"
 B2_APPLICATION_KEY_ID = "REPLACE_ME"
@@ -6,7 +10,6 @@ B2_APPLICATION_KEY_ID = "REPLACE_ME"
 # Cloudflare
 CLOUDFLARE_API_KEY = "REPLACE_ME"
 CLOUDFLARE_EMAIL = "REPLACE_ME"
-TF_VAR_cloudflare_account_id = "REPLACE_ME"
 
 # GitHub
 GITHUB_TOKEN = "REPLACE_ME"

@@ -4,16 +4,6 @@ variable "acme_dns_server" {
   type        = string
 }
 
-variable "cloudflare_account_id" {
-  description = "Cloudflare account ID"
-  type        = string
-
-  validation {
-    condition     = can(regex("^[a-f0-9]{32}$", var.cloudflare_account_id))
-    error_message = "Cloudflare account ID must be a 32-character hex string."
-  }
-}
-
 variable "defaults" {
   description = "Defaults for homelab infrastructure"
   type = object({
@@ -49,14 +39,25 @@ variable "komodo_repository" {
   type        = string
 }
 
+variable "onepassword_connect_host" {
+  description = "URL of the 1Password Connect server"
+  type        = string
+}
+
+variable "onepassword_connect_token" {
+  description = "1Password Connect API token"
+  sensitive   = true
+  type        = string
+}
+
 variable "onepassword_servers_vault" {
-  default     = "servers"
+  default     = "Servers"
   description = "1Password servers vault"
   type        = string
 }
 
 variable "onepassword_services_vault" {
-  default     = "services"
+  default     = "Services"
   description = "1Password services vault"
   type        = string
 }
@@ -109,18 +110,8 @@ variable "resend_api_key" {
   type        = string
 }
 
-variable "url_fields" {
-  description = "URL fields to filter"
-  type        = list(string)
-
-  default = [
-    "fqdn_external",
-    "fqdn_internal",
-    "private_ipv4",
-    "public_address",
-    "public_ipv4",
-    "public_ipv6",
-    "tailscale_ipv4",
-    "tailscale_ipv6"
-  ]
+variable "url_field_pattern" {
+  default     = "(^fqdn_|_(ipv[46]|address)$)"
+  description = "Regex pattern to identify fields that should be treated as URLs in 1Password"
+  type        = string
 }

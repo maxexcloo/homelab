@@ -3,6 +3,11 @@ data "external" "onepassword_servers" {
     "${path.module}/scripts/onepassword-vault-read.sh",
     var.onepassword_servers_vault
   ]
+
+  query = {
+    connect_host  = var.onepassword_connect_host
+    connect_token = var.onepassword_connect_token
+  }
 }
 
 locals {
@@ -120,7 +125,7 @@ locals {
   servers_outputs_filtered = {
     for k, v in local.servers : k => {
       for output_key, output_value in v.output : output_key => output_value
-      if !contains(var.url_fields, output_key)
+      if !can(regex(var.url_field_pattern, output_key))
     }
   }
 
@@ -143,7 +148,7 @@ locals {
         },
         key == "fqdn_internal" ? { primary = true } : {}
       )
-      if contains(var.url_fields, key) && v.output[key] != null
+      if can(regex(var.url_field_pattern, key)) && v.output[key] != null
     ]
   }
 }
@@ -157,15 +162,18 @@ resource "shell_sensitive_script" "onepassword_server_sync" {
   for_each = local._servers
 
   environment = {
-    ID           = each.value.id
-    OUTPUTS_JSON = jsonencode(local.servers_outputs_filtered[each.key])
-    URLS_JSON    = jsonencode(local.servers_urls[each.key])
-    VAULT        = var.onepassword_servers_vault
+    CONNECT_HOST  = var.onepassword_connect_host
+    CONNECT_TOKEN = var.onepassword_connect_token
+    ID            = each.value.id
+    OUTPUTS_JSON  = jsonencode(local.servers_outputs_filtered[each.key])
+    URLS_JSON     = jsonencode(local.servers_urls[each.key])
+    VAULT         = var.onepassword_servers_vault
   }
 
   lifecycle_commands {
     create = "${path.module}/scripts/onepassword-server-write.sh"
     delete = "true"
+    update = "${path.module}/scripts/onepassword-server-write.sh"
   }
 
   triggers = {

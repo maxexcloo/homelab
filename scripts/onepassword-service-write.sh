@@ -1,74 +1,69 @@
 #!/bin/bash
 set -e
 
-# Get current item as JSON
-ITEM_JSON=$(op item get "$ID" --vault "$VAULT" --format json)
+# Helpers
+function op_get() {
+  curl -f -s -H "Authorization: Bearer $CONNECT_TOKEN" -H "Content-Type: application/json" "$CONNECT_HOST$1"
+}
 
-# Get all existing output-* section IDs as a JSON object
-OUTPUT_SECTIONS=$(echo "$ITEM_JSON" | jq -r '
-  [.sections[]? | select((.label? // "") | startswith("output-")) | {label: .label, id: .id}] |
-  map({(.label): .id}) | add // {}
-')
+function op_put() {
+  curl -f -s -X PUT -H "Authorization: Bearer $CONNECT_TOKEN" -H "Content-Type: application/json" -d @- "$CONNECT_HOST$1"
+}
 
-# Update the item with new URLs and output fields
+# 1. Resolve vault ID
+VAULT_ID=$(op_get "/v1/vaults" | jq -r --arg vault "$VAULT" '.[] | select(.id == $vault or .name == $vault) | .id')
+
+# 2. Validate vault
+if [ -z "$VAULT_ID" ]; then
+  echo "Error: Vault '$VAULT' not found." >&2
+  exit 1
+fi
+
+# 3. Get current item
+ITEM_JSON=$(op_get "/v1/vaults/$VAULT_ID/items/$ID")
+
+# 4. Update Item
 echo "$ITEM_JSON" | jq \
---argjson outputSections "$OUTPUT_SECTIONS" \
---argjson outputsJson "$OUTPUTS_JSON" \
---argjson urlsJson "$URLS_JSON" \
+--argjson outputs "$OUTPUTS_JSON" \
+--argjson urls "$URLS_JSON" \
 '
-  .urls = (
-    $urlsJson | map({
-      href: .href,
-      label: .label,
-      primary: (.primary // false)
-    })
-  ) |
-  .sections = (
-    # Keep all non-output-* sections
-    [.sections[]? | select((( .label? // "" ) | startswith("output-")) | not)] +
-    # Add output-* sections for each server with non-empty outputs
+  # Map existing output sections (Label -> ID)
+  ([.sections[]? | select(.label | startswith("output-"))] | map({(.label): .id}) | add // {}) as $existing_map |
+
+  # Calculate target sections (Reuse ID if exists, else deterministic)
+  ($outputs | keys | map(
+    . as $s | ("output-\($s)") as $l | { id: ($existing_map[$l] // "\($l)_section"), label: $l }
+  )) as $targets |
+
+  # Lookup for field assignment (Label -> ID)
+  ($targets | map({(.label): .id}) | add) as $final_map |
+
+  # Update item
+  .fields = (
+    # Keep fields not in any output-* section
+    [.fields[]? | select(
+      (.section.id // "") as $sid | ($existing_map | to_entries | map(select(.value == $sid)) | length == 0)
+    )] +
+    # Add new output fields
     [
-      $outputsJson | to_entries[] |
-      .key as $server_name |
-      select(.value | to_entries | map(select(.value != null and .value != "")) | length > 0) |
-      (
-        $outputSections["output-\($server_name)"] // "output_\($server_name)_section"
-      ) as $sectionId |
-      {
-        "id": $sectionId,
-        "label": "output-\($server_name)"
+      $outputs | to_entries[] | . as $server |
+      $server.value | to_entries[] | select(.value != null and .value != "") | {
+        label: (.key | sub("_sensitive$"; "")),
+        section: { id: $final_map["output-\($server.key)"] },
+        type: (if .key | endswith("_sensitive") then "CONCEALED" else "STRING" end),
+        value: .value
       }
     ]
   ) |
-  .fields = (
-    # Keep all existing fields that are NOT in output-* sections
-    [.fields[]? | select(
-      (.section.label? // "") | startswith("output-") | not
-    )] +
-    # Add new output-* fields from OUTPUTS_JSON (excluding null/empty values)
-    [
-      $outputsJson | to_entries | map(
-        .key as $server_name |
-        # Get section ID for this server
-        ($outputSections["output-\($server_name)"] // "output_\($server_name)_section") as $sectionId |
-        .value | to_entries[] |
-        select(.value != null and .value != "") |
-        if .key | endswith("_sensitive") then
-          {
-            "label": (.key | rtrimstr("_sensitive")),
-            "section": {"id": $sectionId},
-            "type": "CONCEALED",
-            "value": .value
-          }
-        else
-          {
-            "label": .key,
-            "section": {"id": $sectionId},
-            "type": "STRING",
-            "value": .value
-          }
-        end
-      ) | .[]
-    ]
-  )
-' | op item edit "$ID" --vault "$VAULT" -
+  .sections = (
+    ([.sections[]? | select((.label // "") | startswith("output-") | not)] +
+    [$targets[] | select(
+      (.label | ltrimstr("output-")) as $s | ($outputs[$s] | to_entries | map(select(.value != null and .value != "")) | length > 0)
+    )]) | sort_by(.label)
+  ) |
+  .urls = ($urls | map({
+    href: .href,
+    label: .label,
+    primary: (.primary // false)
+  }))
+' | op_put "/v1/vaults/$VAULT_ID/items/$ID"

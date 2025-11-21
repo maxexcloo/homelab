@@ -1,7 +1,9 @@
+data "cloudflare_accounts" "default" {}
+
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "server" {
   for_each = cloudflare_zero_trust_tunnel_cloudflared.server
 
-  account_id = var.cloudflare_account_id
+  account_id = data.cloudflare_accounts.default.result[0].id
   tunnel_id  = each.value.id
 }
 
@@ -19,7 +21,7 @@ resource "cloudflare_account_token" "server" {
     if local.servers_resources[k].cloudflare
   }
 
-  account_id = var.cloudflare_account_id
+  account_id = data.cloudflare_accounts.default.result[0].id
   name       = each.key
 
   policies = [
@@ -117,7 +119,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
     if local.servers_resources[k].cloudflared
   }
 
-  account_id = var.cloudflare_account_id
+  account_id = data.cloudflare_accounts.default.result[0].id
   config_src = "cloudflare"
   name       = each.key
 }

@@ -3,6 +3,11 @@ data "external" "onepassword_services" {
     "${path.module}/scripts/onepassword-vault-read.sh",
     var.onepassword_services_vault
   ]
+
+  query = {
+    connect_host  = var.onepassword_connect_host
+    connect_token = var.onepassword_connect_token
+  }
 }
 
 locals {
@@ -57,7 +62,7 @@ locals {
     for k, v in local.services : k => {
       for target, output in v.output : target => {
         for output_key, output_value in output : output_key => output_value
-        if !contains(var.url_fields, output_key)
+        if !can(regex(var.url_field_pattern, output_key))
       }
     }
   }
@@ -79,12 +84,12 @@ locals {
       ] : [],
       flatten([
         for target, output in v.output : [
-          for field in var.url_fields : {
+          for field in sort(keys(output)) : {
             href    = output[field]
             label   = "${field}_${target}"
             primary = field == "fqdn_internal" && v.url == null && target == keys(v.output)[0]
           }
-          if contains(keys(output), field) && output[field] != null
+          if can(regex(var.url_field_pattern, field)) && output[field] != null
         ]
       ])
     )
@@ -100,15 +105,18 @@ resource "shell_sensitive_script" "onepassword_service_sync" {
   for_each = local.services
 
   environment = {
-    ID           = each.value.id
-    OUTPUTS_JSON = jsonencode(local.services_outputs_filtered[each.key])
-    URLS_JSON    = jsonencode(local.services_urls[each.key])
-    VAULT        = var.onepassword_services_vault
+    CONNECT_HOST  = var.onepassword_connect_host
+    CONNECT_TOKEN = var.onepassword_connect_token
+    ID            = each.value.id
+    OUTPUTS_JSON  = jsonencode(local.services_outputs_filtered[each.key])
+    URLS_JSON     = jsonencode(local.services_urls[each.key])
+    VAULT         = var.onepassword_services_vault
   }
 
   lifecycle_commands {
     create = "${path.module}/scripts/onepassword-service-write.sh"
     delete = "true"
+    update = "${path.module}/scripts/onepassword-service-write.sh"
   }
 
   triggers = {
