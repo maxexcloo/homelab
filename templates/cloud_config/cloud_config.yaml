@@ -23,7 +23,7 @@ runcmd:
 %{ endif ~}
 %{ if server.resources.tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
-  - tailscale up --advertise-exit-node --authkey ${server.output.tailscale_auth_key_sensitive} --hostname ${server.platform == "router" ? server.name : "${server.region}-${server.name}"}
+  - tailscale up --advertise-exit-node --authkey ${server.output.tailscale_auth_key_sensitive} --hostname ${server.slug}
 %{ endif ~}
 users:
   - name: ${server.username}

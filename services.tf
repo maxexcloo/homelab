@@ -27,33 +27,43 @@ locals {
     for k, v in local._services : k => merge(
       v,
       {
-        url = try(v.urls[0], null)
+        deployments = local.services_deployments[k]
+        resources   = local.services_resources[k]
+        url         = try(v.urls[0], null)
         output = length(local.services_deployments[k]) > 0 ? {
-          for target in local.services_deployments[k] : target => {
-            fqdn_external = "${v.name}.${local.servers[target].output.fqdn_external}"
-            fqdn_internal = "${v.name}.${local.servers[target].output.fqdn_internal}"
-          }
+          for target in local.services_deployments[k] : target => merge(
+            {},
+
+            !contains(v.tags, "no_dns") ? {
+              fqdn_external = "${v.name}.${local.servers[target].output.fqdn_external}"
+              fqdn_internal = "${v.name}.${local.servers[target].output.fqdn_internal}"
+            } : {}
+          )
         } : {}
       }
     )
   }
 
   services_deployments = {
-    for k, v in local._services : k => (
-      v.input.deploy_to == null ? [] :
-      # Deploy to all servers
-      v.input.deploy_to == "all" ? keys(local._servers) :
-      # Direct server reference
-      contains(keys(local._servers), v.input.deploy_to) ? [v.input.deploy_to] :
-      # Pattern-based matches
-      [
-        for h_key, h_val in local._servers : h_key
-        if(
-          startswith(v.input.deploy_to, "platform:") && h_val.platform == trimprefix(v.input.deploy_to, "platform:") ||
-          startswith(v.input.deploy_to, "region:") && h_val.region == trimprefix(v.input.deploy_to, "region:")
-        )
-      ]
-    )
+    for k, v in local._services : k => distinct(flatten([
+      # Handle null first, otherwise split the string by comma (removing spaces)
+      for target in(v.input.deploy_to == null ? [] : split(",", replace(v.input.deploy_to, " ", ""))) : (
+        # Match "all"
+        target == "all" ? keys(local._servers) :
+        # Match "platform:x"
+        startswith(target, "platform:") ? [
+          for h_key, h_val in local._servers : h_key
+          if h_val.platform == trimprefix(target, "platform:")
+        ] :
+        # Match "region:x"
+        startswith(target, "region:") ? [
+          for h_key, h_val in local._servers : h_key
+          if h_val.region == trimprefix(target, "region:")
+        ] :
+        # Match Direct Server Reference
+        contains(keys(local._servers), target) ? [target] : []
+      )
+    ]))
   }
 
   services_outputs_filtered = {

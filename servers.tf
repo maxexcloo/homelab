@@ -17,6 +17,7 @@ locals {
         name     = length(split("-", k)) > 2 ? join("-", slice(split("-", k), 2, length(split("-", k)))) : split("-", k)[1]
         platform = split("-", k)[0]
         region   = split("-", k)[1]
+        slug     = length(split("-", k)) > 2 ? "${split("-", k)[1]}-${join("-", slice(split("-", k), 2, length(split("-", k))))}" : split("-", k)[1]
         input = merge(
           var.server_defaults,
           jsondecode(v).input
@@ -67,12 +68,12 @@ locals {
             )
 
             tailscale_ipv4 = try(
-              local.tailscale_device_addresses[v.platform == "router" ? v.name : "${v.region}-${v.name}"].ipv4,
+              local.tailscale_device_addresses[v.slug].ipv4,
               null
             )
 
             tailscale_ipv6 = try(
-              local.tailscale_device_addresses[v.platform == "router" ? v.name : "${v.region}-${v.name}"].ipv6,
+              local.tailscale_device_addresses[v.slug].ipv6,
               null
             )
           },

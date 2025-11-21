@@ -1,9 +1,11 @@
 locals {
   komodo_stacks = merge([
-    for k, service in local.services : {
-      for target in local.services_deployments[k] : "${service.name}-${target}" => {
-        service = service
-        target  = target
+    for service_key, service in local.services : {
+      for target in service.deployments : "${service.name}-${local.servers[target].slug}" => {
+        service     = service
+        service_key = service_key
+        server      = local.servers[target]
+        server_key  = target
       }
       if local.servers_resources[target].docker
     } if service.input.service != null && service.platform == "docker" && fileexists("${path.module}/docker/${service.input.service}/docker-compose.yaml")
@@ -14,7 +16,7 @@ locals {
       "${path.module}/docker/${v.service.input.service}/docker-compose.yaml",
       {
         defaults = var.defaults
-        server   = local.servers[v.target]
+        server   = v.server
         service  = v.service
       }
     )
@@ -50,14 +52,14 @@ resource "github_repository_file" "komodo_servers" {
     for k, v in local.servers : <<-EOT
       [[server]]
       description = "${v.input.description != null ? v.input.description : k} (${upper(v.region)})"
-      name = "${k}"
+      name = "${v.slug}"
       tags = [${join(", ", [for tag in v.tags : "\"${tag}\""])}]
       [server.config]
       address = "https://${v.output.fqdn_internal}:8120"
       enabled = true
       region = "${v.region}"
     EOT
-    if local.servers_resources[k].docker
+    if v.resources.docker
   ])
 }
 
@@ -70,14 +72,14 @@ resource "github_repository_file" "komodo_stacks" {
   content = join("\n", [
     for k, v in local.komodo_stacks : <<-EOT
       [[stack]]
-      description = "${v.service.input.description != null ? v.service.input.description : v.service.name} (${v.target})"
+      description = "${v.service.input.description != null ? v.service.input.description : v.service.name} (${v.server.slug})"
       name = "${k}"
       tags = [${join(", ", [for tag in v.service.tags : "\"${tag}\""])}]
       [stack.config]
       auto_update = true
       repo = "${data.github_user.default.login}/${var.komodo_repository}"
       run_directory = "${k}"
-      server = "${v.target}"
+      server = "${v.server.slug}"
       [stack.config.pre_deploy]
       command = "SOPS_AGE_KEY=[[AGE_SECRET_KEY]] sops decrypt -i compose.yaml"
     EOT
@@ -98,7 +100,7 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   for_each = local.komodo_stacks
 
   environment = {
-    AGE_PUBLIC_KEY = local.servers[each.value.target].output.age_public_key
+    AGE_PUBLIC_KEY = each.value.server.output.age_public_key
     CONTENT        = base64encode(local.komodo_stacks_templates[each.key])
   }
 
@@ -110,7 +112,7 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(local.servers[each.value.target].output.age_public_key)
+    age_public_key_hash = sha256(each.value.server.output.age_public_key)
     content_hash        = sha256(local.komodo_stacks_templates[each.key])
     script_hash         = filemd5("${path.module}/scripts/komodo-encrypt.sh")
   }

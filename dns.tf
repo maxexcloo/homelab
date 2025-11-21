@@ -103,9 +103,9 @@ locals {
   )
 
   dns_records_services = merge([
-    for key, service in local.services : (length(local.services_deployments[key]) == 0 || contains(local.services[key].tags, "no_dns")) ? {} : merge(
+    for key, service in local.services : (length(service.deployments) == 0 || contains(service.tags, "no_dns")) ? {} : merge(
       {
-        for target in local.services_deployments[key] : "${var.defaults.domain_external}-${key}-${target}" => {
+        for target in service.deployments : "${var.defaults.domain_external}-${key}-${target}" => {
           content = contains(local.servers[target].tags, "proxied") && local.servers_resources[target].cloudflare ? "${cloudflare_zero_trust_tunnel_cloudflared.server[target].id}.cfargotunnel.com" : "${local._servers[target].fqdn}.${var.defaults.domain_external}"
           name    = "${service.name}.${local._servers[target].fqdn}.${var.defaults.domain_external}"
           proxied = contains(local.servers[target].tags, "proxied")
@@ -115,7 +115,7 @@ locals {
         }
       },
       {
-        for target in local.services_deployments[key] : "${var.defaults.domain_internal}-${key}-${target}" => {
+        for target in service.deployments : "${var.defaults.domain_internal}-${key}-${target}" => {
           content = contains(local.servers[target].tags, "proxied") && local.servers_resources[target].cloudflare ? "${cloudflare_zero_trust_tunnel_cloudflared.server[target].id}.cfargotunnel.com" : "${local._servers[target].fqdn}.${var.defaults.domain_internal}"
           name    = "${service.name}.${local._servers[target].fqdn}.${var.defaults.domain_internal}"
           proxied = contains(local.servers[target].tags, "proxied")
@@ -130,20 +130,18 @@ locals {
   dns_records_services_urls = {
     for key, service in local.services : "${key}-url" => {
       name    = service.url
-      proxied = contains(local.servers[local.services_deployments[key][0]].tags, "proxied")
-      server  = local.services_deployments[key][0]
+      proxied = contains(local.servers[service.deployments[0]].tags, "proxied")
+      server  = service.deployments[0]
       type    = "CNAME"
       zone    = local._dns_services_url_zone[key]
 
       content = (
-        contains(local.servers[local.services_deployments[key][0]].tags, "proxied") && local.servers_resources[local.services_deployments[key][0]].cloudflare ?
-        "${cloudflare_zero_trust_tunnel_cloudflared.server[local.services_deployments[key][0]].id}.cfargotunnel.com" :
-        "${service.name}.${local._servers[local.services_deployments[key][0]].fqdn}.${contains(local.services[key].tags, "external") ? var.defaults.domain_external : var.defaults.domain_internal}"
+        contains(local.servers[service.deployments[0]].tags, "proxied") && local.servers_resources[service.deployments[0]].cloudflare ?
+        "${cloudflare_zero_trust_tunnel_cloudflared.server[service.deployments[0]].id}.cfargotunnel.com" :
+        "${service.name}.${local._servers[service.deployments[0]].fqdn}.${contains(local.services[key].tags, "external") ? var.defaults.domain_external : var.defaults.domain_internal}"
       )
     }
-    if service.url != null &&
-    length(local.services_deployments[key]) == 1 &&
-    local._dns_services_url_zone[key] != null
+    if service.url != null && length(service.deployments) == 1 && local._dns_services_url_zone[key] != null
   }
 
   dns_records_wildcards = {

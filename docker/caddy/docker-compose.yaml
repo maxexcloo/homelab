@@ -1,28 +1,28 @@
 networks:
-  ${default.organization}:
+  ${defaults.organization}:
     external: true
 services:
   caddy:
     environment:
-      TS_AUTHKEY: ${server.output.tailscale_caddy_key}
+      TS_AUTHKEY: ${server.output.tailscale_caddy_key_sensitive}
     extra_hosts:
       - host.docker.internal:host-gateway
     image: ghcr.io/maxexcloo/caddy:latest
     labels:
-      caddy.email: ${default.email}
+      caddy.email: ${defaults.email}
       caddy_0: (defaults)
       caddy_0.@is_tailscale: host tailscale/*
       caddy_0.handle: "@is_tailscale"
       caddy_0.handle.reverse_proxy: "{args[0]}"
       caddy_0.handle.tls.dns: acmedns
-      caddy_0.handle.tls.dns.acmedns.password: ${server.output.acme_dns_password}
+      caddy_0.handle.tls.dns.acmedns.password: ${server.output.acme_dns_password_sensitive}
       caddy_0.handle.tls.dns.acmedns.subdomain: ${server.output.acme_dns_subdomain}
       caddy_0.handle.tls.dns.acmedns.username: ${server.output.acme_dns_username}
       caddy_0.handle_1:
       caddy_0.handle_1.reverse_proxy: "{args[0]}"
     networks:
       - default
-      - ${default.organization}
+      - ${defaults.organization}
     ports:
       - 80:80
       - 443:443
