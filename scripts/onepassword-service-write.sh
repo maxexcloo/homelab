@@ -28,7 +28,7 @@ echo "$ITEM_JSON" | jq \
 --argjson urls "$URLS_JSON" \
 '
   # Map existing output sections (Label -> ID)
-  ([.sections[]? | select(.label | startswith("output-"))] | map({(.label): .id}) | add // {}) as $existing_map |
+  ([.sections[]? | select((.label // "") | startswith("output-"))] | map({(.label): .id}) | add // {}) as $existing_map |
 
   # Calculate target sections (Reuse ID if exists, else deterministic)
   ($outputs | keys | map(
