@@ -33,3 +33,12 @@ resource "tailscale_tailnet_key" "server" {
   reusable      = true
   tags          = ["tag:${each.value.platform}"]
 }
+
+resource "tailscale_tailnet_key" "service" {
+  for_each = local.services_instances
+
+  description   = each.key
+  preauthorized = true
+  reusable      = true
+  tags          = ["tag:ephemeral"]
+}

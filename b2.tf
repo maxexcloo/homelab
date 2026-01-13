@@ -8,8 +8,22 @@ resource "b2_application_key" "server" {
 
   capabilities = [
     "deleteFiles",
+    "listBuckets",
     "listFiles",
+    "readBucketEncryption",
+    "readBucketLifecycleRules",
+    "readBucketLogging",
+    "readBucketNotifications",
+    "readBucketReplications",
+    "readBuckets",
     "readFiles",
+    "shareFiles",
+    "writeBucketEncryption",
+    "writeBucketLifecycleRules",
+    "writeBucketLogging",
+    "writeBucketNotifications",
+    "writeBucketReplications",
+    "writeBuckets",
     "writeFiles"
   ]
 }

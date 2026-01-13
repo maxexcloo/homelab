@@ -15,9 +15,12 @@ locals {
     for k, v in local.komodo_stacks : k => templatefile(
       "${path.module}/docker/${v.service.input.service}/docker-compose.yaml",
       {
-        defaults = var.defaults
-        server   = v.server
-        service  = v.service
+        defaults  = var.defaults
+        instances = local.services_instances
+        server    = v.server
+        servers   = local.servers
+        service   = v.service
+        services  = local.services
       }
     )
   }

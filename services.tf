@@ -66,6 +66,15 @@ locals {
     ]))
   }
 
+  services_instances = merge([
+    for service_key, service in local.services : {
+      for target in service.deployments : "${service.name}-${local.servers[target].slug}" => {
+        server  = target
+        service = service_key
+      }
+    }
+  ]...)
+
   services_outputs_filtered = {
     for k, v in local.services : k => {
       for target, output in v.output : target => {

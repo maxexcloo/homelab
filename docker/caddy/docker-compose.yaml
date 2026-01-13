@@ -4,7 +4,7 @@ networks:
 services:
   caddy:
     environment:
-      TS_AUTHKEY: ${server.output.tailscale_caddy_key_sensitive}
+      TS_AUTHKEY: null
     extra_hosts:
       - host.docker.internal:host-gateway
     image: ghcr.io/maxexcloo/caddy:latest

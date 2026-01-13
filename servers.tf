@@ -96,11 +96,6 @@ locals {
             cloudflared_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
           } : {},
 
-          # Docker resources
-          local.servers_resources[k].docker ? {
-            tailscale_caddy_key_sensitive = tailscale_tailnet_key.caddy[k].key
-          } : {},
-
           # Komodo resources
           local.servers_resources[k].komodo ? {
             age_private_key_sensitive = age_secret_key.server[k].secret_key
