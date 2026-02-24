@@ -20,7 +20,7 @@ terraform {
     }
     htpasswd = {
       source  = "loafoe/htpasswd"
-      version = "~> 1.0"
+      version = "~> 2.0"
     }
     http = {
       source  = "hashicorp/http"
