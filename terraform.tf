@@ -10,6 +10,10 @@ terraform {
       source  = "backblaze/b2"
       version = "~> 0.0"
     }
+    bitwarden = {
+      source  = "maxlaverse/bitwarden"
+      version = ">= 0.17.3"
+    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
@@ -26,6 +30,10 @@ terraform {
       source  = "hashicorp/http"
       version = "~> 3.0"
     }
+    incus = {
+      source = "lxc/incus"
+      version = "1.0.2"
+    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.0"
@@ -41,6 +49,10 @@ terraform {
     tailscale = {
       source  = "tailscale/tailscale"
       version = "~> 0.0"
+    }
+    unifi = {
+      source = "ubiquiti-community/unifi"
+      version = "0.41.17"
     }
   }
 }

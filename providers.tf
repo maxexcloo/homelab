@@ -1,3 +1,7 @@
+provider "bitwarden" {
+  client_implementation = "embedded"
+}
+
 provider "restapi" {
   alias                 = "resend"
   create_returns_object = true

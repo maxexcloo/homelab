@@ -1,12 +1,7 @@
-variable "acme_dns_server" {
-  default     = "https://auth.acme-dns.io"
-  description = "ACME DNS server URL for challenge validation"
-  type        = string
-}
-
 variable "defaults" {
   description = "Defaults for homelab infrastructure"
   type = object({
+    domain_acme = string
     domain_external = string
     domain_internal = string
     email           = string
@@ -33,35 +28,6 @@ variable "dns" {
   })))
 }
 
-variable "komodo_repository" {
-  default     = "komodo"
-  description = "GitHub repository for Komodo configuration deployment"
-  type        = string
-}
-
-variable "onepassword_connect_host" {
-  description = "URL of the 1Password Connect server"
-  type        = string
-}
-
-variable "onepassword_connect_token" {
-  description = "1Password Connect API token"
-  sensitive   = true
-  type        = string
-}
-
-variable "onepassword_servers_vault" {
-  default     = "Servers"
-  description = "1Password servers vault"
-  type        = string
-}
-
-variable "onepassword_services_vault" {
-  default     = "Services"
-  description = "1Password services vault"
-  type        = string
-}
-
 variable "server_defaults" {
   description = "Default values for server configurations"
   type        = any
@@ -70,7 +36,6 @@ variable "server_defaults" {
     description     = null
     management_port = null
     parent          = null
-    private_ipv4    = null
     public_address  = null
     public_ipv4     = null
     public_ipv6     = null

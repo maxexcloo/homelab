@@ -1,5 +1,4 @@
 [tools]
-1password = "latest"
 opentofu = "latest"
 sops = "latest"
 

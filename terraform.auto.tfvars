@@ -5,6 +5,7 @@ server_resources  = ["b2", "cloudflare", "cloudflared", "docker", "komodo", "res
 service_resources = ["b2", "resend", "tailscale"]
 
 defaults = {
+  domain_acme     = "043847.xyz"
   domain_external = "excloo.net"
   domain_internal = "excloo.dev"
   email           = "max@excloo.com"
