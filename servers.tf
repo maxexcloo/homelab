@@ -73,8 +73,13 @@ locals {
         resources     = local.servers_resources[k]
         ssh_keys      = data.github_user.default.ssh_keys
 
+        private_address = try(
+          local.unifi_clients[v.slug].local_dns_record,
+          null
+        )
+
         private_ipv4 = try(
-          local.unifi_clients_by_name[v.slug].ip,
+          local.unifi_clients[v.slug].fixed_ip,
           null
         )
 
@@ -101,21 +106,11 @@ locals {
           ),
           null
         )
-
-        tailscale_ipv4 = try(
-          local.tailscale_device_addresses[v.slug].ipv4,
-          null
-        )
-
-        tailscale_ipv6 = try(
-          local.tailscale_device_addresses[v.slug].ipv6,
-          null
-        )
       },
       # Backblaze B2 resources
       local.servers_resources[k].b2 ? {
-        b2_application_key_sensitive = b2_application_key.server[k].application_key
         b2_application_key_id        = b2_application_key.server[k].application_key_id
+        b2_application_key_sensitive = b2_application_key.server[k].application_key
         b2_bucket_name               = b2_bucket.server[k].bucket_name
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
@@ -134,6 +129,8 @@ locals {
       # Tailscale resources
       local.servers_resources[k].tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.server[k].key
+        tailscale_ipv4               = try(local.tailscale_device_addresses[v.slug].ipv4, null)
+        tailscale_ipv6               = try(local.tailscale_device_addresses[v.slug].ipv6, null)
       } : {}
     )
   }
