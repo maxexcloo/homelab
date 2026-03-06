@@ -1,7 +1,7 @@
 variable "defaults" {
   description = "Defaults for homelab infrastructure"
   type = object({
-    domain_acme = string
+    domain_acme     = string
     domain_external = string
     domain_internal = string
     email           = string
@@ -36,6 +36,7 @@ variable "server_defaults" {
     description     = null
     management_port = null
     parent          = null
+    platform        = null
     public_address  = null
     public_ipv4     = null
     public_ipv6     = null

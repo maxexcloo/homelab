@@ -16,21 +16,12 @@ locals {
     )
   }
 
-  dns_records_acme = {
-    for key, group in {
-      for candidate in [
-        for record in concat(
-          values(local.dns_records_servers),
-          values(local.dns_records_services),
-          values(local.dns_records_services_urls)
-        ) : record
-        if contains(["A", "AAAA", "CNAME"], record.type)
-      ] : "${candidate.zone}-${candidate.name}-${candidate.server}" => candidate...
-      } : "${group[0].name}-acme" => {
-      content = nonsensitive(shell_sensitive_script.acme_dns_server[group[0].server].output.fulldomain)
-      name    = "_acme-challenge.${group[0].name}"
+  dns_records_acme_delegation = {
+    for zone in [var.defaults.domain_external, var.defaults.domain_internal] : "${zone}-acme-delegation" => {
+      content = "${zone}.${var.defaults.domain_acme}"
+      name    = "_acme-challenge"
       type    = "CNAME"
-      zone    = group[0].zone
+      zone    = zone
     }
   }
 
@@ -52,53 +43,53 @@ locals {
   dns_records_servers = merge(
     {
       for key, server in local._servers : "${var.defaults.domain_external}-${key}-cname" => {
-        content = server.input.public_address
+        content = server.public_address
         name    = "${server.fqdn}.${var.defaults.domain_external}"
         server  = key
         type    = "CNAME"
         zone    = var.defaults.domain_external
       }
-      if server.input.public_address != null
+      if server.public_address != null
     },
     {
       for key, server in local._servers : "${var.defaults.domain_external}-${key}-a" => {
-        content = server.input.public_ipv4
+        content = server.public_ipv4
         name    = "${server.fqdn}.${var.defaults.domain_external}"
         server  = key
         type    = "A"
         zone    = var.defaults.domain_external
       }
-      if server.input.public_ipv4 != null && can(cidrhost("${server.input.public_ipv4}/32", 0))
+      if server.public_ipv4 != null && can(cidrhost("${server.public_ipv4}/32", 0))
     },
     {
       for key, server in local._servers : "${var.defaults.domain_external}-${key}-aaaa" => {
-        content = server.input.public_ipv6
+        content = server.public_ipv6
         name    = "${server.fqdn}.${var.defaults.domain_external}"
         server  = key
         type    = "AAAA"
         zone    = var.defaults.domain_external
       }
-      if server.input.public_ipv6 != null && can(cidrhost("${server.input.public_ipv6}/128", 0))
+      if server.public_ipv6 != null && can(cidrhost("${server.public_ipv6}/128", 0))
     },
     {
       for key, server in local._servers : "${var.defaults.domain_internal}-${key}-a" => {
-        content = local.servers[key].output.tailscale_ipv4
+        content = local.servers[key].tailscale_ipv4
         name    = "${server.fqdn}.${var.defaults.domain_internal}"
         server  = key
         type    = "A"
         zone    = var.defaults.domain_internal
       }
-      if local.servers[key].output.tailscale_ipv4 != null
+      if local.servers[key].tailscale_ipv4 != null
     },
     {
       for key, server in local._servers : "${var.defaults.domain_internal}-${key}-aaaa" => {
-        content = local.servers[key].output.tailscale_ipv6
+        content = local.servers[key].tailscale_ipv6
         name    = "${server.fqdn}.${var.defaults.domain_internal}"
         server  = key
         type    = "AAAA"
         zone    = var.defaults.domain_internal
       }
-      if local.servers[key].output.tailscale_ipv6 != null
+      if local.servers[key].tailscale_ipv6 != null
     }
   )
 

@@ -1,27 +1,64 @@
-data "external" "onepassword_servers" {
-  program = ["${path.module}/scripts/onepassword-vault-read.sh"]
+data "bitwarden_folder" "servers" {
+  search = "Servers"
+}
 
-  query = {
-    connect_host  = var.onepassword_connect_host
-    connect_token = var.onepassword_connect_token
-    vault         = var.onepassword_servers_vault
-  }
+data "external" "bw_servers" {
+  program = [
+    "mise", "exec", "--", "bash", "-c",
+    <<-EOF
+    SESSION_FILE=".bitwarden/session"
+    
+    if [ -f "$SESSION_FILE" ]; then
+      export BW_SESSION=$(cat "$SESSION_FILE")
+    fi
+
+    if ! bw status --session "$BW_SESSION" &>/dev/null | grep -q '"status":"unlocked"'; then
+      bw config server "$BW_URL" &>/dev/null || true
+      bw login --apikey &>/dev/null || true
+      
+      export BW_SESSION="$(bw unlock --passwordenv BW_PASSWORD --raw 2>/dev/null)"
+      
+      if [ -n "$BW_SESSION" ]; then
+        echo "$BW_SESSION" > "$SESSION_FILE"
+      else
+        echo "Failed to unlock. You may be rate-limited by Vaultwarden or missing credentials." >&2
+        exit 1
+      fi
+    fi
+
+    bw sync --session "$BW_SESSION" &>/dev/null || true
+    ITEMS=$(bw list items --folderid "${data.bitwarden_folder.servers.id}" --session "$BW_SESSION" 2>/dev/null)
+    
+    # Check if ITEMS is empty or just an empty JSON array '[]'
+    if [[ -z "$ITEMS" || "$ITEMS" =~ ^[[:space:]]*\[\][[:space:]]*$ ]]; then
+      echo "Error: No items found in Vaultwarden folder. The folder might be empty, or sync failed." >&2
+      exit 1
+    fi
+    
+    echo "$ITEMS" | jq -c '{items: tostring}'
+    EOF
+  ]
 }
 
 locals {
   _servers = {
-    for k, v in data.external.onepassword_servers.result : k => merge(
-      jsondecode(v),
+    for v in jsondecode(data.external.bw_servers.result.items) : v.name => merge(
       {
-        fqdn     = length(split("-", k)) > 2 ? "${join("-", slice(split("-", k), 2, length(split("-", k))))}.${split("-", k)[1]}" : split("-", k)[1]
-        name     = length(split("-", k)) > 2 ? join("-", slice(split("-", k), 2, length(split("-", k)))) : split("-", k)[1]
-        platform = split("-", k)[0]
-        region   = split("-", k)[1]
-        slug     = length(split("-", k)) > 2 ? "${split("-", k)[1]}-${join("-", slice(split("-", k), 2, length(split("-", k))))}" : split("-", k)[1]
-        input = merge(
-          var.server_defaults,
-          jsondecode(v).input
-        ),
+        fields   = v.fields
+        fqdn     = length(split("-", v.name)) > 2 ? "${join("-", slice(split("-", v.name), 2, length(split("-", v.name))))}.${split("-", v.name)[1]}" : split("-", v.name)[1]
+        id       = v.id
+        name     = length(split("-", v.name)) > 2 ? join("-", slice(split("-", v.name), 2, length(split("-", v.name)))) : split("-", v.name)[1]
+        password = v.login.password != null ? v.login.password : ""
+        region   = split("-", v.name)[1]
+        slug     = length(split("-", v.name)) > 2 ? "${split("-", v.name)[1]}-${join("-", slice(split("-", v.name), 2, length(split("-", v.name))))}" : split("-", v.name)[1]
+        type     = split("-", v.name)[0]
+        urls     = try([for uri in v.login.uris : uri.uri], [])
+        username = v.login.username != null ? v.login.username : ""
+      },
+      var.server_defaults,
+      {
+        for field in v.fields : field.name => field.value
+        if contains(keys(var.server_defaults), field.name)
       }
     )
   }
@@ -30,149 +67,102 @@ locals {
     for k, v in local._servers : k => merge(
       v,
       {
-        password_hash = htpasswd_password.server[k].sha512
+        fqdn_external = "${v.fqdn}.${var.defaults.domain_external}"
+        fqdn_internal = "${v.fqdn}.${var.defaults.domain_internal}"
+        password_hash = try(htpasswd_password.server[k].sha512, "")
         resources     = local.servers_resources[k]
         ssh_keys      = data.github_user.default.ssh_keys
-        output = merge(
-          # Base resources
-          {
-            acme_dns_password_sensitive = shell_sensitive_script.acme_dns_server[k].output.password
-            acme_dns_subdomain          = shell_sensitive_script.acme_dns_server[k].output.subdomain
-            acme_dns_username           = shell_sensitive_script.acme_dns_server[k].output.username
-            fqdn_external               = "${v.fqdn}.${var.defaults.domain_external}"
-            fqdn_internal               = "${v.fqdn}.${var.defaults.domain_internal}"
-            private_ipv4                = v.input.private_ipv4
 
-            public_address = try(
-              coalesce(
-                v.input.public_address,
-                try(local._servers[v.input.parent].input.public_address, null)
-              ),
-              null
-            )
-
-            public_ipv4 = try(
-              coalesce(
-                v.input.public_ipv4,
-                try(local._servers[v.input.parent].input.public_ipv4, null)
-              ),
-              null
-            )
-
-            public_ipv6 = try(
-              coalesce(
-                v.input.public_ipv6,
-                try(local._servers[v.input.parent].input.public_ipv6, null)
-              ),
-              null
-            )
-
-            tailscale_ipv4 = try(
-              local.tailscale_device_addresses[v.slug].ipv4,
-              null
-            )
-
-            tailscale_ipv6 = try(
-              local.tailscale_device_addresses[v.slug].ipv6,
-              null
-            )
-          },
-
-          # Backblaze B2 resources
-          local.servers_resources[k].b2 ? {
-            b2_application_key_sensitive = b2_application_key.server[k].application_key
-            b2_application_key_id        = b2_application_key.server[k].application_key_id
-            b2_bucket_name               = b2_bucket.server[k].bucket_name
-            b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
-          } : {},
-
-          # Cloudflare resources
-          local.servers_resources[k].cloudflare ? {
-            cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
-          } : {},
-
-          # Cloudflared resources
-          local.servers_resources[k].cloudflared ? {
-            cloudflared_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
-          } : {},
-
-          # Komodo resources
-          local.servers_resources[k].komodo ? {
-            age_private_key_sensitive = age_secret_key.server[k].secret_key
-            age_public_key            = age_secret_key.server[k].public_key
-          } : {},
-
-          # Resend resources
-          local.servers_resources[k].resend ? {
-            resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_server[k].create_response).token
-          } : {},
-
-          # Tailscale resources
-          local.servers_resources[k].tailscale ? {
-            tailscale_auth_key_sensitive = tailscale_tailnet_key.server[k].key
-          } : {}
+        private_ipv4 = try(
+          local.unifi_clients_by_name[v.slug].ip,
+          null
         )
-      }
-    )
-  }
 
-  servers_outputs_filtered = {
-    for k, v in local.servers : k => {
-      for output_key, output_value in v.output : output_key => output_value
-      if !can(regex(var.url_field_pattern, output_key))
-    }
+        public_address = try(
+          coalesce(
+            v.public_address,
+            try(local._servers[v.parent].public_address, null)
+          ),
+          null
+        )
+
+        public_ipv4 = try(
+          coalesce(
+            v.public_ipv4,
+            try(local._servers[v.parent].public_ipv4, null)
+          ),
+          null
+        )
+
+        public_ipv6 = try(
+          coalesce(
+            v.public_ipv6,
+            try(local._servers[v.parent].public_ipv6, null)
+          ),
+          null
+        )
+
+        tailscale_ipv4 = try(
+          local.tailscale_device_addresses[v.slug].ipv4,
+          null
+        )
+
+        tailscale_ipv6 = try(
+          local.tailscale_device_addresses[v.slug].ipv6,
+          null
+        )
+      },
+      # Backblaze B2 resources
+      local.servers_resources[k].b2 ? {
+        b2_application_key_sensitive = b2_application_key.server[k].application_key
+        b2_application_key_id        = b2_application_key.server[k].application_key_id
+        b2_bucket_name               = b2_bucket.server[k].bucket_name
+        b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
+      } : {},
+      # Cloudflare resources
+      local.servers_resources[k].cloudflare ? {
+        cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
+      } : {},
+      # Cloudflared resources
+      local.servers_resources[k].cloudflared ? {
+        cloudflared_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
+      } : {},
+      # Resend resources
+      local.servers_resources[k].resend ? {
+        resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_server[k].create_response).token
+      } : {},
+      # Tailscale resources
+      local.servers_resources[k].tailscale ? {
+        tailscale_auth_key_sensitive = tailscale_tailnet_key.server[k].key
+      } : {}
+    )
   }
 
   servers_resources = {
     for k, v in local._servers : k => {
-      for resource in var.server_resources : resource => contains(try(split(",", replace(v.input.resources, " ", "")), []), resource)
+      for resource in var.server_resources : resource => contains(try(split(",", replace(v.resources, " ", "")), []), resource)
     }
   }
 
   servers_urls = {
-    for k, v in local.servers : k => [
-      for key in sort(keys(v.output)) : merge(
-        {
-          href = format(
-            "%s%s",
-            can(cidrhost("${v.output[key]}/128", 0)) ? "[${v.output[key]}]" : v.output[key],
-            v.input.management_port != null ? ":${v.input.management_port}" : ""
-          )
-          label = key
-        },
-        key == "fqdn_internal" ? { primary = true } : {}
-      )
-      if can(regex(var.url_field_pattern, key)) && v.output[key] != null
-    ]
+    #   for k, v in local.servers : k => [
+    #     for key in sort(keys(v)) : merge(
+    #       {
+    #         href = format(
+    #           "%s%s",
+    #           can(cidrhost("${v[key]}/128", 0)) ? "[${v[key]}]" : v[key],
+    #           v.management_port != null ? ":${v.management_port}" : ""
+    #         )
+    #         label = key
+    #       },
+    #       key == "fqdn_internal" ? { primary = true } : {}
+    #     )
+    #     if can(regex(var.url_field_pattern, key)) && v[key] != null
+    #   ]
   }
 }
 
 output "servers" {
   value     = keys(local._servers)
   sensitive = false
-}
-
-resource "shell_sensitive_script" "onepassword_server_sync" {
-  for_each = local._servers
-
-  environment = {
-    CONNECT_HOST  = var.onepassword_connect_host
-    CONNECT_TOKEN = var.onepassword_connect_token
-    ID            = each.value.id
-    OUTPUTS_JSON  = jsonencode(local.servers_outputs_filtered[each.key])
-    URLS_JSON     = jsonencode(local.servers_urls[each.key])
-    VAULT         = var.onepassword_servers_vault
-  }
-
-  lifecycle_commands {
-    create = "${path.module}/scripts/onepassword-server-write.sh"
-    delete = "true"
-  }
-
-  triggers = {
-    outputs_hash      = sha256(jsonencode(local.servers_outputs_filtered[each.key]))
-    script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
-    script_write_hash = filemd5("${path.module}/scripts/onepassword-server-write.sh")
-    urls_hash         = sha256(jsonencode(local.servers_urls[each.key]))
-  }
 }

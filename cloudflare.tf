@@ -32,24 +32,11 @@ resource "cloudflare_account_token" "server" {
           id = "4755a26eedb94da69e1066d98aa820be" # Zone - DNS: Edit
         }
       ]
-      resources = {
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.defaults.domain_external].zone_id}" = "*",
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.defaults.domain_internal].zone_id}" = "*"
-      }
+      resources = jsonencode({
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.defaults.domain_acme].zone_id}" = "*"
+      })
     }
   ]
-}
-
-resource "cloudflare_dns_record" "acme" {
-  for_each = local.dns_records_acme
-
-  comment = var.defaults.managed_comment
-  content = each.value.content
-  name    = each.value.name
-  proxied = false
-  ttl     = 1
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_dns_record" "manual" {

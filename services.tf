@@ -1,26 +1,32 @@
-data "external" "onepassword_services" {
-  program = ["${path.module}/scripts/onepassword-vault-read.sh"]
+data "bitwarden_folder" "services" {
+  search = "Services"
+}
 
-  query = {
-    connect_host  = var.onepassword_connect_host
-    connect_token = var.onepassword_connect_token
-    vault         = var.onepassword_services_vault
-  }
+data "external" "bw_services" {
+  program = [
+    "mise", "exec", "--", "bash", "-c",
+    <<-EOF
+    bw config server "$BW_URL" &>/dev/null || true
+    bw login --apikey &>/dev/null || true
+    export BW_SESSION="$(bw unlock --passwordenv BW_PASSWORD --raw 2>/dev/null)"
+    [ -n "$BW_SESSION" ] && bw sync --session "$BW_SESSION" &>/dev/null || true
+    ITEMS=$(bw list items --folderid "${data.bitwarden_folder.services.id}" --session "$BW_SESSION" 2>/dev/null)
+    echo "$${ITEMS:-[]}" | jq -c '{items: tostring}'
+    EOF
+  ]
 }
 
 locals {
   _services = {
-    for k, v in data.external.onepassword_services.result : k => merge(
-      jsondecode(v),
-      {
-        name     = join("-", slice(split("-", k), 1, length(split("-", k))))
-        platform = split("-", k)[0]
-        input = merge(
-          var.service_defaults,
-          jsondecode(v).input
-        )
-      }
-    )
+    # for v in jsondecode(data.external.bw_services.result.items) : v.name => merge(
+    #   {
+    #     id       = v.id
+    #     name     = join("-", slice(split("-", v.name), 1, length(split("-", v.name))))
+    #     platform = split("-", v.name)[0]
+    #     urls     = try([for uri in v.login.uris : uri.uri], [])
+    #     fields   = { for field in v.fields : field.name => field.value }
+    #   }
+    # )
   }
 
   services = {
@@ -30,37 +36,31 @@ locals {
         deployments = local.services_deployments[k]
         resources   = local.services_resources[k]
         url         = try(v.urls[0], null)
-        output = length(local.services_deployments[k]) > 0 ? {
-          for target in local.services_deployments[k] : target => merge(
-            {},
-
-            !contains(v.tags, "no_dns") ? {
-              fqdn_external = "${v.name}.${local.servers[target].output.fqdn_external}"
-              fqdn_internal = "${v.name}.${local.servers[target].output.fqdn_internal}"
-            } : {}
-          )
-        } : {}
-      }
+      },
+      # Per-deployment fqdns merged at top level per target
+      length(local.services_deployments[k]) > 0 ? {
+        for target in local.services_deployments[k] : target => merge(
+          !contains(try(split(",", replace(v.tags, " ", "")), []), "no_dns") ? {
+            fqdn_external = "${v.name}.${local.servers[target].fqdn_external}"
+            fqdn_internal = "${v.name}.${local.servers[target].fqdn_internal}"
+          } : {}
+        )
+      } : {}
     )
   }
 
   services_deployments = {
     for k, v in local._services : k => distinct(flatten([
-      # Handle null first, otherwise split the string by comma (removing spaces)
-      for target in(v.input.deploy_to == null ? [] : split(",", replace(v.input.deploy_to, " ", ""))) : (
-        # Match "all"
+      for target in(v.deploy_to == null ? [] : split(",", replace(v.deploy_to, " ", ""))) : (
         target == "all" ? keys(local._servers) :
-        # Match "platform:x"
         startswith(target, "platform:") ? [
           for h_key, h_val in local._servers : h_key
           if h_val.platform == trimprefix(target, "platform:")
         ] :
-        # Match "region:x"
         startswith(target, "region:") ? [
           for h_key, h_val in local._servers : h_key
           if h_val.region == trimprefix(target, "region:")
         ] :
-        # Match Direct Server Reference
         contains(keys(local._servers), target) ? [target] : []
       )
     ]))
@@ -75,18 +75,9 @@ locals {
     }
   ]...)
 
-  services_outputs_filtered = {
-    for k, v in local.services : k => {
-      for target, output in v.output : target => {
-        for output_key, output_value in output : output_key => output_value
-        if !can(regex(var.url_field_pattern, output_key))
-      }
-    }
-  }
-
   services_resources = {
     for k, v in local._services : k => {
-      for resource in var.service_resources : resource => contains(try(split(",", replace(v.input.resources, " ", "")), []), resource)
+      for resource in var.service_resources : resource => contains(try(split(",", replace(v.resources, " ", "")), []), resource)
     }
   }
 
@@ -100,11 +91,11 @@ locals {
         }
       ] : [],
       flatten([
-        for target, output in v.output : [
+        for target, output in v : [
           for field in sort(keys(output)) : {
             href    = output[field]
             label   = "${field}_${target}"
-            primary = field == "fqdn_internal" && v.url == null && target == keys(v.output)[0]
+            primary = field == "fqdn_internal" && v.url == null && target == keys(v)[0]
           }
           if can(regex(var.url_field_pattern, field)) && output[field] != null
         ]
@@ -116,29 +107,4 @@ locals {
 output "services" {
   value     = keys(local._services)
   sensitive = false
-}
-
-resource "shell_sensitive_script" "onepassword_service_sync" {
-  for_each = local.services
-
-  environment = {
-    CONNECT_HOST  = var.onepassword_connect_host
-    CONNECT_TOKEN = var.onepassword_connect_token
-    ID            = each.value.id
-    OUTPUTS_JSON  = jsonencode(local.services_outputs_filtered[each.key])
-    URLS_JSON     = jsonencode(local.services_urls[each.key])
-    VAULT         = var.onepassword_services_vault
-  }
-
-  lifecycle_commands {
-    create = "${path.module}/scripts/onepassword-service-write.sh"
-    delete = "true"
-  }
-
-  triggers = {
-    outputs_hash      = sha256(jsonencode(local.services_outputs_filtered[each.key]))
-    script_read_hash  = filemd5("${path.module}/scripts/onepassword-vault-read.sh")
-    script_write_hash = filemd5("${path.module}/scripts/onepassword-service-write.sh")
-    urls_hash         = sha256(jsonencode(local.services_urls[each.key]))
-  }
 }

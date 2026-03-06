@@ -31,7 +31,7 @@ terraform {
       version = "~> 3.0"
     }
     incus = {
-      source = "lxc/incus"
+      source  = "lxc/incus"
       version = "1.0.2"
     }
     random = {
@@ -51,7 +51,7 @@ terraform {
       version = "~> 0.0"
     }
     unifi = {
-      source = "ubiquiti-community/unifi"
+      source  = "ubiquiti-community/unifi"
       version = "0.41.17"
     }
   }

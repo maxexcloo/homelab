@@ -2,6 +2,7 @@
 # This file contains DNS records for all managed zones and is safe to commit to version control
 
 dns = {
+  "043847.xyz" = []
   "bestmates.xyz" = [
     {
       content  = "hsp.au.excloo.net"

@@ -1,7 +1,7 @@
 # Non-sensitive infrastructure configuration
 # This file is safe to commit to version control
 
-server_resources  = ["b2", "cloudflare", "cloudflared", "docker", "komodo", "resend", "tailscale"]
+server_resources  = ["b2", "cloudflare", "cloudflared", "docker", "resend", "tailscale"]
 service_resources = ["b2", "resend", "tailscale"]
 
 defaults = {
