@@ -3,7 +3,7 @@ backend:
   branch: main
   name: github
   pkce: true
-  repo: your-github-username/homelab
+  repo: maxexcloo/homelab
 
 media_folder: "images" # Required by Decap, even if unused
 
@@ -21,3 +21,24 @@ collections:
       - { label: "Region", name: "region", widget: "string", default: "au" }
       - { label: "Resources", name: "resources", widget: "select", multiple: true, required: false, options: ["b2", "cloudflare", "cloudflared", "docker", "resend", "tailscale"] }
       - { label: "Public IPv4", name: "public_ipv4", widget: "string", required: false }
+
+  - name: "services"
+    label: "Services"
+    folder: "data/services"
+    create: true
+    extension: "yml"
+    format: "yml"
+    identifier_field: "name"
+    fields:
+      - { label: "Service Name", name: "name", widget: "string" }
+      - { label: "URL", name: "url", widget: "string", required: false }
+      - { label: "Tags", name: "tags", widget: "list", required: false }
+      # This is the magic relational link!
+      - label: "Deploy To"
+        name: "deploy_to"
+        widget: "relation"
+        collection: "servers" # Looks at your servers collection
+        search_fields: ["name"] # Searches by server name
+        value_field: "name" # Saves the server name to the YAML file
+        display_fields: ["name"] # Displays the name in the dropdown UI
+        multiple: true # Allows deploying to multiple servers (like your comma-separated list)
