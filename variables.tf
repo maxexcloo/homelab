@@ -9,6 +9,11 @@ variable "dns_record_defaults" {
   }
 }
 
+variable "resend_api_key" {
+  description = "Resend API key"
+  type        = string
+}
+
 variable "server_defaults" {
   description = "Default values for server configurations"
   type        = any
@@ -51,11 +56,6 @@ variable "service_defaults" {
     service                  = null
     url                      = null
   }
-}
-
-variable "resend_api_key" {
-  description = "Resend API key"
-  type        = string
 }
 
 variable "url_field_pattern" {
