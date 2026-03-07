@@ -82,10 +82,16 @@ collections:
 
   - name: servers
     label: Servers
+    identifier_field: name
     folder: data/servers
     extension: yml
     format: yml
+    slug: "{{region}}-{{name}}"
     fields:
+      - name: name
+        label: Server Name (e.g., test, router)
+        widget: string
+        pattern: ['^[a-z][a-z0-9-]*$', 'Must start with letter, use lowercase letters, numbers, and hyphens']
       - name: description
         label: Friendly Name
         widget: string
@@ -94,9 +100,9 @@ collections:
         label: Parent Server
         widget: relation
         collection: servers
-        search_fields: [title]
-        display_fields: [title]
-        value_field: title
+        search_fields: [name]
+        display_fields: [name]
+        value_field: name
         required: false
       - name: platform
         label: Platform
@@ -163,10 +169,15 @@ collections:
 
   - name: services
     label: Services
+    identifier_field: name
     folder: data/services
     extension: yml
     format: yml
     fields:
+      - name: name
+        label: Service ID (e.g., traefik, nginx-proxy)
+        widget: string
+        pattern: ['^[a-z][a-z0-9-]*$', 'Must start with letter, use lowercase letters, numbers, and hyphens only']
       - name: description
         label: Friendly Description
         widget: string
@@ -194,9 +205,9 @@ collections:
         label: Deploy To
         widget: relation
         collection: servers
-        search_fields: [title]
-        display_fields: [title]
-        value_field: title
+        search_fields: [name]
+        display_fields: [name]
+        value_field: name
         multiple: true
         required: false
       - name: enable_api_key
