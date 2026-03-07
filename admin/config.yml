@@ -16,10 +16,35 @@ collections:
     label: "Servers"
     fields:
       - { label: "Server Name", name: "name", widget: "string" }
-      - { label: "Type", name: "type", widget: "select", options: ["lxc", "vm", "baremetal", "cloud"] }
+      - {
+          label: "Type",
+          name: "type",
+          widget: "select",
+          options: ["lxc", "vm", "baremetal", "cloud"],
+        }
       - { label: "Region", name: "region", widget: "string", default: "au" }
-      - { label: "Resources", name: "resources", widget: "select", multiple: true, required: false, options: ["b2", "cloudflare", "cloudflared", "docker", "resend", "tailscale"] }
-      - { label: "Public IPv4", name: "public_ipv4", widget: "string", required: false }
+      - {
+          label: "Resources",
+          name: "resources",
+          widget: "select",
+          multiple: true,
+          required: false,
+          options:
+            [
+              "b2",
+              "cloudflare",
+              "cloudflared",
+              "docker",
+              "resend",
+              "tailscale",
+            ],
+        }
+      - {
+          label: "Public IPv4",
+          name: "public_ipv4",
+          widget: "string",
+          required: false,
+        }
 
   - name: "services"
     label: "Services"
@@ -41,3 +66,5 @@ collections:
         value_field: "name" # Saves the server name to the YAML file
         display_fields: ["name"] # Displays the name in the dropdown UI
         multiple: true # Allows deploying to multiple servers (like your comma-separated list)
+
+media_folder: media
