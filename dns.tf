@@ -27,16 +27,21 @@ locals {
 
   dns_records_manual = merge([
     for zone, records in local.dns : {
-      for index, record in records : "${zone}-manual-${record.type}-${index}" => {
-        content  = record.content
-        name     = record.name == "@" ? zone : "${record.name}.${zone}"
-        priority = try(record.priority, null)
-        proxied  = record.proxied
-        ttl      = record.ttl
-        type     = record.type
-        wildcard = record.wildcard
-        zone     = zone
-      }
+      for index, record in records : "${zone}-manual-${record.type}-${index}" => merge(
+        var.dns_record_defaults,
+        {
+          content  = record.content
+          name     = record.name == "@" ? zone : "${record.name}.${zone}"
+          priority = try(record.priority, null)
+          type     = record.type
+          zone     = zone
+        },
+        {
+          proxied  = try(record.proxied, var.dns_record_defaults.proxied)
+          ttl      = try(record.ttl, var.dns_record_defaults.ttl)
+          wildcard = try(record.wildcard, var.dns_record_defaults.wildcard)
+        }
+      )
     }
   ]...)
 
@@ -94,12 +99,12 @@ locals {
   )
 
   dns_records_services = merge([
-    for key, service in local.services : (length(service.deployments) == 0 || contains(service.tags, "no_dns")) ? {} : merge(
+    for key, service in local.services : (length(service.deployments) == 0) ? {} : merge(
       {
         for target in service.deployments : "${local.defaults.domain_external}-${key}-${target}" => {
-          content = contains(local.servers[target].tags, "proxied") && local.servers[target].enable_cloudflare ? "${cloudflare_zero_trust_tunnel_cloudflared.server[target].id}.cfargotunnel.com" : "${local._servers[target].fqdn}.${local.defaults.domain_external}"
+          content = local.servers[target].enable_proxied && local.servers[target].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[target].id}.cfargotunnel.com" : "${local._servers[target].fqdn}.${local.defaults.domain_external}"
           name    = "${service.name}.${local._servers[target].fqdn}.${local.defaults.domain_external}"
-          proxied = contains(local.servers[target].tags, "proxied")
+          proxied = local.servers[target].enable_proxied
           server  = target
           type    = "CNAME"
           zone    = local.defaults.domain_external
@@ -107,9 +112,9 @@ locals {
       },
       {
         for target in service.deployments : "${local.defaults.domain_internal}-${key}-${target}" => {
-          content = contains(local.servers[target].tags, "proxied") && local.servers[target].enable_cloudflare ? "${cloudflare_zero_trust_tunnel_cloudflared.server[target].id}.cfargotunnel.com" : "${local._servers[target].fqdn}.${local.defaults.domain_internal}"
+          content = local.servers[target].enable_proxied && local.servers[target].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[target].id}.cfargotunnel.com" : "${local._servers[target].fqdn}.${local.defaults.domain_internal}"
           name    = "${service.name}.${local._servers[target].fqdn}.${local.defaults.domain_internal}"
-          proxied = contains(local.servers[target].tags, "proxied")
+          proxied = local.servers[target].enable_proxied
           server  = target
           type    = "CNAME"
           zone    = local.defaults.domain_internal
@@ -121,15 +126,15 @@ locals {
   dns_records_services_urls = {
     for key, service in local.services : "${key}-url" => {
       name    = service.url
-      proxied = contains(local.servers[service.deployments[0]].tags, "proxied")
+      proxied = local.servers[service.deployments[0]].enable_proxied
       server  = service.deployments[0]
       type    = "CNAME"
       zone    = local._dns_services_url_zone[key]
 
       content = (
-        contains(local.servers[service.deployments[0]].tags, "proxied") && local.servers[service.deployments[0]].enable_cloudflare ?
+        local.servers[service.deployments[0]].enable_proxied && local.servers[service.deployments[0]].enable_cloudflare_acme_token ?
         "${cloudflare_zero_trust_tunnel_cloudflared.server[service.deployments[0]].id}.cfargotunnel.com" :
-        "${service.name}.${local._servers[service.deployments[0]].fqdn}.${contains(local.services[key].tags, "external") ? local.defaults.domain_external : local.defaults.domain_internal}"
+        "${service.name}.${local._servers[service.deployments[0]].fqdn}.${local.defaults.domain_internal}"
       )
     }
     if service.url != null && length(service.deployments) == 1 && local._dns_services_url_zone[key] != null

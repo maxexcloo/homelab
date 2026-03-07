@@ -1,14 +1,11 @@
 locals {
-  _services_raw = {
-    for filepath in fileset(path.module, "data/services/*.yml") :
-    yamldecode(file("${path.module}/${filepath}")).name => yamldecode(file("${path.module}/${filepath}"))
-  }
-
   _services = {
-    for k, v in local._services_raw : k => merge(
+    for k, v in {
+      for filepath in fileset(path.module, "data/services/*.yml") :
+      trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
+      } : k => merge(
       var.service_defaults,
-      v,
-      { id = k }
+      v
     )
   }
 
@@ -16,10 +13,10 @@ locals {
     for k, v in local._services : k => merge(
       v,
       {
-        deployments = try(v.deploy_to, [])
-        url         = try(v.url, null)
+        deployments = v.deploy_to
+        url         = v.url
       },
-      length(try(v.deploy_to, [])) > 0 ? {
+      length(v.deploy_to) > 0 ? {
         for target in v.deploy_to : target => {
           fqdn_external = "${v.name}.${local.servers[target].fqdn_external}"
           fqdn_internal = "${v.name}.${local.servers[target].fqdn_internal}"
@@ -29,7 +26,7 @@ locals {
   }
 
   services_deployments = {
-    for k, v in local._services : k => try(v.deploy_to, [])
+    for k, v in local._services : k => v.deploy_to
   }
 
   services_instances = merge([
@@ -59,13 +56,12 @@ locals {
           }
           if can(regex(var.url_field_pattern, field)) && output[field] != null
         ]
-        if can(keys(output)) # Safely ensures we only parse objects, not our new boolean toggles
+        if can(keys(output))
       ])
     )
   }
 }
 
-# Automatically generate optional secrets when toggled in the UI
 resource "random_password" "service_db" {
   for_each = { for k, v in local._services : k => v if v.enable_database_password }
   length   = 32

@@ -17,8 +17,8 @@ endpoints:
       - type: email
     conditions:
       - "[CONNECTED] == true"
-    group: "${tags[server.tag]}"
-    name: "${k} (${server.title})"
+    group: "Servers (${try(server.platform, "Unknown")})"
+    name: "${k} (${try(server.description, k)})"
     url: "icmp://${k}"
 %{ endfor ~}
 %{ for service in services ~}
