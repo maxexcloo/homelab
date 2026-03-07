@@ -1,0 +1,23 @@
+backend:
+  app_id: Ov23liJhlk4GEVS5oASX
+  branch: main
+  name: github
+  pkce: true
+  repo: your-github-username/homelab
+
+media_folder: "images" # Required by Decap, even if unused
+
+collections:
+  - name: "servers"
+    create: true
+    extension: "yml"
+    folder: "data/servers"
+    format: "yml"
+    identifier_field: "name"
+    label: "Servers"
+    fields:
+      - { label: "Server Name", name: "name", widget: "string" }
+      - { label: "Type", name: "type", widget: "select", options: ["lxc", "vm", "baremetal", "cloud"] }
+      - { label: "Region", name: "region", widget: "string", default: "au" }
+      - { label: "Resources", name: "resources", widget: "select", multiple: true, required: false, options: ["b2", "cloudflare", "cloudflared", "docker", "resend", "tailscale"] }
+      - { label: "Public IPv4", name: "public_ipv4", widget: "string", required: false }

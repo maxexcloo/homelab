@@ -7,17 +7,15 @@ data "external" "bw_servers" {
     "mise", "exec", "--", "bash", "-c",
     <<-EOF
     SESSION_FILE=".bitwarden/session"
-    
     if [ -f "$SESSION_FILE" ]; then
       export BW_SESSION=$(cat "$SESSION_FILE")
     fi
-
     if ! bw status --session "$BW_SESSION" &>/dev/null | grep -q '"status":"unlocked"'; then
       bw config server "$BW_URL" &>/dev/null || true
       bw login --apikey &>/dev/null || true
-      
+      bw unlock --passwordenv BW_PASSWORD --raw 2>/dev/null || true
+      bw lock >/dev/null 2>&1
       export BW_SESSION="$(bw unlock --passwordenv BW_PASSWORD --raw 2>/dev/null)"
-      
       if [ -n "$BW_SESSION" ]; then
         echo "$BW_SESSION" > "$SESSION_FILE"
       else
@@ -25,16 +23,12 @@ data "external" "bw_servers" {
         exit 1
       fi
     fi
-
     bw sync --session "$BW_SESSION" &>/dev/null || true
     ITEMS=$(bw list items --folderid "${data.bitwarden_folder.servers.id}" --session "$BW_SESSION" 2>/dev/null)
-    
-    # Check if ITEMS is empty or just an empty JSON array '[]'
     if [[ -z "$ITEMS" || "$ITEMS" =~ ^[[:space:]]*\[\][[:space:]]*$ ]]; then
       echo "Error: No items found in Vaultwarden folder. The folder might be empty, or sync failed." >&2
       exit 1
     fi
-    
     echo "$ITEMS" | jq -c '{items: tostring}'
     EOF
   ]
