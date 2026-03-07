@@ -18,7 +18,7 @@ data "cloudflare_zone" "all" {
 resource "cloudflare_account_token" "server" {
   for_each = {
     for k, v in local._servers : k => v
-    if v.enable_cloudflare
+    if v.enable_cloudflare_acme_token
   }
 
   account_id = data.cloudflare_accounts.default.result[0].id
@@ -103,7 +103,7 @@ resource "cloudflare_dns_record" "wildcard" {
 resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
   for_each = {
     for k, v in local._servers : k => v
-    if v.enable_cloudflared
+    if v.enable_cloudflared_tunnel
   }
 
   account_id = data.cloudflare_accounts.default.result[0].id

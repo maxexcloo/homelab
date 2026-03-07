@@ -82,15 +82,10 @@ collections:
 
   - name: servers
     label: Servers
-    identifier_field: name
     folder: data/servers
     extension: yml
     format: yml
     fields:
-      - name: name
-        label: Machine Name / Slug
-        widget: string
-        pattern: ['^[a-z0-9]([-a-z0-9]*[a-z0-9])?$', 'Must be lowercase alphanumeric, dashes allowed']
       - name: description
         label: Friendly Name
         widget: string
@@ -99,19 +94,24 @@ collections:
         label: Parent Server
         widget: relation
         collection: servers
-        search_fields: [name]
-        display_fields: [name]
-        value_field: name
+        search_fields: [title]
+        display_fields: [title]
+        value_field: title
         required: false
       - name: platform
         label: Platform
-        widget: string
-        required: false
+        widget: select
+        options: ["unmanaged", "physical", "incus", "oracle"]
+        default: "unmanaged"
+      - name: type
+        label: Type (vm, router, server)
+        widget: select
+        options: ["vm", "router", "server"]
+        default: "server"
       - name: region
         label: Region
         widget: string
         default: au
-        required: true
       - name: public_address
         label: Public Address (Leave blank if inheriting)
         widget: string
@@ -136,43 +136,37 @@ collections:
         label: Enable B2
         widget: boolean
         default: false
-        required: true
-      - name: enable_cloudflare
-        label: Enable Cloudflare
+      - name: enable_cloudflare_acme_token
+        label: Enable Cloudflare ACME Token
         widget: boolean
         default: false
-        required: true
-      - name: enable_cloudflared
-        label: Enable Cloudflared
+      - name: enable_cloudflared_tunnel
+        label: Enable Cloudflared Tunnel
         widget: boolean
         default: false
-        required: true
       - name: enable_docker
         label: Enable Docker
         widget: boolean
         default: false
-        required: true
+      - name: enable_proxied
+        label: Enable Proxied (via Cloudflare Tunnel)
+        widget: boolean
+        default: false
       - name: enable_resend
         label: Enable Resend
         widget: boolean
         default: false
-        required: true
       - name: enable_tailscale
         label: Enable Tailscale
         widget: boolean
         default: false
-        required: true
 
   - name: services
     label: Services
-    identifier_field: name
     folder: data/services
     extension: yml
     format: yml
     fields:
-      - name: name
-        label: Friendly Machine Name
-        widget: string
       - name: description
         label: Friendly Description
         widget: string
@@ -200,41 +194,35 @@ collections:
         label: Deploy To
         widget: relation
         collection: servers
-        search_fields: [name]
-        display_fields: [name]
-        value_field: name
+        search_fields: [title]
+        display_fields: [title]
+        value_field: title
         multiple: true
         required: false
       - name: enable_api_key
         label: Generate API Key
         widget: boolean
         default: false
-        required: true
       - name: enable_b2
         label: Enable B2
         widget: boolean
         default: false
-        required: true
       - name: enable_database_password
         label: Generate Database Password
         widget: boolean
         default: false
-        required: true
       - name: enable_resend
         label: Enable Resend
         widget: boolean
         default: false
-        required: true
       - name: enable_secret_hash
         label: Generate Secret Hash
         widget: boolean
         default: false
-        required: true
       - name: enable_tailscale
         label: Enable Tailscale
         widget: boolean
         default: false
-        required: true
 
   - name: settings
     label: Global Settings
