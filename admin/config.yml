@@ -8,7 +8,6 @@ backend:
 
 collections:
   - name: servers
-    create: true
     extension: yml
     folder: data/servers
     format: yml
@@ -18,35 +17,74 @@ collections:
       - name: name
         label: Server Name
         widget: string
-      - name: type
-        label: Type
-        widget: select
-        options:
-          - lxc
-          - vm
-          - baremetal
-          - cloud
-      - name: region
-        label: Region
-        widget: string
-        default: au
-      - name: resources
-        label: Resources
-        multiple: true
+      - name: description
+        label: Description
         required: false
-        widget: select
-        options:
-          - b2
-          - cloudflare
-          - cloudflared
-          - docker
-          - resend
-          - tailscale
+        widget: string
+      - name: enable_b2
+        default: false
+        label: Enable B2
+        required: false
+        widget: boolean
+      - name: enable_cloudflare
+        default: false
+        label: Enable Cloudflare
+        required: false
+        widget: boolean
+      - name: enable_cloudflared
+        default: false
+        label: Enable Cloudflared
+        required: false
+        widget: boolean
+      - name: enable_docker
+        default: false
+        label: Enable Docker
+        required: false
+        widget: boolean
+      - name: enable_resend
+        default: false
+        label: Enable Resend
+        required: false
+        widget: boolean
+      - name: enable_tailscale
+        default: false
+        label: Enable Tailscale
+        required: false
+        widget: boolean
+      - name: management_port
+        label: Management Port
+        required: false
+        value_type: int
+        widget: number
+      - name: parent
+        collection: servers
+        display_fields: [name]
+        label: Parent Server
+        required: false
+        search_fields: [name]
+        value_field: name
+        widget: relation
+      - name: platform
+        label: Platform
+        required: false
+        widget: string
+      - name: public_address
+        label: Public Address
+        required: false
+        widget: string
       - name: public_ipv4
         label: Public IPv4
+        pattern: ['^(\d{1,3}\.){3}\d{1,3}$', 'Must be a valid IPv4 address']
         required: false
         widget: string
-
+      - name: public_ipv6
+        label: Public IPv6
+        required: false
+        widget: string
+      - name: region
+        default: au
+        label: Region
+        widget: string
   - name: services
     extension: yml
     folder: data/services
@@ -57,21 +95,99 @@ collections:
       - name: name
         label: Service Name
         widget: string
-      - name: url
-        label: URL
+      - name: service
+        label: Service Type / Platform
         required: false
         widget: string
-      - name: tags
-        label: Tags
+      - name: description
+        label: Description
         required: false
-        widget: list
+        widget: string
       - name: deploy_to
         collection: servers
         display_fields: [name]
         label: Deploy To
         multiple: true
+        required: false
         search_fields: [name]
         value_field: name
         widget: relation
+      - name: enable_api_key
+        default: false
+        label: Generate API Key
+        required: false
+        widget: boolean
+      - name: enable_b2
+        default: false
+        label: Enable B2
+        required: false
+        widget: boolean
+      - name: enable_database_password
+        default: false
+        label: Generate Database Password
+        required: false
+        widget: boolean
+      - name: enable_resend
+        default: false
+        label: Enable Resend
+        required: false
+        widget: boolean
+      - name: enable_secret_hash
+        default: false
+        label: Generate Secret Hash
+        required: false
+        widget: boolean
+      - name: enable_tailscale
+        default: false
+        label: Enable Tailscale
+        required: false
+        widget: boolean
+      - name: icon
+        label: Icon
+        required: false
+        widget: string
+      - name: port
+        label: Internal Port
+        required: false
+        value_type: int
+        widget: number
+      - name: url
+        label: External URL
+        required: false
+        widget: string
+  - name: settings
+    label: Global Settings
+    files:
+      - name: defaults
+        label: Terraform Defaults
+        file: data/defaults.yml
+        fields:
+          - name: domain_acme
+            label: ACME Domain
+            widget: string
+          - name: domain_external
+            label: External Domain
+            widget: string
+          - name: domain_internal
+            label: Internal Domain
+            widget: string
+          - name: email
+            label: Admin Email
+            widget: string
+          - name: locale
+            label: Locale
+            widget: string
+          - name: managed_comment
+            label: Managed Comment
+            widget: string
+          - name: organization
+            label: Organization Name
+            widget: string
+          - name: shell
+            label: Default Shell
+            widget: string
+          - name: timezone
+            label: Timezone
+            widget: string
 
 media_folder: media
