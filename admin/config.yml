@@ -1,11 +1,8 @@
 backend:
-  app_id: Ov23liJhlk4GEVS5oASX
-  branch: main
   name: github
-  pkce: true
   repo: maxexcloo/homelab
 
-media_folder: "images" # Required by Decap, even if unused
+media_folder: "images"
 
 collections:
   - name: "servers"
