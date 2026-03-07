@@ -1,9 +1,0 @@
-name: test.com
-records:
-  - content: test.xyz
-    name: '@'
-    priority: null
-    proxied: false
-    ttl: 1
-    type: CNAME
-    wildcard: false
