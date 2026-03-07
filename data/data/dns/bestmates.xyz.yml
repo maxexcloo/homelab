@@ -1,0 +1,6 @@
+name: bestmates.xyz
+records:
+  - content: hsp.au.excloo.net
+    name: "@"
+    type: CNAME
+    wildcard: true

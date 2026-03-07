@@ -7,6 +7,59 @@ backend:
   repo: maxexcloo/homelab
 
 collections:
+  - name: dns
+    extension: yml
+    folder: data/dns
+    format: yml
+    identifier_field: name
+    label: DNS Zones
+    fields:
+      - name: name
+        label: Zone Name (e.g., excloo.com)
+        widget: string
+      - name: records
+        label: DNS Records
+        required: false
+        widget: list
+        fields:
+          - name: content
+            label: Content / Target
+            widget: string
+          - name: name
+            label: Record Name (e.g., @ or sub)
+            widget: string
+          - name: priority
+            label: Priority (MX/SRV only)
+            required: false
+            value_type: int
+            widget: number
+          - name: proxied
+            default: false
+            label: Proxied (Cloudflare)
+            required: false
+            widget: boolean
+          - name: ttl
+            default: 1
+            label: TTL
+            required: false
+            value_type: int
+            widget: number
+          - name: type
+            label: Record Type
+            options:
+              - A
+              - AAAA
+              - CNAME
+              - MX
+              - NS
+              - SRV
+              - TXT
+            widget: select
+          - name: wildcard
+            default: false
+            label: Wildcard Record
+            required: false
+            widget: boolean
   - name: servers
     extension: yml
     folder: data/servers

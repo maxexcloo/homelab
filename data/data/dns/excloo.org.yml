@@ -1,0 +1,6 @@
+name: excloo.org
+records:
+  - content: hsp.au.excloo.net
+    name: "@"
+    type: CNAME
+    wildcard: true
