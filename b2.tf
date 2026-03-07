@@ -49,7 +49,7 @@ resource "b2_bucket" "server" {
 resource "random_string" "b2_server" {
   for_each = {
     for k, v in local._servers : k => v
-    if local.servers_resources[k].b2
+    if v.enable_b2
   }
 
   length  = 6

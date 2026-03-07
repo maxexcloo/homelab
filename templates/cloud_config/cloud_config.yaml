@@ -8,20 +8,20 @@ packages: [curl, sudo]
 ssh_pwauth: false
 timezone: ${defaults.timezone}
 groups:
-%{ if server.resources.docker ~}
+%{ if server.enable_docker ~}
   - docker
 %{ endif ~}
   - sudo
 runcmd:
   - sysctl --system
-%{ if server.resources.docker ~}
+%{ if server.enable_docker ~}
   - curl -fsLS https://get.docker.com | sh
 %{ endif ~}
-%{ if server.resources.cloudflared ~}
+%{ if server.enable_cloudflared ~}
   - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
   - cloudflared service install ${server.cloudflared_tunnel_token_sensitive}
 %{ endif ~}
-%{ if server.resources.tailscale ~}
+%{ if server.enable_tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
   - tailscale up --advertise-exit-node --authkey ${server.tailscale_auth_key_sensitive} --hostname ${server.slug}
 %{ endif ~}
@@ -32,7 +32,7 @@ users:
     shell: ${defaults.shell}
     ssh_authorized_keys: ${jsonencode(server.ssh_keys)}
     groups:
-%{ if server.resources.docker ~}
+%{ if server.enable_docker ~}
       - docker
 %{ endif ~}
       - sudo

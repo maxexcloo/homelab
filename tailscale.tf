@@ -12,7 +12,7 @@ locals {
 resource "tailscale_tailnet_key" "server" {
   for_each = {
     for k, v in local._servers : k => v
-    if local.servers_resources[k].tailscale
+    if v.enable_tailscale
   }
 
   description   = each.key

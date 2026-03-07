@@ -8,7 +8,7 @@ data "cloudflare_zero_trust_tunnel_cloudflared_token" "server" {
 }
 
 data "cloudflare_zone" "all" {
-  for_each = var.dns
+  for_each = local.dns
 
   filter = {
     name = each.key
@@ -18,7 +18,7 @@ data "cloudflare_zone" "all" {
 resource "cloudflare_account_token" "server" {
   for_each = {
     for k, v in local._servers : k => v
-    if local.servers_resources[k].cloudflare
+    if v.enable_cloudflare
   }
 
   account_id = data.cloudflare_accounts.default.result[0].id
@@ -33,7 +33,7 @@ resource "cloudflare_account_token" "server" {
         }
       ]
       resources = jsonencode({
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[var.defaults.domain_acme].zone_id}" = "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domain_acme].zone_id}" = "*"
       })
     }
   ]
@@ -42,7 +42,7 @@ resource "cloudflare_account_token" "server" {
 resource "cloudflare_dns_record" "manual" {
   for_each = local.dns_records_manual
 
-  comment  = var.defaults.managed_comment
+  comment  = local.defaults.managed_comment
   content  = each.value.content
   name     = each.value.name
   priority = each.value.priority
@@ -55,7 +55,7 @@ resource "cloudflare_dns_record" "manual" {
 resource "cloudflare_dns_record" "server" {
   for_each = local.dns_records_servers
 
-  comment = var.defaults.managed_comment
+  comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = false
@@ -67,7 +67,7 @@ resource "cloudflare_dns_record" "server" {
 resource "cloudflare_dns_record" "service" {
   for_each = local.dns_records_services
 
-  comment = var.defaults.managed_comment
+  comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = try(each.value.proxied, false)
@@ -79,7 +79,7 @@ resource "cloudflare_dns_record" "service" {
 resource "cloudflare_dns_record" "service_url" {
   for_each = local.dns_records_services_urls
 
-  comment = var.defaults.managed_comment
+  comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = try(each.value.proxied, false)
@@ -91,7 +91,7 @@ resource "cloudflare_dns_record" "service_url" {
 resource "cloudflare_dns_record" "wildcard" {
   for_each = local.dns_records_wildcards
 
-  comment = var.defaults.managed_comment
+  comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = false
@@ -103,7 +103,7 @@ resource "cloudflare_dns_record" "wildcard" {
 resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
   for_each = {
     for k, v in local._servers : k => v
-    if local.servers_resources[k].cloudflared
+    if v.enable_cloudflared
   }
 
   account_id = data.cloudflare_accounts.default.result[0].id

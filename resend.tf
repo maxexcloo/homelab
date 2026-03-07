@@ -1,7 +1,7 @@
 resource "restapi_object" "resend_api_key_server" {
   for_each = {
     for k, v in local._servers : k => v
-    if local.servers_resources[k].resend
+    if v.enable_resend
   }
 
   data                      = jsonencode({ name = each.key })
