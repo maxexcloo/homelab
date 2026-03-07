@@ -7,64 +7,71 @@ backend:
   repo: maxexcloo/homelab
 
 collections:
-  - name: "servers"
+  - name: servers
     create: true
-    extension: "yml"
-    folder: "data/servers"
-    format: "yml"
-    identifier_field: "name"
-    label: "Servers"
+    extension: yml
+    folder: data/servers
+    format: yml
+    identifier_field: name
+    label: Servers
     fields:
-      - { label: "Server Name", name: "name", widget: "string" }
-      - {
-          label: "Type",
-          name: "type",
-          widget: "select",
-          options: ["lxc", "vm", "baremetal", "cloud"],
-        }
-      - { label: "Region", name: "region", widget: "string", default: "au" }
-      - {
-          label: "Resources",
-          name: "resources",
-          widget: "select",
-          multiple: true,
-          required: false,
-          options:
-            [
-              "b2",
-              "cloudflare",
-              "cloudflared",
-              "docker",
-              "resend",
-              "tailscale",
-            ],
-        }
-      - {
-          label: "Public IPv4",
-          name: "public_ipv4",
-          widget: "string",
-          required: false,
-        }
+      - name: name
+        label: Server Name
+        widget: string
+      - name: type
+        label: Type
+        widget: select
+        options:
+          - lxc
+          - vm
+          - baremetal
+          - cloud
+      - name: region
+        label: Region
+        widget: string
+        default: au
+      - name: resources
+        label: Resources
+        multiple: true
+        required: false
+        widget: select
+        options:
+          - b2
+          - cloudflare
+          - cloudflared
+          - docker
+          - resend
+          - tailscale
+      - name: public_ipv4
+        label: Public IPv4
+        required: false
+        widget: string
 
-  - name: "services"
-    label: "Services"
-    folder: "data/services"
-    create: true
-    extension: "yml"
-    format: "yml"
-    identifier_field: "name"
+  - name: services
+    extension: yml
+    folder: data/services
+    format: yml
+    identifier_field: name
+    label: Services
     fields:
-      - { label: "Service Name", name: "name", widget: "string" }
-      - { label: "URL", name: "url", widget: "string", required: false }
-      - { label: "Tags", name: "tags", widget: "list", required: false }
-      # This is the magic relational link!
-      - label: "Deploy To"
-        name: "deploy_to"
-        widget: "relation"
-        collection: "servers" # Looks at your servers collection
-        search_fields: ["name"] # Searches by server name
-        value_field: "name" # Saves the server name to the YAML file
-        display_fields: ["name"] # Displays the name in the dropdown UI
-        multiple: true # Allows deploying to multiple servers (like your comma-separated list)
+      - name: name
+        label: Service Name
+        widget: string
+      - name: url
+        label: URL
+        required: false
+        widget: string
+      - name: tags
+        label: Tags
+        required: false
+        widget: list
+      - name: deploy_to
+        collection: servers
+        display_fields: [name]
+        label: Deploy To
+        multiple: true
+        search_fields: [name]
+        value_field: name
+        widget: relation
 
 media_folder: media
