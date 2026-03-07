@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+
 backend:
+  base_url: https://sveltia-cms-auth.excloo.workers.dev
+  branch: main
   name: github
   repo: maxexcloo/homelab
-
-media_folder: "images"
 
 collections:
   - name: "servers"
