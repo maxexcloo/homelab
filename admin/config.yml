@@ -82,14 +82,13 @@ collections:
 
   - name: servers
     label: Servers
-    identifier_field: name
     folder: data/servers
     extension: yml
     format: yml
-    slug: "{{region}}-{{name}}"
+    slug: "{{region}}-{{slug}}"
     fields:
-      - name: name
-        label: Server Name (e.g., test, router)
+      - name: slug
+        label: Server ID (e.g., test, router, proxy)
         widget: string
         pattern: ['^[a-z][a-z0-9-]*$', 'Must start with letter, use lowercase letters, numbers, and hyphens']
       - name: description
@@ -169,15 +168,10 @@ collections:
 
   - name: services
     label: Services
-    identifier_field: name
     folder: data/services
     extension: yml
     format: yml
     fields:
-      - name: name
-        label: Service ID (e.g., traefik, nginx-proxy)
-        widget: string
-        pattern: ['^[a-z][a-z0-9-]*$', 'Must start with letter, use lowercase letters, numbers, and hyphens only']
       - name: description
         label: Friendly Description
         widget: string

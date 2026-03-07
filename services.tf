@@ -3,10 +3,7 @@ locals {
     for k, v in {
       for filepath in fileset(path.module, "data/services/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-      } : k => merge(
-      var.service_defaults,
-      v
-    )
+    } : k => merge(var.service_defaults, v, { name = k })
   }
 
   services = {
@@ -18,8 +15,8 @@ locals {
       },
       length(v.deploy_to) > 0 ? {
         for target in v.deploy_to : target => {
-          fqdn_external = "${v.name}.${local.servers[target].fqdn_external}"
-          fqdn_internal = "${v.name}.${local.servers[target].fqdn_internal}"
+          fqdn_external = "${k}.${local.servers[target].fqdn_external}"
+          fqdn_internal = "${k}.${local.servers[target].fqdn_internal}"
         }
       } : {}
     )
@@ -31,7 +28,7 @@ locals {
 
   services_instances = merge([
     for service_key, service in local.services : {
-      for target in service.deployments : "${service.name}-${local.servers[target].slug}" => {
+      for target in service.deployments : "${service_key}-${target}" => {
         server  = target
         service = service_key
       }

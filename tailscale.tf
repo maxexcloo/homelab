@@ -22,7 +22,10 @@ resource "tailscale_tailnet_key" "server" {
 }
 
 resource "tailscale_tailnet_key" "service" {
-  for_each = local.services_instances
+  for_each = {
+    for k, v in local.services_instances : k => v
+    if v.enable_tailscale
+  }
 
   description   = each.key
   preauthorized = true
