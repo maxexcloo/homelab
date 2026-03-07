@@ -52,6 +52,7 @@ variable "service_defaults" {
     enable_secret_hash       = false
     enable_tailscale         = false
     icon                     = null
+    name                     = null
     port                     = null
     service                  = null
     url                      = null
