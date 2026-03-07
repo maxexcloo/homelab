@@ -172,8 +172,11 @@ collections:
     extension: yml
     format: yml
     fields:
+      - name: name
+        label: Service Name (displayed in dashboard)
+        widget: string
       - name: description
-        label: Friendly Description
+        label: Description
         widget: string
         required: false
       - name: service

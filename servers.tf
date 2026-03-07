@@ -3,7 +3,7 @@ locals {
     for k, v in {
       for filepath in fileset(path.module, "data/servers/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-    } : k => merge(var.server_defaults, v, { name = split("-", k)[0] == k ? k : join("-", slice(split("-", k), 1, length(split("-", k)))) })
+    } : k => merge(var.server_defaults, v)
   }
 
   servers = {
