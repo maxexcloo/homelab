@@ -85,12 +85,13 @@ collections:
     folder: data/servers
     extension: yml
     format: yml
-    slug: "{{region}}-{{slug}}"
+    identifier_field: slug
     fields:
       - name: slug
-        label: Server ID (e.g., test, router, proxy)
+        label: Server ID (e.g., au, au-test, au-proxy)
         widget: string
-        pattern: ['^[a-z][a-z0-9-]*$', 'Must start with letter, use lowercase letters, numbers, and hyphens']
+        pattern: ['^[a-z]{2}(-[a-z0-9-]+)?$', 'Routers: au | Servers: au-name']
+        hint: "Routers use just the region code (au). Servers use region-name (au-test)."
       - name: description
         label: Friendly Name
         widget: string
@@ -99,9 +100,9 @@ collections:
         label: Parent Server
         widget: relation
         collection: servers
-        search_fields: [name]
-        display_fields: [name]
-        value_field: name
+        search_fields: [slug]
+        display_fields: [slug]
+        value_field: slug
         required: false
       - name: platform
         label: Platform

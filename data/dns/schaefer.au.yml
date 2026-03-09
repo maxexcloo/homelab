@@ -2,31 +2,49 @@ name: schaefer.au
 records:
   - content: hsp.au.excloo.net
     name: "@"
+    proxied: false
+    ttl: 1
     type: CNAME
     wildcard: true
   - content: fm1.schaefer.au.dkim.fmhosted.com
     name: fm1._domainkey
+    proxied: false
+    ttl: 1
     type: CNAME
+    wildcard: false
   - content: fm2.schaefer.au.dkim.fmhosted.com
     name: fm2._domainkey
+    proxied: false
+    ttl: 1
     type: CNAME
+    wildcard: false
   - content: fm3.schaefer.au.dkim.fmhosted.com
     name: fm3._domainkey
+    proxied: false
+    ttl: 1
     type: CNAME
+    wildcard: false
   - content: mesmtp.schaefer.au.dkim.fmhosted.com
     name: mesmtp._domainkey
+    proxied: false
+    ttl: 1
     type: CNAME
+    wildcard: false
   - content: in1-smtp.messagingengine.com
     name: "@"
     priority: 10
+    ttl: 1
     type: MX
   - content: in2-smtp.messagingengine.com
     name: "@"
     priority: 20
+    ttl: 1
     type: MX
   - content: '"v=DMARC1; p=none;"'
     name: "@"
+    ttl: 1
     type: TXT
   - content: '"v=spf1 include:spf.messagingengine.com ?all"'
     name: "@"
+    ttl: 1
     type: TXT
