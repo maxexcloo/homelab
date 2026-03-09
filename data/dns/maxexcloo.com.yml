@@ -2,5 +2,7 @@ name: maxexcloo.com
 records:
   - content: hsp.au.excloo.net
     name: "@"
+    proxied: false
+    ttl: 1
     type: CNAME
     wildcard: true
