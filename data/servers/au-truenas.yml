@@ -1,6 +1,8 @@
-name: au-truenas
+id: au-truenas
+name: truenas
 description: TrueNAS
 parent: au-pie
+username: root
 platform: incus
 region: au
 type: vm
@@ -13,5 +15,6 @@ enable_cloudflare_acme_token: true
 enable_cloudflare_proxy: true
 enable_cloudflare_zero_trust_tunnel: true
 enable_docker: false
+enable_password: true
 enable_resend: true
 enable_tailscale: true
