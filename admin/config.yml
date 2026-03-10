@@ -88,15 +88,16 @@ collections:
     identifier_field: id
     fields:
       - name: id
-        label: Server ID (filename)
+        label: Server ID
         widget: string
         pattern: ['^[a-z]{2}(-[a-z0-9-]+)*$', 'Hierarchical: au, au-pie, au-pie-vm1']
-        hint: "Full hierarchical path. Router: au | Child: parent-name (au-pie) | Grandchild: parent-parent-name (au-pie-vm1)"
+        hint: "Derived from filename. Shows full hierarchical path."
+        required: false
       - name: name
         label: Server Name
         widget: string
         pattern: ['^[a-z0-9-]+$', 'Must be lowercase alphanumeric with hyphens']
-        hint: "Last segment of ID. For au-pie-truenas, use 'truenas'"
+        hint: "Last segment of filename. For au-pie-truenas.yml, use 'truenas'"
       - name: parent
         label: Parent Server
         widget: relation

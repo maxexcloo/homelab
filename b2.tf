@@ -3,8 +3,8 @@ data "b2_account_info" "default" {}
 resource "b2_application_key" "server" {
   for_each = b2_bucket.server
 
-  bucket_id = each.value.id
-  key_name  = each.key
+  bucket_ids = [each.value.id]
+  key_name   = each.key
 
   capabilities = [
     "deleteFiles",
