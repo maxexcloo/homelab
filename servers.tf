@@ -6,8 +6,7 @@ locals {
     } : k => merge(var.server_defaults, v)
   }
 
-  # Recursive parent lookup helper - walks up parent chain
-  _resolve_parent_value = {
+  _servers_resolve_parent_value = {
     for k, v in local._servers : k => {
       public_address = try(
         coalesce(
@@ -45,15 +44,15 @@ locals {
     }
   }
 
-  # Build FQDN from hierarchical ID
+  # Build FQDN as name.region (not full hierarchy)
   # au -> au
   # au-pie -> pie.au
-  # au-pie-truenas -> truenas.pie.au
+  # au-pie-truenas -> truenas.au
   _fqdn_from_id = {
     for k, v in local._servers : k => (
       length(split("-", k)) == 1 ?
       k :
-      join(".", reverse(split("-", k)))
+      "${v.name}.${v.region}"
     )
   }
 
@@ -67,9 +66,9 @@ locals {
         password_hash   = v.enable_password ? htpasswd_password.server[k].sha512 : ""
         private_address = try(local.unifi_clients[k].local_dns_record, null)
         private_ipv4    = try(local.unifi_clients[k].fixed_ip, null)
-        public_address  = local._resolve_parent_value[k].public_address
-        public_ipv4     = local._resolve_parent_value[k].public_ipv4
-        public_ipv6     = local._resolve_parent_value[k].public_ipv6
+        public_address  = local._servers_resolve_parent_value[k].public_address
+        public_ipv4     = local._servers_resolve_parent_value[k].public_ipv4
+        public_ipv6     = local._servers_resolve_parent_value[k].public_ipv6
         ssh_keys        = data.github_user.default.ssh_keys
       },
       v.enable_b2 ? {
