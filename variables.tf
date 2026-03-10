@@ -19,22 +19,24 @@ variable "server_defaults" {
   type        = any
 
   default = {
-    description                  = null
-    enable_b2                    = false
-    enable_cloudflare_acme_token = false
-    enable_cloudflared_tunnel    = false
-    enable_docker                = false
-    enable_proxied               = false
-    enable_resend                = false
-    enable_tailscale             = false
-    management_port              = null
-    parent                       = null
-    platform                     = "unmanaged"
-    public_address               = null
-    public_ipv4                  = null
-    public_ipv6                  = null
-    region                       = "au"
-    type                         = "server"
+    description                         = null
+    enable_b2                           = false
+    enable_cloudflare_acme_token        = false
+    enable_cloudflare_proxy             = false
+    enable_cloudflare_zero_trust_tunnel = false
+    enable_docker                       = false
+    enable_password                     = false
+    enable_resend                       = false
+    enable_tailscale                    = false
+    management_port                     = 443
+    parent                              = null
+    platform                            = "unmanaged"
+    public_address                      = null
+    public_ipv4                         = null
+    public_ipv6                         = null
+    region                              = "au"
+    type                                = "server"
+    username                            = "root"
   }
 }
 
