@@ -1,0 +1,17 @@
+name: us-hotdog
+description: Hotdog
+parent: ''
+platform: unmanaged
+region: us
+type: vm
+public_address: ''
+public_ipv4: 199.127.129.143
+public_ipv6: 2602:f831::4665:8aff:fee1:40ed
+management_port: 8007
+enable_b2: false
+enable_cloudflare_acme_token: true
+enable_cloudflare_proxy: true
+enable_cloudflare_zero_trust_tunnel: false
+enable_docker: false
+enable_resend: true
+enable_tailscale: true
