@@ -23,7 +23,7 @@ resource "tailscale_tailnet_key" "server" {
 
 resource "tailscale_tailnet_key" "service" {
   for_each = {
-    for k, v in local.services_instances : k => v
+    for k, v in local.services : k => v
     if v.enable_tailscale
   }
 
