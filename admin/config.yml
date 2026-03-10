@@ -173,7 +173,7 @@ collections:
         widget: boolean
         default: false
       - name: enable_password
-        label: Enable Password Authentication
+        label: Enable Password
         widget: boolean
         default: false
       - name: enable_resend
