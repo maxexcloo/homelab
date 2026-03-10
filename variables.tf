@@ -1,5 +1,5 @@
-variable "dns_record_defaults" {
-  description = "Default values for DNS records"
+variable "dns_defaults" {
+  description = "Default values for DNS"
   type        = any
 
   default = {
@@ -15,7 +15,7 @@ variable "resend_api_key" {
 }
 
 variable "server_defaults" {
-  description = "Default values for server configurations"
+  description = "Default values for servers"
   type        = any
 
   default = {
@@ -39,23 +39,21 @@ variable "server_defaults" {
 }
 
 variable "service_defaults" {
-  description = "Default values for service configurations"
+  description = "Default values for services"
   type        = any
 
   default = {
-    deploy_to                = []
-    description              = null
-    enable_api_key           = false
-    enable_b2                = false
-    enable_database_password = false
-    enable_resend            = false
-    enable_secret_hash       = false
-    enable_tailscale         = false
-    icon                     = null
-    name                     = null
-    port                     = null
-    service                  = null
-    url                      = null
+    deploy_to        = []
+    description      = null
+    enable_b2        = false
+    enable_resend    = false
+    enable_tailscale = false
+    icon             = null
+    name             = null
+    port             = null
+    secrets          = []
+    service          = null
+    url              = null
   }
 }
 

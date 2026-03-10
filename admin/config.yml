@@ -81,17 +81,17 @@ collections:
               - { name: ttl, label: TTL, widget: number, value_type: int, default: 1, required: true }
 
   - name: servers
-    label: Servers
+    label: Servers (filename = id)
     folder: data/servers
     extension: yml
     format: yml
-    identifier_field: slug
+    identifier_field: id
     fields:
-      - name: slug
-        label: Server ID (e.g., au, au-test, au-proxy)
+      - name: name
+        label: Server Name (e.g., test, proxy)
         widget: string
-        pattern: ['^[a-z]{2}(-[a-z0-9-]+)?$', 'Routers: au | Servers: au-name']
-        hint: "Routers use just the region code (au). Servers use region-name (au-test)."
+        pattern: ['^[a-z0-9-]+$', 'Must be lowercase alphanumeric with hyphens']
+        hint: "Not used for routers (use region as filename). For others, combine with region for filename: region-name.yml"
       - name: description
         label: Friendly Name
         widget: string
@@ -100,9 +100,9 @@ collections:
         label: Parent Server
         widget: relation
         collection: servers
-        search_fields: [slug]
-        display_fields: [slug]
-        value_field: slug
+        search_fields: [id]
+        display_fields: [id]
+        value_field: id
         required: false
       - name: platform
         label: Platform
@@ -110,14 +110,16 @@ collections:
         options: ["unmanaged", "physical", "incus", "oracle"]
         default: "unmanaged"
       - name: type
-        label: Type (vm, router, server)
+        label: Type
         widget: select
         options: ["vm", "router", "server"]
         default: "server"
+        hint: "Determines filename format: router = region.yml, others = region-name.yml"
       - name: region
         label: Region
         widget: string
         default: au
+        hint: "First part of filename (e.g., 'au' in au.yml or au-proxy.yml)"
       - name: public_address
         label: Public Address (Leave blank if inheriting)
         widget: string
@@ -208,24 +210,21 @@ collections:
         value_field: name
         multiple: true
         required: false
-      - name: enable_api_key
-        label: Generate API Key
-        widget: boolean
-        default: false
+      - name: secrets
+        label: Secrets to Generate
+        widget: select
+        multiple: true
+        options:
+          - { label: "API Key", value: "api_key" }
+          - { label: "Database Password", value: "database_password" }
+          - { label: "Secret Hash", value: "secret_hash" }
+        required: false
       - name: enable_b2
         label: Enable B2
         widget: boolean
         default: false
-      - name: enable_database_password
-        label: Generate Database Password
-        widget: boolean
-        default: false
       - name: enable_resend
         label: Enable Resend
-        widget: boolean
-        default: false
-      - name: enable_secret_hash
-        label: Generate Secret Hash
         widget: boolean
         default: false
       - name: enable_tailscale

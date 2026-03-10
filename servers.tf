@@ -10,18 +10,16 @@ locals {
     for k, v in local._servers : k => merge(
       v,
       {
-        fqdn          = local._server_fqdn[k]
-        fqdn_external = "${local._server_fqdn[k]}.${local.defaults.domain_external}"
-        fqdn_internal = "${local._server_fqdn[k]}.${local.defaults.domain_internal}"
-        password_hash = try(htpasswd_password.server[k].sha512, "")
-        ssh_keys      = data.github_user.default.ssh_keys
-
+        fqdn            = local._server_fqdn[k]
+        fqdn_external   = "${local._server_fqdn[k]}.${local.defaults.domain_external}"
+        fqdn_internal   = "${local._server_fqdn[k]}.${local.defaults.domain_internal}"
+        password_hash   = try(htpasswd_password.server[k].sha512, "")
         private_address = try(local.unifi_clients[k].local_dns_record, null)
         private_ipv4    = try(local.unifi_clients[k].fixed_ip, null)
-
-        public_address = try(coalesce(v.public_address, try(local._servers[v.parent].public_address, null)), null)
-        public_ipv4    = try(coalesce(v.public_ipv4, try(local._servers[v.parent].public_ipv4, null)), null)
-        public_ipv6    = try(coalesce(v.public_ipv6, try(local._servers[v.parent].public_ipv6, null)), null)
+        public_address  = try(coalesce(v.public_address, try(local._servers[v.parent].public_address, null)), null)
+        public_ipv4     = try(coalesce(v.public_ipv4, try(local._servers[v.parent].public_ipv4, null)), null)
+        public_ipv6     = try(coalesce(v.public_ipv6, try(local._servers[v.parent].public_ipv6, null)), null)
+        ssh_keys        = data.github_user.default.ssh_keys
       },
       v.enable_b2 ? {
         b2_application_key_id        = b2_application_key.server[k].application_key_id

@@ -6,77 +6,87 @@ locals {
     } : k => merge(var.service_defaults, v)
   }
 
-  services = {
-    for k, v in local._services : k => merge(
-      v,
-      {
-        deployments = v.deploy_to
-        url         = v.url
-      },
-      length(v.deploy_to) > 0 ? {
-        for target in v.deploy_to : target => {
-          fqdn_external = "${v.name}.${local.servers[target].fqdn_external}"
-          fqdn_internal = "${v.name}.${local.servers[target].fqdn_internal}"
-        }
-      } : {}
-    )
+  # Validate that all deploy_to references exist as servers
+  _services_validation = {
+    for k, v in local._services : k => [
+      for target in v.deploy_to : target
+      if !contains(keys(local.servers), target)
+    ]
   }
 
-  services_deployments = {
-    for k, v in local._services : k => v.deploy_to
+  _services_validation_errors = compact([
+    for k, invalid_refs in local._services_validation :
+    length(invalid_refs) > 0 ? "Service '${k}' references non-existent servers: ${join(", ", invalid_refs)}" : ""
+  ])
+
+  # Generate secrets for each service (once per service, not per deployment)
+  _service_secrets = {
+    for k, v in local._services : k => {
+      for secret in v.secrets : "${secret}_sensitive" => (
+        secret == "secret_hash" ?
+        random_id.service_secret["${k}-${secret}"].b64_std :
+        random_password.service_secret["${k}-${secret}"].result
+      )
+    }
   }
 
-  services_instances = merge([
-    for service_key, service in local.services : {
-      for target in service.deployments : "${service_key}-${target}" => {
-        server  = target
-        service = service_key
-      }
+  services = length(local._services_validation_errors) > 0 ? tomap({
+    ERROR = "Service validation failed: ${join("; ", local._services_validation_errors)}"
+    }) : merge([
+    for service_key, service in local._services : {
+      for target in service.deploy_to : "${service_key}-${target}" => merge(
+        service,
+        {
+          server        = target
+          fqdn_external = "${service.name}.${local.servers[target].fqdn_external}"
+          fqdn_internal = "${service.name}.${local.servers[target].fqdn_internal}"
+          url           = service.url
+        },
+        local._service_secrets[service_key]
+      )
     }
   ]...)
 
   services_urls = {
-    for k, v in local.services : k => concat(
-      v.url != null ? [
-        {
-          href    = v.url
-          label   = "url"
-          primary = true
-        }
-      ] : [],
-      flatten([
-        for target, output in v : [
-          for field in sort(keys(output)) : {
-            href    = output[field]
-            label   = "${field}_${target}"
-            primary = field == "fqdn_internal" && v.url == null && target == keys(v)[0]
-          }
-          if can(regex(var.url_field_pattern, field)) && output[field] != null
-        ]
-        if can(keys(output))
-      ])
-    )
+    for k, v in local.services : k => v.url != null ? [
+      {
+        href    = v.url
+        label   = "url"
+        primary = true
+      }
+      ] : [
+      {
+        href    = "https://${v.fqdn_internal}"
+        label   = "internal"
+        primary = true
+      }
+    ]
   }
 }
 
-resource "random_password" "service_db" {
-  for_each = { for k, v in local._services : k => v if v.enable_database_password }
-  length   = 32
-  special  = true
-}
-
-resource "random_password" "service_api" {
-  for_each = { for k, v in local._services : k => v if v.enable_api_key }
-  length   = 32
-  special  = true
+# Generate secrets for services
+resource "random_password" "service_secret" {
+  for_each = {
+    for pair in setproduct(
+      keys(local._services),
+      flatten([for k, v in local._services : [for s in v.secrets : s if s != "secret_hash"]])
+    ) : "${pair[0]}-${pair[1]}" => pair
+  }
+  length  = 32
+  special = true
 }
 
 resource "random_id" "service_secret" {
-  for_each    = { for k, v in local._services : k => v if v.enable_secret_hash }
+  for_each = {
+    for pair in setproduct(
+      keys(local._services),
+      flatten([for k, v in local._services : [for s in v.secrets : s if s == "secret_hash"]])
+    ) : "${pair[0]}-${pair[1]}" => pair
+  }
   byte_length = 32
 }
 
 output "services" {
-  value     = keys(local._services)
+  value     = keys(local.services)
   sensitive = false
 }
