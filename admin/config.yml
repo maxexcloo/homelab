@@ -97,6 +97,17 @@ collections:
         widget: string
         pattern: ['^[a-z0-9-]+$', 'Must be lowercase alphanumeric with hyphens']
         hint: "For routers, this can be anything (ignored). For others, this should match the filename suffix"
+      - name: region
+        label: Region
+        widget: string
+        default: au
+        hint: "First part of filename (e.g., 'au' in au.yml or au-proxy.yml)"
+      - name: type
+        label: Type
+        widget: select
+        options: ["vm", "router", "server"]
+        default: "server"
+        hint: "Determines filename format: router = region.yml, others = region-name.yml"
       - name: description
         label: Friendly Name
         widget: string
@@ -115,17 +126,6 @@ collections:
         widget: select
         options: ["unmanaged", "incus", "oracle", "physical", "unifi"]
         default: "unmanaged"
-      - name: region
-        label: Region
-        widget: string
-        default: au
-        hint: "First part of filename (e.g., 'au' in au.yml or au-proxy.yml)"
-      - name: type
-        label: Type
-        widget: select
-        options: ["vm", "router", "server"]
-        default: "server"
-        hint: "Determines filename format: router = region.yml, others = region-name.yml"
       - name: management_port
         label: Management Port
         widget: number
@@ -255,11 +255,8 @@ collections:
         label: Defaults
         file: data/defaults.yml
         fields:
-          - name: organization
-            label: Organization Name
-            widget: string
-          - name: email
-            label: Admin Email
+          - name: domain_acme
+            label: ACME Domain
             widget: string
           - name: domain_external
             label: External Domain
@@ -267,20 +264,23 @@ collections:
           - name: domain_internal
             label: Internal Domain
             widget: string
-          - name: domain_acme
-            label: ACME Domain
+          - name: email
+            label: Admin Email
             widget: string
           - name: locale
             label: Locale
             widget: string
-          - name: timezone
-            label: Timezone
+          - name: managed_comment
+            label: Managed Comment
+            widget: string
+          - name: organization
+            label: Organization Name
             widget: string
           - name: shell
             label: Default Shell
             widget: string
-          - name: managed_comment
-            label: Managed Comment
+          - name: timezone
+            label: Timezone
             widget: string
 
 media_folder: media
