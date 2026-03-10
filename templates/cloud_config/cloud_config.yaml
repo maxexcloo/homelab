@@ -17,13 +17,13 @@ runcmd:
 %{ if server.enable_docker ~}
   - curl -fsLS https://get.docker.com | sh
 %{ endif ~}
-%{ if server.enable_cloudflared ~}
+%{ if server.enable_cloudflare_zero_trust_tunnel ~}
   - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
   - cloudflared service install ${server.cloudflared_tunnel_token_sensitive}
 %{ endif ~}
 %{ if server.enable_tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
-  - tailscale up --advertise-exit-node --authkey ${server.tailscale_auth_key_sensitive} --hostname ${server.slug}
+  - tailscale up --advertise-exit-node --authkey ${server.tailscale_auth_key_sensitive} --hostname ${server.id}
 %{ endif ~}
 users:
   - name: ${server.username}

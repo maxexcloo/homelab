@@ -99,8 +99,8 @@ locals {
 
 resource "random_password" "server" {
   for_each = local._servers
-  length   = 32
-  special  = true
+
+  length = 32
 }
 
 output "servers" {

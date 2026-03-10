@@ -47,7 +47,7 @@ locals {
 
   dns_records_servers = merge(
     {
-      for key, server in local._servers : "${local.defaults.domain_external}-${key}-cname" => {
+      for key, server in local.servers : "${local.defaults.domain_external}-${key}-cname" => {
         content = server.public_address
         name    = "${server.fqdn}.${local.defaults.domain_external}"
         server  = key
@@ -57,7 +57,7 @@ locals {
       if server.public_address != null
     },
     {
-      for key, server in local._servers : "${local.defaults.domain_external}-${key}-a" => {
+      for key, server in local.servers : "${local.defaults.domain_external}-${key}-a" => {
         content = server.public_ipv4
         name    = "${server.fqdn}.${local.defaults.domain_external}"
         server  = key
@@ -67,7 +67,7 @@ locals {
       if server.public_ipv4 != null && can(cidrhost("${server.public_ipv4}/32", 0))
     },
     {
-      for key, server in local._servers : "${local.defaults.domain_external}-${key}-aaaa" => {
+      for key, server in local.servers : "${local.defaults.domain_external}-${key}-aaaa" => {
         content = server.public_ipv6
         name    = "${server.fqdn}.${local.defaults.domain_external}"
         server  = key
@@ -77,32 +77,32 @@ locals {
       if server.public_ipv6 != null && can(cidrhost("${server.public_ipv6}/128", 0))
     },
     {
-      for key, server in local._servers : "${local.defaults.domain_internal}-${key}-a" => {
-        content = local.servers[key].tailscale_ipv4
+      for key, server in local.servers : "${local.defaults.domain_internal}-${key}-a" => {
+        content = server.tailscale_ipv4
         name    = "${server.fqdn}.${local.defaults.domain_internal}"
         server  = key
         type    = "A"
         zone    = local.defaults.domain_internal
       }
-      if local.servers[key].tailscale_ipv4 != null
+      if server.tailscale_ipv4 != null
     },
     {
-      for key, server in local._servers : "${local.defaults.domain_internal}-${key}-aaaa" => {
-        content = local.servers[key].tailscale_ipv4
+      for key, server in local.servers : "${local.defaults.domain_internal}-${key}-aaaa" => {
+        content = server.tailscale_ipv6
         name    = "${server.fqdn}.${local.defaults.domain_internal}"
         server  = key
         type    = "AAAA"
         zone    = local.defaults.domain_internal
       }
-      if local.servers[key].tailscale_ipv6 != null
+      if server.tailscale_ipv6 != null
     }
   )
 
   # Services are now per-deployment instances, so each service in local.services is already a single deployment
   dns_records_services_external = {
     for key, service in local.services : "${local.defaults.domain_external}-${key}" => {
-      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local._servers[service.server].fqdn}.${local.defaults.domain_external}"
-      name    = "${service.name}.${local._servers[service.server].fqdn}.${local.defaults.domain_external}"
+      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${local.defaults.domain_external}"
+      name    = "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_external}"
       proxied = local.servers[service.server].enable_cloudflare_proxy
       server  = service.server
       type    = "CNAME"
@@ -112,8 +112,8 @@ locals {
 
   dns_records_services_internal = {
     for key, service in local.services : "${local.defaults.domain_internal}-${key}" => {
-      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local._servers[service.server].fqdn}.${local.defaults.domain_internal}"
-      name    = "${service.name}.${local._servers[service.server].fqdn}.${local.defaults.domain_internal}"
+      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
+      name    = "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
       proxied = local.servers[service.server].enable_cloudflare_proxy
       server  = service.server
       type    = "CNAME"
@@ -137,7 +137,7 @@ locals {
       content = (
         local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ?
         "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
-        "${service.name}.${local._servers[service.server].fqdn}.${local.defaults.domain_internal}"
+        "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
       )
     }
     if service.url != null && local._dns_services_url_zone[key] != null
