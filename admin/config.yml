@@ -139,6 +139,7 @@ collections:
         label: Management Port
         widget: number
         value_type: int
+        default: 443
         required: false
       - name: enable_b2
         label: Enable B2
