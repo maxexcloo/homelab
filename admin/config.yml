@@ -90,28 +90,13 @@ collections:
       - name: id
         label: Server ID (filename)
         widget: string
-        pattern: ['^[a-z]{2}(-[a-z0-9-]+)?$', 'Routers: au | Others: au-name']
-        hint: "This becomes the filename. Must match: region (routers) or region-name (others)"
+        pattern: ['^[a-z]{2}(-[a-z0-9-]+)*$', 'Hierarchical: au, au-pie, au-pie-vm1']
+        hint: "Full hierarchical path. Router: au | Child: parent-name (au-pie) | Grandchild: parent-parent-name (au-pie-vm1)"
       - name: name
-        label: Server Name (e.g., test, proxy)
+        label: Server Name
         widget: string
         pattern: ['^[a-z0-9-]+$', 'Must be lowercase alphanumeric with hyphens']
-        hint: "For routers, this can be anything (ignored). For others, this should match the filename suffix"
-      - name: region
-        label: Region
-        widget: string
-        default: au
-        hint: "First part of filename (e.g., 'au' in au.yml or au-proxy.yml)"
-      - name: type
-        label: Type
-        widget: select
-        options: ["vm", "router", "server"]
-        default: "server"
-        hint: "Determines filename format: router = region.yml, others = region-name.yml"
-      - name: description
-        label: Friendly Name
-        widget: string
-        required: false
+        hint: "Last segment of ID. For au-pie-truenas, use 'truenas'"
       - name: parent
         label: Parent Server
         widget: relation
@@ -120,7 +105,22 @@ collections:
         display_fields: [id]
         value_field: id
         required: false
-        hint: "Supports recursion: router → server → vm"
+        hint: "Select parent to build hierarchy. ID will be: parent-id + '-' + name"
+      - name: region
+        label: Region
+        widget: string
+        default: au
+        hint: "First segment of ID (region code like 'au', 'us')"
+      - name: type
+        label: Type
+        widget: select
+        options: ["vm", "router", "server"]
+        default: "server"
+        hint: "Only routers have no parent. VMs and servers can have parents for hierarchical naming"
+      - name: description
+        label: Friendly Name
+        widget: string
+        required: false
       - name: platform
         label: Platform
         widget: select
