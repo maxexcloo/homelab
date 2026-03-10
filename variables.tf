@@ -28,7 +28,10 @@ variable "server_defaults" {
     enable_password                     = false
     enable_resend                       = false
     enable_tailscale                    = false
+    fqdn                                = null
+    id                                  = null
     management_port                     = 443
+    name                                = null
     parent                              = null
     platform                            = "unmanaged"
     public_address                      = null
@@ -51,6 +54,7 @@ variable "service_defaults" {
     enable_resend    = false
     enable_tailscale = false
     icon             = null
+    id               = null
     name             = null
     port             = null
     secrets          = []

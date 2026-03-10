@@ -1,11 +1,5 @@
 name: excloo.com
 records:
-  - content: hsp.au.excloo.net
-    name: "@"
-    proxied: false
-    ttl: 1
-    type: CNAME
-    wildcard: true
   - content: fm1.excloo.com.dkim.fmhosted.com
     name: fm1._domainkey
     proxied: false
