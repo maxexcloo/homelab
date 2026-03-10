@@ -1,7 +1,7 @@
 name: au-truenas
 description: TrueNAS
 parent: au
-platform: physical
+platform: incus
 region: au
 type: vm
 public_address: ''
