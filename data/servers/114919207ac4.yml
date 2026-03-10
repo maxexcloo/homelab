@@ -1,7 +1,7 @@
 name: au-malatang
 description: Malatang
 parent: au
-platform: physical
+platform: incus
 region: au
 type: server
 public_address: ''
