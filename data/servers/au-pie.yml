@@ -1,6 +1,8 @@
-name: au-pie
+id: au-pie
+name: pie
 description: Pie
 parent: au
+username: ''
 platform: incus
 region: au
 type: server

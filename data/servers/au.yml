@@ -1,7 +1,9 @@
+id: au
 name: au
 description: AU
 parent: ''
-platform: physical
+username: root
+platform: unifi
 region: au
 type: router
 public_address: excloo-au.controld.live
