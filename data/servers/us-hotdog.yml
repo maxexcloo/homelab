@@ -1,6 +1,8 @@
-name: us-hotdog
+id: us-hotdog
+name: hotdog
 description: Hotdog
 parent: ''
+username: root
 platform: unmanaged
 region: us
 type: vm
@@ -13,5 +15,6 @@ enable_cloudflare_acme_token: true
 enable_cloudflare_proxy: true
 enable_cloudflare_zero_trust_tunnel: false
 enable_docker: false
+enable_password: true
 enable_resend: true
 enable_tailscale: true
