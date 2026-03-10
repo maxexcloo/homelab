@@ -1,6 +1,6 @@
 name: au-haos
 description: HAOS
-parent: au
+parent: au-pie
 platform: incus
 region: au
 type: vm
