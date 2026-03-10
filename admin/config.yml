@@ -110,11 +110,6 @@ collections:
         value_field: id
         required: false
         hint: "Supports recursion: router → server → vm"
-      - name: username
-        label: Username
-        widget: string
-        default: "root"
-        required: false
       - name: platform
         label: Platform
         widget: select
@@ -131,6 +126,12 @@ collections:
         options: ["vm", "router", "server"]
         default: "server"
         hint: "Determines filename format: router = region.yml, others = region-name.yml"
+      - name: management_port
+        label: Management Port
+        widget: number
+        value_type: int
+        default: 443
+        required: false
       - name: public_address
         label: Public Address
         widget: string
@@ -146,11 +147,10 @@ collections:
         widget: string
         pattern: ['^$|^([0-9a-fA-F:]+)$', 'Must be a valid IPv6 address or empty']
         required: false
-      - name: management_port
-        label: Management Port
-        widget: number
-        value_type: int
-        default: 443
+      - name: username
+        label: Username
+        widget: string
+        default: "root"
         required: false
       - name: enable_b2
         label: Enable B2
