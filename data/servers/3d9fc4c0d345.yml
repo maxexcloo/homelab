@@ -7,7 +7,7 @@ type: vm
 public_address: ''
 public_ipv4: ''
 public_ipv6: ''
-management_port: null
+management_port: 443
 enable_b2: true
 enable_cloudflare_acme_token: true
 enable_cloudflare_proxy: false
