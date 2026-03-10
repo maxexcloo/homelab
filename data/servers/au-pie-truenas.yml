@@ -1,4 +1,4 @@
-id: au-truenas
+id: au-pie-truenas
 name: truenas
 description: TrueNAS
 parent: au-pie

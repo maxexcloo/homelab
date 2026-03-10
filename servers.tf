@@ -45,14 +45,26 @@ locals {
     }
   }
 
+  # Build FQDN from hierarchical ID
+  # au -> au
+  # au-pie -> pie.au
+  # au-pie-truenas -> truenas.pie.au
+  _fqdn_from_id = {
+    for k, v in local._servers : k => (
+      length(split("-", k)) == 1 ?
+      k :
+      join(".", reverse(split("-", k)))
+    )
+  }
+
   servers = {
     for k, v in local._servers : k => merge(
       v,
       {
-        fqdn            = local._server_fqdn[k]
-        fqdn_external   = "${local._server_fqdn[k]}.${local.defaults.domain_external}"
-        fqdn_internal   = "${local._server_fqdn[k]}.${local.defaults.domain_internal}"
-        password_hash   = try(htpasswd_password.server[k].sha512, "")
+        fqdn            = local._fqdn_from_id[k]
+        fqdn_external   = "${local._fqdn_from_id[k]}.${local.defaults.domain_external}"
+        fqdn_internal   = "${local._fqdn_from_id[k]}.${local.defaults.domain_internal}"
+        password_hash   = v.enable_password ? htpasswd_password.server[k].sha512 : ""
         private_address = try(local.unifi_clients[k].local_dns_record, null)
         private_ipv4    = try(local.unifi_clients[k].fixed_ip, null)
         public_address  = local._resolve_parent_value[k].public_address
@@ -83,13 +95,6 @@ locals {
     )
   }
 
-  _server_fqdn = {
-    for k, v in local._servers : k => (
-      length(split("-", k)) == 1 ?
-      k :
-      "${join("-", slice(split("-", k), 1, length(split("-", k))))}.${split("-", k)[0]}"
-    )
-  }
 }
 
 resource "random_password" "server" {
