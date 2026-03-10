@@ -1,0 +1,17 @@
+name: au-haos
+description: HAOS
+parent: au
+platform: incus
+region: au
+type: vm
+public_address: ''
+public_ipv4: ''
+public_ipv6: ''
+management_port: null
+enable_b2: true
+enable_cloudflare_acme_token: true
+enable_cloudflare_proxy: false
+enable_cloudflare_zero_trust_tunnel: true
+enable_docker: false
+enable_resend: false
+enable_tailscale: true
