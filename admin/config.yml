@@ -81,17 +81,22 @@ collections:
               - { name: ttl, label: TTL, widget: number, value_type: int, default: 1, required: true }
 
   - name: servers
-    label: Servers (filename = id)
+    label: Servers
     folder: data/servers
     extension: yml
     format: yml
     identifier_field: id
     fields:
+      - name: id
+        label: Server ID (filename)
+        widget: string
+        pattern: ['^[a-z]{2}(-[a-z0-9-]+)?$', 'Routers: au | Others: au-name']
+        hint: "This becomes the filename. Must match: region (routers) or region-name (others)"
       - name: name
         label: Server Name (e.g., test, proxy)
         widget: string
         pattern: ['^[a-z0-9-]+$', 'Must be lowercase alphanumeric with hyphens']
-        hint: "Not used for routers (use region as filename). For others, combine with region for filename: region-name.yml"
+        hint: "For routers, this can be anything (ignored). For others, this should match the filename suffix"
       - name: description
         label: Friendly Name
         widget: string
@@ -104,10 +109,16 @@ collections:
         display_fields: [id]
         value_field: id
         required: false
+        hint: "Supports recursion: router → server → vm"
+      - name: username
+        label: Username
+        widget: string
+        default: "root"
+        required: false
       - name: platform
         label: Platform
         widget: select
-        options: ["unmanaged", "physical", "incus", "oracle"]
+        options: ["unmanaged", "incus", "oracle", "physical", "unifi"]
         default: "unmanaged"
       - name: region
         label: Region
@@ -159,6 +170,10 @@ collections:
         default: false
       - name: enable_docker
         label: Enable Docker
+        widget: boolean
+        default: false
+      - name: enable_password
+        label: Enable Password Authentication
         widget: boolean
         default: false
       - name: enable_resend
@@ -234,10 +249,10 @@ collections:
         default: false
 
   - name: settings
-    label: Global Settings
+    label: Settings
     files:
       - name: defaults
-        label: Terraform Defaults
+        label: Defaults
         file: data/defaults.yml
         fields:
           - name: organization

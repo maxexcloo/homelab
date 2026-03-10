@@ -6,6 +6,45 @@ locals {
     } : k => merge(var.server_defaults, v)
   }
 
+  # Recursive parent lookup helper - walks up parent chain
+  _resolve_parent_value = {
+    for k, v in local._servers : k => {
+      public_address = try(
+        coalesce(
+          v.public_address,
+          try(local._servers[v.parent].public_address, null),
+          try(local._servers[local._servers[v.parent].parent].public_address, null),
+          try(local._servers[local._servers[local._servers[v.parent].parent].parent].public_address, null),
+          try(local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].public_address, null),
+          try(local._servers[local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].parent].public_address, null)
+        ),
+        null
+      )
+      public_ipv4 = try(
+        coalesce(
+          v.public_ipv4,
+          try(local._servers[v.parent].public_ipv4, null),
+          try(local._servers[local._servers[v.parent].parent].public_ipv4, null),
+          try(local._servers[local._servers[local._servers[v.parent].parent].parent].public_ipv4, null),
+          try(local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].public_ipv4, null),
+          try(local._servers[local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].parent].public_ipv4, null)
+        ),
+        null
+      )
+      public_ipv6 = try(
+        coalesce(
+          v.public_ipv6,
+          try(local._servers[v.parent].public_ipv6, null),
+          try(local._servers[local._servers[v.parent].parent].public_ipv6, null),
+          try(local._servers[local._servers[local._servers[v.parent].parent].parent].public_ipv6, null),
+          try(local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].public_ipv6, null),
+          try(local._servers[local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].parent].public_ipv6, null)
+        ),
+        null
+      )
+    }
+  }
+
   servers = {
     for k, v in local._servers : k => merge(
       v,
@@ -16,9 +55,9 @@ locals {
         password_hash   = try(htpasswd_password.server[k].sha512, "")
         private_address = try(local.unifi_clients[k].local_dns_record, null)
         private_ipv4    = try(local.unifi_clients[k].fixed_ip, null)
-        public_address  = try(coalesce(v.public_address, try(local._servers[v.parent].public_address, null)), null)
-        public_ipv4     = try(coalesce(v.public_ipv4, try(local._servers[v.parent].public_ipv4, null)), null)
-        public_ipv6     = try(coalesce(v.public_ipv6, try(local._servers[v.parent].public_ipv6, null)), null)
+        public_address  = local._resolve_parent_value[k].public_address
+        public_ipv4     = local._resolve_parent_value[k].public_ipv4
+        public_ipv6     = local._resolve_parent_value[k].public_ipv6
         ssh_keys        = data.github_user.default.ssh_keys
       },
       v.enable_b2 ? {
@@ -30,7 +69,7 @@ locals {
       v.enable_cloudflare_acme_token ? {
         cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
       } : {},
-      v.enable_cloudflared_tunnel ? {
+      v.enable_cloudflare_zero_trust_tunnel ? {
         cloudflared_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
       } : {},
       v.enable_resend ? {

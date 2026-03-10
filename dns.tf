@@ -101,9 +101,9 @@ locals {
   # Services are now per-deployment instances, so each service in local.services is already a single deployment
   dns_records_services_external = {
     for key, service in local.services : "${local.defaults.domain_external}-${key}" => {
-      content = local.servers[service.server].enable_proxied && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local._servers[service.server].fqdn}.${local.defaults.domain_external}"
+      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local._servers[service.server].fqdn}.${local.defaults.domain_external}"
       name    = "${service.name}.${local._servers[service.server].fqdn}.${local.defaults.domain_external}"
-      proxied = local.servers[service.server].enable_proxied
+      proxied = local.servers[service.server].enable_cloudflare_proxy
       server  = service.server
       type    = "CNAME"
       zone    = local.defaults.domain_external
@@ -112,9 +112,9 @@ locals {
 
   dns_records_services_internal = {
     for key, service in local.services : "${local.defaults.domain_internal}-${key}" => {
-      content = local.servers[service.server].enable_proxied && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local._servers[service.server].fqdn}.${local.defaults.domain_internal}"
+      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local._servers[service.server].fqdn}.${local.defaults.domain_internal}"
       name    = "${service.name}.${local._servers[service.server].fqdn}.${local.defaults.domain_internal}"
-      proxied = local.servers[service.server].enable_proxied
+      proxied = local.servers[service.server].enable_cloudflare_proxy
       server  = service.server
       type    = "CNAME"
       zone    = local.defaults.domain_internal
@@ -129,13 +129,13 @@ locals {
   dns_records_services_urls = {
     for key, service in local.services : "${key}-url" => {
       name    = service.url
-      proxied = local.servers[service.server].enable_proxied
+      proxied = local.servers[service.server].enable_cloudflare_proxy
       server  = service.server
       type    = "CNAME"
       zone    = local._dns_services_url_zone[key]
 
       content = (
-        local.servers[service.server].enable_proxied && local.servers[service.server].enable_cloudflare_acme_token ?
+        local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ?
         "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
         "${service.name}.${local._servers[service.server].fqdn}.${local.defaults.domain_internal}"
       )

@@ -103,7 +103,7 @@ resource "cloudflare_dns_record" "wildcard" {
 resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
   for_each = {
     for k, v in local._servers : k => v
-    if v.enable_cloudflared_tunnel
+    if v.enable_cloudflare_zero_trust_tunnel
   }
 
   account_id = data.cloudflare_accounts.default.result[0].id
