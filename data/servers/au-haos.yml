@@ -1,5 +1,5 @@
 id: au-haos
-name: au-haos
+name: haos
 description: HAOS
 parent: au-pie
 username: root
@@ -15,5 +15,6 @@ enable_cloudflare_acme_token: true
 enable_cloudflare_proxy: false
 enable_cloudflare_zero_trust_tunnel: true
 enable_docker: false
+enable_password: true
 enable_resend: false
 enable_tailscale: true
