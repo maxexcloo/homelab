@@ -1,6 +1,8 @@
-name: au-malatang
+id: au-malatang
+name: malatang
 description: Malatang
 parent: au
+username: ''
 platform: incus
 region: au
 type: server
