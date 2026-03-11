@@ -33,11 +33,11 @@ variable "server_defaults" {
     management_port                     = 443
     name                                = null
     parent                              = null
-    platform                            = "unmanaged"
+    platform                            = ""
     public_address                      = null
     public_ipv4                         = null
     public_ipv6                         = null
-    region                              = "au"
+    region                              = ""
     type                                = "server"
     username                            = "root"
   }
