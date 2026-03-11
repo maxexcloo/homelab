@@ -6,20 +6,25 @@ locals {
     } : k => merge(var.service_defaults, v)
   }
 
-  # Validate that all deploy_to references exist as servers
-  _services_validation = {
-    for k, v in local._services : k => [
-      for target in v.deploy_to : target
+  # Validate deploy_to references  
+  _services_invalid_refs = flatten([
+    for k, v in local._services : [
+      for target in v.deploy_to : "${k} -> ${target}"
       if !contains(keys(local.servers), target)
     ]
-  }
-
-  _services_validation_errors = compact([
-    for k, invalid_refs in local._services_validation :
-    length(invalid_refs) > 0 ? "Service '${k}' references non-existent servers: ${join(", ", invalid_refs)}" : ""
   ])
 
-  # Generate secrets for each service (once per service, not per deployment)
+  # Build flat map of all service secrets
+  _service_secrets_flat = flatten([
+    for service_key, service in local._services : [
+      for secret in service.secrets : {
+        key  = "${service_key}-${secret}"
+        type = secret
+        hash = secret == "secret_hash"
+      }
+    ]
+  ])
+
   _service_secrets = {
     for k, v in local._services : k => {
       for secret in v.secrets : "${secret}_sensitive" => (
@@ -30,8 +35,8 @@ locals {
     }
   }
 
-  services = length(local._services_validation_errors) > 0 ? tomap({
-    ERROR = "Service validation failed: ${join("; ", local._services_validation_errors)}"
+  services = length(local._services_invalid_refs) > 0 ? tomap({
+    ERROR = "Invalid server references: ${join(", ", local._services_invalid_refs)}"
     }) : merge([
     for service_key, service in local._services : {
       for target in service.deploy_to : "${service_key}-${target}" => merge(
@@ -40,48 +45,28 @@ locals {
           server        = target
           fqdn_external = "${service.name}.${local.servers[target].fqdn_external}"
           fqdn_internal = "${service.name}.${local.servers[target].fqdn_internal}"
-          url           = service.url
         },
         local._service_secrets[service_key]
       )
     }
   ]...)
-
-  services_urls = {
-    for k, v in local.services : k => v.url != null ? [
-      {
-        href    = v.url
-        label   = "url"
-        primary = true
-      }
-      ] : [
-      {
-        href    = "https://${v.fqdn_internal}"
-        label   = "internal"
-        primary = true
-      }
-    ]
-  }
 }
 
-# Generate secrets for services
+# Generate password-based secrets
 resource "random_password" "service_secret" {
   for_each = {
-    for pair in setproduct(
-      keys(local._services),
-      flatten([for k, v in local._services : [for s in v.secrets : s if s != "secret_hash"]])
-    ) : "${pair[0]}-${pair[1]}" => pair
+    for s in local._service_secrets_flat : s.key => s
+    if !s.hash
   }
   length  = 32
   special = true
 }
 
+# Generate hash-based secrets  
 resource "random_id" "service_secret" {
   for_each = {
-    for pair in setproduct(
-      keys(local._services),
-      flatten([for k, v in local._services : [for s in v.secrets : s if s == "secret_hash"]])
-    ) : "${pair[0]}-${pair[1]}" => pair
+    for s in local._service_secrets_flat : s.key => s
+    if s.hash
   }
   byte_length = 32
 }
