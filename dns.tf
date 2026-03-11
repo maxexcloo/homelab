@@ -1,19 +1,19 @@
 locals {
   _dns_services_url_zone = {
-    for key, service in local.services : key => (
-      service.url == null ?
-      null :
-      try(
-        split(
-          reverse(sort([
-            for zone_name in local.dns_zones : format("%04d:%s", length(zone_name), zone_name)
-            if endswith(service.url, zone_name)
-          ]))[0],
-          ":"
-        )[1],
-        null
+    for key, service in local.services : key => {
+      for idx, url in(service.urls != null ? service.urls : []) : idx => (
+        try(
+          split(
+            reverse(sort([
+              for zone_name in local.dns_zones : format("%04d:%s", length(zone_name), zone_name)
+              if endswith(url, zone_name)
+            ]))[0],
+            ":"
+          )[1],
+          null
+        )
       )
-    )
+    }
   }
 
   dns_records_acme_delegation = {
@@ -126,22 +126,26 @@ locals {
     local.dns_records_services_internal
   )
 
-  dns_records_services_urls = {
-    for key, service in local.services : "${key}-url" => {
-      name    = service.url
-      proxied = local.servers[service.server].enable_cloudflare_proxy
-      server  = service.server
-      type    = "CNAME"
-      zone    = local._dns_services_url_zone[key]
+  dns_records_services_urls = merge(
+    [
+      for key, service in local.services : {
+        for idx, url in(service.urls != null ? service.urls : []) : "${key}-url-${idx}" => {
+          name    = url
+          proxied = local.servers[service.server].enable_cloudflare_proxy
+          server  = service.server
+          type    = "CNAME"
+          zone    = local._dns_services_url_zone[key][idx]
 
-      content = (
-        local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ?
-        "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
-        "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
-      )
-    }
-    if service.url != null && local._dns_services_url_zone[key] != null
-  }
+          content = (
+            local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ?
+            "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
+            "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
+          )
+        }
+        if local._dns_services_url_zone[key][idx] != null
+      }
+    ]
+  ...)
 
   dns_records_wildcards = {
     for key, group in {
