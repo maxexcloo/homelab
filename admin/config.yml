@@ -248,6 +248,7 @@ collections:
         widget: string
       - name: platform
         label: Platform
+        hint: 'Infrastructure provider. Affects how Terraform manages this server. incus=container, oracle=OCI, physical=bare-metal, unifi=network device'
         required: false
         widget: select
         options:
@@ -264,7 +265,7 @@ collections:
         widget: number
       - name: public_address
         label: Public Address
-        hint: 'Public address routing to this server, takes priority over parent and IPv4 and IPv6, optional.'
+        hint: 'Public address routing to this server, takes priority over parent and IPv4 and IPv6.'
         required: false
         widget: string
         pattern:
@@ -272,7 +273,7 @@ collections:
           - Must be a valid domain name or empty
       - name: public_ipv4
         label: Public IPv4
-        hint: 'Public IPv4 of this server, takes priority over parent, optional.'
+        hint: 'Public IPv4 of this server, takes priority over parent.'
         required: false
         widget: string
         pattern:
@@ -280,7 +281,7 @@ collections:
           - Must be a valid IPv4 address or empty
       - name: public_ipv6
         label: Public IPv6
-        hint: 'Public IPv6 of this server, takes priority over parent, optional.'
+        hint: 'Public IPv6 of this server, takes priority over parent.'
         required: false
         widget: string
         pattern:
@@ -318,12 +319,12 @@ collections:
         default: false
         widget: boolean
       - name: enable_password
-        label: Enable Password Login
+        label: Enable Password
         hint: 'Generate password for this server. Credential stored in Bitwarden.'
         default: false
         widget: boolean
       - name: enable_resend
-        label: Enable Resend Email
+        label: Enable Resend
         hint: 'Creates Resend API key for sending emails. Key stored in Bitwarden.'
         default: false
         widget: boolean
@@ -342,7 +343,7 @@ collections:
     fields:
       - name: id
         label: Service ID
-        hint: 'Unique identifier for this service. Becomes the filename. Example: nginx, homeassistant, plex'
+        hint: 'Unique identifier for this service. Example: nginx'
         widget: string
         pattern:
           - ^[a-z0-9-]+$
@@ -353,23 +354,23 @@ collections:
         required: false
         widget: string
       - name: service
-        label: Service Config
-        hint: 'References Docker Compose file or application configuration. Leave empty for simple services.'
+        label: Service Config Name
+        hint: 'Reference for  Docker Compose file or application configuration. Leave empty for simple services.'
         required: false
         widget: string
       - name: icon
         label: Dashboard Icon
-        hint: 'Icon name for service dashboards (e.g., nginx, homeassistant, database). See Dashboard docs for available icons.'
+        hint: 'Icon name for service dashboards.'
         required: false
         widget: string
       - name: url
         label: External URL
-        hint: 'Custom public URL if different from auto-generated. Leave empty to use name.domain format.'
+        hint: 'Additional custom domain(s) for this service. Main URL is auto-generated. Optional.'
         required: false
         widget: string
         pattern:
-          - ^https?://[^\s]+$
-          - Must start with http:// or https://
+          - ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$
+          - Must be a valid domain name (e.g., service.example.com)
       - name: port
         label: Internal Port
         hint: 'Container/internal port the service listens on. Used for health checks and proxying.'
@@ -407,7 +408,7 @@ collections:
         hint: 'Create dedicated B2 bucket for this service backups. Credentials stored in Bitwarden.'
         widget: boolean
       - name: enable_resend
-        label: Enable Resend Email
+        label: Enable Resend
         default: false
         hint: 'Create Resend API key for service to send emails. Key stored in Bitwarden.'
         widget: boolean
@@ -446,11 +447,11 @@ collections:
             widget: string
           - name: timezone
             label: Timezone
-            hint: 'Default timezone for all servers. Example: Australia/Sydney, America/New_York'
+            hint: 'Default timezone for all servers. Example: Australia/Sydney'
             widget: string
           - name: locale
             label: Locale
-            hint: 'Default locale for system messages. Example: en_US.UTF-8, en_AU.UTF-8'
+            hint: 'Default locale for system messages. Example: en_AU'
             widget: string
           - name: shell
             label: Default Shell
