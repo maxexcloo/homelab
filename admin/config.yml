@@ -309,7 +309,7 @@ collections:
         widget: boolean
       - name: enable_cloudflare_zero_trust_tunnel
         label: Enable Cloudflare Tunnel
-        hint: 'Creates cloudflared tunnel for inbound access without open ports. Token in Bitwarden.'
+        hint: 'Creates cloudflared tunnel for inbound access without open ports. Token stored in Bitwarden.'
         default: false
         widget: boolean
       - name: enable_docker
@@ -342,42 +342,44 @@ collections:
     fields:
       - name: id
         label: Service ID
-        hint: Derived from filename. Shows full hierarchical path.
+        hint: 'Unique identifier for this service. Becomes the filename. Example: nginx, homeassistant, plex'
         widget: string
         pattern:
-          - ^[a-z]{2}(-[a-z0-9-]+)*$
-          - 'Hierarchical: au, au-pie, au-pie-vm1'
-      - name: name
-        label: Service Name (displayed in dashboard)
-        widget: string
+          - ^[a-z0-9-]+$
+          - 'Lowercase letters, numbers, and hyphens only'
       - name: description
         label: Description
+        hint: 'Human-readable description shown in service listings'
         required: false
         widget: string
       - name: service
         label: Service Config
-        hint: Maps to your Docker config or application image
+        hint: 'References Docker Compose file or application configuration. Leave empty for simple services.'
         required: false
         widget: string
       - name: icon
-        label: Icon
+        label: Dashboard Icon
+        hint: 'Icon name for service dashboards (e.g., nginx, homeassistant, database). See Dashboard docs for available icons.'
         required: false
         widget: string
       - name: url
         label: External URL
+        hint: 'Custom public URL if different from auto-generated. Leave empty to use name.domain format.'
         required: false
         widget: string
         pattern:
           - ^https?://[^\s]+$
-          - Must be a valid URL starting with http:// or https://
+          - Must start with http:// or https://
       - name: port
         label: Internal Port
+        hint: 'Container/internal port the service listens on. Used for health checks and proxying.'
         required: false
         value_type: int
         widget: number
       - name: deploy_to
-        label: Deploy To
+        label: Deploy To Servers
         collection: servers
+        hint: 'Servers to deploy this service on. Creates one instance per selected server.'
         multiple: true
         required: false
         value_field: name
@@ -387,28 +389,32 @@ collections:
         search_fields:
           - name
       - name: secrets
-        label: Secrets to Generate
+        label: Auto-Generated Secrets
+        hint: 'Secrets automatically created and stored in Bitwarden for this service.'
         multiple: true
         required: false
         widget: select
         options:
-          - label: API Key
+          - label: API Key (32-char random)
             value: api_key
-          - label: Database Password
+          - label: Database Password (32-char random)
             value: database_password
-          - label: Secret Hash
+          - label: Secret Hash (64-char base64)
             value: secret_hash
       - name: enable_b2
-        label: Enable B2
+        label: Enable Backblaze B2
         default: false
+        hint: 'Create dedicated B2 bucket for this service backups. Credentials stored in Bitwarden.'
         widget: boolean
       - name: enable_resend
-        label: Enable Resend
+        label: Enable Resend Email
         default: false
+        hint: 'Create Resend API key for service to send emails. Key stored in Bitwarden.'
         widget: boolean
       - name: enable_tailscale
         label: Enable Tailscale
         default: false
+        hint: 'Expose service on Tailscale network. Creates DNS records and auth key in Bitwarden.'
         widget: boolean
 
   - name: settings
