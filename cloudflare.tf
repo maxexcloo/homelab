@@ -39,6 +39,18 @@ resource "cloudflare_account_token" "server" {
   ]
 }
 
+resource "cloudflare_dns_record" "acme_delegation" {
+  for_each = local.dns_records_acme_delegation
+
+  comment = local.defaults.managed_comment
+  content = each.value.content
+  name    = each.value.name
+  proxied = false
+  ttl     = 1
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
+}
+
 resource "cloudflare_dns_record" "manual" {
   for_each = local.dns_records_manual
 

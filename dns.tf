@@ -17,11 +17,22 @@ locals {
   }
 
   dns_records_acme_delegation = {
-    for zone in [local.defaults.domain_external, local.defaults.domain_internal] : "${zone}-acme-delegation" => {
-      content = "${zone}.${local.defaults.domain_acme}"
-      name    = "_acme-challenge"
+    for record in distinct([
+      for r in concat(
+        values(local.dns_records_manual),
+        values(local.dns_records_servers),
+        values(local.dns_records_services),
+        values(local.dns_records_services_urls)
+        ) : {
+        name = r.name
+        zone = r.zone
+      }
+      if contains(["A", "AAAA", "CNAME"], r.type)
+      ]) : "${record.zone}-${record.name}-acme-delegation" => {
+      content = "${record.name}.${local.defaults.domain_acme}"
+      name    = "_acme-challenge.${record.name}"
       type    = "CNAME"
-      zone    = zone
+      zone    = record.zone
     }
   }
 
