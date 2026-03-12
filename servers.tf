@@ -78,10 +78,11 @@ locals {
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
       v.enable_cloudflare_acme_token ? {
-        cloudflare_account_token_sensitive = cloudflare_account_token.server[k].value
+        enable_cloudflare_acme_account_id      = data.cloudflare_accounts.default.result[0].id
+        enable_cloudflare_acme_token_sensitive = cloudflare_account_token.server[k].value
       } : {},
       v.enable_cloudflare_zero_trust_tunnel ? {
-        cloudflared_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
+        cloudflare_zero_trust_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
       } : {},
       v.enable_resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_server[k].create_response).token
