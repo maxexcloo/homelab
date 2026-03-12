@@ -78,8 +78,8 @@ locals {
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
       v.enable_cloudflare_acme_token ? {
-        enable_cloudflare_acme_account_id      = data.cloudflare_accounts.default.result[0].id
-        enable_cloudflare_acme_token_sensitive = cloudflare_account_token.server[k].value
+        cloudflare_acme_account_id      = data.cloudflare_accounts.default.result[0].id
+        cloudflare_acme_token_sensitive = cloudflare_account_token.server[k].value
       } : {},
       v.enable_cloudflare_zero_trust_tunnel ? {
         cloudflare_zero_trust_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token

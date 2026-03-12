@@ -28,6 +28,7 @@ resource "tailscale_tailnet_key" "service" {
   }
 
   description   = each.key
+  ephemeral     = true
   preauthorized = true
   reusable      = true
   tags          = ["tag:ephemeral"]
