@@ -33,6 +33,7 @@ variable "server_defaults" {
     management_port                     = 443
     name                                = null
     parent                              = null
+    password_hash                       = ""
     platform                            = ""
     public_address                      = null
     public_ipv4                         = null
