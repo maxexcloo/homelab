@@ -22,8 +22,9 @@ locals {
     for k, v in local._services_deployments : k => merge(
       v,
       {
-        fqdn_external = "${v.name}.${local.servers[v.server].fqdn_external}"
-        fqdn_internal = "${v.name}.${local.servers[v.server].fqdn_internal}"
+        fqdn_external      = "${v.name}.${local.servers[v.server].fqdn_external}"
+        fqdn_internal      = "${v.name}.${local.servers[v.server].fqdn_internal}"
+        password_sensitive = v.enable_password ? random_password.service[k].result : null
       },
       {
         for secret in v.secrets : "${secret}_sensitive" => (
@@ -48,6 +49,13 @@ locals {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
       } : {}
     )
+  }
+
+  services_filtered = {
+    for k, v in local.services : k => {
+      for kk, vv in v : kk => vv
+      if vv != null && vv != "" && vv != false
+    }
   }
 }
 
@@ -103,6 +111,13 @@ resource "terraform_data" "services_validation" {
 }
 
 output "services" {
-  value     = keys(local.services)
-  sensitive = false
+  description = "Service configurations"
+  value       = keys(local._services_deployments)
+  sensitive   = false
+}
+
+output "services_sensitive" {
+  description = "Service sensitive configurations"
+  sensitive   = true
+  value       = local.services_filtered
 }
