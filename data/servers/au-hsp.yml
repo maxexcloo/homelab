@@ -24,6 +24,6 @@ config:
     boot_disk_size: 128
     cpus: 4
     ingress_ports: []
-    memory: 16
+    memory: 24
     shape: VM.Standard.A1.Flex
   incus: null
