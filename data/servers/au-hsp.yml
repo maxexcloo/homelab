@@ -9,7 +9,7 @@ management_port: 443
 public_address: ''
 public_ipv4: ''
 public_ipv6: ''
-username: root
+username: max.schaefer
 enable_b2: false
 enable_cloudflare_acme_token: true
 enable_cloudflare_proxy: false
@@ -24,6 +24,6 @@ config:
     boot_disk_size: 128
     cpus: 4
     ingress_ports: []
-    memory: 24
+    memory: 16
     shape: VM.Standard.A1.Flex
   incus: null
