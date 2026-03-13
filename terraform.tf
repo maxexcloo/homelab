@@ -20,6 +20,9 @@ terraform {
     incus = {
       source = "lxc/incus"
     }
+    oci = {
+      source = "oracle/oci"
+    }
     random = {
       source = "hashicorp/random"
     }

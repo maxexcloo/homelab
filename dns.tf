@@ -43,7 +43,23 @@ locals {
           zone    = local.defaults.domain_external
         }
       } : {},
-      server.public_ipv4 != null ? {
+      server.platform == "oci" ? {
+        "${local.defaults.domain_external}-${k}-a" = {
+          content = data.oci_core_vnic.server[k].public_ip_address
+          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          server  = k
+          type    = "A"
+          zone    = local.defaults.domain_external
+        }
+        "${local.defaults.domain_external}-${k}-aaaa" = {
+          content = data.oci_core_vnic.server[k].ipv6addresses[0]
+          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          server  = k
+          type    = "AAAA"
+          zone    = local.defaults.domain_external
+        }
+      } : {},
+      server.public_ipv4 != null && server.platform != "oci" ? {
         "${local.defaults.domain_external}-${k}-a" = {
           content = server.public_ipv4
           name    = "${server.fqdn}.${local.defaults.domain_external}"
@@ -52,7 +68,7 @@ locals {
           zone    = local.defaults.domain_external
         }
       } : {},
-      server.public_ipv6 != null ? {
+      server.public_ipv6 != null && server.platform != "oci" ? {
         "${local.defaults.domain_external}-${k}-aaaa" = {
           content = server.public_ipv6
           name    = "${server.fqdn}.${local.defaults.domain_external}"

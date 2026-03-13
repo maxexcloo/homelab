@@ -43,6 +43,17 @@ variable "server_defaults" {
     region                              = ""
     type                                = "server"
     username                            = "root"
+    config = {
+      incus = {}
+      oci = {
+        boot_disk_image_id = null
+        boot_disk_size     = 128
+        cpus               = 4
+        ingress_ports      = [22, 80, 443]
+        memory             = 8
+        shape              = "VM.Standard.A1.Flex"
+      }
+    }
   }
 }
 
@@ -83,5 +94,11 @@ variable "services_folder" {
 variable "url_field_pattern" {
   default     = "(^fqdn_|^url_|_(ipv[46]|address)$)"
   description = "Regex pattern to identify fields that should be treated as URLs"
+  type        = string
+}
+
+variable "oci_compartment_id" {
+  default     = ""
+  description = "OCI compartment OCID (defaults to tenancy OCID)"
   type        = string
 }
