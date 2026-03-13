@@ -76,6 +76,22 @@ resource "random_password" "server" {
   length = 32
 }
 
+resource "terraform_data" "servers_validation" {
+  input = join(", ", flatten([
+    for k, v in local._servers : [
+      "${k} -> ${v.parent}"
+    ]
+    if v.parent != "" && v.parent != null && !contains(keys(local._servers), v.parent)
+  ]))
+
+  lifecycle {
+    precondition {
+      condition     = length(flatten([for k, v in local._servers : [v.parent] if v.parent != "" && v.parent != null && !contains(keys(local._servers), v.parent)])) == 0
+      error_message = "Invalid parent references found in servers configuration"
+    }
+  }
+}
+
 output "servers" {
   value     = keys(local._servers)
   sensitive = false

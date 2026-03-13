@@ -51,22 +51,6 @@ locals {
   }
 }
 
-resource "terraform_data" "services_validation" {
-  input = join(", ", flatten([
-    for k, v in local._services : [
-      for target in v.deploy_to : "${k} -> ${target}"
-      if !contains(keys(local.servers), target)
-    ]
-  ]))
-
-  lifecycle {
-    precondition {
-      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target)]])) == 0
-      error_message = "Invalid server references found in services configuration"
-    }
-  }
-}
-
 resource "random_id" "service_secret" {
   for_each = {
     for s in flatten([
@@ -100,6 +84,22 @@ resource "random_password" "service_secret" {
   }
 
   length = 32
+}
+
+resource "terraform_data" "services_validation" {
+  input = join(", ", flatten([
+    for k, v in local._services : [
+      for target in v.deploy_to : "${k} -> ${target}"
+      if !contains(keys(local.servers), target)
+    ]
+  ]))
+
+  lifecycle {
+    precondition {
+      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target)]])) == 0
+      error_message = "Invalid server references found in services configuration"
+    }
+  }
 }
 
 output "services" {
