@@ -154,6 +154,16 @@ resource "oci_core_network_security_group" "server" {
   vcn_id         = oci_core_vcn.default[each.value.region].id
 }
 
+resource "oci_core_network_security_group_security_rule" "server_ingress_icmp" {
+  for_each = local.oci_vms
+
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.server[each.key].id
+  protocol                  = "1"
+  source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
+}
+
 resource "oci_core_network_security_group_security_rule" "server_ingress_tcp" {
   for_each = merge([
     for k, v in local.oci_vms : {
