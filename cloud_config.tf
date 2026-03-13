@@ -11,6 +11,7 @@ locals {
 }
 
 output "cloud_config" {
-  sensitive = true
-  value     = local.cloud_config
+  description = "Generated cloud-init configurations for servers"
+  sensitive   = true
+  value       = local.cloud_config
 }

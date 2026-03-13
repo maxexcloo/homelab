@@ -11,13 +11,13 @@ resource "bitwarden_item_login" "server" {
 
   folder_id = data.bitwarden_folder.servers.id
   name      = each.key
-  password  = each.value.enable_password ? random_password.server[each.key].result : null
+  password  = each.value.password_sensitive
   username  = each.value.username
 
   dynamic "field" {
     for_each = {
-      for k, v in each.value : k => v
-      if !can(regex(var.url_field_pattern, k)) && !contains(keys(var.server_defaults), k) && v != false && v != null && v != "" && can(tostring(v))
+      for k, v in local.servers_filtered[each.key] : k => v
+      if !can(regex(var.url_field_pattern, k)) && !contains(keys(var.server_defaults), k) && can(tostring(v))
     }
 
     content {
@@ -29,8 +29,8 @@ resource "bitwarden_item_login" "server" {
 
   dynamic "uri" {
     for_each = {
-      for k, v in each.value : k => v
-      if can(regex(var.url_field_pattern, k)) && v != null && v != ""
+      for k, v in local.servers_filtered[each.key] : k => v
+      if can(regex(var.url_field_pattern, k))
     }
 
     content {
@@ -50,13 +50,13 @@ resource "bitwarden_item_login" "service" {
 
   folder_id = data.bitwarden_folder.services.id
   name      = each.key
-  password  = each.value.enable_password ? random_password.service[each.key].result : null
+  password  = each.value.password_sensitive
   username  = each.value.username
 
   dynamic "field" {
     for_each = {
-      for k, v in each.value : k => v
-      if !can(regex(var.url_field_pattern, k)) && !contains(keys(var.service_defaults), k) && v != false && v != null && v != "" && can(tostring(v))
+      for k, v in local.services_filtered[each.key] : k => v
+      if !can(regex(var.url_field_pattern, k)) && !contains(keys(var.service_defaults), k) && can(tostring(v))
     }
 
     content {
@@ -68,8 +68,8 @@ resource "bitwarden_item_login" "service" {
 
   dynamic "uri" {
     for_each = {
-      for k, v in each.value : k => v
-      if can(regex(var.url_field_pattern, k)) && v != null && v != ""
+      for k, v in local.services_filtered[each.key] : k => v
+      if can(regex(var.url_field_pattern, k))
     }
 
     content {

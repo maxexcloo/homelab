@@ -35,12 +35,13 @@ locals {
       v,
       local._servers_computed[k],
       {
-        fqdn_external   = "${local._servers_computed[k].fqdn}.${local.defaults.domain_external}"
-        fqdn_internal   = "${local._servers_computed[k].fqdn}.${local.defaults.domain_internal}"
-        password_hash   = v.enable_password ? htpasswd_password.server[k].sha512 : ""
-        private_address = try(local.unifi_clients[k].local_dns_record, null)
-        private_ipv4    = try(local.unifi_clients[k].fixed_ip, null)
-        ssh_keys        = data.github_user.default.ssh_keys
+        fqdn_external      = "${local._servers_computed[k].fqdn}.${local.defaults.domain_external}"
+        fqdn_internal      = "${local._servers_computed[k].fqdn}.${local.defaults.domain_internal}"
+        password_hash      = v.enable_password ? htpasswd_password.server[k].sha512 : ""
+        password_sensitive = v.enable_password ? random_password.server[k].result : null
+        private_address    = try(local.unifi_clients[k].local_dns_record, null)
+        private_ipv4       = try(local.unifi_clients[k].fixed_ip, null)
+        ssh_keys           = data.github_user.default.ssh_keys
       },
       v.enable_b2 ? {
         b2_application_key_id        = b2_application_key.server[k].application_key_id
@@ -64,6 +65,13 @@ locals {
         tailscale_ipv6               = try(local.tailscale_device_addresses[k].ipv6, null)
       } : {}
     )
+  }
+
+  servers_filtered = {
+    for k, v in local.servers : k => {
+      for kk, vv in v : kk => vv
+      if vv != null && vv != "" && vv != false
+    }
   }
 }
 
@@ -93,6 +101,13 @@ resource "terraform_data" "servers_validation" {
 }
 
 output "servers" {
-  value     = keys(local._servers)
-  sensitive = false
+  description = "Server configurations"
+  value       = keys(local._servers)
+  sensitive   = false
+}
+
+output "servers_sensitive" {
+  description = "Server sensitive configurations"
+  sensitive   = true
+  value       = local.servers_filtered
 }

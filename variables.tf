@@ -59,6 +59,7 @@ variable "service_defaults" {
     deploy_to        = []
     description      = null
     enable_b2        = false
+    enable_password  = false
     enable_resend    = false
     enable_tailscale = false
     icon             = null
