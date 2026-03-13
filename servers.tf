@@ -6,69 +6,40 @@ locals {
     } : k => merge(var.server_defaults, v)
   }
 
-  _servers_resolve_parent_value = {
+  _servers_computed = {
     for k, v in local._servers : k => {
+      description = v.parent == "" || v.parent == null ? v.description : "${local._servers[v.parent].description} ${v.description} (${upper(v.region)})"
+      fqdn        = length(split("-", k)) == 1 ? k : "${v.name}.${v.region}"
+
       public_address = try(
-        coalesce(
-          v.public_address,
-          try(local._servers[v.parent].public_address, null),
-          try(local._servers[local._servers[v.parent].parent].public_address, null),
-          try(local._servers[local._servers[local._servers[v.parent].parent].parent].public_address, null),
-          try(local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].public_address, null),
-          try(local._servers[local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].parent].public_address, null)
-        ),
+        v.public_address != "" ? v.public_address : null,
+        v.parent != "" ? local._servers[v.parent].public_address : null,
+        v.parent != "" && local._servers[v.parent].parent != "" ? local._servers[local._servers[v.parent].parent].public_address : null,
         null
       )
       public_ipv4 = try(
-        coalesce(
-          v.public_ipv4,
-          try(local._servers[v.parent].public_ipv4, null),
-          try(local._servers[local._servers[v.parent].parent].public_ipv4, null),
-          try(local._servers[local._servers[local._servers[v.parent].parent].parent].public_ipv4, null),
-          try(local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].public_ipv4, null),
-          try(local._servers[local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].parent].public_ipv4, null)
-        ),
+        can(cidrhost(v.public_ipv4, 0)) ? v.public_ipv4 : null,
+        v.parent != "" && can(cidrhost(local._servers[v.parent].public_ipv4, 0)) ? local._servers[v.parent].public_ipv4 : null,
         null
       )
       public_ipv6 = try(
-        coalesce(
-          v.public_ipv6,
-          try(local._servers[v.parent].public_ipv6, null),
-          try(local._servers[local._servers[v.parent].parent].public_ipv6, null),
-          try(local._servers[local._servers[local._servers[v.parent].parent].parent].public_ipv6, null),
-          try(local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].public_ipv6, null),
-          try(local._servers[local._servers[local._servers[local._servers[local._servers[v.parent].parent].parent].parent].parent].public_ipv6, null)
-        ),
+        can(cidrhost("${v.public_ipv6}/128", 0)) ? v.public_ipv6 : null,
+        v.parent != "" && can(cidrhost("${local._servers[v.parent].public_ipv6}/128", 0)) ? local._servers[v.parent].public_ipv6 : null,
         null
       )
     }
   }
 
-  # Build FQDN as name.region (not full hierarchy)
-  # au -> au
-  # au-pie -> pie.au
-  # au-pie-truenas -> truenas.au
-  _fqdn_from_id = {
-    for k, v in local._servers : k => (
-      length(split("-", k)) == 1 ?
-      k :
-      "${v.name}.${v.region}"
-    )
-  }
-
   servers = {
     for k, v in local._servers : k => merge(
       v,
+      local._servers_computed[k],
       {
-        fqdn            = local._fqdn_from_id[k]
-        fqdn_external   = "${local._fqdn_from_id[k]}.${local.defaults.domain_external}"
-        fqdn_internal   = "${local._fqdn_from_id[k]}.${local.defaults.domain_internal}"
+        fqdn_external   = "${local._servers_computed[k].fqdn}.${local.defaults.domain_external}"
+        fqdn_internal   = "${local._servers_computed[k].fqdn}.${local.defaults.domain_internal}"
         password_hash   = v.enable_password ? htpasswd_password.server[k].sha512 : ""
         private_address = try(local.unifi_clients[k].local_dns_record, null)
         private_ipv4    = try(local.unifi_clients[k].fixed_ip, null)
-        public_address  = local._servers_resolve_parent_value[k].public_address
-        public_ipv4     = local._servers_resolve_parent_value[k].public_ipv4
-        public_ipv6     = local._servers_resolve_parent_value[k].public_ipv6
         ssh_keys        = data.github_user.default.ssh_keys
       },
       v.enable_b2 ? {
@@ -79,7 +50,7 @@ locals {
       } : {},
       v.enable_cloudflare_acme_token ? {
         cloudflare_acme_account_id      = data.cloudflare_accounts.default.result[0].id
-        cloudflare_acme_token_sensitive = cloudflare_account_token.server[k].value
+        cloudflare_acme_token_sensitive = cloudflare_account_token.server_acme[k].value
       } : {},
       v.enable_cloudflare_zero_trust_tunnel ? {
         cloudflare_zero_trust_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
@@ -94,11 +65,13 @@ locals {
       } : {}
     )
   }
-
 }
 
 resource "random_password" "server" {
-  for_each = local._servers
+  for_each = {
+    for k, v in local._servers : k => v
+    if v.enable_password
+  }
 
   length = 32
 }

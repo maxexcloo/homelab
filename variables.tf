@@ -3,6 +3,7 @@ variable "dns_defaults" {
   type        = any
 
   default = {
+    priority = null
     proxied  = false
     ttl      = 1
     wildcard = false
@@ -44,6 +45,12 @@ variable "server_defaults" {
   }
 }
 
+variable "servers_folder" {
+  default     = "Servers"
+  description = "Server folder name in Bitwarden"
+  type        = string
+}
+
 variable "service_defaults" {
   description = "Default values for services"
   type        = any
@@ -64,8 +71,14 @@ variable "service_defaults" {
   }
 }
 
+variable "services_folder" {
+  default     = "Services"
+  description = "Server folder name in Bitwarden"
+  type        = string
+}
+
 variable "url_field_pattern" {
-  default     = "(^fqdn_|_(ipv[46]|address)$)"
+  default     = "(^fqdn_|^url_|_(ipv[46]|address)$)"
   description = "Regex pattern to identify fields that should be treated as URLs"
   type        = string
 }

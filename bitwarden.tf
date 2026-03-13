@@ -1,5 +1,9 @@
 data "bitwarden_folder" "servers" {
-  search = "Servers"
+  search = var.servers_folder
+}
+
+data "bitwarden_folder" "services" {
+  search = var.services_folder
 }
 
 resource "bitwarden_item_login" "server" {
@@ -17,9 +21,9 @@ resource "bitwarden_item_login" "server" {
     }
 
     content {
-      hidden = can(regex("_sensitive$", field.key)) ? field.value : null
-      name   = replace(field.key, "/_sensitive$/", "")
-      text   = can(regex("_sensitive$", field.key)) ? null : field.value
+      hidden = endswith(field.key, "_sensitive") ? field.value : null
+      name   = trimsuffix(field.key, "_sensitive")
+      text   = endswith(field.key, "_sensitive") ? null : field.value
     }
   }
 
@@ -36,6 +40,41 @@ resource "bitwarden_item_login" "server" {
         can(cidrhost("${uri.value}/128", 0)) ? "[${uri.value}]" : uri.value,
         each.value.management_port != 443 ? ":${each.value.management_port}" : ""
       )
+    }
+  }
+}
+
+
+resource "bitwarden_item_login" "service" {
+  for_each = local.services
+
+  folder_id = data.bitwarden_folder.services.id
+  name      = each.key
+  password  = each.value.enable_password ? random_password.service[each.key].result : null
+  username  = each.value.username
+
+  dynamic "field" {
+    for_each = {
+      for k, v in each.value : k => v
+      if !can(regex(var.url_field_pattern, k)) && !contains(keys(var.service_defaults), k) && v != false && v != null && v != "" && can(tostring(v))
+    }
+
+    content {
+      hidden = endswith(field.key, "_sensitive") ? field.value : null
+      name   = trimsuffix(field.key, "_sensitive")
+      text   = endswith(field.key, "_sensitive") ? null : field.value
+    }
+  }
+
+  dynamic "uri" {
+    for_each = {
+      for k, v in each.value : k => v
+      if can(regex(var.url_field_pattern, k)) && v != null && v != ""
+    }
+
+    content {
+      match = "host"
+      value = uri.value
     }
   }
 }

@@ -15,7 +15,7 @@ data "cloudflare_zone" "all" {
   }
 }
 
-resource "cloudflare_account_token" "server" {
+resource "cloudflare_account_token" "server_acme" {
   for_each = {
     for k, v in local._servers : k => v
     if v.enable_cloudflare_acme_token
@@ -45,8 +45,8 @@ resource "cloudflare_dns_record" "acme_delegation" {
   comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
-  proxied = false
-  ttl     = 1
+  proxied = var.dns_defaults.proxied
+  ttl     = var.dns_defaults.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -70,8 +70,8 @@ resource "cloudflare_dns_record" "server" {
   comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
-  proxied = false
-  ttl     = 1
+  proxied = var.dns_defaults.proxied
+  ttl     = var.dns_defaults.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -82,8 +82,8 @@ resource "cloudflare_dns_record" "service" {
   comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
-  proxied = try(each.value.proxied, false)
-  ttl     = 1
+  proxied = each.value.proxied
+  ttl     = var.dns_defaults.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -94,8 +94,8 @@ resource "cloudflare_dns_record" "service_url" {
   comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
-  proxied = try(each.value.proxied, false)
-  ttl     = 1
+  proxied = each.value.proxied
+  ttl     = var.dns_defaults.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -106,8 +106,8 @@ resource "cloudflare_dns_record" "wildcard" {
   comment = local.defaults.managed_comment
   content = each.value.content
   name    = each.value.name
-  proxied = false
-  ttl     = 1
+  proxied = var.dns_defaults.proxied
+  ttl     = var.dns_defaults.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }

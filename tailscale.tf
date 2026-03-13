@@ -1,8 +1,8 @@
-data "tailscale_devices" "default" {}
+data "tailscale_devices" "all" {}
 
 locals {
   tailscale_device_addresses = {
-    for device in data.tailscale_devices.default.devices : split(".", device.name)[0] => {
+    for device in data.tailscale_devices.all.devices : split(".", device.name)[0] => {
       ipv4 = try([for a in device.addresses : a if can(cidrhost("${a}/32", 0))][0], null)
       ipv6 = try([for a in device.addresses : a if can(cidrhost("${a}/128", 0))][0], null)
     }
@@ -23,7 +23,7 @@ resource "tailscale_tailnet_key" "server" {
 
 resource "tailscale_tailnet_key" "service" {
   for_each = {
-    for k, v in local.services : k => v
+    for k, v in local._services_deployments : k => v
     if v.enable_tailscale
   }
 
