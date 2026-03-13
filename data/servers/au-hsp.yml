@@ -1,0 +1,29 @@
+id: au-hsp
+name: hsp
+parent: ''
+region: au
+type: vm
+description: HSP
+platform: oci
+management_port: 443
+public_address: ''
+public_ipv4: ''
+public_ipv6: ''
+username: root
+enable_b2: false
+enable_cloudflare_acme_token: true
+enable_cloudflare_proxy: false
+enable_cloudflare_zero_trust_tunnel: true
+enable_docker: true
+enable_password: true
+enable_resend: false
+enable_tailscale: true
+config:
+  oci:
+    boot_disk_image_id: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
+    boot_disk_size: 128
+    cpus: 4
+    ingress_ports: []
+    memory: 16
+    shape: VM.Standard.A1.Flex
+  incus: null
