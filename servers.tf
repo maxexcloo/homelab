@@ -102,12 +102,6 @@ resource "terraform_data" "servers_validation" {
 
 output "servers" {
   description = "Server configurations"
-  value       = keys(local._servers)
-  sensitive   = false
-}
-
-output "servers_sensitive" {
-  description = "Server sensitive configurations"
   sensitive   = true
   value       = local.servers_filtered
 }

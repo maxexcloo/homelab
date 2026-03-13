@@ -1,5 +1,9 @@
 provider "bitwarden" {
   client_implementation = "embedded"
+
+  experimental {
+    disable_sync_after_write_verification = true
+  }
 }
 
 provider "restapi" {
