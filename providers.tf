@@ -6,7 +6,9 @@ provider "bitwarden" {
   }
 }
 
-provider "oci" {}
+provider "oci" {
+  private_key = base64decode(var.oci_private_key_base64)
+}
 
 provider "restapi" {
   alias                 = "resend"
