@@ -112,12 +112,6 @@ resource "terraform_data" "services_validation" {
 
 output "services" {
   description = "Service configurations"
-  value       = keys(local._services_deployments)
-  sensitive   = false
-}
-
-output "services_sensitive" {
-  description = "Service sensitive configurations"
   sensitive   = true
   value       = local.services_filtered
 }

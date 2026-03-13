@@ -35,6 +35,7 @@ variable "server_defaults" {
     name                                = null
     parent                              = null
     password_hash                       = ""
+    password_sensitive                  = null
     platform                            = ""
     public_address                      = null
     public_ipv4                         = null
@@ -56,19 +57,20 @@ variable "service_defaults" {
   type        = any
 
   default = {
-    deploy_to        = []
-    description      = null
-    enable_b2        = false
-    enable_password  = false
-    enable_resend    = false
-    enable_tailscale = false
-    icon             = null
-    id               = null
-    name             = null
-    port             = null
-    secrets          = []
-    service          = null
-    url              = null
+    deploy_to          = []
+    description        = null
+    enable_b2          = false
+    enable_password    = false
+    enable_resend      = false
+    enable_tailscale   = false
+    icon               = null
+    id                 = null
+    name               = null
+    password_sensitive = null
+    port               = null
+    secrets            = []
+    service            = null
+    url                = null
   }
 }
 

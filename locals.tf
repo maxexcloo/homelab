@@ -12,11 +12,14 @@ output "summary" {
   sensitive   = false
 
   value = {
+    defaults = local.defaults
+    servers  = keys(local._servers)
+    services = keys(local._services)
+
     counts = {
       dns_records = length(local.dns_records_acme_delegation) + length(local.dns_records_manual) + length(local.dns_records_servers) + length(local.dns_records_services) + length(local.dns_records_wildcards)
       servers     = length(local.servers)
       services    = length(local.services)
     }
-    defaults = local.defaults
   }
 }
