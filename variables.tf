@@ -16,6 +16,12 @@ variable "oci_private_key_base64" {
   type        = string
 }
 
+variable "oci_tenancy_ocid" {
+  description = "OCI tenancy OCID"
+  sensitive   = true
+  type        = string
+}
+
 variable "resend_api_key" {
   description = "Resend API key"
   sensitive   = true
@@ -101,11 +107,5 @@ variable "services_folder" {
 variable "url_field_pattern" {
   default     = "(^fqdn_|^url_|_(ipv[46]|address)$)"
   description = "Regex pattern to identify fields that should be treated as URLs"
-  type        = string
-}
-
-variable "oci_compartment_id" {
-  default     = ""
-  description = "OCI compartment OCID (defaults to tenancy OCID)"
   type        = string
 }

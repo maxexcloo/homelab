@@ -7,7 +7,8 @@ provider "bitwarden" {
 }
 
 provider "oci" {
-  private_key = base64decode(var.oci_private_key_base64)
+  private_key  = base64decode(var.oci_private_key_base64)
+  tenancy_ocid = var.oci_tenancy_ocid
 }
 
 provider "restapi" {

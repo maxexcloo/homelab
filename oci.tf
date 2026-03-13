@@ -7,14 +7,14 @@ data "oci_core_vnic" "server" {
 data "oci_core_vnic_attachments" "server" {
   for_each = oci_core_instance.server
 
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.oci_tenancy_ocid
   instance_id    = each.value.id
 }
 
 data "oci_identity_availability_domain" "default" {
   for_each = local.oci_regions
 
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.oci_tenancy_ocid
   ad_number      = 1
 }
 
@@ -32,7 +32,7 @@ locals {
 resource "oci_core_default_dhcp_options" "default" {
   for_each = local.oci_regions
 
-  compartment_id             = var.oci_compartment_id
+  compartment_id             = var.oci_tenancy_ocid
   display_name               = "${each.value}.${local.defaults.domain_external}"
   manage_default_resource_id = oci_core_vcn.default[each.value].default_dhcp_options_id
 
@@ -69,7 +69,7 @@ resource "oci_core_default_route_table" "default" {
 resource "oci_core_default_security_list" "default" {
   for_each = local.oci_regions
 
-  compartment_id             = var.oci_compartment_id
+  compartment_id             = var.oci_tenancy_ocid
   display_name               = "${each.value}.${local.defaults.domain_external}"
   manage_default_resource_id = oci_core_vcn.default[each.value].default_security_list_id
 
@@ -102,7 +102,7 @@ resource "oci_core_instance" "server" {
   for_each = local.oci_vms
 
   availability_domain = data.oci_identity_availability_domain.default[each.value.region].name
-  compartment_id      = var.oci_compartment_id
+  compartment_id      = var.oci_tenancy_ocid
   display_name        = each.key
   shape               = each.value.config.oci.shape
 
@@ -141,7 +141,7 @@ resource "oci_core_instance" "server" {
 resource "oci_core_internet_gateway" "default" {
   for_each = local.oci_regions
 
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domain_external}"
   vcn_id         = oci_core_vcn.default[each.value].id
 }
@@ -149,7 +149,7 @@ resource "oci_core_internet_gateway" "default" {
 resource "oci_core_network_security_group" "server" {
   for_each = local.oci_vms
 
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.oci_tenancy_ocid
   display_name   = each.key
   vcn_id         = oci_core_vcn.default[each.value.region].id
 }
@@ -206,7 +206,7 @@ resource "oci_core_subnet" "default" {
   for_each = local.oci_regions
 
   cidr_block     = "10.0.0.0/24"
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domain_external}"
   dns_label      = each.value
   ipv6cidr_block = replace(oci_core_vcn.default[each.value].ipv6cidr_blocks[0], "/56", "/64")
@@ -217,7 +217,7 @@ resource "oci_core_vcn" "default" {
   for_each = local.oci_regions
 
   cidr_blocks    = ["10.0.0.0/16"]
-  compartment_id = var.oci_compartment_id
+  compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domain_external}"
   dns_label      = replace(local.defaults.domain_external, "/\\.[^.]*$/", "")
   is_ipv6enabled = true
