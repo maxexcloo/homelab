@@ -29,6 +29,9 @@ terraform {
     tailscale = {
       source = "tailscale/tailscale"
     }
+    talos = {
+      source = "siderolabs/talos"
+    }
     unifi = {
       source = "ubiquiti-community/unifi"
     }
