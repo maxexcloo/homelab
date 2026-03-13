@@ -1,21 +1,4 @@
 locals {
-  _dns_services_url_zone = {
-    for key, service in local.services : key => {
-      for idx, url in(service.urls != null ? service.urls : []) : idx => (
-        try(
-          split(
-            reverse(sort([
-              for zone_name in local.dns_zones : format("%04d:%s", length(zone_name), zone_name)
-              if endswith(url, zone_name)
-            ]))[0],
-            ":"
-          )[1],
-          null
-        )
-      )
-    }
-  }
-
   dns_records_acme_delegation = {
     for record in distinct([
       for r in concat(
@@ -38,142 +21,129 @@ locals {
 
   dns_records_manual = merge([
     for zone, records in local.dns : {
-      for index, record in records : "${zone}-manual-${record.type}-${index}" => merge(
+      for record in records : "${zone}-manual-${record.type}-${substr(sha256(jsonencode(record)), 0, 8)}" => merge(
+        var.dns_defaults,
+        record,
+        {
+          name = record.name == "@" ? zone : "${record.name}.${zone}"
+          zone = zone
+        },
+      )
+    }
+  ]...)
+
+  dns_records_servers = merge([
+    for k, server in local.servers : merge(
+      server.public_address != null ? {
+        "${local.defaults.domain_external}-${k}-cname" = {
+          content = server.public_address
+          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          server  = k
+          type    = "CNAME"
+          zone    = local.defaults.domain_external
+        }
+      } : {},
+      server.public_ipv4 != null ? {
+        "${local.defaults.domain_external}-${k}-a" = {
+          content = server.public_ipv4
+          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          server  = k
+          type    = "A"
+          zone    = local.defaults.domain_external
+        }
+      } : {},
+      server.public_ipv6 != null ? {
+        "${local.defaults.domain_external}-${k}-aaaa" = {
+          content = server.public_ipv6
+          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          server  = k
+          type    = "AAAA"
+          zone    = local.defaults.domain_external
+        }
+      } : {},
+      server.tailscale_ipv4 != null ? {
+        "${local.defaults.domain_internal}-${k}-a" = {
+          content = server.tailscale_ipv4
+          name    = "${server.fqdn}.${local.defaults.domain_internal}"
+          server  = k
+          type    = "A"
+          zone    = local.defaults.domain_internal
+        }
+      } : {},
+      server.tailscale_ipv6 != null ? {
+        "${local.defaults.domain_internal}-${k}-aaaa" = {
+          content = server.tailscale_ipv6
+          name    = "${server.fqdn}.${local.defaults.domain_internal}"
+          server  = k
+          type    = "AAAA"
+          zone    = local.defaults.domain_internal
+        }
+      } : {}
+    )
+  ]...)
+
+  dns_records_services = merge([
+    for zone in [local.defaults.domain_external, local.defaults.domain_internal] : {
+      for k, service in local.services : "${zone}-${k}" => merge(
         var.dns_defaults,
         {
-          content  = record.content
-          name     = record.name == "@" ? zone : "${record.name}.${zone}"
-          priority = try(record.priority, null)
-          type     = record.type
-          zone     = zone
-        },
-        {
-          proxied  = try(record.proxied, var.dns_defaults.proxied)
-          ttl      = try(record.ttl, var.dns_defaults.ttl)
-          wildcard = try(record.wildcard, var.dns_defaults.wildcard)
+          content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_zero_trust_tunnel ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${zone}"
+          name    = "${service.name}.${local.servers[service.server].fqdn}.${zone}"
+          proxied = local.servers[service.server].enable_cloudflare_proxy
+          type    = "CNAME"
+          zone    = zone
         }
       )
     }
   ]...)
 
-  dns_records_servers = merge(
-    {
-      for key, server in local.servers : "${local.defaults.domain_external}-${key}-cname" => {
-        content = server.public_address
-        name    = "${server.fqdn}.${local.defaults.domain_external}"
-        server  = key
-        type    = "CNAME"
-        zone    = local.defaults.domain_external
-      }
-      if server.public_address != null
-    },
-    {
-      for key, server in local.servers : "${local.defaults.domain_external}-${key}-a" => {
-        content = server.public_ipv4
-        name    = "${server.fqdn}.${local.defaults.domain_external}"
-        server  = key
-        type    = "A"
-        zone    = local.defaults.domain_external
-      }
-      if server.public_ipv4 != null && can(cidrhost("${server.public_ipv4}/32", 0))
-    },
-    {
-      for key, server in local.servers : "${local.defaults.domain_external}-${key}-aaaa" => {
-        content = server.public_ipv6
-        name    = "${server.fqdn}.${local.defaults.domain_external}"
-        server  = key
-        type    = "AAAA"
-        zone    = local.defaults.domain_external
-      }
-      if server.public_ipv6 != null && can(cidrhost("${server.public_ipv6}/128", 0))
-    },
-    {
-      for key, server in local.servers : "${local.defaults.domain_internal}-${key}-a" => {
-        content = server.tailscale_ipv4
-        name    = "${server.fqdn}.${local.defaults.domain_internal}"
-        server  = key
-        type    = "A"
-        zone    = local.defaults.domain_internal
-      }
-      if server.tailscale_ipv4 != null
-    },
-    {
-      for key, server in local.servers : "${local.defaults.domain_internal}-${key}-aaaa" => {
-        content = server.tailscale_ipv6
-        name    = "${server.fqdn}.${local.defaults.domain_internal}"
-        server  = key
-        type    = "AAAA"
-        zone    = local.defaults.domain_internal
-      }
-      if server.tailscale_ipv6 != null
-    }
-  )
-
-  # Services are now per-deployment instances, so each service in local.services is already a single deployment
-  dns_records_services_external = {
-    for key, service in local.services : "${local.defaults.domain_external}-${key}" => {
-      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${local.defaults.domain_external}"
-      name    = "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_external}"
-      proxied = local.servers[service.server].enable_cloudflare_proxy
-      server  = service.server
-      type    = "CNAME"
-      zone    = local.defaults.domain_external
-    }
-  }
-
-  dns_records_services_internal = {
-    for key, service in local.services : "${local.defaults.domain_internal}-${key}" => {
-      content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
-      name    = "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
-      proxied = local.servers[service.server].enable_cloudflare_proxy
-      server  = service.server
-      type    = "CNAME"
-      zone    = local.defaults.domain_internal
-    }
-  }
-
-  dns_records_services = merge(
-    local.dns_records_services_external,
-    local.dns_records_services_internal
-  )
-
   dns_records_services_urls = merge(
-    [
-      for key, service in local.services : {
-        for idx, url in(service.urls != null ? service.urls : []) : "${key}-url-${idx}" => {
-          name    = url
-          proxied = local.servers[service.server].enable_cloudflare_proxy
-          server  = service.server
-          type    = "CNAME"
-          zone    = local._dns_services_url_zone[key][idx]
+    flatten([
+      for k, service in local.services : [
+        for i, url in(service.urls != null ? service.urls : []) : {
+          "${k}-url-${i}" = merge(
+            var.dns_defaults,
+            {
+              name    = url
+              proxied = local.servers[service.server].enable_cloudflare_proxy
+              server  = service.server
+              type    = "CNAME"
 
-          content = (
-            local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_acme_token ?
-            "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
-            "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
+              content = (
+                local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_zero_trust_tunnel ?
+                "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
+                "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
+              )
+
+              zone = try(
+                split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
+                null
+              )
+            }
           )
         }
-        if local._dns_services_url_zone[key][idx] != null
-      }
-    ]
+        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0
+      ]
+    ])
   ...)
 
   dns_records_wildcards = {
-    for key, group in {
-      for candidate in [
-        for record in concat(
-          values(local.dns_records_servers),
-          values(local.dns_records_manual),
-          values(local.dns_records_services),
-          values(local.dns_records_services_urls)
-        ) : record
-        if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
-      ] : "${candidate.zone}-${candidate.name}" => candidate...
-      } : "${group[0].name}-wildcard" => {
-      content = group[0].name
-      name    = "*.${group[0].name}"
+    for hostname in distinct([
+      for record in concat(
+        values(local.dns_records_servers),
+        values(local.dns_records_manual),
+        values(local.dns_records_services),
+        values(local.dns_records_services_urls)
+        ) : {
+        name = record.name
+        zone = record.zone
+      }
+      if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
+      ]) : "${hostname.zone}-${hostname.name}-wildcard" => {
+      content = hostname.name
+      name    = "*.${hostname.name}"
       type    = "CNAME"
-      zone    = group[0].zone
+      zone    = hostname.zone
     }
   }
 
