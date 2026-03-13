@@ -6,6 +6,8 @@ provider "bitwarden" {
   }
 }
 
+provider "oci" {}
+
 provider "restapi" {
   alias                 = "resend"
   create_returns_object = true
