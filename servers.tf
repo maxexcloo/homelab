@@ -3,7 +3,26 @@ locals {
     for k, v in {
       for filepath in fileset(path.module, "data/servers/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-    } : k => merge(var.server_defaults, v)
+      } : k => merge(
+      var.server_defaults,
+      v,
+      {
+        config = merge(
+          var.server_defaults.config,
+          try(v.config, {}),
+          {
+            incus = merge(
+              var.server_defaults.config.incus,
+              try(v.config.incus, {})
+            )
+            oci = merge(
+              var.server_defaults.config.oci,
+              try(v.config.oci, {})
+            )
+          }
+        )
+      }
+    )
   }
 
   _servers_computed = {

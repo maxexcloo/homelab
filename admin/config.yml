@@ -253,7 +253,7 @@ collections:
         widget: select
         options:
           - incus
-          - oracle
+          - oci
           - unifi
       - name: management_port
         label: Management Port
@@ -332,6 +332,66 @@ collections:
         default: false
         hint: 'Create auth key and join Tailscale network. Key and device IPs stored in Bitwarden.'
         widget: boolean
+      - name: config
+        label: Platform Config
+        hint: 'Platform-specific configuration. Only fields for the selected platform are used.'
+        required: false
+        widget: object
+        fields:
+          - name: oci
+            label: Oracle Cloud (OCI)
+            hint: 'OCI-specific VM configuration'
+            required: false
+            widget: object
+            fields:
+              - name: boot_disk_image_id
+                label: Boot Image OCID
+                hint: 'Oracle Cloud image OCID. Example: ocid1.image.oc1.ap-sydney-1.xxxxx'
+                required: false
+                widget: string
+              - name: boot_disk_size
+                label: Boot Disk Size (GB)
+                default: 128
+                hint: 'Size of boot volume in GB'
+                required: false
+                value_type: int
+                widget: number
+              - name: cpus
+                label: CPU Cores
+                default: 4
+                hint: 'Number of OCPUs (1-4 for Always Free)'
+                required: false
+                value_type: int
+                widget: number
+              - name: ingress_ports
+                label: Ingress Ports
+                hint: 'TCP/UDP ports to allow inbound. Defaults to [22, 80, 443] if empty'
+                required: false
+                widget: list
+                field:
+                  name: port
+                  label: Port
+                  value_type: int
+                  widget: number
+              - name: memory
+                label: Memory (GB)
+                default: 8
+                hint: 'Memory in GB (1-24 for Always Free)'
+                required: false
+                value_type: int
+                widget: number
+              - name: shape
+                label: VM Shape
+                default: VM.Standard.A1.Flex
+                hint: 'OCI compute shape'
+                required: false
+                widget: string
+          - name: incus
+            label: Incus
+            hint: 'Incus-specific VM configuration'
+            required: false
+            widget: object
+            fields: []
 
   - name: services
     label: Services
