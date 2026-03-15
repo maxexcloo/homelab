@@ -5,6 +5,7 @@ region: au
 type: router
 description: AU
 platform: unifi
+management_address: ''
 management_port: 443
 public_address: excloo-au.controld.live
 public_ipv4: ''
@@ -18,3 +19,14 @@ enable_docker: false
 enable_password: true
 enable_resend: false
 enable_tailscale: true
+config:
+  incus:
+    cpus: null
+    image: ''
+    memory: null
+  oci:
+    cpus: null
+    disk_size: null
+    image_id: ''
+    memory: null
+    shape: ''
