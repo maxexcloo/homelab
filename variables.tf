@@ -60,18 +60,30 @@ variable "server_defaults" {
     config = {
       incus = {
         cpus        = 2
-        disks       = [{ name = "root", path = "/", pool = "default", size = 32 }]
         image       = null
         memory      = 4
-        nested      = false
-        networks    = [{ mac_address = null, name = "eth0", network = "incusbr0" }]
+        nested      = null
         pci_devices = []
-        privileged  = false
+        privileged  = null
         profiles    = ["default"]
-        protection  = false
-        secureboot  = true
+        protection  = null
+        secureboot  = null
         type        = "virtual-machine"
         usb_devices = []
+        disks = [
+          {
+            name = "root"
+            path = "/"
+            pool = "default"
+            size = 128
+          }
+        ]
+        networks = [
+          {
+            name        = "eth-1"
+            network     = "incusbr0"
+          }
+        ]
       }
       oci = {
         assign_public_ip = true
@@ -79,7 +91,7 @@ variable "server_defaults" {
         disk_size        = 128
         image_id         = "ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza"
         ingress_ports    = [22, 80, 443]
-        memory           = 8
+        memory           = 4
         shape            = "VM.Standard.A1.Flex"
       }
     }
