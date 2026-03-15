@@ -6,7 +6,7 @@ username: ''
 platform: incus
 region: au
 type: server
-public_address: ''
+management_address: 'pie.au.excloo.dev'
 public_ipv4: ''
 public_ipv6: ''
 management_port: 8443

@@ -25,7 +25,7 @@ locals {
 
   oci_vms = {
     for k, v in local._servers : k => v
-    if v.platform == "oci" && v.type == "vm"
+    if v.platform == "oci" && v.type == "vm" && try(v.config.oci, null) != null
   }
 }
 
@@ -113,7 +113,7 @@ resource "oci_core_instance" "server" {
   create_vnic_details {
     assign_ipv6ip             = true
     assign_private_dns_record = true
-    assign_public_ip          = true
+    assign_public_ip          = each.value.config.oci.assign_public_ip
     display_name              = each.key
     hostname_label            = each.value.name
     nsg_ids                   = [oci_core_network_security_group.server[each.key].id]
@@ -126,8 +126,8 @@ resource "oci_core_instance" "server" {
   }
 
   source_details {
-    boot_volume_size_in_gbs = each.value.config.oci.boot_disk_size
-    source_id               = each.value.config.oci.boot_disk_image_id
+    boot_volume_size_in_gbs = each.value.config.oci.disk_size
+    source_id               = each.value.config.oci.image_id
     source_type             = "image"
   }
 

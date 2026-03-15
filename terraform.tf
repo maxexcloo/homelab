@@ -11,6 +11,9 @@ terraform {
     cloudflare = {
       source = "cloudflare/cloudflare"
     }
+    deepmerge = {
+      source = "isometry/deepmerge"
+    }
     github = {
       source = "integrations/github"
     }

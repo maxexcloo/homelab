@@ -3,26 +3,7 @@ locals {
     for k, v in {
       for filepath in fileset(path.module, "data/servers/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-      } : k => merge(
-      var.server_defaults,
-      v,
-      {
-        config = merge(
-          var.server_defaults.config,
-          try(v.config, {}),
-          {
-            incus = merge(
-              var.server_defaults.config.incus,
-              try(v.config.incus, {})
-            )
-            oci = merge(
-              var.server_defaults.config.oci,
-              try(v.config.oci, {})
-            )
-          }
-        )
-      }
-    )
+    } : k => provider::deepmerge::mergo(var.server_defaults, v)
   }
 
   _servers_computed = {
@@ -61,6 +42,8 @@ locals {
         private_address    = try(local.unifi_clients[k].local_dns_record, null)
         private_ipv4       = try(local.unifi_clients[k].fixed_ip, null)
         ssh_keys           = data.github_user.default.ssh_keys
+        tailscale_ipv4     = try(local.tailscale_device_addresses[k].ipv4, null)
+        tailscale_ipv6     = try(local.tailscale_device_addresses[k].ipv6, null)
       },
       v.enable_b2 ? {
         b2_application_key_id        = b2_application_key.server[k].application_key_id
@@ -80,8 +63,6 @@ locals {
       } : {},
       v.enable_tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.server[k].key
-        tailscale_ipv4               = try(local.tailscale_device_addresses[k].ipv4, null)
-        tailscale_ipv6               = try(local.tailscale_device_addresses[k].ipv6, null)
       } : {}
     )
   }

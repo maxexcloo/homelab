@@ -18,3 +18,20 @@ enable_docker: false
 enable_password: true
 enable_resend: false
 enable_tailscale: true
+config:
+  incus:
+    cpus: 2
+    disks:
+      - pool: local
+        path: /
+        size: 128
+    image: haos
+    memory: 4
+    networks:
+      - network: eno1
+        mac_address: 10:66:6a:38:76:25
+    profiles:
+      - default
+    secureboot: true
+    type: virtual-machine
+  oci: null
