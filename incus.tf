@@ -13,23 +13,27 @@ locals {
 resource "incus_instance" "vm" {
   for_each = local.incus_vms
 
-  image    = each.value.config.incus.image
-  name     = each.value.name
-  profiles = each.value.config.incus.profiles
-  remote   = each.value.parent
-  type     = each.value.config.incus.type
+  description = each.value.description
+  image       = each.value.config.incus.image
+  name        = each.value.name
+  profiles    = each.value.config.incus.profiles
+  project     = "default"
+  remote      = each.value.parent
+  type        = each.value.config.incus.type
 
   config = merge(
     {
-      "limits.cpu"          = each.value.config.incus.cpus
-      "limits.memory"       = "${each.value.config.incus.memory}GiB"
-      "security.secureboot" = each.value.config.incus.secureboot
-      "user.user-data"      = base64encode(local.cloud_config[each.key])
+      "limits.cpu"                 = each.value.config.incus.cpus
+      "limits.memory"              = "${each.value.config.incus.memory}GiB"
+      "security.protection.delete" = each.value.config.incus.protection
     },
-    # Container-specific settings
     each.value.config.incus.type == "container" ? {
       "security.nesting"    = each.value.config.incus.nested
       "security.privileged" = each.value.config.incus.privileged
+      "user.user-data"      = base64encode(local.cloud_config[each.key])
+    } : {},
+    each.value.config.incus.type == "virtual-machine" ? {
+      "security.secureboot" = each.value.config.incus.secureboot
     } : {}
   )
 
@@ -57,7 +61,6 @@ resource "incus_instance" "vm" {
 
       properties = merge(
         {
-          name    = try(device.value.name, null) != null ? device.value.name : "eth${device.key}"
           network = device.value.network
         },
         try(device.value.mac_address, null) != null ? {

@@ -61,13 +61,14 @@ variable "server_defaults" {
       incus = {
         cpus        = 2
         disks       = [{ name = "root", path = "/", pool = "default", size = 32 }]
-        image       = "images:ubuntu/24.04"
+        image       = null
         memory      = 4
         nested      = false
         networks    = [{ mac_address = null, name = "eth0", network = "incusbr0" }]
         pci_devices = []
         privileged  = false
         profiles    = ["default"]
+        protection  = false
         secureboot  = true
         type        = "virtual-machine"
         usb_devices = []

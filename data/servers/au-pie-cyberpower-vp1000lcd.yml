@@ -10,14 +10,13 @@ username: root
 config:
   incus:
     cpus: 1
-    disks:
-      - pool: default
-        path: /
-        size: 10
+    protection: true
+    disks: []
     image: images:ubuntu/24.04
     memory: 1
     networks:
-      - network: eno1
+      - name: eth-1
+        network: eno1
         mac_address: 10:66:6a:0b:62:cf
     nested: false
     privileged: false
@@ -25,7 +24,8 @@ config:
       - default
     type: container
     usb_devices:
-      - vendorid: '0764'
+      - name: ups-1
+        vendorid: '0764'
         productid: '0501'
         mode: '0666'
   oci: null
