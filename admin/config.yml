@@ -255,16 +255,24 @@ collections:
           - incus
           - oci
           - unifi
+      - name: management_address
+        label: Management Address
+        hint: 'Management address for API connections (domain or IP). Required for Incus hosts. Examples: pie.au.excloo.net, 192.168.1.100, [2001:db8::1]'
+        required: false
+        widget: string
+        pattern:
+          - ^$|^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$|^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$|^\[[0-9a-fA-F:]+\]$
+          - Must be a valid domain name, IPv4 address, IPv6 address (in brackets), or empty
       - name: management_port
         label: Management Port
-        hint: 'Port for web UI, can be empty.'
+        hint: 'Port for management API/web UI.'
         default: 443
         required: false
         value_type: int
         widget: number
       - name: public_address
         label: Public Address
-        hint: 'Public address routing to this server, takes priority over parent and IPv4 and IPv6.'
+        hint: 'Public address routing to this server, takes priority over parent and IP addresses.'
         required: false
         widget: string
         pattern:
@@ -334,35 +342,207 @@ collections:
         widget: boolean
       - name: config
         label: Platform Config
-        hint: 'Platform-specific configuration. Only fields for the selected platform are used.'
-        required: false
+        hint: 'Platform-specific configuration. Both incus and oci must be present but can be null/empty.'
+        required: true
         widget: object
         fields:
-          - name: oci
-            label: Oracle Cloud (OCI)
-            hint: 'OCI-specific VM configuration'
-            required: false
+          - name: incus
+            label: Incus
+            hint: 'Incus-specific VM configuration. Set to null for OCI VMs.'
+            required: true
             widget: object
             fields:
-              - name: boot_disk_image_id
-                label: Boot Image OCID
-                hint: 'Oracle Cloud image OCID. Example: ocid1.image.oc1.ap-sydney-1.xxxxx'
+              - name: cpus
+                label: CPU Cores
+                default: 2
+                hint: 'Number of CPU cores'
+                required: false
+                value_type: int
+                widget: number
+              - name: disks
+                label: Disks
+                hint: 'Disk devices for this instance'
+                required: false
+                widget: list
+                types:
+                  - name: disk
+                    label: Disk
+                    fields:
+                      - name: name
+                        label: Device Name
+                        hint: 'Name of the disk device (optional, auto-generated if empty)'
+                        required: false
+                        widget: string
+                      - name: path
+                        label: Mount Path
+                        default: '/'
+                        hint: 'Path where disk is mounted'
+                        widget: string
+                      - name: pool
+                        label: Storage Pool
+                        default: 'default'
+                        hint: 'Storage pool for this disk'
+                        widget: string
+                      - name: size
+                        label: Size (GB)
+                        default: 32
+                        hint: 'Disk size in GB'
+                        value_type: int
+                        widget: number
+              - name: image
+                label: VM Image
+                default: 'images:ubuntu/24.04'
+                hint: 'Incus image to use (e.g., images:ubuntu/24.04)'
                 required: false
                 widget: string
-              - name: boot_disk_size
-                label: Boot Disk Size (GB)
+              - name: memory
+                label: Memory (GB)
+                default: 4
+                hint: 'Memory in GB'
+                required: false
+                value_type: int
+                widget: number
+              - name: networks
+                label: Networks
+                hint: 'Network interfaces for this instance'
+                required: false
+                widget: list
+                types:
+                  - name: network
+                    label: Network
+                    fields:
+                      - name: name
+                        label: Interface Name
+                        hint: 'Name of the network interface (optional, auto-generated if empty)'
+                        required: false
+                        widget: string
+                      - name: network
+                        label: Network
+                        default: 'incusbr0'
+                        hint: 'Network to attach to'
+                        widget: string
+                      - name: mac_address
+                        label: MAC Address
+                        hint: 'Hardware MAC address (optional). Format: 10:66:6a:xx:xx:xx'
+                        required: false
+                        widget: string
+                        pattern:
+                          - ^$|^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$
+                          - Must be a valid MAC address or empty
+              - name: profiles
+                label: Profiles
+                hint: 'List of Incus profiles to apply'
+                required: false
+                widget: list
+                field:
+                  name: profile
+                  label: Profile
+                  default: default
+                  widget: string
+              - name: secureboot
+                label: Secure Boot
+                default: true
+                hint: 'Enable Secure Boot (VMs only).'
+                required: false
+                widget: boolean
+              - name: type
+                label: Instance Type
+                default: virtual-machine
+                hint: 'Type of instance: virtual-machine or container'
+                required: false
+                widget: select
+                options:
+                  - container
+                  - virtual-machine
+              - name: nested
+                label: Nesting
+                default: false
+                hint: 'Enable nesting (containers only)'
+                required: false
+                widget: boolean
+              - name: privileged
+                label: Privileged
+                default: false
+                hint: 'Run privileged container (containers only)'
+                required: false
+                widget: boolean
+              - name: pci_devices
+                label: PCI Devices
+                hint: 'PCI passthrough devices'
+                required: false
+                widget: list
+                types:
+                  - name: device
+                    label: PCI Device
+                    fields:
+                      - name: name
+                        label: Device Name
+                        hint: 'Name of the PCI device (optional, auto-generated if empty)'
+                        required: false
+                        widget: string
+                      - name: address
+                        label: PCI Address
+                        hint: 'PCI address format: 0000:01:00.0'
+                        widget: string
+              - name: usb_devices
+                label: USB Devices
+                hint: 'USB passthrough devices'
+                required: false
+                widget: list
+                types:
+                  - name: device
+                    label: USB Device
+                    fields:
+                      - name: name
+                        label: Device Name
+                        hint: 'Name of the USB device (optional, auto-generated if empty)'
+                        required: false
+                        widget: string
+                      - name: vendorid
+                        label: Vendor ID
+                        hint: '4-character hex vendor ID'
+                        widget: string
+                      - name: productid
+                        label: Product ID
+                        hint: '4-character hex product ID'
+                        widget: string
+                      - name: mode
+                        label: Mode
+                        hint: 'Device permissions (e.g., 0666)'
+                        required: false
+                        widget: string
+          - name: oci
+            label: Oracle Cloud (OCI)
+            hint: 'OCI-specific VM configuration. Set to null for Incus VMs.'
+            required: true
+            widget: object
+            fields:
+              - name: assign_public_ip
+                label: Assign Public IP
+                default: true
+                hint: 'Assign a public IP address to this VM'
+                required: false
+                widget: boolean
+              - name: cpus
+                label: CPU Cores
+                default: 2
+                hint: 'Number of OCPUs (1-4 for Always Free)'
+                required: false
+                value_type: int
+                widget: number
+              - name: disk_size
+                label: Disk Size (GB)
                 default: 128
                 hint: 'Size of boot volume in GB'
                 required: false
                 value_type: int
                 widget: number
-              - name: cpus
-                label: CPU Cores
-                default: 4
-                hint: 'Number of OCPUs (1-4 for Always Free)'
+              - name: image_id
+                label: Image OCID
+                default: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
+                hint: 'Oracle Cloud image OCID. Example: ocid1.image.oc1.ap-sydney-1.xxxxx'
                 required: false
-                value_type: int
-                widget: number
+                widget: string
               - name: ingress_ports
                 label: Ingress Ports
                 hint: 'TCP/UDP ports to allow inbound. Defaults to [22, 80, 443] if empty'
@@ -386,12 +566,6 @@ collections:
                 hint: 'OCI compute shape'
                 required: false
                 widget: string
-          - name: incus
-            label: Incus
-            hint: 'Incus-specific VM configuration'
-            required: false
-            widget: object
-            fields: []
 
   - name: services
     label: Services
@@ -494,13 +668,9 @@ collections:
         label: Global Defaults
         file: data/defaults.yml
         fields:
-          - name: organization
-            label: Organization Name
-            hint: 'Your organization name.'
-            widget: string
-          - name: email
-            label: Admin Email
-            hint: 'Primary contact email. Used for Let''s Encrypt notifications and service alerts.'
+          - name: domain_acme
+            label: ACME Domain
+            hint: 'Domain for DNS-01 ACME challenges. Usually same as external or delegated subdomain.'
             widget: string
           - name: domain_external
             label: External Domain
@@ -510,25 +680,29 @@ collections:
             label: Internal Domain
             hint: 'Private domain for internal services (Tailscale). Example: excloo.dev'
             widget: string
-          - name: domain_acme
-            label: ACME Domain
-            hint: 'Domain for DNS-01 ACME challenges. Usually same as external or delegated subdomain.'
-            widget: string
-          - name: timezone
-            label: Timezone
-            hint: 'Default timezone for all servers. Example: Australia/Sydney'
+          - name: email
+            label: Admin Email
+            hint: 'Primary contact email. Used for Let''s Encrypt notifications and service alerts.'
             widget: string
           - name: locale
             label: Locale
             hint: 'Default locale for system messages. Example: en_AU'
             widget: string
+          - name: managed_comment
+            label: Managed Comment
+            hint: 'Comment added to all Cloudflare DNS records to indicate Terraform management.'
+            widget: string
+          - name: organization
+            label: Organization Name
+            hint: 'Your organization name.'
+            widget: string
           - name: shell
             label: Default Shell
             hint: 'Default login shell for users. Example: /bin/bash, /bin/zsh'
             widget: string
-          - name: managed_comment
-            label: Managed Comment
-            hint: 'Comment added to all Cloudflare DNS records to indicate Terraform management.'
+          - name: timezone
+            label: Timezone
+            hint: 'Default timezone for all servers. Example: Australia/Sydney'
             widget: string
 
 media_folder: media

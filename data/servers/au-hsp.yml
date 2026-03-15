@@ -20,9 +20,10 @@ enable_resend: false
 enable_tailscale: true
 config:
   oci:
-    boot_disk_image_id: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
-    boot_disk_size: 128
+    assign_public_ip: true
     cpus: 4
+    disk_size: 128
+    image_id: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
     ingress_ports: []
     memory: 24
     shape: VM.Standard.A1.Flex

@@ -44,6 +44,7 @@ variable "server_defaults" {
     enable_tailscale                    = false
     fqdn                                = null
     id                                  = null
+    management_address                  = null
     management_port                     = 443
     name                                = null
     parent                              = null
@@ -57,14 +58,28 @@ variable "server_defaults" {
     type                                = "server"
     username                            = "root"
     config = {
-      incus = {}
+      incus = {
+        cpus        = 2
+        disks       = [{ name = "root", path = "/", pool = "default", size = 32 }]
+        image       = "images:ubuntu/24.04"
+        memory      = 4
+        nested      = false
+        networks    = [{ mac_address = null, name = "eth0", network = "incusbr0" }]
+        pci_devices = []
+        privileged  = false
+        profiles    = ["default"]
+        secureboot  = true
+        type        = "virtual-machine"
+        usb_devices = []
+      }
       oci = {
-        boot_disk_image_id = null
-        boot_disk_size     = 128
-        cpus               = 4
-        ingress_ports      = [22, 80, 443]
-        memory             = 8
-        shape              = "VM.Standard.A1.Flex"
+        assign_public_ip = true
+        cpus             = 2
+        disk_size        = 128
+        image_id         = "ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza"
+        ingress_ports    = [22, 80, 443]
+        memory           = 8
+        shape            = "VM.Standard.A1.Flex"
       }
     }
   }

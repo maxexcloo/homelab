@@ -6,6 +6,20 @@ provider "bitwarden" {
   }
 }
 
+provider "incus" {
+  accept_remote_certificate    = true
+  generate_client_certificates = true
+
+  dynamic "remote" {
+    for_each = local.incus_servers
+
+    content {
+      address = "https://${remote.value.management_address}:${remote.value.management_port}"
+      name    = remote.key
+    }
+  }
+}
+
 provider "oci" {
   private_key  = base64decode(var.oci_private_key_base64)
   tenancy_ocid = var.oci_tenancy_ocid

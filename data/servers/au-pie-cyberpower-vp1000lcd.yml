@@ -1,0 +1,31 @@
+id: au-pie-cyberpower-vp1000lcd
+name: cyberpower-vp1000lcd
+description: CyberPower UPS Monitor
+parent: au-pie
+platform: incus
+region: au
+type: vm
+enable_password: true
+username: root
+config:
+  incus:
+    cpus: 1
+    disks:
+      - pool: default
+        path: /
+        size: 10
+    image: images:ubuntu/24.04
+    memory: 1
+    networks:
+      - network: eno1
+        mac_address: 10:66:6a:0b:62:cf
+    nested: false
+    privileged: false
+    profiles:
+      - default
+    type: container
+    usb_devices:
+      - vendorid: '0764'
+        productid: '0501'
+        mode: '0666'
+  oci: null
