@@ -1,39 +1,29 @@
-id: au-pie-haos
-name: haos
-description: HAOS
-parent: au-pie
-username: root
 platform: incus
-region: au
-type: vm
-public_address: ''
-public_ipv4: ''
-public_ipv6: ''
-management_port: 443
-enable_b2: true
-enable_cloudflare_acme_token: true
-enable_cloudflare_proxy: false
-enable_cloudflare_zero_trust_tunnel: true
-enable_docker: false
-enable_password: true
-enable_resend: false
-enable_tailscale: true
-config:
+identity:
+  description: HAOS
+  id: au-pie-haos
+  name: haos
+  parent: au-pie
+  region: au
+  type: vm
+features:
+  b2: true
+  cloudflare_acme_token: true
+  cloudflare_zero_trust_tunnel: true
+  password: true
+  tailscale: true
+platform_config:
   incus:
     cpus: 4
-    disks:
-      - name: root
-        pool: local
-        path: /
-        size: 128
     memory: 8
-    networks:
-      - name: eth-1
-        network: eno1
-        mac_address: 10:66:6a:38:76:25
-    profiles:
-      - default
-    secureboot: false
     protection: true
     type: virtual-machine
-  oci: null
+    disks:
+      - name: root
+        path: /
+        pool: local
+        size: 128
+    networks:
+      - name: eth-1
+        mac_address: 10:66:6a:38:76:25
+        network: eno1

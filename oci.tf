@@ -20,12 +20,12 @@ data "oci_identity_availability_domain" "default" {
 
 locals {
   oci_regions = toset(distinct([
-    for k, v in local.oci_vms : v.region
+    for k, v in local.oci_vms : v.identity.region
   ]))
 
   oci_vms = {
     for k, v in local._servers : k => v
-    if v.platform == "oci" && v.type == "vm" && try(v.config.oci, null) != null
+    if v.identity.type == "vm" && v.platform == "oci" && v.platform_config.oci != null
   }
 }
 
@@ -101,10 +101,10 @@ resource "oci_core_default_security_list" "default" {
 resource "oci_core_instance" "server" {
   for_each = local.oci_vms
 
-  availability_domain = data.oci_identity_availability_domain.default[each.value.region].name
+  availability_domain = data.oci_identity_availability_domain.default[each.value.identity.region].name
   compartment_id      = var.oci_tenancy_ocid
   display_name        = each.key
-  shape               = each.value.config.oci.shape
+  shape               = each.value.platform_config.oci.shape
 
   metadata = {
     user_data = base64encode(local.cloud_config[each.key])
@@ -113,21 +113,21 @@ resource "oci_core_instance" "server" {
   create_vnic_details {
     assign_ipv6ip             = true
     assign_private_dns_record = true
-    assign_public_ip          = each.value.config.oci.assign_public_ip
+    assign_public_ip          = each.value.platform_config.oci.assign_public_ip
     display_name              = each.key
-    hostname_label            = each.value.name
+    hostname_label            = each.value.identity.name
     nsg_ids                   = [oci_core_network_security_group.server[each.key].id]
-    subnet_id                 = oci_core_subnet.default[each.value.region].id
+    subnet_id                 = oci_core_subnet.default[each.value.identity.region].id
   }
 
   shape_config {
-    memory_in_gbs = each.value.config.oci.memory
-    ocpus         = each.value.config.oci.cpus
+    memory_in_gbs = each.value.platform_config.oci.memory
+    ocpus         = each.value.platform_config.oci.cpus
   }
 
   source_details {
-    boot_volume_size_in_gbs = each.value.config.oci.disk_size
-    source_id               = each.value.config.oci.image_id
+    boot_volume_size_in_gbs = each.value.platform_config.oci.disk_size
+    source_id               = each.value.platform_config.oci.image_id
     source_type             = "image"
   }
 
@@ -151,7 +151,7 @@ resource "oci_core_network_security_group" "server" {
 
   compartment_id = var.oci_tenancy_ocid
   display_name   = each.key
-  vcn_id         = oci_core_vcn.default[each.value.region].id
+  vcn_id         = oci_core_vcn.default[each.value.identity.region].id
 }
 
 resource "oci_core_network_security_group_security_rule" "server_ingress_icmp" {
@@ -167,7 +167,7 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_icmp" {
 resource "oci_core_network_security_group_security_rule" "server_ingress_tcp" {
   for_each = merge([
     for k, v in local.oci_vms : {
-      for port in v.config.oci.ingress_ports : "${k}-tcp-${port}" => {
+      for port in v.platform_config.oci.ingress_ports : "${k}-tcp-${port}" => {
         vm_key = k
         port   = port
       }
@@ -191,7 +191,7 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_tcp" {
 resource "oci_core_network_security_group_security_rule" "server_ingress_udp" {
   for_each = merge([
     for k, v in local.oci_vms : {
-      for port in v.config.oci.ingress_ports : "${k}-udp-${port}" => {
+      for port in v.platform_config.oci.ingress_ports : "${k}-udp-${port}" => {
         vm_key = k
         port   = port
       }

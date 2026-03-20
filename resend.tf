@@ -1,8 +1,5 @@
 resource "restapi_object" "resend_api_key_server" {
-  for_each = {
-    for k, v in local._servers : k => v
-    if v.enable_resend
-  }
+  for_each = local.servers_by_feature.resend
 
   data                      = jsonencode({ name = each.key })
   id_attribute              = "id"
@@ -20,10 +17,7 @@ resource "restapi_object" "resend_api_key_server" {
 }
 
 resource "restapi_object" "resend_api_key_service" {
-  for_each = {
-    for k, v in local._services_deployments : k => v
-    if v.enable_resend
-  }
+  for_each = local.services_by_feature.resend
 
   data                      = jsonencode({ name = each.key })
   id_attribute              = "id"

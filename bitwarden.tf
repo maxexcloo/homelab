@@ -12,12 +12,12 @@ resource "bitwarden_item_login" "server" {
   folder_id = data.bitwarden_folder.servers.id
   name      = each.key
   password  = each.value.password_sensitive
-  username  = each.value.username
+  username  = each.value.networking.username
 
   dynamic "field" {
     for_each = {
       for k, v in local.servers_filtered[each.key] : k => v
-      if !can(regex(var.url_field_pattern, k)) && !contains(keys(var.server_defaults), k) && can(tostring(v))
+      if !can(regex(var.url_field_pattern, k)) && !contains(keys(local.server_defaults), k) && can(tostring(v))
     }
 
     content {
@@ -38,7 +38,7 @@ resource "bitwarden_item_login" "server" {
       value = format(
         "%s%s",
         can(cidrhost("${uri.value}/128", 0)) ? "[${uri.value}]" : uri.value,
-        each.value.management_port != 443 ? ":${each.value.management_port}" : ""
+        each.value.networking.management_port != 443 ? ":${each.value.networking.management_port}" : ""
       )
     }
   }
@@ -51,12 +51,12 @@ resource "bitwarden_item_login" "service" {
   folder_id = data.bitwarden_folder.services.id
   name      = each.key
   password  = each.value.password_sensitive
-  username  = each.value.username
+  username  = each.value.networking.username
 
   dynamic "field" {
     for_each = {
       for k, v in local.services_filtered[each.key] : k => v
-      if !can(regex(var.url_field_pattern, k)) && !contains(keys(var.service_defaults), k) && can(tostring(v))
+      if !can(regex(var.url_field_pattern, k)) && !contains(keys(local.service_defaults), k) && can(tostring(v))
     }
 
     content {

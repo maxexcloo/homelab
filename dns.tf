@@ -21,13 +21,15 @@ locals {
 
   dns_records_manual = merge([
     for zone, records in local.dns : {
-      for record in records : "${zone}-manual-${record.type}-${substr(sha256(jsonencode(record)), 0, 8)}" => merge(
-        var.dns_defaults,
-        record,
-        {
-          name = record.name == "@" ? zone : "${record.name}.${zone}"
-          zone = zone
-        },
+      for record in records : "${zone}-manual-${record.type}-${substr(sha256(jsonencode(record)), 0, 8)}" => provider::deepmerge::mergo(
+        local.dns_defaults,
+        merge(
+          record,
+          {
+            name = record.name == "@" ? zone : "${record.name}.${zone}"
+            zone = zone
+          },
+        )
       )
     }
   ]...)
@@ -100,12 +102,12 @@ locals {
 
   dns_records_services = merge([
     for zone in [local.defaults.domain_external, local.defaults.domain_internal] : {
-      for k, service in local.services : "${zone}-${k}" => merge(
-        var.dns_defaults,
+      for k, service in local.services : "${zone}-${k}" => provider::deepmerge::mergo(
+        local.dns_defaults,
         {
-          content = local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_zero_trust_tunnel ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${zone}"
-          name    = "${service.name}.${local.servers[service.server].fqdn}.${zone}"
-          proxied = local.servers[service.server].enable_cloudflare_proxy
+          content = local.servers[service.server].features.cloudflare_proxy && local.servers[service.server].features.cloudflare_zero_trust_tunnel ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${zone}"
+          name    = "${service.identity.name}.${local.servers[service.server].fqdn}.${zone}"
+          proxied = local.servers[service.server].features.cloudflare_proxy
           type    = "CNAME"
           zone    = zone
         }
@@ -116,19 +118,19 @@ locals {
   dns_records_services_urls = merge(
     flatten([
       for k, service in local.services : [
-        for i, url in(service.urls != null ? service.urls : []) : {
-          "${k}-url-${i}" = merge(
-            var.dns_defaults,
+        for i, url in service.features.urls : {
+          "${k}-url-${i}" = provider::deepmerge::mergo(
+            local.dns_defaults,
             {
               name    = url
-              proxied = local.servers[service.server].enable_cloudflare_proxy
+              proxied = local.servers[service.server].features.cloudflare_proxy
               server  = service.server
               type    = "CNAME"
 
               content = (
-                local.servers[service.server].enable_cloudflare_proxy && local.servers[service.server].enable_cloudflare_zero_trust_tunnel ?
+                local.servers[service.server].features.cloudflare_proxy && local.servers[service.server].features.cloudflare_zero_trust_tunnel ?
                 "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
-                "${service.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
+                "${service.identity.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
               )
 
               zone = try(

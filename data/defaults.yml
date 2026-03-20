@@ -1,3 +1,9 @@
+dns:
+  priority: null
+  proxied: false
+  ttl: 1
+  wildcard: false
+
 domain_acme: 043847.xyz
 domain_external: excloo.net
 domain_internal: excloo.dev
@@ -7,3 +13,73 @@ managed_comment: OpenTofu Managed
 organization: excloo
 shell: /bin/bash
 timezone: Australia/Sydney
+
+servers:
+  platform: ""
+  identity:
+    description: ""
+    id: ""
+    name: ""
+    parent: ""
+    region: ""
+    type: server
+  features:
+    b2: false
+    cloudflare_acme_token: false
+    cloudflare_proxy: false
+    cloudflare_zero_trust_tunnel: false
+    docker: false
+    password: false
+    resend: false
+    tailscale: false
+  networking:
+    management_address: ""
+    management_port: 443
+    public_address: ""
+    public_ipv4: ""
+    public_ipv6: ""
+    username: root
+  platform_config:
+    incus:
+      cpus: 2
+      image: null
+      memory: 4
+      nested: false
+      privileged: false
+      protection: false
+      secureboot: false
+      type: container
+      disks: []
+      networks: []
+      pci_devices: []
+      profiles:
+        - default
+      usb_devices: []
+    oci:
+      assign_public_ip: true
+      cpus: 2
+      disk_size: 128
+      image_id: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
+      ingress_ports:
+        - 22
+        - 80
+        - 443
+      memory: 4
+      shape: VM.Standard.A1.Flex
+
+services:
+  deploy_to: []
+  identity:
+    description: ""
+    id: ""
+    name: ""
+    service: ""
+  features:
+    b2: false
+    password: false
+    resend: false
+    secrets: []
+    tailscale: false
+  networking:
+    port: null
+    urls: []

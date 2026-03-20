@@ -1,6 +1,6 @@
 [tools]
-bitwarden = "latest"
 opentofu = "latest"
+prettier = "latest"
 
 [env]
 TF_CLI_ARGS_init = "-upgrade"
@@ -31,7 +31,10 @@ depends = ["fmt", "validate"]
 
 [tasks.fmt]
 description = "Format all files"
-run = "tofu fmt -recursive"
+run = """
+prettier --log-level warn --write "data/**/*.yml"
+tofu fmt -recursive
+"""
 
 [tasks.validate]
 description = "Validate configurations"

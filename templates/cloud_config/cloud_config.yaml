@@ -1,5 +1,5 @@
 #cloud-config
-hostname: ${server.name}
+hostname: ${server.identity.name}
 locale: ${defaults.locale}
 package_reboot_if_required: true
 package_update: true
@@ -8,31 +8,31 @@ packages: [curl, sudo]
 ssh_pwauth: false
 timezone: ${defaults.timezone}
 groups:
-%{ if server.enable_docker ~}
+%{ if server.features.docker ~}
   - docker
 %{ endif ~}
   - sudo
 runcmd:
   - sysctl --system
-%{ if server.enable_docker ~}
+%{ if server.features.docker ~}
   - curl -fsLS https://get.docker.com | sh
 %{ endif ~}
-%{ if server.enable_cloudflare_zero_trust_tunnel ~}
+%{ if server.features.cloudflare_zero_trust_tunnel ~}
   - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
   - cloudflared service install ${server.cloudflare_zero_trust_tunnel_token_sensitive}
 %{ endif ~}
-%{ if server.enable_tailscale ~}
+%{ if server.features.tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
-  - tailscale up --advertise-exit-node --authkey ${server.tailscale_auth_key_sensitive} --hostname ${server.id}
+  - tailscale up --advertise-exit-node --authkey ${server.tailscale_auth_key_sensitive} --hostname ${server.identity.id}
 %{ endif ~}
 users:
-  - name: ${server.username}
+  - name: ${server.networking.username}
     hashed_passwd: ${server.password_hash}
     lock_passwd: false
     shell: ${defaults.shell}
     ssh_authorized_keys: ${jsonencode(server.ssh_keys)}
     groups:
-%{ if server.enable_docker ~}
+%{ if server.features.docker ~}
       - docker
 %{ endif ~}
       - sudo

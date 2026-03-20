@@ -1,20 +1,17 @@
-id: us-hotdog
-name: hotdog
-parent: ''
-region: us
-type: vm
-description: Hotdog
 platform: unmanaged
-management_port: 8007
-public_address: ''
-public_ipv4: 199.127.129.143
-public_ipv6: 2602:f831::4665:8aff:fee1:40ed
-username: root
-enable_b2: false
-enable_cloudflare_acme_token: true
-enable_cloudflare_proxy: false
-enable_cloudflare_zero_trust_tunnel: true
-enable_docker: false
-enable_password: true
-enable_resend: true
-enable_tailscale: true
+identity:
+  description: Hotdog
+  id: us-hotdog
+  name: hotdog
+  region: us
+  type: vm
+features:
+  cloudflare_acme_token: true
+  cloudflare_zero_trust_tunnel: true
+  password: true
+  resend: true
+  tailscale: true
+networking:
+  management_port: 8007
+  public_ipv4: 199.127.129.143
+  public_ipv6: 2602:f831::4665:8aff:fee1:40ed
