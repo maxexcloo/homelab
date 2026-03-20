@@ -1,6 +1,6 @@
 platform: incus
 identity:
-  description: CyberPower UPS Monitor
+  description: CyberPower VP1000LCD UPS Monitor
   id: au-pie-cyberpower-vp1000lcd
   name: cyberpower-vp1000lcd
   parent: au-pie
