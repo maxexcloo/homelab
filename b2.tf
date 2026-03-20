@@ -52,7 +52,7 @@ resource "b2_bucket" "server" {
 }
 
 resource "b2_bucket" "service" {
-  for_each = local.services_by_feature.b2
+  for_each = random_string.b2_service
 
   bucket_name = "${each.key}-${random_string.b2_service[each.key].result}"
   bucket_type = "allPrivate"

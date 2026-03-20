@@ -12,7 +12,7 @@ resource "bitwarden_item_login" "server" {
   folder_id = data.bitwarden_folder.servers.id
   name      = each.key
   password  = each.value.password_sensitive
-  username  = each.value.networking.username
+  username  = each.value.identity.username
 
   dynamic "field" {
     for_each = {
@@ -51,7 +51,7 @@ resource "bitwarden_item_login" "service" {
   folder_id = data.bitwarden_folder.services.id
   name      = each.key
   password  = each.value.password_sensitive
-  username  = each.value.networking.username
+  username  = each.value.identity.username
 
   dynamic "field" {
     for_each = {

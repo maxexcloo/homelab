@@ -1,11 +1,11 @@
+id: au-pie
+parent: au
 platform: incus
+type: server
 identity:
   description: Pie
-  id: au-pie
   name: pie
-  parent: au
   region: au
-  type: server
 features:
   cloudflare_acme_token: true
   tailscale: true

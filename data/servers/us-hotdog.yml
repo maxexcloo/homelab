@@ -1,10 +1,10 @@
+id: us-hotdog
 platform: unmanaged
+type: vm
 identity:
   description: Hotdog
-  id: us-hotdog
   name: hotdog
   region: us
-  type: vm
 features:
   cloudflare_acme_token: true
   cloudflare_zero_trust_tunnel: true

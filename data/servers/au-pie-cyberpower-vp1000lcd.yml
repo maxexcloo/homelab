@@ -1,11 +1,11 @@
+id: au-pie-cyberpower-vp1000lcd
+parent: au-pie
 platform: incus
+type: vm
 identity:
   description: CyberPower VP1000LCD UPS Monitor
-  id: au-pie-cyberpower-vp1000lcd
   name: cyberpower-vp1000lcd
-  parent: au-pie
   region: au
-  type: vm
 features:
   password: true
 platform_config:

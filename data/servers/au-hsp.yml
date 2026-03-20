@@ -1,18 +1,18 @@
+id: au-hsp
 platform: oci
+type: vm
+
 identity:
   description: HSP
-  id: au-hsp
   name: hsp
   region: au
-  type: vm
+  username: max.schaefer
 features:
   cloudflare_acme_token: true
   cloudflare_zero_trust_tunnel: true
   docker: true
   password: true
   tailscale: true
-networking:
-  username: max.schaefer
 platform_config:
   oci:
     cpus: 4
