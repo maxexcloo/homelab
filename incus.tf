@@ -3,7 +3,7 @@ locals {
     for name, profile in {
       for filepath in fileset(path.module, "data/incus/profiles/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-    } : name => provider::deepmerge::merge(local.defaults.incus.profiles, profile)
+    } : name => provider::deepmerge::mergo(local.defaults.incus.profiles, profile)
   }
 
   incus_profile_remotes = merge([
@@ -21,7 +21,7 @@ locals {
     for name, project in {
       for filepath in fileset(path.module, "data/incus/projects/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-    } : name => provider::deepmerge::merge(local.defaults.incus.projects, project)
+    } : name => provider::deepmerge::mergo(local.defaults.incus.projects, project)
   }
 
   incus_project_remotes = merge([
