@@ -42,18 +42,18 @@ servers:
   platform_config:
     incus:
       cpus: 2
+      disks: []
       image: null
       memory: 4
       nested: false
+      networks: []
+      pci_devices: []
       privileged: false
+      profiles:
+        - default
       protection: false
       secureboot: false
       type: container
-      disks: []
-      networks: []
-      pci_devices: []
-      profiles:
-        - default
       usb_devices: []
     oci:
       assign_public_ip: true
@@ -68,18 +68,18 @@ servers:
       shape: VM.Standard.A1.Flex
 
 services:
-  deploy_to: []
   identity:
     description: ""
     id: ""
     name: ""
     service: ""
+  networking:
+    port: null
+    urls: []
+  deploy_to: []
   features:
     b2: false
     password: false
     resend: false
     secrets: []
     tailscale: false
-  networking:
-    port: null
-    urls: []
