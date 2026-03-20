@@ -1,10 +1,10 @@
 # yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
 
 backend:
+  base_url: https://sveltia-cms-auth.excloo.workers.dev
+  branch: main
   name: github
   repo: maxexcloo/homelab
-  branch: main
-  base_url: https://sveltia-cms-auth.excloo.workers.dev
 
 collections:
   - name: dns
@@ -186,6 +186,20 @@ collections:
     identifier_field: id
     fields:
       # ============================================
+      # PLATFORM
+      # ============================================
+      - name: platform
+        label: Platform
+        hint: 'Infrastructure provider. Affects how OpenTofu manages this server.'
+        required: false
+        widget: select
+        options:
+          - incus
+          - oci
+          - unifi
+          - unmanaged
+
+      # ============================================
       # IDENTITY
       # ============================================
       - name: identity
@@ -238,18 +252,45 @@ collections:
             widget: string
 
       # ============================================
-      # PLATFORM
+      # FEATURES & INTEGRATIONS
       # ============================================
-      - name: platform
-        label: Platform
-        hint: 'Infrastructure provider. Affects how OpenTofu manages this server.'
-        required: false
-        widget: select
-        options:
-          - incus
-          - oci
-          - unifi
-          - unmanaged
+      - name: features
+        label: Features & Integrations
+        widget: object
+        collapsed: true
+        fields:
+          - name: b2
+            label: Backblaze B2
+            hint: 'Create B2 bucket and application key. Credentials stored in Bitwarden.'
+            widget: boolean
+          - name: cloudflare_acme_token
+            label: Cloudflare ACME
+            hint: 'Create API token for Let''s Encrypt DNS challenges. Token stored in Bitwarden.'
+            widget: boolean
+          - name: cloudflare_proxy
+            label: Cloudflare Proxy
+            hint: 'Enable Cloudflare proxy on DNS records for this server.'
+            widget: boolean
+          - name: cloudflare_zero_trust_tunnel
+            label: Cloudflare Tunnel
+            hint: 'Create cloudflared tunnel for inbound access without open ports. Token stored in Bitwarden.'
+            widget: boolean
+          - name: docker
+            label: Docker
+            hint: 'Install Docker on this server.'
+            widget: boolean
+          - name: password
+            label: Password
+            hint: 'Generate password for this server. Credential stored in Bitwarden.'
+            widget: boolean
+          - name: resend
+            label: Resend
+            hint: 'Create Resend API key for sending emails. Key stored in Bitwarden.'
+            widget: boolean
+          - name: tailscale
+            label: Tailscale
+            hint: 'Create auth key and join Tailscale network. Key and device IPs stored in Bitwarden.'
+            widget: boolean
 
       # ============================================
       # NETWORKING
@@ -302,47 +343,6 @@ collections:
             hint: 'Default login user.'
             required: false
             widget: string
-
-      # ============================================
-      # FEATURES & INTEGRATIONS
-      # ============================================
-      - name: features
-        label: Features & Integrations
-        widget: object
-        collapsed: true
-        fields:
-          - name: enable_b2
-            label: Enable Backblaze B2
-            hint: 'Create B2 bucket and application key. Credentials stored in Bitwarden.'
-            widget: boolean
-          - name: enable_cloudflare_acme_token
-            label: Enable Cloudflare ACME
-            hint: 'Create API token for Let''s Encrypt DNS challenges. Token stored in Bitwarden.'
-            widget: boolean
-          - name: enable_cloudflare_proxy
-            label: Enable Cloudflare Proxy
-            hint: 'Enable Cloudflare proxy on DNS records for this server.'
-            widget: boolean
-          - name: enable_cloudflare_zero_trust_tunnel
-            label: Enable Cloudflare Tunnel
-            hint: 'Create cloudflared tunnel for inbound access without open ports. Token stored in Bitwarden.'
-            widget: boolean
-          - name: enable_docker
-            label: Enable Docker
-            hint: 'Install Docker on this server.'
-            widget: boolean
-          - name: enable_password
-            label: Enable Password
-            hint: 'Generate password for this server. Credential stored in Bitwarden.'
-            widget: boolean
-          - name: enable_resend
-            label: Enable Resend
-            hint: 'Create Resend API key for sending emails. Key stored in Bitwarden.'
-            widget: boolean
-          - name: enable_tailscale
-            label: Enable Tailscale
-            hint: 'Create auth key and join Tailscale network. Key and device IPs stored in Bitwarden.'
-            widget: boolean
 
       # ============================================
       # PLATFORM CONFIGURATION (Polymorphic)
@@ -549,18 +549,56 @@ collections:
     format: yml
     identifier_field: id
     fields:
-      - name: id
-        label: Service ID
-        hint: 'Unique identifier for this service. Example: nginx'
-        widget: string
-        pattern:
-          - ^[a-z0-9-]+$
-          - 'Lowercase letters, numbers, and hyphens only'
-      - name: description
-        label: Description
-        hint: 'Human-readable description shown in service listings.'
-        required: false
-        widget: string
+      - name: identity
+        label: Identity
+        widget: object
+        collapsed: false
+        fields:
+          - name: description
+            label: Description
+            hint: 'Human-readable description shown in service listings.'
+            required: false
+            widget: string
+          - name: id
+            label: ID
+            hint: 'Unique identifier for this service. Example: nginx'
+            widget: string
+            pattern:
+              - ^[a-z0-9-]+$
+              - 'Lowercase letters, numbers, and hyphens only'
+          - name: name
+            label: Name
+            hint: 'Service name. Example: nginx, homepage'
+            widget: string
+          - name: service
+            label: Service Config Name
+            hint: 'Reference for Docker Compose file or application configuration. Leave empty for simple services.'
+            required: false
+            widget: string
+      - name: networking
+        label: Networking
+        widget: object
+        collapsed: true
+        fields:
+          - name: port
+            label: Internal Port
+            hint: 'Container/internal port the service listens on. Used for health checks and proxying.'
+            required: false
+            value_type: int
+            widget: number
+          - name: urls
+            label: Custom URLs
+            hint: 'Additional custom domain names.'
+            required: false
+            widget: list
+            field:
+              name: url
+              label: Domain
+              hint: 'Custom domain like service.example.com'
+              widget: string
+              pattern:
+                - ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$
+                - Must be a valid domain name
       - name: deploy_to
         label: Deploy To Servers
         collection: servers
@@ -573,67 +611,38 @@ collections:
           - id
         search_fields:
           - id
-      - name: icon
-        label: Dashboard Icon
-        hint: 'Icon name for service dashboards.'
-        required: false
-        widget: string
-      - name: port
-        label: Internal Port
-        hint: 'Container/internal port the service listens on. Used for health checks and proxying.'
-        required: false
-        value_type: int
-        widget: number
-      - name: service
-        label: Service Config Name
-        hint: 'Reference for Docker Compose file or application configuration. Leave empty for simple services.'
-        required: false
-        widget: string
-      - name: urls
-        label: Custom URLs
-        hint: 'Additional custom domain names.'
-        required: false
-        widget: list
-        field:
-          name: url
-          label: Domain
-          hint: 'Custom domain like service.example.com'
-          widget: string
-          pattern:
-            - ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$
-            - Must be a valid domain name
-      - name: secrets
-        label: Auto-Generated Secrets
-        hint: 'Secrets automatically created and stored in Bitwarden for this service.'
-        multiple: true
-        required: false
-        widget: select
-        options:
-          - label: API Key (32-char random)
-            value: api_key
-          - label: Database Password (32-char random)
-            value: database_password
-          - label: Secret Hash (64-char base64)
-            value: secret_hash
       - name: features
         label: Features & Integrations
         widget: object
         collapsed: true
         fields:
-          - name: enable_b2
-            label: Enable Backblaze B2
+          - name: b2
+            label: Backblaze B2
             hint: 'Create B2 bucket and application key. Credentials stored in Bitwarden.'
             widget: boolean
-          - name: enable_password
-            label: Enable Password
+          - name: password
+            label: Password
             hint: 'Generate password for this service. Credential stored in Bitwarden.'
             widget: boolean
-          - name: enable_resend
-            label: Enable Resend
+          - name: resend
+            label: Resend
             hint: 'Create Resend API key for sending emails. Key stored in Bitwarden.'
             widget: boolean
-          - name: enable_tailscale
-            label: Enable Tailscale
+          - name: secrets
+            label: Auto-Generated Secrets
+            hint: 'Secrets automatically created and stored in Bitwarden for this service.'
+            multiple: true
+            required: false
+            widget: select
+            options:
+              - label: API Key (32-char random)
+                value: api_key
+              - label: Database Password (32-char random)
+                value: database_password
+              - label: Secret Hash (64-char base64)
+                value: secret_hash
+          - name: tailscale
+            label: Tailscale
             hint: 'Create auth key for this service. Key stored in Bitwarden.'
             widget: boolean
 
