@@ -1,19 +1,14 @@
-id: au-pie
-name: pie
-description: Pie
-parent: au
-username: ''
 platform: incus
-region: au
-type: server
-management_address: 'pie.au.excloo.dev'
-public_ipv4: ''
-public_ipv6: ''
-management_port: 8443
-enable_b2: false
-enable_cloudflare_acme_token: true
-enable_cloudflare_proxy: false
-enable_cloudflare_zero_trust_tunnel: false
-enable_docker: false
-enable_resend: false
-enable_tailscale: true
+identity:
+  description: Pie
+  id: au-pie
+  name: pie
+  parent: au
+  region: au
+  type: server
+features:
+  cloudflare_acme_token: true
+  tailscale: true
+networking:
+  management_address: pie.au.excloo.dev
+  management_port: 8443

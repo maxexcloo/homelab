@@ -3,28 +3,30 @@ locals {
     for k, v in {
       for filepath in fileset(path.module, "data/servers/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-    } : k => provider::deepmerge::mergo(var.server_defaults, v)
+    } : k => provider::deepmerge::mergo(local.server_defaults, v)
   }
 
   _servers_computed = {
     for k, v in local._servers : k => {
-      description = v.parent == "" || v.parent == null ? v.description : "${local._servers[v.parent].description} ${v.description} (${upper(v.region)})"
-      fqdn        = length(split("-", k)) == 1 ? k : "${v.name}.${v.region}"
+      description = v.identity.parent == "" ? v.identity.description : "${local._servers[v.identity.parent].identity.description} ${v.identity.description} (${upper(v.identity.region)})"
+      fqdn        = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
 
       public_address = try(
-        v.public_address != "" ? v.public_address : null,
-        v.parent != "" ? local._servers[v.parent].public_address : null,
-        v.parent != "" && local._servers[v.parent].parent != "" ? local._servers[local._servers[v.parent].parent].public_address : null,
+        v.networking.public_address != "" ? v.networking.public_address : null,
+        v.identity.parent != "" ? local._servers[v.identity.parent].networking.public_address : null,
+        v.identity.parent != "" && local._servers[v.identity.parent].identity.parent != "" ? local._servers[local._servers[v.identity.parent].identity.parent].networking.public_address : null,
         null
       )
+
       public_ipv4 = try(
-        can(cidrhost(v.public_ipv4, 0)) ? v.public_ipv4 : null,
-        v.parent != "" && can(cidrhost(local._servers[v.parent].public_ipv4, 0)) ? local._servers[v.parent].public_ipv4 : null,
+        can(cidrhost(v.networking.public_ipv4, 0)) ? v.networking.public_ipv4 : null,
+        v.identity.parent != "" && can(cidrhost(local._servers[v.identity.parent].networking.public_ipv4, 0)) ? local._servers[v.identity.parent].networking.public_ipv4 : null,
         null
       )
+
       public_ipv6 = try(
-        can(cidrhost("${v.public_ipv6}/128", 0)) ? v.public_ipv6 : null,
-        v.parent != "" && can(cidrhost("${local._servers[v.parent].public_ipv6}/128", 0)) ? local._servers[v.parent].public_ipv6 : null,
+        can(cidrhost("${v.networking.public_ipv6}/128", 0)) ? v.networking.public_ipv6 : null,
+        v.identity.parent != "" && can(cidrhost("${local._servers[v.identity.parent].networking.public_ipv6}/128", 0)) ? local._servers[v.identity.parent].networking.public_ipv6 : null,
         null
       )
     }
@@ -37,34 +39,41 @@ locals {
       {
         fqdn_external      = "${local._servers_computed[k].fqdn}.${local.defaults.domain_external}"
         fqdn_internal      = "${local._servers_computed[k].fqdn}.${local.defaults.domain_internal}"
-        password_hash      = v.enable_password ? htpasswd_password.server[k].sha512 : ""
-        password_sensitive = v.enable_password ? random_password.server[k].result : null
+        password_hash      = v.features.password ? htpasswd_password.server[k].sha512 : ""
+        password_sensitive = v.features.password ? random_password.server[k].result : null
         private_address    = try(local.unifi_clients[k].local_dns_record, null)
         private_ipv4       = try(local.unifi_clients[k].fixed_ip, null)
         ssh_keys           = data.github_user.default.ssh_keys
         tailscale_ipv4     = try(local.tailscale_device_addresses[k].ipv4, null)
         tailscale_ipv6     = try(local.tailscale_device_addresses[k].ipv6, null)
       },
-      v.enable_b2 ? {
+      v.features.b2 ? {
         b2_application_key_id        = b2_application_key.server[k].application_key_id
         b2_application_key_sensitive = b2_application_key.server[k].application_key
         b2_bucket_name               = b2_bucket.server[k].bucket_name
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
-      v.enable_cloudflare_acme_token ? {
+      v.features.cloudflare_acme_token ? {
         cloudflare_acme_account_id      = data.cloudflare_accounts.default.result[0].id
         cloudflare_acme_token_sensitive = cloudflare_account_token.server_acme[k].value
       } : {},
-      v.enable_cloudflare_zero_trust_tunnel ? {
+      v.features.cloudflare_zero_trust_tunnel ? {
         cloudflare_zero_trust_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
       } : {},
-      v.enable_resend ? {
+      v.features.resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_server[k].create_response).token
       } : {},
-      v.enable_tailscale ? {
+      v.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.server[k].key
       } : {}
     )
+  }
+
+  servers_by_feature = {
+    for feature in keys(local.server_defaults.features) : feature => {
+      for k, v in local._servers : k => v
+      if v.features[feature]
+    }
   }
 
   servers_filtered = {
@@ -76,10 +85,7 @@ locals {
 }
 
 resource "random_password" "server" {
-  for_each = {
-    for k, v in local._servers : k => v
-    if v.enable_password
-  }
+  for_each = local.servers_by_feature.password
 
   length = 32
 }
@@ -87,14 +93,14 @@ resource "random_password" "server" {
 resource "terraform_data" "servers_validation" {
   input = join(", ", flatten([
     for k, v in local._servers : [
-      "${k} -> ${v.parent}"
+      "${k} -> ${v.identity.parent}"
     ]
-    if v.parent != "" && v.parent != null && !contains(keys(local._servers), v.parent)
+    if v.identity.parent != "" && !contains(keys(local._servers), v.identity.parent)
   ]))
 
   lifecycle {
     precondition {
-      condition     = length(flatten([for k, v in local._servers : [v.parent] if v.parent != "" && v.parent != null && !contains(keys(local._servers), v.parent)])) == 0
+      condition     = length(flatten([for k, v in local._servers : [v.identity.parent] if v.identity.parent != "" && !contains(keys(local._servers), v.identity.parent)])) == 0
       error_message = "Invalid parent references found in servers configuration"
     }
   }

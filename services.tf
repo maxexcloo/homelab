@@ -3,7 +3,7 @@ locals {
     for k, v in {
       for filepath in fileset(path.module, "data/services/*.yml") :
       trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
-    } : k => merge(var.service_defaults, v)
+    } : k => provider::deepmerge::mergo(local.service_defaults, v)
   }
 
   _services_deployments = merge([
@@ -12,7 +12,7 @@ locals {
         service,
         {
           server = target
-          fqdn   = "${service.name}.${local.servers[target].fqdn}"
+          fqdn   = "${service.identity.name}.${local.servers[target].fqdn}"
         }
       )
     }
@@ -22,33 +22,40 @@ locals {
     for k, v in local._services_deployments : k => merge(
       v,
       {
-        fqdn_external      = "${v.name}.${local.servers[v.server].fqdn_external}"
-        fqdn_internal      = "${v.name}.${local.servers[v.server].fqdn_internal}"
-        password_sensitive = v.enable_password ? random_password.service[k].result : null
+        fqdn_external      = "${v.identity.name}.${local.servers[v.server].fqdn_external}"
+        fqdn_internal      = "${v.identity.name}.${local.servers[v.server].fqdn_internal}"
+        password_sensitive = v.features.password ? random_password.service[k].result : null
       },
       {
-        for secret in v.secrets : "${secret}_sensitive" => (
+        for secret in v.features.secrets : "${secret}_sensitive" => (
           secret == "secret_hash" ?
           random_id.service_secret["${k}-${secret}"].b64_std :
           random_password.service_secret["${k}-${secret}"].result
         )
       },
       {
-        for i, url in(v.urls != null ? v.urls : []) : "url_${i}" => url
+        for i, url in v.networking.urls : "url_${i}" => url
       },
-      v.enable_b2 ? {
+      v.features.b2 ? {
         b2_application_key_id        = b2_application_key.service[k].application_key_id
         b2_application_key_sensitive = b2_application_key.service[k].application_key
         b2_bucket_name               = b2_bucket.service[k].bucket_name
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
-      v.enable_resend ? {
+      v.features.resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_service[k].create_response).token
       } : {},
-      v.enable_tailscale ? {
+      v.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
       } : {}
     )
+  }
+
+  services_by_feature = {
+    for feature in keys(local.service_defaults.features) : feature => {
+      for k, v in local._services_deployments : k => v
+      if v.features[feature]
+    }
   }
 
   services_filtered = {
@@ -63,7 +70,7 @@ resource "random_id" "service_secret" {
   for_each = {
     for s in flatten([
       for k, v in local._services_deployments : [
-        for secret in v.secrets : "${k}-${secret}"
+        for secret in v.features.secrets : "${k}-${secret}"
         if secret == "secret_hash"
       ]
     ]) : s => s
@@ -73,10 +80,7 @@ resource "random_id" "service_secret" {
 }
 
 resource "random_password" "service" {
-  for_each = {
-    for k, v in local._services_deployments : k => v
-    if v.enable_password
-  }
+  for_each = local.services_by_feature.password
 
   length = 32
 }
@@ -85,7 +89,7 @@ resource "random_password" "service_secret" {
   for_each = {
     for s in flatten([
       for k, v in local._services_deployments : [
-        for secret in v.secrets : "${k}-${secret}"
+        for secret in v.features.secrets : "${k}-${secret}"
         if secret != "secret_hash"
       ]
     ]) : s => s

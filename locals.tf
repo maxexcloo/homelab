@@ -1,5 +1,13 @@
 locals {
-  defaults = yamldecode(file("${path.module}/data/defaults.yml"))
+  _defaults        = yamldecode(file("${path.module}/data/defaults.yml"))
+  dns_defaults     = local._defaults.dns
+  server_defaults  = local._defaults.servers
+  service_defaults = local._defaults.services
+
+  defaults = {
+    for k, v in local._defaults : k => v
+    if !contains(["dns", "servers", "services"], k)
+  }
 
   dns = {
     for filepath in fileset(path.module, "data/dns/*.yml") :

@@ -1,40 +1,37 @@
-id: au-pie-truenas
-name: truenas
-description: TrueNAS
-parent: au-pie
-username: root
 platform: incus
-region: au
-type: vm
-enable_b2: true
-enable_cloudflare_acme_token: true
-enable_cloudflare_proxy: true
-enable_cloudflare_zero_trust_tunnel: true
-enable_docker: false
-enable_password: true
-enable_resend: true
-enable_tailscale: true
-config:
+identity:
+  id: au-pie-truenas
+  name: truenas
+  type: vm
+  region: au
+  parent: au-pie
+  description: TrueNAS
+features:
+  b2: true
+  cloudflare_acme_token: true
+  cloudflare_proxy: true
+  cloudflare_zero_trust_tunnel: true
+  password: true
+  resend: true
+  tailscale: true
+networking:
+  management_port: 8443
+platform_config:
   incus:
     cpus: 8
-    disks: []
     memory: 32
-    networks:
-      - name: eth-1
-        network: enp3s0
-        mac_address: 10:66:6a:5d:8e:a2
-    profiles:
-      - default
-    secureboot: false
     protection: true
     type: virtual-machine
+    networks:
+      - name: eth-1
+        mac_address: 10:66:6a:5d:8e:a2
+        network: enp3s0
     pci_devices:
       - name: nmve-1
-        address: '0000:01:00.0'
+        address: "0000:01:00.0"
       - name: nvme-2
-        address: '0000:05:00.0'
+        address: "0000:05:00.0"
       - name: sata-1
-        address: '0000:07:00.0'
+        address: "0000:07:00.0"
       - name: sata-2
-        address: '0000:07:00.1'
-  oci: null
+        address: "0000:07:00.1"

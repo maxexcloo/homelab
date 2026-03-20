@@ -14,7 +14,7 @@ provider "incus" {
     for_each = local.incus_servers
 
     content {
-      address = "https://${remote.value.management_address}:${remote.value.management_port}"
+      address = "https://${remote.value.networking.management_address}:${remote.value.networking.management_port}"
       name    = remote.key
     }
   }

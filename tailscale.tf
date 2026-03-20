@@ -10,22 +10,16 @@ locals {
 }
 
 resource "tailscale_tailnet_key" "server" {
-  for_each = {
-    for k, v in local._servers : k => v
-    if v.enable_tailscale
-  }
+  for_each = local.servers_by_feature.tailscale
 
   description   = each.key
   preauthorized = true
   reusable      = true
-  tags          = ["tag:${each.value.type}"]
+  tags          = ["tag:${each.value.identity.type}"]
 }
 
 resource "tailscale_tailnet_key" "service" {
-  for_each = {
-    for k, v in local._services_deployments : k => v
-    if v.enable_tailscale
-  }
+  for_each = local.services_by_feature.tailscale
 
   description   = each.key
   ephemeral     = true

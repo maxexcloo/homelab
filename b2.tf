@@ -52,10 +52,7 @@ resource "b2_bucket" "server" {
 }
 
 resource "b2_bucket" "service" {
-  for_each = {
-    for k, v in local._services_deployments : k => v
-    if v.enable_b2
-  }
+  for_each = local.services_by_feature.b2
 
   bucket_name = "${each.key}-${random_string.b2_service[each.key].result}"
   bucket_type = "allPrivate"
@@ -72,10 +69,7 @@ resource "b2_bucket" "service" {
 }
 
 resource "random_string" "b2_server" {
-  for_each = {
-    for k, v in local._servers : k => v
-    if v.enable_b2
-  }
+  for_each = local.servers_by_feature.b2
 
   length  = 6
   special = false
@@ -83,10 +77,7 @@ resource "random_string" "b2_server" {
 }
 
 resource "random_string" "b2_service" {
-  for_each = {
-    for k, v in local._services_deployments : k => v
-    if v.enable_b2
-  }
+  for_each = local.services_by_feature.b2
 
   length  = 6
   special = false
