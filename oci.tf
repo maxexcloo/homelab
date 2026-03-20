@@ -24,8 +24,8 @@ locals {
   ]))
 
   oci_vms = {
-    for k, v in local._servers : k => v
-    if v.identity.type == "vm" && v.platform == "oci" && v.platform_config.oci != null
+    for k, v in local.servers : k => v
+    if v.platform == "oci" && v.type == "vm" && v.platform_config.oci != null
   }
 }
 

@@ -1,11 +1,11 @@
+id: au-pie-haos
+parent: au-pie
 platform: incus
+type: vm
 identity:
   description: HAOS
-  id: au-pie-haos
   name: haos
-  parent: au-pie
   region: au
-  type: vm
 features:
   b2: true
   cloudflare_acme_token: true

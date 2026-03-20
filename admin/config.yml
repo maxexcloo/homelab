@@ -321,75 +321,40 @@ collections:
     format: yml
     identifier_field: id
     fields:
-      # ============================================
-      # PLATFORM
-      # ============================================
+      - name: id
+        label: ID
+        hint: 'Unique identifier. Routers: just region. Servers: region-name. VMs: region-parent-name.'
+        widget: string
+        pattern:
+          - ^[a-z]{2}(-[a-z0-9-]+)*$
+          - 'Format: au | au-pie | au-pie-haos'
+      - name: parent
+        label: Parent Server
+        collection: servers
+        hint: 'Parent router this runs under or parent server this runs on. Public IPs are inherited if not set (recursive up to 2 levels). Leave empty for routers.'
+        required: false
+        value_field: id
+        widget: relation
+        display_fields:
+          - id
       - name: platform
         label: Platform
         hint: 'Infrastructure provider. Affects how OpenTofu manages this server.'
         required: false
         widget: select
         options:
+          - unmanaged
           - incus
           - oci
           - unifi
-          - unmanaged
-
-      # ============================================
-      # IDENTITY
-      # ============================================
-      - name: identity
-        label: Identity
-        widget: object
-        collapsed: false
-        fields:
-          - name: id
-            label: ID
-            hint: 'Unique identifier. Routers: just region. Servers: region-name. VMs: region-parent-name.'
-            widget: string
-            pattern:
-              - ^[a-z]{2}(-[a-z0-9-]+)*$
-              - 'Format: au | au-pie | au-pie-haos'
-          - name: name
-            label: Name
-            hint: 'Machine name. Examples: au, pie, haos, truenas. Must match last part of ID.'
-            widget: string
-            pattern:
-              - ^[a-z0-9-]+$
-              - Lowercase letters, numbers, and hyphens only
-          - name: type
-            label: Type
-            hint: 'Routers: network entry points (no parent). Servers: host machines. VMs: guests on servers.'
-            widget: select
-            options:
-              - router
-              - server
-              - vm
-          - name: region
-            label: Region
-            hint: 'Location code used in FQDN (name.region). Examples: au, us, eu. Must match first segment of ID.'
-            widget: string
-            pattern:
-              - ^[a-z]{2}$
-              - Must be 2 lowercase letters
-          - name: parent
-            label: Parent Server
-            collection: servers
-            hint: 'Parent router this runs under or parent server this runs on. Public IPs are inherited if not set (recursive up to 2 levels). Leave empty for routers.'
-            required: false
-            value_field: id
-            widget: relation
-            display_fields:
-              - id
-          - name: description
-            label: Friendly Name
-            hint: 'Human-readable name shown in dashboards. Example: TrueNAS Primary'
-            required: false
-            widget: string
-
-      # ============================================
-      # FEATURES & INTEGRATIONS
-      # ============================================
+      - name: type
+        label: Type
+        hint: 'Routers: network entry points (no parent). Servers: host machines. VMs: guests on servers.'
+        widget: select
+        options:
+          - router
+          - server
+          - vm
       - name: features
         label: Features & Integrations
         widget: object
@@ -427,10 +392,39 @@ collections:
             label: Tailscale
             hint: 'Create auth key and join Tailscale network. Key and device IPs stored in Bitwarden.'
             widget: boolean
-
-      # ============================================
-      # NETWORKING
-      # ============================================
+          - name: talos
+            label: Talos
+            hint: 'Enable Talos Kubernetes support on this server.'
+            widget: boolean
+      - name: identity
+        label: Identity
+        widget: object
+        collapsed: false
+        fields:
+          - name: description
+            label: Friendly Name
+            hint: 'Human-readable name shown in dashboards. Example: TrueNAS Primary'
+            required: false
+            widget: string
+          - name: name
+            label: Name
+            hint: 'Machine name. Examples: au, pie, haos, truenas. Must match last part of ID.'
+            widget: string
+            pattern:
+              - ^[a-z0-9-]+$
+              - Lowercase letters, numbers, and hyphens only
+          - name: region
+            label: Region
+            hint: 'Location code used in FQDN (name.region). Examples: au, us, eu. Must match first segment of ID.'
+            widget: string
+            pattern:
+              - ^[a-z]{2}$
+              - Must be 2 lowercase letters
+          - name: username
+            label: Username
+            hint: 'Default login user for this server.'
+            required: false
+            widget: string
       - name: networking
         label: Networking
         widget: object
@@ -474,15 +468,6 @@ collections:
             pattern:
               - ^$|^([0-9a-fA-F:]+)$
               - Must be a valid IPv6 address or empty
-          - name: username
-            label: Username
-            hint: 'Default login user.'
-            required: false
-            widget: string
-
-      # ============================================
-      # PLATFORM CONFIGURATION (Polymorphic)
-      # ============================================
       - name: platform_config
         label: Platform Configuration
         hint: 'Provider-specific settings. Select platform type to see relevant options.'
@@ -636,7 +621,6 @@ collections:
                         hint: 'Device permissions (e.g., 0666)'
                         required: false
                         widget: string
-
           - name: oci
             label: Oracle Cloud (OCI)
             widget: object
@@ -685,56 +669,17 @@ collections:
     format: yml
     identifier_field: id
     fields:
-      - name: identity
-        label: Identity
-        widget: object
-        collapsed: false
-        fields:
-          - name: description
-            label: Description
-            hint: 'Human-readable description shown in service listings.'
-            required: false
-            widget: string
-          - name: id
-            label: ID
-            hint: 'Unique identifier for this service. Example: nginx'
-            widget: string
-            pattern:
-              - ^[a-z0-9-]+$
-              - 'Lowercase letters, numbers, and hyphens only'
-          - name: name
-            label: Name
-            hint: 'Service name. Example: nginx, homepage'
-            widget: string
-          - name: service
-            label: Service Config Name
-            hint: 'Reference for Docker Compose file or application configuration. Leave empty for simple services.'
-            required: false
-            widget: string
-      - name: networking
-        label: Networking
-        widget: object
-        collapsed: true
-        fields:
-          - name: port
-            label: Internal Port
-            hint: 'Container/internal port the service listens on. Used for health checks and proxying.'
-            required: false
-            value_type: int
-            widget: number
-          - name: urls
-            label: Custom URLs
-            hint: 'Additional custom domain names.'
-            required: false
-            widget: list
-            field:
-              name: url
-              label: Domain
-              hint: 'Custom domain like service.example.com'
-              widget: string
-              pattern:
-                - ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$
-                - Must be a valid domain name
+      # ============================================
+      # TOP LEVEL FIELDS
+      # ============================================
+      - name: id
+        label: ID
+        hint: 'Unique identifier for this service. Example: nginx'
+        widget: string
+        pattern:
+          - ^[a-z0-9-]+$
+          - 'Lowercase letters, numbers, and hyphens only'
+
       - name: deploy_to
         label: Deploy To Servers
         collection: servers
@@ -747,6 +692,10 @@ collections:
           - id
         search_fields:
           - id
+
+      # ============================================
+      # FEATURES
+      # ============================================
       - name: features
         label: Features & Integrations
         widget: object
@@ -781,6 +730,62 @@ collections:
             label: Tailscale
             hint: 'Create auth key for this service. Key stored in Bitwarden.'
             widget: boolean
+
+      # ============================================
+      # IDENTITY
+      # ============================================
+      - name: identity
+        label: Identity
+        widget: object
+        collapsed: false
+        fields:
+          - name: description
+            label: Description
+            hint: 'Human-readable description shown in service listings.'
+            required: false
+            widget: string
+          - name: name
+            label: Name
+            hint: 'Service name. Example: nginx, homepage'
+            widget: string
+          - name: service
+            label: Service Config Name
+            hint: 'Reference for Docker Compose file or application configuration. Leave empty for simple services.'
+            required: false
+            widget: string
+          - name: username
+            label: Username
+            hint: 'Username for this service (if applicable).'
+            required: false
+            widget: string
+
+      # ============================================
+      # NETWORKING
+      # ============================================
+      - name: networking
+        label: Networking
+        widget: object
+        collapsed: true
+        fields:
+          - name: port
+            label: Internal Port
+            hint: 'Container/internal port the service listens on. Used for health checks and proxying.'
+            required: false
+            value_type: int
+            widget: number
+          - name: urls
+            label: Custom URLs
+            hint: 'Additional custom domain names.'
+            required: false
+            widget: list
+            field:
+              name: url
+              label: Domain
+              hint: 'Custom domain like service.example.com'
+              widget: string
+              pattern:
+                - ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$
+                - Must be a valid domain name
 
   - name: settings
     label: Settings

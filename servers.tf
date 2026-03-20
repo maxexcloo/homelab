@@ -8,25 +8,25 @@ locals {
 
   _servers_computed = {
     for k, v in local._servers : k => {
-      description = v.identity.parent == "" ? v.identity.description : "${local._servers[v.identity.parent].identity.description} ${v.identity.description} (${upper(v.identity.region)})"
+      description = v.parent == "" ? v.identity.description : "${local._servers[v.parent].identity.description} ${v.identity.description} (${upper(v.identity.region)})"
       fqdn        = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
 
       public_address = try(
         v.networking.public_address != "" ? v.networking.public_address : null,
-        v.identity.parent != "" ? local._servers[v.identity.parent].networking.public_address : null,
-        v.identity.parent != "" && local._servers[v.identity.parent].identity.parent != "" ? local._servers[local._servers[v.identity.parent].identity.parent].networking.public_address : null,
+        v.parent != "" ? local._servers[v.parent].networking.public_address : null,
+        v.parent != "" && local._servers[v.parent].parent != "" ? local._servers[local._servers[v.parent].parent].networking.public_address : null,
         null
       )
 
       public_ipv4 = try(
         can(cidrhost(v.networking.public_ipv4, 0)) ? v.networking.public_ipv4 : null,
-        v.identity.parent != "" && can(cidrhost(local._servers[v.identity.parent].networking.public_ipv4, 0)) ? local._servers[v.identity.parent].networking.public_ipv4 : null,
+        v.parent != "" && can(cidrhost(local._servers[v.parent].networking.public_ipv4, 0)) ? local._servers[v.parent].networking.public_ipv4 : null,
         null
       )
 
       public_ipv6 = try(
         can(cidrhost("${v.networking.public_ipv6}/128", 0)) ? v.networking.public_ipv6 : null,
-        v.identity.parent != "" && can(cidrhost("${local._servers[v.identity.parent].networking.public_ipv6}/128", 0)) ? local._servers[v.identity.parent].networking.public_ipv6 : null,
+        v.parent != "" && can(cidrhost("${local._servers[v.parent].networking.public_ipv6}/128", 0)) ? local._servers[v.parent].networking.public_ipv6 : null,
         null
       )
     }
@@ -93,14 +93,14 @@ resource "random_password" "server" {
 resource "terraform_data" "servers_validation" {
   input = join(", ", flatten([
     for k, v in local._servers : [
-      "${k} -> ${v.identity.parent}"
+      "${k} -> ${v.parent}"
     ]
-    if v.identity.parent != "" && !contains(keys(local._servers), v.identity.parent)
+    if v.parent != "" && !contains(keys(local._servers), v.parent)
   ]))
 
   lifecycle {
     precondition {
-      condition     = length(flatten([for k, v in local._servers : [v.identity.parent] if v.identity.parent != "" && !contains(keys(local._servers), v.identity.parent)])) == 0
+      condition     = length(flatten([for k, v in local._servers : [v.parent] if v.parent != "" && !contains(keys(local._servers), v.parent)])) == 0
       error_message = "Invalid parent references found in servers configuration"
     }
   }

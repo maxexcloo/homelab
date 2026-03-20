@@ -15,7 +15,7 @@ resource "tailscale_tailnet_key" "server" {
   description   = each.key
   preauthorized = true
   reusable      = true
-  tags          = ["tag:${each.value.identity.type}"]
+  tags          = ["tag:${each.value.type}"]
 }
 
 resource "tailscale_tailnet_key" "service" {

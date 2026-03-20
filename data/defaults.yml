@@ -32,14 +32,10 @@ shell: /bin/bash
 timezone: Australia/Sydney
 
 servers:
-  platform: ""
-  identity:
-    description: ""
-    id: ""
-    name: ""
-    parent: ""
-    region: ""
-    type: server
+  id: ""
+  parent: ""
+  platform: unmanaged
+  type: server
   features:
     b2: false
     cloudflare_acme_token: false
@@ -50,13 +46,17 @@ servers:
     resend: false
     tailscale: false
     talos: false
+  identity:
+    description: ""
+    name: ""
+    region: ""
+    username: root
   networking:
     management_address: ""
     management_port: 443
     public_address: ""
     public_ipv4: ""
     public_ipv6: ""
-    username: root
   platform_config:
     incus:
       cpus: 2
@@ -77,7 +77,7 @@ servers:
       assign_public_ip: true
       cpus: 2
       disk_size: 128
-      image_id: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
+      image_id: null
       ingress_ports:
         - 22
         - 80
@@ -88,14 +88,7 @@ servers:
       role: worker
 
 services:
-  identity:
-    description: ""
-    id: ""
-    name: ""
-    service: ""
-  networking:
-    port: null
-    urls: []
+  id: ""
   deploy_to: []
   features:
     b2: false
@@ -103,3 +96,11 @@ services:
     resend: false
     secrets: []
     tailscale: false
+  identity:
+    description: ""
+    name: ""
+    service: ""
+    username: ""
+  networking:
+    port: null
+    urls: []

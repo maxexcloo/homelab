@@ -1,13 +1,14 @@
+id: au-malatang
+parent: au
 platform: incus
+type: server
 identity:
   description: Malatang
-  id: au-malatang
   name: malatang
-  parent: au
   region: au
-  type: server
 features:
   cloudflare_acme_token: true
   tailscale: true
 networking:
+  management_address: malatang.au.excloo.dev
   management_port: 8443

@@ -37,12 +37,12 @@ locals {
 
   incus_servers = {
     for k, v in local.servers : k => v
-    if v.identity.type == "server" && v.platform == "incus" && v.networking.management_address != "" && v.networking.management_port != 0
+    if v.platform == "incus" && v.type == "server" && v.networking.management_address != "" && v.networking.management_port != 0
   }
 
   incus_vms = {
     for k, v in local.servers : k => v
-    if v.identity.parent != "" && v.identity.type == "vm" && v.platform == "incus" && v.platform_config.incus != null && contains(keys(local.incus_servers), v.identity.parent)
+    if v.parent != "" && v.platform == "incus" && v.type == "vm" && v.platform_config.incus != null && contains(keys(local.incus_servers), v.parent)
   }
 }
 
@@ -85,7 +85,7 @@ resource "incus_instance" "vm" {
   name        = each.value.identity.name
   profiles    = each.value.platform_config.incus.profiles
   project     = "default"
-  remote      = each.value.identity.parent
+  remote      = each.value.parent
   type        = each.value.features.talos ? "virtual-machine" : each.value.platform_config.incus.type
 
   config = merge(
@@ -108,7 +108,7 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.disks
 
     content {
-      name = device.value.name != "" ? device.value.name : "disk-${device.key}"
+      name = device.value.name != "" ? device.value.name : "disk-${device.key + 1}"
       type = "disk"
 
       properties = {
@@ -123,7 +123,7 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.networks
 
     content {
-      name = device.value.name != "" ? device.value.name : "eth${device.key}"
+      name = device.value.name != "" ? device.value.name : "eth-${device.key + 1}"
       type = "nic"
 
       properties = merge(
@@ -141,7 +141,7 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.pci_devices
 
     content {
-      name = device.value.name != "" ? device.value.name : "pci-${device.key}"
+      name = device.value.name != "" ? device.value.name : "pci-${device.key + 1}"
       type = "pci"
 
       properties = {
@@ -154,7 +154,7 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.usb_devices
 
     content {
-      name = device.value.name != "" ? device.value.name : "usb-${device.key}"
+      name = device.value.name != "" ? device.value.name : "usb-${device.key + 1}"
       type = "usb"
 
       properties = merge(

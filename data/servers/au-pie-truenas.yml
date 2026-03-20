@@ -1,11 +1,11 @@
+id: au-pie-truenas
+parent: au-pie
 platform: incus
+type: vm
 identity:
   description: TrueNAS
-  id: au-pie-truenas
   name: truenas
-  parent: au-pie
   region: au
-  type: vm
 features:
   b2: true
   cloudflare_acme_token: true

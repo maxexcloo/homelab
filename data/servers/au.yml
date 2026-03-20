@@ -1,10 +1,10 @@
+id: au
 platform: unifi
+type: server
 identity:
   description: AU
-  id: au
   name: au
   region: au
-  type: router
 features:
   cloudflare_acme_token: true
   password: true
