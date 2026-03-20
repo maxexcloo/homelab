@@ -375,7 +375,7 @@ collections:
           - name: parent
             label: Parent Server
             collection: servers
-            hint: 'Parent router this runs under or parent server this runs on. Public IPs are inherited if not set (recursive up to 5 levels). Leave empty for routers.'
+            hint: 'Parent router this runs under or parent server this runs on. Public IPs are inherited if not set (recursive up to 2 levels). Leave empty for routers.'
             required: false
             value_field: id
             widget: relation
