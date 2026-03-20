@@ -4,6 +4,23 @@ dns:
   ttl: 1
   wildcard: false
 
+incus:
+  profiles:
+    config: {}
+    description: ""
+    devices: {}
+    remotes: []
+  projects:
+    config:
+      features.images: true
+      features.networks: true
+      features.networks.zones: true
+      features.profiles: true
+      features.storage.buckets: true
+      features.storage.volumes: true
+    description: ""
+    remotes: []
+
 domain_acme: 043847.xyz
 domain_external: excloo.net
 domain_internal: excloo.dev
@@ -32,6 +49,7 @@ servers:
     password: false
     resend: false
     tailscale: false
+    talos: false
   networking:
     management_address: ""
     management_port: 443
@@ -66,6 +84,8 @@ servers:
         - 443
       memory: 4
       shape: VM.Standard.A1.Flex
+    talos:
+      role: worker
 
 services:
   identity:

@@ -1,4 +1,40 @@
 locals {
+  incus_profiles = {
+    for name, profile in {
+      for filepath in fileset(path.module, "data/incus/profiles/*.yml") :
+      trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
+    } : name => provider::deepmerge::merge(local.defaults.incus.profiles, profile)
+  }
+
+  incus_profile_remotes = merge([
+    for profile_name, profile in local.incus_profiles : {
+      for remote in profile.remotes : "${profile_name}:${remote}" => {
+        name    = profile_name
+        profile = profile
+        remote  = remote
+      }
+      if contains(keys(local.incus_servers), remote)
+    }
+  ]...)
+
+  incus_projects = {
+    for name, project in {
+      for filepath in fileset(path.module, "data/incus/projects/*.yml") :
+      trimsuffix(basename(filepath), ".yml") => yamldecode(file("${path.module}/${filepath}"))
+    } : name => provider::deepmerge::merge(local.defaults.incus.projects, project)
+  }
+
+  incus_project_remotes = merge([
+    for project_name, project in local.incus_projects : {
+      for remote in project.remotes : "${project_name}:${remote}" => {
+        name    = project_name
+        project = project
+        remote  = remote
+      }
+      if contains(keys(local.incus_servers), remote)
+    }
+  ]...)
+
   incus_servers = {
     for k, v in local.servers : k => v
     if v.identity.type == "server" && v.platform == "incus" && v.networking.management_address != "" && v.networking.management_port != 0
@@ -10,6 +46,37 @@ locals {
   }
 }
 
+resource "incus_profile" "profile" {
+  for_each = local.incus_profile_remotes
+
+  config = each.value.profile.config
+  name   = each.value.name
+  remote = each.value.remote
+
+  dynamic "device" {
+    for_each = each.value.profile.devices
+
+    content {
+      name = device.key
+      type = device.value.type
+
+      properties = {
+        for k, v in device.value : k => v
+        if k != "type" && k != "name"
+      }
+    }
+  }
+}
+
+resource "incus_project" "project" {
+  for_each = local.incus_project_remotes
+
+  config      = each.value.project.config
+  description = each.value.project.description
+  name        = each.value.name
+  remote      = each.value.remote
+}
+
 resource "incus_instance" "vm" {
   for_each = local.incus_vms
 
@@ -19,7 +86,7 @@ resource "incus_instance" "vm" {
   profiles    = each.value.platform_config.incus.profiles
   project     = "default"
   remote      = each.value.identity.parent
-  type        = each.value.platform_config.incus.type
+  type        = each.value.features.talos ? "virtual-machine" : each.value.platform_config.incus.type
 
   config = merge(
     {
@@ -27,13 +94,13 @@ resource "incus_instance" "vm" {
       "limits.memory"              = "${each.value.platform_config.incus.memory}GiB"
       "security.protection.delete" = each.value.platform_config.incus.protection
     },
-    each.value.platform_config.incus.type == "container" ? {
+    each.value.platform_config.incus.type == "container" && !each.value.features.talos ? {
       "security.nesting"    = each.value.platform_config.incus.nested
       "security.privileged" = each.value.platform_config.incus.privileged
       "user.user-data"      = base64encode(local.cloud_config[each.key])
     } : {},
-    each.value.platform_config.incus.type == "virtual-machine" ? {
-      "security.secureboot" = each.value.platform_config.incus.secureboot
+    each.value.platform_config.incus.type == "virtual-machine" || each.value.features.talos ? {
+      "security.secureboot" = each.value.features.talos ? false : each.value.platform_config.incus.secureboot
     } : {}
   )
 
