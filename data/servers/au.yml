@@ -1,6 +1,6 @@
 id: au
 platform: unifi
-type: server
+type: router
 identity:
   description: AU
   name: au

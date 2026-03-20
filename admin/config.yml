@@ -125,10 +125,12 @@ collections:
                 widget: string
               - name: priority
                 label: Priority
+                hint: 'MX priority. Lower values are preferred.'
                 value_type: int
                 widget: number
               - name: ttl
                 label: TTL
+                hint: 'Time to live in seconds.'
                 value_type: int
                 widget: number
           - name: NS
@@ -145,6 +147,7 @@ collections:
                 widget: string
               - name: ttl
                 label: TTL
+                hint: 'Time to live in seconds.'
                 value_type: int
                 widget: number
           - name: SRV
@@ -152,16 +155,20 @@ collections:
             fields:
               - name: name
                 label: Name
+                hint: 'Service name for SRV record.'
                 widget: string
               - name: content
                 label: Target
+                hint: 'Target host for the service.'
                 widget: string
               - name: priority
                 label: Priority
+                hint: 'SRV priority. Lower values are preferred.'
                 value_type: int
                 widget: number
               - name: ttl
                 label: TTL
+                hint: 'Time to live in seconds.'
                 value_type: int
                 widget: number
           - name: TXT
@@ -169,12 +176,15 @@ collections:
             fields:
               - name: name
                 label: Name
+                hint: 'TXT record name.'
                 widget: string
               - name: content
                 label: Content
+                hint: 'TXT record content.'
                 widget: string
               - name: ttl
                 label: TTL
+                hint: 'Time to live in seconds.'
                 value_type: int
                 widget: number
 
@@ -194,41 +204,41 @@ collections:
           - 'Lowercase letters, numbers, and hyphens only'
       - name: description
         label: Description
-        hint: 'Human-readable description of this profile'
+        hint: 'Human-readable description of this profile.'
         required: false
         widget: string
       - name: config
         label: Configuration
-        hint: 'Instance configuration options (limits, security settings, etc.)'
+        hint: 'Instance configuration options (limits, security settings, etc.).'
         required: false
         widget: object
         collapsed: true
         fields:
           - name: limits_cpu
             label: CPU Limit
-            hint: 'Maximum CPU cores allowed'
+            hint: 'Maximum CPU cores allowed.'
             required: false
             widget: string
           - name: limits_memory
             label: Memory Limit
-            hint: 'Maximum memory allowed (e.g., 8GiB)'
+            hint: 'Maximum memory allowed (e.g., 8GiB).'
             required: false
             widget: string
           - name: security_secureboot
             label: Secure Boot
-            hint: 'Enable UEFI Secure Boot'
+            hint: 'Enable UEFI Secure Boot.'
             required: false
             widget: boolean
       - name: devices
         label: Devices
-        hint: 'Hardware devices to attach to instances using this profile'
+        hint: 'Hardware devices to attach to instances using this profile.'
         required: false
         widget: object
         collapsed: true
         fields:
           - name: root
             label: Root Disk
-            hint: 'Root storage configuration'
+            hint: 'Root storage configuration.'
             required: false
             widget: object
             collapsed: true
@@ -249,7 +259,7 @@ collections:
                   - disk
           - name: eth0
             label: Network Interface
-            hint: 'Primary network interface'
+            hint: 'Primary network interface.'
             required: false
             widget: object
             collapsed: true
@@ -279,39 +289,39 @@ collections:
           - 'Lowercase letters, numbers, and hyphens only'
       - name: description
         label: Description
-        hint: 'Human-readable description of this project'
+        hint: 'Human-readable description of this project.'
         required: false
         widget: string
       - name: config
         label: Project Features
-        hint: 'Enable/disable features for this project'
+        hint: 'Enable/disable features for this project.'
         required: false
         widget: object
         collapsed: true
         fields:
           - name: features_images
             label: Images
-            hint: 'Allow use of images in this project'
+            hint: 'Allow use of images in this project.'
             widget: boolean
           - name: features_networks
             label: Networks
-            hint: 'Allow creation of networks in this project'
+            hint: 'Allow creation of networks in this project.'
             widget: boolean
           - name: features_networks_zones
             label: Network Zones
-            hint: 'Allow DNS zone management in this project'
+            hint: 'Allow DNS zone management in this project.'
             widget: boolean
           - name: features_profiles
             label: Profiles
-            hint: 'Allow use of profiles in this project'
+            hint: 'Allow use of profiles in this project.'
             widget: boolean
           - name: features_storage_buckets
             label: Storage Buckets
-            hint: 'Allow use of storage buckets in this project'
+            hint: 'Allow use of storage buckets in this project.'
             widget: boolean
           - name: features_storage_volumes
             label: Storage Volumes
-            hint: 'Allow use of storage volumes in this project'
+            hint: 'Allow use of storage volumes in this project.'
             widget: boolean
 
   - name: servers
@@ -480,24 +490,24 @@ collections:
             fields:
               - name: type
                 label: Instance Type
-                hint: 'Type of instance to create'
+                hint: 'Type of instance to create.'
                 widget: select
                 options:
                   - container
                   - virtual-machine
               - name: cpus
                 label: CPU Cores
-                hint: 'Number of CPU cores'
+                hint: 'Number of CPU cores.'
                 value_type: int
                 widget: number
               - name: memory
                 label: Memory (GB)
-                hint: 'Memory in GB'
+                hint: 'Memory in GB.'
                 value_type: int
                 widget: number
               - name: image
                 label: VM Image
-                hint: 'Incus image to use (e.g., images:ubuntu/24.04)'
+                hint: 'Incus image to use (e.g., images:ubuntu/24.04).'
                 widget: string
               - name: secureboot
                 label: Secure Boot
@@ -505,19 +515,19 @@ collections:
                 widget: boolean
               - name: protection
                 label: Protection
-                hint: 'Enable deletion protection'
+                hint: 'Enable deletion protection.'
                 widget: boolean
               - name: nested
                 label: Nesting
-                hint: 'Enable nesting (containers only)'
+                hint: 'Enable nesting (containers only).'
                 widget: boolean
               - name: privileged
                 label: Privileged
-                hint: 'Run privileged container (containers only)'
+                hint: 'Run privileged container (containers only).'
                 widget: boolean
               - name: profiles
                 label: Profiles
-                hint: 'List of Incus profiles to apply'
+                hint: 'List of Incus profiles to apply.'
                 widget: list
                 field:
                   name: profile
@@ -525,7 +535,7 @@ collections:
                   widget: string
               - name: disks
                 label: Disks
-                hint: 'Disk devices for this instance'
+                hint: 'Disk devices for this instance.'
                 widget: list
                 types:
                   - name: disk
@@ -534,25 +544,25 @@ collections:
                     fields:
                       - name: name
                         label: Device Name
-                        hint: 'Name of the disk device (optional, auto-generated if empty)'
+                        hint: 'Name of the disk device (optional, auto-generated if empty).'
                         required: false
                         widget: string
                       - name: path
                         label: Mount Path
-                        hint: 'Path where disk is mounted'
+                        hint: 'Path where disk is mounted.'
                         widget: string
                       - name: pool
                         label: Storage Pool
-                        hint: 'Storage pool for this disk'
+                        hint: 'Storage pool for this disk.'
                         widget: string
                       - name: size
                         label: Size (GB)
-                        hint: 'Disk size in GB'
+                        hint: 'Disk size in GB.'
                         value_type: int
                         widget: number
               - name: networks
                 label: Networks
-                hint: 'Network interfaces for this instance'
+                hint: 'Network interfaces for this instance.'
                 widget: list
                 types:
                   - name: network
@@ -561,16 +571,16 @@ collections:
                     fields:
                       - name: name
                         label: Interface Name
-                        hint: 'Name of the network interface (optional, auto-generated if empty)'
+                        hint: 'Name of the network interface (optional, auto-generated if empty).'
                         required: false
                         widget: string
                       - name: network
                         label: Network
-                        hint: 'Network to attach to'
+                        hint: 'Network to attach to.'
                         widget: string
                       - name: mac_address
                         label: MAC Address
-                        hint: 'Hardware MAC address (optional). Format: 10:66:6a:xx:xx:xx'
+                        hint: 'Hardware MAC address (optional). Format: 10:66:6a:xx:xx:xx.'
                         required: false
                         widget: string
                         pattern:
@@ -578,7 +588,7 @@ collections:
                           - Must be a valid MAC address or empty
               - name: pci_devices
                 label: PCI Devices
-                hint: 'PCI passthrough devices'
+                hint: 'PCI passthrough devices.'
                 widget: list
                 types:
                   - name: device
@@ -587,16 +597,16 @@ collections:
                     fields:
                       - name: name
                         label: Device Name
-                        hint: 'Name of the PCI device (optional, auto-generated if empty)'
+                        hint: 'Name of the PCI device (optional, auto-generated if empty).'
                         required: false
                         widget: string
                       - name: address
                         label: PCI Address
-                        hint: 'PCI address format: 0000:01:00.0'
+                        hint: 'PCI address format: 0000:01:00.0.'
                         widget: string
               - name: usb_devices
                 label: USB Devices
-                hint: 'USB passthrough devices'
+                hint: 'USB passthrough devices.'
                 widget: list
                 types:
                   - name: device
@@ -605,20 +615,20 @@ collections:
                     fields:
                       - name: name
                         label: Device Name
-                        hint: 'Name of the USB device (optional, auto-generated if empty)'
+                        hint: 'Name of the USB device (optional, auto-generated if empty).'
                         required: false
                         widget: string
                       - name: vendorid
                         label: Vendor ID
-                        hint: '4-character hex vendor ID'
+                        hint: '4-character hex vendor ID.'
                         widget: string
                       - name: productid
                         label: Product ID
-                        hint: '4-character hex product ID'
+                        hint: '4-character hex product ID.'
                         widget: string
                       - name: mode
                         label: Mode
-                        hint: 'Device permissions (e.g., 0666)'
+                        hint: 'Device permissions (e.g., 0666).'
                         required: false
                         widget: string
           - name: oci
@@ -627,34 +637,34 @@ collections:
             fields:
               - name: shape
                 label: VM Shape
-                hint: 'OCI compute shape'
+                hint: 'OCI compute shape.'
                 widget: string
               - name: cpus
                 label: CPU Cores
-                hint: 'Number of OCPUs (1-4 for Always Free)'
+                hint: 'Number of OCPUs (1-4 for Always Free).'
                 value_type: int
                 widget: number
               - name: memory
                 label: Memory (GB)
-                hint: 'Memory in GB (1-24 for Always Free)'
+                hint: 'Memory in GB (1-24 for Always Free).'
                 value_type: int
                 widget: number
               - name: disk_size
                 label: Disk Size (GB)
-                hint: 'Size of boot volume in GB'
+                hint: 'Size of boot volume in GB.'
                 value_type: int
                 widget: number
               - name: image_id
                 label: Image OCID
-                hint: 'Oracle Cloud image OCID'
+                hint: 'Oracle Cloud image OCID.'
                 widget: string
               - name: assign_public_ip
                 label: Assign Public IP
-                hint: 'Assign a public IP address to this VM'
+                hint: 'Assign a public IP address to this VM.'
                 widget: boolean
               - name: ingress_ports
                 label: Ingress Ports
-                hint: 'TCP/UDP ports to allow inbound. Defaults to [22, 80, 443] if empty'
+                hint: 'TCP/UDP ports to allow inbound. Defaults to [22, 80, 443] if empty.'
                 widget: list
                 field:
                   name: port
@@ -746,7 +756,7 @@ collections:
             widget: string
           - name: name
             label: Name
-            hint: 'Service name. Example: nginx, homepage'
+            hint: 'Service name. Example: nginx, homepage.'
             widget: string
           - name: service
             label: Service Config Name
