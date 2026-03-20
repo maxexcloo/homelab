@@ -178,6 +178,142 @@ collections:
                 value_type: int
                 widget: number
 
+  - name: incus_profiles
+    label: Incus Profiles
+    extension: yml
+    folder: data/incus/profiles
+    format: yml
+    identifier_field: name
+    fields:
+      - name: name
+        label: Profile Name
+        hint: 'Unique identifier for this profile. Example: default, gpu, storage'
+        widget: string
+        pattern:
+          - ^[a-z0-9-]+$
+          - 'Lowercase letters, numbers, and hyphens only'
+      - name: description
+        label: Description
+        hint: 'Human-readable description of this profile'
+        required: false
+        widget: string
+      - name: config
+        label: Configuration
+        hint: 'Instance configuration options (limits, security settings, etc.)'
+        required: false
+        widget: object
+        collapsed: true
+        fields:
+          - name: limits_cpu
+            label: CPU Limit
+            hint: 'Maximum CPU cores allowed'
+            required: false
+            widget: string
+          - name: limits_memory
+            label: Memory Limit
+            hint: 'Maximum memory allowed (e.g., 8GiB)'
+            required: false
+            widget: string
+          - name: security_secureboot
+            label: Secure Boot
+            hint: 'Enable UEFI Secure Boot'
+            required: false
+            widget: boolean
+      - name: devices
+        label: Devices
+        hint: 'Hardware devices to attach to instances using this profile'
+        required: false
+        widget: object
+        collapsed: true
+        fields:
+          - name: root
+            label: Root Disk
+            hint: 'Root storage configuration'
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: path
+                label: Mount Path
+                widget: string
+              - name: pool
+                label: Storage Pool
+                widget: string
+              - name: size
+                label: Size
+                widget: string
+              - name: type
+                label: Type
+                widget: select
+                options:
+                  - disk
+          - name: eth0
+            label: Network Interface
+            hint: 'Primary network interface'
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: network
+                label: Network
+                widget: string
+              - name: type
+                label: Type
+                widget: select
+                options:
+                  - nic
+
+  - name: incus_projects
+    label: Incus Projects
+    extension: yml
+    folder: data/incus/projects
+    format: yml
+    identifier_field: name
+    fields:
+      - name: name
+        label: Project Name
+        hint: 'Unique identifier for this project. Example: default, production, staging'
+        widget: string
+        pattern:
+          - ^[a-z0-9-]+$
+          - 'Lowercase letters, numbers, and hyphens only'
+      - name: description
+        label: Description
+        hint: 'Human-readable description of this project'
+        required: false
+        widget: string
+      - name: config
+        label: Project Features
+        hint: 'Enable/disable features for this project'
+        required: false
+        widget: object
+        collapsed: true
+        fields:
+          - name: features_images
+            label: Images
+            hint: 'Allow use of images in this project'
+            widget: boolean
+          - name: features_networks
+            label: Networks
+            hint: 'Allow creation of networks in this project'
+            widget: boolean
+          - name: features_networks_zones
+            label: Network Zones
+            hint: 'Allow DNS zone management in this project'
+            widget: boolean
+          - name: features_profiles
+            label: Profiles
+            hint: 'Allow use of profiles in this project'
+            widget: boolean
+          - name: features_storage_buckets
+            label: Storage Buckets
+            hint: 'Allow use of storage buckets in this project'
+            widget: boolean
+          - name: features_storage_volumes
+            label: Storage Volumes
+            hint: 'Allow use of storage volumes in this project'
+            widget: boolean
+
   - name: servers
     label: Servers
     extension: yml

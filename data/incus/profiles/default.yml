@@ -1,0 +1,17 @@
+description: Default Profile
+config:
+  limits.cpu: 4
+  limits.memory: 8GiB
+  security.secureboot: false
+devices:
+  eth-1:
+    network: eno1
+    type: nic
+  root:
+    path: /
+    pool: local
+    size: 128GiB
+    type: disk
+remotes:
+  - au-pie
+  - au-malatang
