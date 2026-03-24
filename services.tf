@@ -52,10 +52,11 @@ locals {
   }
 
   services_by_feature = {
-    for feature in keys(local.service_defaults.features) : feature => {
+    for feature, default_value in local.service_defaults.features : feature => {
       for k, v in local._services_deployments : k => v
       if v.features[feature]
     }
+    if can(tobool(default_value))
   }
 
   services_filtered = {

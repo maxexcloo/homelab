@@ -118,7 +118,7 @@ locals {
   dns_records_services_urls = merge(
     flatten([
       for k, service in local.services : [
-        for i, url in service.features.urls : {
+        for i, url in service.networking.urls : {
           "${k}-url-${i}" = provider::deepmerge::mergo(
             local.dns_defaults,
             {
