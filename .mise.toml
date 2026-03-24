@@ -1,4 +1,5 @@
 [tools]
+"npm:@anthropic-ai/claude-code" = "latest"
 opentofu = "latest"
 prettier = "latest"
 
