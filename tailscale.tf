@@ -20,17 +20,17 @@ resource "tailscale_acl" "default" {
       # Ephemeral: health checks, ping, and dashboard traffic only
       {
         action = "accept"
-        dst    = ["tag:router:0"]
+        dst    = ["tag:router:*"]
         src    = ["tag:ephemeral"]
       },
       {
         action = "accept"
-        dst    = ["tag:server:0", "tag:server:80", "tag:server:443"]
+        dst    = ["tag:server:80", "tag:server:443"]
         src    = ["tag:ephemeral"]
       },
       {
         action = "accept"
-        dst    = ["tag:vm:0", "tag:vm:80", "tag:vm:443"]
+        dst    = ["tag:vm:80", "tag:vm:443"]
         src    = ["tag:ephemeral"]
       },
 
