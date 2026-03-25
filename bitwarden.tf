@@ -1,9 +1,9 @@
 data "bitwarden_folder" "servers" {
-  search = local.defaults.bitwarden.servers_folder
+  search = local.defaults.bitwarden.folders.servers
 }
 
 data "bitwarden_folder" "services" {
-  search = local.defaults.bitwarden.services_folder
+  search = local.defaults.bitwarden.folders.services
 }
 
 resource "bitwarden_item_login" "server" {

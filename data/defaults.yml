@@ -1,17 +1,23 @@
-domain_acme: 043847.xyz
-domain_external: excloo.net
-domain_internal: excloo.dev
-email: max@excloo.com
-locale: en_AU
-managed_comment: OpenTofu Managed
-organization: excloo
-shell: /bin/bash
-timezone: Australia/Sydney
+organization:
+  name: excloo
+  email: max@excloo.com
+  managed_comment: OpenTofu Managed
+
+domains:
+  acme: 043847.xyz
+  external: excloo.net
+  internal: excloo.dev
+
+system:
+  locale: en_AU
+  shell: /bin/bash
+  timezone: Australia/Sydney
 
 bitwarden:
-  servers_folder: Servers
-  services_folder: Services
   url_field_pattern: "(^fqdn_|^url_|_(ipv[46]|address)$)"
+  folders:
+    servers: Servers
+    services: Services
 
 dns:
   priority: null
@@ -20,8 +26,9 @@ dns:
   wildcard: false
 
 github:
-  fly_repository: fly
-  komodo_repository: komodo
+  repositories:
+    fly: fly
+    komodo: komodo
 
 incus:
   profiles:
@@ -41,9 +48,9 @@ incus:
     remotes: []
 
 resend:
-  smtp_host: smtp.resend.com
-  smtp_port: 465
-  smtp_username: resend
+  host: smtp.resend.com
+  port: 465
+  username: resend
 
 servers:
   id: ""

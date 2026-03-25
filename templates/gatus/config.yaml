@@ -5,12 +5,12 @@ alerting:
       failure-threshold: 5
       send-on-resolved: true
       success-threshold: 5
-    from: ${defaults.email}
-    host: ${defaults.resend.smtp_host}
+    from: ${defaults.organization.email}
+    host: ${defaults.resend.host}
     password: $${RESEND_API_KEY}
-    port: ${defaults.resend.smtp_port}
-    to: ${defaults.email}
-    username: ${defaults.resend.smtp_username}
+    port: ${defaults.resend.port}
+    to: ${defaults.organization.email}
+    username: ${defaults.resend.username}
 endpoints:
 %{ for k, server in servers ~}
   - alerts:

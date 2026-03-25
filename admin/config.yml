@@ -686,9 +686,6 @@ collections:
     format: yml
     identifier_field: id
     fields:
-      # ============================================
-      # TOP LEVEL FIELDS
-      # ============================================
       - name: id
         label: ID
         hint: 'Unique identifier for this service. Example: nginx'
@@ -696,7 +693,6 @@ collections:
         pattern:
           - ^[a-z0-9-]+$
           - 'Lowercase letters, numbers, and hyphens only'
-
       - name: deploy_to
         label: Deploy To Servers
         collection: servers
@@ -709,10 +705,6 @@ collections:
           - id
         search_fields:
           - id
-
-      # ============================================
-      # FEATURES
-      # ============================================
       - name: features
         label: Features & Integrations
         widget: object
@@ -751,10 +743,6 @@ collections:
             label: Tailscale
             hint: 'Create auth key for this service. Key stored in Bitwarden.'
             widget: boolean
-
-      # ============================================
-      # IDENTITY
-      # ============================================
       - name: identity
         label: Identity
         widget: object
@@ -779,10 +767,6 @@ collections:
             hint: 'Username for this service (if applicable).'
             required: false
             widget: string
-
-      # ============================================
-      # NETWORKING
-      # ============================================
       - name: networking
         label: Networking
         widget: object
@@ -871,82 +855,118 @@ collections:
         label: Global Defaults
         file: data/defaults.yml
         fields:
+          - name: organization
+            label: Organization
+            widget: object
+            collapsed: false
+            fields:
+              - name: name
+                label: Name
+                hint: 'Used as Docker network name and resource prefix.'
+                widget: string
+              - name: email
+                label: Admin Email
+                hint: 'Primary contact email. Used for Let''s Encrypt notifications and service alerts.'
+                widget: string
+              - name: managed_comment
+                label: Managed Comment
+                hint: 'Comment added to all Cloudflare DNS records to indicate Terraform management.'
+                widget: string
+          - name: domains
+            label: Domains
+            widget: object
+            collapsed: false
+            fields:
+              - name: acme
+                label: ACME Domain
+                hint: 'Domain for DNS-01 ACME challenges. Usually same as external or delegated subdomain.'
+                widget: string
+              - name: external
+                label: External Domain
+                hint: 'Public-facing domain for external services. Example: excloo.com'
+                widget: string
+              - name: internal
+                label: Internal Domain
+                hint: 'Private domain for internal services (Tailscale). Example: excloo.dev'
+                widget: string
+          - name: system
+            label: System
+            widget: object
+            collapsed: false
+            fields:
+              - name: locale
+                label: Locale
+                hint: 'Default locale for system messages. Example: en_AU'
+                widget: string
+              - name: shell
+                label: Default Shell
+                hint: 'Default login shell for users. Example: /bin/bash, /bin/zsh'
+                widget: string
+              - name: timezone
+                label: Timezone
+                hint: 'Default timezone for all servers. Example: Australia/Sydney'
+                widget: string
           - name: bitwarden
             label: Bitwarden
             required: false
             widget: object
             collapsed: true
             fields:
-              - name: servers_folder
-                label: Servers Folder
-                hint: 'Bitwarden folder name for server credentials.'
+              - name: url_field_pattern
+                label: URL Field Pattern
+                hint: 'Regex pattern matching fields to treat as URLs in Bitwarden entries.'
                 widget: string
-              - name: services_folder
-                label: Services Folder
-                hint: 'Bitwarden folder name for service credentials.'
-                widget: string
-          - name: domain_acme
-            label: ACME Domain
-            hint: 'Domain for DNS-01 ACME challenges. Usually same as external or delegated subdomain.'
-            widget: string
-          - name: domain_external
-            label: External Domain
-            hint: 'Public-facing domain for external services. Example: excloo.com'
-            widget: string
-          - name: domain_internal
-            label: Internal Domain
-            hint: 'Private domain for internal services (Tailscale). Example: excloo.dev'
-            widget: string
-          - name: email
-            label: Admin Email
-            hint: 'Primary contact email. Used for Let''s Encrypt notifications and service alerts.'
-            widget: string
-          - name: locale
-            label: Locale
-            hint: 'Default locale for system messages. Example: en_AU'
-            widget: string
-          - name: managed_comment
-            label: Managed Comment
-            hint: 'Comment added to all Cloudflare DNS records to indicate Terraform management.'
-            widget: string
-          - name: organization
-            label: Organization Name
-            hint: 'Used as Docker network name and resource prefix.'
-            widget: string
+              - name: folders
+                label: Folders
+                widget: object
+                collapsed: true
+                fields:
+                  - name: servers
+                    label: Servers Folder
+                    hint: 'Bitwarden folder name for server credentials.'
+                    widget: string
+                  - name: services
+                    label: Services Folder
+                    hint: 'Bitwarden folder name for service credentials.'
+                    widget: string
           - name: github
             label: GitHub
             required: false
             widget: object
             collapsed: true
             fields:
-              - name: fly_repository
-                label: Fly.io Repository
-                hint: 'GitHub repository name for Fly.io configuration sync.'
-                widget: string
-              - name: komodo_repository
-                label: Komodo Repository
-                hint: 'GitHub repository name for Komodo configuration sync.'
-                widget: string
+              - name: repositories
+                label: Repositories
+                widget: object
+                collapsed: true
+                fields:
+                  - name: fly
+                    label: Fly.io
+                    hint: 'GitHub repository name for Fly.io configuration sync.'
+                    widget: string
+                  - name: komodo
+                    label: Komodo
+                    hint: 'GitHub repository name for Komodo configuration sync.'
+                    widget: string
           - name: resend
             label: Resend SMTP
             required: false
             widget: object
             collapsed: true
             fields:
-              - name: smtp_host
+              - name: host
                 label: SMTP Host
+                hint: 'SMTP server hostname.'
                 widget: string
-              - name: smtp_port
+              - name: port
                 label: SMTP Port
+                hint: 'SMTP server port.'
                 value_type: int
                 widget: number
-              - name: smtp_username
+              - name: username
                 label: SMTP Username
+                hint: 'SMTP authentication username.'
                 widget: string
-          - name: shell
-            label: Default Shell
-            hint: 'Default login shell for users. Example: /bin/bash, /bin/zsh'
-            widget: string
           - name: tailscale
             label: Tailscale
             required: false
@@ -955,16 +975,21 @@ collections:
             fields:
               - name: admin_identities
                 label: Admin Identities
-                hint: 'Tailscale admin identities granted full access.'
+                hint: 'Tailscale admin identities granted full access alongside tag owners.'
                 required: false
                 widget: list
                 field:
                   name: identity
                   label: Identity
                   widget: string
-          - name: timezone
-            label: Timezone
-            hint: 'Default timezone for all servers. Example: Australia/Sydney'
-            widget: string
+              - name: tags
+                label: Tags
+                hint: 'Tailscale ACL tags. Each tag is prefixed with tag: in the ACL.'
+                required: false
+                widget: list
+                field:
+                  name: tag
+                  label: Tag
+                  widget: string
 
 media_folder: media

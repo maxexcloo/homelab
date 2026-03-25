@@ -1,7 +1,7 @@
 # Homelab
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![OpenTofu](https://img.shields.io/badge/OpenTofu-1.8+-blue)](https://opentofu.org/)
+[![OpenTofu](https://img.shields.io/badge/OpenTofu-1.10+-blue)](https://opentofu.org/)
 [![Status](https://img.shields.io/badge/status-active-success)](https://github.com/maxexcloo/homelab)
 
 Infrastructure as code for homelab management using OpenTofu, Bitwarden, and Sveltia CMS.

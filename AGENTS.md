@@ -4,11 +4,11 @@
 
 **Purpose**: Homelab infrastructure management using OpenTofu with Sveltia CMS as source of truth
 **Status**: Active
-**Language**: HCL (OpenTofu 1.8+), YAML
+**Language**: HCL (OpenTofu 1.10+), YAML
 
 ## Tech Stack
 
-- **IaC**: OpenTofu 1.8+
+- **IaC**: OpenTofu 1.10+
 - **CMS**: Sveltia CMS (admin UI for editing `data/` YAML files)
 - **Credentials**: Bitwarden (via OpenTofu provider — no CLI required)
 - **Formatting**: Prettier (YAML), `tofu fmt` (HCL)
@@ -21,7 +21,7 @@ Sveltia CMS (admin/)
     │  edits
     ▼
 data/
-├── defaults.yml        # Global defaults merged into every server/service
+├── defaults.yml        # Global config (organization, domains, system) and schema defaults for servers/services
 ├── dns/*.yml           # DNS zones and manual records
 ├── incus/              # Incus profiles and projects
 ├── servers/*.yml       # Server definitions
@@ -52,12 +52,12 @@ Providers
 - **`age.tf`**: age keypair generation per docker-enabled server (public key for SOPS, secret key stored in Bitwarden)
 - **`b2.tf`**: Backblaze B2 buckets and application keys
 - **`backend.tf`**: OpenTofu state backend (Terraform Cloud)
+- **`bcrypt.tf`**: Bcrypt password hashing for server and service passwords
 - **`bitwarden.tf`**: Credential storage — one Bitwarden entry per server/service
-- **`cloud_config.tf`**: Renders cloud-init configs from `templates/cloud_config/cloud_config.yaml` for Incus containers
+- **`cloud_config.tf`**: Renders cloud-init configs from `templates/cloud_config/cloud_config.yaml` for all servers (Incus containers/VMs and OCI instances)
 - **`cloudflare.tf`**: DNS records, Zero Trust tunnels, ACME tokens
 - **`dns.tf`**: DNS record locals (ACME delegation, manual, server, service, URL, wildcard)
 - **`github.tf`**: Fetches SSH public keys from a GitHub user for injection into server cloud-init; also referenced by `komodo.tf` for repository file management
-- **`htpasswd.tf`**: Basic auth credential generation
 - **`incus.tf`**: Incus profiles, projects, containers, and VMs
 - **`komodo.tf`**: Renders SOPS-encrypted Docker Compose files and pushes Komodo ResourceSync configs (servers/stacks) to a GitHub repository
 - **`locals.tf`**: Shared locals and summary output
@@ -79,10 +79,12 @@ Providers
 Within any YAML or HCL object, apply this order:
 1. `id` or `name` first
 2. `description` second (if present)
-3. All remaining **scalar** key/value pairs, alphabetical
+3. All remaining **scalar** key/value pairs — grouped by semantic relationship, alphabetical within each group
 4. All remaining **multi-line** objects and lists, alphabetical
 
 This applies to: `data/defaults.yml`, `admin/config.yml` field definitions, HCL `locals {}` blocks, and resource attribute lists.
+
+Top-level objects in `data/defaults.yml` are ordered: primary config groups (`organization`, `domains`, `system`) first, then service integrations and schema defaults alphabetically (`bitwarden`, `dns`, `github`, `incus`, `resend`, `servers`, `services`, `tailscale`).
 
 ### HCL
 

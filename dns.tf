@@ -12,7 +12,7 @@ locals {
       }
       if contains(["A", "AAAA", "CNAME"], r.type)
       ]) : "${record.zone}-${record.name}-acme-delegation" => {
-      content = "${record.name}.${local.defaults.domain_acme}"
+      content = "${record.name}.${local.defaults.domains.acme}"
       name    = "_acme-challenge.${record.name}"
       type    = "CNAME"
       zone    = record.zone
@@ -37,71 +37,71 @@ locals {
   dns_records_servers = merge([
     for k, server in local.servers : merge(
       server.public_address != null ? {
-        "${local.defaults.domain_external}-${k}-cname" = {
+        "${local.defaults.domains.external}-${k}-cname" = {
           content = server.public_address
-          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          name    = "${server.fqdn}.${local.defaults.domains.external}"
           server  = k
           type    = "CNAME"
-          zone    = local.defaults.domain_external
+          zone    = local.defaults.domains.external
         }
       } : {},
       server.platform == "oci" ? {
-        "${local.defaults.domain_external}-${k}-a" = {
+        "${local.defaults.domains.external}-${k}-a" = {
           content = data.oci_core_vnic.server[k].public_ip_address
-          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          name    = "${server.fqdn}.${local.defaults.domains.external}"
           server  = k
           type    = "A"
-          zone    = local.defaults.domain_external
+          zone    = local.defaults.domains.external
         }
-        "${local.defaults.domain_external}-${k}-aaaa" = {
+        "${local.defaults.domains.external}-${k}-aaaa" = {
           content = data.oci_core_vnic.server[k].ipv6addresses[0]
-          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          name    = "${server.fqdn}.${local.defaults.domains.external}"
           server  = k
           type    = "AAAA"
-          zone    = local.defaults.domain_external
+          zone    = local.defaults.domains.external
         }
       } : {},
       server.public_ipv4 != null && server.platform != "oci" ? {
-        "${local.defaults.domain_external}-${k}-a" = {
+        "${local.defaults.domains.external}-${k}-a" = {
           content = server.public_ipv4
-          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          name    = "${server.fqdn}.${local.defaults.domains.external}"
           server  = k
           type    = "A"
-          zone    = local.defaults.domain_external
+          zone    = local.defaults.domains.external
         }
       } : {},
       server.public_ipv6 != null && server.platform != "oci" ? {
-        "${local.defaults.domain_external}-${k}-aaaa" = {
+        "${local.defaults.domains.external}-${k}-aaaa" = {
           content = server.public_ipv6
-          name    = "${server.fqdn}.${local.defaults.domain_external}"
+          name    = "${server.fqdn}.${local.defaults.domains.external}"
           server  = k
           type    = "AAAA"
-          zone    = local.defaults.domain_external
+          zone    = local.defaults.domains.external
         }
       } : {},
       server.tailscale_ipv4 != null ? {
-        "${local.defaults.domain_internal}-${k}-a" = {
+        "${local.defaults.domains.internal}-${k}-a" = {
           content = server.tailscale_ipv4
-          name    = "${server.fqdn}.${local.defaults.domain_internal}"
+          name    = "${server.fqdn}.${local.defaults.domains.internal}"
           server  = k
           type    = "A"
-          zone    = local.defaults.domain_internal
+          zone    = local.defaults.domains.internal
         }
       } : {},
       server.tailscale_ipv6 != null ? {
-        "${local.defaults.domain_internal}-${k}-aaaa" = {
+        "${local.defaults.domains.internal}-${k}-aaaa" = {
           content = server.tailscale_ipv6
-          name    = "${server.fqdn}.${local.defaults.domain_internal}"
+          name    = "${server.fqdn}.${local.defaults.domains.internal}"
           server  = k
           type    = "AAAA"
-          zone    = local.defaults.domain_internal
+          zone    = local.defaults.domains.internal
         }
       } : {}
     )
   ]...)
 
   dns_records_services = merge([
-    for zone in [local.defaults.domain_external, local.defaults.domain_internal] : {
+    for zone in [local.defaults.domains.external, local.defaults.domains.internal] : {
       for k, service in local.services : "${zone}-${k}" => provider::deepmerge::mergo(
         local.dns_defaults,
         {
@@ -131,7 +131,7 @@ locals {
               content = (
                 local.servers[service.server].features.cloudflare_proxy && local.servers[service.server].features.cloudflare_zero_trust_tunnel ?
                 "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
-                "${service.identity.name}.${local.servers[service.server].fqdn}.${local.defaults.domain_internal}"
+                "${service.identity.name}.${local.servers[service.server].fqdn}.${local.defaults.domains.internal}"
               )
 
               zone = try(

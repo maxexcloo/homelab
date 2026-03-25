@@ -30,7 +30,7 @@ resource "cloudflare_account_token" "server_acme" {
         }
       ]
       resources = jsonencode({
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domain_acme].zone_id}" = "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domains.acme].zone_id}" = "*"
       })
     }
   ]
@@ -39,7 +39,7 @@ resource "cloudflare_account_token" "server_acme" {
 resource "cloudflare_dns_record" "acme_delegation" {
   for_each = local.dns_records_acme_delegation
 
-  comment = local.defaults.managed_comment
+  comment = local.defaults.organization.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = local.dns_defaults.proxied
@@ -51,7 +51,7 @@ resource "cloudflare_dns_record" "acme_delegation" {
 resource "cloudflare_dns_record" "manual" {
   for_each = local.dns_records_manual
 
-  comment  = local.defaults.managed_comment
+  comment  = local.defaults.organization.managed_comment
   content  = each.value.content
   name     = each.value.name
   priority = each.value.priority
@@ -64,7 +64,7 @@ resource "cloudflare_dns_record" "manual" {
 resource "cloudflare_dns_record" "server" {
   for_each = local.dns_records_servers
 
-  comment = local.defaults.managed_comment
+  comment = local.defaults.organization.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = local.dns_defaults.proxied
@@ -76,7 +76,7 @@ resource "cloudflare_dns_record" "server" {
 resource "cloudflare_dns_record" "service" {
   for_each = local.dns_records_services
 
-  comment = local.defaults.managed_comment
+  comment = local.defaults.organization.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = each.value.proxied
@@ -88,7 +88,7 @@ resource "cloudflare_dns_record" "service" {
 resource "cloudflare_dns_record" "service_url" {
   for_each = local.dns_records_services_urls
 
-  comment = local.defaults.managed_comment
+  comment = local.defaults.organization.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = each.value.proxied
@@ -100,7 +100,7 @@ resource "cloudflare_dns_record" "service_url" {
 resource "cloudflare_dns_record" "wildcard" {
   for_each = local.dns_records_wildcards
 
-  comment = local.defaults.managed_comment
+  comment = local.defaults.organization.managed_comment
   content = each.value.content
   name    = each.value.name
   proxied = local.dns_defaults.proxied

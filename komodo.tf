@@ -70,14 +70,14 @@ resource "github_repository_file" "komodo_stacks_configs" {
   content             = each.value.content
   file                = each.key
   overwrite_on_create = true
-  repository          = local.defaults.github.komodo_repository
+  repository          = local.defaults.github.repositories.komodo
 }
 
 resource "github_repository_file" "komodo_resource_sync" {
   commit_message      = "Update Komodo ResourceSync configuration"
   file                = "resource_sync.toml"
   overwrite_on_create = true
-  repository          = local.defaults.github.komodo_repository
+  repository          = local.defaults.github.repositories.komodo
 
   content = <<-EOT
     [[resource_sync]]
@@ -87,7 +87,7 @@ resource "github_repository_file" "komodo_resource_sync" {
     delete = true
     git_account = "${data.github_user.default.login}"
     managed = true
-    repo = "${data.github_user.default.login}/${local.defaults.github.komodo_repository}"
+    repo = "${data.github_user.default.login}/${local.defaults.github.repositories.komodo}"
     resource_path = ["."]
   EOT
 }
@@ -96,7 +96,7 @@ resource "github_repository_file" "komodo_servers" {
   commit_message      = "Update Komodo server configurations"
   file                = "servers.toml"
   overwrite_on_create = true
-  repository          = local.defaults.github.komodo_repository
+  repository          = local.defaults.github.repositories.komodo
 
   content = join("\n", [
     for k, v in local.servers : <<-EOT
@@ -117,7 +117,7 @@ resource "github_repository_file" "komodo_stacks" {
   commit_message      = "Update Komodo stack configurations"
   file                = "stacks.toml"
   overwrite_on_create = true
-  repository          = local.defaults.github.komodo_repository
+  repository          = local.defaults.github.repositories.komodo
 
   content = join("\n", [
     for k, v in local.komodo_stacks : <<-EOT
@@ -127,7 +127,7 @@ resource "github_repository_file" "komodo_stacks" {
 
       [stack.config]
       auto_update = true
-      repo = "${data.github_user.default.login}/${local.defaults.github.komodo_repository}"
+      repo = "${data.github_user.default.login}/${local.defaults.github.repositories.komodo}"
       run_directory = "${k}"
       server = "${v.server}"
 
@@ -144,7 +144,7 @@ resource "github_repository_file" "komodo_stacks_compose" {
   content             = shell_sensitive_script.komodo_service_compose_encrypt[each.key].output["encrypted_content"]
   file                = "${each.key}/compose.yaml"
   overwrite_on_create = true
-  repository          = local.defaults.github.komodo_repository
+  repository          = local.defaults.github.repositories.komodo
 }
 
 resource "shell_sensitive_script" "komodo_service_compose_encrypt" {

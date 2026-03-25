@@ -33,7 +33,7 @@ resource "oci_core_default_dhcp_options" "default" {
   for_each = local.oci_regions
 
   compartment_id             = var.oci_tenancy_ocid
-  display_name               = "${each.value}.${local.defaults.domain_external}"
+  display_name               = "${each.value}.${local.defaults.domains.external}"
   manage_default_resource_id = oci_core_vcn.default[each.value].default_dhcp_options_id
 
   options {
@@ -50,7 +50,7 @@ resource "oci_core_default_dhcp_options" "default" {
 resource "oci_core_default_route_table" "default" {
   for_each = local.oci_regions
 
-  display_name               = "${each.value}.${local.defaults.domain_external}"
+  display_name               = "${each.value}.${local.defaults.domains.external}"
   manage_default_resource_id = oci_core_vcn.default[each.value].default_route_table_id
 
   route_rules {
@@ -70,7 +70,7 @@ resource "oci_core_default_security_list" "default" {
   for_each = local.oci_regions
 
   compartment_id             = var.oci_tenancy_ocid
-  display_name               = "${each.value}.${local.defaults.domain_external}"
+  display_name               = "${each.value}.${local.defaults.domains.external}"
   manage_default_resource_id = oci_core_vcn.default[each.value].default_security_list_id
 
   egress_security_rules {
@@ -142,7 +142,7 @@ resource "oci_core_internet_gateway" "default" {
   for_each = local.oci_regions
 
   compartment_id = var.oci_tenancy_ocid
-  display_name   = "${each.value}.${local.defaults.domain_external}"
+  display_name   = "${each.value}.${local.defaults.domains.external}"
   vcn_id         = oci_core_vcn.default[each.value].id
 }
 
@@ -217,7 +217,7 @@ resource "oci_core_subnet" "default" {
 
   cidr_block     = "10.0.0.0/24"
   compartment_id = var.oci_tenancy_ocid
-  display_name   = "${each.value}.${local.defaults.domain_external}"
+  display_name   = "${each.value}.${local.defaults.domains.external}"
   dns_label      = each.value
   ipv6cidr_block = replace(oci_core_vcn.default[each.value].ipv6cidr_blocks[0], "/56", "/64")
   vcn_id         = oci_core_vcn.default[each.value].id
@@ -228,7 +228,7 @@ resource "oci_core_vcn" "default" {
 
   cidr_blocks    = ["10.0.0.0/16"]
   compartment_id = var.oci_tenancy_ocid
-  display_name   = "${each.value}.${local.defaults.domain_external}"
-  dns_label      = replace(local.defaults.domain_external, "/\\.[^.]*$/", "")
+  display_name   = "${each.value}.${local.defaults.domains.external}"
+  dns_label      = replace(local.defaults.domains.external, "/\\.[^.]*$/", "")
   is_ipv6enabled = true
 }

@@ -37,8 +37,8 @@ locals {
       v,
       local._servers_computed[k],
       {
-        fqdn_external           = "${local._servers_computed[k].fqdn}.${local.defaults.domain_external}"
-        fqdn_internal           = "${local._servers_computed[k].fqdn}.${local.defaults.domain_internal}"
+        fqdn_external           = "${local._servers_computed[k].fqdn}.${local.defaults.domains.external}"
+        fqdn_internal           = "${local._servers_computed[k].fqdn}.${local.defaults.domains.internal}"
         password_hash_sensitive = v.features.password ? bcrypt_hash.server[k].id : null
         password_sensitive      = v.features.password ? random_password.server[k].result : null
         private_address         = try(local.unifi_clients[k].local_dns_record, null)

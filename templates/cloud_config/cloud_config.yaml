@@ -1,12 +1,12 @@
 #cloud-config
 hostname: ${server.identity.name}
-locale: ${defaults.locale}
+locale: ${defaults.system.locale}
 package_reboot_if_required: true
 package_update: true
 package_upgrade: true
 packages: [curl, sudo]
 ssh_pwauth: false
-timezone: ${defaults.timezone}
+timezone: ${defaults.system.timezone}
 groups:
 %{ if server.features.docker ~}
   - docker
@@ -31,7 +31,7 @@ users:
     hashed_passwd: ${server.password_hash_sensitive}
 %{ endif ~}
     lock_passwd: false
-    shell: ${defaults.shell}
+    shell: ${defaults.system.shell}
     ssh_authorized_keys: ${jsonencode(server.ssh_keys)}
     groups:
 %{ if server.features.docker ~}

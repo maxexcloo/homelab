@@ -1,5 +1,5 @@
 networks:
-  ${defaults.organization}:
+  ${defaults.organization.name}:
     external: true
 services:
   caddy:
@@ -9,7 +9,7 @@ services:
       - host.docker.internal:host-gateway
     image: ghcr.io/maxexcloo/caddy:latest
     labels:
-      caddy.email: ${defaults.email}
+      caddy.email: ${defaults.organization.email}
       caddy_0: (defaults)
       caddy_0.@is_tailscale: host tailscale/*
       caddy_0.handle: "@is_tailscale"
@@ -22,7 +22,7 @@ services:
       caddy_0.handle_1.reverse_proxy: "{args[0]}"
     networks:
       - default
-      - ${defaults.organization}
+      - ${defaults.organization.name}
     ports:
       - 80:80
       - 443:443

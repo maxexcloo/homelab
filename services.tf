@@ -22,8 +22,8 @@ locals {
     for k, v in local._services_deployments : k => merge(
       v,
       {
-        fqdn_external           = "${v.identity.name}.${contains(keys(local.servers), v.server) ? local.servers[v.server].fqdn_external : local.defaults.domain_external}"
-        fqdn_internal           = "${v.identity.name}.${contains(keys(local.servers), v.server) ? local.servers[v.server].fqdn_internal : local.defaults.domain_internal}"
+        fqdn_external           = "${v.identity.name}.${contains(keys(local.servers), v.server) ? local.servers[v.server].fqdn_external : local.defaults.domains.external}"
+        fqdn_internal           = "${v.identity.name}.${contains(keys(local.servers), v.server) ? local.servers[v.server].fqdn_internal : local.defaults.domains.internal}"
         password_hash_sensitive = v.features.password ? bcrypt_hash.service[k].id : null
         password_sensitive      = v.features.password ? random_password.service[k].result : null
       },
