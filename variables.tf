@@ -1,3 +1,9 @@
+variable "fly_repository" {
+  default     = "fly"
+  description = "GitHub repository name for Fly.io configuration sync"
+  type        = string
+}
+
 variable "komodo_repository" {
   default     = "komodo"
   description = "GitHub repository name for Komodo configuration sync"

@@ -1,0 +1,14 @@
+app = "${service.identity.name}"
+primary_region = "${service.platform_config.fly.region}"
+
+[build]
+image = "${service.platform_config.fly.image}"
+
+[http_service]
+force_https = true
+internal_port = ${service.platform_config.fly.port}
+
+[[vm]]
+cpu_kind = "${service.platform_config.fly.cpu_kind}"
+cpus = ${service.platform_config.fly.cpus}
+memory_mb = ${service.platform_config.fly.memory}

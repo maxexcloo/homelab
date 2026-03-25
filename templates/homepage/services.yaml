@@ -1,8 +1,8 @@
 %{ for service_name, service in services ~}
-%{ if length(try(service.widgets, [])) > 0 && try(service.has_href, true) ~}
+%{ if length(try(service.widgets, [])) > 0 ~}
 %{ for widget in service.widgets ~}
-- "${try(service.group, "Uncategorized")}":
-  - "${try(service.title, "Service")}":
+- "${try(service.identity.name, "Uncategorized")}":
+  - "${try(service.identity.name, "Service")}":
       ${indent(6, chomp(yamlencode(try(widget.widget, {}))))}
 %{ endfor ~}
 %{ endif ~}

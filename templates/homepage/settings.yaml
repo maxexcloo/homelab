@@ -1,9 +1,9 @@
 headerStyle: clean
-title: ${homepage.title}
+title: ${service.identity.name}
 layout:
-%{ for service_name, service in services ~}
-%{ if length(try(service.widgets, [])) > 0 && try(service.has_href, true) ~}
-  ${try(service.group, "Uncategorized")}:
+%{ for service_name, svc in services ~}
+%{ if length(try(svc.widgets, [])) > 0 ~}
+  ${try(svc.identity.name, "Uncategorized")}:
     columns: 4
     style: row
 %{ endif ~}

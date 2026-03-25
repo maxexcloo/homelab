@@ -699,7 +699,7 @@ collections:
       - name: deploy_to
         label: Deploy To Servers
         collection: servers
-        hint: 'Servers to deploy this service on. Create one instance per selected server.'
+        hint: 'Servers to deploy this service on. Use "fly" for Fly.io deployments.'
         multiple: true
         required: false
         value_field: id
@@ -720,6 +720,10 @@ collections:
           - name: b2
             label: Backblaze B2
             hint: 'Create B2 bucket and application key. Credentials stored in Bitwarden.'
+            widget: boolean
+          - name: monitoring
+            label: Monitoring
+            hint: 'Include this service in Gatus health monitoring. Enabled by default.'
             widget: boolean
           - name: password
             label: Password
@@ -789,6 +793,14 @@ collections:
             required: false
             value_type: int
             widget: number
+          - name: ssl
+            label: HTTPS
+            hint: 'Service is accessible over HTTPS. Enabled by default.'
+            widget: boolean
+          - name: ssl_validation
+            label: SSL Validation
+            hint: 'Validate SSL certificate in Gatus monitoring. Disable for self-signed certs.'
+            widget: boolean
           - name: urls
             label: Custom URLs
             hint: 'Custom domains this service responds on. DNS records are auto-created for any managed zone.'
@@ -802,6 +814,54 @@ collections:
               pattern:
                 - ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$
                 - Must be a valid domain name
+
+      - name: platform_config
+        label: Platform Configuration
+        hint: 'Fly.io-specific settings. Only required when platform is set to fly.'
+        required: false
+        widget: object
+        collapsed: true
+        fields:
+          - name: fly
+            label: Fly.io
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: cpu_kind
+                label: CPU Kind
+                hint: 'CPU performance tier.'
+                widget: select
+                options:
+                  - shared
+                  - performance
+              - name: cpus
+                label: CPUs
+                hint: 'Number of virtual CPUs.'
+                value_type: int
+                widget: number
+              - name: image
+                label: Docker Image
+                hint: 'Docker image to deploy. Example: ghcr.io/user/app:latest'
+                widget: string
+              - name: memory
+                label: Memory (MB)
+                hint: 'Memory in megabytes.'
+                value_type: int
+                widget: number
+              - name: org
+                label: Organization
+                hint: 'Fly.io organization slug.'
+                widget: string
+              - name: port
+                label: Internal Port
+                hint: 'Port the container listens on internally.'
+                value_type: int
+                widget: number
+              - name: region
+                label: Region
+                hint: 'Primary deployment region. Example: syd, lax, iad'
+                widget: string
 
   - name: settings
     label: Settings
@@ -838,6 +898,22 @@ collections:
             label: Organization Name
             hint: 'Used as Docker network name and resource prefix.'
             widget: string
+          - name: resend
+            label: Resend SMTP
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: smtp_host
+                label: SMTP Host
+                widget: string
+              - name: smtp_port
+                label: SMTP Port
+                value_type: int
+                widget: number
+              - name: smtp_username
+                label: SMTP Username
+                widget: string
           - name: shell
             label: Default Shell
             hint: 'Default login shell for users. Example: /bin/bash, /bin/zsh'

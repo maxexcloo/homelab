@@ -112,6 +112,7 @@ locals {
           zone    = zone
         }
       )
+      if contains(keys(local.servers), service.server)
     }
   ]...)
 
@@ -140,7 +141,7 @@ locals {
             }
           )
         }
-        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0
+        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0 && contains(keys(local.servers), service.server)
       ]
     ])
   ...)

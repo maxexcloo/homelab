@@ -37,15 +37,15 @@ locals {
       v,
       local._servers_computed[k],
       {
-        fqdn_external      = "${local._servers_computed[k].fqdn}.${local.defaults.domain_external}"
-        fqdn_internal      = "${local._servers_computed[k].fqdn}.${local.defaults.domain_internal}"
-        password_hash      = v.features.password ? htpasswd_password.server[k].sha512 : ""
-        password_sensitive = v.features.password ? random_password.server[k].result : null
-        private_address    = try(local.unifi_clients[k].local_dns_record, null)
-        private_ipv4       = try(local.unifi_clients[k].fixed_ip, null)
-        ssh_keys           = data.github_user.default.ssh_keys
-        tailscale_ipv4     = try(local.tailscale_device_addresses[k].ipv4, null)
-        tailscale_ipv6     = try(local.tailscale_device_addresses[k].ipv6, null)
+        fqdn_external           = "${local._servers_computed[k].fqdn}.${local.defaults.domain_external}"
+        fqdn_internal           = "${local._servers_computed[k].fqdn}.${local.defaults.domain_internal}"
+        password_hash_sensitive = v.features.password ? bcrypt_hash.server[k].id : null
+        password_sensitive      = v.features.password ? random_password.server[k].result : null
+        private_address         = try(local.unifi_clients[k].local_dns_record, null)
+        private_ipv4            = try(local.unifi_clients[k].fixed_ip, null)
+        ssh_keys                = data.github_user.default.ssh_keys
+        tailscale_ipv4          = try(local.tailscale_device_addresses[k].ipv4, null)
+        tailscale_ipv6          = try(local.tailscale_device_addresses[k].ipv6, null)
       },
       v.features.b2 ? {
         b2_application_key_id        = b2_application_key.server[k].application_key_id

@@ -26,8 +26,27 @@ locals {
   komodo_stacks = {
     for k, v in local.services : k => v
     if v.identity.service != "" &&
+    contains(keys(local.servers), v.server) &&
     local.servers[v.server].features.docker &&
     fileexists("${path.module}/docker/${v.identity.service}/docker-compose.yaml")
+  }
+
+  komodo_stacks_configs = {
+    for pair in flatten([
+      for k, v in local.komodo_stacks : [
+        for filepath in fileset(path.module, "templates/${v.identity.service}/*.yaml") : {
+          content = templatefile("${path.module}/${filepath}", {
+            defaults = local.defaults
+            server   = local.servers[v.server]
+            servers  = local.servers
+            service  = v
+            services = local.services
+          })
+          filename = basename(filepath)
+          stack    = k
+        }
+      ]
+    ]) : "${pair.stack}/${pair.filename}" => pair
   }
 
   komodo_stacks_templates = {
@@ -42,6 +61,16 @@ locals {
       }
     )
   }
+}
+
+resource "github_repository_file" "komodo_stacks_configs" {
+  for_each = local.komodo_stacks_configs
+
+  commit_message      = "Update ${each.value.stack} config"
+  content             = each.value.content
+  file                = each.key
+  overwrite_on_create = true
+  repository          = var.komodo_repository
 }
 
 resource "github_repository_file" "komodo_resource_sync" {

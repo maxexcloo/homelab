@@ -11,8 +11,8 @@ locals {
       for target in service.deploy_to : "${service_key}-${target}" => merge(
         service,
         {
+          fqdn   = contains(keys(local.servers), target) ? "${service.identity.name}.${local.servers[target].fqdn}" : service.identity.name
           server = target
-          fqdn   = "${service.identity.name}.${local.servers[target].fqdn}"
         }
       )
     }
@@ -22,9 +22,10 @@ locals {
     for k, v in local._services_deployments : k => merge(
       v,
       {
-        fqdn_external      = "${v.identity.name}.${local.servers[v.server].fqdn_external}"
-        fqdn_internal      = "${v.identity.name}.${local.servers[v.server].fqdn_internal}"
-        password_sensitive = v.features.password ? random_password.service[k].result : null
+        fqdn_external           = "${v.identity.name}.${contains(keys(local.servers), v.server) ? local.servers[v.server].fqdn_external : local.defaults.domain_external}"
+        fqdn_internal           = "${v.identity.name}.${contains(keys(local.servers), v.server) ? local.servers[v.server].fqdn_internal : local.defaults.domain_internal}"
+        password_hash_sensitive = v.features.password ? bcrypt_hash.service[k].id : null
+        password_sensitive      = v.features.password ? random_password.service[k].result : null
       },
       {
         for secret in v.features.secrets : "${secret}_sensitive" => (
@@ -103,13 +104,13 @@ resource "terraform_data" "services_validation" {
   input = join(", ", flatten([
     for k, v in local._services : [
       for target in v.deploy_to : "${k} -> ${target}"
-      if !contains(keys(local.servers), target)
+      if !contains(keys(local.servers), target) && target != "fly"
     ]
   ]))
 
   lifecycle {
     precondition {
-      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target)]])) == 0
+      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target) && target != "fly"]])) == 0
       error_message = "Invalid server references found in services configuration"
     }
   }

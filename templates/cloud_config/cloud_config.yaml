@@ -27,7 +27,9 @@ runcmd:
 %{ endif ~}
 users:
   - name: ${server.identity.username}
-    hashed_passwd: ${server.password_hash}
+%{ if server.password_hash_sensitive != null ~}
+    hashed_passwd: ${server.password_hash_sensitive}
+%{ endif ~}
     lock_passwd: false
     shell: ${defaults.shell}
     ssh_authorized_keys: ${jsonencode(server.ssh_keys)}

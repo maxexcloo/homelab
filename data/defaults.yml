@@ -31,6 +31,11 @@ incus:
       features.storage.volumes: true
     remotes: []
 
+resend:
+  smtp_host: smtp.resend.com
+  smtp_port: 465
+  smtp_username: resend
+
 servers:
   id: ""
   parent: ""
@@ -92,6 +97,7 @@ services:
   deploy_to: []
   features:
     b2: false
+    monitoring: true
     password: false
     resend: false
     tailscale: false
@@ -103,4 +109,16 @@ services:
     username: ""
   networking:
     port: null
+    ssl: true
+    ssl_validation: true
     urls: []
+  platform_config:
+    fly:
+      cpu_kind: shared
+      cpus: 1
+      image: null
+      memory: 256
+      org: ""
+      port: 8080
+      region: ""
+  widgets: []
