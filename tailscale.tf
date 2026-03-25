@@ -82,7 +82,6 @@ resource "tailscale_acl" "default" {
       }
     }
 
-    # Identity
     groups = {
       "group:admin" = concat([local.defaults.email], var.tailscale_admin_identities)
     }
