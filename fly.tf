@@ -13,7 +13,7 @@ resource "github_repository_file" "fly_configs" {
   overwrite_on_create = true
   repository          = var.fly_repository
 
-  content = templatefile("${path.module}/templates/fly.toml", {
+  content = templatefile("${path.module}/templates/fly/fly.toml", {
     defaults = local.defaults
     servers  = local.servers
     service  = each.value

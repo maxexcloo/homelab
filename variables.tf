@@ -36,7 +36,7 @@ variable "servers_folder" {
 
 variable "services_folder" {
   default     = "Services"
-  description = "Server folder name in Bitwarden"
+  description = "Service folder name in Bitwarden"
   type        = string
 }
 
