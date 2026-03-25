@@ -40,6 +40,12 @@ variable "services_folder" {
   type        = string
 }
 
+variable "tailscale_admin_identities" {
+  default     = ["maxexcloo@passkey"]
+  description = "Additional Tailscale admin identities (e.g. passkeys) granted full access alongside the default email"
+  type        = list(string)
+}
+
 variable "url_field_pattern" {
   default     = "(^fqdn_|^url_|_(ipv[46]|address)$)"
   description = "Regex pattern to identify fields that should be treated as URLs"
