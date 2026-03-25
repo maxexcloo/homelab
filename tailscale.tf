@@ -103,7 +103,7 @@ resource "tailscale_acl" "default" {
     }
 
     groups = {
-      "group:admin" = concat([local.defaults.email], local.defaults.tailscale.admin_identities)
+      "group:admin" = local.defaults.tailscale.admin_identities
     }
 
     tagOwners = {

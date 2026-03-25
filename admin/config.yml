@@ -955,7 +955,7 @@ collections:
             fields:
               - name: admin_identities
                 label: Admin Identities
-                hint: 'Additional Tailscale admin identities (e.g. passkeys) granted full access alongside the default email.'
+                hint: 'Tailscale admin identities granted full access.'
                 required: false
                 widget: list
                 field:

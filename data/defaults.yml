@@ -134,6 +134,7 @@ services:
 
 tailscale:
   admin_identities:
+    - max@excloo.com
     - maxexcloo@passkey
   tags:
     - appliance
