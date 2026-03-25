@@ -11,7 +11,7 @@ resource "github_repository_file" "fly_configs" {
   commit_message      = "Update ${each.key} Fly.io configuration"
   file                = "${each.key}/fly.toml"
   overwrite_on_create = true
-  repository          = var.fly_repository
+  repository          = local.defaults.github.fly_repository
 
   content = templatefile("${path.module}/templates/fly/fly.toml", {
     defaults = local.defaults

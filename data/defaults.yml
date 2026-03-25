@@ -8,11 +8,20 @@ organization: excloo
 shell: /bin/bash
 timezone: Australia/Sydney
 
+bitwarden:
+  servers_folder: Servers
+  services_folder: Services
+  url_field_pattern: "(^fqdn_|^url_|_(ipv[46]|address)$)"
+
 dns:
   priority: null
   proxied: false
   ttl: 1
   wildcard: false
+
+github:
+  fly_repository: fly
+  komodo_repository: komodo
 
 incus:
   profiles:
@@ -122,3 +131,13 @@ services:
       port: 8080
       region: ""
   widgets: []
+
+tailscale:
+  admin_identities:
+    - maxexcloo@passkey
+  tags:
+    - appliance
+    - ephemeral
+    - router
+    - server
+    - vm

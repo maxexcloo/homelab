@@ -9,7 +9,12 @@ locals {
   }
 
   tailscale_tags = toset([
-    for k, v in local.servers_by_feature.tailscale : "tag:${v.type}"
+    for tag in local.defaults.tailscale.tags : "tag:${tag}"
+  ])
+
+  tailscale_route_tags = toset([
+    for tag in local.defaults.tailscale.tags : "tag:${tag}"
+    if !contains(["appliance", "ephemeral"], tag)
   ])
 }
 
@@ -18,6 +23,11 @@ resource "tailscale_acl" "default" {
     # Rules: ordered by least to most permissive source
     acls = [
       # Ephemeral: health checks, ping, and dashboard traffic only
+      {
+        action = "accept"
+        dst    = ["tag:appliance:80", "tag:appliance:443"]
+        src    = ["tag:ephemeral"]
+      },
       {
         action = "accept"
         dst    = ["tag:router:*"]
@@ -37,6 +47,11 @@ resource "tailscale_acl" "default" {
       # VMs: service traffic and Komodo agent communication
       {
         action = "accept"
+        dst    = ["tag:appliance:80", "tag:appliance:443"]
+        src    = ["tag:vm"]
+      },
+      {
+        action = "accept"
         dst    = ["tag:server:80", "tag:server:443", "tag:server:8120"]
         src    = ["tag:vm"]
       },
@@ -46,7 +61,12 @@ resource "tailscale_acl" "default" {
         src    = ["tag:vm"]
       },
 
-      # Servers: full access to managed VMs and peer servers
+      # Servers: full access to managed VMs, appliances, and peer servers
+      {
+        action = "accept"
+        dst    = ["tag:appliance:*"]
+        src    = ["tag:server"]
+      },
       {
         action = "accept"
         dst    = ["tag:server:*"]
@@ -73,21 +93,21 @@ resource "tailscale_acl" "default" {
       }
     ]
 
-    # Exit nodes and subnet routes: any tagged device may optionally advertise
+    # Exit nodes and subnet routes: routers, servers, and VMs may optionally advertise
     autoApprovers = {
-      exitNode = tolist(local.tailscale_tags)
+      exitNode = tolist(local.tailscale_route_tags)
       routes = {
-        "0.0.0.0/0" = tolist(local.tailscale_tags)
-        "::/0"      = tolist(local.tailscale_tags)
+        "0.0.0.0/0" = tolist(local.tailscale_route_tags)
+        "::/0"      = tolist(local.tailscale_route_tags)
       }
     }
 
     groups = {
-      "group:admin" = concat([local.defaults.email], var.tailscale_admin_identities)
+      "group:admin" = concat([local.defaults.email], local.defaults.tailscale.admin_identities)
     }
 
     tagOwners = {
-      for tag in concat(tolist(local.tailscale_tags), ["tag:ephemeral"]) : tag => ["group:admin"]
+      for tag in local.tailscale_tags : tag => ["group:admin"]
     }
   })
 }

@@ -1,9 +1,9 @@
 data "bitwarden_folder" "servers" {
-  search = var.servers_folder
+  search = local.defaults.bitwarden.servers_folder
 }
 
 data "bitwarden_folder" "services" {
-  search = var.services_folder
+  search = local.defaults.bitwarden.services_folder
 }
 
 resource "bitwarden_item_login" "server" {
@@ -17,7 +17,7 @@ resource "bitwarden_item_login" "server" {
   dynamic "field" {
     for_each = {
       for k, v in local.servers_filtered[each.key] : k => v
-      if !can(regex(var.url_field_pattern, k)) && !contains(keys(local.server_defaults), k) && can(tostring(v))
+      if !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.server_defaults), k) && can(tostring(v))
     }
 
     content {
@@ -30,7 +30,7 @@ resource "bitwarden_item_login" "server" {
   dynamic "uri" {
     for_each = {
       for k, v in local.servers_filtered[each.key] : k => v
-      if can(regex(var.url_field_pattern, k))
+      if can(regex(local.defaults.bitwarden.url_field_pattern, k))
     }
 
     content {
@@ -56,7 +56,7 @@ resource "bitwarden_item_login" "service" {
   dynamic "field" {
     for_each = {
       for k, v in local.services_filtered[each.key] : k => v
-      if !can(regex(var.url_field_pattern, k)) && !contains(keys(local.service_defaults), k) && can(tostring(v))
+      if !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.service_defaults), k) && can(tostring(v))
     }
 
     content {
@@ -69,7 +69,7 @@ resource "bitwarden_item_login" "service" {
   dynamic "uri" {
     for_each = {
       for k, v in local.services_filtered[each.key] : k => v
-      if can(regex(var.url_field_pattern, k))
+      if can(regex(local.defaults.bitwarden.url_field_pattern, k))
     }
 
     content {

@@ -362,6 +362,7 @@ collections:
         hint: 'Routers: network entry points (no parent). Servers: host machines. VMs: guests on servers.'
         widget: select
         options:
+          - appliance
           - router
           - server
           - vm
@@ -870,6 +871,20 @@ collections:
         label: Global Defaults
         file: data/defaults.yml
         fields:
+          - name: bitwarden
+            label: Bitwarden
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: servers_folder
+                label: Servers Folder
+                hint: 'Bitwarden folder name for server credentials.'
+                widget: string
+              - name: services_folder
+                label: Services Folder
+                hint: 'Bitwarden folder name for service credentials.'
+                widget: string
           - name: domain_acme
             label: ACME Domain
             hint: 'Domain for DNS-01 ACME challenges. Usually same as external or delegated subdomain.'
@@ -898,6 +913,20 @@ collections:
             label: Organization Name
             hint: 'Used as Docker network name and resource prefix.'
             widget: string
+          - name: github
+            label: GitHub
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: fly_repository
+                label: Fly.io Repository
+                hint: 'GitHub repository name for Fly.io configuration sync.'
+                widget: string
+              - name: komodo_repository
+                label: Komodo Repository
+                hint: 'GitHub repository name for Komodo configuration sync.'
+                widget: string
           - name: resend
             label: Resend SMTP
             required: false
@@ -918,6 +947,21 @@ collections:
             label: Default Shell
             hint: 'Default login shell for users. Example: /bin/bash, /bin/zsh'
             widget: string
+          - name: tailscale
+            label: Tailscale
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: admin_identities
+                label: Admin Identities
+                hint: 'Additional Tailscale admin identities (e.g. passkeys) granted full access alongside the default email.'
+                required: false
+                widget: list
+                field:
+                  name: identity
+                  label: Identity
+                  widget: string
           - name: timezone
             label: Timezone
             hint: 'Default timezone for all servers. Example: Australia/Sydney'
