@@ -1,3 +1,9 @@
+variable "komodo_repository" {
+  default     = "komodo"
+  description = "GitHub repository name for Komodo configuration sync"
+  type        = string
+}
+
 variable "oci_private_key_base64" {
   description = "OCI private key (base64 encoded)"
   sensitive   = true

@@ -236,6 +236,21 @@ collections:
         widget: object
         collapsed: true
         fields:
+          - name: eth0
+            label: Network Interface
+            hint: 'Primary network interface.'
+            required: false
+            widget: object
+            collapsed: true
+            fields:
+              - name: network
+                label: Network
+                widget: string
+              - name: type
+                label: Type
+                widget: select
+                options:
+                  - nic
           - name: root
             label: Root Disk
             hint: 'Root storage configuration.'
@@ -257,21 +272,6 @@ collections:
                 widget: select
                 options:
                   - disk
-          - name: eth0
-            label: Network Interface
-            hint: 'Primary network interface.'
-            required: false
-            widget: object
-            collapsed: true
-            fields:
-              - name: network
-                label: Network
-                widget: string
-              - name: type
-                label: Type
-                widget: select
-                options:
-                  - nic
 
   - name: incus_projects
     label: Incus Projects
@@ -388,7 +388,7 @@ collections:
             widget: boolean
           - name: docker
             label: Docker
-            hint: 'Install Docker on this server.'
+            hint: 'Enable Docker on this server. Required for Komodo stack management and age keypair generation.'
             widget: boolean
           - name: password
             label: Password
@@ -411,11 +411,6 @@ collections:
         widget: object
         collapsed: false
         fields:
-          - name: description
-            label: Friendly Name
-            hint: 'Human-readable name shown in dashboards. Example: TrueNAS Primary'
-            required: false
-            widget: string
           - name: name
             label: Name
             hint: 'Machine name. Examples: au, pie, haos, truenas. Must match last part of ID.'
@@ -423,6 +418,11 @@ collections:
             pattern:
               - ^[a-z0-9-]+$
               - Lowercase letters, numbers, and hyphens only
+          - name: description
+            label: Friendly Name
+            hint: 'Human-readable name shown in dashboards. Example: TrueNAS Primary'
+            required: false
+            widget: string
           - name: region
             label: Region
             hint: 'Location code used in FQDN (name.region). Examples: au, us, eu. Must match first segment of ID.'
@@ -488,54 +488,47 @@ collections:
             label: Incus
             widget: object
             fields:
-              - name: type
-                label: Instance Type
-                hint: 'Type of instance to create.'
-                widget: select
-                options:
-                  - container
-                  - virtual-machine
               - name: cpus
                 label: CPU Cores
-                hint: 'Number of CPU cores.'
-                value_type: int
-                widget: number
-              - name: memory
-                label: Memory (GB)
-                hint: 'Memory in GB.'
+                hint: 'Number of vCPU cores.'
                 value_type: int
                 widget: number
               - name: image
-                label: VM Image
+                label: Image
                 hint: 'Incus image to use (e.g., images:ubuntu/24.04).'
                 widget: string
-              - name: secureboot
-                label: Secure Boot
-                hint: 'Enable Secure Boot (VMs only).'
-                widget: boolean
-              - name: protection
-                label: Protection
-                hint: 'Enable deletion protection.'
-                widget: boolean
+              - name: memory
+                label: Memory (GiB)
+                hint: 'Memory in GiB.'
+                value_type: int
+                widget: number
               - name: nested
                 label: Nesting
-                hint: 'Enable nesting (containers only).'
+                hint: 'Allow nested containers/VMs (containers only).'
                 widget: boolean
               - name: privileged
                 label: Privileged
                 hint: 'Run privileged container (containers only).'
                 widget: boolean
-              - name: profiles
-                label: Profiles
-                hint: 'List of Incus profiles to apply.'
-                widget: list
-                field:
-                  name: profile
-                  label: Profile
-                  widget: string
+              - name: protection
+                label: Protection
+                hint: 'Prevent accidental deletion in Incus.'
+                widget: boolean
+              - name: secureboot
+                label: Secure Boot
+                hint: 'Enable UEFI Secure Boot (VMs only). Disable for Talos or custom kernels.'
+                widget: boolean
+              - name: type
+                label: Instance Type
+                hint: 'LXC container or VM. Use virtual-machine for USB/PCI passthrough, Talos, or Home Assistant.'
+                widget: select
+                options:
+                  - container
+                  - virtual-machine
               - name: disks
                 label: Disks
-                hint: 'Disk devices for this instance.'
+                hint: 'Disk devices for this instance. Leave empty to use profile-provided storage.'
+                required: false
                 widget: list
                 types:
                   - name: disk
@@ -556,13 +549,14 @@ collections:
                         hint: 'Storage pool for this disk.'
                         widget: string
                       - name: size
-                        label: Size (GB)
-                        hint: 'Disk size in GB.'
+                        label: Size (GiB)
+                        hint: 'Disk size in GiB.'
                         value_type: int
                         widget: number
               - name: networks
                 label: Networks
-                hint: 'Network interfaces for this instance.'
+                hint: 'Network interfaces for this instance. Leave empty to use profile-provided networking.'
+                required: false
                 widget: list
                 types:
                   - name: network
@@ -574,10 +568,6 @@ collections:
                         hint: 'Name of the network interface (optional, auto-generated if empty).'
                         required: false
                         widget: string
-                      - name: network
-                        label: Network
-                        hint: 'Network to attach to.'
-                        widget: string
                       - name: mac_address
                         label: MAC Address
                         hint: 'Hardware MAC address (optional). Format: 10:66:6a:xx:xx:xx.'
@@ -586,9 +576,14 @@ collections:
                         pattern:
                           - ^$|^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$
                           - Must be a valid MAC address or empty
+                      - name: network
+                        label: Network
+                        hint: 'Network to attach to.'
+                        widget: string
               - name: pci_devices
                 label: PCI Devices
-                hint: 'PCI passthrough devices.'
+                hint: 'PCI passthrough devices (VMs only).'
+                required: false
                 widget: list
                 types:
                   - name: device
@@ -604,9 +599,19 @@ collections:
                         label: PCI Address
                         hint: 'PCI address format: 0000:01:00.0.'
                         widget: string
+              - name: profiles
+                label: Profiles
+                hint: 'Profiles applied to this instance (merged left to right). The ''default'' profile provides base network and storage.'
+                required: false
+                widget: list
+                field:
+                  name: profile
+                  label: Profile
+                  widget: string
               - name: usb_devices
                 label: USB Devices
                 hint: 'USB passthrough devices.'
+                required: false
                 widget: list
                 types:
                   - name: device
@@ -618,53 +623,54 @@ collections:
                         hint: 'Name of the USB device (optional, auto-generated if empty).'
                         required: false
                         widget: string
-                      - name: vendorid
-                        label: Vendor ID
-                        hint: '4-character hex vendor ID.'
-                        widget: string
-                      - name: productid
-                        label: Product ID
-                        hint: '4-character hex product ID.'
-                        widget: string
                       - name: mode
                         label: Mode
                         hint: 'Device permissions (e.g., 0666).'
                         required: false
                         widget: string
+                      - name: productid
+                        label: Product ID
+                        hint: '4-character hex product ID.'
+                        widget: string
+                      - name: vendorid
+                        label: Vendor ID
+                        hint: '4-character hex vendor ID.'
+                        widget: string
           - name: oci
             label: Oracle Cloud (OCI)
             widget: object
             fields:
-              - name: shape
-                label: VM Shape
-                hint: 'OCI compute shape.'
-                widget: string
+              - name: assign_public_ip
+                label: Assign Public IP
+                hint: 'Assign a public IP address to this VM.'
+                widget: boolean
               - name: cpus
                 label: CPU Cores
                 hint: 'Number of OCPUs (1-4 for Always Free).'
                 value_type: int
                 widget: number
+              - name: disk_size
+                label: Disk Size (GB)
+                hint: 'Boot volume size in GB (50-200 for Always Free).'
+                value_type: int
+                widget: number
+              - name: image_id
+                label: Image OCID
+                hint: 'Oracle Cloud image OCID. Find in Console > Compute > Images.'
+                widget: string
               - name: memory
                 label: Memory (GB)
                 hint: 'Memory in GB (1-24 for Always Free).'
                 value_type: int
                 widget: number
-              - name: disk_size
-                label: Disk Size (GB)
-                hint: 'Size of boot volume in GB.'
-                value_type: int
-                widget: number
-              - name: image_id
-                label: Image OCID
-                hint: 'Oracle Cloud image OCID.'
+              - name: shape
+                label: VM Shape
+                hint: 'OCI compute shape. Use VM.Standard.A1.Flex for Always Free ARM instances.'
                 widget: string
-              - name: assign_public_ip
-                label: Assign Public IP
-                hint: 'Assign a public IP address to this VM.'
-                widget: boolean
               - name: ingress_ports
                 label: Ingress Ports
-                hint: 'TCP/UDP ports to allow inbound. Defaults to [22, 80, 443] if empty.'
+                hint: 'TCP/UDP ports open to the internet. Defaults to [22, 80, 443].'
+                required: false
                 widget: list
                 field:
                   name: port
@@ -749,18 +755,18 @@ collections:
         widget: object
         collapsed: false
         fields:
+          - name: name
+            label: Name
+            hint: 'Service name. Example: nginx, homepage.'
+            widget: string
           - name: description
             label: Description
             hint: 'Human-readable description shown in service listings.'
             required: false
             widget: string
-          - name: name
-            label: Name
-            hint: 'Service name. Example: nginx, homepage.'
-            widget: string
           - name: service
             label: Service Config Name
-            hint: 'Reference for Docker Compose file or application configuration. Leave empty for simple services.'
+            hint: 'Matches the docker/ subdirectory name for this service''s compose file.'
             required: false
             widget: string
           - name: username
@@ -785,7 +791,7 @@ collections:
             widget: number
           - name: urls
             label: Custom URLs
-            hint: 'Additional custom domain names.'
+            hint: 'Custom domains this service responds on. DNS records are auto-created for any managed zone.'
             required: false
             widget: list
             field:
@@ -830,7 +836,7 @@ collections:
             widget: string
           - name: organization
             label: Organization Name
-            hint: 'Your organization name.'
+            hint: 'Used as Docker network name and resource prefix.'
             widget: string
           - name: shell
             label: Default Shell

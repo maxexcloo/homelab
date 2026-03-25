@@ -1,26 +1,3 @@
-dns:
-  priority: null
-  proxied: false
-  ttl: 1
-  wildcard: false
-
-incus:
-  profiles:
-    config: {}
-    description: ""
-    devices: {}
-    remotes: []
-  projects:
-    config:
-      features.images: true
-      features.networks: true
-      features.networks.zones: true
-      features.profiles: true
-      features.storage.buckets: true
-      features.storage.volumes: true
-    description: ""
-    remotes: []
-
 domain_acme: 043847.xyz
 domain_external: excloo.net
 domain_internal: excloo.dev
@@ -30,6 +7,29 @@ managed_comment: OpenTofu Managed
 organization: excloo
 shell: /bin/bash
 timezone: Australia/Sydney
+
+dns:
+  priority: null
+  proxied: false
+  ttl: 1
+  wildcard: false
+
+incus:
+  profiles:
+    description: ""
+    config: {}
+    devices: {}
+    remotes: []
+  projects:
+    description: ""
+    config:
+      features.images: true
+      features.networks: true
+      features.networks.zones: true
+      features.profiles: true
+      features.storage.buckets: true
+      features.storage.volumes: true
+    remotes: []
 
 servers:
   id: ""
@@ -47,8 +47,8 @@ servers:
     tailscale: false
     talos: false
   identity:
-    description: ""
     name: ""
+    description: ""
     region: ""
     username: root
   networking:
@@ -60,30 +60,30 @@ servers:
   platform_config:
     incus:
       cpus: 2
-      disks: []
       image: null
       memory: 4
       nested: false
-      networks: []
-      pci_devices: []
       privileged: false
-      profiles:
-        - default
       protection: false
       secureboot: false
       type: container
+      disks: []
+      networks: []
+      pci_devices: []
+      profiles:
+        - default
       usb_devices: []
     oci:
       assign_public_ip: true
       cpus: 2
       disk_size: 128
       image_id: null
+      memory: 4
+      shape: VM.Standard.A1.Flex
       ingress_ports:
         - 22
         - 80
         - 443
-      memory: 4
-      shape: VM.Standard.A1.Flex
     talos:
       role: worker
 
@@ -94,11 +94,11 @@ services:
     b2: false
     password: false
     resend: false
-    secrets: []
     tailscale: false
+    secrets: []
   identity:
-    description: ""
     name: ""
+    description: ""
     service: ""
     username: ""
   networking:

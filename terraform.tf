@@ -2,6 +2,9 @@ terraform {
   required_version = ">= 1.10"
 
   required_providers {
+    age = {
+      source = "clementblaise/age"
+    }
     b2 = {
       source = "backblaze/b2"
     }
@@ -31,6 +34,9 @@ terraform {
     }
     restapi = {
       source = "mastercard/restapi"
+    }
+    shell = {
+      source = "linyinfeng/shell"
     }
     tailscale = {
       source = "tailscale/tailscale"

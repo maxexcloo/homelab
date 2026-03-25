@@ -60,6 +60,10 @@ locals {
       v.features.cloudflare_zero_trust_tunnel ? {
         cloudflare_zero_trust_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
       } : {},
+      v.features.docker ? {
+        age_public_key           = age_secret_key.server[k].public_key
+        age_secret_key_sensitive = age_secret_key.server[k].secret_key
+      } : {},
       v.features.resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_server[k].create_response).token
       } : {},

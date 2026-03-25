@@ -4,7 +4,7 @@
 [![OpenTofu](https://img.shields.io/badge/OpenTofu-1.8+-blue)](https://opentofu.org/)
 [![Status](https://img.shields.io/badge/status-active-success)](https://github.com/maxexcloo/homelab)
 
-Infrastructure as code for homelab management using OpenTofu, 1Password, and SOPS/age encryption.
+Infrastructure as code for homelab management using OpenTofu, Bitwarden, and Sveltia CMS.
 
 ## Quick Start
 
@@ -14,7 +14,7 @@ git clone https://github.com/maxexcloo/homelab.git
 cd homelab
 
 # Setup
-mise run setup  # Creates providers entry in 1Password
+mise run setup  # Creates .mise.local.toml template
 mise run init   # Initialize OpenTofu
 
 # Deploy
@@ -24,116 +24,80 @@ mise run apply  # Apply changes
 
 ## Prerequisites
 
-- [1Password CLI](https://1password.com/downloads/command-line/) with service account
-- [mise](https://mise.jdx.dev/) for task management
-- [OpenTofu](https://opentofu.org/) 1.8+
-- [SOPS](https://github.com/getsops/sops) for secret encryption
-- [age](https://age-encryption.org/) for key management
+- [mise](https://mise.jdx.dev/) for task management and tool installation
+- Bitwarden account with **Servers** and **Services** folders created
+- Terraform Cloud account for state backend
 
-Create `.mise.local.toml`:
-```toml
-[env]
-OP_SERVICE_ACCOUNT_TOKEN = "ops_..."     # From 1Password
-TF_TOKEN_app_terraform_io = "..."        # From HCP Terraform
+Run `mise run setup` to create `.mise.local.toml` from the template, then fill in credentials — see `.mise.local.toml.default` for the full list.
+
+## Architecture
+
+Data flows from **Sveltia CMS** → **YAML files** in `data/` → **OpenTofu** → infrastructure providers.
+
+```
+Sveltia CMS (admin/)
+    │
+    ▼
+data/
+├── defaults.yml        # Global defaults and base schemas
+├── dns/*.yml           # DNS zones and manual records
+├── incus/              # Incus profiles and projects
+├── servers/*.yml       # Server definitions
+└── services/*.yml      # Service deployments
+    │
+    ▼
+OpenTofu
+    ├── Bitwarden       Credential storage (one entry per server/service)
+    ├── B2              Object storage buckets and keys
+    ├── Cloudflare      DNS records, Zero Trust tunnels, ACME tokens
+    ├── GitHub          SSH public keys injected into server cloud-init
+    ├── Incus           Profiles, projects, containers, and VMs
+    ├── Komodo          SOPS-encrypted compose files + server/stack configs → GitHub repo
+    ├── OCI             Oracle Cloud VMs and networking
+    ├── Resend          Email API keys
+    ├── Tailscale       VPN auth keys and device lookups
+    └── Talos           Kubernetes cluster node locals (control-plane/worker)
 ```
 
 ## Workflow
 
-### Adding Infrastructure
+### Adding Servers
 
-1. **Create entry** in 1Password Homelab vault (e.g., `server-au-web`)
-2. **Run apply** - OpenTofu creates input/output sections
-3. **Fill inputs** in 1Password (platform, flags, etc.)
-4. **Run apply** again - Resources are provisioned
+1. Open **Sveltia CMS** → Servers → New
+2. Fill in `id`, `platform`, `type`, `features`, `identity`, `networking`
+3. Commit via Sveltia CMS
+4. Run `mise run plan` to review, `mise run apply` to provision
 
 ### Adding Services
 
-1. **Create entry** in 1Password Services vault (e.g., `docker-grafana`)
-2. **Run apply** - OpenTofu creates input/output sections
-3. **Fill inputs** in 1Password (deploy_to, resources, secrets, etc.)
-4. **Run apply** again - SOPS-encrypted docker-compose files are generated
-
-## Configuration
-
-### Variables (terraform.auto.tfvars)
-
-```hcl
-default_email        = "admin@example.com"
-default_organization = "My Homelab"
-default_timezone     = "Australia/Sydney"
-domain_external      = "example.com"
-domain_internal      = "internal.example"
-komodo_repository    = "username/komodo-config"
-```
-
-### DNS Records (dns.auto.tfvars)
-
-```hcl
-dns = {
-  "example.com" = [
-    { name = "@", type = "A", content = "1.2.3.4" },
-    { name = "@", type = "MX", content = "mail.server", priority = 10 }
-  ]
-}
-```
-
-## 1Password Structure
-
-### Homelab Vault
-
-```yaml
-providers:  # Required - run 'mise run setup' first
-  b2, cloudflare, hcp, resend, tailscale sections
-
-router-REGION:  # e.g., router-au
-  inputs:  # Created on first apply, then fill these
-  outputs: # Auto-generated credentials
-
-server-REGION-NAME:  # e.g., server-au-web
-  inputs:  # Created on first apply, then fill these
-  outputs: # Auto-generated credentials
-```
-
-### Services Vault
-
-```yaml
-PLATFORM-SERVICE:  # e.g., docker-grafana
-  username: admin
-  password: (shared across deployments)
-  inputs:  # Created on first apply, then fill these
-    deploy_to: server-au-web    # Server targeting
-    resources: b2,resend        # Required server resources
-    database_password: secret   # Service-specific secrets
-    oidc_client_id: client_id   # Service configuration
-  outputs: # Auto-generated URLs
-```
+1. Open **Sveltia CMS** → Services → New
+2. Fill in `id`, `deploy_to`, `features`, `identity`, `networking`
+3. Commit via Sveltia CMS
+4. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands
 
 ```bash
-mise run apply     # Deploy changes
-mise run check     # Format and validate
-mise run clean     # Clean up
-mise run plan      # Review changes
-mise run refresh   # Check drift
+mise run apply     # Apply infrastructure changes
+mise run check     # Format and validate (fmt + validate)
+mise run fmt       # Format HCL and YAML data files
+mise run init      # Initialize OpenTofu providers and backend
+mise run plan      # Review infrastructure changes
+mise run refresh   # Check for configuration drift
+mise run setup     # Initial project setup
+mise run validate  # Validate OpenTofu configuration
 ```
+
+## Credential Storage
+
+All generated credentials are stored automatically in **Bitwarden** in two folders:
+
+- **Servers** — one login entry per server; all generated fields (passwords, API keys, IPs, FQDNs, tunnel tokens) stored as custom fields
+- **Services** — one login entry per service deployment with the same pattern
 
 ## Documentation
 
-- [AGENTS.md](AGENTS.md) - Development guide
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System design and field reference
-- [SECRETS.md](SECRETS.md) - Secret setup
-
-## Secret Management
-
-This project uses **SOPS with age encryption** for secure docker-compose secrets:
-
-- **Age keypairs** generated per server and stored in 1Password
-- **SOPS encryption** of docker-compose files with server-specific keys
-- **Pre-deploy decryption** on Komodo servers using age private keys
-- **No external dependencies** - secrets encrypted directly in git repository
-
-See generated `ENCRYPTION.md` in the Komodo repository for detailed documentation.
+- [AGENTS.md](AGENTS.md) - Development guide and standards
 
 ## License
 

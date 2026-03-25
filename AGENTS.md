@@ -2,116 +2,154 @@
 
 ## Project Overview
 
-**Purpose**: Unified homelab infrastructure and services management using OpenTofu with 1Password as single source of truth
+**Purpose**: Homelab infrastructure management using OpenTofu with Sveltia CMS as source of truth
 **Status**: Active
-**Language**: HCL (OpenTofu 1.8+)
-
-## Code Standards
-
-### Organization
-- **Config/Data**: Alphabetical and recursive (imports, dependencies, object keys, mise tasks)
-- **Documentation**: Sort sections, lists, and references alphabetically when logical
-- **Files**: Alphabetical in documentation and directories
-- **Functions**: Group by purpose, alphabetical within groups
-- **Variables**: Alphabetical within scope
-
-### Quality
-- **Comments**: Minimal - only for complex business logic
-- **Documentation**: Update ARCHITECTURE.md and README.md with every feature change
-- **Error handling**: Use `nonsensitive()` for secrets, include resource names
-- **Formatting**: Run `mise run fmt` before commits
-- **KISS principle**: Keep it simple - prefer readable code over clever code
-- **Naming**: snake_case for all HCL resources and variables
-- **Testing**: Run `tofu validate` and `tofu plan` before commits
-- **Trailing newlines**: Required in all files
-
-## Commands
-
-```bash
-# Setup
-mise run setup           # Create providers entry in 1Password
-mise run init            # Initialize OpenTofu providers and backend
-
-# Development
-mise run check           # All validation (fmt + validate)
-mise run fmt             # Format HCL files recursively
-mise run validate        # Validate OpenTofu configuration
-
-# Deployment
-mise run refresh         # Check for configuration drift
-mise run plan            # Review infrastructure changes
-mise run apply           # Apply infrastructure changes
-```
-
-## Development Guidelines
-
-### Contribution Standards
-- **Code Changes**: Follow alphabetical sorting and maintain field schemas
-- **Documentation**: Keep all docs synchronized and cross-referenced
-- **Feature Changes**: Update README.md and ARCHITECTURE.md when adding features
-
-### Documentation Structure
-- **AGENTS.md**: Development standards and project guidelines
-- **ARCHITECTURE.md**: Technical design and field reference
-- **README.md**: Tool overview and usage guide
-- **SECRETS.md**: Credential setup and management
-
-## Development Workflow Standards
-
-### 1Password Workflow
-1. Create entry with proper naming convention
-2. Run `apply` to generate input/output sections
-3. Fill in input fields
-4. Run `apply` again to provision resources
-
-### Environment Management
-- Define common tasks as mise scripts in `.mise.toml`
-- Pin tool versions in `.mise.toml`
-- Use **mise** for consistent development environments
-
-## Error Handling Standards
-
-- **Contextual errors**: Include resource name and operation in messages
-- **Graceful degradation**: Continue with other resources if one fails
-- **Informative messages**: Suggest fixes for common issues
-- **User-friendly output**: Use `nonsensitive()` wrapper for error messages with secrets
-
-## OpenTofu Standards
-
-- **Resource naming**: Use `for_each` over `count` for all resources
-- **Sensitive data**: Mark all secrets as sensitive in outputs
-- **State management**: Never manipulate state manually except for imports
-- **Validation**: Use preconditions for input validation
-
-## Project Structure
-
-- **b2.tf**: Backblaze B2 storage resources
-- **cloudflare.tf**: DNS and tunnel management
-- **homelab_*.tf**: Infrastructure discovery, processing, and sync
-- **locals_dns.tf**: DNS record generation logic
-- **providers.tf**: Provider configurations
-- **resend.tf**: Email service resources
-- **services_*.tf**: Service discovery, processing, and sync
-- **tailscale.tf**: Zero-trust networking
-- **templates/**: Configuration files
-- **terraform.tf**: Backend configuration
-- **variables.tf**: Variable definitions
-
-## README Guidelines
-
-- **Badges**: Include license, status, and OpenTofu version
-- **Code examples**: Always include working commands
-- **Installation**: Provide copy-paste setup commands
-- **Quick Start**: Get users running in under 5 minutes
-- **Structure**: Title → Badges → Description → Quick Start → Workflow → Documentation
+**Language**: HCL (OpenTofu 1.8+), YAML
 
 ## Tech Stack
 
 - **IaC**: OpenTofu 1.8+
-- **Secrets**: 1Password CLI + SOPS/age encryption
+- **CMS**: Sveltia CMS (admin UI for editing `data/` YAML files)
+- **Credentials**: Bitwarden (via OpenTofu provider — no CLI required)
+- **Formatting**: Prettier (YAML), `tofu fmt` (HCL)
 - **Task Runner**: mise
-- **Version Control**: Git
 
----
+## Data Flow
 
-*Development guide for the homelab infrastructure project.*
+```
+Sveltia CMS (admin/)
+    │  edits
+    ▼
+data/
+├── defaults.yml        # Global defaults merged into every server/service
+├── dns/*.yml           # DNS zones and manual records
+├── incus/              # Incus profiles and projects
+├── servers/*.yml       # Server definitions
+└── services/*.yml      # Service deployments
+    │  read by
+    ▼
+OpenTofu locals
+    ├── servers.tf      deepmerge defaults + per-server YAML → local.servers
+    └── services.tf     deepmerge defaults + per-service YAML → local.services (expanded per deploy_to target)
+    │  provisions
+    ▼
+Providers
+    ├── Bitwarden       One credential entry per server/service with all generated fields
+    ├── B2              Object storage buckets and application keys
+    ├── Cloudflare      DNS records, Zero Trust tunnels, ACME tokens
+    ├── Incus           Profiles, projects, containers, VMs
+    ├── OCI             Oracle Cloud VMs and networking
+    ├── Komodo          SOPS-encrypted compose files + server/stack configs → GitHub repo
+    ├── Resend          Email API keys
+    └── Tailscale       VPN auth keys and device lookups
+```
+
+## Project Structure
+
+- **`admin/`**: Sveltia CMS configuration (`config.yml`)
+- **`data/`**: YAML source-of-truth files (edited via Sveltia CMS or directly)
+- **`docker/`**: Docker Compose templates rendered by `komodo.tf` (one subdirectory per service)
+- **`age.tf`**: age keypair generation per docker-enabled server (public key for SOPS, secret key stored in Bitwarden)
+- **`b2.tf`**: Backblaze B2 buckets and application keys
+- **`backend.tf`**: OpenTofu state backend (Terraform Cloud)
+- **`bitwarden.tf`**: Credential storage — one Bitwarden entry per server/service
+- **`cloud_config.tf`**: Renders cloud-init configs from `templates/cloud_config/cloud_config.yaml` for Incus containers
+- **`cloudflare.tf`**: DNS records, Zero Trust tunnels, ACME tokens
+- **`dns.tf`**: DNS record locals (ACME delegation, manual, server, service, URL, wildcard)
+- **`github.tf`**: Fetches SSH public keys from a GitHub user for injection into server cloud-init; also referenced by `komodo.tf` for repository file management
+- **`htpasswd.tf`**: Basic auth credential generation
+- **`incus.tf`**: Incus profiles, projects, containers, and VMs
+- **`komodo.tf`**: Renders SOPS-encrypted Docker Compose files and pushes Komodo ResourceSync configs (servers/stacks) to a GitHub repository
+- **`locals.tf`**: Shared locals and summary output
+- **`oci.tf`**: Oracle Cloud VMs and networking
+- **`providers.tf`**: Provider configurations and versions
+- **`resend.tf`**: Resend email API keys
+- **`servers.tf`**: Server locals — deepmerge, feature maps, validation
+- **`services.tf`**: Service locals — deepmerge, deployment expansion, feature maps, validation
+- **`talos.tf`**: Filtered locals for Talos nodes (control-plane/worker) — no resources provisioned yet
+- **`tailscale.tf`**: Tailscale auth keys and device lookups
+- **`terraform.tf`**: Required providers and OpenTofu version
+- **`unifi.tf`**: UniFi client lookup stub (currently commented out — provides private IPs when enabled)
+- **`variables.tf`**: Input variable definitions
+
+## Code Standards
+
+### Sorting Convention
+
+Within any YAML or HCL object, apply this order:
+1. `id` or `name` first
+2. `description` second (if present)
+3. All remaining **scalar** key/value pairs, alphabetical
+4. All remaining **multi-line** objects and lists, alphabetical
+
+This applies to: `data/defaults.yml`, `admin/config.yml` field definitions, HCL `locals {}` blocks, and resource attribute lists.
+
+### HCL
+
+- **Formatting**: `tofu fmt -recursive` (run via `mise run fmt`)
+- **`for_each`**: Always prefer over `count`
+- **Naming**: `snake_case` for all resources, locals, and variables
+- **Sensitive data**: Mark all secrets as `sensitive = true` in outputs
+- **State**: Never manipulate state manually — use `tofu import` for imports
+- **Validation**: Use `terraform_data` preconditions for referential integrity checks
+
+### YAML
+
+- **Formatting**: Prettier (run via `mise run fmt`)
+- **Sorting**: Follow the sorting convention above
+- **Defaults**: `data/defaults.yml` defines the full schema; per-resource files only override what differs
+
+### General
+
+- **Comments**: Minimal — only for non-obvious business logic
+- **KISS**: Prefer readable over clever
+- **Trailing newlines**: Required in all files
+
+## Workflow
+
+### Adding a Server
+
+1. Open **Sveltia CMS** → Servers → New (or edit `data/servers/<id>.yml` directly)
+2. Set `id`, `platform`, `type`, `features`, `identity`, `networking`
+3. Commit via Sveltia CMS (or `git commit`)
+4. Run `mise run plan` → `mise run apply`
+
+### Adding a Service
+
+1. Open **Sveltia CMS** → Services → New (or edit `data/services/<id>.yml` directly)
+2. Set `id`, `deploy_to`, `features`, `identity`, `networking`
+3. Commit via Sveltia CMS (or `git commit`)
+4. Run `mise run plan` → `mise run apply`
+
+### Adding Incus Profiles / Projects
+
+1. Edit `data/incus/profiles/<name>.yml` or `data/incus/projects/<name>.yml`
+2. Run `mise run plan` → `mise run apply`
+
+## Commands
+
+```bash
+mise run setup     # Create .mise.local.toml from template
+mise run init      # Initialize OpenTofu providers and backend
+
+mise run check     # Format and validate (fmt + validate)
+mise run fmt       # Format HCL and YAML data files
+mise run validate  # Validate OpenTofu configuration
+
+mise run refresh   # Check for configuration drift
+mise run plan      # Review infrastructure changes
+mise run apply     # Apply infrastructure changes
+```
+
+## Credential Storage
+
+All generated credentials are stored automatically in **Bitwarden**:
+
+- **Servers folder**: One login entry per server; generated fields (passwords, API keys, IPs, FQDNs, tunnel tokens) stored as custom fields
+- **Services folder**: One login entry per service deployment with the same pattern
+
+The Bitwarden entry `username` is set from `identity.username`; all other fields use custom field storage via the `bitwarden_item_login` resource in `bitwarden.tf`.
+
+## Environment Setup
+
+Run `mise run setup` to create `.mise.local.toml` from `.mise.local.toml.default`, then fill in all credentials.
