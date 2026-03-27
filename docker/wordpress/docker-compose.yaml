@@ -8,7 +8,7 @@ services:
       MARIADB_PASSWORD: ${service.database.password}
       MARIADB_RANDOM_ROOT_PASSWORD: 1
       MARIADB_USER: ${service.database.username}
-    image: mariadb:11
+    image: mariadb:12
     restart: unless-stopped
     volumes:
       - mariadb:/var/lib/mysql
