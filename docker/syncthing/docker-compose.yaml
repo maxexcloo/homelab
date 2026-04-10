@@ -3,7 +3,7 @@ networks:
     external: true
 services:
   syncthing:
-    image: syncthing/syncthing:1
+    image: syncthing/syncthing:2
     labels:
       caddy: ${service.fqdn}
       caddy.import: ${service.zone}
