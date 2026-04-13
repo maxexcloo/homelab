@@ -11,24 +11,23 @@ locals {
       description = v.parent == "" ? v.identity.description : "${local._servers[v.parent].identity.description} ${v.identity.description} (${upper(v.identity.region)})"
       fqdn        = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
 
-      public_address = try(
-        v.networking.public_address != "" ? v.networking.public_address : null,
-        v.parent != "" ? local._servers[v.parent].networking.public_address : null,
-        v.parent != "" && local._servers[v.parent].parent != "" ? local._servers[local._servers[v.parent].parent].networking.public_address : null,
-        null
-      )
+      public_address = try(compact([
+        v.networking.public_address,
+        try(local._servers[v.parent].networking.public_address, ""),
+        try(local._servers[local._servers[v.parent].parent].networking.public_address, ""),
+      ])[0], null)
 
-      public_ipv4 = try(
-        can(cidrhost(v.networking.public_ipv4, 0)) ? v.networking.public_ipv4 : null,
-        v.parent != "" && can(cidrhost(local._servers[v.parent].networking.public_ipv4, 0)) ? local._servers[v.parent].networking.public_ipv4 : null,
-        null
-      )
+      public_ipv4 = try(compact([
+        can(cidrhost(v.networking.public_ipv4, 0)) ? v.networking.public_ipv4 : "",
+        try(can(cidrhost(local._servers[v.parent].networking.public_ipv4, 0)) ? local._servers[v.parent].networking.public_ipv4 : "", ""),
+        try(can(cidrhost(local._servers[local._servers[v.parent].parent].networking.public_ipv4, 0)) ? local._servers[local._servers[v.parent].parent].networking.public_ipv4 : "", ""),
+      ])[0], null)
 
-      public_ipv6 = try(
-        can(cidrhost("${v.networking.public_ipv6}/128", 0)) ? v.networking.public_ipv6 : null,
-        v.parent != "" && can(cidrhost("${local._servers[v.parent].networking.public_ipv6}/128", 0)) ? local._servers[v.parent].networking.public_ipv6 : null,
-        null
-      )
+      public_ipv6 = try(compact([
+        can(cidrhost("${v.networking.public_ipv6}/128", 0)) ? v.networking.public_ipv6 : "",
+        try(can(cidrhost("${local._servers[v.parent].networking.public_ipv6}/128", 0)) ? local._servers[v.parent].networking.public_ipv6 : "", ""),
+        try(can(cidrhost("${local._servers[local._servers[v.parent].parent].networking.public_ipv6}/128", 0)) ? local._servers[local._servers[v.parent].parent].networking.public_ipv6 : "", ""),
+      ])[0], null)
     }
   }
 
