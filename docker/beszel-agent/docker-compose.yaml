@@ -1,9 +1,0 @@
-services:
-  beszel-agent:
-    environment:
-      KEY: ${service.config.public_key}
-    image: henrygd/beszel-agent:latest
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro

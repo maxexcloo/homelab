@@ -1,9 +1,0 @@
-services:
-  isponsorblocktv:
-    image: ghcr.io/dmunozv04/isponsorblocktv:latest
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - data:/app/data
-volumes:
-  data:
