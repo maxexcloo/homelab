@@ -10,6 +10,7 @@ locals {
     for k, v in local._servers : k => {
       description = v.parent == "" ? v.identity.description : (v.identity.region == local._servers[v.parent].identity.name ? "${v.identity.description} (${upper(v.identity.region)})" : "${local._servers[v.parent].identity.description} ${v.identity.description} (${upper(v.identity.region)})")
       fqdn        = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
+      slug        = k
 
       public_address = try(compact([
         v.networking.public_address,

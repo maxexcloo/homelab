@@ -2,8 +2,8 @@ locals {
   komodo_stacks = {
     for k, v in local.services : k => v
     if v.identity.service != "" &&
-    contains(keys(local.servers), v.server) &&
-    local.servers[v.server].features.docker &&
+    contains(keys(local.servers), v.target) &&
+    local.servers[v.target].features.docker &&
     fileexists("${path.module}/docker/${v.identity.service}/docker-compose.yaml")
   }
 
@@ -13,7 +13,7 @@ locals {
         for filepath in fileset(path.module, "templates/${v.identity.service}/*.yaml") : {
           content = templatefile("${path.module}/${filepath}", {
             defaults = local.defaults
-            server   = local.servers[v.server]
+            server   = local.servers[v.target]
             servers  = local.servers
             service  = v
             services = local.services
@@ -30,7 +30,7 @@ locals {
       "${path.module}/docker/${v.identity.service}/docker-compose.yaml",
       {
         defaults = local.defaults
-        server   = local.servers[v.server]
+        server   = local.servers[v.target]
         servers  = local.servers
         service  = v
         services = local.services
@@ -105,7 +105,7 @@ resource "github_repository_file" "komodo_stacks" {
       auto_update = true
       repo = "${data.github_user.default.login}/${local.defaults.github.repositories.komodo}"
       run_directory = "${k}"
-      server = "${v.server}"
+      server = "${v.target}"
 
       [stack.config.pre_deploy]
       command = "SOPS_AGE_KEY=[[AGE_SECRET_KEY]] sops decrypt -i compose.yaml"
@@ -127,7 +127,7 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   for_each = local.komodo_stacks
 
   environment = {
-    AGE_PUBLIC_KEY = local.servers[each.value.server].age_public_key
+    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
     CONTENT        = base64encode(local.komodo_stacks_templates[each.key])
     CONTENT_TYPE   = "yaml"
   }
@@ -140,7 +140,7 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(local.servers[each.value.server].age_public_key)
+    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
     content_hash        = sha256(local.komodo_stacks_templates[each.key])
     script_hash         = sha256(local.sops_encrypt_script)
   }

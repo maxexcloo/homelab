@@ -96,6 +96,7 @@ services:
   deploy_to: []
   fqdn: ""
   password_sensitive: ""
+  target: ""
   features:
     b2: false
     cloudflare_proxy: false

@@ -104,15 +104,15 @@ locals {
       for k, service in local.services : "${zone}-${k}" => provider::deepmerge::mergo(
         local.dns_defaults,
         {
-          content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com"
-          name    = "${service.identity.name}.${local.servers[service.server].fqdn}.${zone}"
+          content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
+          name    = "${service.identity.name}.${local.servers[service.target].fqdn}.${zone}"
           proxied = true
           type    = "CNAME"
           zone    = zone
         }
       )
-      if contains(keys(local.servers), service.server) &&
-      local.servers[service.server].features.cloudflare_zero_trust_tunnel &&
+      if contains(keys(local.servers), service.target) &&
+      local.servers[service.target].features.cloudflare_zero_trust_tunnel &&
       service.features.cloudflare_proxy &&
       zone == local.defaults.domains.external
     }
@@ -126,14 +126,14 @@ locals {
             local.dns_defaults,
             {
               name    = url
-              proxied = local.servers[service.server].features.cloudflare_proxy
-              server  = service.server
+              proxied = local.servers[service.target].features.cloudflare_proxy
+              server  = service.target
               type    = "CNAME"
 
               content = (
-                local.servers[service.server].features.cloudflare_zero_trust_tunnel && service.features.cloudflare_proxy ?
-                "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
-                "${service.identity.name}.${local.servers[service.server].fqdn}.${local.defaults.domains.internal}"
+                local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.features.cloudflare_proxy ?
+                "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
+                "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.internal}"
               )
 
               zone = try(
@@ -143,7 +143,7 @@ locals {
             }
           )
         }
-        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0 && contains(keys(local.servers), service.server)
+        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0 && contains(keys(local.servers), service.target)
       ]
     ])
   ...)

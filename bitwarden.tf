@@ -52,7 +52,7 @@ resource "bitwarden_item_login" "service" {
   }
 
   folder_id = data.bitwarden_folder.services.id
-  name      = "${each.value.identity.description} (${contains(keys(local.servers), each.value.server) ? local.servers[each.value.server].fqdn : each.value.server})"
+  name      = "${each.value.identity.description} (${each.value.target})"
   password  = each.value.password_sensitive
   username  = each.value.identity.username
 

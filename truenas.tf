@@ -4,7 +4,7 @@ locals {
       "${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml",
       {
         defaults = local.defaults
-        server   = local.servers[v.server]
+        server   = local.servers[v.target]
         servers  = local.servers
         service  = v
         services = local.services
@@ -50,7 +50,7 @@ locals {
 
   truenas_services = {
     for k, v in local.services : k => v
-    if contains(keys(local.truenas_servers), v.server)
+    if contains(keys(local.truenas_servers), v.target)
   }
 
   truenas_standard_services = {
@@ -71,7 +71,7 @@ resource "github_repository_file" "truenas_compose" {
   for_each = local.truenas_custom_services
 
   commit_message      = "Update ${each.key} compose"
-  file                = "${each.value.server}/${each.value.identity.service}/compose.json"
+  file                = "${each.value.target}/${each.value.identity.service}/compose.json"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
 
@@ -82,7 +82,7 @@ resource "github_repository_file" "truenas_labels" {
   for_each = local.truenas_standard_services
 
   commit_message      = "Update ${each.key} labels"
-  file                = "${each.value.server}/${each.value.identity.service}/${local.truenas_container[each.key]}/override.json"
+  file                = "${each.value.target}/${each.value.identity.service}/${local.truenas_container[each.key]}/override.json"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
 
@@ -105,7 +105,7 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
   for_each = local.truenas_custom_services
 
   environment = {
-    AGE_PUBLIC_KEY = age_secret_key.server[each.value.server].public_key
+    AGE_PUBLIC_KEY = age_secret_key.server[each.value.target].public_key
     CONTENT = base64encode(jsonencode({
       app_name                     = each.value.identity.service
       custom_app                   = true
@@ -122,7 +122,7 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(age_secret_key.server[each.value.server].public_key)
+    age_public_key_hash = sha256(age_secret_key.server[each.value.target].public_key)
     content_hash        = sha256(local.truenas_compose_templates[each.key])
     script_hash         = sha256(local.sops_encrypt_script)
   }
@@ -132,7 +132,7 @@ resource "shell_sensitive_script" "truenas_labels_encrypt" {
   for_each = local.truenas_standard_services
 
   environment = {
-    AGE_PUBLIC_KEY = age_secret_key.server[each.value.server].public_key
+    AGE_PUBLIC_KEY = age_secret_key.server[each.value.target].public_key
     CONTENT = base64encode(jsonencode({
       values = {
         containerConfig = {
@@ -152,7 +152,7 @@ resource "shell_sensitive_script" "truenas_labels_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(age_secret_key.server[each.value.server].public_key)
+    age_public_key_hash = sha256(age_secret_key.server[each.value.target].public_key)
     content_hash        = sha256(jsonencode(local.truenas_labels[each.key]))
     script_hash         = sha256(local.sops_encrypt_script)
   }

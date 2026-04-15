@@ -19,7 +19,7 @@ locals {
 
   fly_services = {
     for k, v in local.services : k => v
-    if v.server == "fly"
+    if v.target == "fly"
   }
 
   fly_toml_content = {
