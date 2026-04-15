@@ -28,9 +28,9 @@ dns:
 
 github:
   repositories:
-    fly: fly
-    komodo: komodo
-    truenas: truenas
+    fly: excloo/fly
+    komodo: excloo/komodo
+    truenas: excloo/truenas
 
 resend:
   host: smtp.resend.com

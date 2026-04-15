@@ -1,6 +1,7 @@
 [tools]
 opentofu = "latest"
 prettier = "latest"
+sops = "latest"
 
 [env]
 TF_CLI_ARGS_init = "-upgrade"
