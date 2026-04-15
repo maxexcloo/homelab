@@ -39,14 +39,15 @@ resend:
   username: resend
 
 servers:
+  fqdn: ""
   id: ""
   parent: ""
+  password_sensitive: ""
   platform: unmanaged
   type: server
   features:
     b2: false
     cloudflare_acme_token: false
-    cloudflare_proxy: false
     cloudflare_zero_trust_tunnel: false
     docker: false
     password: false
@@ -96,6 +97,7 @@ services:
   deploy_to: []
   features:
     b2: false
+    cloudflare_proxy: false
     monitoring: true
     password: false
     resend: false

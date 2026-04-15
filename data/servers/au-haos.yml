@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schemas/server.json
-id: au-haos
 parent: au
 platform: unmanaged
 type: server

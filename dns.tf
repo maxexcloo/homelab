@@ -104,16 +104,16 @@ locals {
       for k, service in local.services : "${zone}-${k}" => provider::deepmerge::mergo(
         local.dns_defaults,
         {
-          content = local.servers[service.server].features.cloudflare_proxy && local.servers[service.server].features.cloudflare_zero_trust_tunnel ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" : "${local.servers[service.server].fqdn}.${zone}"
+          content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com"
           name    = "${service.identity.name}.${local.servers[service.server].fqdn}.${zone}"
-          proxied = local.servers[service.server].features.cloudflare_proxy
+          proxied = true
           type    = "CNAME"
           zone    = zone
         }
       )
       if contains(keys(local.servers), service.server) &&
-      local.servers[service.server].features.cloudflare_proxy &&
       local.servers[service.server].features.cloudflare_zero_trust_tunnel &&
+      service.features.cloudflare_proxy &&
       zone == local.defaults.domains.external
     }
   ]...)
@@ -131,7 +131,7 @@ locals {
               type    = "CNAME"
 
               content = (
-                local.servers[service.server].features.cloudflare_proxy && local.servers[service.server].features.cloudflare_zero_trust_tunnel ?
+                local.servers[service.server].features.cloudflare_zero_trust_tunnel && service.features.cloudflare_proxy ?
                 "${cloudflare_zero_trust_tunnel_cloudflared.server[service.server].id}.cfargotunnel.com" :
                 "${service.identity.name}.${local.servers[service.server].fqdn}.${local.defaults.domains.internal}"
               )

@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schemas/server.json
-id: au-hsp
 platform: oci
 type: vm
 identity:

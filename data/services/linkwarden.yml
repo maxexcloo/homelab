@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-id: linkwarden
 deploy_to:
   - au-truenas
 features:

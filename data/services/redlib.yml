@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-id: redlib
 deploy_to:
   - au-truenas
 identity:

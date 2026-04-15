@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-id: syncthing
 deploy_to:
   - au-truenas
 identity:

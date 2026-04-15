@@ -122,7 +122,6 @@
           "properties": {
             "b2": { "type": "boolean" },
             "cloudflare_acme_token": { "type": "boolean" },
-            "cloudflare_proxy": { "type": "boolean" },
             "cloudflare_zero_trust_tunnel": { "type": "boolean" },
             "docker": { "type": "boolean" },
             "password": { "type": "boolean" },

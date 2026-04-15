@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-id: netbootxyz
 deploy_to:
   - au-truenas
 identity:

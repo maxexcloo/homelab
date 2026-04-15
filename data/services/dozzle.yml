@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-id: dozzle
 deploy_to:
   - au-truenas
 identity:
