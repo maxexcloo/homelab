@@ -1,28 +1,4 @@
 locals {
-  komodo_script_encrypt = <<-EOT
-    #!/bin/bash
-    set -euo pipefail
-
-    DATA="$(printf '%s' "$CONTENT" | base64 -d)"
-
-    PREVIOUS_DATA=""
-    if [ ! -t 0 ]; then
-      PREVIOUS_DATA="$(cat || true)"
-    fi
-
-    HASH="$(printf '%s' "$DATA" | sha256sum | awk '{print $1}')"
-    PREVIOUS_HASH="$(printf '%s' "$PREVIOUS_DATA" | jq -r '.hash // ""' 2>/dev/null || true)"
-
-    if [ -n "$PREVIOUS_DATA" ] && [ "$PREVIOUS_HASH" = "$HASH" ]; then
-      printf '%s' "$PREVIOUS_DATA"
-      exit 0
-    fi
-
-    ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type yaml --output-type yaml /dev/stdin)"
-
-    jq -n --arg encrypted_content "$ENCRYPTED_CONTENT" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
-  EOT
-
   komodo_stacks = {
     for k, v in local.services : k => v
     if v.identity.service != "" &&
@@ -153,18 +129,19 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
   environment = {
     AGE_PUBLIC_KEY = local.servers[each.value.server].age_public_key
     CONTENT        = base64encode(local.komodo_stacks_templates[each.key])
+    CONTENT_TYPE   = "yaml"
   }
 
   lifecycle_commands {
-    create = local.komodo_script_encrypt
+    create = local.sops_encrypt_script
     delete = "true"
-    read   = local.komodo_script_encrypt
-    update = local.komodo_script_encrypt
+    read   = local.sops_encrypt_script
+    update = local.sops_encrypt_script
   }
 
   triggers = {
     age_public_key_hash = sha256(local.servers[each.value.server].age_public_key)
     content_hash        = sha256(local.komodo_stacks_templates[each.key])
-    script_hash         = sha256(local.komodo_script_encrypt)
+    script_hash         = sha256(local.sops_encrypt_script)
   }
 }

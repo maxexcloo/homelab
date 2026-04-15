@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schemas/dns.json
 name: excloo.com
 records:
   - content: fm1.excloo.com.dkim.fmhosted.com

@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: redlib
+deploy_to:
+  - au-truenas
+identity:
+  description: Redlib
+  group: Media
+  name: redlib
+  service: redlib
+networking:
+  port: 8080
+  scheme: http

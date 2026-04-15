@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DNS Zone",
+  "type": "object",
+  "required": ["name"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Domain name of the Cloudflare zone"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "content", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "content": { "type": "string" },
+          "name": { "type": "string" },
+          "priority": { "type": "integer" },
+          "proxied": { "type": "boolean" },
+          "ttl": { "type": "integer" },
+          "type": {
+            "type": "string",
+            "enum": ["A", "AAAA", "CNAME", "MX", "NS", "SRV", "TXT"]
+          },
+          "wildcard": {
+            "type": "boolean",
+            "description": "Also create a *.name CNAME pointing to this record"
+          }
+        }
+      }
+    }
+  }
+}

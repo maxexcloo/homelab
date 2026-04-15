@@ -17,13 +17,9 @@
 ## Data Flow
 
 ```
-Sveltia CMS (admin/)
-    │  edits
-    ▼
 data/
 ├── defaults.yml        # Global config (organization, domains, system) and schema defaults for servers/services
 ├── dns/*.yml           # DNS zones and manual records
-├── incus/              # Incus profiles and projects
 ├── servers/*.yml       # Server definitions
 └── services/*.yml      # Service deployments
     │  read by
@@ -37,38 +33,40 @@ Providers
     ├── Bitwarden       One credential entry per server/service with all generated fields
     ├── B2              Object storage buckets and application keys
     ├── Cloudflare      DNS records, Zero Trust tunnels, ACME tokens
-    ├── Incus           Profiles, projects, containers, VMs
+    ├── GitHub          Repository files: Komodo configs, TrueNAS labels/compose, Fly.io configs
+    ├── Incus           VM instances
     ├── OCI             Oracle Cloud VMs and networking
-    ├── Komodo          SOPS-encrypted compose files + server/stack configs → GitHub repo
     ├── Resend          Email API keys
     └── Tailscale       VPN auth keys and device lookups
 ```
 
 ## Project Structure
 
-- **`admin/`**: Sveltia CMS configuration (`config.yml`)
-- **`data/`**: YAML source-of-truth files (edited via Sveltia CMS or directly)
-- **`docker/`**: Docker Compose templates rendered by `komodo.tf` (one subdirectory per service)
-- **`age.tf`**: age keypair generation per docker-enabled server (public key for SOPS, secret key stored in Bitwarden)
+- **`data/`**: YAML source-of-truth files (edited directly or via CMS)
+- **`docker/`**: Docker Compose files for Komodo-managed services (one subdirectory per service)
+- **`templates/`**: Config file templates — `cloud_config/`, `docker/` (TrueNAS compose), `fly/`, and per-service subdirs for Komodo stack configs
+- **`age.tf`**: age keypair generation — one per docker-enabled server (SOPS + Bitwarden), one per TrueNAS server (GitHub Actions), one for Fly.io (GitHub Actions)
 - **`b2.tf`**: Backblaze B2 buckets and application keys
 - **`backend.tf`**: OpenTofu state backend (Terraform Cloud)
 - **`bcrypt.tf`**: Bcrypt password hashing for server and service passwords
 - **`bitwarden.tf`**: Credential storage — one Bitwarden entry per server/service
-- **`cloud_config.tf`**: Renders cloud-init configs from `templates/cloud_config/cloud_config.yaml` for all servers (Incus containers/VMs and OCI instances)
+- **`cloud_config.tf`**: Renders cloud-init configs from `templates/cloud_config/cloud_config.yaml` for Incus and OCI servers
 - **`cloudflare.tf`**: DNS records, Zero Trust tunnels, ACME tokens
 - **`dns.tf`**: DNS record locals (ACME delegation, manual, server, service, URL, wildcard)
-- **`github.tf`**: Fetches SSH public keys from a GitHub user for injection into server cloud-init; also referenced by `komodo.tf` for repository file management
-- **`incus.tf`**: Incus profiles, projects, containers, and VMs
-- **`komodo.tf`**: Renders SOPS-encrypted Docker Compose files and pushes Komodo ResourceSync configs (servers/stacks) to a GitHub repository
-- **`locals.tf`**: Shared locals and summary output
+- **`fly.tf`**: Fly.io service configs, SOPS age key, and GitHub repository files
+- **`github.tf`**: GitHub user data source (SSH keys for cloud-init)
+- **`incus.tf`**: Incus VM instances
+- **`komodo.tf`**: SOPS-encrypted Docker Compose files and Komodo ResourceSync configs (servers/stacks/configs) pushed to a GitHub repository
+- **`locals.tf`**: Shared locals (`defaults`, `dns`) and summary output
 - **`oci.tf`**: Oracle Cloud VMs and networking
 - **`providers.tf`**: Provider configurations and versions
 - **`resend.tf`**: Resend email API keys
-- **`servers.tf`**: Server locals — deepmerge, feature maps, validation
+- **`servers.tf`**: Server locals — deepmerge, computed fields, feature maps, validation
 - **`services.tf`**: Service locals — deepmerge, deployment expansion, feature maps, validation
-- **`talos.tf`**: Filtered locals for Talos nodes (control-plane/worker) — no resources provisioned yet
+- **`ssh.tf`**: SSH config generation (currently commented out)
 - **`tailscale.tf`**: Tailscale auth keys and device lookups
 - **`terraform.tf`**: Required providers and OpenTofu version
+- **`truenas.tf`**: TrueNAS service labels/compose files, SOPS age keys, and GitHub repository files
 - **`unifi.tf`**: UniFi client lookup stub (currently commented out — provides private IPs when enabled)
 - **`variables.tf`**: Input variable definitions
 

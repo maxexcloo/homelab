@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: gatus
+deploy_to:
+  - fly
+features:
+  monitoring: false
+  resend: true
+identity:
+  description: Gatus
+  group: System
+  name: gatus
+  service: gatus
+networking:
+  port: 8080
+platform_config:
+  fly:
+    image: ghcr.io/twin/gatus:v5
+    memory: 256
+    region: syd

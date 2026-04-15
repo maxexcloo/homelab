@@ -1,0 +1,16 @@
+services:
+  redlib:
+    image: quay.io/redlib/redlib:latest
+    labels:
+      homepage.description: Reddit Frontend
+      homepage.group: Media
+      homepage.href: https://${service.fqdn_external}
+      homepage.icon: redlib.svg
+      homepage.name: Redlib
+      traefik.enable: true
+      traefik.http.routers.redlib.entrypoints: websecure
+      traefik.http.routers.redlib.rule: Host(`${service.fqdn_external}`)
+      traefik.http.routers.redlib.tls: true
+      traefik.http.services.redlib.loadbalancer.server.port: 8080
+    network_mode: host
+    restart: unless-stopped

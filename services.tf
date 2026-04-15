@@ -28,10 +28,13 @@ locals {
         password_sensitive      = v.features.password ? random_password.service[k].result : null
       },
       {
-        for secret in v.features.secrets : "${secret}_sensitive" => (
-          secret == "secret_hash" ?
-          random_id.service_secret["${k}-${secret}"].b64_std :
-          random_password.service_secret["${k}-${secret}"].result
+        for secret in v.features.secrets : "${secret.name}_sensitive" => (
+          contains(["hex", "base64"], secret.type) ? (
+            secret.type == "hex" ?
+            random_id.service_secret["${k}-${secret.name}"].hex :
+            random_id.service_secret["${k}-${secret.name}"].b64_std
+          ) :
+          random_password.service_secret["${k}-${secret.name}"].result
         )
       },
       {
@@ -70,15 +73,18 @@ locals {
 
 resource "random_id" "service_secret" {
   for_each = {
-    for s in flatten([
+    for item in flatten([
       for k, v in local._services_deployments : [
-        for secret in v.features.secrets : "${k}-${secret}"
-        if secret == "secret_hash"
+        for secret in v.features.secrets : {
+          key         = "${k}-${secret.name}"
+          byte_length = secret.length
+        }
+        if contains(["hex", "base64"], secret.type)
       ]
-    ]) : s => s
+    ]) : item.key => item
   }
 
-  byte_length = 32
+  byte_length = each.value.byte_length
 }
 
 resource "random_password" "service" {
@@ -89,15 +95,20 @@ resource "random_password" "service" {
 
 resource "random_password" "service_secret" {
   for_each = {
-    for s in flatten([
+    for item in flatten([
       for k, v in local._services_deployments : [
-        for secret in v.features.secrets : "${k}-${secret}"
-        if secret != "secret_hash"
+        for secret in v.features.secrets : {
+          key     = "${k}-${secret.name}"
+          length  = secret.length
+          special = secret.type == "string"
+        }
+        if contains(["string", "alphanumeric"], secret.type)
       ]
-    ]) : s => s
+    ]) : item.key => item
   }
 
-  length = 32
+  length  = each.value.length
+  special = each.value.special
 }
 
 resource "terraform_data" "services_validation" {

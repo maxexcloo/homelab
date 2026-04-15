@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: immich
+deploy_to:
+  - au-truenas
+features:
+  password: true
+identity:
+  description: Immich
+  group: Media
+  name: immich
+  service: immich
+networking:
+  port: 30041
+  scheme: http

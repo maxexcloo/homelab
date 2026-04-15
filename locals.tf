@@ -1,8 +1,39 @@
 locals {
+  sops_encrypt_script = <<-EOT
+    #!/bin/bash
+    set -euo pipefail
+
+    DATA="$(printf '%s' "$CONTENT" | base64 -d)"
+
+    PREVIOUS_DATA=""
+    if [ ! -t 0 ]; then
+      PREVIOUS_DATA="$(cat || true)"
+    fi
+
+    HASH="$(printf '%s' "$DATA" | sha256sum | awk '{print $1}')"
+    PREVIOUS_HASH="$(printf '%s' "$PREVIOUS_DATA" | jq -r '.hash // ""' 2>/dev/null || true)"
+
+    if [ -n "$PREVIOUS_DATA" ] && [ "$PREVIOUS_HASH" = "$HASH" ]; then
+      printf '%s' "$PREVIOUS_DATA"
+      exit 0
+    fi
+
+    ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type "$CONTENT_TYPE" --output-type "$CONTENT_TYPE" /dev/stdin)"
+
+    jq -n --arg encrypted_content "$ENCRYPTED_CONTENT" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
+  EOT
+}
+
+locals {
   _defaults        = yamldecode(file("${path.module}/data/defaults.yml"))
   dns_defaults     = local._defaults.dns
   server_defaults  = local._defaults.servers
   service_defaults = local._defaults.services
+
+  _dns_raw = {
+    for filepath in fileset(path.module, "data/dns/*.yml") :
+    filepath => yamldecode(file("${path.module}/${filepath}"))
+  }
 
   defaults = {
     for k, v in local._defaults : k => v
@@ -10,8 +41,8 @@ locals {
   }
 
   dns = {
-    for filepath in fileset(path.module, "data/dns/*.yml") :
-    yamldecode(file("${path.module}/${filepath}")).name => try(yamldecode(file("${path.module}/${filepath}")).records, [])
+    for filepath, data in local._dns_raw :
+    data.name => try(data.records, [])
   }
 }
 

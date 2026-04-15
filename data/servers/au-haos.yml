@@ -1,12 +1,15 @@
 # yaml-language-server: $schema=../../schemas/server.json
-id: au-malatang
+id: au-haos
 parent: au
 platform: unmanaged
 type: server
 identity:
-  description: Malatang
-  name: malatang
+  description: HAOS
+  name: haos
   region: au
 features:
+  b2: true
   cloudflare_acme_token: true
+  cloudflare_zero_trust_tunnel: true
+  password: true
   tailscale: true

@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: syncthing
+deploy_to:
+  - au-truenas
+identity:
+  description: Syncthing
+  group: System
+  name: syncthing
+  service: syncthing
+networking:
+  port: 20910
+  scheme: http

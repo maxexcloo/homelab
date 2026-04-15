@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: linkwarden
+deploy_to:
+  - au-truenas
+features:
+  password: true
+  secrets:
+    - name: secret_hash
+      type: base64
+      length: 32
+identity:
+  description: Linkwarden
+  group: Productivity
+  name: linkwarden
+  service: linkwarden
+networking:
+  port: 30243
+  scheme: http

@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: homepage
+deploy_to:
+  - au-truenas
+identity:
+  description: Homepage
+  group: System
+  name: homepage
+  service: homepage
+networking:
+  port: 30054
+  scheme: http
+platform_config:
+  homepage:
+    href: https://truenas.au.excloo.dev:8443

@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Service",
+  "type": "object",
+  "required": ["id", "identity"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique identifier. Must match the docker/ subdirectory name if deploying via Komodo."
+    },
+    "deploy_to": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Server IDs to deploy this service on. Use 'fly' for Fly.io deployments."
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "b2": { "type": "boolean" },
+        "monitoring": { "type": "boolean" },
+        "password": { "type": "boolean" },
+        "resend": { "type": "boolean" },
+        "secrets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type", "length"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z0-9_]+$",
+                "description": "Secret identifier. Exposed as {name}_sensitive on the service."
+              },
+              "type": {
+                "type": "string",
+                "enum": ["hex", "base64", "string", "alphanumeric"],
+                "description": "hex/base64: random bytes (length = byte count); string: random password with special chars; alphanumeric: random password without special chars."
+              },
+              "length": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Byte count for hex/base64 types; character count for string/alphanumeric types."
+              }
+            }
+          }
+        },
+        "tailscale": { "type": "boolean" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "group": { "type": "string", "description": "Dashboard group (e.g. Media, System, Productivity)." },
+        "name": { "type": "string" },
+        "service": {
+          "type": "string",
+          "description": "Matches the docker/ subdirectory name for the compose file."
+        },
+        "username": { "type": "string" }
+      }
+    },
+    "networking": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "port": { "type": ["integer", "null"] },
+        "scheme": {
+          "enum": ["http", "https", null],
+          "description": "Traefik backend scheme override. Defaults to null (no scheme label)."
+        },
+        "ssl": { "type": "boolean" },
+        "ssl_validation": { "type": "boolean" },
+        "urls": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Custom domains. DNS records are auto-created for any managed zone."
+        }
+      }
+    },
+    "platform_config": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "docker": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "description": "Set to {} (or with overrides) to include this service in Docker/TrueNAS management.",
+          "properties": {
+            "config": {
+              "type": "object",
+              "description": "Extra template variables for custom compose templates.",
+              "additionalProperties": { "type": "string" }
+            },
+            "container": {
+              "type": "string",
+              "description": "Container to attach labels to. Defaults to identity.service."
+            },
+            "memory": {
+              "type": ["integer", "null"],
+              "minimum": 1,
+              "description": "Container memory limit in MiB."
+            },
+            "middleware": {
+              "type": "string",
+              "description": "Traefik middleware to apply to this service's router."
+            },
+            "ram": {
+              "type": ["integer", "null"],
+              "minimum": 1,
+              "description": "Container memory reservation in MiB."
+            }
+          }
+        },
+        "fly": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpu_kind": { "type": "string", "enum": ["shared", "performance"] },
+            "cpus": { "type": "integer", "minimum": 1 },
+            "image": { "type": "string" },
+            "memory": { "type": "integer", "minimum": 1 },
+            "org": { "type": "string" },
+            "port": { "type": "integer" },
+            "region": { "type": "string" }
+          }
+        },
+        "homepage": {
+          "type": "object",
+          "description": "Homepage dashboard configuration. Supports template variables in string values: ${service.*}, ${defaults.*}.",
+          "additionalProperties": false,
+          "properties": {
+            "group": { "type": "string", "description": "Dashboard group override. Defaults to identity.group." },
+            "href": { "type": "string", "description": "Dashboard link. Defaults to https://{fqdn_external}. Supports template variables." },
+            "icon": { "type": "string", "description": "Dashboard icon. Defaults to {service}.svg." },
+            "name": { "type": "string", "description": "Dashboard name. Defaults to identity.description." },
+            "widget": {
+              "type": "object",
+              "description": "Homepage widget definition.",
+              "additionalProperties": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

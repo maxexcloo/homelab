@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schemas/dns.json
 name: schaefer.au
 records:
   - content: fm1.schaefer.au.dkim.fmhosted.com

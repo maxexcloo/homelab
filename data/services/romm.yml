@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: romm
+deploy_to:
+  - au-truenas
+features:
+  password: true
+identity:
+  description: RoMM
+  group: Media
+  name: romm
+  service: romm
+networking:
+  port: 8080
+  scheme: http

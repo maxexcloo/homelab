@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../schemas/defaults.json
 organization:
   name: excloo
   email: max@excloo.com
@@ -29,23 +30,7 @@ github:
   repositories:
     fly: fly
     komodo: komodo
-
-incus:
-  profiles:
-    description: ""
-    config: {}
-    devices: {}
-    remotes: []
-  projects:
-    description: ""
-    config:
-      features.images: true
-      features.networks: true
-      features.networks.zones: true
-      features.profiles: true
-      features.storage.buckets: true
-      features.storage.volumes: true
-    remotes: []
+    truenas: truenas
 
 resend:
   host: smtp.resend.com
@@ -66,7 +51,6 @@ servers:
     password: false
     resend: false
     tailscale: false
-    talos: false
   identity:
     name: ""
     description: ""
@@ -105,8 +89,6 @@ servers:
         - 22
         - 80
         - 443
-    talos:
-      role: worker
 
 services:
   id: ""
@@ -121,14 +103,18 @@ services:
   identity:
     name: ""
     description: ""
+    group: ""
     service: ""
     username: ""
   networking:
     port: null
+    scheme: null
     ssl: true
     ssl_validation: true
     urls: []
   platform_config:
+    docker: null
+    homepage: null
     fly:
       cpu_kind: shared
       cpus: 1
@@ -137,7 +123,6 @@ services:
       org: ""
       port: 8080
       region: ""
-  widgets: []
 
 tailscale:
   admin_identities:

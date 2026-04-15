@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: tailscale
+deploy_to:
+  - au-truenas
+identity:
+  description: Tailscale
+  group: System
+  name: tailscale
+  service: tailscale

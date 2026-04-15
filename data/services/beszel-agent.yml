@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: beszel-agent
+deploy_to:
+  - au-truenas
+identity:
+  description: Beszel Agent
+  group: System
+  name: beszel-agent
+  service: beszel-agent

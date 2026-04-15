@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: miniflux
+deploy_to:
+  - au-truenas
+features:
+  password: true
+identity:
+  description: Miniflux
+  group: Productivity
+  name: miniflux
+  service: miniflux
+networking:
+  port: 30285
+  scheme: http

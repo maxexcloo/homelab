@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: traefik
+deploy_to:
+  - au-truenas
+identity:
+  description: Traefik
+  group: System
+  name: traefik
+  service: traefik

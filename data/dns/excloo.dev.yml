@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../schemas/dns.json
 name: excloo.dev
 records:
   - content: feedback-smtp.ap-northeast-1.amazonses.com

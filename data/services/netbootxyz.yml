@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: netbootxyz
+deploy_to:
+  - au-truenas
+identity:
+  description: netboot.xyz
+  group: System
+  name: netbootxyz
+  service: netbootxyz
+networking:
+  port: 31010
+  scheme: http

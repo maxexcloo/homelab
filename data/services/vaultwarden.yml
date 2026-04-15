@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../schemas/service.json
+id: vaultwarden
+deploy_to:
+  - au-truenas
+features:
+  password: true
+identity:
+  description: Vaultwarden
+  group: Security
+  name: vaultwarden
+  service: vaultwarden
+networking:
+  port: 30032
+  scheme: https

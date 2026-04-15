@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Server",
+  "type": "object",
+  "required": ["id", "identity"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[a-z0-9-]+)*$",
+      "description": "Unique identifier. Format: au | au-pie | au-pie-haos"
+    },
+    "parent": {
+      "type": "string",
+      "description": "Parent server ID. Public IPs are inherited up to 2 levels."
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["unmanaged", "incus", "oci", "truenas", "unifi"]
+    },
+    "type": {
+      "type": "string",
+      "enum": ["appliance", "router", "server", "vm"]
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "b2": { "type": "boolean" },
+        "cloudflare_acme_token": { "type": "boolean" },
+        "cloudflare_proxy": { "type": "boolean" },
+        "cloudflare_zero_trust_tunnel": { "type": "boolean" },
+        "docker": { "type": "boolean" },
+        "password": { "type": "boolean" },
+        "resend": { "type": "boolean" },
+        "tailscale": { "type": "boolean" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "required": ["name", "region"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "region": { "type": "string", "pattern": "^[a-z]{2}$" },
+        "username": { "type": "string" }
+      }
+    },
+    "networking": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "management_address": { "type": "string" },
+        "management_port": { "type": "integer" },
+        "public_address": { "type": "string" },
+        "public_ipv4": { "type": "string" },
+        "public_ipv6": { "type": "string" }
+      }
+    },
+    "platform_config": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "incus": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpus": { "type": "integer", "minimum": 1 },
+            "image": { "type": ["string", "null"] },
+            "memory": { "type": "integer", "minimum": 1 },
+            "nested": { "type": "boolean" },
+            "privileged": { "type": "boolean" },
+            "profiles": { "type": "array", "items": { "type": "string" } },
+            "protection": { "type": "boolean" },
+            "secureboot": { "type": "boolean" },
+            "type": { "type": "string", "enum": ["container", "virtual-machine"] },
+            "disks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path", "pool"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "path": { "type": "string" },
+                  "pool": { "type": "string" },
+                  "size": { "type": "integer", "minimum": 1 }
+                }
+              }
+            },
+            "networks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["network"],
+                "additionalProperties": false,
+                "properties": {
+                  "mac_address": {
+                    "type": "string",
+                    "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+                  },
+                  "name": { "type": "string" },
+                  "network": { "type": "string" }
+                }
+              }
+            },
+            "pci_devices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["address"],
+                "additionalProperties": false,
+                "properties": {
+                  "address": { "type": "string" },
+                  "name": { "type": "string" }
+                }
+              }
+            },
+            "usb_devices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["productid", "vendorid"],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": { "type": "string" },
+                  "name": { "type": "string" },
+                  "productid": { "type": "string", "pattern": "^[0-9a-fA-F]{4}$" },
+                  "vendorid": { "type": "string", "pattern": "^[0-9a-fA-F]{4}$" }
+                }
+              }
+            }
+          }
+        },
+        "oci": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "assign_public_ip": { "type": "boolean" },
+            "cpus": { "type": "integer", "minimum": 1 },
+            "disk_size": { "type": "integer", "minimum": 1 },
+            "image_id": { "type": "string" },
+            "ingress_ports": { "type": "array", "items": { "type": "integer" } },
+            "memory": { "type": "integer", "minimum": 1 },
+            "shape": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

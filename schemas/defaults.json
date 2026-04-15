@@ -1,0 +1,242 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Defaults",
+  "type": "object",
+  "required": ["organization", "domains", "system"],
+  "additionalProperties": false,
+  "properties": {
+    "organization": {
+      "type": "object",
+      "required": ["name", "email"],
+      "additionalProperties": false,
+      "properties": {
+        "email": { "type": "string" },
+        "managed_comment": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "domains": {
+      "type": "object",
+      "required": ["acme", "external", "internal"],
+      "additionalProperties": false,
+      "properties": {
+        "acme": { "type": "string", "description": "Domain used for DNS-01 ACME challenge delegation" },
+        "external": { "type": "string", "description": "Public-facing domain" },
+        "internal": { "type": "string", "description": "Internal Tailscale domain" }
+      }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "locale": { "type": "string" },
+        "shell": { "type": "string" },
+        "timezone": { "type": "string" }
+      }
+    },
+    "bitwarden": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "folders": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "servers": { "type": "string" },
+            "services": { "type": "string" }
+          }
+        },
+        "url_field_pattern": {
+          "type": "string",
+          "description": "Regex matching server/service fields to store as Bitwarden URIs"
+        }
+      }
+    },
+    "dns": {
+      "type": "object",
+      "description": "Default values merged into all DNS records",
+      "additionalProperties": false,
+      "properties": {
+        "priority": { "type": ["integer", "null"] },
+        "proxied": { "type": "boolean" },
+        "ttl": { "type": "integer" },
+        "wildcard": { "type": "boolean" }
+      }
+    },
+    "github": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repositories": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fly": { "type": "string" },
+            "komodo": { "type": "string" },
+            "truenas": { "type": "string" }
+          }
+        }
+      }
+    },
+    "resend": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "host": { "type": "string" },
+        "port": { "type": "integer" },
+        "username": { "type": "string" }
+      }
+    },
+    "servers": {
+      "type": "object",
+      "description": "Default values merged into all server YAML files",
+      "$ref": "#/definitions/serverDefaults"
+    },
+    "services": {
+      "type": "object",
+      "description": "Default values merged into all service YAML files",
+      "$ref": "#/definitions/serviceDefaults"
+    },
+    "tailscale": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "admin_identities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "serverDefaults": {
+      "additionalProperties": false,
+      "properties": {
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "b2": { "type": "boolean" },
+            "cloudflare_acme_token": { "type": "boolean" },
+            "cloudflare_proxy": { "type": "boolean" },
+            "cloudflare_zero_trust_tunnel": { "type": "boolean" },
+            "docker": { "type": "boolean" },
+            "password": { "type": "boolean" },
+            "resend": { "type": "boolean" },
+            "tailscale": { "type": "boolean" }
+          }
+        },
+        "id": { "type": "string" },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "description": { "type": "string" },
+            "name": { "type": "string" },
+            "region": { "type": "string" },
+            "username": { "type": "string" }
+          }
+        },
+        "networking": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "management_address": { "type": "string" },
+            "management_port": { "type": "integer" },
+            "public_address": { "type": "string" },
+            "public_ipv4": { "type": "string" },
+            "public_ipv6": { "type": "string" }
+          }
+        },
+        "parent": { "type": "string" },
+        "platform": { "type": "string" },
+        "platform_config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "incus": { "type": "object" },
+            "oci": { "type": "object" }
+          }
+        },
+        "type": { "type": "string" }
+      }
+    },
+    "serviceDefaults": {
+      "additionalProperties": false,
+      "properties": {
+        "deploy_to": { "type": "array", "items": { "type": "string" } },
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "b2": { "type": "boolean" },
+            "monitoring": { "type": "boolean" },
+            "password": { "type": "boolean" },
+            "resend": { "type": "boolean" },
+            "secrets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "type", "length"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string", "enum": ["hex", "base64", "string", "alphanumeric"] },
+                  "length": { "type": "integer", "minimum": 1 }
+                }
+              }
+            },
+            "tailscale": { "type": "boolean" }
+          }
+        },
+        "id": { "type": "string" },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "description": { "type": "string" },
+            "group": { "type": "string" },
+            "name": { "type": "string" },
+            "service": { "type": "string" },
+            "username": { "type": "string" }
+          }
+        },
+        "networking": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "port": { "type": ["integer", "null"] },
+            "scheme": { "enum": ["http", "https", null] },
+            "ssl": { "type": "boolean" },
+            "ssl_validation": { "type": "boolean" },
+            "urls": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "platform_config": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "docker": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "properties": {
+                "config": { "type": "object", "additionalProperties": { "type": "string" } },
+                "container": { "type": "string" },
+                "href": { "type": "string" },
+                "memory": { "type": ["integer", "null"], "minimum": 1 },
+                "middleware": { "type": "string" },
+                "ram": { "type": ["integer", "null"], "minimum": 1 }
+              }
+            },
+            "fly": { "type": "object" }
+          }
+        },
+        "widgets": { "type": "array" }
+      }
+    }
+  }
+}

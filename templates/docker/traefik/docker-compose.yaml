@@ -1,0 +1,24 @@
+services:
+  traefik:
+    command:
+      - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.cloudflare.acme.dnschallenge=true
+      - --certificatesresolvers.cloudflare.acme.email=${defaults.organization.email}
+      - --certificatesresolvers.cloudflare.acme.storage=/certificates/acme.json
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls.certresolver=cloudflare
+      - --entrypoints.websecure.http.tls.domains[0].main=${server.fqdn_external}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.${server.fqdn_external}
+      - --entrypoints.websecure.http.tls=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker=true
+    environment:
+      CF_DNS_API_TOKEN: ${server.cloudflare_acme_token_sensitive}
+    image: traefik:v3
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - certificates:/certificates
+volumes:
+  certificates:
