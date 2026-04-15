@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Server",
   "type": "object",
-  "required": ["id", "identity"],
+  "required": ["identity"],
   "additionalProperties": false,
   "properties": {
     "id": {
@@ -28,6 +28,7 @@
       "properties": {
         "b2": { "type": "boolean" },
         "cloudflare_acme_token": { "type": "boolean" },
+        "cloudflare_proxy": { "type": "boolean" },
         "cloudflare_zero_trust_tunnel": { "type": "boolean" },
         "docker": { "type": "boolean" },
         "password": { "type": "boolean" },

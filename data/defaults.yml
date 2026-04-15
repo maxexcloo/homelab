@@ -40,7 +40,6 @@ resend:
 
 servers:
   fqdn: ""
-  id: ""
   parent: ""
   password_sensitive: ""
   platform: unmanaged
@@ -48,6 +47,7 @@ servers:
   features:
     b2: false
     cloudflare_acme_token: false
+    cloudflare_proxy: false
     cloudflare_zero_trust_tunnel: false
     docker: false
     password: false
@@ -93,8 +93,9 @@ servers:
         - 443
 
 services:
-  id: ""
   deploy_to: []
+  fqdn: ""
+  password_sensitive: ""
   features:
     b2: false
     cloudflare_proxy: false

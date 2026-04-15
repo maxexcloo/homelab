@@ -46,10 +46,13 @@ resource "bitwarden_item_login" "server" {
 
 
 resource "bitwarden_item_login" "service" {
-  for_each = local.services
+  for_each = {
+    for k, v in local.services : k => v
+    if anytrue([for k, v in v.features : tobool(v) if can(tobool(v))]) || length(v.features.secrets) > 0
+  }
 
   folder_id = data.bitwarden_folder.services.id
-  name      = each.key
+  name      = "${each.value.identity.description} (${contains(keys(local.servers), each.value.server) ? local.servers[each.value.server].fqdn : each.value.server})"
   password  = each.value.password_sensitive
   username  = each.value.identity.username
 

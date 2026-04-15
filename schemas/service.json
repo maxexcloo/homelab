@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Service",
   "type": "object",
-  "required": ["id", "identity"],
+  "required": ["identity"],
   "additionalProperties": false,
   "properties": {
     "id": {
@@ -20,6 +20,7 @@
       "additionalProperties": false,
       "properties": {
         "b2": { "type": "boolean" },
+        "cloudflare_proxy": { "type": "boolean", "description": "Route this service's DNS records through the Cloudflare Zero Trust tunnel." },
         "monitoring": { "type": "boolean" },
         "password": { "type": "boolean" },
         "resend": { "type": "boolean" },
@@ -91,7 +92,7 @@
         "docker": {
           "type": ["object", "null"],
           "additionalProperties": false,
-          "description": "Set to {} (or with overrides) to include this service in Docker/TrueNAS management.",
+          "description": "Optional overrides for Docker/TrueNAS deployments.",
           "properties": {
             "config": {
               "type": "object",
@@ -102,19 +103,9 @@
               "type": "string",
               "description": "Container to attach labels to. Defaults to identity.service."
             },
-            "memory": {
-              "type": ["integer", "null"],
-              "minimum": 1,
-              "description": "Container memory limit in MiB."
-            },
             "middleware": {
               "type": "string",
               "description": "Traefik middleware to apply to this service's router."
-            },
-            "ram": {
-              "type": ["integer", "null"],
-              "minimum": 1,
-              "description": "Container memory reservation in MiB."
             }
           }
         },
@@ -140,11 +131,21 @@
             "href": { "type": "string", "description": "Dashboard link. Defaults to https://{fqdn_external}. Supports template variables." },
             "icon": { "type": "string", "description": "Dashboard icon. Defaults to {service}.svg." },
             "name": { "type": "string", "description": "Dashboard name. Defaults to identity.description." },
-            "widget": {
-              "type": "object",
-              "description": "Homepage widget definition.",
-              "additionalProperties": true
-            }
+          }
+        }
+      }
+    },
+    "widgets": {
+      "type": "array",
+      "description": "Homepage widget definitions rendered in the dashboard layout.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "widget": {
+            "type": "object",
+            "description": "Homepage widget definition.",
+            "additionalProperties": true
           }
         }
       }
