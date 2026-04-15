@@ -6,6 +6,10 @@ provider "bitwarden" {
   }
 }
 
+provider "github" {
+  owner = local.defaults.github.owner
+}
+
 provider "incus" {
   accept_remote_certificate    = true
   generate_client_certificates = true

@@ -44,7 +44,7 @@ resource "tailscale_acl" "default" {
         src    = ["tag:ephemeral"]
       },
 
-      # VMs: service traffic and Komodo agent communication
+      # VMs: service traffic and agent communication
       {
         action = "accept"
         dst    = ["tag:appliance:80", "tag:appliance:443"]

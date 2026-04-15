@@ -112,7 +112,10 @@ locals {
           zone    = zone
         }
       )
-      if contains(keys(local.servers), service.server)
+      if contains(keys(local.servers), service.server) &&
+      local.servers[service.server].features.cloudflare_proxy &&
+      local.servers[service.server].features.cloudflare_zero_trust_tunnel &&
+      zone == local.defaults.domains.external
     }
   ]...)
 

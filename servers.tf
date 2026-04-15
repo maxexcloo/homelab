@@ -36,15 +36,17 @@ locals {
       v,
       local._servers_computed[k],
       {
-        fqdn_external           = "${local._servers_computed[k].fqdn}.${local.defaults.domains.external}"
-        fqdn_internal           = "${local._servers_computed[k].fqdn}.${local.defaults.domains.internal}"
-        password_hash_sensitive = v.features.password ? bcrypt_hash.server[k].id : null
-        password_sensitive      = v.features.password ? random_password.server[k].result : null
-        private_address         = try(local.unifi_clients[k].local_dns_record, null)
-        private_ipv4            = try(local.unifi_clients[k].fixed_ip, null)
-        ssh_keys                = data.github_user.default.ssh_keys
-        tailscale_ipv4          = try(local.tailscale_device_addresses[k].ipv4, null)
-        tailscale_ipv6          = try(local.tailscale_device_addresses[k].ipv6, null)
+        age_public_key           = age_secret_key.server[k].public_key
+        age_secret_key_sensitive = age_secret_key.server[k].secret_key
+        fqdn_external            = "${local._servers_computed[k].fqdn}.${local.defaults.domains.external}"
+        fqdn_internal            = "${local._servers_computed[k].fqdn}.${local.defaults.domains.internal}"
+        password_hash_sensitive  = v.features.password ? bcrypt_hash.server[k].id : null
+        password_sensitive       = v.features.password ? random_password.server[k].result : null
+        private_address          = try(local.unifi_clients[k].local_dns_record, null)
+        private_ipv4             = try(local.unifi_clients[k].fixed_ip, null)
+        ssh_keys                 = data.github_user.default.ssh_keys
+        tailscale_ipv4           = try(local.tailscale_device_addresses[k].ipv4, null)
+        tailscale_ipv6           = try(local.tailscale_device_addresses[k].ipv6, null)
       },
       v.features.b2 ? {
         b2_application_key_id        = b2_application_key.server[k].application_key_id
@@ -58,10 +60,6 @@ locals {
       } : {},
       v.features.cloudflare_zero_trust_tunnel ? {
         cloudflare_zero_trust_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
-      } : {},
-      v.features.docker ? {
-        age_public_key           = age_secret_key.server[k].public_key
-        age_secret_key_sensitive = age_secret_key.server[k].secret_key
       } : {},
       v.features.resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_server[k].create_response).token

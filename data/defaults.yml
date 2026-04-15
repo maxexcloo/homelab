@@ -27,10 +27,11 @@ dns:
   wildcard: false
 
 github:
+  owner: excloo
   repositories:
-    fly: excloo/fly
-    komodo: excloo/komodo
-    truenas: excloo/truenas
+    fly: fly
+    komodo: komodo
+    truenas: truenas
 
 resend:
   host: smtp.resend.com

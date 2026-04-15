@@ -6,7 +6,7 @@ locals {
     } : k => provider::deepmerge::mergo(local.service_defaults, v)
   }
 
-  _services_deployments = merge([
+  _services_computed = merge([
     for service_key, service in local._services : {
       for target in service.deploy_to : "${service_key}-${target}" => merge(
         service,
@@ -19,7 +19,7 @@ locals {
   ]...)
 
   services = {
-    for k, v in local._services_deployments : k => merge(
+    for k, v in local._services_computed : k => merge(
       v,
       {
         fqdn_external           = "${v.identity.name}.${contains(keys(local.servers), v.server) ? local.servers[v.server].fqdn_external : local.defaults.domains.external}"
@@ -57,7 +57,7 @@ locals {
 
   services_by_feature = {
     for feature, default_value in local.service_defaults.features : feature => {
-      for k, v in local._services_deployments : k => v
+      for k, v in local._services_computed : k => v
       if v.features[feature]
     }
     if can(tobool(default_value))
@@ -74,7 +74,7 @@ locals {
 resource "random_id" "service_secret" {
   for_each = {
     for item in flatten([
-      for k, v in local._services_deployments : [
+      for k, v in local._services_computed : [
         for secret in v.features.secrets : {
           key         = "${k}-${secret.name}"
           byte_length = secret.length
@@ -96,7 +96,7 @@ resource "random_password" "service" {
 resource "random_password" "service_secret" {
   for_each = {
     for item in flatten([
-      for k, v in local._services_deployments : [
+      for k, v in local._services_computed : [
         for secret in v.features.secrets : {
           key     = "${k}-${secret.name}"
           length  = secret.length

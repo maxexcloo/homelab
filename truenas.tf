@@ -50,7 +50,7 @@ locals {
 
   truenas_services = {
     for k, v in local.services : k => v
-    if try(v.platform_config.docker != null, false) && contains(keys(local.truenas_servers), v.server)
+    if contains(keys(local.truenas_servers), v.server)
   }
 
   truenas_standard_services = {
@@ -62,7 +62,7 @@ locals {
 resource "github_actions_secret" "truenas_age_key" {
   for_each = local.truenas_servers
 
-  plaintext_value = age_secret_key.server_truenas[each.key].secret_key
+  plaintext_value = age_secret_key.server[each.key].secret_key
   repository      = local.defaults.github.repositories.truenas
   secret_name     = "AGE_KEY_${upper(replace(each.key, "-", "_"))}"
 }
@@ -97,7 +97,7 @@ resource "github_repository_file" "truenas_sops_config" {
   file = ".sops.yaml"
   content = join("\n", concat(
     ["creation_rules:"],
-    [for k, v in local.truenas_servers : "  - path_regex: '^${k}/'\n    age: ${age_secret_key.server_truenas[k].public_key}"]
+    [for k, v in local.truenas_servers : "  - path_regex: '^${k}/'\n    age: ${age_secret_key.server[k].public_key}"]
   ))
 }
 
@@ -105,7 +105,7 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
   for_each = local.truenas_custom_services
 
   environment = {
-    AGE_PUBLIC_KEY = age_secret_key.server_truenas[each.value.server].public_key
+    AGE_PUBLIC_KEY = age_secret_key.server[each.value.server].public_key
     CONTENT = base64encode(jsonencode({
       app_name                     = each.value.identity.service
       custom_app                   = true
@@ -122,7 +122,7 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(age_secret_key.server_truenas[each.value.server].public_key)
+    age_public_key_hash = sha256(age_secret_key.server[each.value.server].public_key)
     content_hash        = sha256(local.truenas_compose_templates[each.key])
     script_hash         = sha256(local.sops_encrypt_script)
   }
@@ -132,7 +132,7 @@ resource "shell_sensitive_script" "truenas_labels_encrypt" {
   for_each = local.truenas_standard_services
 
   environment = {
-    AGE_PUBLIC_KEY = age_secret_key.server_truenas[each.value.server].public_key
+    AGE_PUBLIC_KEY = age_secret_key.server[each.value.server].public_key
     CONTENT = base64encode(jsonencode({
       values = {
         containerConfig = {
@@ -152,7 +152,7 @@ resource "shell_sensitive_script" "truenas_labels_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(age_secret_key.server_truenas[each.value.server].public_key)
+    age_public_key_hash = sha256(age_secret_key.server[each.value.server].public_key)
     content_hash        = sha256(jsonencode(local.truenas_labels[each.key]))
     script_hash         = sha256(local.sops_encrypt_script)
   }

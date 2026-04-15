@@ -9,8 +9,9 @@ locals {
             service  = v
             services = local.services
           })
-          filename = basename(filepath)
-          stack    = k
+          filename     = basename(filepath)
+          service_name = v.identity.service
+          stack        = k
         }
       ]
     ]) : "${pair.stack}/${pair.filename}" => pair
@@ -42,7 +43,7 @@ resource "github_repository_file" "fly_service_configs" {
 
   commit_message      = "Update ${each.value.stack} config"
   content             = shell_sensitive_script.fly_service_configs_encrypt[each.key].output["encrypted_content"]
-  file                = each.key
+  file                = "${each.value.service_name}/${each.value.filename}"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
@@ -72,8 +73,8 @@ resource "shell_sensitive_script" "fly_service_configs_encrypt" {
 
 resource "github_repository_file" "fly_sops_config" {
   commit_message      = "Update SOPS configuration"
-  content = "creation_rules:\n  - age: ${age_secret_key.fly.public_key}\n"
-  file    = ".sops.yaml"
+  content             = "creation_rules:\n  - age: ${age_secret_key.fly.public_key}\n"
+  file                = ".sops.yaml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
@@ -83,7 +84,7 @@ resource "github_repository_file" "fly_toml" {
 
   commit_message      = "Update ${each.key} Fly configuration"
   content             = shell_sensitive_script.fly_toml_encrypt[each.key].output["encrypted_content"]
-  file                = "${each.key}/fly.toml"
+  file                = "${each.value.identity.service}/fly.toml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }

@@ -1,4 +1,24 @@
 locals {
+  _defaults        = yamldecode(file("${path.module}/data/defaults.yml"))
+  dns_defaults     = local._defaults.dns
+  server_defaults  = local._defaults.servers
+  service_defaults = local._defaults.services
+
+  _dns_raw = {
+    for filepath in fileset(path.module, "data/dns/*.yml") :
+    filepath => yamldecode(file("${path.module}/${filepath}"))
+  }
+
+  defaults = {
+    for k, v in local._defaults : k => v
+    if !contains(["dns", "servers", "services"], k)
+  }
+
+  dns = {
+    for filepath, data in local._dns_raw :
+    data.name => try(data.records, [])
+  }
+
   sops_encrypt_script = <<-EOT
     #!/bin/bash
     set -euo pipefail
@@ -22,28 +42,6 @@ locals {
 
     jq -n --arg encrypted_content "$ENCRYPTED_CONTENT" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
   EOT
-}
-
-locals {
-  _defaults        = yamldecode(file("${path.module}/data/defaults.yml"))
-  dns_defaults     = local._defaults.dns
-  server_defaults  = local._defaults.servers
-  service_defaults = local._defaults.services
-
-  _dns_raw = {
-    for filepath in fileset(path.module, "data/dns/*.yml") :
-    filepath => yamldecode(file("${path.module}/${filepath}"))
-  }
-
-  defaults = {
-    for k, v in local._defaults : k => v
-    if !contains(["dns", "servers", "services"], k)
-  }
-
-  dns = {
-    for filepath, data in local._dns_raw :
-    data.name => try(data.records, [])
-  }
 }
 
 output "summary" {
