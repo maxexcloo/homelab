@@ -16,5 +16,5 @@ networking:
     - status.excloo.com
 platform_config:
   fly:
-    memory: 256
+    memory_mb: 256
     region: syd

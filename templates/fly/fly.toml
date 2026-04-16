@@ -21,4 +21,4 @@ hostname = "${url}"
 [[vm]]
 cpu_kind = "${service.platform_config.fly.cpu_kind}"
 cpus = ${service.platform_config.fly.cpus}
-memory_mb = ${service.platform_config.fly.memory}
+memory_mb = ${service.platform_config.fly.memory_mb}

@@ -123,7 +123,7 @@ services:
       cpu_kind: shared
       cpus: 1
       image: null
-      memory: 256
+      memory_mb: 256
       min_machines_running: 1
       region: ""
 
