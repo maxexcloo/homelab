@@ -43,6 +43,11 @@ locals {
       exit 0
     fi
 
+    if [ -z "$${CONTENT_TYPE:-}" ]; then
+      jq -n --arg encrypted_content "$DATA" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
+      exit 0
+    fi
+
     ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type "$CONTENT_TYPE" --output-type "$CONTENT_TYPE" /dev/stdin)"
 
     jq -n --arg encrypted_content "$ENCRYPTED_CONTENT" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
@@ -59,7 +64,7 @@ output "summary" {
     services = keys(local.services)
 
     counts = {
-      dns_records = length(local.dns_records_acme_delegation) + length(local.dns_records_manual) + length(local.dns_records_servers) + length(local.dns_records_services) + length(local.dns_records_services_urls) + length(local.dns_records_wildcards)
+      dns_records = length(local.dns_records_acme_delegation) + length(local.dns_records_manual) + length(local.dns_records_servers) + length(local.dns_records_services) + length(local.dns_records_services_fly) + length(local.dns_records_services_urls) + length(local.dns_records_wildcards)
       servers     = length(local.servers)
       services    = length(local.services)
     }

@@ -1,13 +1,5 @@
 locals {
-  komodo_stacks = {
-    for k, v in local.services : k => v
-    if v.identity.service != "" &&
-    contains(keys(local.servers), v.target) &&
-    local.servers[v.target].features.docker &&
-    fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml")
-  }
-
-  komodo_stacks_configs = {
+  komodo_stack_configs = {
     for pair in flatten([
       for k, v in local.komodo_stacks : [
         for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
@@ -26,18 +18,14 @@ locals {
     ]) : "${pair.stack}/${pair.rel_path}" => pair
   }
 
-  komodo_stacks_templates = {
-    for k, v in local.komodo_stacks : k => templatefile(
-      "${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml",
-      {
-        defaults = local.defaults
-        server   = local.servers[v.target]
-        servers  = local.servers
-        service  = v
-        services = local.services
-      }
-    )
+  komodo_stacks = {
+    for k, v in local.services : k => v
+    if v.identity.service != "" &&
+    contains(keys(local.servers), v.target) &&
+    local.servers[v.target].features.docker &&
+    fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml")
   }
+
 }
 
 resource "github_repository_file" "komodo_resource_sync" {
@@ -80,6 +68,38 @@ resource "github_repository_file" "komodo_servers" {
   ])
 }
 
+resource "github_repository_file" "komodo_sops_config" {
+  commit_message      = "Update SOPS configuration"
+  file                = ".sops.yaml"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.komodo
+
+  content = join("\n", concat(
+    ["creation_rules:"],
+    [for k, v in local.komodo_stacks : "  - path_regex: '^${k}/'\n    age: ${age_secret_key.server[v.target].public_key}"]
+  ))
+}
+
+resource "github_repository_file" "komodo_stack_compose" {
+  for_each = local.komodo_stacks
+
+  commit_message      = "Update ${each.key} SOPS-encrypted compose"
+  content             = shell_sensitive_script.komodo_stack_compose_encrypt[each.key].output["encrypted_content"]
+  file                = "${each.key}/compose.yaml"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.komodo
+}
+
+resource "github_repository_file" "komodo_stack_configs" {
+  for_each = local.komodo_stack_configs
+
+  commit_message      = "Update ${each.value.stack} config"
+  content             = shell_sensitive_script.komodo_stack_configs_encrypt[each.key].output["encrypted_content"]
+  file                = each.key
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.komodo
+}
+
 resource "github_repository_file" "komodo_stacks" {
   commit_message      = "Update Komodo stack configurations"
   file                = "stacks.toml"
@@ -99,39 +119,25 @@ resource "github_repository_file" "komodo_stacks" {
       server = "${v.target}"
 
       [stack.config.pre_deploy]
-      command = "SOPS_AGE_KEY=[[AGE_SECRET_KEY]] sops decrypt -i compose.yaml"
+      command = "export SOPS_AGE_KEY=[[AGE_SECRET_KEY]] && find . \\( -name '*.yaml' -o -name '*.toml' \\) -exec sops decrypt -i {} \\;"
     EOT
   ])
 }
 
-resource "github_repository_file" "komodo_stacks_compose" {
-  for_each = local.komodo_stacks
-
-  commit_message      = "Update ${each.key} SOPS-encrypted compose"
-  content             = shell_sensitive_script.komodo_service_compose_encrypt[each.key].output["encrypted_content"]
-  file                = "${each.key}/compose.yaml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-}
-
-resource "github_repository_file" "komodo_stacks_configs" {
-  for_each = local.komodo_stacks_configs
-
-  commit_message      = "Update ${each.value.stack} config"
-  content             = shell_sensitive_script.komodo_stacks_configs_encrypt[each.key].output["encrypted_content"]
-  file                = each.key
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-}
-
-resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
+resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
   for_each = local.komodo_stacks
 
   environment = {
     AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
-    CONTENT        = base64encode(local.komodo_stacks_templates[each.key])
-    CONTENT_TYPE   = "yaml"
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
+    CONTENT        = base64encode(templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
+      defaults = local.defaults
+      server   = local.servers[each.value.target]
+      servers  = local.servers
+      service  = each.value
+      services = local.services
+    }))
+    CONTENT_TYPE = "yaml"
+    DEBUG_PATH   = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
   }
 
   lifecycle_commands {
@@ -143,13 +149,12 @@ resource "shell_sensitive_script" "komodo_service_compose_encrypt" {
 
   triggers = {
     age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
-    content_hash        = sha256(local.komodo_stacks_templates[each.key])
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }
 
-resource "shell_sensitive_script" "komodo_stacks_configs_encrypt" {
-  for_each = local.komodo_stacks_configs
+resource "shell_sensitive_script" "komodo_stack_configs_encrypt" {
+  for_each = local.komodo_stack_configs
 
   environment = {
     AGE_PUBLIC_KEY = local.servers[local.komodo_stacks[each.value.stack].target].age_public_key
@@ -167,7 +172,6 @@ resource "shell_sensitive_script" "komodo_stacks_configs_encrypt" {
 
   triggers = {
     age_public_key_hash = sha256(local.servers[local.komodo_stacks[each.value.stack].target].age_public_key)
-    content_hash        = sha256(each.value.content)
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }

@@ -115,36 +115,52 @@ locals {
     service.features.cloudflare_proxy
   }
 
-  dns_records_services_urls = merge(
-    flatten([
-      for k, service in local.services : [
-        for i, url in service.networking.urls : {
-          "${k}-url-${i}" = provider::deepmerge::mergo(
-            local.dns_defaults,
-            {
-              acme    = service.target != "fly"
-              name    = url
-              proxied = service.features.cloudflare_proxy
-              type    = "CNAME"
+  dns_records_services_fly = merge(flatten([
+    for k, service in local.fly_services : [
+      for i, url in service.networking.urls : {
+        "${k}-url-${i}" = provider::deepmerge::mergo(
+          local.dns_defaults,
+          {
+            content = "${service.app_name}.fly.dev"
+            name    = url
+            proxied = service.features.cloudflare_proxy
+            type    = "CNAME"
+            zone = try(
+              split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
+              null
+            )
+          }
+        )
+      }
+      if length([for z in local.dns_zones : z if endswith(url, z)]) > 0
+    ]
+  ])...)
 
-              content = (
-                service.target == "fly" ? "${local.fly_app_names[k]}.fly.dev" :
-                local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.features.cloudflare_proxy ?
-                "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
-                "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.internal}"
-              )
-
-              zone = try(
-                split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
-                null
-              )
-            }
-          )
-        }
-        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0 && (contains(keys(local.servers), service.target) || service.target == "fly")
-      ]
-    ])
-  ...)
+  dns_records_services_urls = merge(flatten([
+    for k, service in local.services : [
+      for i, url in service.networking.urls : {
+        "${k}-url-${i}" = provider::deepmerge::mergo(
+          local.dns_defaults,
+          {
+            content = (
+              local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.features.cloudflare_proxy ?
+              "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
+              "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.internal}"
+            )
+            name    = url
+            proxied = service.features.cloudflare_proxy
+            type    = "CNAME"
+            zone = try(
+              split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
+              null
+            )
+          }
+        )
+      }
+      if length([for z in local.dns_zones : z if endswith(url, z)]) > 0
+    ]
+    if contains(keys(local.servers), service.target)
+  ])...)
 
   dns_records_wildcards = {
     for hostname in distinct([
@@ -152,6 +168,7 @@ locals {
         values(local.dns_records_servers),
         values(local.dns_records_manual),
         values(local.dns_records_services),
+        values(local.dns_records_services_fly),
         values(local.dns_records_services_urls)
         ) : {
         name = record.name

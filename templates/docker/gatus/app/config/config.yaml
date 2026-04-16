@@ -30,14 +30,14 @@ endpoints:
       insecure: true
 %{ endif ~}
     conditions:
-%{ if svc.networking.ssl && svc.networking.ssl_validation && startswith(url, "https://") ~}
+%{ if svc.networking.ssl && svc.networking.ssl_validation ~}
       - "[CERTIFICATE_EXPIRATION] > 48h"
 %{ endif ~}
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
     group: "Services"
     name: "${svc.identity.description} (${svc.target})"
-    url: "${url}"
+    url: "${svc.networking.ssl ? "https" : "http"}://${url}"
 %{ endfor ~}
 %{ if svc.fqdn_external != null ~}
   - alerts:
@@ -54,7 +54,7 @@ endpoints:
       - "[STATUS] == any(200, 401)"
     group: "Services (External)"
     name: "${svc.identity.description} (${svc.target})"
-    url: "${svc.networking.scheme}://${svc.fqdn_external}"
+    url: "${svc.networking.ssl ? "https" : "http"}://${svc.fqdn_external}"
 %{ endif ~}
 %{ if svc.fqdn_internal != null ~}
   - alerts:
@@ -71,7 +71,7 @@ endpoints:
       - "[STATUS] == any(200, 401)"
     group: "Services (Internal)"
     name: "${svc.identity.description} (${svc.target})"
-    url: "${svc.networking.scheme}://${svc.fqdn_internal}"
+    url: "${svc.networking.ssl ? "https" : "http"}://${svc.fqdn_internal}"
 %{ endif ~}
 %{ endfor ~}
 ui:

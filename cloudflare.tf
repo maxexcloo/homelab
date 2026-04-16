@@ -85,6 +85,18 @@ resource "cloudflare_dns_record" "service" {
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
+resource "cloudflare_dns_record" "service_fly" {
+  for_each = local.dns_records_services_fly
+
+  comment = local.defaults.organization.managed_comment
+  content = each.value.content
+  name    = each.value.name
+  proxied = each.value.proxied
+  ttl     = local.dns_defaults.ttl
+  type    = each.value.type
+  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
+}
+
 resource "cloudflare_dns_record" "service_url" {
   for_each = local.dns_records_services_urls
 
