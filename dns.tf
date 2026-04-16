@@ -9,7 +9,7 @@ locals {
         name = r.name
         zone = r.zone
       }
-      if contains(["A", "AAAA", "CNAME"], r.type)
+      if contains(["A", "AAAA", "CNAME"], r.type) && try(r.acme, true)
       ]) : "${record.zone}-${record.name}-acme-delegation" => {
       content = "${record.name}.${local.defaults.domains.acme}"
       name    = "_acme-challenge.${record.name}"
@@ -122,6 +122,7 @@ locals {
           "${k}-url-${i}" = provider::deepmerge::mergo(
             local.dns_defaults,
             {
+              acme    = service.target != "fly"
               name    = url
               proxied = service.features.cloudflare_proxy
               type    = "CNAME"
