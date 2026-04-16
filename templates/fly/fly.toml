@@ -11,6 +11,7 @@ dockerfile = "Dockerfile"
 [http_service]
 force_https = true
 internal_port = ${service.networking.port}
+min_machines_running = ${service.platform_config.fly.min_machines}
 %{ for url in service.networking.urls ~}
 
 [[http_service.certs]]

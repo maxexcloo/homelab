@@ -124,6 +124,7 @@ services:
       cpus: 1
       image: null
       memory: 256
+      min_machines: 1
       region: ""
 
 system:
