@@ -46,6 +46,7 @@
             "services": { "type": "string" }
           }
         },
+        "organization": { "type": "string" },
         "url_field_pattern": {
           "type": "string",
           "description": "Regex matching server/service fields to store as Bitwarden URIs"

@@ -11,7 +11,6 @@ locals {
       for target in service.deploy_to : "${service_key}-${target}" => merge(
         service,
         {
-          fqdn   = contains(keys(local.servers), target) ? "${service.identity.name}.${local.servers[target].fqdn}" : service.identity.name
           target = target
         }
       )
@@ -49,12 +48,12 @@ locals {
       } : {},
       v.networking.scheme != null ? merge(
         {
-          fqdn_external = "${v.identity.name}.${contains(keys(local.servers), v.target) ? local.servers[v.target].fqdn_external : local.defaults.domains.external}"
-          fqdn_internal = "${v.identity.name}.${contains(keys(local.servers), v.target) ? local.servers[v.target].fqdn_internal : local.defaults.domains.internal}"
-        },
-        {
           for i, url in v.networking.urls : "url_${i}" => url
-        }
+        },
+        contains(keys(local.servers), v.target) ? {
+          fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
+          fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
+        } : {}
       ) : {}
     )
   }
@@ -127,6 +126,11 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target) && target != "fly"]])) == 0
       error_message = "Invalid server references found in services configuration"
+    }
+
+    precondition {
+      condition     = length([for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null]) == 0
+      error_message = "Fly services must have networking.port set: ${join(", ", [for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null])}"
     }
   }
 }

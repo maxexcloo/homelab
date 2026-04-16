@@ -92,6 +92,8 @@ servers:
 services:
   deploy_to: []
   fqdn: null
+  fqdn_external: null
+  fqdn_internal: null
   password_hash_sensitive: null
   password_sensitive: null
   target: null
@@ -122,8 +124,6 @@ services:
       cpus: 1
       image: null
       memory: 256
-      org: ""
-      port: 8080
       region: ""
 
 system:

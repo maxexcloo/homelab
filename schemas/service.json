@@ -5,11 +5,6 @@
   "required": ["identity"],
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^[a-z0-9-]+$",
-      "description": "Unique identifier. Must match the docker/ subdirectory name if deploying via Komodo."
-    },
     "deploy_to": {
       "type": "array",
       "items": { "type": "string" },
@@ -61,7 +56,7 @@
         "name": { "type": "string" },
         "service": {
           "type": "string",
-          "description": "Matches the docker/ subdirectory name for the compose file."
+          "description": "Keys the templates/{service}/ and docker/{service}/ directories for compose files and per-service config templates."
         },
         "username": { "type": "string" }
       }
@@ -73,7 +68,7 @@
         "port": { "type": ["integer", "null"] },
         "scheme": {
           "enum": ["http", "https", null],
-          "description": "Traefik backend scheme override. Defaults to null (no scheme label)."
+          "description": "Setting this enables fqdn_external/fqdn_internal computation and DNS record creation. For TrueNAS services it is also passed as the Traefik backend scheme label."
         },
         "ssl": { "type": "boolean" },
         "ssl_validation": { "type": "boolean" },
@@ -114,10 +109,8 @@
           "properties": {
             "cpu_kind": { "type": "string", "enum": ["shared", "performance"] },
             "cpus": { "type": "integer", "minimum": 1 },
-            "image": { "type": "string" },
+            "image": { "type": ["string", "null"] },
             "memory": { "type": "integer", "minimum": 1 },
-            "org": { "type": "string" },
-            "port": { "type": "integer" },
             "region": { "type": "string" }
           }
         },
@@ -129,7 +122,7 @@
             "group": { "type": "string", "description": "Dashboard group override. Defaults to identity.group." },
             "href": { "type": "string", "description": "Dashboard link. Defaults to https://{fqdn_external}. Supports template variables." },
             "icon": { "type": "string", "description": "Dashboard icon. Defaults to {service}.svg." },
-            "name": { "type": "string", "description": "Dashboard name. Defaults to identity.description." },
+            "name": { "type": "string", "description": "Dashboard name. Defaults to identity.description." }
           }
         }
       }

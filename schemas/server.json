@@ -5,11 +5,6 @@
   "required": ["identity"],
   "additionalProperties": false,
   "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^[a-z]{2}(-[a-z0-9-]+)*$",
-      "description": "Unique identifier. Format: au | au-pie | au-pie-haos"
-    },
     "parent": {
       "type": "string",
       "description": "Parent server ID. Public IPs are inherited up to 2 levels."

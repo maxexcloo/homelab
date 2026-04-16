@@ -8,13 +8,13 @@ locals {
     }
   }
 
-  tailscale_tags = toset([
-    for tag in local.defaults.tailscale.tags : "tag:${tag}"
-  ])
-
   tailscale_route_tags = toset([
     for tag in local.defaults.tailscale.tags : "tag:${tag}"
     if !contains(["appliance", "ephemeral"], tag)
+  ])
+
+  tailscale_tags = toset([
+    for tag in local.defaults.tailscale.tags : "tag:${tag}"
   ])
 }
 

@@ -33,6 +33,11 @@ locals {
     HASH="$(printf '%s' "$DATA" | sha256sum | awk '{print $1}')"
     PREVIOUS_HASH="$(printf '%s' "$PREVIOUS_DATA" | jq -r '.hash // ""' 2>/dev/null || true)"
 
+    if [ -n "$${DEBUG_PATH:-}" ]; then
+      mkdir -p "$(dirname "$${DEBUG_PATH}")"
+      printf '%s' "$DATA" > "$${DEBUG_PATH}"
+    fi
+
     if [ -n "$PREVIOUS_DATA" ] && [ "$PREVIOUS_HASH" = "$HASH" ]; then
       printf '%s' "$PREVIOUS_DATA"
       exit 0

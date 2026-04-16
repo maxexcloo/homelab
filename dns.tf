@@ -126,11 +126,12 @@ locals {
             local.dns_defaults,
             {
               name    = url
-              proxied = local.servers[service.target].features.cloudflare_proxy
+              proxied = service.features.cloudflare_proxy
               server  = service.target
               type    = "CNAME"
 
               content = (
+                service.target == "fly" ? "${local.fly_app_names[k]}.fly.dev" :
                 local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.features.cloudflare_proxy ?
                 "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
                 "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.internal}"
@@ -143,7 +144,7 @@ locals {
             }
           )
         }
-        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0 && contains(keys(local.servers), service.target)
+        if length([for z in local.dns_zones : z if endswith(url, z)]) > 0 && (contains(keys(local.servers), service.target) || service.target == "fly")
       ]
     ])
   ...)

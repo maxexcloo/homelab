@@ -1,12 +1,21 @@
-app = "${service.identity.name}"
+app = "${app_name}"
 primary_region = "${service.platform_config.fly.region}"
 
 [build]
+%{ if service.platform_config.fly.image != null ~}
 image = "${service.platform_config.fly.image}"
+%{ else ~}
+dockerfile = "Dockerfile"
+%{ endif ~}
 
 [http_service]
 force_https = true
-internal_port = ${service.platform_config.fly.port}
+internal_port = ${service.networking.port}
+%{ for url in service.networking.urls ~}
+
+[[http_service.certs]]
+hostname = "${url}"
+%{ endfor ~}
 
 [[vm]]
 cpu_kind = "${service.platform_config.fly.cpu_kind}"

@@ -1,4 +1,6 @@
 locals {
+  truenas_container = { for k, v in local.truenas_services : k => try(v.platform_config.docker.container, v.identity.service) }
+
   truenas_compose_templates = {
     for k, v in local.truenas_custom_services : k => templatefile(
       "${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml",
@@ -10,6 +12,11 @@ locals {
         services = local.services
       }
     )
+  }
+
+  truenas_custom_services = {
+    for k, v in local.truenas_services : k => v
+    if fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml")
   }
 
   truenas_labels = {
@@ -34,18 +41,30 @@ locals {
     }
   }
 
-  truenas_container = {
-    for k, v in local.truenas_services : k => try(v.platform_config.docker.container, v.identity.service)
-  }
-
-  truenas_custom_services = {
-    for k, v in local.truenas_services : k => v
-    if fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml")
-  }
-
   truenas_servers = {
     for k, v in local.servers : k => v
     if v.platform == "truenas"
+  }
+
+  truenas_service_configs = {
+    for pair in flatten([
+      for k, v in local.truenas_custom_services : [
+        for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
+          content = templatefile("${path.module}/${filepath}", {
+            defaults = local.defaults
+            server   = local.servers[v.target]
+            servers  = local.servers
+            service  = v
+            services = local.services
+          })
+          rel_path     = trimprefix(filepath, "templates/docker/${v.identity.service}/")
+          service_name = v.identity.service
+          stack        = k
+          target       = v.target
+        }
+        if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
+      ]
+    ]) : "${pair.stack}/${pair.rel_path}" => pair
   }
 
   truenas_services = {
@@ -89,12 +108,22 @@ resource "github_repository_file" "truenas_labels" {
   content = shell_sensitive_script.truenas_labels_encrypt[each.key].output["encrypted_content"]
 }
 
+resource "github_repository_file" "truenas_service_configs" {
+  for_each = local.truenas_service_configs
+
+  commit_message      = "Update ${each.value.stack} ${each.value.rel_path}"
+  content             = shell_sensitive_script.truenas_service_configs_encrypt[each.key].output["encrypted_content"]
+  file                = "${each.value.target}/${each.value.service_name}/${each.value.rel_path}"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.truenas
+}
+
 resource "github_repository_file" "truenas_sops_config" {
   commit_message      = "Update SOPS configuration"
+  file                = ".sops.yaml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
 
-  file = ".sops.yaml"
   content = join("\n", concat(
     ["creation_rules:"],
     [for k, v in local.truenas_servers : "  - path_regex: '^${k}/'\n    age: ${age_secret_key.server[k].public_key}"]
@@ -105,13 +134,15 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
   for_each = local.truenas_custom_services
 
   environment = {
-    AGE_PUBLIC_KEY = age_secret_key.server[each.value.target].public_key
+    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
+    CONTENT_TYPE   = "json"
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.value.target}/${each.value.identity.service}/compose.json" : ""
+
     CONTENT = base64encode(jsonencode({
       app_name                     = each.value.identity.service
       custom_app                   = true
       custom_compose_config_string = local.truenas_compose_templates[each.key]
     }))
-    CONTENT_TYPE = "json"
   }
 
   lifecycle_commands {
@@ -122,8 +153,32 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(age_secret_key.server[each.value.target].public_key)
+    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
     content_hash        = sha256(local.truenas_compose_templates[each.key])
+    script_hash         = sha256(local.sops_encrypt_script)
+  }
+}
+
+resource "shell_sensitive_script" "truenas_service_configs_encrypt" {
+  for_each = local.truenas_service_configs
+
+  environment = {
+    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
+    CONTENT        = base64encode(each.value.content)
+    CONTENT_TYPE   = endswith(each.value.rel_path, ".toml") ? "toml" : "yaml"
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.value.target}/${each.value.service_name}/${each.value.rel_path}" : ""
+  }
+
+  lifecycle_commands {
+    create = local.sops_encrypt_script
+    delete = "true"
+    read   = local.sops_encrypt_script
+    update = local.sops_encrypt_script
+  }
+
+  triggers = {
+    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
+    content_hash        = sha256(each.value.content)
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }
@@ -132,7 +187,10 @@ resource "shell_sensitive_script" "truenas_labels_encrypt" {
   for_each = local.truenas_standard_services
 
   environment = {
-    AGE_PUBLIC_KEY = age_secret_key.server[each.value.target].public_key
+    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
+    CONTENT_TYPE   = "json"
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.value.target}/${each.value.identity.service}/${local.truenas_container[each.key]}/override.json" : ""
+
     CONTENT = base64encode(jsonencode({
       values = {
         containerConfig = {
@@ -141,7 +199,6 @@ resource "shell_sensitive_script" "truenas_labels_encrypt" {
         }
       }
     }))
-    CONTENT_TYPE = "json"
   }
 
   lifecycle_commands {
@@ -152,7 +209,7 @@ resource "shell_sensitive_script" "truenas_labels_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(age_secret_key.server[each.value.target].public_key)
+    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
     content_hash        = sha256(jsonencode(local.truenas_labels[each.key]))
     script_hash         = sha256(local.sops_encrypt_script)
   }
