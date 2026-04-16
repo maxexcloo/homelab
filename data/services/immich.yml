@@ -7,7 +7,7 @@ identity:
   description: Immich
   group: Media
   name: immich
-  service: immich
+  service: server
 networking:
   port: 30041
   scheme: http
