@@ -99,24 +99,21 @@ locals {
     )
   ]...)
 
-  dns_records_services = merge([
-    for zone in [local.defaults.domains.external, local.defaults.domains.internal] : {
-      for k, service in local.services : "${zone}-${k}" => provider::deepmerge::mergo(
-        local.dns_defaults,
-        {
-          content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
-          name    = "${service.identity.name}.${local.servers[service.target].fqdn}.${zone}"
-          proxied = true
-          type    = "CNAME"
-          zone    = zone
-        }
-      )
-      if contains(keys(local.servers), service.target) &&
-      local.servers[service.target].features.cloudflare_zero_trust_tunnel &&
-      service.features.cloudflare_proxy &&
-      zone == local.defaults.domains.external
-    }
-  ]...)
+  dns_records_services = {
+    for k, service in local.services : "${local.defaults.domains.external}-${k}" => provider::deepmerge::mergo(
+      local.dns_defaults,
+      {
+        content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
+        name    = "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.external}"
+        proxied = true
+        type    = "CNAME"
+        zone    = local.defaults.domains.external
+      }
+    )
+    if contains(keys(local.servers), service.target) &&
+    local.servers[service.target].features.cloudflare_zero_trust_tunnel &&
+    service.features.cloudflare_proxy
+  }
 
   dns_records_services_urls = merge(
     flatten([
@@ -127,7 +124,6 @@ locals {
             {
               name    = url
               proxied = service.features.cloudflare_proxy
-              server  = service.target
               type    = "CNAME"
 
               content = (
