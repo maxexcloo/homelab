@@ -111,7 +111,7 @@
             "cpus": { "type": "integer", "minimum": 1 },
             "image": { "type": ["string", "null"] },
             "memory": { "type": "integer", "minimum": 1 },
-            "min_machines": { "type": "integer", "minimum": 0 },
+            "min_machines_running": { "type": "integer", "minimum": 0 },
             "region": { "type": "string" }
           }
         },
