@@ -15,6 +15,12 @@ locals {
   truenas_labels = {
     for k, v in local.truenas_standard_services : k => {
       for label, value in merge(
+        {
+          "homepage.group" = try(coalesce(v.platform_config.homepage.group, v.identity.group != "" ? v.identity.group : null), null)
+          "homepage.href"  = try(templatestring(v.platform_config.homepage.href, { defaults = local.defaults, service = v }), "https://${v.fqdn_external}", null)
+          "homepage.icon"  = try(coalesce(v.platform_config.homepage.icon, "${v.identity.service}.svg"), "${v.identity.service}.svg")
+          "homepage.name"  = try(coalesce(v.platform_config.homepage.name, v.identity.description), v.identity.description)
+        },
         v.networking.port != null ? {
           "traefik.enable"                                                         = "true"
           "traefik.http.routers.${v.identity.service}.entrypoints"                 = "websecure"
@@ -23,12 +29,6 @@ locals {
           "traefik.http.routers.${v.identity.service}.tls"                         = "true"
           "traefik.http.services.${v.identity.service}.loadbalancer.server.port"   = tostring(v.networking.port)
           "traefik.http.services.${v.identity.service}.loadbalancer.server.scheme" = try(v.networking.scheme, null)
-        } : {},
-        v.features.monitoring ? {
-          "homepage.group" = try(coalesce(v.platform_config.homepage.group, v.identity.group != "" ? v.identity.group : null), null)
-          "homepage.href"  = try(templatestring(v.platform_config.homepage.href, { defaults = local.defaults, service = v }), "https://${v.fqdn_external}")
-          "homepage.icon"  = try(coalesce(v.platform_config.homepage.icon, "${v.identity.service}.svg"), "${v.identity.service}.svg")
-          "homepage.name"  = try(coalesce(v.platform_config.homepage.name, v.identity.description), v.identity.description)
         } : {}
       ) : label => value if value != null
     }

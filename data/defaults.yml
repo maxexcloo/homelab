@@ -1,24 +1,15 @@
 # yaml-language-server: $schema=../schemas/defaults.json
-organization:
-  name: excloo
-  email: max@excloo.com
-  managed_comment: OpenTofu Managed
+bitwarden:
+  organization: Homelab
+  url_field_pattern: "(^fqdn_|^url_|_(ipv[46]|address)$)"
+  collections:
+    servers: Servers
+    services: Services
 
 domains:
   acme: 043847.xyz
   external: excloo.net
   internal: excloo.dev
-
-system:
-  locale: en_AU
-  shell: /bin/bash
-  timezone: Australia/Sydney
-
-bitwarden:
-  url_field_pattern: "(^fqdn_|^url_|_(ipv[46]|address)$)"
-  folders:
-    servers: Servers
-    services: Services
 
 dns:
   priority: null
@@ -33,15 +24,21 @@ github:
     komodo: komodo
     truenas: truenas
 
+organization:
+  name: excloo
+  email: max@excloo.com
+  managed_comment: OpenTofu Managed
+
 resend:
   host: smtp.resend.com
   port: 465
   username: resend
 
 servers:
-  fqdn: ""
+  fqdn: null
   parent: ""
-  password_sensitive: ""
+  password_hash_sensitive: null
+  password_sensitive: null
   platform: unmanaged
   type: server
   features:
@@ -54,8 +51,8 @@ servers:
     resend: false
     tailscale: false
   identity:
-    name: ""
     description: ""
+    name: ""
     region: ""
     username: root
   networking:
@@ -94,21 +91,21 @@ servers:
 
 services:
   deploy_to: []
-  fqdn: ""
-  password_sensitive: ""
-  target: ""
+  fqdn: null
+  password_hash_sensitive: null
+  password_sensitive: null
+  target: null
   features:
     b2: false
     cloudflare_proxy: false
-    monitoring: true
     password: false
     resend: false
-    tailscale: false
     secrets: []
+    tailscale: false
   identity:
-    name: ""
     description: ""
     group: ""
+    name: ""
     service: ""
     username: ""
   networking:
@@ -129,12 +126,18 @@ services:
       port: 8080
       region: ""
 
+system:
+  locale: en_AU
+  shell: /bin/bash
+  timezone: Australia/Sydney
+
 tailscale:
   admin_identities:
     - max@excloo.com
     - maxexcloo@passkey
   tags:
     - appliance
+    - cicd
     - ephemeral
     - router
     - server

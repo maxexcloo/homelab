@@ -1,18 +1,25 @@
-data "bitwarden_folder" "servers" {
-  search = local.defaults.bitwarden.folders.servers
+data "bitwarden_org_collection" "servers" {
+  organization_id = data.bitwarden_organization.default.id
+  search          = local.defaults.bitwarden.collections.servers
 }
 
-data "bitwarden_folder" "services" {
-  search = local.defaults.bitwarden.folders.services
+data "bitwarden_org_collection" "services" {
+  organization_id = data.bitwarden_organization.default.id
+  search          = local.defaults.bitwarden.collections.services
+}
+
+data "bitwarden_organization" "default" {
+  search = local.defaults.bitwarden.organization
 }
 
 resource "bitwarden_item_login" "server" {
   for_each = local.servers
 
-  folder_id = data.bitwarden_folder.servers.id
-  name      = each.key
-  password  = each.value.password_sensitive
-  username  = each.value.identity.username
+  collection_ids  = [data.bitwarden_org_collection.servers.id]
+  name            = each.key
+  organization_id = data.bitwarden_organization.default.id
+  password        = each.value.password_sensitive
+  username        = each.value.identity.username
 
   dynamic "field" {
     for_each = {
@@ -44,17 +51,17 @@ resource "bitwarden_item_login" "server" {
   }
 }
 
-
 resource "bitwarden_item_login" "service" {
   for_each = {
     for k, v in local.services : k => v
-    if anytrue([for k, v in v.features : tobool(v) if can(tobool(v))]) || length(v.features.secrets) > 0
+    if anytrue([for k, v in v.features : tobool(v) if can(tobool(v))]) || length(v.features.secrets) > 0 || v.networking.scheme != null
   }
 
-  folder_id = data.bitwarden_folder.services.id
-  name      = "${each.value.identity.description} (${each.value.target})"
-  password  = each.value.password_sensitive
-  username  = each.value.identity.username
+  collection_ids  = [data.bitwarden_org_collection.services.id]
+  name            = "${each.value.identity.description} (${each.value.target})"
+  organization_id = data.bitwarden_organization.default.id
+  password        = each.value.password_sensitive
+  username        = each.value.identity.username
 
   dynamic "field" {
     for_each = {

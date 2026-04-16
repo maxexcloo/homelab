@@ -38,7 +38,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "folders": {
+        "collections": {
           "type": "object",
           "additionalProperties": false,
           "properties": {

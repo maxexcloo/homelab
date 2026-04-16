@@ -22,12 +22,6 @@ locals {
     for k, v in local._services_computed : k => merge(
       v,
       {
-        fqdn_external           = "${v.identity.name}.${contains(keys(local.servers), v.target) ? local.servers[v.target].fqdn_external : local.defaults.domains.external}"
-        fqdn_internal           = "${v.identity.name}.${contains(keys(local.servers), v.target) ? local.servers[v.target].fqdn_internal : local.defaults.domains.internal}"
-        password_hash_sensitive = v.features.password ? bcrypt_hash.service[k].id : null
-        password_sensitive      = v.features.password ? random_password.service[k].result : null
-      },
-      {
         for secret in v.features.secrets : "${secret.name}_sensitive" => (
           contains(["hex", "base64"], secret.type) ? (
             secret.type == "hex" ?
@@ -37,21 +31,31 @@ locals {
           random_password.service_secret["${k}-${secret.name}"].result
         )
       },
-      {
-        for i, url in v.networking.urls : "url_${i}" => url
-      },
       v.features.b2 ? {
         b2_application_key_id        = b2_application_key.service[k].application_key_id
         b2_application_key_sensitive = b2_application_key.service[k].application_key
         b2_bucket_name               = b2_bucket.service[k].bucket_name
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
+      v.features.password ? {
+        password_hash_sensitive = bcrypt_hash.service[k].id
+        password_sensitive      = random_password.service[k].result
+      } : {},
       v.features.resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_service[k].create_response).token
       } : {},
       v.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
-      } : {}
+      } : {},
+      v.networking.scheme != null ? merge(
+        {
+          fqdn_external = "${v.identity.name}.${contains(keys(local.servers), v.target) ? local.servers[v.target].fqdn_external : local.defaults.domains.external}"
+          fqdn_internal = "${v.identity.name}.${contains(keys(local.servers), v.target) ? local.servers[v.target].fqdn_internal : local.defaults.domains.internal}"
+        },
+        {
+          for i, url in v.networking.urls : "url_${i}" => url
+        }
+      ) : {}
     )
   }
 

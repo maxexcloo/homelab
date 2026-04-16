@@ -2,7 +2,6 @@
 deploy_to:
   - fly
 features:
-  monitoring: false
   resend: true
 identity:
   description: Gatus

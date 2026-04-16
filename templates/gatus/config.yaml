@@ -22,7 +22,7 @@ endpoints:
     url: "icmp://${k}"
 %{ endfor ~}
 %{ for svc in values(services) ~}
-%{ if try(svc.features.monitoring, true) && try(svc.fqdn_external, null) != null && try(svc.identity.name, "") != "" ~}
+%{ if try(svc.fqdn_external, null) != null && try(svc.identity.name, "") != "" ~}
   - alerts:
       - type: email
 %{ if try(svc.networking.ssl_validation, true) == false ~}
