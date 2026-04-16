@@ -78,7 +78,7 @@ resource "github_repository_file" "fly_service_configs" {
 }
 
 resource "github_repository_file" "fly_service_env" {
-  for_each = toset(keys(local.fly_service_env))
+  for_each = toset(nonsensitive(keys(local.fly_service_env)))
 
   commit_message      = "Update ${each.key} secrets"
   content             = shell_sensitive_script.fly_service_env_encrypt[each.key].output["encrypted_content"]
@@ -148,7 +148,7 @@ resource "shell_sensitive_script" "fly_service_configs_encrypt" {
 }
 
 resource "shell_sensitive_script" "fly_service_env_encrypt" {
-  for_each = toset(keys(local.fly_service_env))
+  for_each = toset(nonsensitive(keys(local.fly_service_env)))
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
