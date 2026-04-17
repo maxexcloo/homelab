@@ -145,7 +145,7 @@
             },
             "labels": {
               "type": "object",
-              "description": "Extra labels merged into the auto-generated Homepage and Traefik labels. Values support template interpolation with ${service.*} and ${defaults.*}.",
+              "description": "Extra labels merged into the auto-generated Traefik and Homepage labels. Use homepage.* keys to override auto-generated homepage defaults. Values support template interpolation with ${service.*} and ${defaults.*}.",
               "additionalProperties": { "type": "string" }
             }
           }
@@ -186,26 +186,14 @@
           }
         },
         "homepage": {
-          "type": "object",
-          "description": "Homepage tile overrides. Any key becomes a homepage.{key} Docker label. Values support template interpolation with ${service.*} and ${defaults.*}. Well-known keys: description, group, href, icon, name, and widget.* for widget config.",
-          "additionalProperties": { "type": "string" }
-        }
-      }
-    },
-    "widgets": {
-      "type": "array",
-      "description": "Homepage widget definitions to render below the service tile in the dashboard layout.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "widget": {
+          "type": "array",
+          "description": "Homepage widget definitions rendered below the service tile. Use platform_config.docker.labels with homepage.* keys to override auto-generated homepage labels.",
+          "items": {
             "type": "object",
-            "description": "Homepage widget definition object. See the Homepage widget documentation for supported keys.",
             "additionalProperties": true
           }
         }
       }
-    }
+    },
   }
 }

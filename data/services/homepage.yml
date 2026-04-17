@@ -11,5 +11,6 @@ networking:
   port: 30054
   scheme: http
 platform_config:
-  homepage:
-    href: https://truenas.au.excloo.dev:8443
+  docker:
+    labels:
+      homepage.href: "https://${server.fqdn_internal}:8443"

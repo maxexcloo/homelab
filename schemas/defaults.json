@@ -11,6 +11,14 @@
       "description": "Bitwarden/Vaultwarden integration settings for storing generated credentials.",
       "additionalProperties": false,
       "properties": {
+        "organization": {
+          "type": "string",
+          "description": "Bitwarden organisation name to look up and file items under."
+        },
+        "url_field_pattern": {
+          "type": "string",
+          "description": "Regex matching server/service field names to store as Bitwarden URI entries rather than custom fields (e.g. fields containing IP addresses, FQDNs, or URLs)."
+        },
         "collections": {
           "type": "object",
           "description": "Bitwarden organisation collection names to file credentials into.",
@@ -25,14 +33,6 @@
               "description": "Collection name for service credentials."
             }
           }
-        },
-        "organization": {
-          "type": "string",
-          "description": "Bitwarden organisation name to look up and file items under."
-        },
-        "url_field_pattern": {
-          "type": "string",
-          "description": "Regex matching server/service field names to store as Bitwarden URI entries rather than custom fields (e.g. fields containing IP addresses, FQDNs, or URLs)."
         }
       }
     },

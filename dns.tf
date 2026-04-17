@@ -104,7 +104,7 @@ locals {
       local.dns_defaults,
       {
         content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
-        name    = "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.external}"
+        name    = service.fqdn_external
         proxied = true
         type    = "CNAME"
         zone    = local.defaults.domains.external
@@ -145,7 +145,7 @@ locals {
             content = (
               local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.networking.expose == "cloudflare" ?
               "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
-              "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.internal}"
+              service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
             )
             name    = url
             proxied = service.networking.expose == "cloudflare"

@@ -130,7 +130,7 @@ services:
       memory_mb: 256
       min_machines_running: 1
       region: ""
-    homepage: {}
+    homepage: []
 
 system:
   locale: en_AU

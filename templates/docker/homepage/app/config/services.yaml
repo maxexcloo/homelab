@@ -1,6 +1,6 @@
 %{ for service_name, service in services ~}
-%{ if length(try(service.widgets, [])) > 0 ~}
-%{ for widget in service.widgets ~}
+%{ if length(service.platform_config.homepage) > 0 ~}
+%{ for widget in service.platform_config.homepage ~}
 - "${try(service.identity.name, "Uncategorized")}":
   - "${try(service.identity.name, "Service")}":
       ${indent(6, chomp(yamlencode(try(widget.widget, {}))))}

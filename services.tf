@@ -20,32 +20,25 @@ locals {
   service_env = {
     for k, v in local.services : k => {
       for key, value in v.platform_config.docker.env :
-      key => try(templatestring(tostring(value), { defaults = local.defaults, service = v }), tostring(value))
+      key => try(templatestring(tostring(value), { defaults = local.defaults, server = try(local.servers[v.target], null), servers = local.servers, service = v }), tostring(value))
       if value != null
     }
   }
 
   service_labels = {
     for k, v in local.services : k => { for label, value in merge(
-      v.networking.scheme != null ? merge(
-        {
-          "homepage.description" = v.identity.description != "" ? v.identity.description : null
-          "homepage.group"       = v.identity.group != "" ? v.identity.group : null
-          "homepage.href"        = v.fqdn_external != null ? "https://${v.fqdn_external}" : (v.fqdn_internal != null ? "${v.networking.ssl ? "https" : "http"}://${v.fqdn_internal}" : null)
-          "homepage.icon"        = v.identity.icon != "" ? v.identity.icon : "${v.identity.service}.svg"
-          "homepage.name"        = v.identity.title != "" ? v.identity.title : v.identity.name
-        },
-        {
-          for key, value in v.platform_config.homepage :
-          "homepage.${key}" => try(templatestring(tostring(value), { defaults = local.defaults, service = v }), tostring(value))
-          if value != null
-        }
-      ) : {},
+      v.networking.scheme != null ? {
+        "homepage.description" = v.identity.description != "" ? v.identity.description : null
+        "homepage.group"       = v.identity.group != "" ? v.identity.group : null
+        "homepage.href"        = v.fqdn_external != null ? "https://${v.fqdn_external}" : (v.fqdn_internal != null ? "${v.networking.ssl ? "https" : "http"}://${v.fqdn_internal}" : null)
+        "homepage.icon"        = v.identity.icon != "" ? v.identity.icon : "${v.identity.service}.svg"
+        "homepage.name"        = v.identity.title != "" ? v.identity.title : v.identity.name
+      } : {},
       v.networking.port != null ? merge(
         {
           "traefik.enable"                                                       = "true"
           "traefik.http.routers.${v.identity.service}.middlewares"               = v.networking.expose == "tailscale" ? "tailscale-only@docker" : (v.networking.expose == "internal" ? "internal-only@docker" : null)
-          "traefik.http.routers.${v.identity.service}.rule"                      = v.fqdn_external != null ? "Host(`${v.fqdn_external}`)" : null
+          "traefik.http.routers.${v.identity.service}.rule"                      = v.fqdn_external != null ? "Host(`${v.fqdn_external}`)" : (v.fqdn_internal != null ? "Host(`${v.fqdn_internal}`)" : null)
           "traefik.http.services.${v.identity.service}.loadbalancer.server.port" = tostring(v.networking.port)
         },
         !v.networking.ssl ? {
@@ -57,7 +50,7 @@ locals {
       ) : {},
       {
         for key, value in v.platform_config.docker.labels :
-        key => try(templatestring(tostring(value), { defaults = local.defaults, service = v }), tostring(value))
+        key => try(templatestring(tostring(value), { defaults = local.defaults, server = try(local.servers[v.target], null), servers = local.servers, service = v }), tostring(value))
         if value != null
       }
     ) : label => value if value != null }
@@ -96,10 +89,14 @@ locals {
         {
           for i, url in v.networking.urls : "url_${i}" => url
         },
-        contains(keys(local.servers), v.target) ? {
-          fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
-          fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
-        } : {}
+        contains(keys(local.servers), v.target) ? merge(
+          {
+            fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
+          },
+          contains(["cloudflare", "external"], v.networking.expose) ? {
+            fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
+          } : {}
+        ) : {}
       ) : {}
     )
   }

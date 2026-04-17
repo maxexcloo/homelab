@@ -2,7 +2,7 @@ headerStyle: clean
 title: ${service.identity.name}
 layout:
 %{ for service_name, svc in services ~}
-%{ if length(try(svc.widgets, [])) > 0 ~}
+%{ if length(svc.platform_config.homepage) > 0 ~}
   ${try(svc.identity.name, "Uncategorized")}:
     columns: 4
     style: row
