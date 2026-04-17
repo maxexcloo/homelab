@@ -46,12 +46,11 @@ locals {
       exit 0
     fi
 
-    if [ -z "$${CONTENT_TYPE:-}" ]; then
-      jq -n --arg encrypted_content "$DATA" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
-      exit 0
+    if [ "$CONTENT_TYPE" = "binary" ]; then
+      ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --filename-override "$FILENAME" --input-type binary --output-type json /dev/stdin)"
+    else
+      ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --filename-override "$FILENAME" --input-type "$CONTENT_TYPE" --output-type "$CONTENT_TYPE" /dev/stdin)"
     fi
-
-    ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type "$CONTENT_TYPE" --output-type "$CONTENT_TYPE" /dev/stdin)"
 
     jq -n --arg encrypted_content "$ENCRYPTED_CONTENT" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
   EOT

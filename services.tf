@@ -17,13 +17,10 @@ locals {
     }
   ]...)
 
-  services_config = {
+  services_files = {
     for pair in flatten([
       for k, v in local.services : [
         for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
-          app_name     = v.target == "fly" ? local.fly_services[k].app_name : null
-          content_type = endswith(filepath, ".toml") ? "toml" : can(regex("\\.(yaml|yml)$", filepath)) ? "yaml" : ""
-          encrypt      = strcontains(file("${path.module}/${filepath}"), "_sensitive")
           rel_path     = trimprefix(filepath, "services/${v.identity.service}/")
           service_name = v.identity.service
           stack        = k
@@ -35,20 +32,21 @@ locals {
             labels          = local.services_labels[k]
             server          = try(local.servers[v.target], null)
             servers         = local.servers
-            service         = merge(v, v.target == "fly" ? { app_name = local.fly_services[k].app_name } : {})
+            service         = v
             services        = local.services
             services_labels = local.services_labels
           })
         }
-        if !endswith(filepath, "docker-compose.yaml") && (v.target == "fly" || can(regex("\\.(yaml|yml|toml)$", filepath)))
+        if !endswith(filepath, "docker-compose.yaml")
       ]
-      if fileexists("${path.module}/services/${v.identity.service}/Dockerfile") || fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
-    ]) : "${pair.stack}/${pair.rel_path}" => pair
-  }
-
-  services_config_encrypted = {
-    for k, v in local.services_config : k => v
-    if v.encrypt
+      ]) : "${pair.stack}/${pair.rel_path}" => merge(
+      pair,
+      {
+        content_type = endswith(pair.rel_path, ".toml") ? "toml" : (
+          can(regex("\\.(yaml|yml)$", pair.rel_path)) && can(keys(yamldecode(pair.content))) ? "yaml" : "binary"
+        )
+      }
+    )
   }
 
   services_env = {
@@ -122,6 +120,9 @@ locals {
       v.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
       } : {},
+      v.target == "fly" ? {
+        fly_app_name = "${v.identity.name}-${random_string.fly_service[k].result}"
+      } : {},
       contains(keys(local.servers), v.target) ? merge(
         {
           fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
@@ -148,7 +149,7 @@ locals {
         if vv != null && vv != "" && vv != false
       },
       v.target == "fly" ? {
-        url_fly = "${v.identity.name}-${random_string.fly_service[k].result}.fly.dev"
+        url_fly = "${v.fly_app_name}.fly.dev"
       } : {}
     )
   }
@@ -194,13 +195,14 @@ resource "random_password" "service_secret" {
   special = each.value.special
 }
 
-resource "shell_sensitive_script" "service_config_encrypt" {
-  for_each = local.services_config_encrypted
+resource "shell_sensitive_script" "service_file_encrypt" {
+  for_each = local.services_files
 
   environment = {
     AGE_PUBLIC_KEY = each.value.target == "fly" ? age_secret_key.fly.public_key : local.servers[each.value.target].age_public_key
     CONTENT        = sensitive(base64encode(each.value.content))
     CONTENT_TYPE   = each.value.content_type
+    FILENAME       = each.value.rel_path
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${each.key}" : ""
   }
 

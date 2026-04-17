@@ -8,11 +8,6 @@ locals {
     for k, v in local.services : k => v
     if contains(keys(local.truenas_servers), v.target)
   }
-
-  truenas_services_config = {
-    for k, v in local.services_config : k => v
-    if contains(keys(local.truenas_servers), v.target)
-  }
 }
 
 resource "github_actions_secret" "truenas_age_key" {
@@ -26,7 +21,7 @@ resource "github_actions_secret" "truenas_age_key" {
 resource "github_repository_file" "truenas_services_compose" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
+    if can(local.services_files["${k}/docker-compose.yaml"])
   }
 
   commit_message      = "Update ${each.key} compose"
@@ -37,10 +32,13 @@ resource "github_repository_file" "truenas_services_compose" {
 }
 
 resource "github_repository_file" "truenas_services_config" {
-  for_each = local.truenas_services_config
+  for_each = {
+    for k, v in local.services_files : k => v
+    if contains(keys(local.truenas_servers), v.target)
+  }
 
   commit_message      = "Update ${each.value.stack} ${each.value.rel_path}"
-  content             = each.value.encrypt ? shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"] : each.value.content
+  content             = shell_sensitive_script.service_file_encrypt[each.key].output["encrypted_content"]
   file                = "${each.value.target}/${each.value.service_name}/${each.value.rel_path}"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
@@ -49,7 +47,7 @@ resource "github_repository_file" "truenas_services_config" {
 resource "github_repository_file" "truenas_services_override" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if !fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
+    if !can(local.services_files["${k}/docker-compose.yaml"])
   }
 
   commit_message      = "Update ${each.key} overrides"
@@ -74,7 +72,7 @@ resource "github_repository_file" "truenas_sops_config" {
 resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
+    if can(local.services_files["${k}/docker-compose.yaml"])
   }
 
   environment = {
@@ -114,7 +112,7 @@ resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
 resource "shell_sensitive_script" "truenas_services_override_encrypt" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if !fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
+    if !can(local.services_files["${k}/docker-compose.yaml"])
   }
 
   environment = {

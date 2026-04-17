@@ -1,15 +1,9 @@
 locals {
   komodo_stacks = {
     for k, v in local.services : k => v
-    if v.identity.service != "" &&
-    contains(keys(local.servers), v.target) &&
+    if contains(keys(local.servers), v.target) &&
     local.servers[v.target].features.docker &&
-    fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
-  }
-
-  komodo_stacks_config = {
-    for k, v in local.services_config : k => v
-    if contains(keys(local.servers), v.target) && local.servers[v.target].features.docker
+    can(local.services_files["${k}/docker-compose.yaml"])
   }
 }
 
@@ -100,10 +94,13 @@ resource "github_repository_file" "komodo_stacks_compose" {
 }
 
 resource "github_repository_file" "komodo_stacks_config" {
-  for_each = local.komodo_stacks_config
+  for_each = {
+    for k, v in local.services_files : k => v
+    if contains(keys(local.servers), v.target) && local.servers[v.target].features.docker
+  }
 
   commit_message      = "Update ${each.value.stack} config"
-  content             = each.value.encrypt ? shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"] : each.value.content
+  content             = shell_sensitive_script.service_file_encrypt[each.key].output["encrypted_content"]
   file                = each.key
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo

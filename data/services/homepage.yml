@@ -12,5 +12,8 @@ networking:
   port: 3000
   scheme: http
 platform_config:
+  docker:
+    env:
+      HOMEPAGE_ALLOWED_HOSTS: '${join(",", compact(["127.0.0.1", "localhost", service.fqdn_internal, service.target == "fly" ? "${service.fly_app_name}.fly.dev" : null]))}'
   fly:
     region: syd
