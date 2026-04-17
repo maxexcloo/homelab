@@ -229,6 +229,6 @@ resource "oci_core_vcn" "default" {
   cidr_blocks    = ["10.0.0.0/16"]
   compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domains.external}"
-  dns_label      = replace(local.defaults.domains.external, "/\\.[^.]*$/", "")
+  dns_label      = split(".", local.defaults.domains.external)[0]
   is_ipv6enabled = true
 }

@@ -134,7 +134,7 @@ resource "shell_sensitive_script" "fly_service_files_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = each.value.content_type != null ? sha256(age_secret_key.fly.public_key) : ""
+    age_public_key_hash = sha256(age_secret_key.fly.public_key)
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }
