@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
 deploy_to:
   - au-truenas
+  - fly
 identity:
   description: Application Dashboard
   group: System
@@ -8,9 +9,8 @@ identity:
   service: homepage
   title: Homepage
 networking:
-  port: 30054
+  port: 3000
   scheme: http
 platform_config:
-  docker:
-    labels:
-      homepage.href: "https://${server.fqdn_internal}:8443"
+  fly:
+    region: syd

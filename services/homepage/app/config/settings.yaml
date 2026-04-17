@@ -1,10 +1,8 @@
 headerStyle: clean
-title: ${service.identity.name}
+title: ${service.identity.title}
 layout:
-%{ for service_name, svc in services ~}
-%{ if length(svc.platform_config.homepage) > 0 ~}
-  ${try(svc.identity.name, "Uncategorized")}:
+%{ for group in sort(distinct([for k, svc in services : services_labels[k]["homepage.group"] if try(services_labels[k]["homepage.href"], null) != null && services_labels[k]["homepage.group"] != ""])) ~}
+  "${group}":
     columns: 4
     style: row
-%{ endif ~}
 %{ endfor ~}

@@ -17,27 +17,6 @@ locals {
       endswith(field_name, "_sensitive") && field_value != null && can(tostring(field_value)) && tostring(field_value) != ""
     ])
   }
-
-  fly_services_file = {
-    for pair in flatten([
-      for k, v in local.fly_services : [
-        for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
-          app_name = v.app_name
-          rel_path = trimprefix(filepath, "services/${v.identity.service}/")
-          stack    = k
-
-          content = templatefile("${path.module}/${filepath}", {
-            defaults = local.defaults
-            server   = try(local.servers[v.target], null)
-            servers  = local.servers
-            service  = v
-            services = local.services
-          })
-        }
-        if !endswith(filepath, "docker-compose.yaml")
-      ]
-    ]) : "${pair.stack}/${pair.rel_path}" => pair
-  }
 }
 
 resource "github_actions_secret" "fly_age_key" {
@@ -70,10 +49,13 @@ resource "github_repository_file" "fly_services_env" {
 }
 
 resource "github_repository_file" "fly_services_file" {
-  for_each = local.fly_services_file
+  for_each = {
+    for k, v in local.services_config : k => v
+    if v.target == "fly"
+  }
 
   commit_message      = "Update ${each.value.app_name} ${each.value.rel_path}"
-  content             = shell_sensitive_script.fly_services_file_encrypt[each.key].output["encrypted_content"]
+  content             = each.value.encrypt ? shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"] : each.value.content
   file                = "${each.value.app_name}/${each.value.rel_path}"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
@@ -113,39 +95,16 @@ resource "shell_sensitive_script" "fly_services_env_encrypt" {
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
-    CONTENT        = base64encode(local.fly_services_env[each.key])
+    CONTENT        = sensitive(base64encode(local.fly_services_env[each.key]))
     CONTENT_TYPE   = "dotenv"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${local.fly_services[each.key].identity.service}/.env" : ""
   }
 
   lifecycle_commands {
-    create = local.sops_encrypt_script
+    create = sensitive(local.sops_encrypt_script)
     delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
-  }
-
-  triggers = {
-    age_public_key_hash = sha256(age_secret_key.fly.public_key)
-    script_hash         = sha256(local.sops_encrypt_script)
-  }
-}
-
-resource "shell_sensitive_script" "fly_services_file_encrypt" {
-  for_each = local.fly_services_file
-
-  environment = {
-    AGE_PUBLIC_KEY = age_secret_key.fly.public_key
-    CONTENT        = base64encode(each.value.content)
-    CONTENT_TYPE   = endswith(each.value.rel_path, ".toml") ? "toml" : can(regex("\\.(yaml|yml)$", each.value.rel_path)) ? "yaml" : ""
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.app_name}/${each.value.rel_path}" : ""
-  }
-
-  lifecycle_commands {
-    create = local.sops_encrypt_script
-    delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
+    read   = sensitive(local.sops_encrypt_script)
+    update = sensitive(local.sops_encrypt_script)
   }
 
   triggers = {
@@ -162,21 +121,21 @@ resource "shell_sensitive_script" "fly_services_toml_encrypt" {
     CONTENT_TYPE   = "toml"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.identity.service}/fly.toml" : ""
 
-    CONTENT = base64encode(templatefile("${path.module}/templates/fly/fly.toml", {
+    CONTENT = sensitive(base64encode(templatefile("${path.module}/templates/fly/fly.toml", {
       app_name = each.value.app_name
       defaults = local.defaults
       server   = try(local.servers[each.value.target], null)
       servers  = local.servers
       service  = each.value
       services = local.services
-    }))
+    })))
   }
 
   lifecycle_commands {
-    create = local.sops_encrypt_script
+    create = sensitive(local.sops_encrypt_script)
     delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
+    read   = sensitive(local.sops_encrypt_script)
+    update = sensitive(local.sops_encrypt_script)
   }
 
   triggers = {

@@ -21,25 +21,34 @@ locals {
     for pair in flatten([
       for k, v in local.services : [
         for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
+          app_name     = v.target == "fly" ? local.fly_services[k].app_name : null
+          content_type = endswith(filepath, ".toml") ? "toml" : can(regex("\\.(yaml|yml)$", filepath)) ? "yaml" : ""
+          encrypt      = strcontains(file("${path.module}/${filepath}"), "_sensitive")
           rel_path     = trimprefix(filepath, "services/${v.identity.service}/")
           service_name = v.identity.service
           stack        = k
           target       = v.target
 
           content = templatefile("${path.module}/${filepath}", {
-            defaults = local.defaults
-            env      = local.services_env[k]
-            labels   = local.services_labels[k]
-            server   = local.servers[v.target]
-            servers  = local.servers
-            service  = v
-            services = local.services
+            defaults        = local.defaults
+            env             = local.services_env[k]
+            labels          = local.services_labels[k]
+            server          = try(local.servers[v.target], null)
+            servers         = local.servers
+            service         = merge(v, v.target == "fly" ? { app_name = local.fly_services[k].app_name } : {})
+            services        = local.services
+            services_labels = local.services_labels
           })
         }
-        if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
+        if !endswith(filepath, "docker-compose.yaml") && (v.target == "fly" || can(regex("\\.(yaml|yml|toml)$", filepath)))
       ]
-      if contains(keys(local.servers), v.target) && fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
+      if fileexists("${path.module}/services/${v.identity.service}/Dockerfile") || fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
     ]) : "${pair.stack}/${pair.rel_path}" => pair
+  }
+
+  services_config_encrypted = {
+    for k, v in local.services_config : k => v
+    if v.encrypt
   }
 
   services_env = {
@@ -186,24 +195,24 @@ resource "random_password" "service_secret" {
 }
 
 resource "shell_sensitive_script" "service_config_encrypt" {
-  for_each = local.services_config
+  for_each = local.services_config_encrypted
 
   environment = {
-    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
-    CONTENT        = base64encode(each.value.content)
-    CONTENT_TYPE   = endswith(each.value.rel_path, ".toml") ? "toml" : "yaml"
+    AGE_PUBLIC_KEY = each.value.target == "fly" ? age_secret_key.fly.public_key : local.servers[each.value.target].age_public_key
+    CONTENT        = sensitive(base64encode(each.value.content))
+    CONTENT_TYPE   = each.value.content_type
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${each.key}" : ""
   }
 
   lifecycle_commands {
-    create = local.sops_encrypt_script
+    create = sensitive(local.sops_encrypt_script)
     delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
+    read   = sensitive(local.sops_encrypt_script)
+    update = sensitive(local.sops_encrypt_script)
   }
 
   triggers = {
-    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
+    age_public_key_hash = sha256(each.value.target == "fly" ? age_secret_key.fly.public_key : local.servers[each.value.target].age_public_key)
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }

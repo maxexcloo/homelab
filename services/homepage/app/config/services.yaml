@@ -1,9 +1,13 @@
-%{ for service_name, service in services ~}
-%{ if length(service.platform_config.homepage) > 0 ~}
-%{ for widget in service.platform_config.homepage ~}
-- "${try(service.identity.name, "Uncategorized")}":
-  - "${try(service.identity.name, "Service")}":
-      ${indent(6, chomp(yamlencode(try(widget.widget, {}))))}
-%{ endfor ~}
+%{ for group in sort(distinct([for k, svc in services : services_labels[k]["homepage.group"] if try(services_labels[k]["homepage.href"], null) != null && services_labels[k]["homepage.group"] != ""])) ~}
+- "${group}":
+%{ for k, svc in { for k, svc in services : k => svc if try(services_labels[k]["homepage.href"], null) != null && services_labels[k]["homepage.group"] == group } ~}
+  - "${services_labels[k]["homepage.name"]}":
+      description: ${services_labels[k]["homepage.description"]}
+      href: ${services_labels[k]["homepage.href"]}
+      icon: ${services_labels[k]["homepage.icon"]}
+%{ if length(svc.platform_config.homepage) > 0 ~}
+      widget:
+        ${indent(8, chomp(yamlencode(svc.platform_config.homepage[0].widget)))}
 %{ endif ~}
+%{ endfor ~}
 %{ endfor ~}

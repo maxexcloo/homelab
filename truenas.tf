@@ -40,7 +40,7 @@ resource "github_repository_file" "truenas_services_config" {
   for_each = local.truenas_services_config
 
   commit_message      = "Update ${each.value.stack} ${each.value.rel_path}"
-  content             = shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"]
+  content             = each.value.encrypt ? shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"] : each.value.content
   file                = "${each.value.target}/${each.value.service_name}/${each.value.rel_path}"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
@@ -82,7 +82,7 @@ resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
     CONTENT_TYPE   = "json"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.value.target}/${each.value.identity.service}/compose.json" : ""
 
-    CONTENT = base64encode(jsonencode({
+    CONTENT = sensitive(base64encode(jsonencode({
       app_name   = each.value.identity.service
       custom_app = true
 
@@ -95,14 +95,14 @@ resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
         service  = each.value
         services = local.services
       })
-    }))
+    })))
   }
 
   lifecycle_commands {
-    create = local.sops_encrypt_script
+    create = sensitive(local.sops_encrypt_script)
     delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
+    read   = sensitive(local.sops_encrypt_script)
+    update = sensitive(local.sops_encrypt_script)
   }
 
   triggers = {
@@ -122,20 +122,20 @@ resource "shell_sensitive_script" "truenas_services_override_encrypt" {
     CONTENT_TYPE   = "json"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.value.target}/${each.value.identity.service}/${each.value.identity.service}/override.json" : ""
 
-    CONTENT = base64encode(jsonencode({
+    CONTENT = sensitive(base64encode(jsonencode({
       values = {
         containerConfig = {
           labels = local.services_labels[each.key]
         }
       }
-    }))
+    })))
   }
 
   lifecycle_commands {
-    create = local.sops_encrypt_script
+    create = sensitive(local.sops_encrypt_script)
     delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
+    read   = sensitive(local.sops_encrypt_script)
+    update = sensitive(local.sops_encrypt_script)
   }
 
   triggers = {

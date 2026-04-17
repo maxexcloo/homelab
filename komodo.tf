@@ -9,7 +9,7 @@ locals {
 
   komodo_stacks_config = {
     for k, v in local.services_config : k => v
-    if local.servers[v.target].features.docker
+    if contains(keys(local.servers), v.target) && local.servers[v.target].features.docker
   }
 }
 
@@ -103,7 +103,7 @@ resource "github_repository_file" "komodo_stacks_config" {
   for_each = local.komodo_stacks_config
 
   commit_message      = "Update ${each.value.stack} config"
-  content             = shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"]
+  content             = each.value.encrypt ? shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"] : each.value.content
   file                = each.key
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
@@ -117,7 +117,7 @@ resource "shell_sensitive_script" "komodo_stacks_compose_encrypt" {
     CONTENT_TYPE   = "yaml"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
 
-    CONTENT = base64encode(templatefile("${path.module}/services/${each.value.identity.service}/docker-compose.yaml", {
+    CONTENT = sensitive(base64encode(templatefile("${path.module}/services/${each.value.identity.service}/docker-compose.yaml", {
       defaults = local.defaults
       env      = local.services_env[each.key]
       labels   = local.services_labels[each.key]
@@ -125,14 +125,14 @@ resource "shell_sensitive_script" "komodo_stacks_compose_encrypt" {
       servers  = local.servers
       service  = each.value
       services = local.services
-    }))
+    })))
   }
 
   lifecycle_commands {
-    create = local.sops_encrypt_script
+    create = sensitive(local.sops_encrypt_script)
     delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
+    read   = sensitive(local.sops_encrypt_script)
+    update = sensitive(local.sops_encrypt_script)
   }
 
   triggers = {
