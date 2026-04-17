@@ -2,6 +2,6 @@ services:
   redlib:
     image: quay.io/redlib/redlib:latest
     labels:
-      ${indent(6, yamlencode(overrides))}
+      ${indent(6, yamlencode(labels))}
     network_mode: host
     restart: unless-stopped

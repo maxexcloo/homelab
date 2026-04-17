@@ -14,12 +14,12 @@ locals {
           target       = v.target
 
           content = templatefile("${path.module}/${filepath}", {
-            defaults  = local.defaults
-            overrides = local.service_overrides[k]
-            server    = local.servers[v.target]
-            servers   = local.servers
-            service   = v
-            services  = local.services
+            defaults = local.defaults
+            labels   = local.service_labels[k]
+            server   = local.servers[v.target]
+            servers  = local.servers
+            service  = v
+            services = local.services
           })
         }
         if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
@@ -100,12 +100,12 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
       custom_app = true
 
       custom_compose_config_string = templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
-        defaults  = local.defaults
-        overrides = local.service_overrides[each.key]
-        server    = local.servers[each.value.target]
-        servers   = local.servers
-        service   = each.value
-        services  = local.services
+        defaults = local.defaults
+        labels   = local.service_labels[each.key]
+        server   = local.servers[each.value.target]
+        servers  = local.servers
+        service  = each.value
+        services = local.services
       })
     }))
   }
@@ -158,8 +158,7 @@ resource "shell_sensitive_script" "truenas_service_standard_overrides_encrypt" {
     CONTENT = base64encode(jsonencode({
       values = {
         containerConfig = {
-          env    = [for k, v in local.service_overrides[each.key] : { name = k, value = tostring(v) }]
-          labels = local.service_overrides[each.key]
+          labels = local.service_labels[each.key]
         }
       }
     }))

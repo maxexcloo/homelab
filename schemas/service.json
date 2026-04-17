@@ -20,10 +20,6 @@
           "type": "boolean",
           "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes b2_bucket_name, b2_application_key_id, b2_application_key_sensitive, and b2_endpoint as template variables."
         },
-        "cloudflare_proxy": {
-          "type": "boolean",
-          "description": "Route DNS records for this service through the Cloudflare proxy. If the target server has a Zero Trust tunnel, traffic is routed through it; otherwise the service FQDN is used directly."
-        },
         "password": {
           "type": "boolean",
           "description": "Generate a random password for this service. Exposes password_sensitive and password_hash_sensitive (bcrypt) as template variables. Stored in Bitwarden."
@@ -77,6 +73,10 @@
         "group": {
           "type": "string",
           "description": "Dashboard group for the Homepage tile (e.g. Media, System, Productivity, Security)."
+        },
+        "icon": {
+          "type": "string",
+          "description": "Homepage icon filename or URL (e.g. 'vaultwarden.svg'). Defaults to {identity.service}.svg."
         },
         "name": {
           "type": "string",
@@ -134,23 +134,23 @@
           "description": "Configuration for Docker-based deployments (Komodo and TrueNAS custom apps).",
           "additionalProperties": false,
           "properties": {
+            "container": {
+              "type": "string",
+              "description": "Name of the container to attach Traefik and Homepage labels to. Defaults to identity.service."
+            },
+            "middleware": {
+              "type": "string",
+              "description": "Traefik middleware name to apply to this service's HTTP router (e.g. for authentication or rate limiting)."
+            },
             "config": {
               "type": "object",
               "description": "Extra key-value pairs injected as template variables when rendering the service's compose and config templates. Useful for service-specific settings that do not belong in the standard schema.",
               "additionalProperties": { "type": "string" }
             },
-            "container": {
-              "type": "string",
-              "description": "Name of the container to attach Traefik and Homepage labels to. Defaults to identity.service."
-            },
-            "overrides": {
+            "labels": {
               "type": "object",
-              "description": "Extra key-value pairs merged with the auto-generated Homepage and Traefik overrides. Applied as both container labels and environment variables on TrueNAS standard apps.",
+              "description": "Extra labels merged into the auto-generated Homepage and Traefik labels. Applied as container labels on TrueNAS standard apps.",
               "additionalProperties": { "type": "string" }
-            },
-            "middleware": {
-              "type": "string",
-              "description": "Traefik middleware name to apply to this service's HTTP router (e.g. for authentication or rate limiting)."
             }
           }
         },
@@ -191,26 +191,8 @@
         },
         "homepage": {
           "type": "object",
-          "description": "Overrides for the Homepage dashboard tile. All string values support template interpolation with ${service.*} and ${defaults.*}.",
-          "additionalProperties": false,
-          "properties": {
-            "group": {
-              "type": "string",
-              "description": "Dashboard group override. Defaults to identity.group."
-            },
-            "href": {
-              "type": "string",
-              "description": "URL the tile links to. Defaults to https://{fqdn_external}. Supports template variables."
-            },
-            "icon": {
-              "type": "string",
-              "description": "Dashboard icon filename (e.g. 'vaultwarden.svg'). Resolved from the Homepage icon set. Defaults to {identity.service}.svg."
-            },
-            "name": {
-              "type": "string",
-              "description": "Tile display name override. Defaults to identity.title."
-            }
-          }
+          "description": "Homepage tile overrides. Any key becomes a homepage.{key} Docker label. Values support template interpolation with ${service.*} and ${defaults.*}. Well-known keys: description, group, href, icon, name, and widget.* for widget config.",
+          "additionalProperties": { "type": "string" }
         }
       }
     },

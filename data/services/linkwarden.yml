@@ -4,9 +4,9 @@ deploy_to:
 features:
   password: true
   secrets:
-    - name: secret_hash
+    - length: 32
+      name: secret_hash
       type: base64
-      length: 32
 identity:
   description: Bookmark and Web Archive Manager
   group: Productivity

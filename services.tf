@@ -17,25 +17,37 @@ locals {
     }
   ]...)
 
-  service_overrides = {
+  service_labels = {
     for k, v in local.services : k => { for label, value in merge(
-      {
-        "homepage.description" = v.identity.description != "" ? v.identity.description : null
-        "homepage.group"       = try(coalesce(v.platform_config.homepage.group, v.identity.group != "" ? v.identity.group : null), null)
-        "homepage.href"        = try(templatestring(v.platform_config.homepage.href, { defaults = local.defaults, service = v }), v.fqdn_external != null ? "https://${v.fqdn_external}" : null)
-        "homepage.icon"        = try(coalesce(v.platform_config.homepage.icon, "${v.identity.service}.svg"), "${v.identity.service}.svg")
-        "homepage.name"        = try(coalesce(v.platform_config.homepage.name, v.identity.title), v.identity.title)
-      },
-      v.networking.port != null ? {
-        "traefik.enable"                                                         = "true"
-        "traefik.http.routers.${v.identity.service}.entrypoints"                 = "websecure"
-        "traefik.http.routers.${v.identity.service}.middlewares"                 = try(v.platform_config.docker.middleware, null)
-        "traefik.http.routers.${v.identity.service}.rule"                        = v.fqdn_external != null ? "Host(`${v.fqdn_external}`)" : null
-        "traefik.http.routers.${v.identity.service}.tls"                         = "true"
-        "traefik.http.services.${v.identity.service}.loadbalancer.server.port"   = tostring(v.networking.port)
-        "traefik.http.services.${v.identity.service}.loadbalancer.server.scheme" = v.networking.scheme
-      } : {},
-      try(v.platform_config.docker.overrides, {})
+      v.networking.scheme != null ? merge(
+        {
+          "homepage.description" = v.identity.description != "" ? v.identity.description : null
+          "homepage.group"       = v.identity.group != "" ? v.identity.group : null
+          "homepage.href"        = v.fqdn_external != null ? "https://${v.fqdn_external}" : (v.fqdn_internal != null ? "${v.networking.ssl ? "https" : "http"}://${v.fqdn_internal}" : null)
+          "homepage.icon"        = v.identity.icon != "" ? v.identity.icon : "${v.identity.service}.svg"
+          "homepage.name"        = v.identity.title != "" ? v.identity.title : v.identity.name
+        },
+        {
+          for key, value in v.platform_config.homepage :
+          "homepage.${key}" => try(templatestring(tostring(value), { defaults = local.defaults, service = v }), tostring(value))
+          if value != null
+        }
+      ) : {},
+      v.networking.port != null ? merge(
+        {
+          "traefik.enable"                                                       = "true"
+          "traefik.http.routers.${v.identity.service}.middlewares"               = v.platform_config.docker.middleware
+          "traefik.http.routers.${v.identity.service}.rule"                      = v.fqdn_external != null ? "Host(`${v.fqdn_external}`)" : null
+          "traefik.http.services.${v.identity.service}.loadbalancer.server.port" = tostring(v.networking.port)
+        },
+        !v.networking.ssl ? {
+          "traefik.http.routers.${v.identity.service}.entrypoints" = "web"
+        } : {},
+        v.networking.scheme == "https" ? {
+          "traefik.http.services.${v.identity.service}.loadbalancer.server.scheme" = "https"
+        } : {}
+      ) : {},
+      v.platform_config.docker.labels
     ) : label => value if value != null }
   }
 

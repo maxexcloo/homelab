@@ -12,7 +12,7 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 Key computed locals:
 - `local.servers` — fully-merged server map with computed fields (FQDNs, feature flags, etc.)
 - `local.services` — fully-merged, deploy-target-expanded service map
-- `local.service_overrides` — per-service Homepage/Traefik Docker labels, computed in `services.tf` and passed as the `overrides` variable to all `templatefile()` calls
+- `local.service_labels` — per-service Homepage/Traefik Docker labels, computed in `services.tf` and passed as the `labels` variable to all `templatefile()` calls
 
 ## Sorting Convention
 
@@ -54,7 +54,7 @@ Always set `overwrite_on_create = true`. SOPS-encrypted files use `shell_sensiti
 ### Template authoring
 
 - Always use `~` on all template directives (`%{ if ~}`, `%{ endif ~}`, `%{ for ~}`, `%{ endfor ~}`) to prevent unwanted blank lines
-- Inject Docker labels via `${indent(N, yamlencode(overrides))}` at the appropriate depth
+- Inject Docker labels via `${indent(N, yamlencode(labels))}` at the appropriate depth
 - Guard `templatefile()` with `fileexists()` when the template may not be present
 
 ## YAML Standards

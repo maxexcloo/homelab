@@ -6,16 +6,16 @@ bitwarden:
     servers: Servers
     services: Services
 
-domains:
-  acme: 043847.xyz
-  external: excloo.net
-  internal: excloo.dev
-
 dns:
   priority: null
   proxied: false
   ttl: 1
   wildcard: false
+
+domains:
+  acme: 043847.xyz
+  external: excloo.net
+  internal: excloo.dev
 
 github:
   owner: excloo
@@ -25,9 +25,9 @@ github:
     truenas: truenas
 
 organization:
-  name: excloo
   email: max@excloo.com
   managed_comment: OpenTofu Managed
+  name: excloo
 
 resend:
   host: smtp.resend.com
@@ -91,23 +91,24 @@ servers:
         - 443
 
 services:
-  deploy_to: []
   fqdn: null
   fqdn_external: null
   fqdn_internal: null
   password_hash_sensitive: null
   password_sensitive: null
   target: null
+  deploy_to: []
   features:
     b2: false
     cloudflare_proxy: false
     password: false
     resend: false
-    secrets: []
     tailscale: false
+    secrets: []
   identity:
     description: ""
     group: ""
+    icon: ""
     name: ""
     service: ""
     title: ""
@@ -119,8 +120,10 @@ services:
     ssl_validation: true
     urls: []
   platform_config:
-    docker: null
-    homepage: null
+    docker:
+      container: null
+      middleware: null
+      labels: {}
     fly:
       cpu_kind: shared
       cpus: 1
@@ -128,6 +131,7 @@ services:
       memory_mb: 256
       min_machines_running: 1
       region: ""
+    homepage: {}
 
 system:
   locale: en_AU

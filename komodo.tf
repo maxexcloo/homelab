@@ -7,12 +7,12 @@ locals {
           stack    = k
 
           content = templatefile("${path.module}/${filepath}", {
-            defaults  = local.defaults
-            overrides = local.service_overrides[k]
-            server    = local.servers[v.target]
-            servers   = local.servers
-            service   = v
-            services  = local.services
+            defaults = local.defaults
+            labels   = local.service_labels[k]
+            server   = local.servers[v.target]
+            servers  = local.servers
+            service  = v
+            services = local.services
           })
         }
         if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
@@ -135,12 +135,12 @@ resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
 
     CONTENT = base64encode(templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
-      defaults  = local.defaults
-      overrides = local.service_overrides[each.key]
-      server    = local.servers[each.value.target]
-      servers   = local.servers
-      service   = each.value
-      services  = local.services
+      defaults = local.defaults
+      labels   = local.service_labels[each.key]
+      server   = local.servers[each.value.target]
+      servers  = local.servers
+      service  = each.value
+      services = local.services
     }))
   }
 
