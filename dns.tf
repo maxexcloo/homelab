@@ -114,7 +114,7 @@ locals {
         "${k}-url-${i}" = provider::deepmerge::mergo(
           local.dns_defaults,
           {
-            content = "${service.app_name}.fly.dev"
+            content = "${service.platform_config.fly.app_name}.fly.dev"
             name    = url
             proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"

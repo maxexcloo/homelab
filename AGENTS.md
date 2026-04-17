@@ -12,7 +12,7 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 Key computed locals:
 - `local.servers` — fully-merged server map with computed fields (FQDNs, feature flags, etc.)
 - `local.services` — fully-merged, deploy-target-expanded service map
-- `local.service_labels` — per-service Homepage/Traefik Docker labels, computed in `services.tf` and passed as the `labels` variable to all `templatefile()` calls
+- `local.services_labels` — per-service Homepage/Traefik Docker labels, computed in `services.tf` and passed as the `labels` variable to all `templatefile()` calls
 
 ## Sorting Convention
 

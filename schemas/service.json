@@ -155,6 +155,10 @@
           "description": "Configuration for Fly.io deployments.",
           "additionalProperties": false,
           "properties": {
+            "app_name": {
+              "type": ["string", "null"],
+              "description": "Fly.io app name override. If null, a unique app name is generated from the service name."
+            },
             "cpu_kind": {
               "type": "string",
               "enum": ["shared", "performance"],

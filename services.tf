@@ -121,7 +121,11 @@ locals {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
       } : {},
       v.target == "fly" ? {
-        fly_app_name = "${v.identity.name}-${random_string.fly_service[k].result}"
+        platform_config = merge(v.platform_config, {
+          fly = merge(v.platform_config.fly, {
+            app_name = coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")
+          })
+        })
       } : {},
       contains(keys(local.servers), v.target) ? merge(
         {
@@ -149,7 +153,7 @@ locals {
         if vv != null && vv != "" && vv != false
       },
       v.target == "fly" ? {
-        url_fly = "${v.fly_app_name}.fly.dev"
+        url_fly = "${v.platform_config.fly.app_name}.fly.dev"
       } : {}
     )
   }
