@@ -19,7 +19,7 @@ endpoints:
       - "[CONNECTED] == true"
     group: "${server.type == "router" ? "Routers" : server.type == "vm" ? "VMs" : "Servers"}"
     name: "${k}"
-    url: "icmp://${k}"
+    url: "icmp://${server.fqdn_internal}"
 %{ endfor ~}
 %{ for k, svc in services ~}
 %{ for url in svc.networking.urls ~}
