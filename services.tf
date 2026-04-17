@@ -85,19 +85,17 @@ locals {
       v.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
       } : {},
-      v.networking.scheme != null ? merge(
+      contains(keys(local.servers), v.target) ? merge(
         {
-          for i, url in v.networking.urls : "url_${i}" => url
+          fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
         },
-        contains(keys(local.servers), v.target) ? merge(
-          {
-            fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
-          },
-          contains(["cloudflare", "external"], v.networking.expose) ? {
-            fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
-          } : {}
-        ) : {}
-      ) : {}
+        contains(["cloudflare", "external"], v.networking.expose) ? {
+          fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
+        } : {}
+      ) : {},
+      v.networking.scheme != null ? {
+        for i, url in v.networking.urls : "url_${i}" => url
+      } : {}
     )
   }
 

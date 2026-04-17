@@ -9,7 +9,7 @@ locals {
         name = r.name
         zone = r.zone
       }
-      if contains(["A", "AAAA", "CNAME"], r.type) && try(r.acme, true)
+      if contains(["A", "AAAA", "CNAME"], r.type)
       ]) : "${record.zone}-${record.name}-acme-delegation" => {
       content = "${record.name}.${local.defaults.domains.acme}"
       name    = "_acme-challenge.${record.name}"
@@ -39,7 +39,6 @@ locals {
         "${local.defaults.domains.external}-${k}-cname" = {
           content = server.public_address
           name    = "${server.fqdn}.${local.defaults.domains.external}"
-          server  = k
           type    = "CNAME"
           zone    = local.defaults.domains.external
         }
@@ -48,14 +47,12 @@ locals {
         "${local.defaults.domains.external}-${k}-a" = {
           content = data.oci_core_vnic.server[k].public_ip_address
           name    = "${server.fqdn}.${local.defaults.domains.external}"
-          server  = k
           type    = "A"
           zone    = local.defaults.domains.external
         }
         "${local.defaults.domains.external}-${k}-aaaa" = {
           content = data.oci_core_vnic.server[k].ipv6addresses[0]
           name    = "${server.fqdn}.${local.defaults.domains.external}"
-          server  = k
           type    = "AAAA"
           zone    = local.defaults.domains.external
         }
@@ -64,7 +61,6 @@ locals {
         "${local.defaults.domains.external}-${k}-a" = {
           content = server.public_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.external}"
-          server  = k
           type    = "A"
           zone    = local.defaults.domains.external
         }
@@ -73,7 +69,6 @@ locals {
         "${local.defaults.domains.external}-${k}-aaaa" = {
           content = server.public_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.external}"
-          server  = k
           type    = "AAAA"
           zone    = local.defaults.domains.external
         }
@@ -82,7 +77,6 @@ locals {
         "${local.defaults.domains.internal}-${k}-a" = {
           content = server.tailscale_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
-          server  = k
           type    = "A"
           zone    = local.defaults.domains.internal
         }
@@ -91,7 +85,6 @@ locals {
         "${local.defaults.domains.internal}-${k}-aaaa" = {
           content = server.tailscale_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
-          server  = k
           type    = "AAAA"
           zone    = local.defaults.domains.internal
         }
@@ -174,7 +167,7 @@ locals {
         name = record.name
         zone = record.zone
       }
-      if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
+      if contains(["A", "AAAA", "CNAME"], record.type)
       ]) : "${hostname.zone}-${hostname.name}-wildcard" => {
       content = hostname.name
       name    = "*.${hostname.name}"

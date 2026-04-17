@@ -21,8 +21,8 @@ locals {
           stack        = k
 
           content = templatefile("${path.module}/${filepath}", {
-            app_name = v.app_name
             defaults = local.defaults
+            server   = try(local.servers[v.target], null)
             servers  = local.servers
             service  = v
             services = local.services
@@ -39,7 +39,6 @@ locals {
     })
     if v.target == "fly"
   }
-
 }
 
 resource "github_actions_secret" "fly_age_key" {
@@ -161,6 +160,7 @@ resource "shell_sensitive_script" "fly_toml_encrypt" {
     CONTENT = base64encode(templatefile("${path.module}/templates/fly/fly.toml", {
       app_name = each.value.app_name
       defaults = local.defaults
+      server   = try(local.servers[each.value.target], null)
       servers  = local.servers
       service  = each.value
       services = local.services

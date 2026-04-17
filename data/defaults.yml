@@ -91,7 +91,6 @@ servers:
         - 443
 
 services:
-  fqdn: null
   fqdn_external: null
   fqdn_internal: null
   password_hash_sensitive: null

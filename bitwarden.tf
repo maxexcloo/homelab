@@ -37,7 +37,7 @@ resource "bitwarden_item_login" "server" {
   dynamic "uri" {
     for_each = {
       for k, v in local.servers_filtered[each.key] : k => v
-      if can(regex(local.defaults.bitwarden.url_field_pattern, k))
+      if can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
     }
 
     content {
@@ -79,7 +79,7 @@ resource "bitwarden_item_login" "service" {
   dynamic "uri" {
     for_each = {
       for k, v in local.services_filtered[each.key] : k => v
-      if can(regex(local.defaults.bitwarden.url_field_pattern, k))
+      if can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
     }
 
     content {

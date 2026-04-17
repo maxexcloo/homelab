@@ -1,4 +1,4 @@
-app = "${app_name}"
+app = "${service.app_name}"
 primary_region = "${service.platform_config.fly.region}"
 
 [build]

@@ -111,7 +111,7 @@
         },
         "scheme": {
           "enum": ["http", "https", null],
-          "description": "Backend scheme. Setting this enables fqdn_external/fqdn_internal computation and external DNS record creation. For TrueNAS standard services it sets the Traefik backend scheme label. Null disables DNS record generation."
+          "description": "Backend scheme. Required for Traefik routing and URL DNS record generation. fqdn_internal is always computed for server-targeted services regardless of this field; fqdn_external is computed when expose is 'external' or 'cloudflare'. Null disables URL DNS records."
         },
         "ssl": {
           "type": "boolean",
@@ -140,12 +140,12 @@
           "properties": {
             "env": {
               "type": "object",
-              "description": "Extra environment variables merged into the service's computed env map. Values support template interpolation with ${service.*} and ${defaults.*}.",
+              "description": "Extra environment variables merged into the service's computed env map. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, and ${service.*}.",
               "additionalProperties": { "type": "string" }
             },
             "labels": {
               "type": "object",
-              "description": "Extra labels merged into the auto-generated Traefik and Homepage labels. Use homepage.* keys to override auto-generated homepage defaults. Values support template interpolation with ${service.*} and ${defaults.*}.",
+              "description": "Extra labels merged into the auto-generated Traefik and Homepage labels. Use homepage.* keys to override auto-generated homepage defaults. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, and ${service.*}.",
               "additionalProperties": { "type": "string" }
             }
           }
@@ -194,6 +194,6 @@
           }
         }
       }
-    },
+    }
   }
 }
