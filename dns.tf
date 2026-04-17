@@ -167,7 +167,7 @@ locals {
         name = record.name
         zone = record.zone
       }
-      if contains(["A", "AAAA", "CNAME"], record.type)
+      if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
       ]) : "${hostname.zone}-${hostname.name}-wildcard" => {
       content = hostname.name
       name    = "*.${hostname.name}"

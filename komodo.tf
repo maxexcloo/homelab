@@ -1,24 +1,7 @@
 locals {
   komodo_stack_configs = {
-    for pair in flatten([
-      for k, v in local.komodo_stacks : [
-        for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
-          rel_path = trimprefix(filepath, "templates/docker/${v.identity.service}/")
-          stack    = k
-
-          content = templatefile("${path.module}/${filepath}", {
-            defaults = local.defaults
-            env      = local.service_env[k]
-            labels   = local.service_labels[k]
-            server   = local.servers[v.target]
-            servers  = local.servers
-            service  = v
-            services = local.services
-          })
-        }
-        if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
-      ]
-    ]) : "${pair.stack}/${pair.rel_path}" => pair
+    for k, v in local.service_config_files : k => v
+    if local.servers[v.target].features.docker
   }
 
   komodo_stacks = {
@@ -96,7 +79,7 @@ resource "github_repository_file" "komodo_stack_configs" {
   for_each = local.komodo_stack_configs
 
   commit_message      = "Update ${each.value.stack} config"
-  content             = shell_sensitive_script.komodo_stack_configs_encrypt[each.key].output["encrypted_content"]
+  content             = shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"]
   file                = each.key
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
@@ -154,29 +137,6 @@ resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
 
   triggers = {
     age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
-    script_hash         = sha256(local.sops_encrypt_script)
-  }
-}
-
-resource "shell_sensitive_script" "komodo_stack_configs_encrypt" {
-  for_each = local.komodo_stack_configs
-
-  environment = {
-    AGE_PUBLIC_KEY = local.servers[local.komodo_stacks[each.value.stack].target].age_public_key
-    CONTENT        = base64encode(each.value.content)
-    CONTENT_TYPE   = endswith(each.value.rel_path, ".toml") ? "toml" : "yaml"
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}" : ""
-  }
-
-  lifecycle_commands {
-    create = local.sops_encrypt_script
-    delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
-  }
-
-  triggers = {
-    age_public_key_hash = sha256(local.servers[local.komodo_stacks[each.value.stack].target].age_public_key)
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }

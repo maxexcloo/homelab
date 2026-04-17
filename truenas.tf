@@ -5,28 +5,8 @@ locals {
   }
 
   truenas_service_config = {
-    for pair in flatten([
-      for k, v in local.truenas_services : [
-        for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
-          rel_path     = trimprefix(filepath, "templates/docker/${v.identity.service}/")
-          service_name = v.identity.service
-          stack        = k
-          target       = v.target
-
-          content = templatefile("${path.module}/${filepath}", {
-            defaults = local.defaults
-            env      = local.service_env[k]
-            labels   = local.service_labels[k]
-            server   = local.servers[v.target]
-            servers  = local.servers
-            service  = v
-            services = local.services
-          })
-        }
-        if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
-      ]
-      if fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml")
-    ]) : "${pair.stack}/${pair.rel_path}" => pair
+    for k, v in local.service_config_files : k => v
+    if contains(keys(local.truenas_servers), v.target)
   }
 
   truenas_services = {
@@ -58,7 +38,7 @@ resource "github_repository_file" "truenas_service_config" {
   for_each = local.truenas_service_config
 
   commit_message      = "Update ${each.value.stack} ${each.value.rel_path}"
-  content             = shell_sensitive_script.truenas_service_config_encrypt[each.key].output["encrypted_content"]
+  content             = shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"]
   file                = "${each.value.target}/${each.value.service_name}/${each.value.rel_path}"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
@@ -110,29 +90,6 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
         services = local.services
       })
     }))
-  }
-
-  lifecycle_commands {
-    create = local.sops_encrypt_script
-    delete = "true"
-    read   = local.sops_encrypt_script
-    update = local.sops_encrypt_script
-  }
-
-  triggers = {
-    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
-    script_hash         = sha256(local.sops_encrypt_script)
-  }
-}
-
-resource "shell_sensitive_script" "truenas_service_config_encrypt" {
-  for_each = local.truenas_service_config
-
-  environment = {
-    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
-    CONTENT        = base64encode(each.value.content)
-    CONTENT_TYPE   = endswith(each.value.rel_path, ".toml") ? "toml" : "yaml"
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.value.target}/${each.value.service_name}/${each.value.rel_path}" : ""
   }
 
   lifecycle_commands {

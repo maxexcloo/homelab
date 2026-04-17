@@ -15,10 +15,9 @@ locals {
     for pair in flatten([
       for k, v in local.fly_services : [
         for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
-          app_name     = v.app_name
-          content_type = can(regex("\\.toml$", filepath)) ? "toml" : can(regex("\\.(yaml|yml)$", filepath)) ? "yaml" : null
-          rel_path     = trimprefix(filepath, "templates/docker/${v.identity.service}/")
-          stack        = k
+          app_name = v.app_name
+          rel_path = trimprefix(filepath, "templates/docker/${v.identity.service}/")
+          stack    = k
 
           content = templatefile("${path.module}/${filepath}", {
             defaults = local.defaults
@@ -47,6 +46,16 @@ resource "github_actions_secret" "fly_age_key" {
   secret_name     = "AGE_KEY"
 }
 
+resource "github_repository_file" "fly_certs" {
+  for_each = { for k, v in local.fly_services : k => v if length(v.networking.urls) > 0 }
+
+  commit_message      = "Update ${each.value.app_name} certificate hostnames"
+  content             = join("\n", each.value.networking.urls)
+  file                = "${each.value.app_name}/.certs"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.fly
+}
+
 resource "github_repository_file" "fly_service_env" {
   for_each = toset(nonsensitive(keys(local.fly_service_env)))
 
@@ -71,16 +80,6 @@ resource "github_repository_file" "fly_sops_config" {
   commit_message      = "Update SOPS configuration"
   content             = "creation_rules:\n  - age: ${age_secret_key.fly.public_key}\n"
   file                = ".sops.yaml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
-}
-
-resource "github_repository_file" "fly_certs" {
-  for_each = { for k, v in local.fly_services : k => v if length(v.networking.urls) > 0 }
-
-  commit_message      = "Update ${each.value.app_name} certificate hostnames"
-  content             = join("\n", each.value.networking.urls)
-  file                = "${each.value.app_name}/.certs"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
@@ -132,7 +131,7 @@ resource "shell_sensitive_script" "fly_service_files_encrypt" {
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
     CONTENT        = base64encode(each.value.content)
-    CONTENT_TYPE   = each.value.content_type != null ? each.value.content_type : ""
+    CONTENT_TYPE   = endswith(each.value.rel_path, ".toml") ? "toml" : can(regex("\\.(yaml|yml)$", each.value.rel_path)) ? "yaml" : ""
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.app_name}/${each.value.rel_path}" : ""
   }
 

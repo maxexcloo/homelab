@@ -17,6 +17,31 @@ locals {
     }
   ]...)
 
+  service_config_files = {
+    for pair in flatten([
+      for k, v in local.services : [
+        for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
+          content = templatefile("${path.module}/${filepath}", {
+            defaults = local.defaults
+            env      = local.service_env[k]
+            labels   = local.service_labels[k]
+            server   = local.servers[v.target]
+            servers  = local.servers
+            service  = v
+            services = local.services
+          })
+          rel_path     = trimprefix(filepath, "templates/docker/${v.identity.service}/")
+          service_name = v.identity.service
+          stack        = k
+          target       = v.target
+        }
+        if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
+      ]
+      if fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml") &&
+      contains(keys(local.servers), v.target)
+    ]) : "${pair.stack}/${pair.rel_path}" => pair
+  }
+
   service_env = {
     for k, v in local.services : k => {
       for key, value in v.platform_config.docker.env :
@@ -93,9 +118,7 @@ locals {
           fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
         } : {}
       ) : {},
-      v.networking.scheme != null ? {
-        for i, url in v.networking.urls : "url_${i}" => url
-      } : {}
+      { for i, url in v.networking.urls : "url_${i}" => url }
     )
   }
 
@@ -108,10 +131,10 @@ locals {
   }
 
   services_filtered = {
-    for k, v in local.services : k => {
-      for kk, vv in v : kk => vv
-      if vv != null && vv != "" && vv != false
-    }
+    for k, v in local.services : k => merge(
+      { for kk, vv in v : kk => vv if vv != null && vv != "" && vv != false },
+      v.target == "fly" ? { url_fly = "${v.identity.name}-${random_string.fly_service[k].result}.fly.dev" } : {}
+    )
   }
 }
 
@@ -153,6 +176,29 @@ resource "random_password" "service_secret" {
 
   length  = each.value.length
   special = each.value.special
+}
+
+resource "shell_sensitive_script" "service_config_encrypt" {
+  for_each = local.service_config_files
+
+  environment = {
+    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
+    CONTENT        = base64encode(each.value.content)
+    CONTENT_TYPE   = endswith(each.value.rel_path, ".toml") ? "toml" : "yaml"
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${each.key}" : ""
+  }
+
+  lifecycle_commands {
+    create = local.sops_encrypt_script
+    delete = "true"
+    read   = local.sops_encrypt_script
+    update = local.sops_encrypt_script
+  }
+
+  triggers = {
+    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
+    script_hash         = sha256(local.sops_encrypt_script)
+  }
 }
 
 resource "terraform_data" "services_validation" {
