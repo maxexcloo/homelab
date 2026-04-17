@@ -16,16 +16,17 @@ locals {
       for k, v in local.fly_services : [
         for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
           app_name     = v.app_name
-          content      = templatefile("${path.module}/${filepath}", {
+          content_type = can(regex("\\.toml$", filepath)) ? "toml" : can(regex("\\.(yaml|yml)$", filepath)) ? "yaml" : null
+          rel_path     = trimprefix(filepath, "templates/docker/${v.identity.service}/")
+          stack        = k
+
+          content = templatefile("${path.module}/${filepath}", {
             app_name = v.app_name
             defaults = local.defaults
             servers  = local.servers
             service  = v
             services = local.services
           })
-          content_type = can(regex("\\.toml$", filepath)) ? "toml" : can(regex("\\.(yaml|yml)$", filepath)) ? "yaml" : null
-          rel_path     = trimprefix(filepath, "templates/docker/${v.identity.service}/")
-          stack        = k
         }
         if !endswith(filepath, "docker-compose.yaml")
       ]
@@ -144,7 +145,7 @@ resource "shell_sensitive_script" "fly_toml_encrypt" {
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
-    CONTENT        = base64encode(templatefile("${path.module}/templates/fly/fly.toml", {
+    CONTENT = base64encode(templatefile("${path.module}/templates/fly/fly.toml", {
       app_name = each.value.app_name
       defaults = local.defaults
       servers  = local.servers

@@ -129,15 +129,16 @@ resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
 
   environment = {
     AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
-    CONTENT        = base64encode(templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
+    CONTENT_TYPE   = "yaml"
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
+
+    CONTENT = base64encode(templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
       defaults = local.defaults
       server   = local.servers[each.value.target]
       servers  = local.servers
       service  = each.value
       services = local.services
     }))
-    CONTENT_TYPE = "yaml"
-    DEBUG_PATH   = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
   }
 
   lifecycle_commands {
