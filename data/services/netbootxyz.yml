@@ -2,10 +2,11 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Netboot
+  description: Network Boot Server
   group: System
   name: netbootxyz
   service: netboot
+  title: Netboot
 networking:
   port: 31010
   scheme: http

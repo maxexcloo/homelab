@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=../../schemas/server.json
 platform: unifi
 type: router
-identity:
-  description: AU
-  name: au
-  region: au
 features:
   cloudflare_acme_token: true
   password: true
   tailscale: true
+identity:
+  name: au
+  region: au
+  title: AU
 networking:
   public_address: excloo-au.controld.live

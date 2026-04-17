@@ -1,16 +1,16 @@
 # yaml-language-server: $schema=../../schemas/server.json
 platform: unmanaged
 type: vm
-identity:
-  description: Hotdog
-  name: hotdog
-  region: us
 features:
   cloudflare_acme_token: true
   cloudflare_zero_trust_tunnel: true
   password: true
   resend: true
   tailscale: true
+identity:
+  name: hotdog
+  region: us
+  title: Hotdog
 networking:
   management_port: 8007
   public_ipv4: 199.127.129.143

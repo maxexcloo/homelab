@@ -1,91 +1,197 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Server",
+  "description": "A physical machine, VM, router, or appliance managed by this homelab. Servers are the deployment targets for services.",
   "type": "object",
   "required": ["identity"],
   "additionalProperties": false,
   "properties": {
     "parent": {
       "type": "string",
-      "description": "Parent server ID. Public IPs are inherited up to 2 levels."
+      "description": "Key of the parent server (e.g. 'au'). Public IPs are inherited from the parent chain up to 2 levels deep, allowing VMs and containers to share the host's public address."
     },
     "platform": {
       "type": "string",
-      "enum": ["unmanaged", "incus", "oci", "truenas", "unifi"]
+      "description": "Provisioning platform. Controls which Terraform resources are created. incus = Incus container/VM; oci = Oracle Cloud instance; truenas = TrueNAS app; unifi = UniFi device; unmanaged = externally managed (DNS and secrets only).",
+      "enum": ["incus", "oci", "truenas", "unifi", "unmanaged"]
     },
     "type": {
       "type": "string",
+      "description": "Functional role of the server. Used for grouping in monitoring (Gatus) and display. appliance = dedicated device; router = network gateway; server = general-purpose machine; vm = virtual machine.",
       "enum": ["appliance", "router", "server", "vm"]
     },
     "features": {
       "type": "object",
+      "description": "Feature flags that provision additional resources for this server.",
       "additionalProperties": false,
       "properties": {
-        "b2": { "type": "boolean" },
-        "cloudflare_acme_token": { "type": "boolean" },
-        "cloudflare_proxy": { "type": "boolean" },
-        "cloudflare_zero_trust_tunnel": { "type": "boolean" },
-        "docker": { "type": "boolean" },
-        "password": { "type": "boolean" },
-        "resend": { "type": "boolean" },
-        "tailscale": { "type": "boolean" }
+        "b2": {
+          "type": "boolean",
+          "description": "Provision a Backblaze B2 bucket and application key. Exposes b2_bucket_name, b2_application_key_id, b2_application_key_sensitive, and b2_endpoint."
+        },
+        "cloudflare_acme_token": {
+          "type": "boolean",
+          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes cloudflare_acme_account_id and cloudflare_acme_token_sensitive for DNS-01 challenge clients."
+        },
+        "cloudflare_proxy": {
+          "type": "boolean",
+          "description": "Enable Cloudflare proxying on DNS records for this server."
+        },
+        "cloudflare_zero_trust_tunnel": {
+          "type": "boolean",
+          "description": "Create a Cloudflare Zero Trust tunnel. Exposes cloudflare_zero_trust_tunnel_token_sensitive. Services targeting this server with cloudflare_proxy enabled route through this tunnel."
+        },
+        "docker": {
+          "type": "boolean",
+          "description": "This server runs Docker and can host Komodo-managed stacks. Adds the server to the Komodo server list."
+        },
+        "password": {
+          "type": "boolean",
+          "description": "Generate a random admin password. Exposes password_sensitive and password_hash_sensitive (bcrypt). Stored in Bitwarden."
+        },
+        "resend": {
+          "type": "boolean",
+          "description": "Provision a Resend API key for outbound email. Exposes resend_api_key_sensitive."
+        },
+        "tailscale": {
+          "type": "boolean",
+          "description": "Generate a Tailscale auth key. Exposes tailscale_auth_key_sensitive for use in cloud-init or startup scripts."
+        }
       }
     },
     "identity": {
       "type": "object",
-      "required": ["name", "region"],
+      "description": "Human-readable identifiers for this server.",
+      "required": ["name", "region", "title"],
       "additionalProperties": false,
       "properties": {
-        "description": { "type": "string" },
-        "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-        "region": { "type": "string", "pattern": "^[a-z]{2}$" },
-        "username": { "type": "string" }
+        "description": {
+          "type": "string",
+          "description": "Optional longer description of this server's purpose."
+        },
+        "name": {
+          "type": "string",
+          "description": "Short hostname component used to build the server FQDN. For region-prefixed keys (e.g. au-malatang) this is the part after the hyphen (malatang). Must be lowercase alphanumeric or hyphen.",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "region": {
+          "type": "string",
+          "description": "Two-letter region code (e.g. au, us). Combined with identity.name to form the FQDN: {name}.{region}.{domain}.",
+          "pattern": "^[a-z]{2}$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Display name shown in dashboards, Komodo, and Bitwarden (e.g. 'Malatang')."
+        },
+        "username": {
+          "type": "string",
+          "description": "Primary admin username for SSH access. Stored in Bitwarden alongside the generated password. Defaults to 'root'."
+        }
       }
     },
     "networking": {
       "type": "object",
+      "description": "Network addressing for this server. Public IPs are used for external DNS records; Tailscale IPs are resolved automatically from the tailnet.",
       "additionalProperties": false,
       "properties": {
-        "management_address": { "type": "string" },
-        "management_port": { "type": "integer" },
-        "public_address": { "type": "string" },
-        "public_ipv4": { "type": "string" },
-        "public_ipv6": { "type": "string" }
+        "management_address": {
+          "type": "string",
+          "description": "Hostname or IP for management access (e.g. Incus API endpoint). Used by Komodo as the server address."
+        },
+        "management_port": {
+          "type": "integer",
+          "description": "Port for management access. Defaults to 443."
+        },
+        "public_address": {
+          "type": "string",
+          "description": "Public CNAME target (e.g. a dynamic DNS hostname). Creates a CNAME external DNS record instead of A/AAAA. Inherited from the parent chain up to 2 levels."
+        },
+        "public_ipv4": {
+          "type": "string",
+          "description": "Public IPv4 address. Creates an A record on the external domain. Inherited from the parent chain up to 2 levels."
+        },
+        "public_ipv6": {
+          "type": "string",
+          "description": "Public IPv6 address (bare, without prefix length). Creates an AAAA record on the external domain. Inherited from the parent chain up to 2 levels."
+        }
       }
     },
     "platform_config": {
       "type": "object",
+      "description": "Platform-specific configuration. Only the block matching the server's platform is used.",
       "additionalProperties": false,
       "properties": {
         "incus": {
           "type": "object",
+          "description": "Configuration for Incus-managed containers and VMs.",
           "additionalProperties": false,
           "properties": {
-            "cpus": { "type": "integer", "minimum": 1 },
-            "image": { "type": ["string", "null"] },
-            "memory": { "type": "integer", "minimum": 1 },
-            "nested": { "type": "boolean" },
-            "privileged": { "type": "boolean" },
-            "profiles": { "type": "array", "items": { "type": "string" } },
-            "protection": { "type": "boolean" },
-            "secureboot": { "type": "boolean" },
-            "type": { "type": "string", "enum": ["container", "virtual-machine"] },
+            "cpus": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of vCPUs to allocate (limits.cpu)."
+            },
+            "image": {
+              "type": ["string", "null"],
+              "description": "Incus image to use (e.g. 'ubuntu:24.04'). Null uses the platform default."
+            },
+            "memory": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "RAM in GiB to allocate (limits.memory)."
+            },
+            "nested": {
+              "type": "boolean",
+              "description": "Enable nested containerisation (security.nesting). Only applies to containers."
+            },
+            "privileged": {
+              "type": "boolean",
+              "description": "Run as a privileged container (security.privileged). Only applies to containers."
+            },
+            "protection": {
+              "type": "boolean",
+              "description": "Enable deletion protection (security.protection.delete)."
+            },
+            "secureboot": {
+              "type": "boolean",
+              "description": "Enable Secure Boot (security.secureboot). Only applies to virtual machines."
+            },
+            "type": {
+              "type": "string",
+              "enum": ["container", "virtual-machine"],
+              "description": "Incus instance type."
+            },
             "disks": {
               "type": "array",
+              "description": "Additional disk devices to attach to this instance.",
               "items": {
                 "type": "object",
                 "required": ["path", "pool"],
                 "additionalProperties": false,
                 "properties": {
-                  "name": { "type": "string" },
-                  "path": { "type": "string" },
-                  "pool": { "type": "string" },
-                  "size": { "type": "integer", "minimum": 1 }
+                  "name": {
+                    "type": "string",
+                    "description": "Device name. Defaults to disk-{n} if omitted."
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "Mount path inside the instance (e.g. '/data')."
+                  },
+                  "pool": {
+                    "type": "string",
+                    "description": "Incus storage pool name."
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Disk size in GiB."
+                  }
                 }
               }
             },
             "networks": {
               "type": "array",
+              "description": "Network interface devices to attach to this instance.",
               "items": {
                 "type": "object",
                 "required": ["network"],
@@ -93,36 +199,70 @@
                 "properties": {
                   "mac_address": {
                     "type": "string",
+                    "description": "Fixed MAC address (hwaddr). Leave unset for a random address.",
                     "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
                   },
-                  "name": { "type": "string" },
-                  "network": { "type": "string" }
+                  "name": {
+                    "type": "string",
+                    "description": "Device name. Defaults to eth-{n} if omitted."
+                  },
+                  "network": {
+                    "type": "string",
+                    "description": "Incus network to attach to (e.g. 'br0')."
+                  }
                 }
               }
             },
             "pci_devices": {
               "type": "array",
+              "description": "PCI devices to pass through to this instance.",
               "items": {
                 "type": "object",
                 "required": ["address"],
                 "additionalProperties": false,
                 "properties": {
-                  "address": { "type": "string" },
-                  "name": { "type": "string" }
+                  "address": {
+                    "type": "string",
+                    "description": "PCI address of the device (e.g. '0000:03:00.0')."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Device name. Defaults to pci-{n} if omitted."
+                  }
                 }
               }
             },
+            "profiles": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Incus profiles to apply to this instance. Defaults to ['default']."
+            },
             "usb_devices": {
               "type": "array",
+              "description": "USB devices to pass through to this instance.",
               "items": {
                 "type": "object",
                 "required": ["productid", "vendorid"],
                 "additionalProperties": false,
                 "properties": {
-                  "mode": { "type": "string" },
-                  "name": { "type": "string" },
-                  "productid": { "type": "string", "pattern": "^[0-9a-fA-F]{4}$" },
-                  "vendorid": { "type": "string", "pattern": "^[0-9a-fA-F]{4}$" }
+                  "mode": {
+                    "type": "string",
+                    "description": "File mode for the device node (e.g. '0666')."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Device name. Defaults to usb-{n} if omitted."
+                  },
+                  "productid": {
+                    "type": "string",
+                    "description": "USB product ID as a 4-digit hex string (e.g. '1234').",
+                    "pattern": "^[0-9a-fA-F]{4}$"
+                  },
+                  "vendorid": {
+                    "type": "string",
+                    "description": "USB vendor ID as a 4-digit hex string (e.g. '5678').",
+                    "pattern": "^[0-9a-fA-F]{4}$"
+                  }
                 }
               }
             }
@@ -130,15 +270,41 @@
         },
         "oci": {
           "type": "object",
+          "description": "Configuration for Oracle Cloud Infrastructure instances.",
           "additionalProperties": false,
           "properties": {
-            "assign_public_ip": { "type": "boolean" },
-            "cpus": { "type": "integer", "minimum": 1 },
-            "disk_size": { "type": "integer", "minimum": 1 },
-            "image_id": { "type": "string" },
-            "ingress_ports": { "type": "array", "items": { "type": "integer" } },
-            "memory": { "type": "integer", "minimum": 1 },
-            "shape": { "type": "string" }
+            "assign_public_ip": {
+              "type": "boolean",
+              "description": "Assign a public IPv4 address to the primary VNIC."
+            },
+            "cpus": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of OCPUs to allocate."
+            },
+            "disk_size": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Boot volume size in GiB."
+            },
+            "image_id": {
+              "type": "string",
+              "description": "OCI image OCID to use as the boot volume source."
+            },
+            "memory": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "RAM in GiB to allocate."
+            },
+            "shape": {
+              "type": "string",
+              "description": "OCI compute shape (e.g. 'VM.Standard.A1.Flex')."
+            },
+            "ingress_ports": {
+              "type": "array",
+              "items": { "type": "integer" },
+              "description": "TCP and UDP ports open in the network security group ingress rules. Defaults to [22, 80, 443]."
+            }
           }
         }
       }

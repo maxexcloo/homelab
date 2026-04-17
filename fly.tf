@@ -76,6 +76,16 @@ resource "github_repository_file" "fly_sops_config" {
   repository          = local.defaults.github.repositories.fly
 }
 
+resource "github_repository_file" "fly_certs" {
+  for_each = { for k, v in local.fly_services : k => v if length(v.networking.urls) > 0 }
+
+  commit_message      = "Update ${each.value.app_name} certificate hostnames"
+  content             = join("\n", each.value.networking.urls)
+  file                = "${each.value.app_name}/.certs"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.fly
+}
+
 resource "github_repository_file" "fly_toml" {
   for_each = local.fly_services
 
@@ -145,6 +155,9 @@ resource "shell_sensitive_script" "fly_toml_encrypt" {
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
+    CONTENT_TYPE   = "toml"
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.identity.service}/fly.toml" : ""
+
     CONTENT = base64encode(templatefile("${path.module}/templates/fly/fly.toml", {
       app_name = each.value.app_name
       defaults = local.defaults
@@ -152,8 +165,6 @@ resource "shell_sensitive_script" "fly_toml_encrypt" {
       service  = each.value
       services = local.services
     }))
-    CONTENT_TYPE = "toml"
-    DEBUG_PATH   = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.identity.service}/fly.toml" : ""
   }
 
   lifecycle_commands {

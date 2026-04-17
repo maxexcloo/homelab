@@ -2,10 +2,11 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Syncthing
+  description: File Synchronisation
   group: System
   name: syncthing
   service: syncthing
+  title: Syncthing
 networking:
   port: 20910
   scheme: http

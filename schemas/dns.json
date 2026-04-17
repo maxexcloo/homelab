@@ -1,33 +1,51 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "DNS Zone",
+  "description": "Manual DNS records for a Cloudflare-managed zone. Auto-generated records (servers, services, wildcards, ACME delegation) are not defined here.",
   "type": "object",
   "required": ["name"],
   "additionalProperties": false,
   "properties": {
     "name": {
       "type": "string",
-      "description": "Domain name of the Cloudflare zone"
+      "description": "Domain name of the Cloudflare zone (e.g. 'excloo.net'). Must match a zone in the Cloudflare account."
     },
     "records": {
       "type": "array",
+      "description": "Manual DNS records to create in this zone. These are merged with the dns defaults (ttl, proxied, priority) before being applied.",
       "items": {
         "type": "object",
         "required": ["name", "content", "type"],
         "additionalProperties": false,
         "properties": {
-          "content": { "type": "string" },
-          "name": { "type": "string" },
-          "priority": { "type": "integer" },
-          "proxied": { "type": "boolean" },
-          "ttl": { "type": "integer" },
+          "content": {
+            "type": "string",
+            "description": "Record value. For A records: an IPv4 address. For AAAA: an IPv6 address. For CNAME/MX/NS: a hostname. For TXT: a quoted string."
+          },
+          "name": {
+            "type": "string",
+            "description": "DNS record name relative to the zone (e.g. 'www', 'mail'). Use '@' for the zone apex."
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Record priority. Required for MX and SRV records; ignored for other types."
+          },
+          "proxied": {
+            "type": "boolean",
+            "description": "Whether to proxy this record through Cloudflare. Overrides the dns default. Cannot be used with TXT, MX, or NS records."
+          },
+          "ttl": {
+            "type": "integer",
+            "description": "TTL in seconds. Overrides the dns default. Use 1 for Cloudflare's automatic TTL (only valid when proxied is false)."
+          },
           "type": {
             "type": "string",
-            "enum": ["A", "AAAA", "CNAME", "MX", "NS", "SRV", "TXT"]
+            "enum": ["A", "AAAA", "CNAME", "MX", "NS", "SRV", "TXT"],
+            "description": "DNS record type."
           },
           "wildcard": {
             "type": "boolean",
-            "description": "Also create a *.name CNAME pointing to this record"
+            "description": "Also create a wildcard CNAME (*.name → name) for this record. Overrides the dns default. Only applies to A, AAAA, and CNAME records."
           }
         }
       }

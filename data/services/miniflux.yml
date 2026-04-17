@@ -4,10 +4,11 @@ deploy_to:
 features:
   password: true
 identity:
-  description: Miniflux
+  description: RSS Feed Reader
   group: Productivity
   name: miniflux
   service: miniflux
+  title: Miniflux
 networking:
   port: 30285
   scheme: http

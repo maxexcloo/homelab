@@ -3,15 +3,17 @@ locals {
     for pair in flatten([
       for k, v in local.komodo_stacks : [
         for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
-          content = templatefile("${path.module}/${filepath}", {
-            defaults = local.defaults
-            server   = local.servers[v.target]
-            servers  = local.servers
-            service  = v
-            services = local.services
-          })
           rel_path = trimprefix(filepath, "templates/docker/${v.identity.service}/")
           stack    = k
+
+          content = templatefile("${path.module}/${filepath}", {
+            defaults  = local.defaults
+            overrides = local.service_overrides[k]
+            server    = local.servers[v.target]
+            servers   = local.servers
+            service   = v
+            services  = local.services
+          })
         }
         if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
       ]
@@ -57,7 +59,7 @@ resource "github_repository_file" "komodo_servers" {
     for k, v in local.servers : <<-EOT
       [[server]]
       name = "${k}"
-      description = "${v.identity.description} (${upper(v.identity.region)})"
+      description = "${v.description}"
 
       [server.config]
       address = "https://${v.fqdn_internal}:8120"
@@ -110,7 +112,7 @@ resource "github_repository_file" "komodo_stacks" {
     for k, v in local.komodo_stacks : <<-EOT
       [[stack]]
       name = "${k}"
-      description = "${v.identity.description}"
+      description = "${v.identity.title}"
 
       [stack.config]
       auto_update = true
@@ -133,11 +135,12 @@ resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
 
     CONTENT = base64encode(templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
-      defaults = local.defaults
-      server   = local.servers[each.value.target]
-      servers  = local.servers
-      service  = each.value
-      services = local.services
+      defaults  = local.defaults
+      overrides = local.service_overrides[each.key]
+      server    = local.servers[each.value.target]
+      servers   = local.servers
+      service   = each.value
+      services  = local.services
     }))
   }
 

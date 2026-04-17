@@ -4,10 +4,11 @@ deploy_to:
 features:
   password: true
 identity:
-  description: RoMM
+  description: ROM and Game Library
   group: Media
   name: romm
   service: romm
+  title: RoMM
 networking:
   port: 8080
   scheme: http

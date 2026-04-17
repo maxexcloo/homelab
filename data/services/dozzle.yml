@@ -2,10 +2,11 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Dozzle
+  description: Docker Log Viewer
   group: System
   name: dozzle
   service: dozzle
+  title: Dozzle
 networking:
   port: 30064
   scheme: http

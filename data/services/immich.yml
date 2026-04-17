@@ -4,10 +4,11 @@ deploy_to:
 features:
   password: true
 identity:
-  description: Immich
+  description: Photo and Video Backup
   group: Media
   name: immich
   service: server
+  title: Immich
 networking:
   port: 30041
   scheme: http

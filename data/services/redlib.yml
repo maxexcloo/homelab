@@ -2,10 +2,11 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Redlib
+  description: Reddit Frontend
   group: Media
   name: redlib
   service: redlib
+  title: Redlib
 networking:
   port: 8080
   scheme: http

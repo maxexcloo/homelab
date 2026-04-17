@@ -2,7 +2,8 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Tailscale
+  description: VPN Node
   group: System
   name: tailscale
   service: tailscale
+  title: Tailscale

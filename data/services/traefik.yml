@@ -2,7 +2,8 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Traefik
+  description: Reverse Proxy
   group: System
   name: traefik
   service: traefik
+  title: Traefik

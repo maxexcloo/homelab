@@ -2,10 +2,6 @@
 parent: au
 platform: truenas
 type: server
-identity:
-  description: TrueNAS
-  name: truenas
-  region: au
 features:
   b2: true
   cloudflare_acme_token: true
@@ -13,3 +9,7 @@ features:
   password: true
   resend: true
   tailscale: true
+identity:
+  name: truenas
+  region: au
+  title: TrueNAS

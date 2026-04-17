@@ -54,6 +54,7 @@ servers:
     description: ""
     name: ""
     region: ""
+    title: ""
     username: root
   networking:
     management_address: ""
@@ -109,6 +110,7 @@ services:
     group: ""
     name: ""
     service: ""
+    title: ""
     username: ""
   networking:
     port: null

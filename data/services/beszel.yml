@@ -4,10 +4,11 @@ deploy_to:
 features:
   password: true
 identity:
-  description: Beszel
+  description: Resource Monitoring Dashboard
   group: System
   name: beszel
   service: beszel
+  title: Beszel
 networking:
   port: 30333
   scheme: http

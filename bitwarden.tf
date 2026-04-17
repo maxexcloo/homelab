@@ -58,7 +58,7 @@ resource "bitwarden_item_login" "service" {
   }
 
   collection_ids  = [data.bitwarden_org_collection.services.id]
-  name            = "${each.value.identity.description} (${each.value.target})"
+  name            = "${each.value.identity.title} (${each.value.target})"
   organization_id = data.bitwarden_organization.default.id
   password        = each.value.password_sensitive
   username        = each.value.identity.username

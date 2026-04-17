@@ -2,7 +2,8 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Beszel Agent
+  description: Resource Monitoring Agent
   group: System
   name: beszel-agent
   service: beszel-agent
+  title: Beszel Agent

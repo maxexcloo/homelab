@@ -4,10 +4,11 @@ deploy_to:
 features:
   password: true
 identity:
-  description: Vaultwarden
+  description: Password Manager
   group: Security
   name: vaultwarden
   service: vaultwarden
+  title: Vaultwarden
 networking:
   port: 30032
   scheme: https

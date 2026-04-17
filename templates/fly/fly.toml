@@ -9,14 +9,9 @@ dockerfile = "Dockerfile"
 %{ endif ~}
 
 [http_service]
-force_https = true
+force_https = ${service.networking.ssl}
 internal_port = ${service.networking.port}
 min_machines_running = ${service.platform_config.fly.min_machines_running}
-%{ for url in service.networking.urls ~}
-
-[[http_service.certs]]
-hostname = "${url}"
-%{ endfor ~}
 
 [[vm]]
 cpu_kind = "${service.platform_config.fly.cpu_kind}"

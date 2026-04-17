@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=../../schemas/server.json
 platform: oci
 type: vm
-identity:
-  description: HSP
-  name: hsp
-  region: au
-  username: max.schaefer
 features:
   cloudflare_acme_token: true
   cloudflare_zero_trust_tunnel: true
   docker: true
   password: true
   tailscale: true
+identity:
+  name: hsp
+  region: au
+  title: HSP
+  username: max.schaefer
 platform_config:
   oci:
     cpus: 4

@@ -7,7 +7,7 @@ alerting:
     to: ${defaults.organization.email}
     username: ${defaults.resend.username}
     default-alert:
-      description: ${service.identity.description} Check Failed
+      description: ${service.identity.title} Check Failed
       failure-threshold: 5
       send-on-resolved: true
       success-threshold: 5
@@ -36,7 +36,7 @@ endpoints:
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
     group: "Services"
-    name: "${svc.identity.description} (${svc.target})"
+    name: "${svc.identity.title} (${svc.target})"
     url: "${svc.networking.ssl ? "https" : "http"}://${url}"
 %{ endfor ~}
 %{ if svc.fqdn_external != null ~}
@@ -53,7 +53,7 @@ endpoints:
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
     group: "Services (External)"
-    name: "${svc.identity.description} (${svc.target})"
+    name: "${svc.identity.title} (${svc.target})"
     url: "${svc.networking.ssl ? "https" : "http"}://${svc.fqdn_external}"
 %{ endif ~}
 %{ if svc.fqdn_internal != null ~}
@@ -70,11 +70,14 @@ endpoints:
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
     group: "Services (Internal)"
-    name: "${svc.identity.description} (${svc.target})"
+    name: "${svc.identity.title} (${svc.target})"
     url: "${svc.networking.ssl ? "https" : "http"}://${svc.fqdn_internal}"
 %{ endif ~}
 %{ endfor ~}
 ui:
+  dashboard-heading: ${service.identity.title}
+  dashboard-subheading: ${service.identity.description}
+  default-sort-by: group
   description: ${service.identity.description}
-  header: ${service.identity.name}
-  title: ${service.identity.name}
+  header: ${service.identity.title}
+  title: ${service.identity.title}

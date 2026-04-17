@@ -2,10 +2,10 @@
 parent: au
 platform: unmanaged
 type: server
-identity:
-  description: Malatang
-  name: malatang
-  region: au
 features:
   cloudflare_acme_token: true
   tailscale: true
+identity:
+  name: malatang
+  region: au
+  title: Malatang

@@ -8,10 +8,11 @@ features:
       type: base64
       length: 32
 identity:
-  description: Linkwarden
+  description: Bookmark and Web Archive Manager
   group: Productivity
   name: linkwarden
   service: linkwarden
+  title: Linkwarden
 networking:
   port: 30243
   scheme: http

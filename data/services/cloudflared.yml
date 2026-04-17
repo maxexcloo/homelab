@@ -2,7 +2,8 @@
 deploy_to:
   - au-truenas
 identity:
-  description: Cloudflared
+  description: Cloudflare Tunnel Daemon
   group: System
   name: cloudflared
   service: cloudflared
+  title: Cloudflared

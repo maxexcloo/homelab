@@ -2,13 +2,13 @@
 parent: au
 platform: unmanaged
 type: server
-identity:
-  description: HAOS
-  name: haos
-  region: au
 features:
   b2: true
   cloudflare_acme_token: true
   cloudflare_zero_trust_tunnel: true
   password: true
   tailscale: true
+identity:
+  name: haos
+  region: au
+  title: HAOS

@@ -5,10 +5,11 @@ features:
   resend: true
   tailscale: true
 identity:
-  description: Gatus
+  description: Health Monitoring and Status Page
   group: System
   name: gatus
   service: gatus
+  title: Gatus
 networking:
   port: 8080
   scheme: http
