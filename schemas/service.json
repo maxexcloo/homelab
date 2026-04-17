@@ -84,7 +84,7 @@
         },
         "service": {
           "type": "string",
-          "description": "Template directory key. Resolves to templates/docker/{service}/ for compose files and per-service config templates. Defaults to identity.name if omitted."
+          "description": "Template directory key. Resolves to services/{service}/ for compose files and per-service config templates. Defaults to identity.name if omitted."
         },
         "title": {
           "type": "string",

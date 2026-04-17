@@ -1,15 +1,15 @@
 locals {
-  komodo_stack_configs = {
-    for k, v in local.service_config_files : k => v
-    if local.servers[v.target].features.docker
-  }
-
   komodo_stacks = {
     for k, v in local.services : k => v
     if v.identity.service != "" &&
     contains(keys(local.servers), v.target) &&
     local.servers[v.target].features.docker &&
-    fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml")
+    fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
+  }
+
+  komodo_stacks_config = {
+    for k, v in local.services_config : k => v
+    if local.servers[v.target].features.docker
   }
 }
 
@@ -65,26 +65,6 @@ resource "github_repository_file" "komodo_sops_config" {
   ))
 }
 
-resource "github_repository_file" "komodo_stack_compose" {
-  for_each = local.komodo_stacks
-
-  commit_message      = "Update ${each.key} SOPS-encrypted compose"
-  content             = shell_sensitive_script.komodo_stack_compose_encrypt[each.key].output["encrypted_content"]
-  file                = "${each.key}/compose.yaml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-}
-
-resource "github_repository_file" "komodo_stack_configs" {
-  for_each = local.komodo_stack_configs
-
-  commit_message      = "Update ${each.value.stack} config"
-  content             = shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"]
-  file                = each.key
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-}
-
 resource "github_repository_file" "komodo_stacks" {
   commit_message      = "Update Komodo stack configurations"
   file                = "stacks.toml"
@@ -109,7 +89,27 @@ resource "github_repository_file" "komodo_stacks" {
   ])
 }
 
-resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
+resource "github_repository_file" "komodo_stacks_compose" {
+  for_each = local.komodo_stacks
+
+  commit_message      = "Update ${each.key} SOPS-encrypted compose"
+  content             = shell_sensitive_script.komodo_stacks_compose_encrypt[each.key].output["encrypted_content"]
+  file                = "${each.key}/compose.yaml"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.komodo
+}
+
+resource "github_repository_file" "komodo_stacks_config" {
+  for_each = local.komodo_stacks_config
+
+  commit_message      = "Update ${each.value.stack} config"
+  content             = shell_sensitive_script.service_config_encrypt[each.key].output["encrypted_content"]
+  file                = each.key
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.komodo
+}
+
+resource "shell_sensitive_script" "komodo_stacks_compose_encrypt" {
   for_each = local.komodo_stacks
 
   environment = {
@@ -117,10 +117,10 @@ resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
     CONTENT_TYPE   = "yaml"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
 
-    CONTENT = base64encode(templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
+    CONTENT = base64encode(templatefile("${path.module}/services/${each.value.identity.service}/docker-compose.yaml", {
       defaults = local.defaults
-      env      = local.service_env[each.key]
-      labels   = local.service_labels[each.key]
+      env      = local.services_env[each.key]
+      labels   = local.services_labels[each.key]
       server   = local.servers[each.value.target]
       servers  = local.servers
       service  = each.value

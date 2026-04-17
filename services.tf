@@ -17,32 +17,32 @@ locals {
     }
   ]...)
 
-  service_config_files = {
+  services_config = {
     for pair in flatten([
       for k, v in local.services : [
-        for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
+        for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
+          rel_path     = trimprefix(filepath, "services/${v.identity.service}/")
+          service_name = v.identity.service
+          stack        = k
+          target       = v.target
+
           content = templatefile("${path.module}/${filepath}", {
             defaults = local.defaults
-            env      = local.service_env[k]
-            labels   = local.service_labels[k]
+            env      = local.services_env[k]
+            labels   = local.services_labels[k]
             server   = local.servers[v.target]
             servers  = local.servers
             service  = v
             services = local.services
           })
-          rel_path     = trimprefix(filepath, "templates/docker/${v.identity.service}/")
-          service_name = v.identity.service
-          stack        = k
-          target       = v.target
         }
         if !endswith(filepath, "docker-compose.yaml") && can(regex("\\.(yaml|yml|toml)$", filepath))
       ]
-      if fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml") &&
-      contains(keys(local.servers), v.target)
+      if contains(keys(local.servers), v.target) && fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
     ]) : "${pair.stack}/${pair.rel_path}" => pair
   }
 
-  service_env = {
+  services_env = {
     for k, v in local.services : k => {
       for key, value in v.platform_config.docker.env :
       key => try(templatestring(tostring(value), { defaults = local.defaults, server = try(local.servers[v.target], null), servers = local.servers, service = v }), tostring(value))
@@ -50,35 +50,35 @@ locals {
     }
   }
 
-  service_labels = {
-    for k, v in local.services : k => { for label, value in merge(
-      v.networking.scheme != null ? {
-        "homepage.description" = v.identity.description != "" ? v.identity.description : null
-        "homepage.group"       = v.identity.group != "" ? v.identity.group : null
-        "homepage.href"        = v.fqdn_external != null ? "https://${v.fqdn_external}" : (v.fqdn_internal != null ? "${v.networking.ssl ? "https" : "http"}://${v.fqdn_internal}" : null)
-        "homepage.icon"        = v.identity.icon != "" ? v.identity.icon : "${v.identity.service}.svg"
-        "homepage.name"        = v.identity.title != "" ? v.identity.title : v.identity.name
-      } : {},
-      v.networking.port != null ? merge(
-        {
-          "traefik.enable"                                                       = "true"
-          "traefik.http.routers.${v.identity.service}.middlewares"               = v.networking.expose == "tailscale" ? "tailscale-only@docker" : (v.networking.expose == "internal" ? "internal-only@docker" : null)
-          "traefik.http.routers.${v.identity.service}.rule"                      = v.fqdn_external != null ? "Host(`${v.fqdn_external}`)" : (v.fqdn_internal != null ? "Host(`${v.fqdn_internal}`)" : null)
-          "traefik.http.services.${v.identity.service}.loadbalancer.server.port" = tostring(v.networking.port)
-        },
-        !v.networking.ssl ? {
-          "traefik.http.routers.${v.identity.service}.entrypoints" = "web"
+  services_labels = {
+    for k, v in local.services : k => {
+      for label, value in merge(
+        v.networking.scheme != null ? {
+          "homepage.description" = v.identity.description
+          "homepage.group"       = v.identity.group
+          "homepage.href"        = v.fqdn_external != null ? "https://${v.fqdn_external}" : (length(v.networking.urls) > 0 ? "https://${v.networking.urls[0]}" : (v.fqdn_internal != null ? "${v.networking.ssl ? "https" : "http"}://${v.fqdn_internal}" : null))
+          "homepage.icon"        = coalesce(v.identity.icon, v.identity.service)
+          "homepage.name"        = coalesce(v.identity.title, v.identity.name)
         } : {},
-        v.networking.scheme == "https" ? {
-          "traefik.http.services.${v.identity.service}.loadbalancer.server.scheme" = "https"
-        } : {}
-      ) : {},
-      {
-        for key, value in v.platform_config.docker.labels :
-        key => try(templatestring(tostring(value), { defaults = local.defaults, server = try(local.servers[v.target], null), servers = local.servers, service = v }), tostring(value))
-        if value != null
-      }
-    ) : label => value if value != null }
+        v.networking.port != null ? {
+          "traefik.enable"                                                         = "true"
+          "traefik.http.routers.${v.identity.service}.entrypoints"                 = v.networking.ssl ? null : "web"
+          "traefik.http.routers.${v.identity.service}.middlewares"                 = v.networking.expose == "tailscale" ? "tailscale-only@docker" : (v.networking.expose == "internal" ? "internal-only@docker" : null)
+          "traefik.http.services.${v.identity.service}.loadbalancer.server.port"   = tostring(v.networking.port)
+          "traefik.http.services.${v.identity.service}.loadbalancer.server.scheme" = v.networking.scheme == "https" ? "https" : null
+          "traefik.http.routers.${v.identity.service}.rule" = join(" || ", concat(
+            v.fqdn_internal != null ? ["Host(`${v.fqdn_internal}`)"] : [],
+            v.fqdn_external != null ? ["Host(`${v.fqdn_external}`)"] : [],
+            [for url in v.networking.urls : "Host(`${url}`)"]
+          ))
+        } : {},
+        {
+          for key, value in v.platform_config.docker.labels :
+          key => try(templatestring(tostring(value), { defaults = local.defaults, server = try(local.servers[v.target], null), servers = local.servers, service = v }), tostring(value))
+          if value != null
+        }
+      ) : label => value if value != null
+    }
   }
 
   services = {
@@ -93,6 +93,9 @@ locals {
           ) :
           random_password.service_secret["${k}-${secret.name}"].result
         )
+      },
+      {
+        for i, url in v.networking.urls : "url_${i}" => url
       },
       v.features.b2 ? {
         b2_application_key_id        = b2_application_key.service[k].application_key_id
@@ -117,8 +120,7 @@ locals {
         contains(["cloudflare", "external"], v.networking.expose) ? {
           fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
         } : {}
-      ) : {},
-      { for i, url in v.networking.urls : "url_${i}" => url }
+      ) : {}
     )
   }
 
@@ -132,8 +134,13 @@ locals {
 
   services_filtered = {
     for k, v in local.services : k => merge(
-      { for kk, vv in v : kk => vv if vv != null && vv != "" && vv != false },
-      v.target == "fly" ? { url_fly = "${v.identity.name}-${random_string.fly_service[k].result}.fly.dev" } : {}
+      {
+        for kk, vv in v : kk => vv
+        if vv != null && vv != "" && vv != false
+      },
+      v.target == "fly" ? {
+        url_fly = "${v.identity.name}-${random_string.fly_service[k].result}.fly.dev"
+      } : {}
     )
   }
 }
@@ -179,7 +186,7 @@ resource "random_password" "service_secret" {
 }
 
 resource "shell_sensitive_script" "service_config_encrypt" {
-  for_each = local.service_config_files
+  for_each = local.services_config
 
   environment = {
     AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key

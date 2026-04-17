@@ -1,7 +1,7 @@
 locals {
   _defaults = yamldecode(file("${path.module}/data/defaults.yml"))
 
-  _dns_raw = {
+  _dns = {
     for filepath in fileset(path.module, "data/dns/*.yml") :
     filepath => yamldecode(file("${path.module}/${filepath}"))
   }
@@ -12,12 +12,14 @@ locals {
   }
 
   dns = {
-    for filepath, data in local._dns_raw :
+    for filepath, data in local._dns :
     data.name => try(data.records, [])
   }
 
-  dns_defaults     = local._defaults.dns
-  server_defaults  = local._defaults.servers
+  dns_defaults = local._defaults.dns
+
+  server_defaults = local._defaults.servers
+
   service_defaults = local._defaults.services
 
   sops_encrypt_script = <<-EOT

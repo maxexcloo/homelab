@@ -1,5 +1,12 @@
 locals {
-  fly_service_env = {
+  fly_services = {
+    for k, v in local.services : k => merge(v, {
+      app_name = "${v.identity.name}-${random_string.fly_service[k].result}"
+    })
+    if v.target == "fly"
+  }
+
+  fly_services_env = {
     for k, v in local.fly_services : k => join("\n", [
       for field_name, field_value in v :
       "${upper(trimsuffix(field_name, "_sensitive"))}=${field_value}"
@@ -11,12 +18,12 @@ locals {
     ])
   }
 
-  fly_service_files = {
+  fly_services_file = {
     for pair in flatten([
       for k, v in local.fly_services : [
-        for filepath in fileset(path.module, "templates/docker/${v.identity.service}/**") : {
+        for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
           app_name = v.app_name
-          rel_path = trimprefix(filepath, "templates/docker/${v.identity.service}/")
+          rel_path = trimprefix(filepath, "services/${v.identity.service}/")
           stack    = k
 
           content = templatefile("${path.module}/${filepath}", {
@@ -31,13 +38,6 @@ locals {
       ]
     ]) : "${pair.stack}/${pair.rel_path}" => pair
   }
-
-  fly_services = {
-    for k, v in local.services : k => merge(v, {
-      app_name = "${v.identity.name}-${random_string.fly_service[k].result}"
-    })
-    if v.target == "fly"
-  }
 }
 
 resource "github_actions_secret" "fly_age_key" {
@@ -46,8 +46,11 @@ resource "github_actions_secret" "fly_age_key" {
   secret_name     = "AGE_KEY"
 }
 
-resource "github_repository_file" "fly_certs" {
-  for_each = { for k, v in local.fly_services : k => v if length(v.networking.urls) > 0 }
+resource "github_repository_file" "fly_services_cert" {
+  for_each = {
+    for k, v in local.fly_services : k => v
+    if length(v.networking.urls) > 0
+  }
 
   commit_message      = "Update ${each.value.app_name} certificate hostnames"
   content             = join("\n", each.value.networking.urls)
@@ -56,22 +59,32 @@ resource "github_repository_file" "fly_certs" {
   repository          = local.defaults.github.repositories.fly
 }
 
-resource "github_repository_file" "fly_service_env" {
-  for_each = toset(nonsensitive(keys(local.fly_service_env)))
+resource "github_repository_file" "fly_services_env" {
+  for_each = toset(nonsensitive(keys(local.fly_services_env)))
 
   commit_message      = "Update ${local.fly_services[each.key].app_name} secrets"
-  content             = shell_sensitive_script.fly_service_env_encrypt[each.key].output["encrypted_content"]
+  content             = shell_sensitive_script.fly_services_env_encrypt[each.key].output["encrypted_content"]
   file                = "${local.fly_services[each.key].app_name}/.env"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
 
-resource "github_repository_file" "fly_service_files" {
-  for_each = local.fly_service_files
+resource "github_repository_file" "fly_services_file" {
+  for_each = local.fly_services_file
 
   commit_message      = "Update ${each.value.app_name} ${each.value.rel_path}"
-  content             = shell_sensitive_script.fly_service_files_encrypt[each.key].output["encrypted_content"]
+  content             = shell_sensitive_script.fly_services_file_encrypt[each.key].output["encrypted_content"]
   file                = "${each.value.app_name}/${each.value.rel_path}"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.fly
+}
+
+resource "github_repository_file" "fly_services_toml" {
+  for_each = local.fly_services
+
+  commit_message      = "Update ${each.value.app_name} Fly configuration"
+  content             = shell_sensitive_script.fly_services_toml_encrypt[each.key].output["encrypted_content"]
+  file                = "${each.value.app_name}/fly.toml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
@@ -84,30 +97,23 @@ resource "github_repository_file" "fly_sops_config" {
   repository          = local.defaults.github.repositories.fly
 }
 
-resource "github_repository_file" "fly_toml" {
-  for_each = local.fly_services
-
-  commit_message      = "Update ${each.value.app_name} Fly configuration"
-  content             = shell_sensitive_script.fly_toml_encrypt[each.key].output["encrypted_content"]
-  file                = "${each.value.app_name}/fly.toml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
-}
-
 resource "random_string" "fly_service" {
-  for_each = { for k, v in local.services : k => v if v.target == "fly" }
+  for_each = {
+    for k, v in local.services : k => v
+    if v.target == "fly"
+  }
 
   length  = 6
   special = false
   upper   = false
 }
 
-resource "shell_sensitive_script" "fly_service_env_encrypt" {
-  for_each = toset(nonsensitive(keys(local.fly_service_env)))
+resource "shell_sensitive_script" "fly_services_env_encrypt" {
+  for_each = toset(nonsensitive(keys(local.fly_services_env)))
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
-    CONTENT        = base64encode(local.fly_service_env[each.key])
+    CONTENT        = base64encode(local.fly_services_env[each.key])
     CONTENT_TYPE   = "dotenv"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${local.fly_services[each.key].identity.service}/.env" : ""
   }
@@ -125,8 +131,8 @@ resource "shell_sensitive_script" "fly_service_env_encrypt" {
   }
 }
 
-resource "shell_sensitive_script" "fly_service_files_encrypt" {
-  for_each = local.fly_service_files
+resource "shell_sensitive_script" "fly_services_file_encrypt" {
+  for_each = local.fly_services_file
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
@@ -148,7 +154,7 @@ resource "shell_sensitive_script" "fly_service_files_encrypt" {
   }
 }
 
-resource "shell_sensitive_script" "fly_toml_encrypt" {
+resource "shell_sensitive_script" "fly_services_toml_encrypt" {
   for_each = local.fly_services
 
   environment = {
