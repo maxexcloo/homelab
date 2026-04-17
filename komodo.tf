@@ -8,6 +8,7 @@ locals {
 
           content = templatefile("${path.module}/${filepath}", {
             defaults = local.defaults
+            env      = local.service_env[k]
             labels   = local.service_labels[k]
             server   = local.servers[v.target]
             servers  = local.servers
@@ -27,7 +28,6 @@ locals {
     local.servers[v.target].features.docker &&
     fileexists("${path.module}/templates/docker/${v.identity.service}/docker-compose.yaml")
   }
-
 }
 
 resource "github_repository_file" "komodo_resource_sync" {
@@ -136,6 +136,7 @@ resource "shell_sensitive_script" "komodo_stack_compose_encrypt" {
 
     CONTENT = base64encode(templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
       defaults = local.defaults
+      env      = local.service_env[each.key]
       labels   = local.service_labels[each.key]
       server   = local.servers[each.value.target]
       servers  = local.servers

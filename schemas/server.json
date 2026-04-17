@@ -39,7 +39,7 @@
         },
         "cloudflare_zero_trust_tunnel": {
           "type": "boolean",
-          "description": "Create a Cloudflare Zero Trust tunnel. Exposes cloudflare_zero_trust_tunnel_token_sensitive. Services targeting this server with cloudflare_proxy enabled route through this tunnel."
+          "description": "Create a Cloudflare Zero Trust tunnel. Exposes cloudflare_zero_trust_tunnel_token_sensitive. Services with networking.expose set to 'cloudflare' route through this tunnel."
         },
         "docker": {
           "type": "boolean",

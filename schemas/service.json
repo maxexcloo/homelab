@@ -101,6 +101,10 @@
       "description": "Network exposure configuration for this service.",
       "additionalProperties": false,
       "properties": {
+        "expose": {
+          "enum": ["cloudflare", "external", "internal", "tailscale", null],
+          "description": "Access level for this service. 'tailscale': accessible only via Tailscale (tailscale-only middleware). 'internal': accessible on the internal network and Tailscale (internal-only middleware). 'external': publicly accessible via direct DNS. 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. Null uses no middleware and creates no DNS records."
+        },
         "port": {
           "type": ["integer", "null"],
           "description": "Port the service listens on. Required for Fly.io deployments. Used as the Traefik backend port for TrueNAS standard services, and as the Fly.io internal_port."
@@ -134,22 +138,14 @@
           "description": "Configuration for Docker-based deployments (Komodo and TrueNAS custom apps).",
           "additionalProperties": false,
           "properties": {
-            "container": {
-              "type": "string",
-              "description": "Name of the container to attach Traefik and Homepage labels to. Defaults to identity.service."
-            },
-            "middleware": {
-              "type": "string",
-              "description": "Traefik middleware name to apply to this service's HTTP router (e.g. for authentication or rate limiting)."
-            },
-            "config": {
+            "env": {
               "type": "object",
-              "description": "Extra key-value pairs injected as template variables when rendering the service's compose and config templates. Useful for service-specific settings that do not belong in the standard schema.",
+              "description": "Extra environment variables merged into the service's computed env map. Values support template interpolation with ${service.*} and ${defaults.*}.",
               "additionalProperties": { "type": "string" }
             },
             "labels": {
               "type": "object",
-              "description": "Extra labels merged into the auto-generated Homepage and Traefik labels. Applied as container labels on TrueNAS standard apps.",
+              "description": "Extra labels merged into the auto-generated Homepage and Traefik labels. Values support template interpolation with ${service.*} and ${defaults.*}.",
               "additionalProperties": { "type": "string" }
             }
           }

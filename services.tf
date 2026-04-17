@@ -17,6 +17,14 @@ locals {
     }
   ]...)
 
+  service_env = {
+    for k, v in local.services : k => {
+      for key, value in v.platform_config.docker.env :
+      key => try(templatestring(tostring(value), { defaults = local.defaults, service = v }), tostring(value))
+      if value != null
+    }
+  }
+
   service_labels = {
     for k, v in local.services : k => { for label, value in merge(
       v.networking.scheme != null ? merge(
@@ -36,7 +44,7 @@ locals {
       v.networking.port != null ? merge(
         {
           "traefik.enable"                                                       = "true"
-          "traefik.http.routers.${v.identity.service}.middlewares"               = v.platform_config.docker.middleware
+          "traefik.http.routers.${v.identity.service}.middlewares"               = v.networking.expose == "tailscale" ? "tailscale-only@docker" : (v.networking.expose == "internal" ? "internal-only@docker" : null)
           "traefik.http.routers.${v.identity.service}.rule"                      = v.fqdn_external != null ? "Host(`${v.fqdn_external}`)" : null
           "traefik.http.services.${v.identity.service}.loadbalancer.server.port" = tostring(v.networking.port)
         },
@@ -47,7 +55,11 @@ locals {
           "traefik.http.services.${v.identity.service}.loadbalancer.server.scheme" = "https"
         } : {}
       ) : {},
-      v.platform_config.docker.labels
+      {
+        for key, value in v.platform_config.docker.labels :
+        key => try(templatestring(tostring(value), { defaults = local.defaults, service = v }), tostring(value))
+        if value != null
+      }
     ) : label => value if value != null }
   }
 

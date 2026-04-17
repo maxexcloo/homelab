@@ -112,7 +112,7 @@ locals {
     )
     if contains(keys(local.servers), service.target) &&
     local.servers[service.target].features.cloudflare_zero_trust_tunnel &&
-    service.features.cloudflare_proxy
+    service.networking.expose == "cloudflare"
   }
 
   dns_records_services_fly = merge(flatten([
@@ -123,7 +123,7 @@ locals {
           {
             content = "${service.app_name}.fly.dev"
             name    = url
-            proxied = service.features.cloudflare_proxy
+            proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"
             zone = try(
               split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
@@ -143,12 +143,12 @@ locals {
           local.dns_defaults,
           {
             content = (
-              local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.features.cloudflare_proxy ?
+              local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.networking.expose == "cloudflare" ?
               "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
               "${service.identity.name}.${local.servers[service.target].fqdn}.${local.defaults.domains.internal}"
             )
             name    = url
-            proxied = service.features.cloudflare_proxy
+            proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"
             zone = try(
               split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],

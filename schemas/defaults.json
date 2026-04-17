@@ -47,7 +47,7 @@
         },
         "proxied": {
           "type": "boolean",
-          "description": "Whether to proxy records through Cloudflare by default. Individual service records override this based on their cloudflare_proxy feature flag."
+          "description": "Whether to proxy records through Cloudflare by default. Individual service records override this based on their networking.expose setting."
         },
         "ttl": {
           "type": "integer",

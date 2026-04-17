@@ -15,6 +15,7 @@ locals {
 
           content = templatefile("${path.module}/${filepath}", {
             defaults = local.defaults
+            env      = local.service_env[k]
             labels   = local.service_labels[k]
             server   = local.servers[v.target]
             servers  = local.servers
@@ -101,6 +102,7 @@ resource "shell_sensitive_script" "truenas_compose_encrypt" {
 
       custom_compose_config_string = templatefile("${path.module}/templates/docker/${each.value.identity.service}/docker-compose.yaml", {
         defaults = local.defaults
+        env      = local.service_env[each.key]
         labels   = local.service_labels[each.key]
         server   = local.servers[each.value.target]
         servers  = local.servers

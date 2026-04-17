@@ -100,7 +100,6 @@ services:
   deploy_to: []
   features:
     b2: false
-    cloudflare_proxy: false
     password: false
     resend: false
     tailscale: false
@@ -114,6 +113,7 @@ services:
     title: ""
     username: ""
   networking:
+    expose: internal
     port: null
     scheme: null
     ssl: true
@@ -121,8 +121,7 @@ services:
     urls: []
   platform_config:
     docker:
-      container: null
-      middleware: null
+      env: {}
       labels: {}
     fly:
       cpu_kind: shared
