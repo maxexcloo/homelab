@@ -1,10 +1,9 @@
 [tools]
-opentofu = "latest"
-prettier = "latest"
-sops = "latest"
+opentofu = "1"
+prettier = "3"
+sops = "3"
 
 [env]
-TF_CLI_ARGS_init = "-upgrade"
 TF_CLI_ARGS_plan = "-parallelism=20"
 TF_CLI_ARGS_apply = "-parallelism=20"
 

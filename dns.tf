@@ -20,7 +20,7 @@ locals {
 
   dns_records_manual = merge([
     for zone, records in local.dns : {
-      for record in records : "${zone}-manual-${record.type}-${substr(sha256(jsonencode(record)), 0, 8)}" => provider::deepmerge::mergo(
+      for record in records : "${zone}-manual-${try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))}" => provider::deepmerge::mergo(
         local.dns_defaults,
         merge(
           record,

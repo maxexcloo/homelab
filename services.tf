@@ -241,6 +241,18 @@ resource "terraform_data" "services_validation" {
       condition     = length([for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null]) == 0
       error_message = "Fly services must have networking.port set: ${join(", ", [for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null])}"
     }
+
+    precondition {
+      condition = length(flatten([
+        for k, v in local._services : [
+          for target in v.deploy_to : "${k} -> ${target}"
+          if contains(keys(local.servers), target) &&
+          v.networking.expose == "cloudflare" &&
+          !local.servers[target].features.cloudflare_zero_trust_tunnel
+        ]
+      ])) == 0
+      error_message = "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if contains(keys(local.servers), target) && v.networking.expose == "cloudflare" && !local.servers[target].features.cloudflare_zero_trust_tunnel]]))}"
+    }
   }
 }
 

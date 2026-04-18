@@ -56,7 +56,7 @@ locals {
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
       v.features.cloudflare_acme_token ? {
-        cloudflare_acme_account_id      = data.cloudflare_accounts.default.result[0].id
+        cloudflare_acme_account_id      = data.cloudflare_account.default.id
         cloudflare_acme_token_sensitive = cloudflare_account_token.server_acme[k].value
       } : {},
       v.features.cloudflare_zero_trust_tunnel ? {

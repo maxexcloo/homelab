@@ -52,9 +52,9 @@ resource "github_repository_file" "fly_services_file" {
     if v.target == "fly"
   }
 
-  commit_message      = "Update ${each.value.platform_config.fly.app_name} ${each.value.rel_path}"
+  commit_message      = "Update ${local.fly_services[each.value.stack].platform_config.fly.app_name} ${each.value.rel_path}"
   content             = shell_sensitive_script.service_file_encrypt[each.key].output["encrypted_content"]
-  file                = "${each.value.platform_config.fly.app_name}/${each.value.rel_path}"
+  file                = "${local.fly_services[each.value.stack].platform_config.fly.app_name}/${each.value.rel_path}"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
@@ -79,7 +79,7 @@ resource "github_repository_file" "fly_sops_config" {
 
 resource "random_string" "fly_service" {
   for_each = {
-    for k, v in local.services : k => v
+    for k, v in local._services_computed : k => v
     if v.target == "fly"
   }
 

@@ -1,9 +1,13 @@
-data "cloudflare_accounts" "default" {}
+data "cloudflare_account" "default" {
+  filter = {
+    name = local.defaults.cloudflare.account_name
+  }
+}
 
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "server" {
   for_each = cloudflare_zero_trust_tunnel_cloudflared.server
 
-  account_id = data.cloudflare_accounts.default.result[0].id
+  account_id = data.cloudflare_account.default.id
   tunnel_id  = each.value.id
 }
 
@@ -18,7 +22,7 @@ data "cloudflare_zone" "all" {
 resource "cloudflare_account_token" "server_acme" {
   for_each = local.servers_by_feature.cloudflare_acme_token
 
-  account_id = data.cloudflare_accounts.default.result[0].id
+  account_id = data.cloudflare_account.default.id
   name       = each.key
 
   policies = [
@@ -124,7 +128,7 @@ resource "cloudflare_dns_record" "wildcard" {
 resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
   for_each = local.servers_by_feature.cloudflare_zero_trust_tunnel
 
-  account_id = data.cloudflare_accounts.default.result[0].id
+  account_id = data.cloudflare_account.default.id
   config_src = "cloudflare"
   name       = each.key
 }

@@ -36,6 +36,17 @@
         }
       }
     },
+    "cloudflare": {
+      "type": "object",
+      "description": "Cloudflare account settings used for account-scoped resources.",
+      "additionalProperties": false,
+      "properties": {
+        "account_name": {
+          "type": "string",
+          "description": "Cloudflare account name to look up for account-scoped resources."
+        }
+      }
+    },
     "dns": {
       "type": "object",
       "description": "Default values merged into all auto-generated DNS records. Individual records may override these.",

@@ -22,6 +22,10 @@
             "type": "string",
             "description": "Record value. For A records: an IPv4 address. For AAAA: an IPv6 address. For CNAME/MX/NS: a hostname. For TXT: a quoted string."
           },
+          "id": {
+            "type": "string",
+            "description": "Stable identifier for records that share the same type and name. Changing this value recreates the Terraform resource address."
+          },
           "name": {
             "type": "string",
             "description": "DNS record name relative to the zone (e.g. 'www', 'mail'). Use '@' for the zone apex."

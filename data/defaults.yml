@@ -6,6 +6,9 @@ bitwarden:
     servers: Servers
     services: Services
 
+cloudflare:
+  account_name: excloo
+
 dns:
   priority: null
   proxied: false

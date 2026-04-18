@@ -164,6 +164,16 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_icmp" {
   source_type               = "CIDR_BLOCK"
 }
 
+resource "oci_core_network_security_group_security_rule" "server_ingress_icmp_ipv6" {
+  for_each = local.oci_vms
+
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.server[each.key].id
+  protocol                  = "1"
+  source                    = "::/0"
+  source_type               = "CIDR_BLOCK"
+}
+
 resource "oci_core_network_security_group_security_rule" "server_ingress_tcp" {
   for_each = merge([
     for k, v in local.oci_vms : {
@@ -188,6 +198,30 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_tcp" {
   }
 }
 
+resource "oci_core_network_security_group_security_rule" "server_ingress_tcp_ipv6" {
+  for_each = merge([
+    for k, v in local.oci_vms : {
+      for port in v.platform_config.oci.ingress_ports : "${k}-tcp-${port}" => {
+        vm_key = k
+        port   = port
+      }
+    }
+  ]...)
+
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
+  protocol                  = "6"
+  source                    = "::/0"
+  source_type               = "CIDR_BLOCK"
+
+  tcp_options {
+    destination_port_range {
+      max = each.value.port
+      min = each.value.port
+    }
+  }
+}
+
 resource "oci_core_network_security_group_security_rule" "server_ingress_udp" {
   for_each = merge([
     for k, v in local.oci_vms : {
@@ -202,6 +236,30 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_udp" {
   network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
   protocol                  = "17"
   source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
+
+  udp_options {
+    destination_port_range {
+      max = each.value.port
+      min = each.value.port
+    }
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "server_ingress_udp_ipv6" {
+  for_each = merge([
+    for k, v in local.oci_vms : {
+      for port in v.platform_config.oci.ingress_ports : "${k}-udp-${port}" => {
+        vm_key = k
+        port   = port
+      }
+    }
+  ]...)
+
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
+  protocol                  = "17"
+  source                    = "::/0"
   source_type               = "CIDR_BLOCK"
 
   udp_options {

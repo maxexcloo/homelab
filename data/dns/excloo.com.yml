@@ -42,10 +42,12 @@ records:
     ttl: 1
     type: MX
   - content: '"v=DMARC1; p=none;"'
+    id: txt-apex-dmarc
     name: "@"
     ttl: 1
     type: TXT
   - content: '"v=spf1 include:spf.messagingengine.com ?all"'
+    id: txt-apex-spf
     name: "@"
     ttl: 1
     type: TXT
