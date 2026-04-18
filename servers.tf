@@ -1,4 +1,5 @@
 locals {
+  # Merge schema defaults into each server file before deriving inherited fields.
   _servers = {
     for k, v in {
       for filepath in fileset(path.module, "data/servers/*.yml") :
@@ -6,6 +7,8 @@ locals {
     } : k => provider::deepmerge::mergo(local.server_defaults, v)
   }
 
+  # Inheritance is intentionally bounded to self, parent, and grandparent; the
+  # validation below fails if data tries to exceed that model.
   _servers_ancestors = {
     for k, v in local._servers : k => compact([
       k,
@@ -80,6 +83,8 @@ locals {
     )
   }
 
+  # Filter maps use the merged data, not provider-enriched servers, to avoid
+  # accidentally making feature resources depend on the resources they create.
   servers_by_feature = {
     for feature in keys(local.server_defaults.features) : feature => {
       for k, v in local._servers : k => v
@@ -105,6 +110,7 @@ resource "terraform_data" "servers_validation" {
   input = keys(local._servers)
 
   lifecycle {
+    # Incus remotes are configured from parent server management addresses.
     precondition {
       condition     = length([for k, v in local._servers : k if v.platform == "incus" && v.type == "vm" && (v.parent == "" || try(local._servers[v.parent].platform != "incus" || local._servers[v.parent].type != "server" || local._servers[v.parent].networking.management_address == "", true))]) == 0
       error_message = "Incus VMs must reference an Incus server parent with networking.management_address set: ${join(", ", [for k, v in local._servers : k if v.platform == "incus" && v.type == "vm" && (v.parent == "" || try(local._servers[v.parent].platform != "incus" || local._servers[v.parent].type != "server" || local._servers[v.parent].networking.management_address == "", true))])}"
@@ -115,9 +121,55 @@ resource "terraform_data" "servers_validation" {
       error_message = "Invalid parent references found in servers configuration: ${join(", ", [for k, v in local._servers : "${k} -> ${v.parent}" if v.parent != "" && !contains(keys(local._servers), v.parent)])}"
     }
 
+    # OCI resources in this stack only model VM instances, not bare metal or
+    # appliance/server abstractions.
     precondition {
       condition     = length([for k, v in local._servers : k if v.platform == "oci" && v.type != "vm"]) == 0
       error_message = "OCI servers must be type vm: ${join(", ", [for k, v in local._servers : k if v.platform == "oci" && v.type != "vm"])}"
+    }
+
+    # OpenTofu locals are not generally recursive; keep the supported inheritance
+    # depth explicit so addressing behavior remains predictable.
+    precondition {
+      condition = length([
+        for k, v in local._servers : k
+        if v.parent != "" && try(local._servers[local._servers[v.parent].parent].parent != "", false)
+      ]) == 0
+      error_message = "Server parent inheritance supports at most two parent levels: ${join(", ", [
+        for k, v in local._servers : k
+        if v.parent != "" && try(local._servers[local._servers[v.parent].parent].parent != "", false)
+      ])}"
+    }
+
+    # Pushover values are pass-through variables, so provider validation will not
+    # catch missing credentials for enabled servers.
+    precondition {
+      condition = length([
+        for k, v in local._servers : k
+        if v.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")
+      ]) == 0
+      error_message = "Servers with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", [
+        for k, v in local._servers : k
+        if v.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")
+      ])}"
+    }
+
+    # Catch short cycles before inherited address lookup hides the root cause.
+    precondition {
+      condition = length([
+        for k, v in local._servers : k
+        if v.parent != "" && (
+          try(local._servers[v.parent].parent == k, false) ||
+          try(local._servers[local._servers[v.parent].parent].parent == k, false)
+        )
+      ]) == 0
+      error_message = "Server parent references contain a cycle within the supported parent depth: ${join(", ", [
+        for k, v in local._servers : k
+        if v.parent != "" && (
+          try(local._servers[v.parent].parent == k, false) ||
+          try(local._servers[local._servers[v.parent].parent].parent == k, false)
+        )
+      ])}"
     }
 
     precondition {

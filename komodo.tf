@@ -1,4 +1,6 @@
 locals {
+  # Komodo only receives services with a rendered compose file on Docker-capable
+  # server targets.
   komodo_stacks = {
     for k, v in local.services : k => v
     if contains(keys(local.servers), v.target) &&
@@ -30,6 +32,8 @@ resource "github_repository_file" "komodo_servers" {
   })
 }
 
+# Per-stack SOPS rules let each target server decrypt only the stacks assigned
+# to it.
 resource "github_repository_file" "komodo_sops_config" {
   commit_message      = "Update SOPS configuration"
   file                = ".sops.yaml"
@@ -55,6 +59,8 @@ resource "github_repository_file" "komodo_stacks" {
   })
 }
 
+# Compose content can contain generated secrets, so it is encrypted before being
+# pushed to the Komodo configuration repository.
 resource "github_repository_file" "komodo_stacks_compose" {
   for_each = local.komodo_stacks
 

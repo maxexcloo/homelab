@@ -1,4 +1,6 @@
 locals {
+  # Delegate ACME challenges for every generated hostname back to the dedicated
+  # ACME zone, so one scoped Cloudflare token can satisfy DNS-01 clients.
   dns_records_acme_delegation = {
     for record in distinct([
       for r in concat(
@@ -18,6 +20,8 @@ locals {
     }
   }
 
+  # Manual DNS records are keyed by either explicit id or stable record fields to
+  # avoid identity churn when records are reordered in YAML.
   dns_records_manual = merge([
     for zone, records in local.dns : {
       for record in records : "${zone}-manual-${try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))}" => provider::deepmerge::mergo(
@@ -33,6 +37,8 @@ locals {
     }
   ]...)
 
+  # Server records combine explicit public addresses, OCI-assigned addresses, and
+  # Tailscale device lookups into external/internal DNS records.
   dns_records_servers = merge([
     for k, server in local.servers : merge(
       server.public_address != null ? {
@@ -99,6 +105,7 @@ locals {
     )
   ]...)
 
+  # Server-hosted Cloudflare services point at the target server's tunnel.
   dns_records_services = {
     for k, service in local.services : "${local.defaults.domains.external}-${k}" => provider::deepmerge::mergo(
       local.dns_defaults,
@@ -115,6 +122,8 @@ locals {
     service.networking.expose == "cloudflare"
   }
 
+  # Fly services get records for custom URLs only; the default fly.dev hostname
+  # remains provider-managed by Fly.
   dns_records_services_fly = merge(flatten([
     for k, service in local.fly_services : [
       for i, url in service.networking.urls : {
@@ -133,6 +142,8 @@ locals {
     ]
   ])...)
 
+  # Custom service URLs resolve to a tunnel when exposed through Cloudflare,
+  # otherwise to the service's computed external or internal hostname.
   dns_records_services_urls = merge(flatten([
     for k, service in local.services : [
       for i, url in service.networking.urls : {
@@ -156,6 +167,8 @@ locals {
     if contains(keys(local.servers), service.target)
   ])...)
 
+  # Wildcards follow each eligible A/AAAA/CNAME record unless the source record
+  # explicitly opts out through wildcard = false.
   dns_records_wildcards = {
     for hostname in distinct([
       for record in concat(
@@ -181,6 +194,8 @@ locals {
 
   dns_zones = keys(local.dns)
 
+  # Pick the longest managed zone suffix for each custom URL, so nested domains
+  # choose the most specific Cloudflare zone.
   dns_zones_urls = {
     for url in distinct(flatten([
       for k, service in local.services : service.networking.urls

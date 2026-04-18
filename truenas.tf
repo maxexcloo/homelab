@@ -1,4 +1,6 @@
 locals {
+  # TrueNAS deploy artifacts are grouped by target server because each server has
+  # its own self-hosted runner and age key.
   truenas_servers = {
     for k, v in local.servers : k => v
     if v.platform == "truenas"
@@ -10,6 +12,8 @@ locals {
   }
 }
 
+# GitHub secret names cannot contain hyphens, so the workflow matrix computes
+# the same uppercase underscore form from the server key.
 resource "github_actions_secret" "truenas_age_key" {
   for_each = local.truenas_servers
 
@@ -71,12 +75,14 @@ resource "github_repository_file" "truenas_sops_config" {
 
 resource "github_repository_file" "truenas_workflow_deploy" {
   commit_message      = "Update deploy workflow"
-  content             = file("${path.module}/templates/workflows/truenas-depoy.yml")
-  file                = ".github/workflows/depoy.yml"
+  content             = file("${path.module}/templates/workflows/truenas-deploy.yml")
+  file                = ".github/workflows/deploy.yml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
 }
 
+# TrueNAS custom apps consume a JSON wrapper whose compose content is embedded
+# as a string.
 resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
   for_each = {
     for k, v in local.truenas_services : k => v
@@ -108,6 +114,8 @@ resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
   }
 }
 
+# Services without a compose template use a TrueNAS override file to update the
+# chart's environment and labels.
 resource "shell_sensitive_script" "truenas_services_override_encrypt" {
   for_each = {
     for k, v in local.truenas_services : k => v

@@ -15,7 +15,7 @@ jobs:
     name: Check Changed Files
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.changed-files.outputs.all_changed_files || steps.manual.outputs.matrix }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,30 +36,38 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           if [ -n "${{ inputs.path }}" ]; then
-            echo "matrix=[\"${{ inputs.path }}\"]" >> $GITHUB_OUTPUT
+            echo 'servers=["${{ inputs.path }}"]' >> "$GITHUB_OUTPUT"
           else
-            DIRS=$(find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' -printf '"%f",' | sed 's/,$//')
-            echo "matrix=[$DIRS]" >> $GITHUB_OUTPUT
+            find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' -printf '%f\n' | jq -Rsc 'split("\n")[:-1]' | sed 's/^/servers=/' >> "$GITHUB_OUTPUT"
           fi
+      - name: Build Matrix
+        id: matrix
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            SERVERS='${{ steps.changed-files.outputs.all_changed_files }}'
+          else
+            SERVERS='${{ steps.manual.outputs.servers }}'
+          fi
+          printf '%s' "$SERVERS" | jq -c '[.[] | {server: ., secret_name: ("AGE_KEY_" + (. | ascii_upcase | gsub("-"; "_")))}]' | sed 's/^/matrix=/' >> "$GITHUB_OUTPUT"
 
   deploy:
     if: needs.changed-files.outputs.matrix != '[]'
     name: Deploy
     needs: [changed-files]
-    runs-on: [self-hosted, "${{ matrix.server }}-privileged"]
+    runs-on: [self-hosted, "${{ matrix.server.server }}-privileged"]
     concurrency:
       cancel-in-progress: true
-      group: deploy-${{ matrix.server }}
+      group: deploy-${{ matrix.server.server }}
     defaults:
       run:
-        working-directory: ${{ matrix.server }}
+        working-directory: ${{ matrix.server.server }}
     strategy:
       fail-fast: false
       matrix:
         server: ${{ fromJSON(needs.changed-files.outputs.matrix) }}
     env:
-      SERVER: ${{ matrix.server }}
-      SOPS_AGE_KEY: ${{ secrets[format('AGE_KEY_{0}', matrix.server)] }}
+      SERVER: ${{ matrix.server.server }}
+      SOPS_AGE_KEY: ${{ secrets[matrix.server.secret_name] }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

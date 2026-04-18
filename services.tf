@@ -1,4 +1,5 @@
 locals {
+  # Merge schema defaults into each source service before expanding deploy targets.
   _services = {
     for k, v in {
       for filepath in fileset(path.module, "data/services/*.yml") :
@@ -6,6 +7,8 @@ locals {
     } : k => provider::deepmerge::mergo(local.service_defaults, v)
   }
 
+  # Each deploy_to target becomes its own stack, so target-specific secrets and
+  # rendered files have stable addresses like service-target.
   _services_computed = merge([
     for service_key, service in local._services : {
       for target in service.deploy_to : "${service_key}-${target}" => merge(
@@ -68,6 +71,8 @@ locals {
     )
   }
 
+  # Template contexts are intentionally small: templates get the current service,
+  # the selected server when present, all services, and global defaults.
   services_base_template_vars = {
     for k, v in local.services : k => {
       defaults = local.defaults
@@ -85,6 +90,52 @@ locals {
     if can(tobool(default_value))
   }
 
+  # Fail fast on bad interpolation rather than silently rendering a literal
+  # ${...} expression into deployment config.
+  services_env = {
+    for k, v in local.services : k => {
+      for key, value in v.platform_config.docker.env :
+      key => templatestring(tostring(value), local.services_base_template_vars[k])
+      if value != null
+    }
+  }
+
+  # SOPS supports structured encryption for these formats. Everything else is
+  # encrypted as binary JSON so static files can still be transported safely.
+  services_file_content_types = {
+    ".dotenv" = "dotenv"
+    ".env"    = "dotenv"
+    ".json"   = "json"
+    ".yaml"   = "yaml"
+    ".yml"    = "yaml"
+  }
+
+  services_docker_labels = {
+    for k, v in local.services : k => {
+      for key, value in v.platform_config.docker.labels :
+      key => templatestring(tostring(value), local.services_base_template_vars[k])
+      if value != null
+    }
+  }
+
+  # Product-specific label rules live in a template; Terraform only merges in
+  # generic user-provided Docker labels after template interpolation.
+  services_labels = {
+    for k, v in local.services : k => merge(
+      yamldecode(templatefile("${path.module}/templates/docker/labels.yaml", local.services_base_template_vars[k])),
+      local.services_docker_labels[k]
+    )
+  }
+
+  services_template_vars = {
+    for k, v in local.services : k => merge(local.services_base_template_vars[k], {
+      env             = local.services_env[k]
+      labels          = local.services_labels[k]
+      services        = local.services
+      services_labels = local.services_labels
+    })
+  }
+
   services_compose = {
     for k, v in local.services : k => templatefile(
       "${path.module}/services/${v.identity.service}/docker-compose.yaml",
@@ -93,32 +144,28 @@ locals {
     if fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
   }
 
-  services_env = {
-    for k, v in local.services : k => {
-      for key, value in v.platform_config.docker.env :
-      key => try(templatestring(tostring(value), local.services_base_template_vars[k]), tostring(value))
-      if value != null
-    }
-  }
+  # Files with template markers are rendered. Other files use filebase64(), which
+  # lets static or binary assets share the same SOPS/GitHub delivery path.
+  services_file_sources = flatten([
+    for k, v in local.services : [
+      for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
+        path            = "${path.module}/${filepath}"
+        rel_path        = trimprefix(filepath, "services/${v.identity.service}/")
+        render_template = can(regex("(?s)(\\$\\{|%\\{)", file("${path.module}/${filepath}")))
+        service_name    = v.identity.service
+        stack           = k
+        target          = v.target
+      }
+      if !endswith(filepath, "docker-compose.yaml")
+    ]
+  ])
 
   services_files = {
-    for pair in flatten([
-      for k, v in local.services : [
-        for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
-          content      = templatefile("${path.module}/${filepath}", local.services_template_vars[k])
-          rel_path     = trimprefix(filepath, "services/${v.identity.service}/")
-          service_name = v.identity.service
-          stack        = k
-          target       = v.target
-        }
-        if !endswith(filepath, "docker-compose.yaml")
-      ]
-      ]) : "${pair.stack}/${pair.rel_path}" => merge(
+    for pair in local.services_file_sources : "${pair.stack}/${pair.rel_path}" => merge(
       pair,
       {
-        content_type = endswith(pair.rel_path, ".toml") ? "toml" : (
-          can(regex("\\.(yaml|yml)$", pair.rel_path)) && can(keys(yamldecode(pair.content))) ? "yaml" : "binary"
-        )
+        content_base64 = pair.render_template ? base64encode(templatefile(pair.path, local.services_template_vars[pair.stack])) : filebase64(pair.path)
+        content_type   = lookup(local.services_file_content_types, try(regex("\\.[^.]+$", lower(pair.rel_path)), ""), "binary")
       }
     )
   }
@@ -132,46 +179,6 @@ locals {
       for kk, vv in v : kk => vv
       if vv != null && vv != "" && vv != false
     }
-  }
-
-  services_labels = {
-    for k, v in local.services : k => {
-      for label, value in merge(
-        v.networking.scheme != null ? {
-          "homepage.description" = v.identity.description
-          "homepage.group"       = v.identity.group
-          "homepage.href"        = v.fqdn_external != null ? "https://${v.fqdn_external}" : (length(v.networking.urls) > 0 ? "https://${v.networking.urls[0]}" : (v.fqdn_internal != null ? "${v.networking.ssl ? "https" : "http"}://${v.fqdn_internal}" : null))
-          "homepage.icon"        = coalesce(v.identity.icon, v.identity.service)
-          "homepage.name"        = coalesce(v.identity.title, v.identity.name)
-        } : {},
-        v.networking.port != null ? {
-          "traefik.enable"                                                         = "true"
-          "traefik.http.routers.${v.identity.service}.entrypoints"                 = v.networking.ssl ? null : "web"
-          "traefik.http.routers.${v.identity.service}.middlewares"                 = v.networking.expose == "tailscale" ? "tailscale-only@docker" : (v.networking.expose == "internal" ? "internal-only@docker" : null)
-          "traefik.http.services.${v.identity.service}.loadbalancer.server.port"   = tostring(v.networking.port)
-          "traefik.http.services.${v.identity.service}.loadbalancer.server.scheme" = v.networking.scheme == "https" ? "https" : null
-          "traefik.http.routers.${v.identity.service}.rule" = join(" || ", concat(
-            v.fqdn_internal != null ? ["Host(`${v.fqdn_internal}`)"] : [],
-            v.fqdn_external != null ? ["Host(`${v.fqdn_external}`)"] : [],
-            [for url in v.networking.urls : "Host(`${url}`)"]
-          ))
-        } : {},
-        {
-          for key, value in v.platform_config.docker.labels :
-          key => try(templatestring(tostring(value), local.services_base_template_vars[k]), tostring(value))
-          if value != null
-        }
-      ) : label => value if value != null
-    }
-  }
-
-  services_template_vars = {
-    for k, v in local.services : k => merge(local.services_base_template_vars[k], {
-      env             = local.services_env[k]
-      labels          = local.services_labels[k]
-      services        = local.services
-      services_labels = local.services_labels
-    })
   }
 }
 
@@ -191,6 +198,8 @@ resource "random_id" "service_secret" {
   byte_length = each.value.byte_length
 }
 
+# Password-like secrets are separate from random_id because string and
+# alphanumeric formats need random_password's character controls.
 resource "random_password" "service" {
   for_each = local.services_by_feature.password
 
@@ -215,12 +224,14 @@ resource "random_password" "service_secret" {
   special = each.value.special
 }
 
+# Renders service config files, encrypts them with the target's age key, and
+# stores only encrypted content for GitHub repository_file resources to consume.
 resource "shell_sensitive_script" "service_file_encrypt" {
   for_each = local.services_files
 
   environment = {
     AGE_PUBLIC_KEY = local.services_files_age_public_keys[each.key]
-    CONTENT        = sensitive(base64encode(each.value.content))
+    CONTENT        = sensitive(each.value.content_base64)
     CONTENT_TYPE   = each.value.content_type
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${each.key}" : ""
     FILENAME       = each.value.rel_path
@@ -243,6 +254,8 @@ resource "terraform_data" "services_validation" {
   input = keys(local._services)
 
   lifecycle {
+    # Cloudflare-exposed services on servers need a tunnel token available from
+    # the target server feature set.
     precondition {
       condition = length(flatten([
         for k, v in local._services : [
@@ -258,6 +271,13 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length([for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null]) == 0
       error_message = "Fly services must have networking.port set: ${join(", ", [for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null])}"
+    }
+
+    # Pushover values are pass-through variables, so provider validation will not
+    # catch missing credentials for enabled services.
+    precondition {
+      condition     = length([for k, v in local._services_computed : k if v.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")]) == 0
+      error_message = "Services with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", [for k, v in local._services_computed : k if v.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")])}"
     }
 
     precondition {

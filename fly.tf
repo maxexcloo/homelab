@@ -1,4 +1,6 @@
 locals {
+  # Fly app names are part of the remote identity, so generated suffixes are
+  # stable random resources rather than recomputed strings.
   _services_fly_computed = {
     for k, v in local._services_computed : k => {
       platform_config = merge(v.platform_config, {
@@ -15,6 +17,8 @@ locals {
     if v.target == "fly"
   }
 
+  # Render dotenv content explicitly because GitHub stores the encrypted file,
+  # while flyctl imports the decrypted .env in the deployment workflow.
   fly_services_env = {
     for k, env in local.fly_services_env_vars : k => join("\n", [
       for field_name in sort(nonsensitive(keys(env))) :
@@ -23,6 +27,8 @@ locals {
     if length(nonsensitive(keys(env))) > 0
   }
 
+  # Any service field ending in _sensitive becomes a Fly secret environment
+  # variable, alongside non-secret per-service env settings.
   fly_services_env_vars = {
     for k, v in local.fly_services : k => merge(
       local.services_env[k],
@@ -35,6 +41,8 @@ locals {
   }
 }
 
+# Shared age key for the Fly deployment repository; per-app files are separated
+# by directory rather than by recipient key.
 resource "github_actions_secret" "fly_age_key" {
   plaintext_value = age_secret_key.fly.secret_key
   repository      = local.defaults.github.repositories.fly
@@ -114,6 +122,8 @@ resource "random_string" "fly_service" {
   upper   = false
 }
 
+# Encrypts dotenv content so the deployment workflow can decrypt and import it
+# with flyctl secrets import.
 resource "shell_sensitive_script" "fly_services_env_encrypt" {
   for_each = toset(nonsensitive(keys(local.fly_services_env)))
 
@@ -137,13 +147,15 @@ resource "shell_sensitive_script" "fly_services_env_encrypt" {
   }
 }
 
+# SOPS does not support TOML in the installed version, so fly.toml is encrypted
+# as binary and decrypted back to the original file by the workflow.
 resource "shell_sensitive_script" "fly_services_toml_encrypt" {
   for_each = local.fly_services
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
     CONTENT        = sensitive(base64encode(templatefile("${path.module}/templates/fly/fly.toml", local.services_template_vars[each.key])))
-    CONTENT_TYPE   = "toml"
+    CONTENT_TYPE   = "binary"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.identity.service}/fly.toml" : ""
   }
 
