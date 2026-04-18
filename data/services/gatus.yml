@@ -2,6 +2,7 @@
 deploy_to:
   - fly
 features:
+  pushover: true
   resend: true
   tailscale: true
 identity:
@@ -15,7 +16,3 @@ networking:
   scheme: http
   urls:
     - status.excloo.com
-platform_config:
-  fly:
-    memory_mb: 256
-    region: syd

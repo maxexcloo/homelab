@@ -69,6 +69,14 @@ resource "github_repository_file" "truenas_sops_config" {
   ))
 }
 
+resource "github_repository_file" "truenas_workflow_deploy" {
+  commit_message      = "Update deploy workflow"
+  content             = file("${path.module}/templates/workflows/truenas-depoy.yml")
+  file                = ".github/workflows/depoy.yml"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.truenas
+}
+
 resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
   for_each = {
     for k, v in local.truenas_services : k => v

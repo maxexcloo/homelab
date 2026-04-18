@@ -16,7 +16,7 @@ locals {
 
   _servers_computed = {
     for k, v in local._servers : k => {
-      description = v.parent == "" ? v.identity.title : (v.identity.region == local._servers[v.parent].identity.name ? "${v.identity.title} (${upper(v.identity.region)})" : "${local._servers[v.parent].identity.title} ${v.identity.title} (${upper(v.identity.region)})")
+      description = v.parent == "" ? v.identity.title : (try(v.identity.region == local._servers[v.parent].identity.name, false) ? "${v.identity.title} (${upper(v.identity.region)})" : "${try(local._servers[v.parent].identity.title, v.parent)} ${v.identity.title} (${upper(v.identity.region)})")
       fqdn        = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
       slug        = k
 
@@ -67,6 +67,10 @@ locals {
       v.features.cloudflare_zero_trust_tunnel ? {
         cloudflare_zero_trust_tunnel_token_sensitive = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[k].token
       } : {},
+      v.features.pushover ? {
+        pushover_application_token_sensitive = var.pushover_application_token
+        pushover_user_key_sensitive          = var.pushover_user_key
+      } : {},
       v.features.resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_server[k].create_response).token
       } : {},
@@ -98,17 +102,17 @@ resource "random_password" "server" {
 }
 
 resource "terraform_data" "servers_validation" {
-  input = join(", ", flatten([
-    for k, v in local._servers : [
-      "${k} -> ${v.parent}"
-    ]
-    if v.parent != "" && !contains(keys(local._servers), v.parent)
-  ]))
+  input = keys(local._servers)
 
   lifecycle {
     precondition {
-      condition     = length(flatten([for k, v in local._servers : [v.parent] if v.parent != "" && !contains(keys(local._servers), v.parent)])) == 0
-      error_message = "Invalid parent references found in servers configuration"
+      condition     = length([for k, v in local._servers : "${k} -> ${v.parent}" if v.parent != "" && !contains(keys(local._servers), v.parent)]) == 0
+      error_message = "Invalid parent references found in servers configuration: ${join(", ", [for k, v in local._servers : "${k} -> ${v.parent}" if v.parent != "" && !contains(keys(local._servers), v.parent)])}"
+    }
+
+    precondition {
+      condition     = length([for k, v in local._servers : k if v.parent == k]) == 0
+      error_message = "Servers cannot set themselves as their own parent: ${join(", ", [for k, v in local._servers : k if v.parent == k])}"
     }
   }
 }

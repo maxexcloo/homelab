@@ -8,7 +8,12 @@
   "properties": {
     "deploy_to": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string",
+        "pattern": "^(fly|[a-z0-9-]+)$"
+      },
+      "minItems": 1,
+      "uniqueItems": true,
       "description": "Server keys to deploy this service on (e.g. 'au-malatang'). Use 'fly' for Fly.io deployments. Each entry produces a separate service instance keyed as {service}-{target}."
     },
     "features": {
@@ -23,6 +28,10 @@
         "password": {
           "type": "boolean",
           "description": "Generate a random password for this service. Exposes password_sensitive and password_hash_sensitive (bcrypt) as template variables. Stored in Bitwarden."
+        },
+        "pushover": {
+          "type": "boolean",
+          "description": "Expose the configured Pushover application token and user/group key for this service. Exposes pushover_application_token_sensitive and pushover_user_key_sensitive as template variables."
         },
         "resend": {
           "type": "boolean",
@@ -80,11 +89,13 @@
         },
         "name": {
           "type": "string",
-          "description": "Short identifier used to build FQDNs and subdomain labels (e.g. 'vaultwarden'). Combined with the target server FQDN: {name}.{server_fqdn}.{domain}."
+          "description": "Short identifier used to build FQDNs and subdomain labels (e.g. 'vaultwarden'). Combined with the target server FQDN: {name}.{server_fqdn}.{domain}.",
+          "pattern": "^[a-z0-9-]+$"
         },
         "service": {
           "type": "string",
-          "description": "Template directory key. Resolves to services/{service}/ for compose files and per-service config templates. Defaults to identity.name if omitted."
+          "description": "Template directory key. Resolves to services/{service}/ for compose files and per-service config templates. Defaults to identity.name if omitted.",
+          "pattern": "^[a-z0-9-]+$"
         },
         "title": {
           "type": "string",
@@ -107,6 +118,8 @@
         },
         "port": {
           "type": ["integer", "null"],
+          "minimum": 1,
+          "maximum": 65535,
           "description": "Port the service listens on. Required for Fly.io deployments. Used as the Traefik backend port for TrueNAS standard services, and as the Fly.io internal_port."
         },
         "scheme": {
@@ -123,7 +136,11 @@
         },
         "urls": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string",
+            "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$"
+          },
+          "uniqueItems": true,
           "description": "Custom public hostnames for this service (e.g. 'status.example.com'). DNS records (CNAME, wildcard, ACME delegation) are automatically created for any hostname that ends with a managed zone."
         }
       }
@@ -157,7 +174,8 @@
           "properties": {
             "app_name": {
               "type": ["string", "null"],
-              "description": "Fly.io app name override. If null, a unique app name is generated from the service name."
+              "description": "Fly.io app name override. If null, a unique app name is generated from the service name.",
+              "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
             },
             "cpu_kind": {
               "type": "string",
@@ -185,7 +203,8 @@
             },
             "region": {
               "type": "string",
-              "description": "Fly.io primary region code (e.g. 'syd', 'lax'). Determines where machines are provisioned by default."
+              "description": "Fly.io primary region code (e.g. 'syd', 'lax'). Determines where machines are provisioned by default.",
+              "pattern": "^[a-z]{3}$"
             }
           }
         },

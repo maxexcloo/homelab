@@ -34,7 +34,7 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 
 ## Architecture
 
-YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers.
+YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers. Some service credentials are rendered directly because no provider resource manages them.
 
 ```
 data/
@@ -51,6 +51,7 @@ OpenTofu
     ├── GitHub          SSH public keys; pushes Fly/Komodo/TrueNAS configs
     ├── Incus           Containers and VMs on managed hosts
     ├── OCI             Oracle Cloud VMs and networking
+    ├── Pushover        Pass-through alert notification credentials
     ├── Resend          Email API keys
     └── Tailscale       VPN auth keys, ACLs, and device lookups
 ```
@@ -58,6 +59,13 @@ OpenTofu
 Rendered service configs (Docker Compose, Fly.toml, TrueNAS overrides) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`, where deployment runners consume them.
 
 Rendered plaintext can be written locally for debugging by setting `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`. Leave it unset for normal runs.
+
+Credentials fall into two groups:
+
+- Mandatory credentials are required for normal operation of this stack: Bitwarden, Cloudflare, GitHub, OpenTofu Cloud, and Tailscale.
+- Optional credentials are required only when the corresponding data enables those resources: B2, Incus, OCI, Resend, and UniFi.
+
+Feature flags either create provider-backed resources or expose values generated locally by OpenTofu. `password` is local-only, while `b2`, `resend`, and `tailscale` call providers when enabled. Resend uses the generic REST API provider with `TF_VAR_resend_api_key` because this repo does not use a native Resend provider. Pushover has no provider-managed resource here, so `TF_VAR_pushover_application_token` and `TF_VAR_pushover_user_key` are pass-through values rendered into service config when `features.pushover` is enabled.
 
 ## Workflow
 

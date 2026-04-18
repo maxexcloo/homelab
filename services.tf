@@ -26,16 +26,14 @@ locals {
         b2_bucket_name               = b2_bucket.service[k].bucket_name
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
-      v.target == "fly" ? {
-        platform_config = merge(v.platform_config, {
-          fly = merge(v.platform_config.fly, {
-            app_name = coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")
-          })
-        })
-      } : {},
+      lookup(local._services_fly_computed, k, {}),
       v.features.password ? {
         password_hash_sensitive = bcrypt_hash.service[k].id
         password_sensitive      = random_password.service[k].result
+      } : {},
+      v.features.pushover ? {
+        pushover_application_token_sensitive = var.pushover_application_token
+        pushover_user_key_sensitive          = var.pushover_user_key
       } : {},
       v.features.resend ? {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_service[k].create_response).token
@@ -127,15 +125,10 @@ locals {
   }
 
   services_filtered = {
-    for k, v in local.services : k => merge(
-      {
-        for kk, vv in v : kk => vv
-        if vv != null && vv != "" && vv != false
-      },
-      v.target == "fly" ? {
-        url_fly = "${v.platform_config.fly.app_name}.fly.dev"
-      } : {}
-    )
+    for k, v in local.services : k => {
+      for kk, vv in v : kk => vv
+      if vv != null && vv != "" && vv != false
+    }
   }
 
   services_labels = {
@@ -244,17 +237,12 @@ resource "shell_sensitive_script" "service_file_encrypt" {
 }
 
 resource "terraform_data" "services_validation" {
-  input = join(", ", flatten([
-    for k, v in local._services : [
-      for target in v.deploy_to : "${k} -> ${target}"
-      if !contains(keys(local.servers), target) && target != "fly"
-    ]
-  ]))
+  input = keys(local._services)
 
   lifecycle {
     precondition {
       condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target) && target != "fly"]])) == 0
-      error_message = "Invalid server references found in services configuration"
+      error_message = "Invalid server references found in services configuration: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if !contains(keys(local.servers), target) && target != "fly"]]))}"
     }
 
     precondition {

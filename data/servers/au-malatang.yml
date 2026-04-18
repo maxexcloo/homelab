@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schemas/server.json
 parent: au
-platform: unmanaged
+platform: incus
 type: server
 features:
   cloudflare_acme_token: true

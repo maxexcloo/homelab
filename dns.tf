@@ -129,7 +129,7 @@ locals {
           }
         )
       }
-      if local.dns_zones_urls[url] != null
+      if url != service.fqdn_external && local.dns_zones_urls[url] != null
     ]
   ])...)
 

@@ -1,0 +1,106 @@
+name: Deploy
+
+on:
+  push:
+    paths:
+      - "**"
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "Server to deploy or leave empty for all"
+        required: false
+
+jobs:
+  changed-files:
+    name: Check Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.changed-files.outputs.all_changed_files || steps.manual.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check Changed Files
+        id: changed-files
+        if: github.event_name == 'push'
+        uses: tj-actions/changed-files@v47
+        with:
+          dir_names: true
+          dir_names_max_depth: 1
+          dir_names_exclude_current_dir: true
+          files_ignore: ".*/**"
+          matrix: true
+      - name: Manual Files
+        id: manual
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ -n "${{ inputs.path }}" ]; then
+            echo "matrix=[\"${{ inputs.path }}\"]" >> $GITHUB_OUTPUT
+          else
+            DIRS=$(find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' -printf '"%f",' | sed 's/,$//')
+            echo "matrix=[$DIRS]" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    if: needs.changed-files.outputs.matrix != '[]'
+    name: Deploy
+    needs: [changed-files]
+    runs-on: [self-hosted, "${{ matrix.server }}-privileged"]
+    concurrency:
+      cancel-in-progress: true
+      group: deploy-${{ matrix.server }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.server }}
+    strategy:
+      fail-fast: false
+      matrix:
+        server: ${{ fromJSON(needs.changed-files.outputs.matrix) }}
+    env:
+      SERVER: ${{ matrix.server }}
+      SOPS_AGE_KEY: ${{ secrets[format('AGE_KEY_{0}', matrix.server)] }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup sops
+        uses: nhedger/setup-sops@v2
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8
+      - name: Setup midclt
+        run: uv tool install git+https://github.com/truenas/api_client.git
+      - name: Decrypt Files
+        run: find . -type f | xargs grep -l 'BEGIN AGE ENCRYPTED FILE' | xargs -r sops --decrypt --in-place
+      - name: Deploy Custom Apps
+        run: |
+          find . -maxdepth 2 -name "compose.json" | while read -r f; do
+            APP=$(basename "$(dirname "$f")")
+            if midclt call app.get_instance "$APP" > /dev/null 2>&1; then
+              midclt call app.update "$APP" "$(cat "$f")" > /dev/null
+              echo "✓ $APP updated"
+            else
+              midclt call app.create "$(cat "$f")" > /dev/null
+              echo "✓ $APP created"
+            fi
+          done
+      - name: Push Config Files
+        run: |
+          find . -mindepth 3 -type f ! -name "compose.json" ! -name "override.json" | while read -r f; do
+            CONTAINER_DIR="$(echo "$f" | cut -d'/' -f1-3)/"
+            APP=$(basename "$(dirname "$CONTAINER_DIR")")
+            SERVICE=$(basename "$CONTAINER_DIR")
+            CONTAINER=$(docker ps --format '{{.Names}}' | grep "^ix-${APP}-${SERVICE}-")
+            if [ -n "$CONTAINER" ]; then
+              docker cp "$f" "$CONTAINER:/${f#"$CONTAINER_DIR"}"
+              echo "✓ $CONTAINER:/${f#"$CONTAINER_DIR"}"
+            else
+              echo "⚠ no container found matching ix-${APP}-${SERVICE}-*"
+            fi
+          done
+      - name: Update Overrides
+        run: |
+          find . -name "override.json" | while read -r f; do
+            APP=$(basename "$(dirname "$(dirname "$f")")")
+            midclt call app.update "$APP" "$(cat "$f")" > /dev/null
+            echo "✓ $APP"
+          done

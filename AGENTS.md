@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across Bitwarden, B2, Cloudflare, GitHub, Incus, OCI, Resend, and Tailscale.
+Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across Bitwarden, B2, Cloudflare, GitHub, Incus, OCI, Resend, and Tailscale. Some credentials, such as Pushover, are pass-through values rendered into generated configs because no provider resource manages them.
 
 - `data/defaults.yml` — global config and schema defaults for servers/services
 - `data/servers/*.yml` — one file per server; deepmerged with server defaults in `servers.tf`
@@ -35,6 +35,14 @@ This applies consistently to `data/` YAML files, `schemas/*.json` property lists
 - **Defaults**: Set values in `data/defaults.yml` wherever possible; use `try()` / `coalesce()` only when a value must be computed from multiple optional sources with no applicable default
 - **Validation**: Use `terraform_data` preconditions for referential integrity checks
 - **State**: Never manipulate state manually — use `tofu import` for imports
+
+### Feature flags
+
+- `password` is local-only and exposes generated `_sensitive` values.
+- Provider-backed feature flags create or read remote resources when enabled, such as `b2`, `resend`, and `tailscale`.
+- Some APIs use `TF_VAR_*` values because there is no native provider in use here, such as Resend through the generic REST API provider.
+- Pass-through feature flags expose externally supplied credentials because no provider resource manages them here, such as `pushover`.
+- Document whether each provider credential is mandatory for this stack or optional based on enabled data. Prefer provider/resource failures or variable validation for missing external credentials unless a referential integrity relationship can be checked locally.
 
 ### Locals structure
 

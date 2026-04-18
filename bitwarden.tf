@@ -35,10 +35,15 @@ resource "bitwarden_item_login" "server" {
   }
 
   dynamic "uri" {
-    for_each = {
-      for k, v in local.servers_filtered[each.key] : k => v
-      if can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
-    }
+    for_each = merge(
+      {
+        for k, v in local.servers_filtered[each.key] : k => v
+        if can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
+      },
+      each.value.networking.management_address != "" ? {
+        management_address = each.value.networking.management_address
+      } : {}
+    )
 
     content {
       match = "host"

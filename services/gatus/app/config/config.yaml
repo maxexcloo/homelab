@@ -1,8 +1,9 @@
 alerting:
+%{ if service.features.resend ~}
   email:
-    from: ${defaults.organization.email}
+    from: ${service.target}@${defaults.domains.internal}
     host: ${defaults.resend.host}
-    password: ${service.resend_api_key_sensitive}
+    password: $${RESEND_API_KEY}
     port: ${defaults.resend.port}
     to: ${defaults.organization.email}
     username: ${defaults.resend.username}
@@ -11,10 +12,26 @@ alerting:
       failure-threshold: 5
       send-on-resolved: true
       success-threshold: 5
+%{ endif ~}
+%{ if service.features.pushover ~}
+  pushover:
+    application-token: $${PUSHOVER_APPLICATION_TOKEN}
+    user-key: $${PUSHOVER_USER_KEY}
+    default-alert:
+      description: ${service.identity.title} Check Failed
+      failure-threshold: 5
+      send-on-resolved: true
+      success-threshold: 5
+%{ endif ~}
 endpoints:
 %{ for k, server in servers ~}
   - alerts:
+%{ if service.features.resend ~}
       - type: email
+%{ endif ~}
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ endif ~}
     conditions:
       - "[CONNECTED] == true"
     group: "${server.type == "router" ? "Routers" : server.type == "vm" ? "VMs" : "Servers"}"
@@ -22,9 +39,15 @@ endpoints:
     url: "icmp://${server.fqdn_internal}"
 %{ endfor ~}
 %{ for k, svc in services ~}
+%{ if svc.networking.scheme != null ~}
 %{ for url in svc.networking.urls ~}
   - alerts:
+%{ if service.features.resend ~}
       - type: email
+%{ endif ~}
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ endif ~}
 %{ if svc.networking.ssl_validation == false ~}
     client:
       insecure: true
@@ -41,7 +64,12 @@ endpoints:
 %{ endfor ~}
 %{ if svc.fqdn_external != null ~}
   - alerts:
+%{ if service.features.resend ~}
       - type: email
+%{ endif ~}
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ endif ~}
 %{ if svc.networking.ssl_validation == false ~}
     client:
       insecure: true
@@ -58,7 +86,12 @@ endpoints:
 %{ endif ~}
 %{ if svc.fqdn_internal != null ~}
   - alerts:
+%{ if service.features.resend ~}
       - type: email
+%{ endif ~}
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ endif ~}
 %{ if svc.networking.ssl_validation == false ~}
     client:
       insecure: true
@@ -72,6 +105,7 @@ endpoints:
     group: "Services (Internal)"
     name: "${svc.identity.title} (${svc.target})"
     url: "${svc.networking.ssl ? "https" : "http"}://${svc.fqdn_internal}"
+%{ endif ~}
 %{ endif ~}
 %{ endfor ~}
 ui:

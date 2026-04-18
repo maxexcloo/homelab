@@ -1,0 +1,80 @@
+name: Deploy
+
+on:
+  push:
+    paths:
+      - "**"
+  workflow_dispatch:
+    inputs:
+      path:
+        description: "App to deploy or leave empty for all"
+        required: false
+
+jobs:
+  changed-files:
+    name: Check Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.changed-files.outputs.all_changed_files || steps.manual.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check Changed Files
+        id: changed-files
+        if: github.event_name == 'push'
+        uses: tj-actions/changed-files@v47
+        with:
+          dir_names: true
+          dir_names_max_depth: 1
+          dir_names_exclude_current_dir: true
+          files_ignore: ".*/**"
+          matrix: true
+      - name: Manual Files
+        id: manual
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ -n "${{ inputs.path }}" ]; then
+            echo "matrix=[\"${{ inputs.path }}\"]" >> $GITHUB_OUTPUT
+          else
+            DIRS=$(find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' -printf '"%f",' | sed 's/,$//')
+            echo "matrix=[$DIRS]" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    if: needs.changed-files.outputs.matrix != '[]'
+    name: Deploy
+    needs: [changed-files]
+    runs-on: ubuntu-latest
+    concurrency:
+      cancel-in-progress: true
+      group: deploy-${{ matrix.app }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.changed-files.outputs.matrix) }}
+    env:
+      APP: ${{ matrix.app }}
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      SOPS_AGE_KEY: ${{ secrets.AGE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@1.5
+      - name: Setup sops
+        uses: nhedger/setup-sops@v2
+      - name: Decrypt Files
+        run: find . -type f | xargs grep -l 'BEGIN AGE ENCRYPTED FILE' | xargs -n 1 -r sops --decrypt --in-place
+      - name: Create App
+        run: flyctl apps create "$APP" || true
+      - name: Add Certificates
+        run: test -f .certs && xargs -a .certs -I{} flyctl certs add {} --app "$APP" || true
+      - name: Import Secrets
+        run: test -f .env && grep -v '^sops_' .env | flyctl secrets import --app "$APP" || true
+      - name: Deploy
+        run: flyctl deploy --app "$APP" --config fly.toml > /dev/null

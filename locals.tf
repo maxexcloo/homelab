@@ -22,45 +22,7 @@ locals {
 
   service_defaults = local._defaults.services
 
-  sops_encrypt_script = <<-EOT
-    #!/bin/bash
-    set -euo pipefail
-
-    DATA="$(printf '%s' "$CONTENT" | base64 -d)"
-
-    PREVIOUS_DATA=""
-    if [ ! -t 0 ]; then
-      PREVIOUS_DATA="$(cat || true)"
-    fi
-
-    HASH="$(printf '%s' "$DATA" | sha256sum | awk '{print $1}')"
-    PREVIOUS_HASH="$(printf '%s' "$PREVIOUS_DATA" | jq -r '.hash // ""' 2>/dev/null || true)"
-    if [ -n "$${DEBUG_PATH:-}" ]; then
-      mkdir -p "$(dirname "$${DEBUG_PATH}")"
-      printf '%s' "$DATA" > "$${DEBUG_PATH}"
-    fi
-
-    if [ -n "$PREVIOUS_DATA" ] && [ "$PREVIOUS_HASH" = "$HASH" ]; then
-      printf '%s' "$PREVIOUS_DATA"
-      exit 0
-    fi
-
-    if [ "$CONTENT_TYPE" = "binary" ]; then
-      if [ -n "$${FILENAME:-}" ]; then
-        ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --filename-override "$FILENAME" --input-type binary --output-type json /dev/stdin)"
-      else
-        ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type binary --output-type json /dev/stdin)"
-      fi
-    else
-      if [ -n "$${FILENAME:-}" ]; then
-        ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --filename-override "$FILENAME" --input-type "$CONTENT_TYPE" --output-type "$CONTENT_TYPE" /dev/stdin)"
-      else
-        ENCRYPTED_CONTENT="$(printf '%s' "$DATA" | sops encrypt --age "$AGE_PUBLIC_KEY" --input-type "$CONTENT_TYPE" --output-type "$CONTENT_TYPE" /dev/stdin)"
-      fi
-    fi
-
-    jq -n --arg encrypted_content "$ENCRYPTED_CONTENT" --arg hash "$HASH" '{encrypted_content: $encrypted_content, hash: $hash}'
-  EOT
+  sops_encrypt_script = file("${path.module}/templates/scripts/sops_encrypt.sh")
 }
 
 output "summary" {

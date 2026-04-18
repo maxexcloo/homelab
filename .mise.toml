@@ -30,14 +30,14 @@ run = "tofu init"
 description = "Format check, lint and validate"
 depends = ["lint", "validate"]
 run = """
-prettier --check "data/**/*.yml"
+prettier --check "data/**/*.yml" "templates/**/*.yml"
 tofu fmt -check -recursive
 """
 
 [tasks.fmt]
 description = "Format all files"
 run = """
-prettier --log-level warn --write "data/**/*.yml"
+prettier --log-level warn --write "data/**/*.yml" "templates/**/*.yml"
 tofu fmt -recursive
 """
 

@@ -1,19 +1,41 @@
 locals {
+  _services_fly_computed = {
+    for k, v in local._services_computed : k => {
+      fqdn_external = "${coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")}.fly.dev"
+      networking = merge(v.networking, {
+        urls = distinct(concat(v.networking.urls, ["${coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")}.fly.dev"]))
+      })
+      platform_config = merge(v.platform_config, {
+        fly = merge(v.platform_config.fly, {
+          app_name = coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")
+        })
+      })
+    }
+    if v.target == "fly"
+  }
+
   fly_services = {
     for k, v in local.services : k => v
     if v.target == "fly"
   }
 
   fly_services_env = {
-    for k, v in local.fly_services : k => join("\n", [
-      for field_name, field_value in v :
-      "${upper(trimsuffix(field_name, "_sensitive"))}=${field_value}"
-      if endswith(field_name, "_sensitive") && field_value != null && can(tostring(field_value)) && tostring(field_value) != ""
+    for k, env in local.fly_services_env_vars : k => join("\n", [
+      for field_name in sort(nonsensitive(keys(env))) :
+      "${field_name}=${env[field_name]}"
     ])
-    if anytrue([
-      for field_name, field_value in v :
-      endswith(field_name, "_sensitive") && field_value != null && can(tostring(field_value)) && tostring(field_value) != ""
-    ])
+    if length(nonsensitive(keys(env))) > 0
+  }
+
+  fly_services_env_vars = {
+    for k, v in local.fly_services : k => merge(
+      local.services_env[k],
+      {
+        for sensitive_field_name, sensitive_field_value in v :
+        upper(trimsuffix(sensitive_field_name, "_sensitive")) => sensitive_field_value
+        if endswith(sensitive_field_name, "_sensitive") && sensitive_field_value != null && can(tostring(sensitive_field_value)) && tostring(sensitive_field_value) != ""
+      }
+    )
   }
 }
 
@@ -26,11 +48,11 @@ resource "github_actions_secret" "fly_age_key" {
 resource "github_repository_file" "fly_services_cert" {
   for_each = {
     for k, v in local.fly_services : k => v
-    if length(v.networking.urls) > 0
+    if length([for url in v.networking.urls : url if url != v.fqdn_external]) > 0
   }
 
   commit_message      = "Update ${each.value.platform_config.fly.app_name} certificate hostnames"
-  content             = join("\n", each.value.networking.urls)
+  content             = join("\n", [for url in each.value.networking.urls : url if url != each.value.fqdn_external])
   file                = "${each.value.platform_config.fly.app_name}/.certs"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
@@ -73,6 +95,14 @@ resource "github_repository_file" "fly_sops_config" {
   commit_message      = "Update SOPS configuration"
   content             = "creation_rules:\n  - age: ${age_secret_key.fly.public_key}\n"
   file                = ".sops.yaml"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.fly
+}
+
+resource "github_repository_file" "fly_workflow_deploy" {
+  commit_message      = "Update deploy workflow"
+  content             = file("${path.module}/templates/workflows/fly-deploy.yml")
+  file                = ".github/workflows/deploy.yml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }

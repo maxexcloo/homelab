@@ -3,12 +3,13 @@
   "title": "Server",
   "description": "A physical machine, VM, router, or appliance managed by this homelab. Servers are the deployment targets for services.",
   "type": "object",
-  "required": ["identity"],
+  "required": ["identity", "platform", "type"],
   "additionalProperties": false,
   "properties": {
     "parent": {
       "type": "string",
-      "description": "Key of the parent server (e.g. 'au'). Public IPs are inherited from the parent chain up to 2 levels deep, allowing VMs and containers to share the host's public address."
+      "description": "Key of the parent server (e.g. 'au'). Public IPs are inherited from the parent chain up to 2 levels deep, allowing VMs and containers to share the host's public address.",
+      "pattern": "^$|^[a-z0-9-]+$"
     },
     "platform": {
       "type": "string",
@@ -48,6 +49,10 @@
         "password": {
           "type": "boolean",
           "description": "Generate a random admin password. Exposes password_sensitive and password_hash_sensitive (bcrypt). Stored in Bitwarden."
+        },
+        "pushover": {
+          "type": "boolean",
+          "description": "Expose the configured Pushover application token and user/group key. Exposes pushover_application_token_sensitive and pushover_user_key_sensitive."
         },
         "resend": {
           "type": "boolean",
@@ -96,23 +101,29 @@
       "properties": {
         "management_address": {
           "type": "string",
-          "description": "Hostname or IP for management access (e.g. Incus API endpoint). Used by Komodo as the server address."
+          "description": "Hostname or IP for management access (e.g. Incus API endpoint). Used by Komodo as the server address.",
+          "pattern": "^$|^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$|^([0-9]{1,3}\\.){3}[0-9]{1,3}$|^[0-9A-Fa-f:]+$"
         },
         "management_port": {
           "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
           "description": "Port for management access. Defaults to 443."
         },
         "public_address": {
           "type": "string",
-          "description": "Public CNAME target (e.g. a dynamic DNS hostname). Creates a CNAME external DNS record instead of A/AAAA. Inherited from the parent chain up to 2 levels."
+          "description": "Public CNAME target (e.g. a dynamic DNS hostname). Creates a CNAME external DNS record instead of A/AAAA. Inherited from the parent chain up to 2 levels.",
+          "pattern": "^$|^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$"
         },
         "public_ipv4": {
           "type": "string",
-          "description": "Public IPv4 address. Creates an A record on the external domain. Inherited from the parent chain up to 2 levels."
+          "description": "Public IPv4 address. Creates an A record on the external domain. Inherited from the parent chain up to 2 levels.",
+          "pattern": "^$|^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
         },
         "public_ipv6": {
           "type": "string",
-          "description": "Public IPv6 address (bare, without prefix length). Creates an AAAA record on the external domain. Inherited from the parent chain up to 2 levels."
+          "description": "Public IPv6 address (bare, without prefix length). Creates an AAAA record on the external domain. Inherited from the parent chain up to 2 levels.",
+          "pattern": "^$|^[0-9A-Fa-f:]+$"
         }
       }
     },
@@ -289,7 +300,8 @@
             },
             "image_id": {
               "type": "string",
-              "description": "OCI image OCID to use as the boot volume source."
+              "description": "OCI image OCID to use as the boot volume source.",
+              "pattern": "^$|^ocid1\\.image\\."
             },
             "memory": {
               "type": "integer",
@@ -302,7 +314,12 @@
             },
             "ingress_ports": {
               "type": "array",
-              "items": { "type": "integer" },
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "uniqueItems": true,
               "description": "TCP and UDP ports open in the network security group ingress rules. Defaults to [22, 80, 443]."
             }
           }

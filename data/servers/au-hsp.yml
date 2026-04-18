@@ -15,6 +15,6 @@ identity:
 platform_config:
   oci:
     cpus: 4
-    disk_size: 128
+    disk_size: 200
     image_id: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
     memory: 24

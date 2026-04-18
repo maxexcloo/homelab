@@ -1,39 +1,43 @@
 [env]
-# B2
+# B2 (optional)
 B2_APPLICATION_KEY = "REPLACE_ME"
 B2_APPLICATION_KEY_ID = "REPLACE_ME"
 
-# BitWarden
+# Bitwarden (required)
 BW_CLIENTID = "REPLACE_ME"
 BW_CLIENTSECRET = "REPLACE_ME"
 BW_PASSWORD = "REPLACE_ME"
 BW_URL = "REPLACE_ME"
 
-# Cloudflare
+# Cloudflare (required)
 CLOUDFLARE_API_TOKEN = "REPLACE_ME"
 
-# GitHub
+# GitHub (required)
 GITHUB_TOKEN = "REPLACE_ME"
 
-# OCI
+# OCI (optional)
 OCI_FINGERPRINT = "REPLACE_ME"
 OCI_REGION = "REPLACE_ME"
 OCI_USER_OCID = "REPLACE_ME"
 TF_VAR_oci_private_key_base64 = "REPLACE_ME"
 TF_VAR_oci_tenancy_ocid = "REPLACE_ME"
 
-# Resend
+# Pushover (optional)
+TF_VAR_pushover_application_token = "REPLACE_ME"
+TF_VAR_pushover_user_key = "REPLACE_ME"
+
+# Resend (optional)
 TF_VAR_resend_api_key = "REPLACE_ME"
 
-# Tailscale
+# Tailscale (required)
 TAILSCALE_OAUTH_CLIENT_ID = "REPLACE_ME"
 TAILSCALE_OAUTH_CLIENT_SECRET = "REPLACE_ME"
 TAILSCALE_TAILNET = "REPLACE_ME"
 
-# Terraform Cloud
+# Terraform Cloud (required)
 TF_TOKEN_app_terraform_io = "REPLACE_ME"
 
-# UniFi
+# UniFi (optional)
 UNIFI_API = "REPLACE_ME"
 UNIFI_PASSWORD = "REPLACE_ME"
 UNIFI_USERNAME = "REPLACE_ME"

@@ -42,8 +42,6 @@ servers:
   parent: ""
   password_hash_sensitive: null
   password_sensitive: null
-  platform: unmanaged
-  type: server
   features:
     b2: false
     cloudflare_acme_token: false
@@ -51,6 +49,7 @@ servers:
     cloudflare_zero_trust_tunnel: false
     docker: false
     password: false
+    pushover: false
     resend: false
     tailscale: false
   identity:
@@ -103,6 +102,7 @@ services:
   features:
     b2: false
     password: false
+    pushover: false
     resend: false
     tailscale: false
     secrets: []
@@ -132,7 +132,7 @@ services:
       image: null
       memory_mb: 256
       min_machines_running: 1
-      region: ""
+      region: syd
     homepage: []
 
 system:
