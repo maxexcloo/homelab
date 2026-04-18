@@ -1,4 +1,5 @@
 [tools]
+"pipx:check-jsonschema" = "latest"
 opentofu = "1"
 prettier = "3"
 sops = "3"
@@ -26,14 +27,27 @@ run = "tofu init"
 
 # Development
 [tasks.check]
-description = "Format and validate"
-depends = ["fmt", "validate"]
+description = "Format check, lint and validate"
+depends = ["lint", "validate"]
+run = """
+prettier --check "data/**/*.yml"
+tofu fmt -check -recursive
+"""
 
 [tasks.fmt]
 description = "Format all files"
 run = """
 prettier --log-level warn --write "data/**/*.yml"
 tofu fmt -recursive
+"""
+
+[tasks.lint]
+description = "Validate YAML data files against JSON schemas"
+run = """
+check-jsonschema --schemafile schemas/defaults.json data/defaults.yml
+check-jsonschema --schemafile schemas/dns.json data/dns/*.yml
+check-jsonschema --schemafile schemas/server.json data/servers/*.yml
+check-jsonschema --schemafile schemas/service.json data/services/*.yml
 """
 
 [tasks.validate]

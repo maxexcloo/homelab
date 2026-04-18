@@ -17,25 +17,98 @@ locals {
     }
   ]...)
 
+  services = {
+    for k, v in local._services_computed : k => merge(
+      v,
+      v.features.b2 ? {
+        b2_application_key_id        = b2_application_key.service[k].application_key_id
+        b2_application_key_sensitive = b2_application_key.service[k].application_key
+        b2_bucket_name               = b2_bucket.service[k].bucket_name
+        b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
+      } : {},
+      v.target == "fly" ? {
+        platform_config = merge(v.platform_config, {
+          fly = merge(v.platform_config.fly, {
+            app_name = coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")
+          })
+        })
+      } : {},
+      v.features.password ? {
+        password_hash_sensitive = bcrypt_hash.service[k].id
+        password_sensitive      = random_password.service[k].result
+      } : {},
+      v.features.resend ? {
+        resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_service[k].create_response).token
+      } : {},
+      {
+        for secret in v.features.secrets : "${secret.name}_sensitive" => (
+          contains(["hex", "base64"], secret.type) ? (
+            secret.type == "hex" ?
+            random_id.service_secret["${k}-${secret.name}"].hex :
+            random_id.service_secret["${k}-${secret.name}"].b64_std
+          ) :
+          random_password.service_secret["${k}-${secret.name}"].result
+        )
+      },
+      contains(keys(local.servers), v.target) ? merge(
+        {
+          fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
+        },
+        contains(["cloudflare", "external"], v.networking.expose) ? {
+          fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
+        } : {}
+      ) : {},
+      v.features.tailscale ? {
+        tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
+      } : {},
+      {
+        for i, url in v.networking.urls : "url_${i}" => url
+      }
+    )
+  }
+
+  services_base_template_vars = {
+    for k, v in local.services : k => {
+      defaults = local.defaults
+      server   = try(local.servers[v.target], null)
+      servers  = local.servers
+      service  = v
+    }
+  }
+
+  services_by_feature = {
+    for feature, default_value in local.service_defaults.features : feature => {
+      for k, v in local._services_computed : k => v
+      if v.features[feature]
+    }
+    if can(tobool(default_value))
+  }
+
+  services_compose = {
+    for k, v in local.services : k => templatefile(
+      "${path.module}/services/${v.identity.service}/docker-compose.yaml",
+      local.services_template_vars[k]
+    )
+    if fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
+  }
+
+  services_env = {
+    for k, v in local.services : k => {
+      for key, value in v.platform_config.docker.env :
+      key => try(templatestring(tostring(value), local.services_base_template_vars[k]), tostring(value))
+      if value != null
+    }
+  }
+
   services_files = {
     for pair in flatten([
       for k, v in local.services : [
         for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
+          content      = templatefile("${path.module}/${filepath}", local.services_template_vars[k])
           rel_path     = trimprefix(filepath, "services/${v.identity.service}/")
           service_name = v.identity.service
           stack        = k
           target       = v.target
-
-          content = templatefile("${path.module}/${filepath}", {
-            defaults        = local.defaults
-            env             = local.services_env[k]
-            labels          = local.services_labels[k]
-            server          = try(local.servers[v.target], null)
-            servers         = local.servers
-            service         = v
-            services        = local.services
-            services_labels = local.services_labels
-          })
         }
         if !endswith(filepath, "docker-compose.yaml")
       ]
@@ -49,12 +122,16 @@ locals {
     )
   }
 
-  services_env = {
-    for k, v in local.services : k => {
-      for key, value in v.platform_config.docker.env :
-      key => try(templatestring(tostring(value), { defaults = local.defaults, server = try(local.servers[v.target], null), servers = local.servers, service = v }), tostring(value))
-      if value != null
-    }
+  services_filtered = {
+    for k, v in local.services : k => merge(
+      {
+        for kk, vv in v : kk => vv
+        if vv != null && vv != "" && vv != false
+      },
+      v.target == "fly" ? {
+        url_fly = "${v.platform_config.fly.app_name}.fly.dev"
+      } : {}
+    )
   }
 
   services_labels = {
@@ -81,81 +158,20 @@ locals {
         } : {},
         {
           for key, value in v.platform_config.docker.labels :
-          key => try(templatestring(tostring(value), { defaults = local.defaults, server = try(local.servers[v.target], null), servers = local.servers, service = v }), tostring(value))
+          key => try(templatestring(tostring(value), local.services_base_template_vars[k]), tostring(value))
           if value != null
         }
       ) : label => value if value != null
     }
   }
 
-  services = {
-    for k, v in local._services_computed : k => merge(
-      v,
-      {
-        for secret in v.features.secrets : "${secret.name}_sensitive" => (
-          contains(["hex", "base64"], secret.type) ? (
-            secret.type == "hex" ?
-            random_id.service_secret["${k}-${secret.name}"].hex :
-            random_id.service_secret["${k}-${secret.name}"].b64_std
-          ) :
-          random_password.service_secret["${k}-${secret.name}"].result
-        )
-      },
-      {
-        for i, url in v.networking.urls : "url_${i}" => url
-      },
-      v.features.b2 ? {
-        b2_application_key_id        = b2_application_key.service[k].application_key_id
-        b2_application_key_sensitive = b2_application_key.service[k].application_key
-        b2_bucket_name               = b2_bucket.service[k].bucket_name
-        b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
-      } : {},
-      v.features.password ? {
-        password_hash_sensitive = bcrypt_hash.service[k].id
-        password_sensitive      = random_password.service[k].result
-      } : {},
-      v.features.resend ? {
-        resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_service[k].create_response).token
-      } : {},
-      v.features.tailscale ? {
-        tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
-      } : {},
-      v.target == "fly" ? {
-        platform_config = merge(v.platform_config, {
-          fly = merge(v.platform_config.fly, {
-            app_name = coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")
-          })
-        })
-      } : {},
-      contains(keys(local.servers), v.target) ? merge(
-        {
-          fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
-        },
-        contains(["cloudflare", "external"], v.networking.expose) ? {
-          fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
-        } : {}
-      ) : {}
-    )
-  }
-
-  services_by_feature = {
-    for feature, default_value in local.service_defaults.features : feature => {
-      for k, v in local._services_computed : k => v
-      if v.features[feature]
-    }
-    if can(tobool(default_value))
-  }
-
-  services_filtered = {
-    for k, v in local.services : k => merge(
-      {
-        for kk, vv in v : kk => vv
-        if vv != null && vv != "" && vv != false
-      },
-      v.target == "fly" ? {
-        url_fly = "${v.platform_config.fly.app_name}.fly.dev"
-      } : {}
-    )
+  services_template_vars = {
+    for k, v in local.services : k => merge(local.services_base_template_vars[k], {
+      env             = local.services_env[k]
+      labels          = local.services_labels[k]
+      services        = local.services
+      services_labels = local.services_labels
+    })
   }
 }
 

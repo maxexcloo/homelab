@@ -21,7 +21,7 @@ resource "github_actions_secret" "truenas_age_key" {
 resource "github_repository_file" "truenas_services_compose" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if can(local.services_files["${k}/docker-compose.yaml"])
+    if contains(keys(local.services_compose), k)
   }
 
   commit_message      = "Update ${each.key} compose"
@@ -47,7 +47,7 @@ resource "github_repository_file" "truenas_services_config" {
 resource "github_repository_file" "truenas_services_override" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if !can(local.services_files["${k}/docker-compose.yaml"])
+    if !contains(keys(local.services_compose), k)
   }
 
   commit_message      = "Update ${each.key} overrides"
@@ -72,7 +72,7 @@ resource "github_repository_file" "truenas_sops_config" {
 resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if can(local.services_files["${k}/docker-compose.yaml"])
+    if contains(keys(local.services_compose), k)
   }
 
   environment = {
@@ -81,18 +81,9 @@ resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.value.target}/${each.value.identity.service}/compose.json" : ""
 
     CONTENT = sensitive(base64encode(jsonencode({
-      app_name   = each.value.identity.service
-      custom_app = true
-
-      custom_compose_config_string = templatefile("${path.module}/services/${each.value.identity.service}/docker-compose.yaml", {
-        defaults = local.defaults
-        env      = local.services_env[each.key]
-        labels   = local.services_labels[each.key]
-        server   = local.servers[each.value.target]
-        servers  = local.servers
-        service  = each.value
-        services = local.services
-      })
+      app_name                     = each.value.identity.service
+      custom_app                   = true
+      custom_compose_config_string = local.services_compose[each.key]
     })))
   }
 
@@ -112,7 +103,7 @@ resource "shell_sensitive_script" "truenas_services_compose_encrypt" {
 resource "shell_sensitive_script" "truenas_services_override_encrypt" {
   for_each = {
     for k, v in local.truenas_services : k => v
-    if !can(local.services_files["${k}/docker-compose.yaml"])
+    if !contains(keys(local.services_compose), k)
   }
 
   environment = {

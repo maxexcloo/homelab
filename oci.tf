@@ -27,6 +27,21 @@ locals {
     for k, v in local.servers : k => v
     if v.platform == "oci" && v.type == "vm" && v.platform_config.oci != null
   }
+
+  oci_vms_ingress_rules = merge([
+    for k, v in local.oci_vms : {
+      for item in flatten([
+        for port in v.platform_config.oci.ingress_ports : [
+          for combo in [
+            { family = "ipv4", protocol = "6", source = "0.0.0.0/0" },
+            { family = "ipv4", protocol = "17", source = "0.0.0.0/0" },
+            { family = "ipv6", protocol = "6", source = "::/0" },
+            { family = "ipv6", protocol = "17", source = "::/0" },
+          ] : merge(combo, { port = port, vm_key = k })
+        ]
+      ]) : "${item.vm_key}-${item.protocol == "6" ? "tcp" : "udp"}-${item.family}-${item.port}" => item
+    }
+  ]...)
 }
 
 resource "oci_core_default_dhcp_options" "default" {
@@ -174,98 +189,34 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_icmp_ip
   source_type               = "CIDR_BLOCK"
 }
 
-resource "oci_core_network_security_group_security_rule" "server_ingress_tcp" {
-  for_each = merge([
-    for k, v in local.oci_vms : {
-      for port in v.platform_config.oci.ingress_ports : "${k}-tcp-${port}" => {
-        vm_key = k
-        port   = port
-      }
-    }
-  ]...)
+resource "oci_core_network_security_group_security_rule" "server_ingress_port" {
+  for_each = local.oci_vms_ingress_rules
 
   direction                 = "INGRESS"
   network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
-  protocol                  = "6"
-  source                    = "0.0.0.0/0"
+  protocol                  = each.value.protocol
+  source                    = each.value.source
   source_type               = "CIDR_BLOCK"
 
-  tcp_options {
-    destination_port_range {
-      max = each.value.port
-      min = each.value.port
+  dynamic "tcp_options" {
+    for_each = each.value.protocol == "6" ? [1] : []
+
+    content {
+      destination_port_range {
+        max = each.value.port
+        min = each.value.port
+      }
     }
   }
-}
 
-resource "oci_core_network_security_group_security_rule" "server_ingress_tcp_ipv6" {
-  for_each = merge([
-    for k, v in local.oci_vms : {
-      for port in v.platform_config.oci.ingress_ports : "${k}-tcp-${port}" => {
-        vm_key = k
-        port   = port
+  dynamic "udp_options" {
+    for_each = each.value.protocol == "17" ? [1] : []
+
+    content {
+      destination_port_range {
+        max = each.value.port
+        min = each.value.port
       }
-    }
-  ]...)
-
-  direction                 = "INGRESS"
-  network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
-  protocol                  = "6"
-  source                    = "::/0"
-  source_type               = "CIDR_BLOCK"
-
-  tcp_options {
-    destination_port_range {
-      max = each.value.port
-      min = each.value.port
-    }
-  }
-}
-
-resource "oci_core_network_security_group_security_rule" "server_ingress_udp" {
-  for_each = merge([
-    for k, v in local.oci_vms : {
-      for port in v.platform_config.oci.ingress_ports : "${k}-udp-${port}" => {
-        vm_key = k
-        port   = port
-      }
-    }
-  ]...)
-
-  direction                 = "INGRESS"
-  network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
-  protocol                  = "17"
-  source                    = "0.0.0.0/0"
-  source_type               = "CIDR_BLOCK"
-
-  udp_options {
-    destination_port_range {
-      max = each.value.port
-      min = each.value.port
-    }
-  }
-}
-
-resource "oci_core_network_security_group_security_rule" "server_ingress_udp_ipv6" {
-  for_each = merge([
-    for k, v in local.oci_vms : {
-      for port in v.platform_config.oci.ingress_ports : "${k}-udp-${port}" => {
-        vm_key = k
-        port   = port
-      }
-    }
-  ]...)
-
-  direction                 = "INGRESS"
-  network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
-  protocol                  = "17"
-  source                    = "::/0"
-  source_type               = "CIDR_BLOCK"
-
-  udp_options {
-    destination_port_range {
-      max = each.value.port
-      min = each.value.port
     }
   }
 }

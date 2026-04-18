@@ -116,17 +116,9 @@ resource "shell_sensitive_script" "fly_services_toml_encrypt" {
 
   environment = {
     AGE_PUBLIC_KEY = age_secret_key.fly.public_key
+    CONTENT        = sensitive(base64encode(templatefile("${path.module}/templates/fly/fly.toml", local.services_template_vars[each.key])))
     CONTENT_TYPE   = "toml"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.identity.service}/fly.toml" : ""
-
-    CONTENT = sensitive(base64encode(templatefile("${path.module}/templates/fly/fly.toml", {
-      app_name = each.value.platform_config.fly.app_name
-      defaults = local.defaults
-      server   = try(local.servers[each.value.target], null)
-      servers  = local.servers
-      service  = each.value
-      services = local.services
-    })))
   }
 
   lifecycle_commands {

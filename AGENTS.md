@@ -7,7 +7,8 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 - `data/defaults.yml` — global config and schema defaults for servers/services
 - `data/servers/*.yml` — one file per server; deepmerged with server defaults in `servers.tf`
 - `data/services/*.yml` — one file per service; deepmerged with service defaults in `services.tf`; expanded per `deploy_to` target (e.g. `gatus-fly`)
-- `templates/` — HCL template files for cloud-init configs (`cloud_config/`), Docker Compose and stack configs (`docker/<service>/`), and Fly.io configs (`fly/`)
+- `templates/` — HCL template files for cloud-init configs (`cloud_config/`) and Fly.io configs (`fly/`)
+- `services/<service>/` — Docker Compose templates and per-service config files (e.g. `docker-compose.yaml`, `app/config/*.yaml`)
 
 Key computed locals:
 - `local.servers` — fully-merged server map with computed fields (FQDNs, feature flags, etc.)

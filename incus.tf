@@ -1,7 +1,7 @@
 locals {
   incus_servers = {
     for k, v in local.servers : k => v
-    if v.platform == "incus" && v.type == "server" && v.networking.management_address != "" && v.networking.management_port != 0
+    if v.platform == "incus" && v.type == "server" && v.networking.management_address != ""
   }
 
   incus_vms = {

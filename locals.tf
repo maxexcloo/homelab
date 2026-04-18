@@ -77,5 +77,10 @@ output "summary" {
     defaults = local.defaults
     servers  = keys(local.servers)
     services = keys(local.services)
+
+    services_by_feature = {
+      for feature, matches in local.services_by_feature : feature => keys(matches)
+      if length(matches) > 0
+    }
   }
 }

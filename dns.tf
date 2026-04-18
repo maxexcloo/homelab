@@ -118,14 +118,11 @@ locals {
             name    = url
             proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"
-            zone = try(
-              split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
-              null
-            )
+            zone    = local.dns_url_zones[url]
           }
         )
       }
-      if length([for z in local.dns_zones : z if endswith(url, z)]) > 0
+      if local.dns_url_zones[url] != null
     ]
   ])...)
 
@@ -143,14 +140,11 @@ locals {
             name    = url
             proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"
-            zone = try(
-              split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
-              null
-            )
+            zone    = local.dns_url_zones[url]
           }
         )
       }
-      if length([for z in local.dns_zones : z if endswith(url, z)]) > 0
+      if local.dns_url_zones[url] != null
     ]
     if contains(keys(local.servers), service.target)
   ])...)
@@ -174,6 +168,15 @@ locals {
       type    = "CNAME"
       zone    = hostname.zone
     }
+  }
+
+  dns_url_zones = {
+    for url in distinct(flatten([
+      for k, service in local.services : service.networking.urls
+      ])) : url => try(
+      split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
+      null
+    )
   }
 
   dns_zones = keys(local.dns)

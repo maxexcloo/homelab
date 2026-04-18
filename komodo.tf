@@ -3,7 +3,7 @@ locals {
     for k, v in local.services : k => v
     if contains(keys(local.servers), v.target) &&
     local.servers[v.target].features.docker &&
-    can(local.services_files["${k}/docker-compose.yaml"])
+    contains(keys(local.services_compose), k)
   }
 }
 
@@ -111,18 +111,9 @@ resource "shell_sensitive_script" "komodo_stacks_compose_encrypt" {
 
   environment = {
     AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
+    CONTENT        = sensitive(base64encode(local.services_compose[each.key]))
     CONTENT_TYPE   = "yaml"
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
-
-    CONTENT = sensitive(base64encode(templatefile("${path.module}/services/${each.value.identity.service}/docker-compose.yaml", {
-      defaults = local.defaults
-      env      = local.services_env[each.key]
-      labels   = local.services_labels[each.key]
-      server   = local.servers[each.value.target]
-      servers  = local.servers
-      service  = each.value
-      services = local.services
-    })))
   }
 
   lifecycle_commands {

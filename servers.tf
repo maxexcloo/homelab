@@ -6,29 +6,34 @@ locals {
     } : k => provider::deepmerge::mergo(local.server_defaults, v)
   }
 
+  _servers_ancestors = {
+    for k, v in local._servers : k => compact([
+      k,
+      v.parent,
+      try(local._servers[v.parent].parent, ""),
+    ])
+  }
+
   _servers_computed = {
     for k, v in local._servers : k => {
       description = v.parent == "" ? v.identity.title : (v.identity.region == local._servers[v.parent].identity.name ? "${v.identity.title} (${upper(v.identity.region)})" : "${local._servers[v.parent].identity.title} ${v.identity.title} (${upper(v.identity.region)})")
       fqdn        = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
       slug        = k
 
-      public_address = try(compact([
-        v.networking.public_address,
-        try(local._servers[v.parent].networking.public_address, ""),
-        try(local._servers[local._servers[v.parent].parent].networking.public_address, ""),
-      ])[0], null)
+      public_address = try([
+        for a in local._servers_ancestors[k] : local._servers[a].networking.public_address
+        if local._servers[a].networking.public_address != ""
+      ][0], null)
 
-      public_ipv4 = try(compact([
-        can(cidrhost(v.networking.public_ipv4, 0)) ? v.networking.public_ipv4 : "",
-        try(can(cidrhost(local._servers[v.parent].networking.public_ipv4, 0)) ? local._servers[v.parent].networking.public_ipv4 : "", ""),
-        try(can(cidrhost(local._servers[local._servers[v.parent].parent].networking.public_ipv4, 0)) ? local._servers[local._servers[v.parent].parent].networking.public_ipv4 : "", ""),
-      ])[0], null)
+      public_ipv4 = try([
+        for a in local._servers_ancestors[k] : local._servers[a].networking.public_ipv4
+        if can(cidrhost(local._servers[a].networking.public_ipv4, 0))
+      ][0], null)
 
-      public_ipv6 = try(compact([
-        can(cidrhost("${v.networking.public_ipv6}/128", 0)) ? v.networking.public_ipv6 : "",
-        try(can(cidrhost("${local._servers[v.parent].networking.public_ipv6}/128", 0)) ? local._servers[v.parent].networking.public_ipv6 : "", ""),
-        try(can(cidrhost("${local._servers[local._servers[v.parent].parent].networking.public_ipv6}/128", 0)) ? local._servers[local._servers[v.parent].parent].networking.public_ipv6 : "", ""),
-      ])[0], null)
+      public_ipv6 = try([
+        for a in local._servers_ancestors[k] : local._servers[a].networking.public_ipv6
+        if can(cidrhost("${local._servers[a].networking.public_ipv6}/128", 0))
+      ][0], null)
     }
   }
 
