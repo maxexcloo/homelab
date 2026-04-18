@@ -29,18 +29,26 @@ locals {
   }
 
   oci_vms_ingress_rules = merge([
-    for k, v in local.oci_vms : {
-      for item in flatten([
-        for port in v.platform_config.oci.ingress_ports : [
-          for combo in [
-            { family = "ipv4", protocol = "6", source = "0.0.0.0/0" },
-            { family = "ipv4", protocol = "17", source = "0.0.0.0/0" },
-            { family = "ipv6", protocol = "6", source = "::/0" },
-            { family = "ipv6", protocol = "17", source = "::/0" },
-          ] : merge(combo, { port = port, vm_key = k })
-        ]
-      ]) : "${item.vm_key}-${item.protocol == "6" ? "tcp" : "udp"}-${item.family}-${item.port}" => item
-    }
+    for k, v in local.oci_vms : merge(
+      {
+        for item in [
+          { family = "ipv4", port = null, protocol = "1", source = "0.0.0.0/0", vm_key = k },
+          { family = "ipv6", port = null, protocol = "1", source = "::/0", vm_key = k },
+        ] : "${item.vm_key}-icmp-${item.family}" => item
+      },
+      {
+        for item in flatten([
+          for port in v.platform_config.oci.ingress_ports : [
+            for combo in [
+              { family = "ipv4", protocol = "6", source = "0.0.0.0/0" },
+              { family = "ipv4", protocol = "17", source = "0.0.0.0/0" },
+              { family = "ipv6", protocol = "6", source = "::/0" },
+              { family = "ipv6", protocol = "17", source = "::/0" },
+            ] : merge(combo, { port = port, vm_key = k })
+          ]
+        ]) : "${item.vm_key}-${item.protocol == "6" ? "tcp" : "udp"}-${item.family}-${item.port}" => item
+      }
+    )
   ]...)
 }
 
@@ -167,26 +175,6 @@ resource "oci_core_network_security_group" "server" {
   compartment_id = var.oci_tenancy_ocid
   display_name   = each.key
   vcn_id         = oci_core_vcn.default[each.value.identity.region].id
-}
-
-resource "oci_core_network_security_group_security_rule" "server_ingress_icmp" {
-  for_each = local.oci_vms
-
-  direction                 = "INGRESS"
-  network_security_group_id = oci_core_network_security_group.server[each.key].id
-  protocol                  = "1"
-  source                    = "0.0.0.0/0"
-  source_type               = "CIDR_BLOCK"
-}
-
-resource "oci_core_network_security_group_security_rule" "server_ingress_icmp_ipv6" {
-  for_each = local.oci_vms
-
-  direction                 = "INGRESS"
-  network_security_group_id = oci_core_network_security_group.server[each.key].id
-  protocol                  = "1"
-  source                    = "::/0"
-  source_type               = "CIDR_BLOCK"
 }
 
 resource "oci_core_network_security_group_security_rule" "server_ingress_port" {

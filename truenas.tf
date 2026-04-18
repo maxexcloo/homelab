@@ -114,7 +114,8 @@ resource "shell_sensitive_script" "truenas_services_override_encrypt" {
     CONTENT = sensitive(base64encode(jsonencode({
       values = {
         containerConfig = {
-          labels = local.services_labels[each.key]
+          environment = local.services_env[each.key]
+          labels      = local.services_labels[each.key]
         }
       }
     })))

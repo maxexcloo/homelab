@@ -118,11 +118,11 @@ locals {
             name    = url
             proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"
-            zone    = local.dns_url_zones[url]
+            zone    = local.dns_zones_urls[url]
           }
         )
       }
-      if local.dns_url_zones[url] != null
+      if local.dns_zones_urls[url] != null
     ]
   ])...)
 
@@ -140,11 +140,11 @@ locals {
             name    = url
             proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"
-            zone    = local.dns_url_zones[url]
+            zone    = local.dns_zones_urls[url]
           }
         )
       }
-      if local.dns_url_zones[url] != null
+      if local.dns_zones_urls[url] != null
     ]
     if contains(keys(local.servers), service.target)
   ])...)
@@ -170,7 +170,9 @@ locals {
     }
   }
 
-  dns_url_zones = {
+  dns_zones = keys(local.dns)
+
+  dns_zones_urls = {
     for url in distinct(flatten([
       for k, service in local.services : service.networking.urls
       ])) : url => try(
@@ -178,6 +180,4 @@ locals {
       null
     )
   }
-
-  dns_zones = keys(local.dns)
 }
