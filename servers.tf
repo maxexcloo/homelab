@@ -106,8 +106,18 @@ resource "terraform_data" "servers_validation" {
 
   lifecycle {
     precondition {
+      condition     = length([for k, v in local._servers : k if v.platform == "incus" && v.type == "vm" && (v.parent == "" || try(local._servers[v.parent].platform != "incus" || local._servers[v.parent].type != "server" || local._servers[v.parent].networking.management_address == "", true))]) == 0
+      error_message = "Incus VMs must reference an Incus server parent with networking.management_address set: ${join(", ", [for k, v in local._servers : k if v.platform == "incus" && v.type == "vm" && (v.parent == "" || try(local._servers[v.parent].platform != "incus" || local._servers[v.parent].type != "server" || local._servers[v.parent].networking.management_address == "", true))])}"
+    }
+
+    precondition {
       condition     = length([for k, v in local._servers : "${k} -> ${v.parent}" if v.parent != "" && !contains(keys(local._servers), v.parent)]) == 0
       error_message = "Invalid parent references found in servers configuration: ${join(", ", [for k, v in local._servers : "${k} -> ${v.parent}" if v.parent != "" && !contains(keys(local._servers), v.parent)])}"
+    }
+
+    precondition {
+      condition     = length([for k, v in local._servers : k if v.platform == "oci" && v.type != "vm"]) == 0
+      error_message = "OCI servers must be type vm: ${join(", ", [for k, v in local._servers : k if v.platform == "oci" && v.type != "vm"])}"
     }
 
     precondition {

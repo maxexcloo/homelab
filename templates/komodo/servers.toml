@@ -1,0 +1,13 @@
+%{ for k, v in servers ~}
+%{ if v.features.docker ~}
+[[server]]
+description = "${v.description}"
+name = "${k}"
+
+[server.config]
+address = "https://${v.fqdn_internal}:8120"
+enabled = true
+region = "${v.identity.region}"
+
+%{ endif ~}
+%{ endfor ~}

@@ -27,6 +27,9 @@ locals {
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
       } : {},
       lookup(local._services_fly_computed, k, {}),
+      v.target == "fly" ? {
+        fqdn_external = "${local._services_fly_computed[k].platform_config.fly.app_name}.fly.dev"
+      } : {},
       v.features.password ? {
         password_hash_sensitive = bcrypt_hash.service[k].id
         password_sensitive      = random_password.service[k].result
@@ -241,16 +244,6 @@ resource "terraform_data" "services_validation" {
 
   lifecycle {
     precondition {
-      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target) && target != "fly"]])) == 0
-      error_message = "Invalid server references found in services configuration: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if !contains(keys(local.servers), target) && target != "fly"]]))}"
-    }
-
-    precondition {
-      condition     = length([for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null]) == 0
-      error_message = "Fly services must have networking.port set: ${join(", ", [for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null])}"
-    }
-
-    precondition {
       condition = length(flatten([
         for k, v in local._services : [
           for target in v.deploy_to : "${k} -> ${target}"
@@ -260,6 +253,16 @@ resource "terraform_data" "services_validation" {
         ]
       ])) == 0
       error_message = "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if contains(keys(local.servers), target) && v.networking.expose == "cloudflare" && !local.servers[target].features.cloudflare_zero_trust_tunnel]]))}"
+    }
+
+    precondition {
+      condition     = length([for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null]) == 0
+      error_message = "Fly services must have networking.port set: ${join(", ", [for k, v in local._services : k if contains(v.deploy_to, "fly") && v.networking.port == null])}"
+    }
+
+    precondition {
+      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target) && target != "fly"]])) == 0
+      error_message = "Invalid server references found in services configuration: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if !contains(keys(local.servers), target) && target != "fly"]]))}"
     }
   }
 }

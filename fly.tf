@@ -1,13 +1,9 @@
 locals {
   _services_fly_computed = {
     for k, v in local._services_computed : k => {
-      fqdn_external = "${coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")}.fly.dev"
-      networking = merge(v.networking, {
-        urls = distinct(concat(v.networking.urls, ["${coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")}.fly.dev"]))
-      })
       platform_config = merge(v.platform_config, {
         fly = merge(v.platform_config.fly, {
-          app_name = coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}")
+          app_name = trimsuffix(coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}"), ".fly.dev")
         })
       })
     }
@@ -22,7 +18,7 @@ locals {
   fly_services_env = {
     for k, env in local.fly_services_env_vars : k => join("\n", [
       for field_name in sort(nonsensitive(keys(env))) :
-      "${field_name}=${env[field_name]}"
+      "${field_name}=\"${replace(replace(replace(replace(env[field_name], "\\", "\\\\"), "\n", "\\n"), "\r", "\\r"), "\"", "\\\"")}\""
     ])
     if length(nonsensitive(keys(env))) > 0
   }

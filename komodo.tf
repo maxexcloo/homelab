@@ -13,17 +13,10 @@ resource "github_repository_file" "komodo_resource_sync" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = <<-EOT
-    [[resource_sync]]
-    name = "komodo"
-
-    [resource_sync.config]
-    delete = true
-    git_account = "${data.github_user.default.login}"
-    managed = true
-    repo = "${data.github_user.default.login}/${local.defaults.github.repositories.komodo}"
-    resource_path = ["."]
-  EOT
+  content = templatefile("${path.module}/templates/komodo/resource_sync.toml", {
+    github_user = data.github_user.default.login
+    repository  = local.defaults.github.repositories.komodo
+  })
 }
 
 resource "github_repository_file" "komodo_servers" {
@@ -32,19 +25,9 @@ resource "github_repository_file" "komodo_servers" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = join("\n", [
-    for k, v in local.servers : <<-EOT
-      [[server]]
-      name = "${k}"
-      description = "${v.description}"
-
-      [server.config]
-      address = "https://${v.fqdn_internal}:8120"
-      enabled = true
-      region = "${v.identity.region}"
-    EOT
-    if v.features.docker
-  ])
+  content = templatefile("${path.module}/templates/komodo/servers.toml", {
+    servers = local.servers
+  })
 }
 
 resource "github_repository_file" "komodo_sops_config" {
@@ -65,22 +48,11 @@ resource "github_repository_file" "komodo_stacks" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = join("\n", [
-    for k, v in local.komodo_stacks : <<-EOT
-      [[stack]]
-      name = "${k}"
-      description = "${v.identity.title}"
-
-      [stack.config]
-      auto_update = true
-      repo = "${data.github_user.default.login}/${local.defaults.github.repositories.komodo}"
-      run_directory = "${k}"
-      server = "${v.target}"
-
-      [stack.config.pre_deploy]
-      command = "export SOPS_AGE_KEY=[[AGE_SECRET_KEY]] && find . \\( -name '*.yaml' -o -name '*.toml' \\) -exec sops decrypt -i {} \\;"
-    EOT
-  ])
+  content = templatefile("${path.module}/templates/komodo/stacks.toml", {
+    github_user = data.github_user.default.login
+    repository  = local.defaults.github.repositories.komodo
+    stacks      = local.komodo_stacks
+  })
 }
 
 resource "github_repository_file" "komodo_stacks_compose" {

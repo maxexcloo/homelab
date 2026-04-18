@@ -185,7 +185,7 @@ locals {
     for url in distinct(flatten([
       for k, service in local.services : service.networking.urls
       ])) : url => try(
-      split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if endswith(url, z)]))[0])[1],
+      split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if url == z || endswith(url, ".${z}")]))[0])[1],
       null
     )
   }

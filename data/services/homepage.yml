@@ -1,7 +1,6 @@
 # yaml-language-server: $schema=../../schemas/service.json
 deploy_to:
   - au-truenas
-  - fly
 identity:
   description: Application Dashboard
   group: System
@@ -11,7 +10,3 @@ identity:
 networking:
   port: 3000
   scheme: http
-platform_config:
-  docker:
-    env:
-      HOMEPAGE_ALLOWED_HOSTS: '${join(",", compact(concat(["127.0.0.1", "localhost"], service.networking.urls)))}'

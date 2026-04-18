@@ -2,7 +2,6 @@
 deploy_to:
   - fly
 features:
-  pushover: true
   resend: true
   tailscale: true
 identity:

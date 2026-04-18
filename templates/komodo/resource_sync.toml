@@ -1,0 +1,9 @@
+[[resource_sync]]
+name = "komodo"
+
+[resource_sync.config]
+delete = true
+git_account = "${github_user}"
+managed = true
+repo = "${github_user}/${repository}"
+resource_path = ["."]
