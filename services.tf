@@ -122,6 +122,10 @@ locals {
     )
   }
 
+  services_files_age_public_keys = {
+    for k, v in local.services_files : k => v.target == "fly" ? age_secret_key.fly.public_key : local.servers[v.target].age_public_key
+  }
+
   services_filtered = {
     for k, v in local.services : k => merge(
       {
@@ -219,11 +223,11 @@ resource "shell_sensitive_script" "service_file_encrypt" {
   for_each = local.services_files
 
   environment = {
-    AGE_PUBLIC_KEY = each.value.target == "fly" ? age_secret_key.fly.public_key : local.servers[each.value.target].age_public_key
+    AGE_PUBLIC_KEY = local.services_files_age_public_keys[each.key]
     CONTENT        = sensitive(base64encode(each.value.content))
     CONTENT_TYPE   = each.value.content_type
-    FILENAME       = each.value.rel_path
     DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${each.key}" : ""
+    FILENAME       = each.value.rel_path
   }
 
   lifecycle_commands {
@@ -234,7 +238,7 @@ resource "shell_sensitive_script" "service_file_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(each.value.target == "fly" ? age_secret_key.fly.public_key : local.servers[each.value.target].age_public_key)
+    age_public_key_hash = sha256(local.services_files_age_public_keys[each.key])
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }

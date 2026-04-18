@@ -92,8 +92,8 @@ resource "incus_instance" "vm" {
 
       properties = merge(
         {
-          vendorid  = device.value.vendorid
           productid = device.value.productid
+          vendorid  = device.value.vendorid
         },
         device.value.mode != "" ? {
           mode = device.value.mode

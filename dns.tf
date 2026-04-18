@@ -39,6 +39,7 @@ locals {
         "${local.defaults.domains.external}-${k}-cname" = {
           content = server.public_address
           name    = "${server.fqdn}.${local.defaults.domains.external}"
+          proxied = server.features.cloudflare_proxy
           type    = "CNAME"
           zone    = local.defaults.domains.external
         }
@@ -47,12 +48,14 @@ locals {
         "${local.defaults.domains.external}-${k}-a" = {
           content = data.oci_core_vnic.server[k].public_ip_address
           name    = "${server.fqdn}.${local.defaults.domains.external}"
+          proxied = server.features.cloudflare_proxy
           type    = "A"
           zone    = local.defaults.domains.external
         }
         "${local.defaults.domains.external}-${k}-aaaa" = {
           content = data.oci_core_vnic.server[k].ipv6addresses[0]
           name    = "${server.fqdn}.${local.defaults.domains.external}"
+          proxied = server.features.cloudflare_proxy
           type    = "AAAA"
           zone    = local.defaults.domains.external
         }
@@ -61,6 +64,7 @@ locals {
         "${local.defaults.domains.external}-${k}-a" = {
           content = server.public_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.external}"
+          proxied = server.features.cloudflare_proxy
           type    = "A"
           zone    = local.defaults.domains.external
         }
@@ -69,6 +73,7 @@ locals {
         "${local.defaults.domains.external}-${k}-aaaa" = {
           content = server.public_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.external}"
+          proxied = server.features.cloudflare_proxy
           type    = "AAAA"
           zone    = local.defaults.domains.external
         }
@@ -77,6 +82,7 @@ locals {
         "${local.defaults.domains.internal}-${k}-a" = {
           content = server.tailscale_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
+          proxied = false
           type    = "A"
           zone    = local.defaults.domains.internal
         }
@@ -85,6 +91,7 @@ locals {
         "${local.defaults.domains.internal}-${k}-aaaa" = {
           content = server.tailscale_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
+          proxied = false
           type    = "AAAA"
           zone    = local.defaults.domains.internal
         }
@@ -158,13 +165,15 @@ locals {
         values(local.dns_records_services_fly),
         values(local.dns_records_services_urls)
         ) : {
-        name = record.name
-        zone = record.zone
+        name    = record.name
+        proxied = record.proxied
+        zone    = record.zone
       }
       if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
       ]) : "${hostname.zone}-${hostname.name}-wildcard" => {
       content = hostname.name
       name    = "*.${hostname.name}"
+      proxied = hostname.proxied
       type    = "CNAME"
       zone    = hostname.zone
     }

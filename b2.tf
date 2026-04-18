@@ -1,12 +1,7 @@
 data "b2_account_info" "default" {}
 
-resource "b2_application_key" "server" {
-  for_each = b2_bucket.server
-
-  bucket_id = each.value.id
-  key_name  = each.key
-
-  capabilities = [
+locals {
+  b2_application_key_capabilities = [
     "deleteFiles",
     "listBuckets",
     "listFiles",
@@ -17,21 +12,22 @@ resource "b2_application_key" "server" {
   ]
 }
 
+resource "b2_application_key" "server" {
+  for_each = b2_bucket.server
+
+  bucket_id = each.value.id
+  key_name  = each.key
+
+  capabilities = local.b2_application_key_capabilities
+}
+
 resource "b2_application_key" "service" {
   for_each = b2_bucket.service
 
   bucket_id = each.value.id
   key_name  = each.key
 
-  capabilities = [
-    "deleteFiles",
-    "listBuckets",
-    "listFiles",
-    "readBuckets",
-    "readFiles",
-    "shareFiles",
-    "writeFiles"
-  ]
+  capabilities = local.b2_application_key_capabilities
 }
 
 resource "b2_bucket" "server" {

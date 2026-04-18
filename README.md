@@ -30,6 +30,8 @@ mise run apply  # Apply changes
 
 Run `mise run setup` to create `.mise.local.toml` from the template, then fill in credentials — see `.mise.local.toml.default` for the full list.
 
+The provider lock file (`.terraform.lock.hcl`) should be committed when provider selections change. The `.terraform/` plugin directory and any plan/state files stay local.
+
 ## Architecture
 
 YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers.
@@ -54,6 +56,8 @@ OpenTofu
 ```
 
 Rendered service configs (Docker Compose, Fly.toml, TrueNAS overrides) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`, where deployment runners consume them.
+
+Rendered plaintext can be written locally for debugging by setting `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`. Leave it unset for normal runs.
 
 ## Workflow
 

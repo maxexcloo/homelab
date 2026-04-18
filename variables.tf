@@ -1,6 +1,6 @@
 variable "debug_dir" {
-  default     = ".debug"
-  description = "Optional local directory to write plaintext encrypted content for debugging. Set to a path like /tmp/.homelab to enable."
+  default     = ""
+  description = "Optional local directory to write plaintext rendered content for debugging. Leave empty unless actively troubleshooting encryption output."
   sensitive   = false
   type        = string
 }

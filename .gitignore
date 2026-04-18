@@ -1,10 +1,8 @@
 .bitwarden
 .claude
-.debug
 .mise.local.toml
+.temp
 .terraform
-.terraform.lock.hcl
 *.tfplan
-*.tfplan.*
 *.tfstate
 *.tfstate.*
