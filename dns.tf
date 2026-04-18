@@ -159,8 +159,8 @@ locals {
   dns_records_wildcards = {
     for hostname in distinct([
       for record in concat(
-        values(local.dns_records_servers),
         values(local.dns_records_manual),
+        values(local.dns_records_servers),
         values(local.dns_records_services),
         values(local.dns_records_services_fly),
         values(local.dns_records_services_urls)
