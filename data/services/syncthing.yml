@@ -3,10 +3,18 @@ deploy_to:
   - au-truenas
 identity:
   description: File Synchronisation
-  group: System
   name: syncthing
-  service: syncthing
   title: Syncthing
 networking:
   port: 20910
   scheme: http
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: System
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"
+  truenas:
+    train: stable

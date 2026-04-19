@@ -17,28 +17,35 @@ locals {
     if v.target == "fly"
   }
 
-  # Render dotenv content explicitly because GitHub stores the encrypted file,
-  # while flyctl imports the decrypted .env in the deployment workflow.
-  fly_services_env = {
-    for k, env in local.fly_services_env_vars : k => join("\n", [
-      for field_name in sort(nonsensitive(keys(env))) :
-      "${field_name}=\"${replace(replace(replace(replace(env[field_name], "\\", "\\\\"), "\n", "\\n"), "\r", "\\r"), "\"", "\\\"")}\""
-    ])
-    if length(nonsensitive(keys(env))) > 0
-  }
-
-  # Any service field ending in _sensitive becomes a Fly secret environment
-  # variable, alongside non-secret per-service env settings.
-  fly_services_env_vars = {
-    for k, v in local.fly_services : k => merge(
-      local.services_env[k],
-      {
-        for sensitive_field_name, sensitive_field_value in v :
-        upper(trimsuffix(sensitive_field_name, "_sensitive")) => sensitive_field_value
-        if endswith(sensitive_field_name, "_sensitive") && sensitive_field_value != null && can(tostring(sensitive_field_value)) && tostring(sensitive_field_value) != ""
+  fly_services_file = merge(
+    {
+      for k, v in local.fly_services : "${v.platform_config.fly.app_name}/fly.toml" => {
+        age_public_key = age_secret_key.fly.public_key
+        commit_message = "Update ${v.platform_config.fly.app_name} Fly configuration"
+        content_base64 = sensitive(base64encode(templatefile("${path.module}/templates/fly/fly.toml.tftpl", local.services_template_vars[k])))
+        content_type   = "binary"
+        file           = "${v.platform_config.fly.app_name}/fly.toml"
       }
-    )
-  }
+    },
+    {
+      for k, v in local.fly_services : "${v.platform_config.fly.app_name}/.certs" => {
+        age_public_key = age_secret_key.fly.public_key
+        commit_message = "Update ${v.platform_config.fly.app_name} certificate hostnames"
+        content_base64 = base64encode(templatefile("${path.module}/templates/fly/certs.tftpl", local.services_template_vars[k]))
+        content_type   = "binary"
+        file           = "${v.platform_config.fly.app_name}/.certs"
+      }
+      if length([for url in v.networking.urls : url if url != v.fqdn_external]) > 0
+    },
+    {
+      for k, v in local.services_files : "${local.fly_services[v.stack].platform_config.fly.app_name}/${v.rel_path}" => merge(v, {
+        age_public_key = age_secret_key.fly.public_key
+        commit_message = "Update ${v.stack} ${v.rel_path}"
+        file           = "${local.fly_services[v.stack].platform_config.fly.app_name}/${v.rel_path}"
+      })
+      if v.target == "fly"
+    }
+  )
 }
 
 # Shared age key for the Fly deployment repository; per-app files are separated
@@ -49,48 +56,12 @@ resource "github_actions_secret" "fly_age_key" {
   secret_name     = "AGE_KEY"
 }
 
-resource "github_repository_file" "fly_services_cert" {
-  for_each = {
-    for k, v in local.fly_services : k => v
-    if length([for url in v.networking.urls : url if url != v.fqdn_external]) > 0
-  }
-
-  commit_message      = "Update ${each.value.platform_config.fly.app_name} certificate hostnames"
-  content             = join("\n", [for url in each.value.networking.urls : url if url != each.value.fqdn_external])
-  file                = "${each.value.platform_config.fly.app_name}/.certs"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
-}
-
-resource "github_repository_file" "fly_services_env" {
-  for_each = toset(nonsensitive(keys(local.fly_services_env)))
-
-  commit_message      = "Update ${local.fly_services[each.key].platform_config.fly.app_name} secrets"
-  content             = shell_sensitive_script.fly_services_env_encrypt[each.key].output["encrypted_content"]
-  file                = "${local.fly_services[each.key].platform_config.fly.app_name}/.env"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
-}
-
 resource "github_repository_file" "fly_services_file" {
-  for_each = {
-    for k, v in local.services_files : k => v
-    if v.target == "fly"
-  }
+  for_each = local.fly_services_file
 
-  commit_message      = "Update ${local.fly_services[each.value.stack].platform_config.fly.app_name} ${each.value.rel_path}"
-  content             = shell_sensitive_script.service_file_encrypt[each.key].output["encrypted_content"]
-  file                = "${local.fly_services[each.value.stack].platform_config.fly.app_name}/${each.value.rel_path}"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
-}
-
-resource "github_repository_file" "fly_services_toml" {
-  for_each = local.fly_services
-
-  commit_message      = "Update ${each.value.platform_config.fly.app_name} Fly configuration"
-  content             = shell_sensitive_script.fly_services_toml_encrypt[each.key].output["encrypted_content"]
-  file                = "${each.value.platform_config.fly.app_name}/fly.toml"
+  commit_message      = each.value.commit_message
+  content             = shell_sensitive_script.fly_services_file_encrypt[each.key].output["encrypted_content"]
+  file                = each.value.file
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
@@ -122,16 +93,15 @@ resource "random_string" "fly_service" {
   upper   = false
 }
 
-# Encrypts dotenv content so the deployment workflow can decrypt and import it
-# with flyctl secrets import.
-resource "shell_sensitive_script" "fly_services_env_encrypt" {
-  for_each = toset(nonsensitive(keys(local.fly_services_env)))
+resource "shell_sensitive_script" "fly_services_file_encrypt" {
+  for_each = local.fly_services_file
 
   environment = {
-    AGE_PUBLIC_KEY = age_secret_key.fly.public_key
-    CONTENT        = sensitive(base64encode(local.fly_services_env[each.key]))
-    CONTENT_TYPE   = "dotenv"
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${local.fly_services[each.key].identity.service}/.env" : ""
+    AGE_PUBLIC_KEY = each.value.age_public_key
+    CONTENT        = sensitive(each.value.content_base64)
+    CONTENT_TYPE   = each.value.content_type
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.key}" : ""
+    FILENAME       = each.value.file
   }
 
   lifecycle_commands {
@@ -142,32 +112,7 @@ resource "shell_sensitive_script" "fly_services_env_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(age_secret_key.fly.public_key)
-    script_hash         = sha256(local.sops_encrypt_script)
-  }
-}
-
-# SOPS does not support TOML in the installed version, so fly.toml is encrypted
-# as binary and decrypted back to the original file by the workflow.
-resource "shell_sensitive_script" "fly_services_toml_encrypt" {
-  for_each = local.fly_services
-
-  environment = {
-    AGE_PUBLIC_KEY = age_secret_key.fly.public_key
-    CONTENT        = sensitive(base64encode(templatefile("${path.module}/templates/fly/fly.toml", local.services_template_vars[each.key])))
-    CONTENT_TYPE   = "binary"
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.value.identity.service}/fly.toml" : ""
-  }
-
-  lifecycle_commands {
-    create = sensitive(local.sops_encrypt_script)
-    delete = "true"
-    read   = sensitive(local.sops_encrypt_script)
-    update = sensitive(local.sops_encrypt_script)
-  }
-
-  triggers = {
-    age_public_key_hash = sha256(age_secret_key.fly.public_key)
+    age_public_key_hash = sha256(each.value.age_public_key)
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }

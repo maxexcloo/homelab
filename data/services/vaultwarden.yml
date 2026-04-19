@@ -3,12 +3,22 @@ deploy_to:
   - au-truenas
 features:
   password: true
+  secrets:
+    - length: 32
+      name: db_password
+      type: base64
 identity:
   description: Password Manager
-  group: Security
   name: vaultwarden
-  service: vaultwarden
   title: Vaultwarden
 networking:
   port: 30032
   scheme: https
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: Security
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

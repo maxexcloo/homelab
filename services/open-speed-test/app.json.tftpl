@@ -1,0 +1,20 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "network": {
+      "host_network": false,
+      "http_port": {
+        "bind_mode": "published",
+        "port_number": ${service.networking.port}
+      },
+      "https_port": {
+        "bind_mode": "published",
+        "port_number": 30117
+      }
+    },
+    "labels": ${jsonencode(truenas_labels)}
+  }
+}

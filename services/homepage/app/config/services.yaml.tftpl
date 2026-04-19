@@ -1,0 +1,9 @@
+%{ for group in sort(distinct([for k, svc in services : lookup(svc.labels, "homepage.group", "") if lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.href", "") != ""])) ~}
+- "${group}":
+%{ for k, svc in { for k, svc in services : k => svc if lookup(svc.labels, "homepage.group", "") == group && lookup(svc.labels, "homepage.href", "") != "" } ~}
+  - ${jsonencode(lookup(svc.labels, "homepage.name", svc.identity.title))}:
+      description: ${jsonencode(lookup(svc.labels, "homepage.description", svc.identity.description))}
+      href: ${jsonencode(svc.labels["homepage.href"])}
+      icon: ${jsonencode(lookup(svc.labels, "homepage.icon", svc.identity.name))}
+%{ endfor ~}
+%{ endfor ~}

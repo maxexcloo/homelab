@@ -72,13 +72,24 @@ locals {
   }
 
   # Template contexts are intentionally small: templates get the current service,
-  # the selected server when present, all services, and global defaults.
+  # the selected server when present, public inventory maps, and global defaults.
   services_base_template_vars = {
     for k, v in local.services : k => {
       defaults = local.defaults
       server   = try(local.servers[v.target], null)
-      servers  = local.servers
+      servers  = local.servers_public
       service  = v
+
+      services = {
+        for kk, vv in local.services : kk => {
+          fqdn_external = vv.fqdn_external
+          fqdn_internal = vv.fqdn_internal
+          target        = vv.target
+
+          identity   = vv.identity
+          networking = vv.networking
+        }
+      }
     }
   }
 
@@ -90,25 +101,30 @@ locals {
     if can(tobool(default_value))
   }
 
-  # Fail fast on bad interpolation rather than silently rendering a literal
-  # ${...} expression into deployment config.
-  services_env = {
-    for k, v in local.services : k => {
-      for key, value in v.platform_config.docker.env :
-      key => templatestring(tostring(value), local.services_base_template_vars[k])
-      if value != null
-    }
+  services_compose = {
+    for k, v in local.services_compose_sources : k => (
+      v.render_template ? templatefile(v.path, local.services_template_vars[k]) : file(v.path)
+    )
   }
 
-  # SOPS supports structured encryption for these formats. Everything else is
-  # encrypted as binary JSON so static files can still be transported safely.
-  services_file_content_types = {
-    ".dotenv" = "dotenv"
-    ".env"    = "dotenv"
-    ".json"   = "json"
-    ".yaml"   = "yaml"
-    ".yml"    = "yaml"
-  }
+  # Service compose files can be static or explicit OpenTofu templates. The
+  # rendered filename is always docker-compose.yaml.
+  services_compose_sources = merge(
+    {
+      for k, v in local.services : k => {
+        path            = "${path.module}/services/${v.identity.name}/docker-compose.yaml"
+        render_template = false
+      }
+      if fileexists("${path.module}/services/${v.identity.name}/docker-compose.yaml")
+    },
+    {
+      for k, v in local.services : k => {
+        path            = "${path.module}/services/${v.identity.name}/docker-compose.yaml.tftpl"
+        render_template = true
+      }
+      if fileexists("${path.module}/services/${v.identity.name}/docker-compose.yaml.tftpl")
+    }
+  )
 
   services_docker_labels = {
     for k, v in local.services : k => {
@@ -118,45 +134,38 @@ locals {
     }
   }
 
-  # Product-specific label rules live in a template; Terraform only merges in
-  # generic user-provided Docker labels after template interpolation.
-  services_labels = {
-    for k, v in local.services : k => merge(
-      yamldecode(templatefile("${path.module}/templates/docker/labels.yaml", local.services_base_template_vars[k])),
-      local.services_docker_labels[k]
-    )
+  # Fail fast on bad interpolation rather than silently rendering a literal
+  # ${...} expression into deployment config.
+  services_env = {
+    for k, v in local.services : k => {
+      for key, value in v.platform_config.docker.env :
+      key => templatestring(tostring(value), local.services_base_template_vars[k])
+      if value != null && templatestring(tostring(value), local.services_base_template_vars[k]) != ""
+    }
   }
 
-  services_template_vars = {
-    for k, v in local.services : k => merge(local.services_base_template_vars[k], {
-      env             = local.services_env[k]
-      labels          = local.services_labels[k]
-      services        = local.services
-      services_labels = local.services_labels
-    })
+  # SOPS supports structured encryption for these formats. Everything else is
+  # encrypted as binary JSON so static files can still be transported safely.
+  services_file_content_types = {
+    ".env"  = "dotenv"
+    ".json" = "json"
+    ".yaml" = "yaml"
+    ".yml"  = "yaml"
   }
 
-  services_compose = {
-    for k, v in local.services : k => templatefile(
-      "${path.module}/services/${v.identity.service}/docker-compose.yaml",
-      local.services_template_vars[k]
-    )
-    if fileexists("${path.module}/services/${v.identity.service}/docker-compose.yaml")
-  }
-
-  # Files with template markers are rendered. Other files use filebase64(), which
-  # lets static or binary assets share the same SOPS/GitHub delivery path.
+  # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
+  # Other files use filebase64(), so static and binary assets share one path.
   services_file_sources = flatten([
     for k, v in local.services : [
-      for filepath in fileset(path.module, "services/${v.identity.service}/**") : {
+      for filepath in fileset(path.module, "services/${v.identity.name}/**") : {
         path            = "${path.module}/${filepath}"
-        rel_path        = trimprefix(filepath, "services/${v.identity.service}/")
-        render_template = can(regex("(?s)(\\$\\{|%\\{)", file("${path.module}/${filepath}")))
-        service_name    = v.identity.service
+        rel_path        = trimsuffix(trimprefix(filepath, "services/${v.identity.name}/"), ".tftpl")
+        render_template = endswith(filepath, ".tftpl")
+        service_name    = v.identity.name
         stack           = k
         target          = v.target
       }
-      if !endswith(filepath, "docker-compose.yaml")
+      if !contains(["app.json", "app.json.tftpl", "docker-compose.yaml", "docker-compose.yaml.tftpl"], basename(filepath))
     ]
   ])
 
@@ -170,15 +179,39 @@ locals {
     )
   }
 
-  services_files_age_public_keys = {
-    for k, v in local.services_files : k => v.target == "fly" ? age_secret_key.fly.public_key : local.servers[v.target].age_public_key
-  }
-
   services_filtered = {
     for k, v in local.services : k => {
       for kk, vv in v : kk => vv
       if vv != null && vv != "" && vv != false
     }
+  }
+
+  # Routing label rules live in a template; service-owned labels are plain data.
+  services_labels = {
+    for k, v in local.services : k => merge(
+      yamldecode(templatefile("${path.module}/templates/docker/labels.yaml.tftpl", local.services_base_template_vars[k])),
+      local.services_docker_labels[k]
+    )
+  }
+
+  services_public = {
+    for k, v in local.services : k => {
+      fqdn_external = v.fqdn_external
+      fqdn_internal = v.fqdn_internal
+      target        = v.target
+
+      identity   = v.identity
+      labels     = local.services_labels[k]
+      networking = v.networking
+    }
+  }
+
+  services_template_vars = {
+    for k, v in local.services : k => merge(local.services_base_template_vars[k], {
+      env      = local.services_env[k]
+      labels   = local.services_labels[k]
+      services = local.services_public
+    })
   }
 }
 
@@ -222,32 +255,6 @@ resource "random_password" "service_secret" {
 
   length  = each.value.length
   special = each.value.special
-}
-
-# Renders service config files, encrypts them with the target's age key, and
-# stores only encrypted content for GitHub repository_file resources to consume.
-resource "shell_sensitive_script" "service_file_encrypt" {
-  for_each = local.services_files
-
-  environment = {
-    AGE_PUBLIC_KEY = local.services_files_age_public_keys[each.key]
-    CONTENT        = sensitive(each.value.content_base64)
-    CONTENT_TYPE   = each.value.content_type
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${each.key}" : ""
-    FILENAME       = each.value.rel_path
-  }
-
-  lifecycle_commands {
-    create = sensitive(local.sops_encrypt_script)
-    delete = "true"
-    read   = sensitive(local.sops_encrypt_script)
-    update = sensitive(local.sops_encrypt_script)
-  }
-
-  triggers = {
-    age_public_key_hash = sha256(local.services_files_age_public_keys[each.key])
-    script_hash         = sha256(local.sops_encrypt_script)
-  }
 }
 
 resource "terraform_data" "services_validation" {

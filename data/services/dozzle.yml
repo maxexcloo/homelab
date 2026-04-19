@@ -3,10 +3,22 @@ deploy_to:
   - au-truenas
 identity:
   description: Docker Log Viewer
-  group: System
   name: dozzle
-  service: dozzle
   title: Dozzle
 networking:
   port: 30064
   scheme: http
+platform_config:
+  docker:
+    env:
+      DOZZLE_ENABLE_ACTIONS: "true"
+      DOZZLE_ENABLE_SHELL: "true"
+      DOZZLE_HOSTNAME: "${server.slug}"
+      DOZZLE_NO_ANALYTICS: "true"
+      DOZZLE_REMOTE_AGENT: '${join(",", [for k, svc in services : format("%s:7007", svc.fqdn_internal) if svc.identity.name == "dozzle-agent" && svc.fqdn_internal != null])}'
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: System
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

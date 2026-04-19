@@ -5,14 +5,26 @@ features:
   password: true
   secrets:
     - length: 32
-      name: secret_hash
+      name: db_password
+      type: base64
+    - length: 32
+      name: meilisearch_master_key
+      type: base64
+    - length: 32
+      name: nextauth_secret
       type: base64
 identity:
   description: Bookmark and Web Archive Manager
-  group: Productivity
   name: linkwarden
-  service: linkwarden
   title: Linkwarden
 networking:
   port: 30243
   scheme: http
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: Productivity
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

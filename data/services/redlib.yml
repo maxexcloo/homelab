@@ -3,10 +3,16 @@ deploy_to:
   - au-truenas
 identity:
   description: Reddit Frontend
-  group: Media
   name: redlib
-  service: redlib
   title: Redlib
 networking:
   port: 8080
   scheme: http
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: Media
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

@@ -1,0 +1,24 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "dozzle": {
+      "additional_envs": ${jsonencode([
+        for key in sort(nonsensitive(keys(env))) : {
+          name  = key
+          value = env[key]
+        }
+      ])}
+    },
+    "network": {
+      "host_network": false,
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.networking.port}
+      }
+    },
+    "labels": ${jsonencode(truenas_labels)}
+  }
+}

@@ -3,7 +3,13 @@ deploy_to:
   - au-truenas
 identity:
   description: Reverse Proxy
-  group: System
   name: traefik
-  service: traefik
   title: Traefik
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: System
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

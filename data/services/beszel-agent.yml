@@ -3,7 +3,13 @@ deploy_to:
   - au-truenas
 identity:
   description: Resource Monitoring Agent
-  group: System
   name: beszel-agent
-  service: beszel-agent
   title: Beszel Agent
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: System
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

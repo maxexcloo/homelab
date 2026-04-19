@@ -108,10 +108,7 @@ services:
     secrets: []
   identity:
     description: ""
-    group: ""
-    icon: ""
     name: ""
-    service: ""
     title: ""
     username: ""
   networking:
@@ -133,7 +130,11 @@ services:
       memory_mb: 256
       min_machines_running: 1
       region: syd
-    homepage: []
+    truenas:
+      catalog_app: null
+      port_key: web_port
+      train: community
+      containers: []
 
 system:
   locale: en_AU

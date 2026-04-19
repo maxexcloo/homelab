@@ -1,0 +1,8 @@
+headerStyle: clean
+title: ${service.identity.title}
+layout:
+%{ for group in sort(distinct([for k, svc in services : lookup(svc.labels, "homepage.group", "") if lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.href", "") != ""])) ~}
+  "${group}":
+    columns: 4
+    style: row
+%{ endfor ~}

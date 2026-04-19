@@ -1,0 +1,36 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "miniflux": {
+      "additional_envs": ${jsonencode([
+        for key in sort(nonsensitive(keys(env))) : {
+          name  = key
+          value = env[key]
+        }
+      ])},
+      "admin_password": "${service.password_sensitive}",
+      "admin_username": "max@excloo.com",
+      "db_password": "${service.db_password_sensitive}",
+      "postgres_image_selector": "postgres_18_image"
+    },
+    "network": {
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.networking.port}
+      }
+    },
+    "storage": {
+      "postgres_data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "pg_data"
+        },
+        "type": "ix_volume"
+      }
+    },
+    "labels": ${jsonencode(truenas_labels)}
+  }
+}

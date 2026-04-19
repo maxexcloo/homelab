@@ -1,8 +1,0 @@
-headerStyle: clean
-title: ${service.identity.title}
-layout:
-%{ for group in sort(distinct([for k, svc in services : services_labels[k]["homepage.group"] if try(services_labels[k]["homepage.href"], null) != null && services_labels[k]["homepage.group"] != ""])) ~}
-  "${group}":
-    columns: 4
-    style: row
-%{ endfor ~}

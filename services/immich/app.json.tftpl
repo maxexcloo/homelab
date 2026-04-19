@@ -1,0 +1,61 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "immich": {
+      "db_password": "${service.db_password_sensitive}",
+      "db_storage_type": "SSD",
+      "enable_ml": true,
+      "hugging_face_endpoint": "",
+      "log_level": "log",
+      "ml_image_selector": "ml_image",
+      "postgres_image_selector": "vectorchord_18_image",
+      "redis_password": "${service.redis_password_sensitive}"
+    },
+    "network": {
+      "api_metrics_port": {
+        "port_number": 30363
+      },
+      "microservices_metrics_port": {
+        "port_number": 30364
+      },
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.networking.port}
+      }
+    },
+    "storage": {
+      "additional_storage": [
+        {
+          "host_path_config": {
+            "acl_enable": false,
+            "path": "/mnt/truenas/icloud-photos"
+          },
+          "mount_path": "/icloud-photos",
+          "read_only": false,
+          "type": "host_path"
+        }
+      ],
+      "data": {
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/immich"
+        },
+        "type": "host_path"
+      },
+      "ml_cache": {
+        "type": "temporary"
+      },
+      "postgres_data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "postgres_data"
+        },
+        "type": "ix_volume"
+      }
+    },
+    "labels": ${jsonencode(truenas_labels)}
+  }
+}

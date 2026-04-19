@@ -7,6 +7,26 @@ locals {
     local.servers[v.target].features.docker &&
     contains(keys(local.services_compose), k)
   }
+
+  komodo_stacks_file = merge(
+    {
+      for k, v in local.komodo_stacks : "${k}/compose.yaml" => {
+        age_public_key = local.servers[v.target].age_public_key
+        commit_message = "Update ${k} compose"
+        content_base64 = sensitive(base64encode(local.services_compose[k]))
+        content_type   = "yaml"
+        file           = "${k}/compose.yaml"
+      }
+    },
+    {
+      for k, v in local.services_files : k => merge(v, {
+        age_public_key = local.servers[v.target].age_public_key
+        commit_message = "Update ${v.stack} ${v.rel_path}"
+        file           = k
+      })
+      if contains(keys(local.servers), v.target) && local.servers[v.target].features.docker
+    }
+  )
 }
 
 resource "github_repository_file" "komodo_resource_sync" {
@@ -15,7 +35,7 @@ resource "github_repository_file" "komodo_resource_sync" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = templatefile("${path.module}/templates/komodo/resource_sync.toml", {
+  content = templatefile("${path.module}/templates/komodo/resource_sync.toml.tftpl", {
     github_user = data.github_user.default.login
     repository  = local.defaults.github.repositories.komodo
   })
@@ -27,7 +47,7 @@ resource "github_repository_file" "komodo_servers" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = templatefile("${path.module}/templates/komodo/servers.toml", {
+  content = templatefile("${path.module}/templates/komodo/servers.toml.tftpl", {
     servers = local.servers
   })
 }
@@ -52,46 +72,32 @@ resource "github_repository_file" "komodo_stacks" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = templatefile("${path.module}/templates/komodo/stacks.toml", {
+  content = templatefile("${path.module}/templates/komodo/stacks.toml.tftpl", {
     github_user = data.github_user.default.login
     repository  = local.defaults.github.repositories.komodo
     stacks      = local.komodo_stacks
   })
 }
 
-# Compose content can contain generated secrets, so it is encrypted before being
-# pushed to the Komodo configuration repository.
-resource "github_repository_file" "komodo_stacks_compose" {
-  for_each = local.komodo_stacks
+resource "github_repository_file" "komodo_stacks_file" {
+  for_each = local.komodo_stacks_file
 
-  commit_message      = "Update ${each.key} SOPS-encrypted compose"
-  content             = shell_sensitive_script.komodo_stacks_compose_encrypt[each.key].output["encrypted_content"]
-  file                = "${each.key}/compose.yaml"
+  commit_message      = each.value.commit_message
+  content             = shell_sensitive_script.komodo_stacks_file_encrypt[each.key].output["encrypted_content"]
+  file                = each.value.file
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 }
 
-resource "github_repository_file" "komodo_stacks_config" {
-  for_each = {
-    for k, v in local.services_files : k => v
-    if contains(keys(local.servers), v.target) && local.servers[v.target].features.docker
-  }
-
-  commit_message      = "Update ${each.value.stack} config"
-  content             = shell_sensitive_script.service_file_encrypt[each.key].output["encrypted_content"]
-  file                = each.key
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-}
-
-resource "shell_sensitive_script" "komodo_stacks_compose_encrypt" {
-  for_each = local.komodo_stacks
+resource "shell_sensitive_script" "komodo_stacks_file_encrypt" {
+  for_each = local.komodo_stacks_file
 
   environment = {
-    AGE_PUBLIC_KEY = local.servers[each.value.target].age_public_key
-    CONTENT        = sensitive(base64encode(local.services_compose[each.key]))
-    CONTENT_TYPE   = "yaml"
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}/compose.yaml" : ""
+    AGE_PUBLIC_KEY = each.value.age_public_key
+    CONTENT        = sensitive(each.value.content_base64)
+    CONTENT_TYPE   = each.value.content_type
+    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}" : ""
+    FILENAME       = each.value.file
   }
 
   lifecycle_commands {
@@ -102,7 +108,7 @@ resource "shell_sensitive_script" "komodo_stacks_compose_encrypt" {
   }
 
   triggers = {
-    age_public_key_hash = sha256(local.servers[each.value.target].age_public_key)
+    age_public_key_hash = sha256(each.value.age_public_key)
     script_hash         = sha256(local.sops_encrypt_script)
   }
 }

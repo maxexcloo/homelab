@@ -3,12 +3,24 @@ deploy_to:
   - au-truenas
 features:
   password: true
+  secrets:
+    - length: 32
+      name: db_password
+      type: base64
 identity:
   description: RSS Feed Reader
-  group: Productivity
   name: miniflux
-  service: miniflux
   title: Miniflux
 networking:
   port: 30285
   scheme: http
+platform_config:
+  docker:
+    env:
+      BASE_URL: "https://${service.fqdn_internal}"
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: Productivity
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

@@ -1,0 +1,25 @@
+# Generated Docker labels for routing. Service-owned labels, including
+# homepage.* labels, come from platform_config.docker.labels.
+%{ if service.networking.port != null ~}
+traefik.enable: "true"
+%{ if !service.networking.ssl ~}
+traefik.http.routers.${service.identity.name}.entrypoints: web
+%{ endif ~}
+%{ if service.networking.expose == "tailscale" ~}
+traefik.http.routers.${service.identity.name}.middlewares: tailscale-only@docker
+%{ endif ~}
+%{ if service.networking.expose == "internal" ~}
+traefik.http.routers.${service.identity.name}.middlewares: internal-only@docker
+%{ endif ~}
+traefik.http.services.${service.identity.name}.loadbalancer.server.port: ${jsonencode(tostring(service.networking.port))}
+%{ if service.networking.scheme == "https" ~}
+traefik.http.services.${service.identity.name}.loadbalancer.server.scheme: https
+%{ endif ~}
+traefik.http.routers.${service.identity.name}.rule: ${jsonencode(join(" || ", concat(
+  service.fqdn_internal != null ? ["Host(`${service.fqdn_internal}`)"] : [],
+  service.fqdn_external != null ? ["Host(`${service.fqdn_external}`)"] : [],
+  [for url in service.networking.urls : "Host(`${url}`)"]
+)))}
+%{ else ~}
+{}
+%{ endif ~}

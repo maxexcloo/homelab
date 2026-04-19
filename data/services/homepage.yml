@@ -3,10 +3,16 @@ deploy_to:
   - au-truenas
 identity:
   description: Application Dashboard
-  group: System
   name: homepage
-  service: homepage
   title: Homepage
 networking:
   port: 3000
   scheme: http
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: System
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

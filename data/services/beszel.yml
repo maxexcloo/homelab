@@ -5,10 +5,18 @@ features:
   password: true
 identity:
   description: Resource Monitoring Dashboard
-  group: System
   name: beszel
-  service: beszel
   title: Beszel
 networking:
   port: 30333
   scheme: http
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: System
+      homepage.href: "https://${service.fqdn_internal}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"
+  truenas:
+    catalog_app: beszel-hub

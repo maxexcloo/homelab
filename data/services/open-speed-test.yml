@@ -1,30 +1,20 @@
 # yaml-language-server: $schema=../../schemas/service.json
 deploy_to:
   - au-truenas
-features:
-  password: true
-  secrets:
-    - length: 32
-      name: db_password
-      type: base64
-    - length: 32
-      name: redis_password
-      type: base64
 identity:
-  description: Photo and Video Backup
-  name: immich
-  title: Immich
+  description: Network Speed Test
+  name: open-speed-test
+  title: Open Speed Test
 networking:
-  port: 30041
+  port: 30116
   scheme: http
 platform_config:
   docker:
     labels:
       homepage.description: "${service.identity.description}"
-      homepage.group: Media
+      homepage.group: System
       homepage.href: "https://${service.fqdn_internal}"
       homepage.icon: "${service.identity.name}"
       homepage.name: "${service.identity.title}"
   truenas:
-    containers:
-      - server
+    port_key: http_port

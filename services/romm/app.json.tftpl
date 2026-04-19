@@ -1,0 +1,64 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "network": {
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.networking.port}
+      }
+    },
+    "romm": {
+      "additional_envs": ${jsonencode([
+        for key in sort(nonsensitive(keys(env))) : {
+          name  = key
+          value = env[key]
+        }
+      ])},
+      "auth_secret_key": "${service.auth_secret_key_sensitive}",
+      "db_password": "${service.db_password_sensitive}",
+      "postgres_image_selector": "postgres_18_image",
+      "redis_password": "${service.redis_password_sensitive}"
+    },
+    "storage": {
+      "assets": {
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/romm/assets"
+        },
+        "type": "host_path"
+      },
+      "config": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "config"
+        },
+        "type": "ix_volume"
+      },
+      "library": {
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/romm/library"
+        },
+        "type": "host_path"
+      },
+      "postgres_data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "pg_data"
+        },
+        "type": "ix_volume"
+      },
+      "resources": {
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/romm/resources"
+        },
+        "type": "host_path"
+      }
+    },
+    "labels": ${jsonencode(truenas_labels)}
+  }
+}

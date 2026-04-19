@@ -79,22 +79,9 @@
           "type": "string",
           "description": "One-line description of what this service does. Shown in dashboards and status pages."
         },
-        "group": {
-          "type": "string",
-          "description": "Dashboard group for the Homepage tile (e.g. Media, System, Productivity, Security)."
-        },
-        "icon": {
-          "type": "string",
-          "description": "Homepage icon filename or URL (e.g. 'vaultwarden.svg'). Defaults to {identity.service}.svg."
-        },
         "name": {
           "type": "string",
           "description": "Short identifier used to build FQDNs and subdomain labels (e.g. 'vaultwarden'). Combined with the target server FQDN: {name}.{server_fqdn}.{domain}.",
-          "pattern": "^[a-z0-9-]+$"
-        },
-        "service": {
-          "type": "string",
-          "description": "Template directory key. Resolves to services/{service}/ for compose files and per-service config templates. Defaults to identity.name if omitted.",
           "pattern": "^[a-z0-9-]+$"
         },
         "title": {
@@ -162,7 +149,7 @@
             },
             "labels": {
               "type": "object",
-              "description": "Extra labels merged into the auto-generated Traefik and Homepage labels. Use homepage.* keys to override auto-generated homepage defaults. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, and ${service.*}.",
+              "description": "Extra Docker labels merged into generated routing labels. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, and ${service.*}.",
               "additionalProperties": { "type": "string" }
             }
           }
@@ -208,12 +195,35 @@
             }
           }
         },
-        "homepage": {
-          "type": "array",
-          "description": "Homepage widget definitions rendered below the service tile. Use platform_config.docker.labels with homepage.* keys to override auto-generated homepage labels.",
-          "items": {
-            "type": "object",
-            "additionalProperties": true
+        "truenas": {
+          "type": "object",
+          "description": "Configuration for TrueNAS catalog app deployments. Custom apps are inferred from docker-compose.yaml or docker-compose.yaml.tftpl files.",
+          "additionalProperties": false,
+          "properties": {
+            "catalog_app": {
+              "type": ["string", "null"],
+              "description": "TrueNAS catalog app name. Defaults to identity.name when null.",
+              "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+            },
+            "port_key": {
+              "type": "string",
+              "description": "Primary TrueNAS network port key that receives networking.port as port_number.",
+              "pattern": "^[a-z0-9_]+$"
+            },
+            "train": {
+              "type": "string",
+              "description": "TrueNAS catalog train.",
+              "minLength": 1
+            },
+            "containers": {
+              "type": "array",
+              "description": "Container names that should receive generated labels for TrueNAS catalog apps. Defaults to identity.name when empty.",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$"
+              },
+              "uniqueItems": true
+            }
           }
         }
       }

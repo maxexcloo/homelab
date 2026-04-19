@@ -6,12 +6,18 @@ features:
   tailscale: true
 identity:
   description: Health Monitoring and Status Page
-  group: System
   name: gatus
-  service: gatus
   title: Gatus
 networking:
   port: 8080
   scheme: http
   urls:
     - status.excloo.com
+platform_config:
+  docker:
+    labels:
+      homepage.description: "${service.identity.description}"
+      homepage.group: System
+      homepage.href: "https://${service.url_0}"
+      homepage.icon: "${service.identity.name}"
+      homepage.name: "${service.identity.title}"

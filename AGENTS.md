@@ -8,12 +8,12 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 - `data/servers/*.yml` — one file per server; deepmerged with server defaults in `servers.tf`
 - `data/services/*.yml` — one file per service; deepmerged with service defaults in `services.tf`; expanded per `deploy_to` target (e.g. `gatus-fly`)
 - `templates/` — HCL template files for cloud-init configs (`cloud_config/`) and Fly.io configs (`fly/`)
-- `services/<service>/` — Docker Compose templates and per-service config files (e.g. `docker-compose.yaml`, `app/config/*.yaml`)
+- `services/<identity.name>/` — Docker Compose templates and per-service config files (e.g. `docker-compose.yaml.tftpl`, `app/config/*.yaml.tftpl`)
 
 Key computed locals:
 - `local.servers` — fully-merged server map with computed fields (FQDNs, feature flags, etc.)
 - `local.services` — fully-merged, deploy-target-expanded service map
-- `local.services_labels` — per-service Homepage/Traefik Docker labels, computed in `services.tf` and passed as the `labels` variable to all `templatefile()` calls
+- `local.services_labels` — per-service Docker labels, with service-owned labels from `platform_config.docker.labels` and routing labels from networking config
 
 ## Sorting Convention
 
@@ -64,6 +64,7 @@ Always set `overwrite_on_create = true`. SOPS-encrypted files use `shell_sensiti
 
 - Always use `~` on all template directives (`%{ if ~}`, `%{ endif ~}`, `%{ for ~}`, `%{ endfor ~}`) to prevent unwanted blank lines
 - Inject Docker labels via `${indent(N, yamlencode(labels))}` at the appropriate depth
+- Use `.tftpl` only for files that need OpenTofu template rendering; the rendered deployment path strips the suffix
 - Guard `templatefile()` with `fileexists()` when the template may not be present
 
 ## YAML Standards

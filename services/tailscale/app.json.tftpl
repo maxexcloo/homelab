@@ -1,0 +1,31 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "network": {
+      "host_network": true
+    },
+    "storage": {
+      "state": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "state"
+        },
+        "type": "ix_volume"
+      }
+    },
+    "tailscale": {
+      "accept_dns": true,
+      "accept_routes": false,
+      "advertise_exit_node": true,
+      "auth_key": "${server.tailscale_auth_key_sensitive}",
+      "auth_once": true,
+      "hostname": "${server.slug}",
+      "reset": false,
+      "userspace": false
+    },
+    "labels": ${jsonencode(truenas_labels)}
+  }
+}

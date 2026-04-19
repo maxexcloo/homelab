@@ -98,6 +98,20 @@ locals {
       if vv != null && vv != "" && vv != false
     }
   }
+
+  # Public server maps are safe for cross-service inventory templates.
+  servers_public = {
+    for k, v in local.servers : k => {
+      description   = v.description
+      fqdn_external = v.fqdn_external
+      fqdn_internal = v.fqdn_internal
+      platform      = v.platform
+      slug          = v.slug
+      type          = v.type
+
+      identity = v.identity
+    }
+  }
 }
 
 resource "random_password" "server" {

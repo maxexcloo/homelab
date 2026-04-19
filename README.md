@@ -56,7 +56,7 @@ OpenTofu
     └── Tailscale       VPN auth keys, ACLs, and device lookups
 ```
 
-Rendered service configs (Docker Compose, Fly.toml, TrueNAS overrides) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`, where deployment runners consume them.
+Rendered service configs (Docker Compose, Fly.toml, TrueNAS overrides) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`, where deployment runners consume them. TrueNAS catalog updates apply desired values as an overlay on the current app config, so per-app values files only need to include managed keys.
 
 Rendered plaintext can be written locally for debugging by setting `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`. Leave it unset for normal runs.
 
@@ -79,7 +79,7 @@ Feature flags either create provider-backed resources or expose values generated
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
 2. Fill in `deploy_to`, `features`, `identity`, `networking`
-3. Optionally add a Docker Compose template at `services/<identity.service>/docker-compose.yaml`
+3. Optionally add deploy artifacts under `services/<identity.name>/`; use `.tftpl` for files that need OpenTofu template rendering
 4. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands

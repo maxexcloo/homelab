@@ -1,0 +1,25 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "network": {
+      "host_network": false,
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.networking.port}
+      }
+    },
+    "storage": {
+      "data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "data"
+        },
+        "type": "ix_volume"
+      }
+    },
+    "labels": ${jsonencode(truenas_labels)}
+  }
+}

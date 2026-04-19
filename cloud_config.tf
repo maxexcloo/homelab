@@ -1,7 +1,7 @@
 locals {
   cloud_config = {
     for k, server in local.servers : k => templatefile(
-      "${path.module}/templates/cloud_config/cloud_config.yaml",
+      "${path.module}/templates/cloud_config/cloud_config.yaml.tftpl",
       {
         defaults = local.defaults
         server   = server
