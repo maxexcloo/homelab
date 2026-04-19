@@ -17,12 +17,19 @@ locals {
     ])
   }
 
-  _servers_computed = {
+  # Parent context keeps inherited description logic readable without adding
+  # broader parent inheritance.
+  _servers_parent_context = {
     for k, v in local._servers : k => {
-      description = v.parent == "" ? v.identity.title : (try(v.identity.region == local._servers[v.parent].identity.name, false) ? "${v.identity.title} (${upper(v.identity.region)})" : "${try(local._servers[v.parent].identity.title, v.parent)} ${v.identity.title} (${upper(v.identity.region)})")
-      fqdn        = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
-      slug        = k
+      region_matches = try(v.identity.region == local._servers[v.parent].identity.name, false)
+      title          = try(local._servers[v.parent].identity.title, v.parent)
+    }
+  }
 
+  # Public addresses inherit from self, then parent, then grandparent; the first
+  # non-empty valid value wins.
+  _servers_public_networking = {
+    for k, v in local._servers : k => {
       public_address = try([
         for a in local._servers_ancestors[k] : local._servers[a].networking.public_address
         if local._servers[a].networking.public_address != ""
@@ -40,15 +47,42 @@ locals {
     }
   }
 
-  servers = {
+  # Non-provider derived fields used by DNS, templates, Bitwarden, and inventory.
+  _servers_computed = {
+    for k, v in local._servers : k => {
+      description = (
+        v.parent == "" ? v.identity.title :
+        local._servers_parent_context[k].region_matches ? "${v.identity.title} (${upper(v.identity.region)})" :
+        "${local._servers_parent_context[k].title} ${v.identity.title} (${upper(v.identity.region)})"
+      )
+      fqdn           = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
+      public_address = local._servers_public_networking[k].public_address
+      public_ipv4    = local._servers_public_networking[k].public_ipv4
+      public_ipv6    = local._servers_public_networking[k].public_ipv6
+      slug           = k
+    }
+  }
+
+  # Desired server model: YAML plus defaults plus deterministic computed fields.
+  # This layer is safe for references that should not depend on generated secrets.
+  servers_desired = {
     for k, v in local._servers : k => merge(
       v,
       local._servers_computed[k],
       {
+        fqdn_external = "${local._servers_computed[k].fqdn}.${local.defaults.domains.external}"
+        fqdn_internal = "${local._servers_computed[k].fqdn}.${local.defaults.domains.internal}"
+      }
+    )
+  }
+
+  # Runtime server model: provider-backed values and generated secrets that are
+  # intentionally kept out of servers_desired to make dependencies visible.
+  servers_runtime = {
+    for k, v in local._servers : k => merge(
+      {
         age_public_key           = age_secret_key.server[k].public_key
         age_secret_key_sensitive = age_secret_key.server[k].secret_key
-        fqdn_external            = "${local._servers_computed[k].fqdn}.${local.defaults.domains.external}"
-        fqdn_internal            = "${local._servers_computed[k].fqdn}.${local.defaults.domains.internal}"
         password_hash_sensitive  = v.features.password ? bcrypt_hash.server[k].id : null
         password_sensitive       = v.features.password ? random_password.server[k].result : null
         private_address          = try(local.unifi_clients[k].local_dns_record, null)
@@ -83,8 +117,8 @@ locals {
     )
   }
 
-  # Filter maps use the merged data, not provider-enriched servers, to avoid
-  # accidentally making feature resources depend on the resources they create.
+  # Feature maps use YAML/default data, not provider-enriched servers, to avoid
+  # making feature resources depend on the resources they create.
   servers_by_feature = {
     for feature in keys(local.server_defaults.features) : feature => {
       for k, v in local._servers : k => v
@@ -92,24 +126,24 @@ locals {
     }
   }
 
-  servers_filtered = {
-    for k, v in local.servers : k => {
-      for kk, vv in v : kk => vv
-      if vv != null && vv != "" && vv != false
-    }
+  # Cloud-init templates need runtime credentials such as Tailscale auth keys.
+  servers_template_context = {
+    for k, v in local.servers_desired : k => merge(
+      v,
+      local.servers_runtime[k]
+    )
   }
 
   # Public server maps are safe for cross-service inventory templates.
   servers_public = {
-    for k, v in local.servers : k => {
+    for k, v in local.servers_desired : k => {
       description   = v.description
       fqdn_external = v.fqdn_external
       fqdn_internal = v.fqdn_internal
+      identity      = v.identity
       platform      = v.platform
       slug          = v.slug
       type          = v.type
-
-      identity = v.identity
     }
   }
 }
@@ -196,5 +230,12 @@ resource "terraform_data" "servers_validation" {
 output "servers" {
   description = "Server configurations"
   sensitive   = true
-  value       = local.servers_filtered
+
+  # Output view removes empty fields but remains sensitive because it includes secrets.
+  value = {
+    for k, v in local.servers_desired : k => {
+      for kk, vv in merge(v, local.servers_runtime[k]) : kk => vv
+      if vv != null && vv != "" && vv != false
+    }
+  }
 }

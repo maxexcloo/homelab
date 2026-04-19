@@ -12,12 +12,15 @@ locals {
     if v.target == "fly"
   }
 
+  # Expanded services whose deployment target is Fly.io.
   fly_services = {
-    for k, v in local.services : k => v
+    for k, v in local.services_desired : k => v
     if v.target == "fly"
   }
 
-  fly_services_file = merge(
+  # GitHub files written to the Fly deployment repository. File keys include
+  # the app directory so multiple Fly apps can share one repo.
+  fly_services_files = merge(
     {
       for k, v in local.fly_services : "${v.platform_config.fly.app_name}/fly.toml" => {
         age_public_key = age_secret_key.fly.public_key
@@ -56,11 +59,11 @@ resource "github_actions_secret" "fly_age_key" {
   secret_name     = "AGE_KEY"
 }
 
-resource "github_repository_file" "fly_services_file" {
-  for_each = local.fly_services_file
+resource "github_repository_file" "fly_services_files" {
+  for_each = local.fly_services_files
 
   commit_message      = each.value.commit_message
-  content             = shell_sensitive_script.fly_services_file_encrypt[each.key].output["encrypted_content"]
+  content             = shell_sensitive_script.fly_services_files_encrypt[each.key].output["encrypted_content"]
   file                = each.value.file
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
@@ -88,14 +91,17 @@ resource "random_string" "fly_service" {
     if v.target == "fly"
   }
 
+  # The generated suffix is stateful so Fly app names do not churn between plans.
   length  = 6
   special = false
   upper   = false
 }
 
-resource "shell_sensitive_script" "fly_services_file_encrypt" {
-  for_each = local.fly_services_file
+resource "shell_sensitive_script" "fly_services_files_encrypt" {
+  for_each = local.fly_services_files
 
+  # The script receives base64 content and returns encrypted text for GitHub.
+  # DEBUG_PATH intentionally writes plaintext only when explicitly configured.
   environment = {
     AGE_PUBLIC_KEY = each.value.age_public_key
     CONTENT        = sensitive(each.value.content_base64)

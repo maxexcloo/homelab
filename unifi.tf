@@ -3,6 +3,8 @@
 # }
 
 locals {
+  # Placeholder for UniFi client lookup output. When enabled, this should map
+  # server keys to UniFi clients so private DNS/IPs can enrich server views.
   unifi_clients = {
     # for client in data.unifi_client_list.all.clients : client.name => client
   }

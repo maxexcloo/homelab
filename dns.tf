@@ -40,7 +40,7 @@ locals {
   # Server records combine explicit public addresses, OCI-assigned addresses, and
   # Tailscale device lookups into external/internal DNS records.
   dns_records_servers = merge([
-    for k, server in local.servers : merge(
+    for k, server in local.servers_desired : merge(
       server.public_address != null ? {
         "${local.defaults.domains.external}-${k}-cname" = {
           content = server.public_address
@@ -84,18 +84,18 @@ locals {
           zone    = local.defaults.domains.external
         }
       } : {},
-      server.tailscale_ipv4 != null ? {
+      local.servers_runtime[k].tailscale_ipv4 != null ? {
         "${local.defaults.domains.internal}-${k}-a" = {
-          content = server.tailscale_ipv4
+          content = local.servers_runtime[k].tailscale_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "A"
           zone    = local.defaults.domains.internal
         }
       } : {},
-      server.tailscale_ipv6 != null ? {
+      local.servers_runtime[k].tailscale_ipv6 != null ? {
         "${local.defaults.domains.internal}-${k}-aaaa" = {
-          content = server.tailscale_ipv6
+          content = local.servers_runtime[k].tailscale_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "AAAA"
@@ -107,7 +107,7 @@ locals {
 
   # Server-hosted Cloudflare services point at the target server's tunnel.
   dns_records_services = {
-    for k, service in local.services : "${local.defaults.domains.external}-${k}" => provider::deepmerge::mergo(
+    for k, service in local.services_desired : "${local.defaults.domains.external}-${k}" => provider::deepmerge::mergo(
       local.dns_defaults,
       {
         content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
@@ -117,8 +117,8 @@ locals {
         zone    = local.defaults.domains.external
       }
     )
-    if contains(keys(local.servers), service.target) &&
-    local.servers[service.target].features.cloudflare_zero_trust_tunnel &&
+    if contains(keys(local.servers_desired), service.target) &&
+    local.servers_desired[service.target].features.cloudflare_zero_trust_tunnel &&
     service.networking.expose == "cloudflare"
   }
 
@@ -145,13 +145,13 @@ locals {
   # Custom service URLs resolve to a tunnel when exposed through Cloudflare,
   # otherwise to the service's computed external or internal hostname.
   dns_records_services_urls = merge(flatten([
-    for k, service in local.services : [
+    for k, service in local.services_desired : [
       for i, url in service.networking.urls : {
         "${k}-url-${i}" = provider::deepmerge::mergo(
           local.dns_defaults,
           {
             content = (
-              local.servers[service.target].features.cloudflare_zero_trust_tunnel && service.networking.expose == "cloudflare" ?
+              local.servers_desired[service.target].features.cloudflare_zero_trust_tunnel && service.networking.expose == "cloudflare" ?
               "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
               service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
             )
@@ -164,7 +164,7 @@ locals {
       }
       if local.dns_zones_urls[url] != null
     ]
-    if contains(keys(local.servers), service.target)
+    if contains(keys(local.servers_desired), service.target)
   ])...)
 
   # Wildcards follow each eligible A/AAAA/CNAME record unless the source record
@@ -192,13 +192,14 @@ locals {
     }
   }
 
+  # Managed Cloudflare zone names available for manual and generated records.
   dns_zones = keys(local.dns)
 
   # Pick the longest managed zone suffix for each custom URL, so nested domains
   # choose the most specific Cloudflare zone.
   dns_zones_urls = {
     for url in distinct(flatten([
-      for k, service in local.services : service.networking.urls
+      for k, service in local.services_desired : service.networking.urls
       ])) : url => try(
       split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if url == z || endswith(url, ".${z}")]))[0])[1],
       null

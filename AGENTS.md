@@ -11,9 +11,12 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 - `services/<identity.name>/` — Docker Compose templates and per-service config files (e.g. `docker-compose.yaml.tftpl`, `app/config/*.yaml.tftpl`)
 
 Key computed locals:
-- `local.servers` — fully-merged server map with computed fields (FQDNs, feature flags, etc.)
-- `local.services` — fully-merged, deploy-target-expanded service map
+
+- `local.servers_desired` — server YAML plus defaults and deterministic computed fields
+- `local.servers_runtime` — provider-backed server values and generated secrets
+- `local.services_desired` — deploy-target-expanded service YAML plus deterministic computed fields
 - `local.services_labels` — per-service Docker labels, with service-owned labels from `platform_config.docker.labels` and routing labels from networking config
+- `local.services_runtime` — provider-backed service values and generated secrets
 
 ## Sorting Convention
 
@@ -24,7 +27,7 @@ Within any object — YAML, HCL, or JSON Schema `properties` — apply this orde
 
 Underscore-prefixed locals (`_defaults`, `_dns_raw`) sort before non-prefixed ones (ASCII `_` = 95 < `a` = 97).
 
-This applies consistently to `data/` YAML files, `schemas/*.json` property lists, HCL `locals {}` blocks, resource attribute blocks, `environment {}` blocks, and `templatefile()` argument objects. When `CONTENT = base64encode(...)` spans multiple lines it is multi-line and goes last; single-line `CONTENT` assignments sort alphabetically with the other scalars.
+This applies consistently to `data/` YAML files, `schemas/*.json` property lists, resource attribute blocks, `environment {}` blocks, and `templatefile()` argument objects. Inside staged HCL `locals {}` blocks, keep top-level locals in data-flow order and sort object attributes inside each local. When `CONTENT = base64encode(...)` spans multiple lines it is multi-line and goes last; single-line `CONTENT` assignments sort alphabetically with the other scalars.
 
 ## HCL Standards
 
@@ -50,10 +53,15 @@ Complex locals are built in stages, underscore-prefixed for intermediate steps:
 
 ```
 _servers           raw deepmerged data
+_servers_ancestors bounded parent lookup chain
+_servers_parent_*  helper maps for inheritance and descriptions
+_servers_public_*  inherited public networking values
 _servers_computed  derived/computed fields added
-servers            final map with feature-conditional resource references merged in
+servers_desired    desired data without generated secrets
+servers_runtime    generated secrets and provider-backed fields
 servers_by_feature filtered subsets keyed by feature flag
-servers_filtered   null/empty/false values stripped (for output)
+servers_template_* template context with runtime fields
+servers_public     template-safe inventory view
 ```
 
 ### `github_repository_file` resources

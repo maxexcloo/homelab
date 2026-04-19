@@ -20,18 +20,38 @@ locals {
     }
   ]...)
 
-  services = {
+  # Desired service model: expanded deployment target data plus deterministic
+  # names/URLs. Runtime credentials are deliberately added in a separate layer.
+  services_desired = {
     for k, v in local._services_computed : k => merge(
       v,
+      lookup(local._services_fly_computed, k, {}),
+      v.target == "fly" ? {
+        fqdn_external = "${local._services_fly_computed[k].platform_config.fly.app_name}.fly.dev"
+      } : {},
+      contains(keys(local.servers_desired), v.target) ? merge(
+        {
+          fqdn_internal = "${v.identity.name}.${local.servers_desired[v.target].fqdn_internal}"
+        },
+        contains(["cloudflare", "external"], v.networking.expose) ? {
+          fqdn_external = "${v.identity.name}.${local.servers_desired[v.target].fqdn_external}"
+        } : {}
+      ) : {},
+      {
+        for i, url in v.networking.urls : "url_${i}" => url
+      }
+    )
+  }
+
+  # Runtime service model: generated credentials and provider-backed values.
+  # Keeping this separate makes secret dependencies easier to spot.
+  services_runtime = {
+    for k, v in local._services_computed : k => merge(
       v.features.b2 ? {
         b2_application_key_id        = b2_application_key.service[k].application_key_id
         b2_application_key_sensitive = b2_application_key.service[k].application_key
         b2_bucket_name               = b2_bucket.service[k].bucket_name
         b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
-      } : {},
-      lookup(local._services_fly_computed, k, {}),
-      v.target == "fly" ? {
-        fqdn_external = "${local._services_fly_computed[k].platform_config.fly.app_name}.fly.dev"
       } : {},
       v.features.password ? {
         password_hash_sensitive = bcrypt_hash.service[k].id
@@ -54,34 +74,23 @@ locals {
           random_password.service_secret["${k}-${secret.name}"].result
         )
       },
-      contains(keys(local.servers), v.target) ? merge(
-        {
-          fqdn_internal = "${v.identity.name}.${local.servers[v.target].fqdn_internal}"
-        },
-        contains(["cloudflare", "external"], v.networking.expose) ? {
-          fqdn_external = "${v.identity.name}.${local.servers[v.target].fqdn_external}"
-        } : {}
-      ) : {},
       v.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[k].key
-      } : {},
-      {
-        for i, url in v.networking.urls : "url_${i}" => url
-      }
+      } : {}
     )
   }
 
   # Template contexts are intentionally small: templates get the current service,
   # the selected server when present, public inventory maps, and global defaults.
   services_base_template_vars = {
-    for k, v in local.services : k => {
+    for k, v in local.services_template_context : k => {
       defaults = local.defaults
-      server   = try(local.servers[v.target], null)
+      server   = try(local.servers_template_context[v.target], null)
       servers  = local.servers_public
       service  = v
 
       services = {
-        for kk, vv in local.services : kk => {
+        for kk, vv in local.services_template_context : kk => {
           fqdn_external = vv.fqdn_external
           fqdn_internal = vv.fqdn_internal
           target        = vv.target
@@ -93,6 +102,8 @@ locals {
     }
   }
 
+  # Feature maps are built from expanded input, not runtime services, to avoid
+  # feature resources depending on the resources they create.
   services_by_feature = {
     for feature, default_value in local.service_defaults.features : feature => {
       for k, v in local._services_computed : k => v
@@ -101,6 +112,7 @@ locals {
     if can(tobool(default_value))
   }
 
+  # Rendered Docker Compose content keyed by expanded service stack.
   services_compose = {
     for k, v in local.services_compose_sources : k => (
       v.render_template ? templatefile(v.path, local.services_template_vars[k]) : file(v.path)
@@ -111,14 +123,14 @@ locals {
   # rendered filename is always docker-compose.yaml.
   services_compose_sources = merge(
     {
-      for k, v in local.services : k => {
+      for k, v in local.services_desired : k => {
         path            = "${path.module}/services/${v.identity.name}/docker-compose.yaml"
         render_template = false
       }
       if fileexists("${path.module}/services/${v.identity.name}/docker-compose.yaml")
     },
     {
-      for k, v in local.services : k => {
+      for k, v in local.services_desired : k => {
         path            = "${path.module}/services/${v.identity.name}/docker-compose.yaml.tftpl"
         render_template = true
       }
@@ -126,8 +138,9 @@ locals {
     }
   )
 
+  # User-provided Docker labels are template-rendered against the safe base context.
   services_docker_labels = {
-    for k, v in local.services : k => {
+    for k, v in local.services_template_context : k => {
       for key, value in v.platform_config.docker.labels :
       key => templatestring(tostring(value), local.services_base_template_vars[k])
       if value != null
@@ -137,15 +150,15 @@ locals {
   # Fail fast on bad interpolation rather than silently rendering a literal
   # ${...} expression into deployment config.
   services_env = {
-    for k, v in local.services : k => {
+    for k, v in local.services_template_context : k => {
       for key, value in v.platform_config.docker.env :
       key => templatestring(tostring(value), local.services_base_template_vars[k])
       if value != null && templatestring(tostring(value), local.services_base_template_vars[k]) != ""
     }
   }
 
-  # SOPS supports structured encryption for these formats. Everything else is
-  # encrypted as binary JSON so static files can still be transported safely.
+  # File extension -> SOPS input type. YAML/JSON still need a structural check
+  # below because SOPS structured encryption expects an object, not a list/scalar.
   services_file_content_types = {
     ".env"  = "dotenv"
     ".json" = "json"
@@ -153,10 +166,15 @@ locals {
     ".yml"  = "yaml"
   }
 
+  # Normalized extension lookup keeps the rendered-file local from repeating regexes.
+  services_file_extensions = {
+    for pair in local.services_file_sources : "${pair.stack}/${pair.rel_path}" => try(regex("\\.[^.]+$", lower(pair.rel_path)), "")
+  }
+
   # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
   # Other files use filebase64(), so static and binary assets share one path.
   services_file_sources = flatten([
-    for k, v in local.services : [
+    for k, v in local.services_desired : [
       for filepath in fileset(path.module, "services/${v.identity.name}/**") : {
         path            = "${path.module}/${filepath}"
         rel_path        = trimsuffix(trimprefix(filepath, "services/${v.identity.name}/"), ".tftpl")
@@ -169,49 +187,64 @@ locals {
     ]
   ])
 
+  # Text content is only loaded for files where we may need templating or SOPS
+  # structured type detection. Other files stay base64-only.
+  services_file_text_content = {
+    for pair in local.services_file_sources : "${pair.stack}/${pair.rel_path}" => (
+      pair.render_template ? templatefile(pair.path, local.services_template_vars[pair.stack]) :
+      contains(keys(local.services_file_content_types), local.services_file_extensions["${pair.stack}/${pair.rel_path}"]) ? file(pair.path) :
+      null
+    )
+  }
+
+  # Deployed sidecar files include encrypted content metadata used by Fly, Komodo,
+  # and TrueNAS GitHub repository file resources.
   services_files = {
     for pair in local.services_file_sources : "${pair.stack}/${pair.rel_path}" => merge(
       pair,
       {
         content_base64 = pair.render_template ? base64encode(templatefile(pair.path, local.services_template_vars[pair.stack])) : filebase64(pair.path)
-        content_type = contains([".json", ".yaml", ".yml"], try(regex("\\.[^.]+$", lower(pair.rel_path)), "")) ? (
-          can(keys(yamldecode(pair.render_template ? templatefile(pair.path, local.services_template_vars[pair.stack]) : file(pair.path)))) ?
-          lookup(local.services_file_content_types, try(regex("\\.[^.]+$", lower(pair.rel_path)), ""), "binary") :
+        content_type = contains([".json", ".yaml", ".yml"], local.services_file_extensions["${pair.stack}/${pair.rel_path}"]) ? (
+          can(keys(yamldecode(local.services_file_text_content["${pair.stack}/${pair.rel_path}"]))) ?
+          local.services_file_content_types[local.services_file_extensions["${pair.stack}/${pair.rel_path}"]] :
           "binary"
-        ) : lookup(local.services_file_content_types, try(regex("\\.[^.]+$", lower(pair.rel_path)), ""), "binary")
+        ) : lookup(local.services_file_content_types, local.services_file_extensions["${pair.stack}/${pair.rel_path}"], "binary")
       }
     )
   }
 
-  services_filtered = {
-    for k, v in local.services : k => {
-      for kk, vv in v : kk => vv
-      if vv != null && vv != "" && vv != false
-    }
-  }
-
   # Routing label rules live in a template; service-owned labels are plain data.
   services_labels = {
-    for k, v in local.services : k => merge(
+    for k, v in local.services_template_context : k => merge(
       yamldecode(templatefile("${path.module}/templates/docker/labels.yaml.tftpl", local.services_base_template_vars[k])),
       local.services_docker_labels[k]
     )
   }
 
+  # Public service inventory is safe to expose to other service templates.
   services_public = {
-    for k, v in local.services : k => {
+    for k, v in local.services_desired : k => {
       fqdn_external = v.fqdn_external
       fqdn_internal = v.fqdn_internal
+      identity      = v.identity
+      labels        = local.services_labels[k]
+      networking    = v.networking
       target        = v.target
-
-      identity   = v.identity
-      labels     = local.services_labels[k]
-      networking = v.networking
     }
   }
 
+  # Templates get the full service object because service config files may need
+  # generated passwords, API keys, and feature credentials.
+  services_template_context = {
+    for k, v in local.services_desired : k => merge(
+      v,
+      local.services_runtime[k]
+    )
+  }
+
+  # Full template context adds rendered env, labels, and public service inventory.
   services_template_vars = {
-    for k, v in local.services : k => merge(local.services_base_template_vars[k], {
+    for k, v in local.services_template_context : k => merge(local.services_base_template_vars[k], {
       env      = local.services_env[k]
       labels   = local.services_labels[k]
       services = local.services_public
@@ -220,6 +253,8 @@ locals {
 }
 
 resource "random_id" "service_secret" {
+  # Byte-oriented generated secrets use random_id so hex/base64 lengths map to
+  # byte counts rather than password character counts.
   for_each = {
     for item in flatten([
       for k, v in local._services_computed : [
@@ -271,12 +306,12 @@ resource "terraform_data" "services_validation" {
       condition = length(flatten([
         for k, v in local._services : [
           for target in v.deploy_to : "${k} -> ${target}"
-          if contains(keys(local.servers), target) &&
+          if contains(keys(local.servers_desired), target) &&
           v.networking.expose == "cloudflare" &&
-          !local.servers[target].features.cloudflare_zero_trust_tunnel
+          !local.servers_desired[target].features.cloudflare_zero_trust_tunnel
         ]
       ])) == 0
-      error_message = "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if contains(keys(local.servers), target) && v.networking.expose == "cloudflare" && !local.servers[target].features.cloudflare_zero_trust_tunnel]]))}"
+      error_message = "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if contains(keys(local.servers_desired), target) && v.networking.expose == "cloudflare" && !local.servers_desired[target].features.cloudflare_zero_trust_tunnel]]))}"
     }
 
     precondition {
@@ -292,8 +327,8 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers), target) && target != "fly"]])) == 0
-      error_message = "Invalid server references found in services configuration: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if !contains(keys(local.servers), target) && target != "fly"]]))}"
+      condition     = length(flatten([for k, v in local._services : [for target in v.deploy_to : target if !contains(keys(local.servers_desired), target) && target != "fly"]])) == 0
+      error_message = "Invalid server references found in services configuration: ${join(", ", flatten([for k, v in local._services : [for target in v.deploy_to : "${k} -> ${target}" if !contains(keys(local.servers_desired), target) && target != "fly"]]))}"
     }
   }
 }
@@ -301,5 +336,12 @@ resource "terraform_data" "services_validation" {
 output "services" {
   description = "Service configurations"
   sensitive   = true
-  value       = local.services_filtered
+
+  # Output view removes empty fields but remains sensitive because it includes secrets.
+  value = {
+    for k, v in local.services_desired : k => {
+      for kk, vv in merge(v, local.services_runtime[k]) : kk => vv
+      if vv != null && vv != "" && vv != false
+    }
+  }
 }

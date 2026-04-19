@@ -19,15 +19,19 @@ data "oci_identity_availability_domain" "default" {
 }
 
 locals {
+  # OCI network primitives are created once per region used by managed OCI VMs.
   oci_regions = toset(distinct([
     for k, v in local.oci_vms : v.identity.region
   ]))
 
+  # OCI resources in this root manage VM servers only.
   oci_vms = {
-    for k, v in local.servers : k => v
+    for k, v in local.servers_desired : k => v
     if v.platform == "oci" && v.type == "vm" && v.platform_config.oci != null
   }
 
+  # Each configured ingress port expands to TCP/UDP and IPv4/IPv6 rules; ICMP is
+  # always allowed for basic reachability diagnostics.
   oci_vms_ingress_rules = merge([
     for k, v in local.oci_vms : merge(
       {
@@ -186,6 +190,8 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_port" {
   source                    = each.value.source
   source_type               = "CIDR_BLOCK"
 
+  # OCI models TCP and UDP port options as different nested blocks, so the rule
+  # map carries protocol numbers and the resource selects the matching block.
   dynamic "tcp_options" {
     for_each = each.value.protocol == "6" ? [1] : []
 

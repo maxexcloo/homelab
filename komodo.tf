@@ -2,16 +2,18 @@ locals {
   # Komodo only receives services with a rendered compose file on Docker-capable
   # server targets.
   komodo_stacks = {
-    for k, v in local.services : k => v
-    if contains(keys(local.servers), v.target) &&
-    local.servers[v.target].features.docker &&
+    for k, v in local.services_desired : k => v
+    if contains(keys(local.servers_desired), v.target) &&
+    local.servers_desired[v.target].features.docker &&
     contains(keys(local.services_compose), k)
   }
 
-  komodo_stacks_file = merge(
+  # Encrypted GitHub files consumed by Komodo ResourceSync. Service sidecar files
+  # reuse the same relative paths as the service artifact model.
+  komodo_stacks_files = merge(
     {
       for k, v in local.komodo_stacks : "${k}/compose.yaml" => {
-        age_public_key = local.servers[v.target].age_public_key
+        age_public_key = age_secret_key.server[v.target].public_key
         commit_message = "Update ${k} compose"
         content_base64 = sensitive(base64encode(local.services_compose[k]))
         content_type   = "yaml"
@@ -20,11 +22,11 @@ locals {
     },
     {
       for k, v in local.services_files : k => merge(v, {
-        age_public_key = local.servers[v.target].age_public_key
+        age_public_key = age_secret_key.server[v.target].public_key
         commit_message = "Update ${v.stack} ${v.rel_path}"
         file           = k
       })
-      if contains(keys(local.servers), v.target) && local.servers[v.target].features.docker
+      if contains(keys(local.servers_desired), v.target) && local.servers_desired[v.target].features.docker
     }
   )
 }
@@ -47,9 +49,9 @@ resource "github_repository_file" "komodo_servers" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = templatefile("${path.module}/templates/komodo/servers.toml.tftpl", {
-    servers = local.servers
-  })
+  content = sensitive(templatefile("${path.module}/templates/komodo/servers.toml.tftpl", {
+    servers = local.servers_desired
+  }))
 }
 
 # Per-stack SOPS rules let each target server decrypt only the stacks assigned
@@ -79,19 +81,21 @@ resource "github_repository_file" "komodo_stacks" {
   })
 }
 
-resource "github_repository_file" "komodo_stacks_file" {
-  for_each = local.komodo_stacks_file
+resource "github_repository_file" "komodo_stacks_files" {
+  for_each = local.komodo_stacks_files
 
   commit_message      = each.value.commit_message
-  content             = shell_sensitive_script.komodo_stacks_file_encrypt[each.key].output["encrypted_content"]
+  content             = shell_sensitive_script.komodo_stacks_files_encrypt[each.key].output["encrypted_content"]
   file                = each.value.file
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 }
 
-resource "shell_sensitive_script" "komodo_stacks_file_encrypt" {
-  for_each = local.komodo_stacks_file
+resource "shell_sensitive_script" "komodo_stacks_files_encrypt" {
+  for_each = local.komodo_stacks_files
 
+  # The script receives base64 content and returns encrypted text for GitHub.
+  # DEBUG_PATH intentionally writes plaintext only when explicitly configured.
   environment = {
     AGE_PUBLIC_KEY = each.value.age_public_key
     CONTENT        = sensitive(each.value.content_base64)

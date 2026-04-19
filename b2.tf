@@ -1,6 +1,8 @@
 data "b2_account_info" "default" {}
 
 locals {
+  # Bucket-scoped keys get broad object permissions because services own their
+  # buckets and need to manage backup/object lifecycles themselves.
   b2_application_key_capabilities = [
     "deleteFiles",
     "listBuckets",
@@ -33,6 +35,7 @@ resource "b2_application_key" "service" {
 resource "b2_bucket" "server" {
   for_each = random_string.b2_server
 
+  # B2 bucket names are global, so a stable random suffix is part of identity.
   bucket_name = "${each.key}-${each.value.result}"
   bucket_type = "allPrivate"
 
@@ -50,6 +53,7 @@ resource "b2_bucket" "server" {
 resource "b2_bucket" "service" {
   for_each = random_string.b2_service
 
+  # Service buckets use the expanded service-target key plus a stable suffix.
   bucket_name = "${each.key}-${each.value.result}"
   bucket_type = "allPrivate"
 

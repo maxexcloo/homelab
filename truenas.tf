@@ -2,15 +2,17 @@ locals {
   # TrueNAS deploy artifacts are grouped by target server because each server has
   # its own self-hosted runner and age key.
   truenas_servers = {
-    for k, v in local.servers : k => v
+    for k, v in local.servers_desired : k => v
     if v.platform == "truenas"
   }
 
+  # Expanded services targeting a TrueNAS server.
   truenas_services = {
-    for k, v in local.services : k => v
+    for k, v in local.services_desired : k => v
     if contains(keys(local.truenas_servers), v.target)
   }
 
+  # Catalog services are the TrueNAS services that do not provide Compose files.
   truenas_services_catalog = {
     for k, v in local.truenas_services : k => v
     if !contains(keys(local.services_compose), k) && contains(keys(local.truenas_services_catalog_sources), k)
@@ -35,10 +37,11 @@ locals {
     }
   )
 
-  truenas_services_file = merge(
+  # Encrypted GitHub files consumed by the TrueNAS deploy workflow.
+  truenas_services_files = merge(
     {
       for k, v in local.truenas_services : "${v.target}/${v.identity.name}/compose.json" => {
-        age_public_key = local.servers[v.target].age_public_key
+        age_public_key = age_secret_key.server[v.target].public_key
         commit_message = "Update ${k} compose"
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/truenas/compose.json.tftpl",
@@ -53,7 +56,7 @@ locals {
     },
     {
       for k, v in local.truenas_services_catalog : "${v.target}/${v.identity.name}/app.json" => {
-        age_public_key = local.servers[v.target].age_public_key
+        age_public_key = age_secret_key.server[v.target].public_key
         commit_message = "Update ${k} catalog app"
         content_base64 = sensitive(base64encode(
           local.truenas_services_catalog_sources[k].render_template ?
@@ -67,10 +70,10 @@ locals {
       }
     },
     {
-      for k, v in local.services_files : "${v.target}/${local.services[v.stack].identity.name}/${v.rel_path}" => merge(v, {
-        age_public_key = local.servers[v.target].age_public_key
+      for k, v in local.services_files : "${v.target}/${local.services_desired[v.stack].identity.name}/${v.rel_path}" => merge(v, {
+        age_public_key = age_secret_key.server[v.target].public_key
         commit_message = "Update ${v.stack} ${v.rel_path}"
-        file           = "${v.target}/${local.services[v.stack].identity.name}/${v.rel_path}"
+        file           = "${v.target}/${local.services_desired[v.stack].identity.name}/${v.rel_path}"
       })
       if contains(keys(local.truenas_servers), v.target)
     }
@@ -100,11 +103,11 @@ resource "github_actions_secret" "truenas_age_key" {
   secret_name     = "AGE_KEY_${upper(replace(each.key, "-", "_"))}"
 }
 
-resource "github_repository_file" "truenas_services_file" {
-  for_each = local.truenas_services_file
+resource "github_repository_file" "truenas_services_files" {
+  for_each = local.truenas_services_files
 
   commit_message      = each.value.commit_message
-  content             = shell_sensitive_script.truenas_services_file_encrypt[each.key].output["encrypted_content"]
+  content             = shell_sensitive_script.truenas_services_files_encrypt[each.key].output["encrypted_content"]
   file                = each.value.file
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
@@ -130,9 +133,11 @@ resource "github_repository_file" "truenas_workflow_deploy" {
   repository          = local.defaults.github.repositories.truenas
 }
 
-resource "shell_sensitive_script" "truenas_services_file_encrypt" {
-  for_each = local.truenas_services_file
+resource "shell_sensitive_script" "truenas_services_files_encrypt" {
+  for_each = local.truenas_services_files
 
+  # The script receives base64 content and returns encrypted text for GitHub.
+  # DEBUG_PATH intentionally writes plaintext only when explicitly configured.
   environment = {
     AGE_PUBLIC_KEY = each.value.age_public_key
     CONTENT        = sensitive(each.value.content_base64)

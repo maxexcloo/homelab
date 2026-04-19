@@ -36,6 +36,8 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 
 YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers. Some service credentials are rendered directly because no provider resource manages them.
 
+Server and service data is modeled in two layers: desired values from YAML/defaults plus deterministic fields, and runtime values from providers or generated secrets. Consumers use narrower views for Bitwarden, templates, public inventory, and outputs so dependencies stay visible.
+
 ```
 data/
 ├── defaults.yml        # Global defaults and base schemas

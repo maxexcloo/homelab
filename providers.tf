@@ -14,6 +14,8 @@ provider "incus" {
   accept_remote_certificate    = true
   generate_client_certificates = true
 
+  # Incus requires provider-level remotes, so the provider is configured from
+  # server data before individual incus_instance resources are declared.
   dynamic "remote" {
     for_each = local.incus_servers
 
@@ -35,6 +37,8 @@ provider "restapi" {
   rate_limit            = 1
   uri                   = "https://api.resend.com"
 
+  # Resend is modeled through the generic REST provider because no native
+  # provider resource is used in this stack.
   headers = {
     "Authorization" = "Bearer ${var.resend_api_key}",
     "Content-Type"  = "application/json"

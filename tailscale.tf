@@ -1,6 +1,8 @@
 data "tailscale_devices" "all" {}
 
 locals {
+  # Device names are matched back to server slugs; only the first IPv4/IPv6
+  # address of each family is used for generated internal DNS records.
   tailscale_device_addresses = {
     for device in data.tailscale_devices.all.devices : split(".", device.name)[0] => {
       ipv4 = try([for a in device.addresses : a if can(cidrhost("${a}/32", 0))][0], null)
@@ -8,11 +10,14 @@ locals {
     }
   }
 
+  # Route auto-approvers exclude appliance and ephemeral tags because those
+  # nodes should not become subnet routers or exit nodes.
   tailscale_route_tags = toset([
     for tag in local.defaults.tailscale.tags : "tag:${tag}"
     if !contains(["appliance", "ephemeral"], tag)
   ])
 
+  # Full tag set used for ACL ownership declarations.
   tailscale_tags = toset([
     for tag in local.defaults.tailscale.tags : "tag:${tag}"
   ])

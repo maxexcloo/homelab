@@ -1,3 +1,21 @@
+locals {
+  # Bitwarden stores the full generated server view, including runtime secrets.
+  servers_bitwarden_items = {
+    for k, v in local.servers_desired : k => merge(
+      v,
+      local.servers_runtime[k]
+    )
+  }
+
+  # Bitwarden stores the full generated service view, including runtime secrets.
+  services_bitwarden_items = {
+    for k, v in local.services_desired : k => merge(
+      v,
+      local.services_runtime[k]
+    )
+  }
+}
+
 data "bitwarden_org_collection" "servers" {
   organization_id = data.bitwarden_organization.default.id
   search          = local.defaults.bitwarden.collections.servers
@@ -13,7 +31,7 @@ data "bitwarden_organization" "default" {
 }
 
 resource "bitwarden_item_login" "server" {
-  for_each = local.servers
+  for_each = local.servers_bitwarden_items
 
   collection_ids  = [data.bitwarden_org_collection.servers.id]
   name            = each.key
@@ -21,10 +39,12 @@ resource "bitwarden_item_login" "server" {
   password        = each.value.password_sensitive
   username        = each.value.identity.username
 
+  # Store scalar non-default fields as custom fields. *_sensitive fields become
+  # hidden Bitwarden fields; URL-like fields are handled as URI entries below.
   dynamic "field" {
     for_each = {
-      for k, v in local.servers_filtered[each.key] : k => v
-      if !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.server_defaults), k) && can(tostring(v))
+      for k, v in each.value : k => v
+      if v != null && v != "" && v != false && !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.server_defaults), k) && can(tostring(v))
     }
 
     content {
@@ -34,11 +54,13 @@ resource "bitwarden_item_login" "server" {
     }
   }
 
+  # Bitwarden URI matching expects host-style values; IPv6 literals need brackets
+  # and non-standard management ports are appended.
   dynamic "uri" {
     for_each = merge(
       {
-        for k, v in local.servers_filtered[each.key] : k => v
-        if can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
+        for k, v in each.value : k => v
+        if v != null && v != "" && v != false && can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
       },
       each.value.networking.management_address != "" ? {
         management_address = each.value.networking.management_address
@@ -58,7 +80,7 @@ resource "bitwarden_item_login" "server" {
 
 resource "bitwarden_item_login" "service" {
   for_each = {
-    for k, v in local.services : k => v
+    for k, v in local.services_bitwarden_items : k => v
     if anytrue([for k, v in v.features : tobool(v) if can(tobool(v))]) || length(v.features.secrets) > 0 || v.networking.scheme != null
   }
 
@@ -68,10 +90,11 @@ resource "bitwarden_item_login" "service" {
   password        = each.value.password_sensitive
   username        = each.value.identity.username
 
+  # Store generated and computed scalar service fields, excluding defaults and URLs.
   dynamic "field" {
     for_each = {
-      for k, v in local.services_filtered[each.key] : k => v
-      if !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.service_defaults), k) && can(tostring(v))
+      for k, v in each.value : k => v
+      if v != null && v != "" && v != false && !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.service_defaults), k) && can(tostring(v))
     }
 
     content {
@@ -81,10 +104,11 @@ resource "bitwarden_item_login" "service" {
     }
   }
 
+  # Service URI entries come from computed fqdn_/url_ fields.
   dynamic "uri" {
     for_each = {
-      for k, v in local.services_filtered[each.key] : k => v
-      if can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
+      for k, v in each.value : k => v
+      if v != null && v != "" && v != false && can(regex(local.defaults.bitwarden.url_field_pattern, k)) && can(tostring(v))
     }
 
     content {
