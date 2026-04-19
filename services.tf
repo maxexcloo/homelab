@@ -174,7 +174,11 @@ locals {
       pair,
       {
         content_base64 = pair.render_template ? base64encode(templatefile(pair.path, local.services_template_vars[pair.stack])) : filebase64(pair.path)
-        content_type   = lookup(local.services_file_content_types, try(regex("\\.[^.]+$", lower(pair.rel_path)), ""), "binary")
+        content_type = contains([".json", ".yaml", ".yml"], try(regex("\\.[^.]+$", lower(pair.rel_path)), "")) ? (
+          can(keys(yamldecode(pair.render_template ? templatefile(pair.path, local.services_template_vars[pair.stack]) : file(pair.path)))) ?
+          lookup(local.services_file_content_types, try(regex("\\.[^.]+$", lower(pair.rel_path)), ""), "binary") :
+          "binary"
+        ) : lookup(local.services_file_content_types, try(regex("\\.[^.]+$", lower(pair.rel_path)), ""), "binary")
       }
     )
   }
