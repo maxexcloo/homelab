@@ -12,13 +12,13 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 
 Key computed locals:
 
-- `local.servers_desired` — server YAML plus defaults and deterministic computed fields
-- `local.servers_private` — server desired data plus runtime fields for private/runtime consumers
-- `local.servers_runtime` — provider-backed server values and generated secrets
-- `local.services_desired` — deploy-target-expanded service YAML plus deterministic computed fields
-- `local.services_labels` — per-service Docker labels, with service-owned labels from `platform_config.docker.labels` and routing labels from networking config
-- `local.services_private` — service desired data plus runtime fields for private/runtime consumers
-- `local.services_runtime` — provider-backed service values and generated secrets
+- `local.servers_model_desired` — server YAML plus defaults and deterministic computed fields
+- `local.servers_model_runtime` — provider-backed server values and generated secrets
+- `local.servers_output_private` — server desired data plus runtime fields for private/runtime consumers
+- `local.services_model_desired` — deploy-target-expanded service YAML plus deterministic computed fields
+- `local.services_model_runtime` — provider-backed service values and generated secrets
+- `local.services_output_private` — service desired data plus runtime fields for private/runtime consumers
+- `local.services_render_labels` — per-service Docker labels, with service-owned labels from `platform_config.docker.labels` and routing labels from networking config
 
 ## Sorting Convention
 
@@ -48,19 +48,45 @@ This applies consistently to `data/` YAML files, `schemas/*.json` property lists
 
 ### Locals structure
 
-Complex locals are built in stages, underscore-prefixed for intermediate steps:
+Complex locals use alphabetical group words so file order matches data-flow order without one local per numbered stage:
 
 ```
-_servers           raw deepmerged data
-_servers_ancestors bounded parent lookup chain
-_servers_computed  derived/computed fields added
-_servers_parent_*  helper maps for inheritance and descriptions
-_servers_public_*  inherited public networking values
-servers_by_feature filtered subsets keyed by feature flag
-servers_desired    desired data without generated secrets
-servers_private    merged private view for runtime consumers
-servers_public     template-safe inventory view
-servers_runtime    generated secrets and provider-backed fields
+_servers_input_source             raw deepmerged data
+_servers_prepare_ancestors        bounded parent lookup chain
+_servers_prepare_parent_context   helper map for inheritance and descriptions
+_servers_refine_computed          derived/computed fields, including inherited public networking
+servers_model_desired             desired data without generated secrets
+servers_model_runtime             generated secrets and provider-backed fields
+servers_output_by_feature         filtered subsets keyed by feature flag
+servers_output_private            merged private view for runtime consumers
+servers_output_public             template-safe inventory view
+
+_services_input_source            raw deepmerged data
+_services_input_targets           deploy-target-expanded data
+services_model_desired            desired data without generated secrets
+services_model_runtime            generated secrets and provider-backed fields
+services_output_by_feature        filtered subsets keyed by feature flag
+services_output_private           merged private view for runtime consumers
+services_output_public            template-safe inventory without labels
+services_output_vars              base template context for label/env rendering
+services_render_labels            merged routing and service-owned labels
+services_render_vars              full template context with environment values
+services_rendered_compose            rendered Docker Compose content
+services_rendered_file_content_types sidecar file extension type map
+services_rendered_file_extensions    sidecar file extension lookup
+services_rendered_file_sources       sidecar file source metadata
+services_rendered_file_text          sidecar rendered text content
+services_rendered_files              deployable sidecar file model
+
+fly_input_services                Fly-targeted service selection
+fly_render_files                  rendered Fly repository files
+komodo_input_stacks               Docker-capable Komodo stack selection
+komodo_render_files               rendered Komodo repository files
+truenas_input_servers             TrueNAS target server selection
+truenas_input_services            TrueNAS-targeted service selection
+truenas_prepare_catalog_services     TrueNAS catalog service selection
+truenas_prepare_catalog_templates    TrueNAS catalog app template metadata
+truenas_render_files              rendered TrueNAS repository files
 ```
 
 ### `github_repository_file` resources

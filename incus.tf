@@ -1,13 +1,13 @@
 locals {
   # Incus remotes are configured only for parent servers with a reachable API.
   incus_servers = {
-    for k, v in local.servers_desired : k => v
+    for k, v in local.servers_model_desired : k => v
     if v.platform == "incus" && v.type == "server" && v.networking.management_address != ""
   }
 
   # Incus instances are child VMs/containers whose parent remote is configured above.
   incus_vms = {
-    for k, v in local.servers_desired : k => v
+    for k, v in local.servers_model_desired : k => v
     if v.parent != "" && v.platform == "incus" && v.type == "vm" && v.platform_config.incus != null && contains(keys(local.incus_servers), v.parent)
   }
 }

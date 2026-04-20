@@ -1,15 +1,10 @@
 {
-  "app_name": "${service.identity.name}",
-  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
-  "custom_app": false,
-  "train": "${service.platform_config.truenas.train}",
   "values": {
     "cloudflared": {
       "tunnel_token": "${server.cloudflare_zero_trust_tunnel_token_sensitive}"
     },
     "network": {
       "host_network": true
-    },
-    "labels": ${jsonencode(truenas_labels)}
+    }
   }
 }

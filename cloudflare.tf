@@ -20,7 +20,7 @@ data "cloudflare_zone" "all" {
 }
 
 resource "cloudflare_account_token" "server_acme" {
-  for_each = local.servers_by_feature.cloudflare_acme_token
+  for_each = local.servers_output_by_feature.cloudflare_acme_token
 
   account_id = data.cloudflare_account.default.id
   name       = each.key
@@ -46,8 +46,8 @@ resource "cloudflare_dns_record" "acme_delegation" {
   comment = local.defaults.organization.managed_comment
   content = each.value.content
   name    = each.value.name
-  proxied = local.dns_defaults.proxied
-  ttl     = local.dns_defaults.ttl
+  proxied = local.defaults_dns.proxied
+  ttl     = local.defaults_dns.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -72,7 +72,7 @@ resource "cloudflare_dns_record" "server" {
   content = each.value.content
   name    = each.value.name
   proxied = each.value.proxied
-  ttl     = local.dns_defaults.ttl
+  ttl     = local.defaults_dns.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -84,7 +84,7 @@ resource "cloudflare_dns_record" "service" {
   content = each.value.content
   name    = each.value.name
   proxied = each.value.proxied
-  ttl     = local.dns_defaults.ttl
+  ttl     = local.defaults_dns.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -96,7 +96,7 @@ resource "cloudflare_dns_record" "service_fly" {
   content = each.value.content
   name    = each.value.name
   proxied = each.value.proxied
-  ttl     = local.dns_defaults.ttl
+  ttl     = local.defaults_dns.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -108,7 +108,7 @@ resource "cloudflare_dns_record" "service_url" {
   content = each.value.content
   name    = each.value.name
   proxied = each.value.proxied
-  ttl     = local.dns_defaults.ttl
+  ttl     = local.defaults_dns.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
@@ -120,13 +120,13 @@ resource "cloudflare_dns_record" "wildcard" {
   content = each.value.content
   name    = each.value.name
   proxied = each.value.proxied
-  ttl     = local.dns_defaults.ttl
+  ttl     = local.defaults_dns.ttl
   type    = each.value.type
   zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
-  for_each = local.servers_by_feature.cloudflare_zero_trust_tunnel
+  for_each = local.servers_output_by_feature.cloudflare_zero_trust_tunnel
 
   account_id = data.cloudflare_account.default.id
   config_src = "cloudflare"

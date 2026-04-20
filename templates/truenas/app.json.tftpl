@@ -1,0 +1,15 @@
+{
+  "app_name": "${service.identity.name}",
+  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
+  "custom_app": false,
+  "train": "${service.platform_config.truenas.train}",
+  "values": {
+    "labels": ${jsonencode([
+      for label_key in sort(keys(labels)) : {
+        containers = length(service.platform_config.truenas.containers) > 0 ? service.platform_config.truenas.containers : [service.identity.name]
+        key        = label_key
+        value      = labels[label_key]
+      }
+    ])}
+  }
+}

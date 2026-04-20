@@ -14,23 +14,23 @@ locals {
     if !contains(["dns", "servers", "services"], k)
   }
 
+  # Default DNS record attributes merged into manual and generated records.
+  defaults_dns = local._defaults.dns
+
+  # Schema-shaped defaults merged into each server YAML file.
+  defaults_server = local._defaults.servers
+
+  # Schema-shaped defaults merged into each service YAML file.
+  defaults_service = local._defaults.services
+
   # Final DNS input map: zone name -> list of manually declared records.
   dns = {
     for filepath, data in local._dns :
     data.name => try(data.records, [])
   }
 
-  # Default DNS record attributes merged into manual and generated records.
-  dns_defaults = local._defaults.dns
-
-  # Schema-shaped defaults merged into each server YAML file.
-  server_defaults = local._defaults.servers
-
-  # Schema-shaped defaults merged into each service YAML file.
-  service_defaults = local._defaults.services
-
   # Shared shell script used by shell_sensitive_script resources before GitHub writes.
-  sops_encrypt_script = file("${path.module}/templates/scripts/sops_encrypt.sh")
+  script_sops_encrypt = file("${path.module}/templates/scripts/sops_encrypt.sh")
 }
 
 output "summary" {
@@ -40,16 +40,16 @@ output "summary" {
   value = {
     counts = {
       dns_records = length(local.dns_records_acme_delegation) + length(local.dns_records_manual) + length(local.dns_records_servers) + length(local.dns_records_services) + length(local.dns_records_services_fly) + length(local.dns_records_services_urls) + length(local.dns_records_wildcards)
-      servers     = length(local.servers_desired)
-      services    = length(local.services_desired)
+      servers     = length(local.servers_model_desired)
+      services    = length(local.services_model_desired)
     }
 
     defaults = local.defaults
-    servers  = keys(local.servers_desired)
-    services = keys(local.services_desired)
+    servers  = keys(local.servers_model_desired)
+    services = keys(local.services_model_desired)
 
     services_by_feature = {
-      for feature, matches in local.services_by_feature : feature => keys(matches)
+      for feature, matches in local.services_output_by_feature : feature => keys(matches)
       if length(matches) > 0
     }
   }

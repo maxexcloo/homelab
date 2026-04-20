@@ -25,7 +25,7 @@ locals {
   dns_records_manual = merge([
     for zone, records in local.dns : {
       for record in records : "${zone}-manual-${try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))}" => provider::deepmerge::mergo(
-        local.dns_defaults,
+        local.defaults_dns,
         merge(
           record,
           {
@@ -40,7 +40,7 @@ locals {
   # Server records combine explicit public addresses, OCI-assigned addresses, and
   # Tailscale device lookups into external/internal DNS records.
   dns_records_servers = merge([
-    for k, server in local.servers_desired : merge(
+    for k, server in local.servers_model_desired : merge(
       server.public_address != null ? {
         "${local.defaults.domains.external}-${k}-cname" = {
           content = server.public_address
@@ -84,18 +84,18 @@ locals {
           zone    = local.defaults.domains.external
         }
       } : {},
-      local.servers_runtime[k].tailscale_ipv4 != null ? {
+      local.servers_model_runtime[k].tailscale_ipv4 != null ? {
         "${local.defaults.domains.internal}-${k}-a" = {
-          content = local.servers_runtime[k].tailscale_ipv4
+          content = local.servers_model_runtime[k].tailscale_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "A"
           zone    = local.defaults.domains.internal
         }
       } : {},
-      local.servers_runtime[k].tailscale_ipv6 != null ? {
+      local.servers_model_runtime[k].tailscale_ipv6 != null ? {
         "${local.defaults.domains.internal}-${k}-aaaa" = {
-          content = local.servers_runtime[k].tailscale_ipv6
+          content = local.servers_model_runtime[k].tailscale_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "AAAA"
@@ -107,8 +107,8 @@ locals {
 
   # Server-hosted Cloudflare services point at the target server's tunnel.
   dns_records_services = {
-    for k, service in local.services_desired : "${local.defaults.domains.external}-${k}" => provider::deepmerge::mergo(
-      local.dns_defaults,
+    for k, service in local.services_model_desired : "${local.defaults.domains.external}-${k}" => provider::deepmerge::mergo(
+      local.defaults_dns,
       {
         content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
         name    = service.fqdn_external
@@ -117,18 +117,18 @@ locals {
         zone    = local.defaults.domains.external
       }
     )
-    if contains(keys(local.servers_desired), service.target) &&
-    local.servers_desired[service.target].features.cloudflare_zero_trust_tunnel &&
+    if contains(keys(local.servers_model_desired), service.target) &&
+    local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel &&
     service.networking.expose == "cloudflare"
   }
 
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as
   # computed service FQDNs and served directly by Fly.
   dns_records_services_fly = merge(flatten([
-    for k, service in local.fly_services : [
+    for k, service in local.fly_input_services : [
       for i, url in service.networking.urls : {
         "${k}-url-${i}" = provider::deepmerge::mergo(
-          local.dns_defaults,
+          local.defaults_dns,
           {
             content = "${service.platform_config.fly.app_name}.fly.dev"
             name    = url
@@ -145,13 +145,13 @@ locals {
   # Custom service URLs resolve to a tunnel when exposed through Cloudflare,
   # otherwise to the service's computed external or internal hostname.
   dns_records_services_urls = merge(flatten([
-    for k, service in local.services_desired : [
+    for k, service in local.services_model_desired : [
       for i, url in service.networking.urls : {
         "${k}-url-${i}" = provider::deepmerge::mergo(
-          local.dns_defaults,
+          local.defaults_dns,
           {
             content = (
-              local.servers_desired[service.target].features.cloudflare_zero_trust_tunnel && service.networking.expose == "cloudflare" ?
+              local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel && service.networking.expose == "cloudflare" ?
               "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
               service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
             )
@@ -164,7 +164,7 @@ locals {
       }
       if local.dns_zones_urls[url] != null
     ]
-    if contains(keys(local.servers_desired), service.target)
+    if contains(keys(local.servers_model_desired), service.target)
   ])...)
 
   # Wildcards follow each eligible A/AAAA/CNAME record unless the source record
@@ -199,7 +199,7 @@ locals {
   # choose the most specific Cloudflare zone.
   dns_zones_urls = {
     for url in distinct(flatten([
-      for k, service in local.services_desired : service.networking.urls
+      for k, service in local.services_model_desired : service.networking.urls
       ])) : url => try(
       split(":", reverse(sort([for z in local.dns_zones : format("%04d:%s", length(z), z) if url == z || endswith(url, ".${z}")]))[0])[1],
       null

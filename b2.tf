@@ -69,7 +69,7 @@ resource "b2_bucket" "service" {
 }
 
 resource "random_string" "b2_server" {
-  for_each = local.servers_by_feature.b2
+  for_each = local.servers_output_by_feature.b2
 
   length  = 6
   special = false
@@ -77,7 +77,7 @@ resource "random_string" "b2_server" {
 }
 
 resource "random_string" "b2_service" {
-  for_each = local.services_by_feature.b2
+  for_each = local.services_output_by_feature.b2
 
   length  = 6
   special = false

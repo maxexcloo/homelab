@@ -1,32 +1,32 @@
 locals {
   # Komodo only receives services with a rendered compose file on Docker-capable
   # server targets.
-  komodo_stacks = {
-    for k, v in local.services_desired : k => v
-    if contains(keys(local.servers_desired), v.target) &&
-    local.servers_desired[v.target].features.docker &&
-    contains(keys(local.services_compose), k)
+  komodo_input_stacks = {
+    for k, v in local.services_model_desired : k => v
+    if contains(keys(local.servers_model_desired), v.target) &&
+    local.servers_model_desired[v.target].features.docker &&
+    contains(keys(local.services_rendered_compose), k)
   }
 
   # Encrypted GitHub files consumed by Komodo ResourceSync. Service sidecar files
   # reuse the same relative paths as the service artifact model.
-  komodo_stacks_files = merge(
+  komodo_render_files = merge(
     {
-      for k, v in local.komodo_stacks : "${k}/compose.yaml" => {
+      for k, v in local.komodo_input_stacks : "${k}/compose.yaml" => {
         age_public_key = age_secret_key.server[v.target].public_key
         commit_message = "Update ${k} compose"
-        content_base64 = sensitive(base64encode(local.services_compose[k]))
+        content_base64 = sensitive(base64encode(local.services_rendered_compose[k]))
         content_type   = "yaml"
         file           = "${k}/compose.yaml"
       }
     },
     {
-      for k, v in local.services_files : k => merge(v, {
+      for k, v in local.services_rendered_files : k => merge(v, {
         age_public_key = age_secret_key.server[v.target].public_key
         commit_message = "Update ${v.stack} ${v.rel_path}"
         file           = k
       })
-      if contains(keys(local.servers_desired), v.target) && local.servers_desired[v.target].features.docker
+      if contains(keys(local.servers_model_desired), v.target) && local.servers_model_desired[v.target].features.docker
     }
   )
 }
@@ -50,7 +50,7 @@ resource "github_repository_file" "komodo_servers" {
   repository          = local.defaults.github.repositories.komodo
 
   content = sensitive(templatefile("${path.module}/templates/komodo/servers.toml.tftpl", {
-    servers = local.servers_desired
+    servers = local.servers_model_desired
   }))
 }
 
@@ -64,7 +64,7 @@ resource "github_repository_file" "komodo_sops_config" {
 
   content = join("\n", concat(
     ["creation_rules:"],
-    [for k, v in local.komodo_stacks : "  - path_regex: '^${k}/'\n    age: ${age_secret_key.server[v.target].public_key}"]
+    [for k, v in local.komodo_input_stacks : "  - path_regex: '^${k}/'\n    age: ${age_secret_key.server[v.target].public_key}"]
   ))
 }
 
@@ -77,12 +77,12 @@ resource "github_repository_file" "komodo_stacks" {
   content = templatefile("${path.module}/templates/komodo/stacks.toml.tftpl", {
     github_user = data.github_user.default.login
     repository  = local.defaults.github.repositories.komodo
-    stacks      = local.komodo_stacks
+    stacks      = local.komodo_input_stacks
   })
 }
 
 resource "github_repository_file" "komodo_stacks_files" {
-  for_each = local.komodo_stacks_files
+  for_each = local.komodo_render_files
 
   commit_message      = each.value.commit_message
   content             = shell_sensitive_script.komodo_stacks_files_encrypt[each.key].output["encrypted_content"]
@@ -92,7 +92,7 @@ resource "github_repository_file" "komodo_stacks_files" {
 }
 
 resource "shell_sensitive_script" "komodo_stacks_files_encrypt" {
-  for_each = local.komodo_stacks_files
+  for_each = local.komodo_render_files
 
   # The script receives base64 content and returns encrypted text for GitHub.
   # DEBUG_PATH intentionally writes plaintext only when explicitly configured.
@@ -105,14 +105,14 @@ resource "shell_sensitive_script" "komodo_stacks_files_encrypt" {
   }
 
   lifecycle_commands {
-    create = sensitive(local.sops_encrypt_script)
+    create = sensitive(local.script_sops_encrypt)
     delete = "true"
-    read   = sensitive(local.sops_encrypt_script)
-    update = sensitive(local.sops_encrypt_script)
+    read   = sensitive(local.script_sops_encrypt)
+    update = sensitive(local.script_sops_encrypt)
   }
 
   triggers = {
     age_public_key_hash = sha256(each.value.age_public_key)
-    script_hash         = sha256(local.sops_encrypt_script)
+    script_hash         = sha256(local.script_sops_encrypt)
   }
 }

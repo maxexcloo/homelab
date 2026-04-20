@@ -10,11 +10,11 @@ locals {
     }
   }
 
-  # Route auto-approvers exclude appliance and ephemeral tags because those
-  # nodes should not become subnet routers or exit nodes.
+  # Route auto-approvers exclude appliance, cicd, and ephemeral tags because
+  # those nodes should not become subnet routers or exit nodes.
   tailscale_route_tags = toset([
     for tag in local.defaults.tailscale.tags : "tag:${tag}"
-    if !contains(["appliance", "ephemeral"], tag)
+    if !contains(["appliance", "cicd", "ephemeral"], tag)
   ])
 
   # Full tag set used for ACL ownership declarations.
@@ -118,7 +118,7 @@ resource "tailscale_acl" "default" {
 }
 
 resource "tailscale_tailnet_key" "server" {
-  for_each = local.servers_by_feature.tailscale
+  for_each = local.servers_output_by_feature.tailscale
 
   description   = each.key
   preauthorized = true
@@ -129,7 +129,7 @@ resource "tailscale_tailnet_key" "server" {
 }
 
 resource "tailscale_tailnet_key" "service" {
-  for_each = local.services_by_feature.tailscale
+  for_each = local.services_output_by_feature.tailscale
 
   description   = each.key
   ephemeral     = true

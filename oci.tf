@@ -26,7 +26,7 @@ locals {
 
   # OCI resources in this root manage VM servers only.
   oci_vms = {
-    for k, v in local.servers_desired : k => v
+    for k, v in local.servers_model_desired : k => v
     if v.platform == "oci" && v.type == "vm" && v.platform_config.oci != null
   }
 

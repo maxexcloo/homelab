@@ -13,7 +13,7 @@ data "bitwarden_organization" "default" {
 }
 
 resource "bitwarden_item_login" "server" {
-  for_each = local.servers_private
+  for_each = local.servers_output_private
 
   collection_ids  = [data.bitwarden_org_collection.servers.id]
   name            = each.key
@@ -26,7 +26,7 @@ resource "bitwarden_item_login" "server" {
   dynamic "field" {
     for_each = {
       for k, v in each.value : k => v
-      if v != null && v != "" && v != false && !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.server_defaults), k) && can(tostring(v))
+      if v != null && v != "" && v != false && !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.defaults_server), k) && can(tostring(v))
     }
 
     content {
@@ -62,7 +62,7 @@ resource "bitwarden_item_login" "server" {
 
 resource "bitwarden_item_login" "service" {
   for_each = {
-    for k, v in local.services_private : k => v
+    for k, v in local.services_output_private : k => v
     if anytrue([for k, v in v.features : tobool(v) if can(tobool(v))]) || length(v.features.secrets) > 0 || v.networking.scheme != null
   }
 
@@ -76,7 +76,7 @@ resource "bitwarden_item_login" "service" {
   dynamic "field" {
     for_each = {
       for k, v in each.value : k => v
-      if v != null && v != "" && v != false && !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.service_defaults), k) && can(tostring(v))
+      if v != null && v != "" && v != false && !can(regex(local.defaults.bitwarden.url_field_pattern, k)) && !contains(keys(local.defaults_service), k) && can(tostring(v))
     }
 
     content {

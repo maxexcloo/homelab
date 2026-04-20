@@ -3,7 +3,7 @@
 #   file_permission = "0600"
 #
 #   content = join("\n", [
-#     for k, v in local.servers_desired : <<-EOT
+#     for k, v in local.servers_model_desired : <<-EOT
 #       Host ${k}
 #         HostName ${v.networking.management_address != "" ? v.networking.management_address : v.fqdn_internal}
 #         Port ${v.networking.management_port}

@@ -1,8 +1,4 @@
 {
-  "app_name": "${service.identity.name}",
-  "catalog_app": "${coalesce(service.platform_config.truenas.catalog_app, service.identity.name)}",
-  "custom_app": false,
-  "train": "${service.platform_config.truenas.train}",
   "values": {
     "network": {
       "web_port": {
@@ -58,7 +54,6 @@
         },
         "type": "host_path"
       }
-    },
-    "labels": ${jsonencode(truenas_labels)}
+    }
   }
 }
