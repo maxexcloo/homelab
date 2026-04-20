@@ -13,21 +13,20 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 Key computed locals:
 
 - `local.servers_desired` — server YAML plus defaults and deterministic computed fields
+- `local.servers_private` — server desired data plus runtime fields for private/runtime consumers
 - `local.servers_runtime` — provider-backed server values and generated secrets
 - `local.services_desired` — deploy-target-expanded service YAML plus deterministic computed fields
 - `local.services_labels` — per-service Docker labels, with service-owned labels from `platform_config.docker.labels` and routing labels from networking config
+- `local.services_private` — service desired data plus runtime fields for private/runtime consumers
 - `local.services_runtime` — provider-backed service values and generated secrets
 
 ## Sorting Convention
 
-Within any object — YAML, HCL, or JSON Schema `properties` — apply this order:
-
-1. **Single-line scalar values** (strings, booleans, integers, enums) — alphabetically
-2. **Multi-line values** (objects and arrays) — alphabetically
+Within any object — YAML, HCL, or JSON Schema `properties` — sort single-line assignments alphabetically by key first, then multi-line assignments alphabetically by key.
 
 Underscore-prefixed locals (`_defaults`, `_dns_raw`) sort before non-prefixed ones (ASCII `_` = 95 < `a` = 97).
 
-This applies consistently to `data/` YAML files, `schemas/*.json` property lists, resource attribute blocks, `environment {}` blocks, and `templatefile()` argument objects. Inside staged HCL `locals {}` blocks, keep top-level locals in data-flow order and sort object attributes inside each local. When `CONTENT = base64encode(...)` spans multiple lines it is multi-line and goes last; single-line `CONTENT` assignments sort alphabetically with the other scalars.
+This applies consistently to `data/` YAML files, `schemas/*.json` property lists, resource attribute blocks, `environment {}` blocks, and `templatefile()` argument objects. Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by name and sort object attributes inside each local. Only assignments that span multiple lines count as multi-line values; a single-line assignment like `identity = v.identity` sorts alphabetically with every other single-line assignment. When `CONTENT = base64encode(...)` spans multiple lines it is multi-line and goes last; single-line `CONTENT` assignments sort alphabetically with the other single-line attributes.
 
 ## HCL Standards
 
@@ -54,14 +53,14 @@ Complex locals are built in stages, underscore-prefixed for intermediate steps:
 ```
 _servers           raw deepmerged data
 _servers_ancestors bounded parent lookup chain
+_servers_computed  derived/computed fields added
 _servers_parent_*  helper maps for inheritance and descriptions
 _servers_public_*  inherited public networking values
-_servers_computed  derived/computed fields added
-servers_desired    desired data without generated secrets
-servers_runtime    generated secrets and provider-backed fields
 servers_by_feature filtered subsets keyed by feature flag
-servers_template_* template context with runtime fields
+servers_desired    desired data without generated secrets
+servers_private    merged private view for runtime consumers
 servers_public     template-safe inventory view
+servers_runtime    generated secrets and provider-backed fields
 ```
 
 ### `github_repository_file` resources

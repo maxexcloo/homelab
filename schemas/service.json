@@ -161,7 +161,7 @@
           "properties": {
             "app_name": {
               "type": ["string", "null"],
-              "description": "Fly.io app name override. If null, a unique app name is generated from the service name.",
+              "description": "Fly.io app name override. If null, defaults to {organization.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
               "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
             },
             "cpu_kind": {

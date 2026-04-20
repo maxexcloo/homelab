@@ -1,21 +1,3 @@
-locals {
-  # Bitwarden stores the full generated server view, including runtime secrets.
-  servers_bitwarden_items = {
-    for k, v in local.servers_desired : k => merge(
-      v,
-      local.servers_runtime[k]
-    )
-  }
-
-  # Bitwarden stores the full generated service view, including runtime secrets.
-  services_bitwarden_items = {
-    for k, v in local.services_desired : k => merge(
-      v,
-      local.services_runtime[k]
-    )
-  }
-}
-
 data "bitwarden_org_collection" "servers" {
   organization_id = data.bitwarden_organization.default.id
   search          = local.defaults.bitwarden.collections.servers
@@ -31,7 +13,7 @@ data "bitwarden_organization" "default" {
 }
 
 resource "bitwarden_item_login" "server" {
-  for_each = local.servers_bitwarden_items
+  for_each = local.servers_private
 
   collection_ids  = [data.bitwarden_org_collection.servers.id]
   name            = each.key
@@ -80,7 +62,7 @@ resource "bitwarden_item_login" "server" {
 
 resource "bitwarden_item_login" "service" {
   for_each = {
-    for k, v in local.services_bitwarden_items : k => v
+    for k, v in local.services_private : k => v
     if anytrue([for k, v in v.features : tobool(v) if can(tobool(v))]) || length(v.features.secrets) > 0 || v.networking.scheme != null
   }
 

@@ -21,22 +21,27 @@ locals {
   ]...)
 
   # Desired service model: expanded deployment target data plus deterministic
-  # names/URLs. Runtime credentials are deliberately added in a separate layer.
+  # names, URLs, and server FQDNs. Runtime credentials are added separately.
   services_desired = {
     for k, v in local._services_computed : k => merge(
-      v,
-      lookup(local._services_fly_computed, k, {}),
-      v.target == "fly" ? {
-        fqdn_external = "${local._services_fly_computed[k].platform_config.fly.app_name}.fly.dev"
-      } : {},
-      contains(keys(local.servers_desired), v.target) ? merge(
+      v.target == "fly" ? provider::deepmerge::mergo(
+        v,
         {
-          fqdn_internal = "${v.identity.name}.${local.servers_desired[v.target].fqdn_internal}"
-        },
-        contains(["cloudflare", "external"], v.networking.expose) ? {
-          fqdn_external = "${v.identity.name}.${local.servers_desired[v.target].fqdn_external}"
-        } : {}
-      ) : {},
+          fqdn_external = "${coalesce(v.platform_config.fly.app_name, "${local.defaults.organization.name}-${v.identity.name}")}.fly.dev"
+
+          platform_config = {
+            fly = {
+              app_name = coalesce(v.platform_config.fly.app_name, "${local.defaults.organization.name}-${v.identity.name}")
+            }
+          }
+        }
+      ) : v,
+      contains(keys(local.servers_desired), v.target) && contains(["cloudflare", "external"], v.networking.expose) ? {
+        fqdn_external = "${v.identity.name}.${local.servers_desired[v.target].fqdn_external}"
+      } : {},
+      contains(keys(local.servers_desired), v.target) ? {
+        fqdn_internal = "${v.identity.name}.${local.servers_desired[v.target].fqdn_internal}"
+      } : {},
       {
         for i, url in v.networking.urls : "url_${i}" => url
       }
@@ -80,17 +85,25 @@ locals {
     )
   }
 
+  # Private generated service view used where runtime fields are required.
+  services_private = {
+    for k, v in local.services_desired : k => merge(
+      v,
+      local.services_runtime[k]
+    )
+  }
+
   # Template contexts are intentionally small: templates get the current service,
   # the selected server when present, public inventory maps, and global defaults.
   services_base_template_vars = {
-    for k, v in local.services_template_context : k => {
+    for k, v in local.services_private : k => {
       defaults = local.defaults
-      server   = try(local.servers_template_context[v.target], null)
+      server   = try(local.servers_private[v.target], null)
       servers  = local.servers_public
       service  = v
 
       services = {
-        for kk, vv in local.services_template_context : kk => {
+        for kk, vv in local.services_private : kk => {
           fqdn_external = vv.fqdn_external
           fqdn_internal = vv.fqdn_internal
           target        = vv.target
@@ -140,7 +153,7 @@ locals {
 
   # User-provided Docker labels are template-rendered against the safe base context.
   services_docker_labels = {
-    for k, v in local.services_template_context : k => {
+    for k, v in local.services_private : k => {
       for key, value in v.platform_config.docker.labels :
       key => templatestring(tostring(value), local.services_base_template_vars[k])
       if value != null
@@ -150,7 +163,7 @@ locals {
   # Fail fast on bad interpolation rather than silently rendering a literal
   # ${...} expression into deployment config.
   services_env = {
-    for k, v in local.services_template_context : k => {
+    for k, v in local.services_private : k => {
       for key, value in v.platform_config.docker.env :
       key => templatestring(tostring(value), local.services_base_template_vars[k])
       if value != null && templatestring(tostring(value), local.services_base_template_vars[k]) != ""
@@ -215,7 +228,7 @@ locals {
 
   # Routing label rules live in a template; service-owned labels are plain data.
   services_labels = {
-    for k, v in local.services_template_context : k => merge(
+    for k, v in local.services_private : k => merge(
       yamldecode(templatefile("${path.module}/templates/docker/labels.yaml.tftpl", local.services_base_template_vars[k])),
       local.services_docker_labels[k]
     )
@@ -233,18 +246,9 @@ locals {
     }
   }
 
-  # Templates get the full service object because service config files may need
-  # generated passwords, API keys, and feature credentials.
-  services_template_context = {
-    for k, v in local.services_desired : k => merge(
-      v,
-      local.services_runtime[k]
-    )
-  }
-
   # Full template context adds rendered env, labels, and public service inventory.
   services_template_vars = {
-    for k, v in local.services_template_context : k => merge(local.services_base_template_vars[k], {
+    for k, v in local.services_private : k => merge(local.services_base_template_vars[k], {
       env      = local.services_env[k]
       labels   = local.services_labels[k]
       services = local.services_public
@@ -259,8 +263,8 @@ resource "random_id" "service_secret" {
     for item in flatten([
       for k, v in local._services_computed : [
         for secret in v.features.secrets : {
-          key         = "${k}-${secret.name}"
           byte_length = secret.length
+          key         = "${k}-${secret.name}"
         }
         if contains(["hex", "base64"], secret.type)
       ]
@@ -339,8 +343,8 @@ output "services" {
 
   # Output view removes empty fields but remains sensitive because it includes secrets.
   value = {
-    for k, v in local.services_desired : k => {
-      for kk, vv in merge(v, local.services_runtime[k]) : kk => vv
+    for k, v in local.services_private : k => {
+      for kk, vv in v : kk => vv
       if vv != null && vv != "" && vv != false
     }
   }

@@ -1,17 +1,4 @@
 locals {
-  # Fly app names are part of the remote identity, so generated suffixes are
-  # stable random resources rather than recomputed strings.
-  _services_fly_computed = {
-    for k, v in local._services_computed : k => {
-      platform_config = merge(v.platform_config, {
-        fly = merge(v.platform_config.fly, {
-          app_name = trimsuffix(coalesce(v.platform_config.fly.app_name, "${v.identity.name}-${random_string.fly_service[k].result}"), ".fly.dev")
-        })
-      })
-    }
-    if v.target == "fly"
-  }
-
   # Expanded services whose deployment target is Fly.io.
   fly_services = {
     for k, v in local.services_desired : k => v
@@ -38,7 +25,7 @@ locals {
         content_type   = "binary"
         file           = "${v.platform_config.fly.app_name}/.certs"
       }
-      if length([for url in v.networking.urls : url if url != v.fqdn_external]) > 0
+      if length(v.networking.urls) > 0
     },
     {
       for k, v in local.services_files : "${local.fly_services[v.stack].platform_config.fly.app_name}/${v.rel_path}" => merge(v, {
@@ -83,18 +70,6 @@ resource "github_repository_file" "fly_workflow_deploy" {
   file                = ".github/workflows/deploy.yml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
-}
-
-resource "random_string" "fly_service" {
-  for_each = {
-    for k, v in local._services_computed : k => v
-    if v.target == "fly"
-  }
-
-  # The generated suffix is stateful so Fly app names do not churn between plans.
-  length  = 6
-  special = false
-  upper   = false
 }
 
 resource "shell_sensitive_script" "fly_services_files_encrypt" {

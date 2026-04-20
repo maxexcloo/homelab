@@ -17,6 +17,23 @@ locals {
     ])
   }
 
+  # Non-provider derived fields used by DNS, templates, Bitwarden, and inventory.
+  _servers_computed = {
+    for k, v in local._servers : k => {
+      fqdn           = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
+      public_address = local._servers_public_networking[k].public_address
+      public_ipv4    = local._servers_public_networking[k].public_ipv4
+      public_ipv6    = local._servers_public_networking[k].public_ipv6
+      slug           = k
+
+      description = (
+        v.parent == "" ? v.identity.title :
+        local._servers_parent_context[k].region_matches ? "${v.identity.title} (${upper(v.identity.region)})" :
+        "${local._servers_parent_context[k].title} ${v.identity.title} (${upper(v.identity.region)})"
+      )
+    }
+  }
+
   # Parent context keeps inherited description logic readable without adding
   # broader parent inheritance.
   _servers_parent_context = {
@@ -47,19 +64,12 @@ locals {
     }
   }
 
-  # Non-provider derived fields used by DNS, templates, Bitwarden, and inventory.
-  _servers_computed = {
-    for k, v in local._servers : k => {
-      description = (
-        v.parent == "" ? v.identity.title :
-        local._servers_parent_context[k].region_matches ? "${v.identity.title} (${upper(v.identity.region)})" :
-        "${local._servers_parent_context[k].title} ${v.identity.title} (${upper(v.identity.region)})"
-      )
-      fqdn           = length(split("-", k)) == 1 ? k : "${v.identity.name}.${v.identity.region}"
-      public_address = local._servers_public_networking[k].public_address
-      public_ipv4    = local._servers_public_networking[k].public_ipv4
-      public_ipv6    = local._servers_public_networking[k].public_ipv6
-      slug           = k
+  # Feature maps use YAML/default data, not provider-enriched servers, to avoid
+  # making feature resources depend on the resources they create.
+  servers_by_feature = {
+    for feature in keys(local.server_defaults.features) : feature => {
+      for k, v in local._servers : k => v
+      if v.features[feature]
     }
   }
 
@@ -74,6 +84,27 @@ locals {
         fqdn_internal = "${local._servers_computed[k].fqdn}.${local.defaults.domains.internal}"
       }
     )
+  }
+
+  # Private generated server view used where runtime fields are required.
+  servers_private = {
+    for k, v in local.servers_desired : k => merge(
+      v,
+      local.servers_runtime[k]
+    )
+  }
+
+  # Public server maps are safe for cross-service inventory templates.
+  servers_public = {
+    for k, v in local.servers_desired : k => {
+      description   = v.description
+      fqdn_external = v.fqdn_external
+      fqdn_internal = v.fqdn_internal
+      identity      = v.identity
+      platform      = v.platform
+      slug          = v.slug
+      type          = v.type
+    }
   }
 
   # Runtime server model: provider-backed values and generated secrets that are
@@ -115,36 +146,6 @@ locals {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.server[k].key
       } : {}
     )
-  }
-
-  # Feature maps use YAML/default data, not provider-enriched servers, to avoid
-  # making feature resources depend on the resources they create.
-  servers_by_feature = {
-    for feature in keys(local.server_defaults.features) : feature => {
-      for k, v in local._servers : k => v
-      if v.features[feature]
-    }
-  }
-
-  # Cloud-init templates need runtime credentials such as Tailscale auth keys.
-  servers_template_context = {
-    for k, v in local.servers_desired : k => merge(
-      v,
-      local.servers_runtime[k]
-    )
-  }
-
-  # Public server maps are safe for cross-service inventory templates.
-  servers_public = {
-    for k, v in local.servers_desired : k => {
-      description   = v.description
-      fqdn_external = v.fqdn_external
-      fqdn_internal = v.fqdn_internal
-      identity      = v.identity
-      platform      = v.platform
-      slug          = v.slug
-      type          = v.type
-    }
   }
 }
 
@@ -233,8 +234,8 @@ output "servers" {
 
   # Output view removes empty fields but remains sensitive because it includes secrets.
   value = {
-    for k, v in local.servers_desired : k => {
-      for kk, vv in merge(v, local.servers_runtime[k]) : kk => vv
+    for k, v in local.servers_private : k => {
+      for kk, vv in v : kk => vv
       if vv != null && vv != "" && vv != false
     }
   }

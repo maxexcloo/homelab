@@ -122,8 +122,8 @@ locals {
     service.networking.expose == "cloudflare"
   }
 
-  # Fly services get records for custom URLs only; the default fly.dev hostname
-  # remains provider-managed by Fly.
+  # Fly services get records for custom URLs; fly.dev hostnames are exposed as
+  # computed service FQDNs and served directly by Fly.
   dns_records_services_fly = merge(flatten([
     for k, service in local.fly_services : [
       for i, url in service.networking.urls : {
@@ -138,7 +138,7 @@ locals {
           }
         )
       }
-      if url != service.fqdn_external && local.dns_zones_urls[url] != null
+      if local.dns_zones_urls[url] != null
     ]
   ])...)
 

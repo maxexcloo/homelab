@@ -81,8 +81,9 @@ Feature flags either create provider-backed resources or expose values generated
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
 2. Fill in `deploy_to`, `features`, `identity`, `networking`
-3. Optionally add deploy artifacts under `services/<identity.name>/`; use `.tftpl` for files that need OpenTofu template rendering
-4. Run `mise run plan` to review, `mise run apply` to provision
+3. For Fly.io deployments, optionally set `platform_config.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
+4. Optionally add deploy artifacts under `services/<identity.name>/`; use `.tftpl` for files that need OpenTofu template rendering
+5. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands
 

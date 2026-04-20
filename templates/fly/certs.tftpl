@@ -1,5 +1,3 @@
 %{ for url in service.networking.urls ~}
-%{ if url != service.fqdn_external ~}
 ${url}
-%{ endif ~}
 %{ endfor ~}
