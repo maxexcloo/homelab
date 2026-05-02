@@ -8,6 +8,7 @@ locals {
       {
         fqdn_external = "${local.servers_input_derived[server_key].fqdn}.${local.defaults.domains.external}"
         fqdn_internal = "${local.servers_input_derived[server_key].fqdn}.${local.defaults.domains.internal}"
+        key           = server_key
       }
     )
   }

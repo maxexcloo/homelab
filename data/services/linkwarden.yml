@@ -29,7 +29,7 @@ platform_config:
   docker:
     env:
       BASE_URL: https://${service.fqdn_internal}
-      EMAIL_FROM: ${defaults.organization.email}
+      EMAIL_FROM: ${service.key}@${defaults.domains.internal}
       EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.resend_api_key_sensitive)}@${defaults.resend.host}:${defaults.resend.port}
       NEXT_PUBLIC_EMAIL_PROVIDER: true
     labels:

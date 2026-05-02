@@ -10,6 +10,7 @@ locals {
       {
         fqdn_external = service.target == "fly" ? "${coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev" : contains(keys(local.servers_model_desired), service.target) && contains(["cloudflare", "external"], service.networking.expose) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_external}" : service.fqdn_external
         fqdn_internal = contains(keys(local.servers_model_desired), service.target) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_internal}" : service.fqdn_internal
+        key           = service_key
 
         identity = {
           group = service.identity.group != null ? service.identity.group : contains(keys(local.servers_model_desired), service.target) ? local.servers_model_desired[service.target].description : "Applications"

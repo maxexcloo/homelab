@@ -24,6 +24,7 @@ locals {
       fqdn_internal = server.fqdn_internal
       features      = server.features
       identity      = server.identity
+      key           = server.key
       platform      = server.platform
       slug          = server.slug
       type          = server.type

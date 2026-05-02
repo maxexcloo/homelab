@@ -18,8 +18,7 @@ locals {
     for service_key, service in local.services_outputs_private : service_key => merge(
       yamldecode(templatefile("${path.module}/templates/docker/labels.yaml.tftpl", local.services_outputs_vars[service_key])),
       {
-        for label_key, label_value in service.platform_config.docker.labels :
-        label_key => templatestring(tostring(label_value), local.services_outputs_vars[service_key])
+        for label_key, label_value in service.platform_config.docker.labels : label_key => templatestring(tostring(label_value), local.services_outputs_vars[service_key])
         if label_value != null
       }
     )
@@ -76,7 +75,6 @@ locals {
         raw_encrypt     = endswith(trimsuffix(trimprefix(file_path, "services/${service.identity.service}/"), ".tftpl"), ".raw")
         rel_path        = trimsuffix(trimsuffix(trimprefix(file_path, "services/${service.identity.service}/"), ".tftpl"), ".raw")
         render_template = endswith(file_path, ".tftpl")
-        service_name    = service.identity.service
         stack           = service_key
         target          = service.target
       }

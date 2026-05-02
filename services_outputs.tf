@@ -24,6 +24,7 @@ locals {
       fqdn_external = service.fqdn_external
       fqdn_internal = service.fqdn_internal
       identity      = service.identity
+      key           = service.key
       networking    = service.networking
       target        = service.target
     }
