@@ -25,7 +25,7 @@ mise run apply  # Apply changes
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev/) for task management and tool installation
-- Bitwarden account with **Servers** and **Services** collections created
+- 1Password Connect server with access to the server and service credential vaults listed in `data/defaults.yml`
 - Terraform Cloud account for state backend
 
 Run `mise run setup` to create `.mise.local.toml` from the template, then fill in credentials — see `.mise.local.toml.default` for the full list.
@@ -36,7 +36,7 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 
 YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers. Some service credentials are rendered directly because no provider resource manages them.
 
-Server and service data is modeled in two layers: desired values from YAML/defaults plus deterministic fields, and runtime values from providers or generated secrets. Consumers use narrower views for Bitwarden, templates, public inventory, and outputs so dependencies stay visible.
+Server and service data is modeled in two layers: desired values from YAML/defaults plus deterministic fields, and runtime values from providers or generated secrets. Consumers use narrower views for 1Password, templates, public inventory, and outputs so dependencies stay visible.
 
 ```
 data/
@@ -47,7 +47,7 @@ data/
     │
     ▼
 OpenTofu
-    ├── Bitwarden       Credential storage (one entry per server/service)
+    ├── 1Password       Credential storage (one entry per server/service)
     ├── B2              Object storage buckets and keys
     ├── Cloudflare      DNS records, Zero Trust tunnels, ACME tokens
     ├── GitHub          SSH public keys; pushes Fly/Komodo/TrueNAS configs
@@ -64,7 +64,7 @@ Rendered plaintext can be written locally for debugging by setting `TF_VAR_debug
 
 Credentials fall into two groups:
 
-- Mandatory credentials are required for normal operation of this stack: Bitwarden, Cloudflare, GitHub, Terraform Cloud, and Tailscale.
+- Mandatory credentials are required for normal operation of this stack: 1Password Connect, Cloudflare, GitHub, Terraform Cloud, and Tailscale.
 - Optional credentials are required only when the corresponding data enables those resources: B2, Incus, OCI, Resend, and UniFi.
 
 Feature flags either create provider-backed resources, expose values generated locally by OpenTofu, or control rendered config. `password` is local-only, while `monitoring` and `monitoring_alerts` only control generated Gatus checks and alerts. `b2`, `resend`, and `tailscale` call providers when enabled. Resend uses the generic REST API provider with `TF_VAR_resend_api_key` because this repo does not use a native Resend provider. Pushover has no provider-managed resource here, so `TF_VAR_pushover_application_token` and `TF_VAR_pushover_user_key` are pass-through values rendered into service config when `features.pushover` is enabled.
@@ -101,10 +101,12 @@ mise run validate  # Validate OpenTofu configuration
 
 ## Credential Storage
 
-All generated credentials are stored automatically in **Bitwarden** in two collections:
+All generated credentials are stored automatically in **1Password** through 1Password Connect:
 
-- **Servers** — one login entry per server; all generated fields (passwords, API keys, IPs, FQDNs, tunnel tokens) stored as custom fields
-- **Services** — one login entry per service deployment with the same pattern
+- **Servers vault** — one login entry per server; generated fields (passwords, API keys, tunnel tokens) are stored as fields, and IPs/FQDNs are stored as item URLs
+- **Services vault** — one login entry per service deployment with the same pattern, preserving all computed and custom URLs on the login item
+
+Set `onepassword.vaults.servers` and `onepassword.vaults.services` in `data/defaults.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
 
 Provided or externally generated secrets can live in `data/secrets.sops.yml`. The file is encrypted with SOPS/age in Git and read during OpenTofu runs. Server keys under `servers.<server>` are exposed as `{key}_sensitive`; service keys are declared in `features.secrets` with `type: external`, then declared keys under `services.<identity.name>` or `services.<service-target>` are exposed as `{key}_sensitive` in templates.
 

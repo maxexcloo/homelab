@@ -32,7 +32,7 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random admin password. Exposes password_sensitive and password_hash_sensitive (bcrypt). Stored in Bitwarden.",
+          "description": "Generate a random admin password. Exposes password_sensitive and password_hash_sensitive (bcrypt). Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
@@ -70,11 +70,11 @@
           "type": "string"
         },
         "title": {
-          "description": "Display name shown in dashboards, Komodo and Bitwarden (e.g. 'Malatang').",
+          "description": "Display name shown in dashboards, Komodo and 1Password (e.g. 'Malatang').",
           "type": "string"
         },
         "username": {
-          "description": "Primary admin username for SSH access. Stored in Bitwarden alongside the generated password. Defaults to 'root'.",
+          "description": "Primary admin username for SSH access. Stored in 1Password alongside the generated password. Defaults to 'root'.",
           "type": "string"
         }
       }

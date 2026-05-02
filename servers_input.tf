@@ -26,7 +26,7 @@ locals {
     }
   }
 
-  # Non-provider derived fields used by DNS, templates, Bitwarden, and inventory.
+  # Non-provider derived fields used by DNS, templates, 1Password, and inventory.
   servers_input_derived = {
     for server_key, server in local.servers_input : server_key => {
       fqdn = length(split("-", server_key)) == 1 ? server_key : "${server.identity.name}.${server.identity.region}"

@@ -1,10 +1,4 @@
 # yaml-language-server: $schema=../schemas/defaults.json
-bitwarden:
-  organization: Homelab
-  url_field_pattern: (^fqdn_|^url_|_(ipv[46]|address)$)
-  collections:
-    servers: Servers
-    services: Services
 cloudflare:
   account_name: excloo
 dns:
@@ -22,6 +16,18 @@ github:
     fly: fly
     komodo: komodo
     truenas: truenas
+onepassword:
+  url_field_pattern: (^fqdn_|^url_|_(ipv[46]|address)$)
+  tags:
+    servers:
+      - homelab
+      - servers
+    services:
+      - homelab
+      - services
+  vaults:
+    servers: jfp5upb7y2wmr4hbz7enfpdh5e
+    services: vjxx2dvl7ukvsqcic3bboeazbi
 organization:
   email: max@excloo.com
   managed_comment: OpenTofu Managed

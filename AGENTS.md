@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across Bitwarden, B2, Cloudflare, GitHub, Incus, OCI, Resend, Tailscale, and UniFi. Some credentials, such as Pushover, are pass-through values rendered into generated configs because no provider resource manages them.
+Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across 1Password Connect, B2, Cloudflare, GitHub, Incus, OCI, Resend, Tailscale, and UniFi. Some credentials, such as Pushover, are pass-through values rendered into generated configs because no provider resource manages them.
 
 - `data/defaults.yml` — global config and schema defaults for servers/services
 - `data/servers/*.yml` — one file per server; deepmerged with server defaults in `servers_input.tf`

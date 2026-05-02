@@ -32,6 +32,28 @@ variable "oci_tenancy_ocid" {
   }
 }
 
+variable "onepassword_connect_token" {
+  description = "1Password Connect API token"
+  sensitive   = true
+  type        = string
+
+  validation {
+    condition     = length(nonsensitive(var.onepassword_connect_token)) > 0
+    error_message = "1Password Connect API token must not be empty."
+  }
+}
+
+variable "onepassword_connect_url" {
+  description = "1Password Connect API base URL, for example https://onepassword-connect.example.com"
+  sensitive   = false
+  type        = string
+
+  validation {
+    condition     = can(regex("^https?://[^/]+", var.onepassword_connect_url)) && !endswith(var.onepassword_connect_url, "/")
+    error_message = "1Password Connect URL must start with http:// or https:// and must not end with a slash."
+  }
+}
+
 variable "pushover_application_token" {
   default     = ""
   description = "Pushover application API token"

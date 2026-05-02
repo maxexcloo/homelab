@@ -6,36 +6,6 @@
   "title": "Defaults",
   "type": "object",
   "properties": {
-    "bitwarden": {
-      "additionalProperties": false,
-      "description": "Bitwarden/Vaultwarden integration settings for storing generated credentials.",
-      "type": "object",
-      "properties": {
-        "collections": {
-          "additionalProperties": false,
-          "description": "Bitwarden organisation collection names to file credentials into.",
-          "type": "object",
-          "properties": {
-            "servers": {
-              "description": "Collection name for server credentials.",
-              "type": "string"
-            },
-            "services": {
-              "description": "Collection name for service credentials.",
-              "type": "string"
-            }
-          }
-        },
-        "organization": {
-          "description": "Bitwarden organisation name to look up and file items under.",
-          "type": "string"
-        },
-        "url_field_pattern": {
-          "description": "Regex matching server/service field names to store as Bitwarden URI entries rather than custom fields (e.g. fields containing IP addresses, FQDNs, or URLs).",
-          "type": "string"
-        }
-      }
-    },
     "cloudflare": {
       "additionalProperties": false,
       "description": "Cloudflare account settings used for account-scoped resources.",
@@ -114,6 +84,53 @@
             },
             "truenas": {
               "description": "Repository for TrueNAS service configs (compose.json, app.json, service config files). A GitHub Actions workflow applies these.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "onepassword": {
+      "additionalProperties": false,
+      "description": "1Password Connect integration settings for storing generated credentials.",
+      "type": "object",
+      "properties": {
+        "tags": {
+          "additionalProperties": false,
+          "description": "Tags assigned to generated 1Password items.",
+          "type": "object",
+          "properties": {
+            "servers": {
+              "description": "Tags for server credentials.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "services": {
+              "description": "Tags for service credentials.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "url_field_pattern": {
+          "description": "Regex matching server/service field names to store as 1Password item URLs rather than custom fields (e.g. fields containing IP addresses, FQDNs, or URLs).",
+          "type": "string"
+        },
+        "vaults": {
+          "additionalProperties": false,
+          "description": "1Password vault UUIDs for generated credentials.",
+          "type": "object",
+          "properties": {
+            "servers": {
+              "description": "Vault UUID for server credentials.",
+              "type": "string"
+            },
+            "services": {
+              "description": "Vault UUID for service credentials.",
               "type": "string"
             }
           }

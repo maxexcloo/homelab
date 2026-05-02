@@ -1,11 +1,3 @@
-provider "bitwarden" {
-  client_implementation = "embedded"
-
-  experimental {
-    disable_sync_after_write_verification = true
-  }
-}
-
 provider "github" {
   owner = local.defaults.github.owner
 }
@@ -41,6 +33,20 @@ provider "restapi" {
   # provider resource is used in this stack.
   headers = {
     "Authorization" = "Bearer ${var.resend_api_key}",
+    "Content-Type"  = "application/json"
+  }
+}
+
+provider "restapi" {
+  alias                 = "onepassword"
+  create_returns_object = true
+  rate_limit            = 1
+  uri                   = var.onepassword_connect_url
+
+  # 1Password Connect is modeled through the generic REST provider because the
+  # native provider does not support all login item URL entries needed here.
+  headers = {
+    "Authorization" = "Bearer ${var.onepassword_connect_token}"
     "Content-Type"  = "application/json"
   }
 }

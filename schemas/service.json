@@ -34,7 +34,7 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random password for this service. Exposes password_sensitive and password_hash_sensitive (bcrypt) as template variables. Stored in Bitwarden.",
+          "description": "Generate a random password for this service. Exposes password_sensitive and password_hash_sensitive (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
@@ -121,11 +121,11 @@
           "type": "string"
         },
         "title": {
-          "description": "Display name shown in Homepage, Komodo, Bitwarden, and monitoring (e.g. 'Vaultwarden').",
+          "description": "Display name shown in Homepage, Komodo, 1Password, and monitoring (e.g. 'Vaultwarden').",
           "type": "string"
         },
         "username": {
-          "description": "Admin username for this service. Stored in Bitwarden alongside the generated password.",
+          "description": "Admin username for this service. Stored in 1Password alongside the generated password.",
           "type": "string"
         }
       }

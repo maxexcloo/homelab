@@ -14,10 +14,6 @@ terraform {
       source  = "viktorradnai/bcrypt"
       version = ">= 0.1, < 1.0"
     }
-    bitwarden = {
-      source  = "maxlaverse/bitwarden"
-      version = ">= 0.17, < 1.0"
-    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
