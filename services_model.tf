@@ -28,12 +28,6 @@ locals {
   # Keeping this separate makes secret dependencies easier to spot.
   services_model_runtime = {
     for service_key, service in local.services_input_targets : service_key => merge(
-      {
-        for secret in service.features.secrets : "${secret.name}_sensitive" => sensitive(
-          try(local.sops_secrets.services[service_key][secret.name], local.sops_secrets.services[service.identity.name][secret.name])
-        )
-        if secret.type == "external" && can(try(local.sops_secrets.services[service_key][secret.name], local.sops_secrets.services[service.identity.name][secret.name]))
-      },
       service.features.b2 ? {
         b2_application_key_id        = b2_application_key.service[service_key].application_key_id
         b2_application_key_sensitive = b2_application_key.service[service_key].application_key
@@ -53,6 +47,7 @@ locals {
       } : {},
       {
         for secret in service.features.secrets : "${secret.name}_sensitive" => (
+          secret.type == "external" ? sensitive(try(local.onepassword_service_existing_fields[service_key][secret.name], "")) :
           contains(["hex", "base64"], secret.type) ? (
             secret.type == "hex" ?
             random_id.service_secret["${service_key}-${secret.name}"].hex :
@@ -60,7 +55,6 @@ locals {
           ) :
           random_password.service_secret["${service_key}-${secret.name}"].result
         )
-        if secret.type != "external"
       },
       service.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[service_key].key

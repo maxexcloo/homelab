@@ -10,6 +10,10 @@ locals {
 
   # Schema-shaped defaults merged into each service YAML file.
   defaults_service = local.defaults.services
+
+  # Shared SOPS encryption script used by shell_sensitive_script resources
+  # before GitHub writes.
+  script_encrypt_sops = file("${path.module}/templates/scripts/sops_encrypt.sh")
 }
 
 output "summary" {

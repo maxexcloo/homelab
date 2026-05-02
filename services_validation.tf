@@ -8,13 +8,6 @@ locals {
     ]
   ])
 
-  services_validation_external_secrets_missing = flatten([
-    for service_key, service in local.services_input_targets : [
-      for secret in service.features.secrets : "${service_key}.${secret.name}"
-      if secret.type == "external" && !can(try(local.sops_secrets.services[service_key][secret.name], local.sops_secrets.services[service.identity.name][secret.name]))
-    ]
-  ])
-
   services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
     if contains(service.deploy_to, "fly") && service.networking.port == null
@@ -56,11 +49,6 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local.services_validation_cloudflare_tunnel_missing) == 0
       error_message = "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", local.services_validation_cloudflare_tunnel_missing)}"
-    }
-
-    precondition {
-      condition     = length(local.services_validation_external_secrets_missing) == 0
-      error_message = "Declared external service secrets are missing from data/secrets.sops.yml: ${join(", ", local.services_validation_external_secrets_missing)}"
     }
 
     precondition {

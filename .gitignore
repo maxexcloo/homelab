@@ -1,4 +1,3 @@
-.bitwarden
 .mise.local.toml
 .terraform
 *.tfplan

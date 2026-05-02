@@ -9,6 +9,7 @@ B2_APPLICATION_KEY_ID = "REPLACE_ME"
 
 # Cloudflare (required)
 CLOUDFLARE_API_TOKEN = "REPLACE_ME"
+CLOUDFLARE_EMAIL = "REPLACE_ME"
 
 # GitHub (required)
 GITHUB_TOKEN = "REPLACE_ME"
@@ -26,9 +27,6 @@ TF_VAR_pushover_user_key = "REPLACE_ME"
 
 # Resend (optional)
 TF_VAR_resend_api_key = "REPLACE_ME"
-
-# SOPS (optional)
-SOPS_AGE_KEY = "REPLACE_ME"
 
 # Tailscale (required)
 TAILSCALE_OAUTH_CLIENT_ID = "REPLACE_ME"

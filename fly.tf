@@ -97,14 +97,14 @@ resource "shell_sensitive_script" "fly_services_files_encrypt" {
   }
 
   lifecycle_commands {
-    create = sensitive(local.sops_script_encrypt)
+    create = sensitive(local.script_encrypt_sops)
     delete = "true"
-    read   = sensitive(local.sops_script_encrypt)
-    update = sensitive(local.sops_script_encrypt)
+    read   = sensitive(local.script_encrypt_sops)
+    update = sensitive(local.script_encrypt_sops)
   }
 
   triggers = {
     age_public_key_hash = sha256(each.value.age_public_key)
-    script_hash         = sha256(local.sops_script_encrypt)
+    script_hash         = sha256(local.script_encrypt_sops)
   }
 }

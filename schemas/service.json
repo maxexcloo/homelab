@@ -83,7 +83,7 @@
                 "type": "string"
               },
               "type": {
-                "description": "Secret format. external: read from data/secrets.sops.yml; hex/base64: random bytes encoded as hex or base64; string: random password including special characters; alphanumeric: random password without special characters.",
+                "description": "Secret format. external: read from the matching 1Password service item; hex/base64: random bytes encoded as hex or base64; string: random password including special characters; alphanumeric: random password without special characters.",
                 "enum": ["alphanumeric", "base64", "external", "hex", "string"],
                 "type": "string"
               }

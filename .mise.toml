@@ -4,7 +4,6 @@ TF_CLI_ARGS_plan = "-parallelism=20"
 
 [tools]
 "pipx:check-jsonschema" = "latest"
-age = "1"
 opentofu = "1"
 prettier = "3"
 sops = "3"
@@ -31,7 +30,6 @@ fi
 description = "Format check, lint and validate"
 depends = ["lint", "validate"]
 run = """
-[[ -f data/secrets.sops.yml ]] && grep -q '^sops:' data/secrets.sops.yml
 prettier --check "data/**/*.yml" "templates/**/*.yml"
 tofu fmt -check -recursive
 """
@@ -55,15 +53,6 @@ check-jsonschema --schemafile schemas/service.json data/services/*.yml
 [tasks.validate]
 description = "Validate configurations"
 run = "tofu validate"
-
-# Secrets
-[tasks.secrets-edit]
-description = "Edit encrypted secrets"
-run = "EDITOR=\"code --wait\" sops data/secrets.sops.yml"
-
-[tasks.secrets-view]
-description = "View encrypted secrets"
-run = "sops --decrypt data/secrets.sops.yml"
 
 # Deployment
 [tasks.apply]

@@ -108,22 +108,11 @@ All generated credentials are stored automatically in **1Password** through 1Pas
 
 Set `onepassword.vaults.servers` and `onepassword.vaults.services` in `data/defaults.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
 
-Provided or externally generated secrets can live in `data/secrets.sops.yml`. The file is encrypted with SOPS/age in Git and read during OpenTofu runs. Server keys under `servers.<server>` are exposed as `{key}_sensitive`; service keys are declared in `features.secrets` with `type: external`, then declared keys under `services.<identity.name>` or `services.<service-target>` are exposed as `{key}_sensitive` in templates.
+Externally supplied service secrets are declared in `features.secrets` with `type: external`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back from 1Password Connect and exposes them as `{key}_sensitive` in templates. After adding a new external service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value.
 
 Services can access another service's private fields only by declaring an `imports.services` alias. The normal `services` map remains public inventory, and declared private imports are overlaid by alias as `services.<alias>`.
 
 Rendered sidecar files named `*.raw.tftpl` are templated, encrypted as binary, and deployed without the `.raw` segment. Use this for files where SOPS structured YAML/JSON encryption is unsuitable, such as top-level YAML arrays.
-
-```yaml
-servers:
-  au-truenas:
-    api_token: ...
-services:
-  truenas:
-    homepage_widget_key: ...
-```
-
-Set `SOPS_AGE_KEY` in `.mise.local.toml` or use the standard SOPS age key file, then use `mise run secrets-edit`.
 
 ## Documentation
 

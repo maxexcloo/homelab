@@ -45,9 +45,35 @@ locals {
     }
   }
 
+  onepassword_service_existing_fields = {
+    for service_key, item in local.onepassword_service_existing_items : service_key => {
+      for field in try(item.fields, []) : field.id => try(field.value, "")
+      if try(field.id, "") != "" && try(field.value, "") != ""
+    }
+  }
+
+  onepassword_service_existing_item_ids = {
+    for service_key, item in data.http.onepassword_service_search : service_key => try(jsondecode(item.response_body)[0].id, null)
+  }
+
+  onepassword_service_existing_items = {
+    for service_key, item in data.http.onepassword_service_item : service_key => jsondecode(item.response_body)
+  }
+
+  onepassword_service_external_secret_fields = {
+    for service_key, service in local.onepassword_service_items : service_key => {
+      for secret in service.features.secrets : secret.name => try(local.onepassword_service_existing_fields[service_key][secret.name], "")
+      if secret.type == "external"
+    }
+  }
+
   onepassword_service_items = {
     for service_key, service in local.services_model_desired : service_key => service
     if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.networking.scheme != null
+  }
+
+  onepassword_service_item_titles = {
+    for service_key, service in local.onepassword_service_items : service_key => "${service.identity.title} (${service.target})"
   }
 
   onepassword_service_url_fields = {
@@ -71,10 +97,11 @@ locals {
 resource "restapi_object" "onepassword_server" {
   for_each = local.servers_model_desired
 
-  id_attribute = "id"
-  path         = "/v1/vaults/${local.defaults.onepassword.vaults.servers}/items"
-  provider     = restapi.onepassword
-  read_path    = "/v1/vaults/${local.defaults.onepassword.vaults.servers}/items"
+  id_attribute              = "id"
+  ignore_all_server_changes = true
+  path                      = "/v1/vaults/${local.defaults.onepassword.vaults.servers}/items"
+  provider                  = restapi.onepassword
+  read_path                 = "/v1/vaults/${local.defaults.onepassword.vaults.servers}/items"
 
   data = sensitive(jsonencode({
     category = "LOGIN"
@@ -106,10 +133,9 @@ resource "restapi_object" "onepassword_server" {
     title = each.key
     urls = [
       for url_index, url_field in local.onepassword_server_url_fields[each.key] : {
-        autofillBehavior = "ExactDomain"
-        href             = local.onepassword_server_urls[each.key][url_field]
-        label            = url_field
-        primary          = contains(local.onepassword_server_url_fields[each.key], "url_0") ? url_field == "url_0" : url_index == 0
+        href    = local.onepassword_server_urls[each.key][url_field]
+        label   = url_field
+        primary = contains(local.onepassword_server_url_fields[each.key], "url_0") ? url_field == "url_0" : url_index == 0
       }
     ]
     vault = {
@@ -122,15 +148,17 @@ resource "restapi_object" "onepassword_server" {
     search_key   = "title"
     search_value = each.key
   }
+
 }
 
 resource "restapi_object" "onepassword_service" {
   for_each = local.onepassword_service_items
 
-  id_attribute = "id"
-  path         = "/v1/vaults/${local.defaults.onepassword.vaults.services}/items"
-  provider     = restapi.onepassword
-  read_path    = "/v1/vaults/${local.defaults.onepassword.vaults.services}/items"
+  id_attribute              = "id"
+  ignore_all_server_changes = true
+  path                      = "/v1/vaults/${local.defaults.onepassword.vaults.services}/items"
+  provider                  = restapi.onepassword
+  read_path                 = "/v1/vaults/${local.defaults.onepassword.vaults.services}/items"
 
   data = sensitive(jsonencode({
     category = "LOGIN"
@@ -150,6 +178,15 @@ resource "restapi_object" "onepassword_service" {
         }
       ] : [],
       [
+        for field_name, field_value in local.onepassword_service_external_secret_fields[each.key] : {
+          id    = field_name
+          label = field_name
+          type  = "CONCEALED"
+          value = field_value
+        }
+        if !contains(keys(local.onepassword_service_fields[each.key]), "${field_name}_sensitive")
+      ],
+      [
         for field_name, field_value in local.onepassword_service_fields[each.key] : {
           id    = trimsuffix(field_name, "_sensitive")
           label = trimsuffix(field_name, "_sensitive")
@@ -159,13 +196,12 @@ resource "restapi_object" "onepassword_service" {
       ]
     )
     tags  = local.defaults.onepassword.tags.services
-    title = "${local.services_outputs_private[each.key].identity.title} (${local.services_outputs_private[each.key].target})"
+    title = local.onepassword_service_item_titles[each.key]
     urls = [
       for url_index, url_field in local.onepassword_service_url_fields[each.key] : {
-        autofillBehavior = "ExactDomain"
-        href             = local.onepassword_service_urls[each.key][url_field]
-        label            = url_field
-        primary          = contains(local.onepassword_service_url_fields[each.key], "url_0") ? url_field == "url_0" : url_index == 0
+        href    = local.onepassword_service_urls[each.key][url_field]
+        label   = url_field
+        primary = contains(local.onepassword_service_url_fields[each.key], "url_0") ? url_field == "url_0" : url_index == 0
       }
     ]
     vault = {
@@ -174,8 +210,34 @@ resource "restapi_object" "onepassword_service" {
   }))
 
   read_search = {
-    query_string = "filter=${urlencode("title eq \"${local.services_outputs_private[each.key].identity.title} (${local.services_outputs_private[each.key].target})\"")}"
+    query_string = "filter=${urlencode("title eq \"${local.onepassword_service_item_titles[each.key]}\"")}"
     search_key   = "title"
-    search_value = "${local.services_outputs_private[each.key].identity.title} (${local.services_outputs_private[each.key].target})"
+    search_value = local.onepassword_service_item_titles[each.key]
+  }
+
+}
+
+data "http" "onepassword_service_item" {
+  for_each = {
+    for service_key, item_id in local.onepassword_service_existing_item_ids : service_key => item_id
+    if item_id != null
+  }
+
+  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services}/items/${each.value}"
+
+  request_headers = {
+    "Authorization" = "Bearer ${var.onepassword_connect_token}"
+    "Content-Type"  = "application/json"
+  }
+}
+
+data "http" "onepassword_service_search" {
+  for_each = local.onepassword_service_items
+
+  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services}/items?filter=${urlencode("title eq \"${local.onepassword_service_item_titles[each.key]}\"")}"
+
+  request_headers = {
+    "Authorization" = "Bearer ${var.onepassword_connect_token}"
+    "Content-Type"  = "application/json"
   }
 }

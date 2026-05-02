@@ -26,6 +26,10 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.0"
     }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
+    }
     incus = {
       source  = "lxc/incus"
       version = "~> 1.0"
@@ -45,10 +49,6 @@ terraform {
     shell = {
       source  = "linyinfeng/shell"
       version = "~> 1.0"
-    }
-    sops = {
-      source  = "carlpett/sops"
-      version = "~> 1.4"
     }
     tailscale = {
       source  = "tailscale/tailscale"
