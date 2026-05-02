@@ -31,6 +31,14 @@
           "description": "This server runs Docker and can host Komodo-managed stacks. Adds the server to the Komodo server list.",
           "type": "boolean"
         },
+        "monitoring": {
+          "description": "Include this server in generated monitoring configuration. Does not provision resources or expose template variables.",
+          "type": "boolean"
+        },
+        "monitoring_alerts": {
+          "description": "Attach generated monitoring alerts to this server when monitoring is enabled. Does not provision resources or expose template variables.",
+          "type": "boolean"
+        },
         "password": {
           "description": "Generate a random admin password. Exposes password_sensitive and password_hash_sensitive (bcrypt). Stored in 1Password.",
           "type": "boolean"

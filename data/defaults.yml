@@ -45,6 +45,8 @@ servers:
     cloudflare_proxy: false
     cloudflare_zero_trust_tunnel: false
     docker: false
+    monitoring: true
+    monitoring_alerts: true
     password: false
     pushover: false
     resend: false

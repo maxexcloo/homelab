@@ -25,18 +25,23 @@ alerting:
 %{ endif ~}
 endpoints:
 %{ for server_key, server in servers ~}
-  - alerts:
+%{ if server.features.monitoring ~}
+  -
+%{ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
+    alerts:
 %{ if service.features.resend ~}
       - type: email
 %{ endif ~}
 %{ if service.features.pushover ~}
       - type: pushover
 %{ endif ~}
+%{ endif ~}
     conditions:
       - "[CONNECTED] == true"
     group: "${server.type == "router" ? "Routers" : server.type == "vm" ? "VMs" : "Servers"}"
     name: "${server_key}"
     url: "icmp://${server.fqdn_internal}"
+%{ endif ~}
 %{ endfor ~}
 %{ for service_key, monitored_service in services ~}
 %{ if monitored_service.features.monitoring && monitored_service.networking.scheme != null ~}

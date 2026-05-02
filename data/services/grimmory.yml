@@ -24,4 +24,3 @@ platform_config:
   truenas:
     containers:
       - grimmory
-      - mariadb

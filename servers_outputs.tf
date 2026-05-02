@@ -22,6 +22,7 @@ locals {
       description   = server.description
       fqdn_external = server.fqdn_external
       fqdn_internal = server.fqdn_internal
+      features      = server.features
       identity      = server.identity
       platform      = server.platform
       slug          = server.slug
