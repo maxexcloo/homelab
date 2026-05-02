@@ -12,6 +12,10 @@ locals {
     )
   }
 
+  servers_model_passwords = {
+    for server_key, server in local.servers_outputs_by_feature.password : server_key => sensitive(try(local.onepassword_server_existing_fields[server_key].password, random_password.server[server_key].result))
+  }
+
   # Runtime server model: provider-backed values and generated secrets that are
   # intentionally kept out of the desired model to make dependencies visible.
   servers_model_runtime = {
@@ -21,7 +25,7 @@ locals {
         age_secret_key_sensitive = age_secret_key.server[server_key].secret_key
         cloudflare_account_id    = data.cloudflare_account.default.id
         password_hash_sensitive  = server.features.password ? bcrypt_hash.server[server_key].id : null
-        password_sensitive       = server.features.password ? random_password.server[server_key].result : null
+        password_sensitive       = server.features.password ? local.servers_model_passwords[server_key] : null
         private_address          = try(local.unifi_clients[server_key].local_dns_record, null)
         private_ipv4             = try(local.unifi_clients[server_key].fixed_ip, null)
         ssh_keys                 = data.github_user.default.ssh_keys

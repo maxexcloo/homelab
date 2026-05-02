@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
 deploy_to:
   - au-truenas
+features:
+  secrets:
+    - name: ctrld_endpoint
 identity:
   description: Reddit Frontend
   group: Applications
@@ -16,11 +19,11 @@ networking:
 platform_config:
   docker:
     env:
-      REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: on
-      REDLIB_DEFAULT_SHOW_NSFW: on
-      REDLIB_DEFAULT_USE_HLS: on
+      REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: true
+      REDLIB_DEFAULT_SHOW_NSFW: true
+      REDLIB_DEFAULT_USE_HLS: true
       REDLIB_FULL_URL: https://${service.fqdn_internal}
-      REDLIB_ROBOTS_DISABLE_INDEXING: on
+      REDLIB_ROBOTS_DISABLE_INDEXING: true
       REDLIB_DEFAULT_SUBSCRIPTIONS:
         - anime_titties
         - apple

@@ -4,11 +4,10 @@ deploy_to:
 features:
   password: true
   secrets:
-    - length: 32
+    - bootstrap_length: 32
+      bootstrap_type: alphanumeric
       name: db_password
-      type: alphanumeric
     - name: homepage_widget_key
-      type: external
 identity:
   description: RSS Reader
   group: Applications

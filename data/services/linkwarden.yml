@@ -5,23 +5,23 @@ features:
   password: true
   resend: true
   secrets:
-    - length: 32
+    - bootstrap_length: 32
+      bootstrap_type: alphanumeric
       name: db_password
-      type: alphanumeric
     - name: homepage_widget_key
-      type: external
-    - length: 32
+    - bootstrap_length: 32
+      bootstrap_type: alphanumeric
       name: meilisearch_master_key
-      type: alphanumeric
-    - length: 32
+    - bootstrap_length: 32
+      bootstrap_type: alphanumeric
       name: nextauth_secret
-      type: alphanumeric
 identity:
   description: Bookmark Manager
   group: Applications
   name: linkwarden
   service: linkwarden
   title: Linkwarden
+  username: max@excloo.com
 networking:
   port: 30243
   scheme: http

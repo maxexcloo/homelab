@@ -24,6 +24,10 @@ locals {
     )
   }
 
+  services_model_passwords = {
+    for service_key, service in local.services_outputs_by_feature.password : service_key => sensitive(try(local.onepassword_service_existing_fields[service_key].password, random_password.service[service_key].result))
+  }
+
   # Runtime service model: generated credentials and provider-backed values.
   # Keeping this separate makes secret dependencies easier to spot.
   services_model_runtime = {
@@ -36,7 +40,7 @@ locals {
       } : {},
       service.features.password ? {
         password_hash_sensitive = bcrypt_hash.service[service_key].id
-        password_sensitive      = random_password.service[service_key].result
+        password_sensitive      = local.services_model_passwords[service_key]
       } : {},
       service.features.pushover ? {
         pushover_application_token_sensitive = var.pushover_application_token
@@ -47,13 +51,15 @@ locals {
       } : {},
       {
         for secret in service.features.secrets : "${secret.name}_sensitive" => (
-          secret.type == "external" ? sensitive(try(local.onepassword_service_existing_fields[service_key][secret.name], "")) :
-          contains(["hex", "base64"], secret.type) ? (
-            secret.type == "hex" ?
-            random_id.service_secret["${service_key}-${secret.name}"].hex :
-            random_id.service_secret["${service_key}-${secret.name}"].b64_std
-          ) :
-          random_password.service_secret["${service_key}-${secret.name}"].result
+          try(secret.bootstrap_type, null) == null ? sensitive(try(local.onepassword_service_existing_fields[service_key][secret.name], "")) : sensitive(try(
+            local.onepassword_service_existing_fields[service_key][secret.name],
+            contains(["hex", "base64"], try(secret.bootstrap_type, null)) ? (
+              try(secret.bootstrap_type, null) == "hex" ?
+              random_id.service_secret["${service_key}-${secret.name}"].hex :
+              random_id.service_secret["${service_key}-${secret.name}"].b64_std
+            ) :
+            random_password.service_secret["${service_key}-${secret.name}"].result
+          ))
         )
       },
       service.features.tailscale ? {

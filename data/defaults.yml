@@ -20,11 +20,9 @@ onepassword:
   url_field_pattern: (^fqdn_|^url_|_(ipv[46]|address)$)
   tags:
     servers:
-      - homelab
-      - servers
+      - Homelab
     services:
-      - homelab
-      - services
+      - Homelab
   vaults:
     servers: jfp5upb7y2wmr4hbz7enfpdh5e
     services: vjxx2dvl7ukvsqcic3bboeazbi

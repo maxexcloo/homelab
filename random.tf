@@ -5,10 +5,10 @@ locals {
     for secret_config in flatten([
       for service_key, service in local.services_input_targets : [
         for secret in service.features.secrets : {
-          byte_length = secret.length
+          byte_length = secret.bootstrap_length
           key         = "${service_key}-${secret.name}"
         }
-        if contains(["hex", "base64"], secret.type)
+        if contains(["hex", "base64"], try(secret.bootstrap_type, ""))
       ]
     ]) : secret_config.key => secret_config
   }
@@ -18,10 +18,10 @@ locals {
       for service_key, service in local.services_input_targets : [
         for secret in service.features.secrets : {
           key     = "${service_key}-${secret.name}"
-          length  = secret.length
-          special = secret.type == "string"
+          length  = secret.bootstrap_length
+          special = try(secret.bootstrap_type, "") == "string"
         }
-        if contains(["string", "alphanumeric"], secret.type)
+        if contains(["string", "alphanumeric"], try(secret.bootstrap_type, ""))
       ]
     ]) : secret_config.key => secret_config
   }

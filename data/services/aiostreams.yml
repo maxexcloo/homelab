@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../../schemas/service.json
+deploy_to:
+  - au-truenas
+features:
+  password: true
+  secrets:
+    - bootstrap_length: 32
+      bootstrap_type: hex
+      name: secret_key
+identity:
+  description: Stremio Addon Aggregator
+  group: Media
+  name: aiostreams
+  service: aiostreams
+  title: AIOStreams
+networking:
+  port: 30375
+  scheme: http
+platform_config:
+  truenas:
+    containers:
+      - aiostreams

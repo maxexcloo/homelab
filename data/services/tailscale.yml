@@ -4,7 +4,6 @@ deploy_to:
 features:
   secrets:
     - name: homepage_widget_key
-      type: external
 identity:
   description: VPN
   name: tailscale

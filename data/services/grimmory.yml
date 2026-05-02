@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../schemas/service.json
+deploy_to:
+  - au-truenas
+features:
+  password: true
+  secrets:
+    - bootstrap_length: 32
+      bootstrap_type: alphanumeric
+      name: db_password
+    - bootstrap_length: 32
+      bootstrap_type: alphanumeric
+      name: mysql_root_password
+identity:
+  description: Digital Library
+  group: Media
+  name: grimmory
+  service: grimmory
+  title: Grimmory
+  username: max@excloo.com
+networking:
+  port: 30396
+  scheme: http
+platform_config:
+  truenas:
+    containers:
+      - grimmory
+      - mariadb

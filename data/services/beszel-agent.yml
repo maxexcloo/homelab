@@ -4,9 +4,7 @@ deploy_to:
 features:
   secrets:
     - name: system_id
-      type: external
     - name: token
-      type: external
 identity:
   description: Resource Monitoring Agent
   name: beszel-agent

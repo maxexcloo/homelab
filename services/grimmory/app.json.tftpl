@@ -1,0 +1,44 @@
+{
+  "values": {
+    "grimmory": {
+      "db_password": "${service.db_password_sensitive}",
+      "db_root_password": "${service.mysql_root_password_sensitive}"
+    },
+    "network": {
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.networking.port}
+      }
+    },
+    "storage": {
+      "bookdrop": {
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/grimmory/bookdrop"
+        },
+        "type": "host_path"
+      },
+      "books": {
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/grimmory/books"
+        },
+        "type": "host_path"
+      },
+      "data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "data"
+        },
+        "type": "ix_volume"
+      },
+      "mariadb_data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "mariadb_data"
+        },
+        "type": "ix_volume"
+      }
+    }
+  }
+}

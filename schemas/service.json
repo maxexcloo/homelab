@@ -46,45 +46,41 @@
           "type": "boolean"
         },
         "secrets": {
-          "description": "Additional generated or externally supplied secrets for this service. Each secret is exposed as {name}_sensitive on the service object.",
+          "description": "Additional secrets for this service. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as {name}_sensitive on the service object.",
           "type": "array",
           "items": {
             "additionalProperties": false,
-            "required": ["name", "type"],
+            "required": ["name"],
             "type": "object",
             "allOf": [
               {
-                "else": {
-                  "required": ["length"]
-                },
                 "if": {
-                  "properties": {
-                    "type": {
-                      "const": "external"
-                    }
-                  }
+                  "required": ["bootstrap_type"]
                 },
                 "then": {
+                  "required": ["bootstrap_length"]
+                },
+                "else": {
                   "not": {
-                    "required": ["length"]
+                    "required": ["bootstrap_length"]
                   }
                 }
               }
             ],
             "properties": {
-              "length": {
-                "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for external secrets.",
+              "bootstrap_length": {
+                "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for manually supplied 1Password fields.",
                 "minimum": 1,
                 "type": "integer"
+              },
+              "bootstrap_type": {
+                "description": "Initial generated secret format. Omit to create an empty concealed 1Password field; hex/base64/string/alphanumeric bootstrap generated values and then read back from 1Password.",
+                "enum": ["alphanumeric", "base64", "hex", "string"],
+                "type": "string"
               },
               "name": {
                 "description": "Secret identifier. Exposed as {name}_sensitive on the service. Must be lowercase alphanumeric or underscore.",
                 "pattern": "^[a-z0-9_]+$",
-                "type": "string"
-              },
-              "type": {
-                "description": "Secret format. external: read from the matching 1Password service item; hex/base64: random bytes encoded as hex or base64; string: random password including special characters; alphanumeric: random password without special characters.",
-                "enum": ["alphanumeric", "base64", "external", "hex", "string"],
                 "type": "string"
               }
             }
