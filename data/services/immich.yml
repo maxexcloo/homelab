@@ -12,7 +12,7 @@ features:
       bootstrap_type: alphanumeric
       name: redis_password
 identity:
-  description: Photo Management
+  description: Photo Manager
   group: Media
   name: immich
   service: immich

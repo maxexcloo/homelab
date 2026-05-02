@@ -18,7 +18,7 @@ features:
     - name: screenscraper_password
     - name: steamgriddb_api_key
 identity:
-  description: ROM & Game Library
+  description: Game & ROM Library
   group: Media
   name: romm
   service: romm

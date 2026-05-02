@@ -21,6 +21,9 @@ networking:
   port: 30396
   scheme: http
 platform_config:
+  docker:
+    labels:
+      homepage.icon: sh-grimmory
   truenas:
     containers:
       - grimmory
