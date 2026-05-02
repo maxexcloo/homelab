@@ -36,6 +36,7 @@ resend:
   username: resend
 servers:
   fqdn: null
+  key: null
   parent: ""
   password_hash_sensitive: null
   password_sensitive: null
@@ -94,6 +95,7 @@ services:
   deploy_to: []
   fqdn_external: null
   fqdn_internal: null
+  key: null
   password_hash_sensitive: null
   password_sensitive: null
   target: null

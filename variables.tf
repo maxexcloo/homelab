@@ -16,8 +16,12 @@ variable "oci_private_key_base64" {
   type        = string
 
   validation {
-    condition     = can(base64decode(nonsensitive(var.oci_private_key_base64))) && startswith(trimspace(base64decode(nonsensitive(var.oci_private_key_base64))), "-----BEGIN")
     error_message = "OCI private key must be a base64-encoded PEM private key."
+
+    condition = (
+      can(base64decode(nonsensitive(var.oci_private_key_base64))) &&
+      startswith(trimspace(base64decode(nonsensitive(var.oci_private_key_base64))), "-----BEGIN")
+    )
   }
 }
 
@@ -49,8 +53,12 @@ variable "onepassword_connect_url" {
   type        = string
 
   validation {
-    condition     = can(regex("^https?://[^/]+", var.onepassword_connect_url)) && !endswith(var.onepassword_connect_url, "/")
     error_message = "1Password Connect URL must start with http:// or https:// and must not end with a slash."
+
+    condition = (
+      can(regex("^https?://[^/]+", var.onepassword_connect_url)) &&
+      !endswith(var.onepassword_connect_url, "/")
+    )
   }
 }
 
@@ -61,8 +69,12 @@ variable "pushover_application_token" {
   type        = string
 
   validation {
-    condition     = nonsensitive(var.pushover_application_token) == "" || can(regex("^[A-Za-z0-9]{30}$", nonsensitive(var.pushover_application_token)))
     error_message = "Pushover application API token must be empty or a 30-character alphanumeric token."
+
+    condition = (
+      nonsensitive(var.pushover_application_token) == "" ||
+      can(regex("^[A-Za-z0-9]{30}$", nonsensitive(var.pushover_application_token)))
+    )
   }
 }
 
@@ -73,8 +85,12 @@ variable "pushover_user_key" {
   type        = string
 
   validation {
-    condition     = nonsensitive(var.pushover_user_key) == "" || can(regex("^[A-Za-z0-9]{30}$", nonsensitive(var.pushover_user_key)))
     error_message = "Pushover user or group key must be empty or a 30-character alphanumeric key."
+
+    condition = (
+      nonsensitive(var.pushover_user_key) == "" ||
+      can(regex("^[A-Za-z0-9]{30}$", nonsensitive(var.pushover_user_key)))
+    )
   }
 }
 

@@ -47,8 +47,10 @@ resource "terraform_data" "services_validation" {
     # Cloudflare-exposed services on servers need a tunnel token available from
     # the target server feature set.
     precondition {
-      condition     = length(local.services_validation_cloudflare_tunnel_missing) == 0
-      error_message = "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", local.services_validation_cloudflare_tunnel_missing)}"
+      condition = length(local.services_validation_cloudflare_tunnel_missing) == 0
+      error_message = (
+        "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", local.services_validation_cloudflare_tunnel_missing)}"
+      )
     }
 
     precondition {
@@ -57,25 +59,33 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition     = length(local.services_validation_import_alias_conflicts) == 0
-      error_message = "Service import aliases must not shadow real service keys: ${join(", ", local.services_validation_import_alias_conflicts)}"
+      condition = length(local.services_validation_import_alias_conflicts) == 0
+      error_message = (
+        "Service import aliases must not shadow real service keys: ${join(", ", local.services_validation_import_alias_conflicts)}"
+      )
     }
 
     precondition {
-      condition     = length(local.services_validation_invalid_imports) == 0
-      error_message = "Invalid service imports found in services configuration: ${join(", ", local.services_validation_invalid_imports)}"
+      condition = length(local.services_validation_invalid_imports) == 0
+      error_message = (
+        "Invalid service imports found in services configuration: ${join(", ", local.services_validation_invalid_imports)}"
+      )
     }
 
     precondition {
-      condition     = length(local.services_validation_invalid_targets) == 0
-      error_message = "Invalid server references found in services configuration: ${join(", ", local.services_validation_invalid_targets)}"
+      condition = length(local.services_validation_invalid_targets) == 0
+      error_message = (
+        "Invalid server references found in services configuration: ${join(", ", local.services_validation_invalid_targets)}"
+      )
     }
 
     # Pushover values are pass-through variables, so provider validation will not
     # catch missing credentials for enabled services.
     precondition {
-      condition     = length(local.services_validation_pushover_missing_credentials) == 0
-      error_message = "Services with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", local.services_validation_pushover_missing_credentials)}"
+      condition = length(local.services_validation_pushover_missing_credentials) == 0
+      error_message = (
+        "Services with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", local.services_validation_pushover_missing_credentials)}"
+      )
     }
   }
 }

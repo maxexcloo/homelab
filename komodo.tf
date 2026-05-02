@@ -26,7 +26,10 @@ locals {
         commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
         file           = file_key
       })
-      if contains(keys(local.servers_model_desired), file_config.target) && local.servers_model_desired[file_config.target].features.docker
+      if(
+        contains(keys(local.servers_model_desired), file_config.target) &&
+        local.servers_model_desired[file_config.target].features.docker
+      )
     }
   )
 }
@@ -65,7 +68,9 @@ resource "github_repository_file" "komodo_sops_config" {
 
   content = join("\n", concat(
     ["creation_rules:"],
-    [for stack_key, stack in local.komodo_input_stacks : "  - path_regex: '^${stack_key}/'\n    age: ${age_secret_key.server[stack.target].public_key}"]
+    [for stack_key, stack in local.komodo_input_stacks : (
+      "  - path_regex: '^${stack_key}/'\n    age: ${age_secret_key.server[stack.target].public_key}"
+    )]
   ))
 }
 
@@ -101,9 +106,14 @@ resource "shell_sensitive_script" "komodo_stacks_files_encrypt" {
     AGE_PUBLIC_KEY = each.value.age_public_key
     CONTENT        = sensitive(each.value.content_base64)
     CONTENT_TYPE   = each.value.content_type
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}" : ""
     FILENAME       = each.value.file
     SOPS_CONFIG    = "/dev/null"
+
+    DEBUG_PATH = (
+      var.debug_dir != ""
+      ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}"
+      : ""
+    )
   }
 
   lifecycle_commands {

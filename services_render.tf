@@ -18,7 +18,8 @@ locals {
     for service_key, service in local.services_outputs_private : service_key => merge(
       yamldecode(templatefile("${path.module}/templates/docker/labels.yaml.tftpl", local.services_outputs_vars[service_key])),
       {
-        for label_key, label_value in service.platform_config.docker.labels : label_key => templatestring(tostring(label_value), local.services_outputs_vars[service_key])
+        for label_key, label_value in service.platform_config.docker.labels :
+        label_key => templatestring(tostring(label_value), local.services_outputs_vars[service_key])
         if label_value != null
       }
     )
@@ -26,25 +27,27 @@ locals {
 
   # Full template context adds rendered env, labels, and public service inventory.
   services_render_context_vars = {
-    for service_key, service in local.services_outputs_private : service_key => merge(local.services_outputs_vars[service_key], {
-      env    = local.services_render_context_env[service_key]
-      labels = local.services_render_context_labels[service_key]
+    for service_key, service in local.services_outputs_private : service_key => merge(
+      local.services_outputs_vars[service_key],
+      {
+        env    = local.services_render_context_env[service_key]
+        labels = local.services_render_context_labels[service_key]
 
-      envs = [
-        for env_key in sort(nonsensitive(keys(local.services_render_context_env[service_key]))) : {
-          name  = env_key
-          value = local.services_render_context_env[service_key][env_key]
-        }
-      ]
-
-      services = {
-        for public_service_key, public_service in local.services_outputs_public : public_service_key => merge(
-          public_service,
-          {
-            labels = local.services_render_context_labels[public_service_key]
+        envs = [
+          for env_key in sort(nonsensitive(keys(local.services_render_context_env[service_key]))) : {
+            name  = env_key
+            value = local.services_render_context_env[service_key][env_key]
           }
-        )
-      }
+        ]
+
+        services = {
+          for public_service_key, public_service in local.services_outputs_public : public_service_key => merge(
+            public_service,
+            {
+              labels = local.services_render_context_labels[public_service_key]
+            }
+          )
+        }
     })
   }
 
@@ -88,8 +91,16 @@ locals {
     for file_input in local.services_render_files_inputs : "${file_input.stack}/${file_input.rel_path}" => merge(
       file_input,
       {
-        content_base64 = file_input.render_template ? base64encode(templatefile(file_input.path, local.services_render_context_vars[file_input.stack])) : filebase64(file_input.path)
-        content_type   = file_input.raw_encrypt ? "binary" : lookup(local.services_render_files_content_types, try(regex("\\.[^.]+$", lower(file_input.rel_path)), ""), "binary")
+        content_base64 = (
+          file_input.render_template
+          ? base64encode(templatefile(file_input.path, local.services_render_context_vars[file_input.stack]))
+          : filebase64(file_input.path)
+        )
+        content_type = (
+          file_input.raw_encrypt
+          ? "binary"
+          : lookup(local.services_render_files_content_types, try(regex("\\.[^.]+$", lower(file_input.rel_path)), ""), "binary")
+        )
       }
     )
   }

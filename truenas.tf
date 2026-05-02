@@ -23,7 +23,9 @@ locals {
   # Encrypted GitHub files consumed by the TrueNAS deploy workflow.
   truenas_render_files = merge(
     {
-      for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}/compose.json" => {
+      for service_key, service in local.truenas_input_services : (
+        "${service.target}/${service.identity.name}/compose.json"
+        ) => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} compose"
         content_type   = "json"
@@ -39,24 +41,39 @@ locals {
       if contains(keys(local.services_render_files_compose), service_key)
     },
     {
-      for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}/app.json" => {
+      for service_key, service in local.truenas_input_services : (
+        "${service.target}/${service.identity.name}/app.json"
+        ) => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} catalog app"
         content_type   = "json"
         file           = "${service.target}/${service.identity.name}/app.json"
 
         content_base64 = sensitive(base64encode(jsonencode(provider::deepmerge::mergo(
-          yamldecode(templatefile("${path.module}/templates/truenas/app.json.tftpl", local.services_render_context_vars[service_key])),
-          yamldecode(templatefile(local.truenas_prepare_catalog_templates[service_key].path, local.services_render_context_vars[service_key]))
+          yamldecode(templatefile(
+            "${path.module}/templates/truenas/app.json.tftpl",
+            local.services_render_context_vars[service_key]
+          )),
+          yamldecode(templatefile(
+            local.truenas_prepare_catalog_templates[service_key].path,
+            local.services_render_context_vars[service_key]
+          ))
         ))))
       }
-      if !contains(keys(local.services_render_files_compose), service_key) && contains(keys(local.truenas_prepare_catalog_templates), service_key)
+      if(
+        !contains(keys(local.services_render_files_compose), service_key) &&
+        contains(keys(local.truenas_prepare_catalog_templates), service_key)
+      )
     },
     {
-      for file_key, file_config in local.services_render_files_sidecars : "${file_config.target}/${local.services_model_desired[file_config.stack].identity.name}/${file_config.rel_path}" => merge(file_config, {
-        age_public_key = age_secret_key.server[file_config.target].public_key
-        commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
-        file           = "${file_config.target}/${local.services_model_desired[file_config.stack].identity.name}/${file_config.rel_path}"
+      for file_key, file_config in local.services_render_files_sidecars : (
+        "${file_config.target}/${local.services_model_desired[file_config.stack].identity.name}/${file_config.rel_path}"
+        ) => merge(file_config, {
+          age_public_key = age_secret_key.server[file_config.target].public_key
+          commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
+          file = (
+            "${file_config.target}/${local.services_model_desired[file_config.stack].identity.name}/${file_config.rel_path}"
+          )
       })
       if contains(keys(local.truenas_input_servers), file_config.target)
     }
@@ -92,7 +109,9 @@ resource "github_repository_file" "truenas_sops_config" {
 
   content = join("\n", concat(
     ["creation_rules:"],
-    [for server_key, server in local.truenas_input_servers : "  - path_regex: '^${server_key}/'\n    age: ${age_secret_key.server[server_key].public_key}"]
+    [for server_key, server in local.truenas_input_servers : (
+      "  - path_regex: '^${server_key}/'\n    age: ${age_secret_key.server[server_key].public_key}"
+    )]
   ))
 }
 
@@ -113,9 +132,14 @@ resource "shell_sensitive_script" "truenas_services_files_encrypt" {
     AGE_PUBLIC_KEY = each.value.age_public_key
     CONTENT        = sensitive(each.value.content_base64)
     CONTENT_TYPE   = each.value.content_type
-    DEBUG_PATH     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.key}" : ""
     FILENAME       = each.value.file
     SOPS_CONFIG    = "/dev/null"
+
+    DEBUG_PATH = (
+      var.debug_dir != ""
+      ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.key}"
+      : ""
+    )
   }
 
   lifecycle_commands {

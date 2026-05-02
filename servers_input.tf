@@ -34,8 +34,9 @@ locals {
 
       description = (
         server.parent == "" ? server.identity.title :
-        local.servers_input_context[server_key].region_matches ? "${server.identity.title} (${upper(server.identity.region)})" :
-        "${local.servers_input_context[server_key].title} ${server.identity.title} (${upper(server.identity.region)})"
+        local.servers_input_context[server_key].region_matches
+        ? "${server.identity.title} (${upper(server.identity.region)})"
+        : "${local.servers_input_context[server_key].title} ${server.identity.title} (${upper(server.identity.region)})"
       )
 
       # Public addresses inherit from self, then parent, then grandparent; the

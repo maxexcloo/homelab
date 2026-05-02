@@ -8,17 +8,34 @@ locals {
         for url_index, url in service.networking.urls : "url_${url_index}" => url
       },
       {
-        fqdn_external = service.target == "fly" ? "${coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev" : contains(keys(local.servers_model_desired), service.target) && contains(["cloudflare", "external"], service.networking.expose) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_external}" : service.fqdn_external
         fqdn_internal = contains(keys(local.servers_model_desired), service.target) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_internal}" : service.fqdn_internal
         key           = service_key
 
+        fqdn_external = (
+          service.target == "fly"
+          ? "${coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
+          : contains(keys(local.servers_model_desired), service.target) && contains(["cloudflare", "external"], service.networking.expose)
+          ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_external}"
+          : service.fqdn_external
+        )
+
         identity = {
-          group = service.identity.group != null ? service.identity.group : contains(keys(local.servers_model_desired), service.target) ? local.servers_model_desired[service.target].description : "Applications"
+          group = (
+            service.identity.group != null
+            ? service.identity.group
+            : contains(keys(local.servers_model_desired), service.target)
+            ? local.servers_model_desired[service.target].description
+            : "Applications"
+          )
         }
 
         platform_config = {
           fly = {
-            app_name = service.target == "fly" ? coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}") : service.platform_config.fly.app_name
+            app_name = (
+              service.target == "fly"
+              ? coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")
+              : service.platform_config.fly.app_name
+            )
           }
         }
       }

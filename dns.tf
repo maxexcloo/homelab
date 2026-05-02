@@ -33,7 +33,9 @@ locals {
   # avoid identity churn when records are reordered in YAML.
   dns_records_manual = merge([
     for zone, records in local.dns_input : {
-      for record in records : "${zone}-manual-${try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))}" => provider::deepmerge::mergo(
+      for record in records : (
+        "${zone}-manual-${try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))}"
+        ) => provider::deepmerge::mergo(
         local.defaults_dns,
         merge(
           record,
@@ -116,7 +118,9 @@ locals {
 
   # Server-hosted Cloudflare services point at the target server's tunnel.
   dns_records_services = {
-    for service_key, service in local.services_model_desired : "${local.defaults.domains.external}-${service_key}" => provider::deepmerge::mergo(
+    for service_key, service in local.services_model_desired : (
+      "${local.defaults.domains.external}-${service_key}"
+      ) => provider::deepmerge::mergo(
       local.defaults_dns,
       {
         content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
@@ -126,9 +130,11 @@ locals {
         zone    = local.defaults.domains.external
       }
     )
-    if contains(keys(local.servers_model_desired), service.target) &&
-    local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel &&
-    service.networking.expose == "cloudflare"
+    if(
+      contains(keys(local.servers_model_desired), service.target) &&
+      local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel &&
+      service.networking.expose == "cloudflare"
+    )
   }
 
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as
@@ -160,9 +166,10 @@ locals {
           local.defaults_dns,
           {
             content = (
-              local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel && service.networking.expose == "cloudflare" ?
-              "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com" :
-              service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
+              local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel
+              && service.networking.expose == "cloudflare"
+              ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
+              : service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
             )
             name    = url
             proxied = service.networking.expose == "cloudflare"
@@ -210,7 +217,10 @@ locals {
     for url in distinct(flatten([
       for service_key, service in local.services_model_desired : service.networking.urls
       ])) : url => try(
-      split(":", reverse(sort([for zone in local.dns_zones : format("%04d:%s", length(zone), zone) if url == zone || endswith(url, ".${zone}")]))[0])[1],
+      split(":", reverse(sort([
+        for zone in local.dns_zones : format("%04d:%s", length(zone), zone)
+        if url == zone || endswith(url, ".${zone}")
+      ]))[0])[1],
       null
     )
   }

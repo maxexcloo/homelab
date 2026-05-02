@@ -8,7 +8,11 @@ locals {
   # Incus instances are child VMs/containers whose parent remote is configured above.
   incus_vms = {
     for server_key, server in local.servers_model_desired : server_key => server
-    if server.parent != "" && server.platform == "incus" && server.type == "vm" && server.platform_config.incus != null && contains(keys(local.incus_servers), server.parent)
+    if(
+      server.parent != "" && server.platform == "incus" && server.type == "vm" &&
+      server.platform_config.incus != null &&
+      contains(keys(local.incus_servers), server.parent)
+    )
   }
 }
 
