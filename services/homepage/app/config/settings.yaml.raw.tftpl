@@ -4,8 +4,8 @@ ${yamlencode({
   layout = merge(
     {
       for group in sort(distinct([
-        for svc in values(services) : svc.labels["homepage.group"]
-        if svc.target != service.target && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != ""
+        for svc_key, svc in services : svc.labels["homepage.group"]
+        if svc_key != service.key && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != ""
       ])) : group => {
         columns = 2
         style   = "row"

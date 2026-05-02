@@ -16,7 +16,7 @@ identity:
   name: grimmory
   service: grimmory
   title: Grimmory
-  username: max@excloo.com
+  username: maxexcloo
 networking:
   port: 30396
   scheme: http
