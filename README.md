@@ -58,7 +58,7 @@ OpenTofu
     └── Tailscale       VPN auth keys, ACLs, and device lookups
 ```
 
-Rendered service configs (Docker Compose, Fly.toml, TrueNAS app values) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`, where deployment runners consume them. TrueNAS catalog updates apply desired values as an overlay on the current app config, so per-app values files only need to include managed keys.
+Rendered service configs (Docker Compose, Fly.toml, TrueNAS app values) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`. Each deploy repo also gets `.github/deploy-request.json`, written after rendered files, SOPS config, and the workflow. Push deploys only trigger from that manifest and compare fingerprints with the previous manifest, so changed Fly apps or TrueNAS `server/service` targets deploy after the render commits settle. TrueNAS deploys can also be started manually with an empty target for everything, a server key, a service key, or `server/service`. TrueNAS catalog updates apply desired values as an overlay on the current app config, so per-app values files only need to include managed keys.
 
 Rendered plaintext can be written locally for debugging by setting `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`. Leave it unset for normal runs.
 

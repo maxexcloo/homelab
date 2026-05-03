@@ -91,6 +91,32 @@ resource "github_actions_secret" "truenas_age_key" {
   secret_name     = "AGE_KEY_${upper(replace(each.key, "-", "_"))}"
 }
 
+resource "github_repository_file" "truenas_deploy_request" {
+  commit_message      = "Request changed deployments"
+  file                = ".github/deploy-request.json"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.truenas
+
+  content = jsonencode({
+    deployments = {
+      for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => sha256(jsonencode({
+        sops = sha256(join("\n", concat(
+          ["creation_rules:"],
+          [for server_key, server in local.truenas_input_servers : (
+            "  - path_regex: '^${server_key}/'\n    age: ${age_secret_key.server[server_key].public_key}"
+          )]
+        )))
+        workflow = filesha256("${path.module}/templates/workflows/truenas-deploy.yml")
+
+        files = {
+          for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
+          if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
+        }
+      }))
+    }
+  })
+}
+
 resource "github_repository_file" "truenas_services_files" {
   for_each = local.truenas_render_files
 

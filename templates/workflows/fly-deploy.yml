@@ -3,57 +3,70 @@ name: Deploy
 on:
   push:
     paths:
-      - "**"
+      - .github/deploy-request.json
   workflow_dispatch:
     inputs:
       service:
         description: "Service to deploy or leave empty for all"
-        required: false
 
 concurrency:
-  cancel-in-progress: true
+  cancel-in-progress: false
   group: deploy
 
 jobs:
-  changed-files:
-    name: Build Matrix
+  deployments:
+    name: Select Deployments
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.targets.outputs.targets }}
+      matrix: ${{ steps.deployments.outputs.deployments }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Select Targets
-        id: targets
+      - name: Select Deployments
+        id: deployments
         env:
+          BEFORE: ${{ github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
           INPUT_SERVICE: ${{ inputs.service }}
         run: |
+          set -euo pipefail
+
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_SERVICE" ]; then
             if ! printf '%s' "$INPUT_SERVICE" | grep -Eq '^[a-z0-9][a-z0-9-]*$'; then
               echo "Invalid service: $INPUT_SERVICE" >&2
               exit 1
             fi
             TARGETS=$(printf '%s\n' "$INPUT_SERVICE")
-          else
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             TARGETS=$(find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' -printf '%f\n')
+          else
+            git show "$BEFORE:.github/deploy-request.json" > before.json 2>/dev/null || printf '{"deployments":{}}' > before.json
+            TARGETS=$(jq -r --slurpfile before before.json '
+              ($before[0].deployments // {}) as $old
+              | (.deployments // {})
+              | to_entries[]
+              | select($old[.key] != .value)
+              | .key
+            ' .github/deploy-request.json)
           fi
-          printf '%s\n' "$TARGETS" | jq -Rsc '[split("\n")[] | select(test("^[^./][^/]*$"))]' | sed 's/^/targets=/' >> "$GITHUB_OUTPUT"
+
+          printf '%s\n' "$TARGETS" | jq -Rsc '[split("\n")[] | select(test("^[^./][^/]*$"))]' | sed 's/^/deployments=/' >> "$GITHUB_OUTPUT"
 
   deploy:
-    if: needs.changed-files.outputs.matrix != '[]'
+    if: needs.deployments.outputs.matrix != '[]'
     name: Deploy
-    needs: [changed-files]
+    needs: [deployments]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ${{ matrix.service }}
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
-        service: ${{ fromJSON(needs.changed-files.outputs.matrix) }}
+        service: ${{ fromJSON(needs.deployments.outputs.matrix) }}
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       SERVICE: ${{ matrix.service }}

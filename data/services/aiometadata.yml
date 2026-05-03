@@ -2,13 +2,7 @@
 deploy_to:
   - au-truenas
 features:
-  secrets:
-    - name: admin_key
-    - name: fanart_api_key
-    - name: mdblist_api_key
-    - name: rpdb_api_key
-    - name: tmdb_api_key
-    - name: tvdb_api_key
+  password: true
 identity:
   description: Stremio Metadata
   group: Media
@@ -20,5 +14,10 @@ networking:
   scheme: http
 platform_config:
   docker:
+    env:
+      ADMIN_KEY: ${service.password_sensitive}
+      DATABASE_URI: sqlite://addon/data/db.sqlite
+      HOST_NAME: ${service.fqdn_internal}
+      REDIS_URL: redis://redis:6379
     labels:
       homepage.icon: sh-aiostreams

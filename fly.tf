@@ -72,6 +72,27 @@ resource "github_actions_secret" "fly_age_key" {
   secret_name     = "AGE_KEY"
 }
 
+resource "github_repository_file" "fly_deploy_request" {
+  commit_message      = "Request changed deployments"
+  file                = ".github/deploy-request.json"
+  overwrite_on_create = true
+  repository          = local.defaults.github.repositories.fly
+
+  content = jsonencode({
+    deployments = {
+      for service_key, service in local.fly_input_services : service.platform_config.fly.app_name => sha256(jsonencode({
+        sops     = sha256("creation_rules:\n  - age: ${age_secret_key.fly.public_key}\n")
+        workflow = filesha256("${path.module}/templates/workflows/fly-deploy.yml")
+
+        files = {
+          for file_key, file_config in local.fly_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
+          if startswith(local.fly_render_files[file_key].file, "${service.platform_config.fly.app_name}/")
+        }
+      }))
+    }
+  })
+}
+
 resource "github_repository_file" "fly_services_files" {
   for_each = local.fly_render_files
 
