@@ -16,7 +16,7 @@ platform_config:
       homepage.href: https://${server.fqdn_internal}:${server.networking.management_port}
       homepage.widget.enablePools: "true"
       homepage.widget.key: ${service.homepage_widget_key_sensitive}
-      homepage.widget.type: truenas
+      homepage.widget.type: ${service.identity.service}
       homepage.widget.url: https://${server.fqdn_internal}:${server.networking.management_port}
       homepage.widget.version: "2"
       traefik.enable: "true"
