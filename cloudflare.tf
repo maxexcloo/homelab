@@ -18,18 +18,41 @@ data "cloudflare_account_api_token_permission_groups_list" "tunnel_read" {
   scope      = "com.cloudflare.api.account"
 }
 
-data "cloudflare_zero_trust_tunnel_cloudflared_token" "server" {
-  for_each = local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel
-
-  account_id = data.cloudflare_account.default.id
-  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.server[each.key].id
-}
-
 data "cloudflare_zone" "all" {
   for_each = local.dns_input
 
   filter = {
     name = each.key
+  }
+}
+
+locals {
+  # Pre-computed tunnel ingress rules per server so the module receives a clean list.
+  cloudflare_tunnel_ingress = {
+    for server_key, server in local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel : server_key => concat(
+      flatten([
+        for service_key, service in local.services_model_desired : [
+          for hostname in distinct(concat(
+            service.fqdn_external != null ? [service.fqdn_external] : [],
+            [for url in service.networking.urls : url if lookup(local.dns_zones_urls, url, null) != null]
+            )) : {
+            hostname = hostname
+            service  = "https://localhost"
+
+            origin_request = {
+              no_tls_verify      = true
+              origin_server_name = hostname
+            }
+          }
+        ]
+        if service.target == server_key && service.networking.expose == "cloudflare"
+      ]),
+      [
+        {
+          service = "http_status:503"
+        }
+      ]
+    )
   }
 }
 
@@ -54,154 +77,26 @@ resource "cloudflare_account_token" "server_acme" {
   ]
 }
 
-resource "cloudflare_account_token" "server_tunnel_read" {
-  for_each = local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel
-
-  account_id = data.cloudflare_account.default.id
-  name       = "${each.key}-tunnel-read"
-
-  policies = [
-    {
-      effect = "allow"
-      permission_groups = [
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result).id
-        }
-      ]
-      resources = jsonencode({
-        "com.cloudflare.api.account.${data.cloudflare_account.default.id}" = "*"
-      })
-    }
-  ]
-}
-
-resource "cloudflare_dns_record" "acme_delegation" {
-  for_each = local.dns_records_acme_delegation
-
-  comment = local.defaults.organization.managed_comment
-  content = each.value.content
-  name    = each.value.name
-  proxied = local.defaults_dns.proxied
-  ttl     = local.defaults_dns.ttl
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
-}
-
-resource "cloudflare_dns_record" "manual" {
-  for_each = local.dns_records_manual
+resource "cloudflare_dns_record" "all" {
+  for_each = local.dns_records_all
 
   comment  = local.defaults.organization.managed_comment
   content  = each.value.content
   name     = each.value.name
-  priority = each.value.priority
-  proxied  = each.value.proxied
-  ttl      = each.value.ttl
+  priority = try(each.value.priority, null)
+  proxied  = try(each.value.proxied, local.defaults_dns.proxied)
+  ttl      = try(each.value.ttl, local.defaults_dns.ttl)
   type     = each.value.type
   zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
 }
 
-resource "cloudflare_dns_record" "server" {
-  for_each = local.dns_records_servers
-
-  comment = local.defaults.organization.managed_comment
-  content = each.value.content
-  name    = each.value.name
-  proxied = each.value.proxied
-  ttl     = local.defaults_dns.ttl
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
-}
-
-resource "cloudflare_dns_record" "service" {
-  for_each = local.dns_records_services
-
-  comment = local.defaults.organization.managed_comment
-  content = each.value.content
-  name    = each.value.name
-  proxied = each.value.proxied
-  ttl     = local.defaults_dns.ttl
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
-}
-
-resource "cloudflare_dns_record" "service_fly" {
-  for_each = local.dns_records_services_fly
-
-  comment = local.defaults.organization.managed_comment
-  content = each.value.content
-  name    = each.value.name
-  proxied = each.value.proxied
-  ttl     = local.defaults_dns.ttl
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
-}
-
-resource "cloudflare_dns_record" "service_url" {
-  for_each = local.dns_records_services_urls
-
-  comment = local.defaults.organization.managed_comment
-  content = each.value.content
-  name    = each.value.name
-  proxied = each.value.proxied
-  ttl     = local.defaults_dns.ttl
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
-}
-
-resource "cloudflare_dns_record" "wildcard" {
-  for_each = local.dns_records_wildcards
-
-  comment = local.defaults.organization.managed_comment
-  content = each.value.content
-  name    = each.value.name
-  proxied = each.value.proxied
-  ttl     = local.defaults_dns.ttl
-  type    = each.value.type
-  zone_id = data.cloudflare_zone.all[each.value.zone].zone_id
-}
-
-resource "cloudflare_zero_trust_tunnel_cloudflared" "server" {
+module "cloudflare_tunnel" {
+  source   = "./modules/cloudflare_tunnel"
   for_each = local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel
 
-  account_id = data.cloudflare_account.default.id
-  config_src = "cloudflare"
-  name       = each.key
+  account_id          = data.cloudflare_account.default.id
+  ingress             = local.cloudflare_tunnel_ingress[each.key]
+  name                = each.key
+  permission_group_id = one(data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result).id
 }
 
-resource "cloudflare_zero_trust_tunnel_cloudflared_config" "server" {
-  for_each = local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel
-
-  account_id = data.cloudflare_account.default.id
-  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.server[each.key].id
-
-  config = {
-    ingress = concat(
-      flatten([
-        for service_key, service in local.services_model_desired : [
-          for hostname in distinct(concat(
-            service.fqdn_external != null ? [service.fqdn_external] : [],
-            [for url in service.networking.urls : url if lookup(local.dns_zones_urls, url, null) != null]
-            )) : {
-            hostname = hostname
-            service  = "https://localhost"
-
-            origin_request = {
-              no_tls_verify      = true
-              origin_server_name = hostname
-            }
-          }
-        ]
-        if service.target == each.key && service.networking.expose == "cloudflare"
-      ]),
-      [
-        {
-          service = "http_status:503"
-        }
-      ]
-    )
-
-    warp_routing = {
-      enabled = false
-    }
-  }
-}

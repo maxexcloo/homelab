@@ -68,21 +68,39 @@ locals {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token
       } : {},
       {
-        for secret in service.features.secrets : "${secret.name}_sensitive" => (
-          try(secret.bootstrap_type, null) == null ? sensitive(try(local.onepassword_service_existing_fields[service_key][secret.name], "")) : sensitive(try(
-            local.onepassword_service_existing_fields[service_key][secret.name],
-            contains(["hex", "base64"], try(secret.bootstrap_type, null)) ? (
-              try(secret.bootstrap_type, null) == "hex" ?
-              random_id.service_secret["${service_key}-${secret.name}"].hex :
-              random_id.service_secret["${service_key}-${secret.name}"].b64_std
-            ) :
-            random_password.service_secret["${service_key}-${secret.name}"].result
-          ))
+        for secret in service.features.secrets : "${secret.name}_sensitive" => sensitive(
+          local.services_model_secret_values["${service_key}-${secret.name}"]
         )
       },
       service.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[service_key].key
       } : {}
     )
+  }
+
+  # Pre-computed secret values referenced by the runtime model.
+  services_model_secret_values = {
+    for secret_config in flatten([
+      for service_key, service in local.services_input_targets : [
+        for secret in service.features.secrets : {
+          bootstrap   = try(secret.bootstrap_type, null)
+          existing    = try(local.onepassword_service_existing_fields[service_key][secret.name], null)
+          key         = "${service_key}-${secret.name}"
+          secret_name = secret.name
+          service_key = service_key
+
+          generated = (
+            contains(["hex", "base64"], try(secret.bootstrap_type, ""))
+            ? (try(secret.bootstrap_type, "") == "hex"
+              ? random_id.service_secret["${service_key}-${secret.name}"].hex
+              : random_id.service_secret["${service_key}-${secret.name}"].b64_std
+            )
+            : try(secret.bootstrap_type, null) != null
+            ? random_password.service_secret["${service_key}-${secret.name}"].result
+            : null
+          )
+        }
+      ]
+    ]) : secret_config.key => try(coalesce(secret_config.existing, secret_config.generated), "")
   }
 }

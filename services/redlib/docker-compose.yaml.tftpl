@@ -7,8 +7,6 @@ services:
       ${indent(6, yamlencode({ for label_key, label_value in labels : label_key => label_value if startswith(label_key, "traefik.") }))}
     restart: unless-stopped
   redlib:
-    environment:
-      ${indent(6, yamlencode(env))}
     healthcheck:
       disable: true
     image: ghcr.io/silvenga/redlib:latest

@@ -1,10 +1,8 @@
 services:
   beszel-agent:
-    environment:
-      ${indent(6, yamlencode(env))}
     image: henrygd/beszel-agent
     labels:
-      ${indent(6, yamlencode(labels))}
+      ${labels_yaml}
     network_mode: host
     restart: unless-stopped
     volumes:

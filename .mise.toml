@@ -7,7 +7,6 @@ TF_CLI_ARGS_plan = "-parallelism=20"
 "pipx:check-jsonschema" = "0.37.1"
 opentofu = "1"
 prettier = "3"
-python = "3.14"
 sops = "3"
 
 # Setup

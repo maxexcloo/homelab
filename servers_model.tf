@@ -44,9 +44,9 @@ locals {
         cloudflare_acme_token_sensitive = cloudflare_account_token.server_acme[server_key].value
       } : {},
       server.features.cloudflare_zero_trust_tunnel ? {
-        cloudflare_tunnel_id                   = cloudflare_zero_trust_tunnel_cloudflared.server[server_key].id
-        cloudflare_tunnel_read_token_sensitive = cloudflare_account_token.server_tunnel_read[server_key].value
-        cloudflare_tunnel_token_sensitive      = data.cloudflare_zero_trust_tunnel_cloudflared_token.server[server_key].token
+        cloudflare_tunnel_id                   = module.cloudflare_tunnel[server_key].tunnel_id
+        cloudflare_tunnel_read_token_sensitive = module.cloudflare_tunnel[server_key].tunnel_read_token
+        cloudflare_tunnel_token_sensitive      = module.cloudflare_tunnel[server_key].tunnel_token
       } : {},
       server.features.pushover ? {
         pushover_application_token_sensitive = var.pushover_application_token

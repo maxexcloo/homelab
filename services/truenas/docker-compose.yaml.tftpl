@@ -5,5 +5,5 @@ services:
       - infinity
     image: alpine:latest
     labels:
-      ${indent(6, yamlencode(labels))}
+      ${labels_yaml}
     restart: unless-stopped

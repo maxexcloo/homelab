@@ -29,6 +29,17 @@ locals {
     }
   }
 
+  # Combined map of all DNS records for a single cloudflare_dns_record resource.
+  dns_records_all = merge(
+    local.dns_records_acme_delegation,
+    local.dns_records_manual,
+    local.dns_records_servers,
+    local.dns_records_services,
+    local.dns_records_services_fly,
+    local.dns_records_services_urls,
+    local.dns_records_wildcards,
+  )
+
   # Manual DNS records are keyed by either explicit id or stable record fields to
   # avoid identity churn when records are reordered in YAML.
   dns_records_manual = merge([
@@ -123,7 +134,7 @@ locals {
       ) => provider::deepmerge::mergo(
       local.defaults_dns,
       {
-        content = "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
+        content = "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
         name    = service.fqdn_external
         proxied = true
         type    = "CNAME"
@@ -168,7 +179,7 @@ locals {
             content = (
               local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel
               && service.networking.expose == "cloudflare"
-              ? "${cloudflare_zero_trust_tunnel_cloudflared.server[service.target].id}.cfargotunnel.com"
+              ? "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
               : service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
             )
             name    = url

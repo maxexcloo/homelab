@@ -35,7 +35,6 @@ resend:
   port: 465
   username: resend
 servers:
-  fqdn: null
   key: null
   parent: ""
   password_hash_sensitive: null
@@ -45,6 +44,7 @@ servers:
     cloudflare_acme_token: false
     cloudflare_proxy: false
     cloudflare_zero_trust_tunnel: false
+    cloud_init: false
     docker: false
     monitoring: true
     monitoring_alerts: true
@@ -108,14 +108,14 @@ services:
     resend: false
     secrets: []
     tailscale: false
-  imports:
-    services: {}
   identity:
     description: ""
     group: null
     name: ""
     title: ""
     username: ""
+  imports:
+    services: {}
   networking:
     expose: internal
     port: null
@@ -137,9 +137,9 @@ services:
       region: syd
     truenas:
       catalog_app: null
+      containers: []
       port_key: web_port
       train: community
-      containers: []
 system:
   locale: en_AU
   shell: /bin/bash

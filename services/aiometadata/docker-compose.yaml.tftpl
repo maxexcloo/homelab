@@ -1,38 +1,25 @@
 services:
   aiometadata:
-    image: ghcr.io/cedya77/aiometadata:latest
-    restart: unless-stopped
     depends_on:
       redis:
         condition: service_healthy
-    environment:
-      ${indent(6, yamlencode({
-        ADMIN_KEY      = service.admin_key_sensitive
-        DATABASE_URI   = "sqlite://addon/data/db.sqlite"
-        FANART_API_KEY = service.fanart_api_key_sensitive
-        HOST_NAME      = service.fqdn_internal
-        MDBLIST_API_KEY = service.mdblist_api_key_sensitive
-        PORT           = tostring(service.networking.port)
-        REDIS_URL      = "redis://redis:6379"
-        RPDB_API_KEY   = service.rpdb_api_key_sensitive
-        TMDB_API       = service.tmdb_api_key_sensitive
-        TVDB_API_KEY   = service.tvdb_api_key_sensitive
-      }))}
+    image: ghcr.io/cedya77/aiometadata:latest
     labels:
-      ${indent(6, yamlencode(labels))}
+      ${labels_yaml}
+    restart: unless-stopped
     volumes:
       - data:/app/addon/data
   redis:
     command: redis-server --appendonly yes --save 60 1
-    image: redis:latest
-    restart: unless-stopped
     healthcheck:
       interval: 10s
       retries: 5
       test: ["CMD", "redis-cli", "ping"]
       timeout: 5s
+    image: redis:latest
+    restart: unless-stopped
     volumes:
-      - cache:/data
+      - redis:/data
 volumes:
-  cache:
   data:
+  redis:

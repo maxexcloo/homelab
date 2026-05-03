@@ -30,8 +30,9 @@ locals {
     for service_key, service in local.services_outputs_private : service_key => merge(
       local.services_outputs_vars[service_key],
       {
-        env    = local.services_render_context_env[service_key]
-        labels = local.services_render_context_labels[service_key]
+        env         = local.services_render_context_env[service_key]
+        labels      = local.services_render_context_labels[service_key]
+        labels_yaml = indent(6, yamlencode(local.services_render_context_labels[service_key]))
 
         envs = [
           for env_key in sort(nonsensitive(keys(local.services_render_context_env[service_key]))) : {

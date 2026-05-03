@@ -21,7 +21,7 @@ services:
       CF_DNS_API_TOKEN: ${server.cloudflare_acme_token_sensitive}
     image: traefik:v3.6.15
     labels:
-      ${indent(6, yamlencode(labels))}
+      ${labels_yaml}
     network_mode: host
     restart: unless-stopped
     volumes:

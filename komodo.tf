@@ -66,12 +66,14 @@ resource "github_repository_file" "komodo_sops_config" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = join("\n", concat(
-    ["creation_rules:"],
-    [for stack_key, stack in local.komodo_input_stacks : (
-      "  - path_regex: '^${stack_key}/'\n    age: ${age_secret_key.server[stack.target].public_key}"
-    )]
-  ))
+  content = yamlencode({
+    creation_rules = [
+      for stack_key, stack in local.komodo_input_stacks : {
+        path_regex = "^${stack_key}/"
+        age        = age_secret_key.server[stack.target].public_key
+      }
+    ]
+  })
 }
 
 resource "github_repository_file" "komodo_stacks" {
@@ -91,40 +93,19 @@ resource "github_repository_file" "komodo_stacks_files" {
   for_each = local.komodo_render_files
 
   commit_message      = each.value.commit_message
-  content             = shell_sensitive_script.komodo_stacks_files_encrypt[each.key].output["encrypted_content"]
+  content             = module.sops_encrypt_komodo[each.key].encrypted_content
   file                = each.value.file
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 }
 
-resource "shell_sensitive_script" "komodo_stacks_files_encrypt" {
+module "sops_encrypt_komodo" {
+  source   = "./modules/sops_encrypt"
   for_each = local.komodo_render_files
 
-  # The script receives base64 content and returns encrypted text for GitHub.
-  # DEBUG_PATH intentionally writes plaintext only when explicitly configured.
-  environment = {
-    AGE_PUBLIC_KEY = each.value.age_public_key
-    CONTENT        = sensitive(each.value.content_base64)
-    CONTENT_TYPE   = each.value.content_type
-    FILENAME       = each.value.file
-    SOPS_CONFIG    = "/dev/null"
-
-    DEBUG_PATH = (
-      var.debug_dir != ""
-      ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}"
-      : ""
-    )
-  }
-
-  lifecycle_commands {
-    create = sensitive(local.script_encrypt_sops)
-    delete = "true"
-    read   = sensitive(local.script_encrypt_sops)
-    update = sensitive(local.script_encrypt_sops)
-  }
-
-  triggers = {
-    age_public_key_hash = sha256(each.value.age_public_key)
-    script_hash         = sha256(local.script_encrypt_sops)
-  }
+  age_public_key = each.value.age_public_key
+  content_base64 = each.value.content_base64
+  content_type   = each.value.content_type
+  debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}" : ""
+  filename       = each.value.file
 }

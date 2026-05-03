@@ -1,4 +1,14 @@
 alerting:
+%{ if service.features.pushover ~}
+  pushover:
+    application-token: $${PUSHOVER_APPLICATION_TOKEN}
+    user-key: $${PUSHOVER_USER_KEY}
+    default-alert:
+      description: ${service.identity.title} Check Failed
+      failure-threshold: 5
+      send-on-resolved: true
+      success-threshold: 5
+%{ else ~}
 %{ if service.features.resend ~}
   email:
     from: ${service.target}@${defaults.domains.internal}
@@ -13,15 +23,6 @@ alerting:
       send-on-resolved: true
       success-threshold: 5
 %{ endif ~}
-%{ if service.features.pushover ~}
-  pushover:
-    application-token: $${PUSHOVER_APPLICATION_TOKEN}
-    user-key: $${PUSHOVER_USER_KEY}
-    default-alert:
-      description: ${service.identity.title} Check Failed
-      failure-threshold: 5
-      send-on-resolved: true
-      success-threshold: 5
 %{ endif ~}
 endpoints:
 %{ for server_key, server in servers ~}
@@ -29,11 +30,12 @@ endpoints:
   -
 %{ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ else ~}
 %{ if service.features.resend ~}
       - type: email
 %{ endif ~}
-%{ if service.features.pushover ~}
-      - type: pushover
 %{ endif ~}
 %{ endif ~}
     conditions:
@@ -49,11 +51,12 @@ endpoints:
   -
 %{ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ else ~}
 %{ if service.features.resend ~}
       - type: email
 %{ endif ~}
-%{ if service.features.pushover ~}
-      - type: pushover
 %{ endif ~}
 %{ endif ~}
 %{ if monitored_service.networking.ssl_validation == false ~}
@@ -74,11 +77,12 @@ endpoints:
   -
 %{ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ else ~}
 %{ if service.features.resend ~}
       - type: email
 %{ endif ~}
-%{ if service.features.pushover ~}
-      - type: pushover
 %{ endif ~}
 %{ endif ~}
 %{ if monitored_service.networking.ssl_validation == false ~}
@@ -99,11 +103,12 @@ endpoints:
   -
 %{ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
+%{ if service.features.pushover ~}
+      - type: pushover
+%{ else ~}
 %{ if service.features.resend ~}
       - type: email
 %{ endif ~}
-%{ if service.features.pushover ~}
-      - type: pushover
 %{ endif ~}
 %{ endif ~}
 %{ if monitored_service.networking.ssl_validation == false ~}

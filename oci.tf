@@ -19,6 +19,14 @@ data "oci_identity_availability_domain" "default" {
 }
 
 locals {
+  # Protocol/family combinations used when expanding ingress ports.
+  oci_ingress_protocols = [
+    { family = "ipv4", name = "tcp", protocol = "6", source = "0.0.0.0/0" },
+    { family = "ipv4", name = "udp", protocol = "17", source = "0.0.0.0/0" },
+    { family = "ipv6", name = "tcp", protocol = "6", source = "::/0" },
+    { family = "ipv6", name = "udp", protocol = "17", source = "::/0" },
+  ]
+
   # OCI network primitives are created once per region used by managed OCI VMs.
   oci_regions = toset(distinct([
     for vm_key, vm in local.oci_vms : vm.identity.region
@@ -43,14 +51,9 @@ locals {
       {
         for rule in flatten([
           for port in vm.platform_config.oci.ingress_ports : [
-            for combo in [
-              { family = "ipv4", protocol = "6", source = "0.0.0.0/0" },
-              { family = "ipv4", protocol = "17", source = "0.0.0.0/0" },
-              { family = "ipv6", protocol = "6", source = "::/0" },
-              { family = "ipv6", protocol = "17", source = "::/0" },
-            ] : merge(combo, { port = port, vm_key = vm_key })
+            for combo in local.oci_ingress_protocols : merge(combo, { port = port, vm_key = vm_key })
           ]
-        ]) : "${rule.vm_key}-${rule.protocol == "6" ? "tcp" : "udp"}-${rule.family}-${rule.port}" => rule
+        ]) : "${rule.vm_key}-${rule.name}-${rule.family}-${rule.port}" => rule
       }
     )
   ]...)
