@@ -223,10 +223,20 @@
               }
             },
             "labels": {
-              "description": "Extra Docker labels merged into generated routing labels. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+              "description": "Extra Docker labels merged into generated routing labels. Values are stringified during rendering except homelab.homepage.enabled, which may be false to suppress generated Homepage labels. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
               "type": "object",
               "additionalProperties": {
-                "type": "string"
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
               }
             }
           }

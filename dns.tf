@@ -7,8 +7,8 @@ locals {
     ] : dns_file.name => try(dns_file.records, [])
   }
 
-  # Delegate ACME challenges for every generated hostname back to the dedicated
-  # ACME zone, so one scoped Cloudflare token can satisfy DNS-01 clients.
+  # Delegate ACME challenges for managed server and server-hosted service
+  # hostnames back to the dedicated ACME zone.
   dns_records_acme_delegation = {
     for record in distinct([
       for source_record in concat(

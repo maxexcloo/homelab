@@ -30,31 +30,42 @@ jobs:
           fetch-depth: 0
       - name: Select Targets
         id: targets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SERVER: ${{ inputs.server }}
+          INPUT_SERVICE: ${{ inputs.service }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.server }}" ] && [ -n "${{ inputs.service }}" ]; then
-            TARGETS=$(printf '%s\n' "${{ inputs.server }}/${{ inputs.service }}")
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.server }}" ]; then
-            TARGETS=$(find "${{ inputs.server }}" -maxdepth 1 -mindepth 1 -type d -printf '%p\n')
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.service }}" ]; then
-            TARGETS=$(find . -maxdepth 2 -mindepth 2 -type d -name "${{ inputs.service }}" -printf '%P\n')
-          else
-            TARGETS=$(find . -maxdepth 2 -mindepth 2 -type d ! -path './.*' -printf '%P\n')
-          fi
-          printf '%s\n' "$TARGETS" | jq -Rsc '
-            [
-              split("\n")[]
-              | select(test("^[^./][^/]*/[^/]+$"))
-              | split("/") as $parts
-              | {path: ., server: $parts[0], service: $parts[1]}
-            ]
-            | sort_by(.server, .service)
+          for value in "$INPUT_SERVER" "$INPUT_SERVICE"; do
+            if [ -n "$value" ] && ! [[ "$value" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+              echo "Invalid target input: $value" >&2
+              exit 1
+            fi
+          done
+
+          target_paths() {
+            if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_SERVER" ] && [ -n "$INPUT_SERVICE" ]; then
+              printf '%s/%s\n' "$INPUT_SERVER" "$INPUT_SERVICE"
+            elif [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_SERVER" ]; then
+              find "$INPUT_SERVER" -maxdepth 1 -mindepth 1 -type d -printf '%p\n'
+            elif [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_SERVICE" ]; then
+              find . -maxdepth 2 -mindepth 2 -type d -name "$INPUT_SERVICE" -printf '%P\n'
+            else
+              find . -maxdepth 2 -mindepth 2 -type d ! -path './.*' -printf '%P\n'
+            fi
+          }
+
+          target_paths | jq -Rsc '
+            split("\n")
+            | map(select(test("^[^./][^/]*/[^/]+$")) | split("/") | {path: join("/"), server: .[0]})
+            | sort_by(.server, .path)
             | group_by(.server)
             | map({
-                paths: map(.path) | sort,
+                paths: map(.path),
                 secret_name: ("AGE_KEY_" + (.[0].server | ascii_upcase | gsub("-"; "_"))),
                 server: .[0].server
               })
-          ' | sed 's/^/targets=/' >> "$GITHUB_OUTPUT"
+            | "targets=\(.)"
+          ' >> "$GITHUB_OUTPUT"
 
   deploy:
     if: needs.changed-files.outputs.matrix != '[]'

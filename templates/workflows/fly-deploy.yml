@@ -27,9 +27,16 @@ jobs:
           fetch-depth: 0
       - name: Select Targets
         id: targets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SERVICE: ${{ inputs.service }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.service }}" ]; then
-            TARGETS=$(printf '%s\n' "${{ inputs.service }}")
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_SERVICE" ]; then
+            if ! printf '%s' "$INPUT_SERVICE" | grep -Eq '^[a-z0-9][a-z0-9-]*$'; then
+              echo "Invalid service: $INPUT_SERVICE" >&2
+              exit 1
+            fi
+            TARGETS=$(printf '%s\n' "$INPUT_SERVICE")
           else
             TARGETS=$(find . -maxdepth 1 -mindepth 1 -type d ! -name '.*' -printf '%f\n')
           fi

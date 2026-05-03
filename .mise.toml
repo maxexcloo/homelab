@@ -4,9 +4,10 @@ TF_CLI_ARGS_apply = "-parallelism=20"
 TF_CLI_ARGS_plan = "-parallelism=20"
 
 [tools]
-"pipx:check-jsonschema" = "latest"
+"pipx:check-jsonschema" = "0.37.1"
 opentofu = "1"
 prettier = "3"
+python = "3.14"
 sops = "3"
 
 # Setup
@@ -19,9 +20,9 @@ description = "Initial project setup"
 run = """
 # Setting up project...
 if [[ ! -f .mise.local.toml ]]; then
-  echo "📄 Creating .mise.local.toml template..."
+  echo "Creating .mise.local.toml template..."
   cp .mise.local.toml.default .mise.local.toml
-  echo "✅ Created .mise.local.toml - please add your tokens"
+  echo "Created .mise.local.toml - please add your tokens"
   exit 1
 fi
 """

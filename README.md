@@ -28,7 +28,7 @@ mise run apply  # Apply changes
 - 1Password Connect server with access to the server and service credential vaults listed in `data/defaults.yml`
 - Terraform Cloud account for state backend
 
-Run `mise run setup` to create `.mise.local.toml` from the template, then fill in credentials — see `.mise.local.toml.default` for the full list.
+Run `mise run setup` to create `.mise.local.toml` from the template, then fill in credentials for the providers used by the current data files. See `.mise.local.toml.default` for the full list.
 
 The provider lock file (`.terraform.lock.hcl`) should be committed when provider selections change. The `.terraform/` plugin directory and any plan/state files stay local.
 
@@ -61,11 +61,6 @@ OpenTofu
 Rendered service configs (Docker Compose, Fly.toml, TrueNAS app values) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`, where deployment runners consume them. TrueNAS catalog updates apply desired values as an overlay on the current app config, so per-app values files only need to include managed keys.
 
 Rendered plaintext can be written locally for debugging by setting `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`. Leave it unset for normal runs.
-
-Credentials fall into two groups:
-
-- Mandatory credentials are required for normal operation of this stack: 1Password Connect, Cloudflare, GitHub, Terraform Cloud, and Tailscale.
-- Optional credentials are required only when the corresponding data enables those resources: B2, Incus, OCI, Resend, and UniFi.
 
 Feature flags either create provider-backed resources, expose values generated locally by OpenTofu, or control rendered config. `password` and `monitoring`/`monitoring_alerts` are local-only; `b2`, `resend`, and `tailscale` call providers when enabled. Resend uses the generic REST API provider with `TF_VAR_resend_api_key`. Pushover has no provider-managed resource here, so `TF_VAR_pushover_application_token` and `TF_VAR_pushover_user_key` are pass-through values rendered into config when `features.pushover` is enabled.
 
@@ -108,7 +103,7 @@ All generated credentials are stored automatically in **1Password** through 1Pas
 
 Set `onepassword.vaults.servers` and `onepassword.vaults.services` in `data/defaults.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
 
-Externally supplied service secrets are declared in `features.secrets` with `type: external`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back from 1Password Connect and exposes them as `{key}_sensitive` in templates. After adding a new external service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value.
+Manually supplied service secrets are declared in `features.secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back from 1Password Connect and exposes them as `{name}_sensitive` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
 
 Services can access another service's private fields only by declaring an `imports.services` alias. The normal `services` map remains public inventory, and declared private imports are overlaid by alias as `services.<alias>`.
 
