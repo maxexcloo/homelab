@@ -11,13 +11,6 @@ data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
-data "cloudflare_account_api_token_permission_groups_list" "tunnel_read" {
-  account_id = data.cloudflare_account.default.id
-  max_items  = 1
-  name       = "Cloudflare%20Tunnel%20Read"
-  scope      = "com.cloudflare.api.account"
-}
-
 data "cloudflare_zone" "all" {
   for_each = local.dns_input
 
@@ -94,9 +87,7 @@ module "cloudflare_tunnel" {
   source   = "./modules/cloudflare_tunnel"
   for_each = local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel
 
-  account_id          = data.cloudflare_account.default.id
-  ingress             = local.cloudflare_tunnel_ingress[each.key]
-  name                = each.key
-  permission_group_id = one(data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result).id
+  account_id = data.cloudflare_account.default.id
+  ingress    = local.cloudflare_tunnel_ingress[each.key]
+  name       = each.key
 }
-

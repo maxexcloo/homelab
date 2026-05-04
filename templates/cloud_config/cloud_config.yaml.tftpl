@@ -8,35 +8,35 @@ packages: [curl, sudo]
 ssh_pwauth: false
 timezone: ${defaults.system.timezone}
 groups:
-%{ if server.features.docker ~}
+  %{~ if server.features.docker ~}
   - docker
-%{ endif ~}
+  %{~ endif ~}
   - sudo
 runcmd:
   - sysctl --system
-%{ if server.features.docker ~}
+  %{~ if server.features.docker ~}
   - curl -fsLS https://get.docker.com | sh
-%{ endif ~}
-%{ if server.features.cloudflare_zero_trust_tunnel ~}
+  %{~ endif ~}
+  %{~ if server.features.cloudflare_zero_trust_tunnel ~}
   - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
   - cloudflared service install ${server.cloudflare_tunnel_token_sensitive}
-%{ endif ~}
-%{ if server.features.tailscale ~}
+  %{~ endif ~}
+  %{~ if server.features.tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
   - tailscale up --advertise-exit-node --authkey ${server.tailscale_auth_key_sensitive} --hostname ${server.slug}
-%{ endif ~}
+  %{~ endif ~}
 users:
   - name: ${server.identity.username}
-%{ if server.password_hash_sensitive != null ~}
+    %{~ if server.password_hash_sensitive != null ~}
     hashed_passwd: ${server.password_hash_sensitive}
-%{ endif ~}
+    %{~ endif ~}
     lock_passwd: false
     shell: ${defaults.system.shell}
     ssh_authorized_keys: ${jsonencode(server.ssh_keys)}
     groups:
-%{ if server.features.docker ~}
+      %{~ if server.features.docker ~}
       - docker
-%{ endif ~}
+      %{~ endif ~}
       - sudo
 write_files:
   - path: /etc/networkd-dispatcher/routable.d/50-network

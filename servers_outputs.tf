@@ -1,8 +1,4 @@
 locals {
-  # Shared set of valid server target keys used throughout the stack to avoid
-  # repeating contains(keys(local.servers_model_desired), ...) everywhere.
-  _servers_target_keys = toset(keys(local.servers_model_desired))
-
   # Feature maps use YAML/default data, not provider-enriched servers, to avoid
   # making feature resources depend on the resources they create.
   servers_outputs_by_feature = {
@@ -23,30 +19,23 @@ locals {
   # Public server maps are safe for cross-service inventory templates.
   servers_outputs_public = {
     for server_key, server in local.servers_model_desired : server_key => {
-      description   = server.description
-      fqdn_external = server.fqdn_external
-      fqdn_internal = server.fqdn_internal
-      features      = server.features
-      identity      = server.identity
-      key           = server.key
-      platform      = server.platform
-      slug          = server.slug
-      type          = server.type
+      for field_name, field_value in server : field_name => field_value
+      if !contains(["password_hash_sensitive", "password_sensitive"], field_name)
     }
   }
 
-  # Public output shape keeps top-level false/null/empty defaults out of output
-  # noise. Nested objects keep their schema shape.
-  servers_outputs_value = {
-    for server_key, server in local.servers_outputs_private : server_key => {
-      for field_name, field_value in server : field_name => field_value
-      if field_value != null && field_value != "" && field_value != false
-    }
-  }
 }
 
 output "servers" {
   description = "Server configurations"
   sensitive   = true
-  value       = local.servers_outputs_value
+
+  # Top-level false/null/empty defaults are filtered out to reduce output noise.
+  # Nested objects keep their full schema shape.
+  value = {
+    for server_key, server in local.servers_outputs_private : server_key => {
+      for field_name, field_value in server : field_name => field_value
+      if field_value != null && field_value != "" && field_value != false
+    }
+  }
 }

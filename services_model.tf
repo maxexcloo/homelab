@@ -5,7 +5,7 @@ locals {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
       {
-        fqdn_internal = contains(local._servers_target_keys, service.target) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_internal}" : service.fqdn_internal
+        fqdn_internal = contains(local.servers_input_keys, service.target) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_internal}" : service.fqdn_internal
         key           = service_key
 
         # coalesce is safe here because defaults.yml sets app_name to null, and
@@ -13,7 +13,7 @@ locals {
         fqdn_external = (
           service.target == "fly"
           ? "${coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
-          : contains(local._servers_target_keys, service.target) && contains(["cloudflare", "external"], service.networking.expose)
+          : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.networking.expose)
           ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_external}"
           : service.fqdn_external
         )
@@ -22,7 +22,7 @@ locals {
           group = (
             service.identity.group != null
             ? service.identity.group
-            : contains(local._servers_target_keys, service.target)
+            : contains(local.servers_input_keys, service.target)
             ? local.servers_model_desired[service.target].description
             : "Applications"
           )
@@ -41,10 +41,6 @@ locals {
     )
   }
 
-  services_model_passwords = {
-    for service_key, service in local.services_outputs_by_feature.password : service_key => sensitive(try(local.onepassword_service_existing_fields[service_key].password, random_password.service[service_key].result))
-  }
-
   # Runtime service model: generated credentials and provider-backed values.
   # Keeping this separate makes secret dependencies easier to spot.
   services_model_runtime = {
@@ -57,7 +53,7 @@ locals {
       } : {},
       service.features.password ? {
         password_hash_sensitive = bcrypt_hash.service[service_key].id
-        password_sensitive      = local.services_model_passwords[service_key]
+        password_sensitive      = sensitive(try(local.onepassword_service_existing_fields[service_key].password, random_password.service[service_key].result))
       } : {},
       service.features.pushover ? {
         pushover_application_token_sensitive = var.pushover_application_token
@@ -67,39 +63,18 @@ locals {
         resend_api_key_sensitive = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token
       } : {},
       {
-        for secret in service.features.secrets : "${secret.name}_sensitive" => sensitive(
-          local.services_model_secret_values["${service_key}-${secret.name}"]
-        )
+        for secret in service.features.secrets : "${secret.name}_sensitive" => sensitive(try(coalesce(
+          try(local.onepassword_service_existing_fields[service_key][secret.name], null),
+          contains(["hex", "base64"], try(secret.bootstrap_type, "")) ? (
+            try(secret.bootstrap_type, "") == "hex"
+            ? random_id.service_secret["${service_key}-${secret.name}"].hex
+            : random_id.service_secret["${service_key}-${secret.name}"].b64_std
+          ) : try(secret.bootstrap_type, null) != null ? random_password.service_secret["${service_key}-${secret.name}"].result : null
+        ), ""))
       },
       service.features.tailscale ? {
         tailscale_auth_key_sensitive = tailscale_tailnet_key.service[service_key].key
       } : {}
     )
-  }
-
-  # Pre-computed secret values referenced by the runtime model.
-  services_model_secret_values = {
-    for secret_config in flatten([
-      for service_key, service in local.services_input_targets : [
-        for secret in service.features.secrets : {
-          bootstrap   = try(secret.bootstrap_type, null)
-          existing    = try(local.onepassword_service_existing_fields[service_key][secret.name], null)
-          key         = "${service_key}-${secret.name}"
-          secret_name = secret.name
-          service_key = service_key
-
-          generated = (
-            contains(["hex", "base64"], try(secret.bootstrap_type, ""))
-            ? (try(secret.bootstrap_type, "") == "hex"
-              ? random_id.service_secret["${service_key}-${secret.name}"].hex
-              : random_id.service_secret["${service_key}-${secret.name}"].b64_std
-            )
-            : try(secret.bootstrap_type, null) != null
-            ? random_password.service_secret["${service_key}-${secret.name}"].result
-            : null
-          )
-        }
-      ]
-    ]) : secret_config.key => try(coalesce(secret_config.existing, secret_config.generated), "")
   }
 }

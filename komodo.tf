@@ -3,7 +3,7 @@ locals {
   # server targets.
   komodo_input_stacks = {
     for service_key, service in local.services_model_desired : service_key => service
-    if contains(local._servers_target_keys, service.target) &&
+    if contains(local.servers_input_keys, service.target) &&
     local.servers_model_desired[service.target].features.docker &&
     contains(keys(local.services_render_files_compose), service_key)
   }
@@ -27,7 +27,7 @@ locals {
         file           = file_key
       })
       if(
-        contains(local._servers_target_keys, file_config.target) &&
+        contains(local.servers_input_keys, file_config.target) &&
         local.servers_model_desired[file_config.target].features.docker
       )
     }
@@ -89,23 +89,15 @@ resource "github_repository_file" "komodo_stacks" {
   })
 }
 
-resource "github_repository_file" "komodo_stacks_files" {
-  for_each = local.komodo_render_files
-
-  commit_message      = each.value.commit_message
-  content             = module.sops_encrypt_komodo[each.key].encrypted_content
-  file                = each.value.file
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-}
-
-module "sops_encrypt_komodo" {
-  source   = "./modules/sops_encrypt"
+module "encrypted_github_file_komodo" {
+  source   = "./modules/github_file_encrypted"
   for_each = local.komodo_render_files
 
   age_public_key = each.value.age_public_key
+  commit_message = each.value.commit_message
   content_base64 = each.value.content_base64
   content_type   = each.value.content_type
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.komodo}/${each.key}" : ""
-  filename       = each.value.file
+  file           = each.value.file
+  repository     = local.defaults.github.repositories.komodo
 }

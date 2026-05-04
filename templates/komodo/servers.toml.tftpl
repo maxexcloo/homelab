@@ -1,5 +1,5 @@
-%{ for server_key, server in servers ~}
-%{ if server.features.docker ~}
+%{~ for server_key, server in servers ~}
+%{~ if server.features.docker ~}
 [[server]]
 description = "${server.description}"
 name = "${server_key}"
@@ -9,5 +9,5 @@ address = "https://${server.fqdn_internal}:8120"
 enabled = true
 region = "${server.identity.region}"
 
-%{ endif ~}
-%{ endfor ~}
+%{~ endif ~}
+%{~ endfor ~}

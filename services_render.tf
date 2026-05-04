@@ -1,15 +1,30 @@
 locals {
-  # Docker env is stored as typed YAML but rendered as strings for deployment.
-  services_render_context_env = {
+  # Pre-render every env value to a string so the filter below doesn't repeat
+  # the rendering expression.
+  _services_env_string = {
     for service_key, service in local.services_outputs_private : service_key => {
       for env_key, env_value in service.platform_config.docker.env : env_key => try(
         join("+", [for env_item in env_value : templatestring(tostring(env_item), local.services_template_context_base[service_key])]),
         templatestring(tostring(env_value), local.services_template_context_base[service_key])
       )
-      if env_value != null && try(
-        join("+", [for env_item in env_value : templatestring(tostring(env_item), local.services_template_context_base[service_key])]),
-        templatestring(tostring(env_value), local.services_template_context_base[service_key])
-      ) != ""
+    }
+  }
+
+  # Pre-computed path metadata for every file under services/* so the per-stack
+  # loop below only adds deployment context (stack key and target).
+  _services_file_path_info = {
+    for file_path in fileset(path.module, "services/*/**") : file_path => {
+      raw_encrypt     = endswith(trimsuffix(file_path, ".tftpl"), ".raw")
+      rel_path        = trimsuffix(trimsuffix(trimprefix(file_path, "services/${split("/", file_path)[1]}/"), ".tftpl"), ".raw")
+      render_template = endswith(file_path, ".tftpl")
+    }
+  }
+
+  # Docker env is stored as typed YAML but rendered as strings for deployment.
+  services_render_context_env = {
+    for service_key, service in local.services_outputs_private : service_key => {
+      for env_key, env_value in service.platform_config.docker.env : env_key => local._services_env_string[service_key][env_key]
+      if env_value != null && local._services_env_string[service_key][env_key] != ""
     }
   }
 
@@ -73,22 +88,16 @@ locals {
 
   # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
   # Other files use filebase64(), so static and binary assets share one path.
-  #
-  # Path manipulation (all relative to services/{identity.service}/):
-  #   1) Strip the service directory prefix
-  #   2) Strip .tftpl suffix for the deployed path
-  #   3) Strip .raw suffix for the deployed path (SOPS will encrypt as binary)
-  #   4) Detect .raw presence to set SOPS input type to binary
   services_render_files_inputs = flatten([
     for service_key, service in local.services_model_desired : [
-      for file_path in fileset(path.module, "services/${service.identity.service}/**") : {
-        path            = "${path.module}/${file_path}"
-        raw_encrypt     = endswith(trimsuffix(trimprefix(file_path, "services/${service.identity.service}/"), ".tftpl"), ".raw")
-        rel_path        = trimsuffix(trimsuffix(trimprefix(file_path, "services/${service.identity.service}/"), ".tftpl"), ".raw")
-        render_template = endswith(file_path, ".tftpl")
-        stack           = service_key
-        target          = service.target
-      }
+      for file_path in fileset(path.module, "services/${service.identity.service}/**") : merge(
+        local._services_file_path_info[file_path],
+        {
+          path   = "${path.module}/${file_path}"
+          stack  = service_key
+          target = service.target
+        }
+      )
       # These two files are handled by platform-specific renderers (TrueNAS catalog
       # apps and Komodo/Fly compose) rather than generic sidecars.
       if !contains(["app.json.tftpl", "docker-compose.yaml.tftpl"], basename(file_path))
@@ -113,5 +122,19 @@ locals {
         )
       }
     )
+  }
+
+  # First-pass template context used to resolve import aliases. Only public
+  # service data is available here to avoid circular dependencies on runtime
+  # fields (the runtime model depends on feature resources, which in turn depend
+  # on the feature maps built from input).
+  services_template_context_public = {
+    for service_key, service in local.services_model_desired : service_key => {
+      defaults = local.defaults
+      server   = try(local.servers_outputs_public[service.target], null)
+      servers  = local.servers_outputs_public
+      service  = service
+      services = local.services_outputs_public
+    }
   }
 }

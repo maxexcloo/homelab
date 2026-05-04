@@ -2,13 +2,20 @@ locals {
   # DNS records are generated across seven categories and merged into a single
   # cloudflare_dns_record resource keyed by a stable, collision-safe identifier.
   #
+  # Nothing in this file is silently created — every generated record is visible
+  # in the final dns_records_all map, which is exported in the summary output.
+  # The categories below show how each record originates so you can trace a
+  # hostname back to its source data.
+  #
   # Categories (each is a map of key => record object):
   #   manual          — records from data/dns/*.yml (e.g. MX, TXT, CNAME)
   #   servers         — A/AAAA/CNAME for server public IPs (e.g. hsp.au.excloo.net)
   #   services        — CNAME → tunnel for cloudflare-exposed services
   #   services_fly    — CNAME → fly.dev for Fly.io deployments
   #   services_urls   — CNAME for custom service URLs (e.g. reddit.excloo.com)
-  #   acme_delegation — _acme-challenge CNAMEs for all A/AAAA/CNAME records
+  #   acme_delegation — _acme-challenge CNAMEs for manual, server, and server-hosted
+  #                     service hostnames (A/AAAA/CNAME types only); Fly.io and
+  #                     wildcard records are excluded
   #   wildcards       — *.hostname CNAMEs for eligible records
   #
   # Final DNS input map: zone name -> list of manually declared records.
@@ -154,7 +161,7 @@ locals {
       }
     )
     if(
-      contains(local._servers_target_keys, service.target) &&
+      contains(local.servers_input_keys, service.target) &&
       local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel &&
       service.networking.expose == "cloudflare"
     )
@@ -203,7 +210,7 @@ locals {
       }
       if local.dns_zones_urls[url] != null
     ]
-    if contains(local._servers_target_keys, service.target)
+    if contains(local.servers_input_keys, service.target)
   ])...)
 
   # Wildcards follow each eligible A/AAAA/CNAME record unless the source record
@@ -234,21 +241,20 @@ locals {
   # Managed Cloudflare zone names available for manual and generated records.
   dns_zones = keys(local.dns_input)
 
-  # Pick the longest managed zone suffix for each custom URL, so nested domains
-  # choose the most specific Cloudflare zone.
-  #
-  # Algorithm: for each zone that matches the URL, build a sortable string
-  # "{padded_length}:{zone_name}". Left-padding the length with zeros makes
-  # lexical sort equivalent to length sort. Reverse-sorting picks the longest
-  # (most specific) zone, then split(":")[1] extracts the zone name.
-  dns_zones_urls = {
+  # For each custom URL, find all managed zones that match (exact or suffix).
+  # The most specific (longest) zone wins so nested domains resolve correctly.
+  dns_zones_matching = {
     for url in distinct(flatten([
       for service_key, service in local.services_model_desired : service.networking.urls
-      ])) : url => try(
-      split(":", reverse(sort([
-        for zone in local.dns_zones : format("%04d:%s", length(zone), zone)
-        if url == zone || endswith(url, ".${zone}")
-      ]))[0])[1],
+      ])) : url => [
+      for zone in local.dns_zones : { length = length(zone), name = zone }
+      if url == zone || endswith(url, ".${zone}")
+    ]
+  }
+
+  dns_zones_urls = {
+    for url, matches in local.dns_zones_matching : url => try(
+      [for m in matches : m.name if m.length == max([for x in matches : x.length]...)][0],
       null
     )
   }

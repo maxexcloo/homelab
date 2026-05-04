@@ -2,9 +2,9 @@
 platform: oci
 type: vm
 features:
+  cloud_init: true
   cloudflare_acme_token: true
   cloudflare_zero_trust_tunnel: true
-  cloud_init: true
   docker: true
   password: true
   tailscale: true

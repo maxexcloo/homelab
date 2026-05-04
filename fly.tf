@@ -16,15 +16,12 @@ locals {
       for service_key, service in local.fly_input_services : (
         "${service.platform_config.fly.app_name}/fly.toml"
         ) => {
-        age_public_key = age_secret_key.fly.public_key
         commit_message = "Update ${service.platform_config.fly.app_name} configuration"
-        content_type   = "binary"
-        file           = "${service.platform_config.fly.app_name}/fly.toml"
-
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/fly/fly.toml.tftpl",
           local.services_render_context_final[service_key]
         )))
+        file = "${service.platform_config.fly.app_name}/fly.toml"
       }
     },
     {
@@ -32,15 +29,12 @@ locals {
       for service_key, service in local.fly_input_services : (
         "${service.platform_config.fly.app_name}/.certs"
         ) => {
-        age_public_key = age_secret_key.fly.public_key
         commit_message = "Update ${service.platform_config.fly.app_name} certificate hostnames"
-        content_type   = "binary"
-        file           = "${service.platform_config.fly.app_name}/.certs"
-
         content_base64 = base64encode(templatefile(
           "${path.module}/templates/fly/certs.tftpl",
           local.services_render_context_final[service_key]
         ))
+        file = "${service.platform_config.fly.app_name}/.certs"
       }
       if length(service.networking.urls) > 0
     },
@@ -49,10 +43,8 @@ locals {
       for service_key, service in local.fly_input_services : (
         "${service.platform_config.fly.app_name}/.machine-count"
         ) => {
-        age_public_key = age_secret_key.fly.public_key
         commit_message = "Update ${service.platform_config.fly.app_name} machine count"
         content_base64 = base64encode("${service.platform_config.fly.machine_count}\n")
-        content_type   = "binary"
         file           = "${service.platform_config.fly.app_name}/.machine-count"
       }
       if service.platform_config.fly.machine_count != null
@@ -62,7 +54,6 @@ locals {
       for file_key, file_config in local.services_render_files_sidecars : (
         "${local.fly_input_services[file_config.stack].platform_config.fly.app_name}/${file_config.rel_path}"
         ) => merge(file_config, {
-          age_public_key = age_secret_key.fly.public_key
           commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
           file           = "${local.fly_input_services[file_config.stack].platform_config.fly.app_name}/${file_config.rel_path}"
       })
@@ -104,25 +95,17 @@ resource "github_repository_file" "fly_deploy_request" {
   })
 }
 
-resource "github_repository_file" "fly_services_files" {
+module "encrypted_github_file_fly" {
+  source   = "./modules/github_file_encrypted"
   for_each = local.fly_render_files
 
-  commit_message      = each.value.commit_message
-  content             = module.sops_encrypt_fly[each.key].encrypted_content
-  file                = each.value.file
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
-}
-
-module "sops_encrypt_fly" {
-  source   = "./modules/sops_encrypt"
-  for_each = local.fly_render_files
-
-  age_public_key = each.value.age_public_key
+  age_public_key = age_secret_key.fly.public_key
+  commit_message = each.value.commit_message
   content_base64 = each.value.content_base64
-  content_type   = each.value.content_type
+  content_type   = "binary"
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.key}" : ""
-  filename       = each.value.file
+  file           = each.value.file
+  repository     = local.defaults.github.repositories.fly
 }
 
 resource "github_repository_file" "fly_sops_config" {
@@ -140,4 +123,3 @@ resource "github_repository_file" "fly_workflow_deploy" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
 }
-

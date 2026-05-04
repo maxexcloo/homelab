@@ -15,6 +15,10 @@
           "description": "Provision a Backblaze B2 bucket and application key. Exposes b2_bucket_name, b2_application_key_id, b2_application_key_sensitive and b2_endpoint.",
           "type": "boolean"
         },
+        "cloud_init": {
+          "description": "Generate cloud-init configuration for this server. Provisions cloud_config output for Incus containers and OCI VMs. Exposes no template variables directly but enables the cloud_config output.",
+          "type": "boolean"
+        },
         "cloudflare_acme_token": {
           "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes cloudflare_acme_token_sensitive for DNS-01 challenge clients.",
           "type": "boolean"
@@ -25,10 +29,6 @@
         },
         "cloudflare_zero_trust_tunnel": {
           "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes cloudflare_tunnel_read_token_sensitive, cloudflare_tunnel_id, and cloudflare_tunnel_token_sensitive. Services with networking.expose set to 'cloudflare' route through this tunnel.",
-          "type": "boolean"
-        },
-        "cloud_init": {
-          "description": "Generate cloud-init configuration for this server. Provisions cloud_config output for Incus containers and OCI VMs. Exposes no template variables directly but enables the cloud_config output.",
           "type": "boolean"
         },
         "docker": {

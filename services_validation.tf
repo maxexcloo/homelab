@@ -2,7 +2,7 @@ locals {
   services_validation_cloudflare_tunnel_missing = flatten([
     for service_key, service in local.services_input : [
       for target in service.deploy_to : "${service_key} -> ${target}"
-      if contains(local._servers_target_keys, target) &&
+      if contains(local.servers_input_keys, target) &&
       service.networking.expose == "cloudflare" &&
       !local.servers_model_desired[target].features.cloudflare_zero_trust_tunnel
     ]
@@ -15,22 +15,22 @@ locals {
 
   services_validation_import_alias_conflicts = flatten([
     for service_key, service in local.services_model_desired : [
-      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, local.services_outputs_public_context[service_key])}"
+      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, local.services_template_context_public[service_key])}"
       if contains(keys(local.services_model_desired), import_alias)
     ]
   ])
 
   services_validation_invalid_imports = flatten([
     for service_key, service in local.services_model_desired : [
-      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, local.services_outputs_public_context[service_key])}"
-      if !contains(keys(local.services_model_desired), templatestring(service_ref, local.services_outputs_public_context[service_key]))
+      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, local.services_template_context_public[service_key])}"
+      if !contains(keys(local.services_model_desired), templatestring(service_ref, local.services_template_context_public[service_key]))
     ]
   ])
 
   services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
       for target in service.deploy_to : "${service_key} -> ${target}"
-      if !contains(local._servers_target_keys, target) && target != "fly"
+      if !contains(local.servers_input_keys, target) && target != "fly"
     ]
   ])
 

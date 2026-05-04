@@ -45,7 +45,7 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable identifier for records that share the same type and name. Changing this value recreates the Terraform resource address.",
+            "description": "Stable identifier for records that share the same type and name. Changing this value recreates the OpenTofu resource address.",
             "type": "string"
           },
           "name": {

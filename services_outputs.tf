@@ -20,33 +20,8 @@ locals {
   # Public service inventory without labels, used while labels are being built.
   services_outputs_public = {
     for service_key, service in local.services_model_desired : service_key => {
-      features      = service.features
-      fqdn_external = service.fqdn_external
-      fqdn_internal = service.fqdn_internal
-      identity      = service.identity
-      key           = service.key
-      networking    = service.networking
-      target        = service.target
-    }
-  }
-
-  # Base template context used to resolve declared private service imports.
-  services_outputs_public_context = {
-    for service_key, service in local.services_model_desired : service_key => {
-      defaults = local.defaults
-      server   = try(local.servers_outputs_public[service.target], null)
-      servers  = local.servers_outputs_public
-      service  = service
-      services = local.services_outputs_public
-    }
-  }
-
-  # Public output shape keeps top-level false/null/empty defaults out of output
-  # noise. Nested objects keep their schema shape.
-  services_outputs_value = {
-    for service_key, service in local.services_outputs_private : service_key => {
       for field_name, field_value in service : field_name => field_value
-      if field_value != null && field_value != "" && field_value != false
+      if !contains(["password_hash_sensitive", "password_sensitive"], field_name)
     }
   }
 
@@ -63,8 +38,8 @@ locals {
         local.services_outputs_public,
         {
           for import_alias, service_ref in service_config.imports.services :
-          import_alias => local.services_outputs_private[templatestring(service_ref, local.services_outputs_public_context[service_key])]
-          if contains(keys(local.services_model_desired), templatestring(service_ref, local.services_outputs_public_context[service_key]))
+          import_alias => local.services_outputs_private[templatestring(service_ref, local.services_template_context_public[service_key])]
+          if contains(keys(local.services_model_desired), templatestring(service_ref, local.services_template_context_public[service_key]))
         }
       )
     }
@@ -74,5 +49,13 @@ locals {
 output "services" {
   description = "Service configurations"
   sensitive   = true
-  value       = local.services_outputs_value
+
+  # Top-level false/null/empty defaults are filtered out to reduce output noise.
+  # Nested objects keep their full schema shape.
+  value = {
+    for service_key, service in local.services_outputs_private : service_key => {
+      for field_name, field_value in service : field_name => field_value
+      if field_value != null && field_value != "" && field_value != false
+    }
+  }
 }

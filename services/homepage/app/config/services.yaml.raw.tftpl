@@ -1,7 +1,7 @@
-%{ for group in sort(distinct([
+%{~ for group in sort(distinct([
   for candidate in values(services) : candidate.labels["homepage.group"]
   if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && !contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
-])) }
+])) ~}
 - ${group}:
   %{~ for service_key in [
     for service_sort_key in sort([
@@ -28,10 +28,10 @@
           %{~ endfor ~}
       %{~ endif ~}
   %{~ endfor ~}
-%{ endfor }
-%{ for group in sort(distinct([
+%{~ endfor ~}
+%{~ for group in sort(distinct([
   for srv in values(servers) : srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers"
-])) }
+])) ~}
 - ${group}:
   %{~ for srv in values(servers) ~}
   %{~ if (srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers") == group ~}
@@ -42,11 +42,11 @@
         ping: ${jsonencode(srv.fqdn_internal)}
   %{~ endif ~}
   %{~ endfor ~}
-%{ endfor }
-%{ for group in sort(distinct([
+%{~ endfor ~}
+%{~ for group in sort(distinct([
   for candidate in values(services) : candidate.labels["homepage.group"]
   if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
-])) }
+])) ~}
 - ${group}:
   %{~ for service_key in [
     for service_sort_key in sort([
@@ -73,4 +73,4 @@
           %{~ endfor ~}
       %{~ endif ~}
   %{~ endfor ~}
-%{ endfor }
+%{~ endfor ~}

@@ -33,15 +33,14 @@ locals {
         ) => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} compose"
-        content_type   = "json"
-        file           = "${service.target}/${service.identity.name}/compose.json"
-
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/truenas/compose.json.tftpl",
           merge(local.services_render_context_final[service_key], {
             compose = local.services_render_files_compose[service_key]
           })
         )))
+        content_type = "json"
+        file         = "${service.target}/${service.identity.name}/compose.json"
       }
       if contains(keys(local.services_render_files_compose), service_key)
     },
@@ -52,9 +51,6 @@ locals {
         ) => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} catalog app"
-        content_type   = "json"
-        file           = "${service.target}/${service.identity.name}/app.json"
-
         content_base64 = sensitive(base64encode(jsonencode(provider::deepmerge::mergo(
           jsondecode(templatefile(
             "${path.module}/templates/truenas/app.json.tftpl",
@@ -65,6 +61,8 @@ locals {
             local.services_render_context_final[service_key]
           ))
         ))))
+        content_type = "json"
+        file         = "${service.target}/${service.identity.name}/app.json"
       }
       if(
         !contains(keys(local.services_render_files_compose), service_key) &&
@@ -126,25 +124,17 @@ resource "github_repository_file" "truenas_deploy_request" {
   })
 }
 
-resource "github_repository_file" "truenas_services_files" {
-  for_each = local.truenas_render_files
-
-  commit_message      = each.value.commit_message
-  content             = module.sops_encrypt_truenas[each.key].encrypted_content
-  file                = each.value.file
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.truenas
-}
-
-module "sops_encrypt_truenas" {
-  source   = "./modules/sops_encrypt"
+module "encrypted_github_file_truenas" {
+  source   = "./modules/github_file_encrypted"
   for_each = local.truenas_render_files
 
   age_public_key = each.value.age_public_key
+  commit_message = each.value.commit_message
   content_base64 = each.value.content_base64
   content_type   = each.value.content_type
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.key}" : ""
-  filename       = each.value.file
+  file           = each.value.file
+  repository     = local.defaults.github.repositories.truenas
 }
 
 resource "github_repository_file" "truenas_sops_config" {
