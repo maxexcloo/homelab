@@ -11,7 +11,9 @@ platform_config:
     labels:
       traefik.enable: "true"
       traefik.http.middlewares.autocompress.compress: "true"
+      # 10.0.0.0/23 = local LAN, 100.64.0.0/10 = Tailscale, 127.0.0.1/32 = localhost, 172.16.0.0/12 = Docker
       traefik.http.middlewares.internal-only.ipallowlist.sourcerange: 10.0.0.0/23, 100.64.0.0/10, 127.0.0.1/32, 172.16.0.0/12
+      # 100.64.0.0/10 = Tailscale, 127.0.0.1/32 = localhost, 172.16.0.0/12 = Docker
       traefik.http.middlewares.tailscale-only.ipallowlist.sourcerange: 100.64.0.0/10, 127.0.0.1/32, 172.16.0.0/12
       traefik.http.routers.dashboard.middlewares: tailscale-only@docker
       traefik.http.routers.dashboard.rule: Host(`${service.fqdn_internal}`)

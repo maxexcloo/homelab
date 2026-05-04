@@ -3,32 +3,21 @@ locals {
   services_render_context_env = {
     for service_key, service in local.services_outputs_private : service_key => {
       for env_key, env_value in service.platform_config.docker.env : env_key => try(
-        join("+", [for env_item in env_value : templatestring(tostring(env_item), local.services_outputs_vars[service_key])]),
-        templatestring(tostring(env_value), local.services_outputs_vars[service_key])
+        join("+", [for env_item in env_value : templatestring(tostring(env_item), local.services_template_context_base[service_key])]),
+        templatestring(tostring(env_value), local.services_template_context_base[service_key])
       )
       if env_value != null && try(
-        join("+", [for env_item in env_value : templatestring(tostring(env_item), local.services_outputs_vars[service_key])]),
-        templatestring(tostring(env_value), local.services_outputs_vars[service_key])
+        join("+", [for env_item in env_value : templatestring(tostring(env_item), local.services_template_context_base[service_key])]),
+        templatestring(tostring(env_value), local.services_template_context_base[service_key])
       ) != ""
     }
   }
 
-  # Routing label rules live in a template; service-owned labels are plain data.
-  services_render_context_labels = {
+  # Final template context merges the base context with rendered env, labels, and
+  # the public service inventory so templates can reference the complete picture.
+  services_render_context_final = {
     for service_key, service in local.services_outputs_private : service_key => merge(
-      yamldecode(templatefile("${path.module}/templates/docker/labels.yaml.tftpl", local.services_outputs_vars[service_key])),
-      {
-        for label_key, label_value in service.platform_config.docker.labels :
-        label_key => templatestring(tostring(label_value), local.services_outputs_vars[service_key])
-        if label_value != null
-      }
-    )
-  }
-
-  # Full template context adds rendered env, labels, and public service inventory.
-  services_render_context_vars = {
-    for service_key, service in local.services_outputs_private : service_key => merge(
-      local.services_outputs_vars[service_key],
+      local.services_template_context_base[service_key],
       {
         env         = local.services_render_context_env[service_key]
         labels      = local.services_render_context_labels[service_key]
@@ -52,11 +41,23 @@ locals {
     })
   }
 
+  # Routing label rules live in a template; service-owned labels are plain data.
+  services_render_context_labels = {
+    for service_key, service in local.services_outputs_private : service_key => merge(
+      yamldecode(templatefile("${path.module}/templates/docker/labels.yaml.tftpl", local.services_template_context_base[service_key])),
+      {
+        for label_key, label_value in service.platform_config.docker.labels :
+        label_key => templatestring(tostring(label_value), local.services_template_context_base[service_key])
+        if label_value != null
+      }
+    )
+  }
+
   # Rendered Docker Compose content keyed by expanded service stack.
   services_render_files_compose = {
     for service_key, service in local.services_model_desired : service_key => templatefile(
       "${path.module}/services/${service.identity.service}/docker-compose.yaml.tftpl",
-      local.services_render_context_vars[service_key]
+      local.services_render_context_final[service_key]
     )
     if fileexists("${path.module}/services/${service.identity.service}/docker-compose.yaml.tftpl")
   }
@@ -72,6 +73,12 @@ locals {
 
   # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
   # Other files use filebase64(), so static and binary assets share one path.
+  #
+  # Path manipulation (all relative to services/{identity.service}/):
+  #   1) Strip the service directory prefix
+  #   2) Strip .tftpl suffix for the deployed path
+  #   3) Strip .raw suffix for the deployed path (SOPS will encrypt as binary)
+  #   4) Detect .raw presence to set SOPS input type to binary
   services_render_files_inputs = flatten([
     for service_key, service in local.services_model_desired : [
       for file_path in fileset(path.module, "services/${service.identity.service}/**") : {
@@ -82,6 +89,8 @@ locals {
         stack           = service_key
         target          = service.target
       }
+      # These two files are handled by platform-specific renderers (TrueNAS catalog
+      # apps and Komodo/Fly compose) rather than generic sidecars.
       if !contains(["app.json.tftpl", "docker-compose.yaml.tftpl"], basename(file_path))
     ]
   ])
@@ -94,7 +103,7 @@ locals {
       {
         content_base64 = (
           file_input.render_template
-          ? base64encode(templatefile(file_input.path, local.services_render_context_vars[file_input.stack]))
+          ? base64encode(templatefile(file_input.path, local.services_render_context_final[file_input.stack]))
           : filebase64(file_input.path)
         )
         content_type = (

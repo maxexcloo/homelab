@@ -1,4 +1,8 @@
 locals {
+  # Shared set of valid server target keys used throughout the stack to avoid
+  # repeating contains(keys(local.servers_model_desired), ...) everywhere.
+  _servers_target_keys = toset(keys(local.servers_model_desired))
+
   # Feature maps use YAML/default data, not provider-enriched servers, to avoid
   # making feature resources depend on the resources they create.
   servers_outputs_by_feature = {

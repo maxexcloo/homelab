@@ -2,7 +2,7 @@ locals {
   services_validation_cloudflare_tunnel_missing = flatten([
     for service_key, service in local.services_input : [
       for target in service.deploy_to : "${service_key} -> ${target}"
-      if contains(keys(local.servers_model_desired), target) &&
+      if contains(local._servers_target_keys, target) &&
       service.networking.expose == "cloudflare" &&
       !local.servers_model_desired[target].features.cloudflare_zero_trust_tunnel
     ]
@@ -30,7 +30,7 @@ locals {
   services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
       for target in service.deploy_to : "${service_key} -> ${target}"
-      if !contains(keys(local.servers_model_desired), target) && target != "fly"
+      if !contains(local._servers_target_keys, target) && target != "fly"
     ]
   ])
 

@@ -5,10 +5,14 @@ locals {
     if service.target == "fly"
   }
 
-  # GitHub files written to the Fly deployment repository. File keys include
-  # the service directory so multiple Fly services can share one repo.
+  # GitHub files written to the Fly deployment repository. Four categories:
+  #   1) fly.toml — main app configuration
+  #   2) .certs — custom domain certificate hostnames
+  #   3) .machine-count — desired machine count
+  #   4) Sidecar files (env, configs, etc. from services/{service}/)
   fly_render_files = merge(
     {
+      # 1) Main Fly app configuration
       for service_key, service in local.fly_input_services : (
         "${service.platform_config.fly.app_name}/fly.toml"
         ) => {
@@ -19,11 +23,12 @@ locals {
 
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/fly/fly.toml.tftpl",
-          local.services_render_context_vars[service_key]
+          local.services_render_context_final[service_key]
         )))
       }
     },
     {
+      # 2) Custom domain certificate hostnames
       for service_key, service in local.fly_input_services : (
         "${service.platform_config.fly.app_name}/.certs"
         ) => {
@@ -34,12 +39,13 @@ locals {
 
         content_base64 = base64encode(templatefile(
           "${path.module}/templates/fly/certs.tftpl",
-          local.services_render_context_vars[service_key]
+          local.services_render_context_final[service_key]
         ))
       }
       if length(service.networking.urls) > 0
     },
     {
+      # 3) Machine count for scaling
       for service_key, service in local.fly_input_services : (
         "${service.platform_config.fly.app_name}/.machine-count"
         ) => {
@@ -52,6 +58,7 @@ locals {
       if service.platform_config.fly.machine_count != null
     },
     {
+      # 4) Generic sidecar files (env, configs, etc.)
       for file_key, file_config in local.services_render_files_sidecars : (
         "${local.fly_input_services[file_config.stack].platform_config.fly.app_name}/${file_config.rel_path}"
         ) => merge(file_config, {

@@ -50,9 +50,10 @@ locals {
     }
   }
 
-  # Template contexts are intentionally small. Declared private service imports
-  # are overlaid into services by alias; undeclared services stay public-only.
-  services_outputs_vars = {
+  # Base template context used for rendering env, labels, and files. Declared
+  # private service imports are overlaid by alias; undeclared services stay
+  # public-only.
+  services_template_context_base = {
     for service_key, service_config in local.services_outputs_private : service_key => {
       defaults = local.defaults
       server   = try(local.servers_outputs_private[service_config.target], null)

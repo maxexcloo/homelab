@@ -1,66 +1,76 @@
-${yamlencode([
-  for section in concat(
-    [
-      for group in sort(distinct([
-        for candidate in values(services) : candidate.labels["homepage.group"]
-        if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && !contains([for server in values(servers) : server.description], candidate.labels["homepage.group"])
-      ])) : {
-        name = group
-        type = "service"
-      }
-    ],
-    [
-      for group in sort(distinct([
-        for server in values(servers) : server.type == "router" ? "Routers" : server.type == "vm" ? "VMs" : server.type == "appliance" ? "Appliances" : "Servers"
-      ])) : {
-        name = group
-        type = "server"
-      }
-    ],
-    [
-      for group in sort(distinct([
-        for candidate in values(services) : candidate.labels["homepage.group"]
-        if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && contains([for server in values(servers) : server.description], candidate.labels["homepage.group"])
-      ])) : {
-        name = group
-        type = "service"
-      }
-    ]
-  ) : {
-    (section.name) = section.type == "server" ? [
-      for server in values(servers) : {
-        (server.description) = {
-          description = server.platform
-          href        = "https://${server.fqdn_internal}"
-          icon        = server.type == "router" ? "mdi-router-network" : server.type == "vm" ? "mdi-desktop-tower-monitor" : server.type == "appliance" ? "mdi-devices" : "mdi-server"
-          ping        = server.fqdn_internal
-        }
-      }
-      if (server.type == "router" ? "Routers" : server.type == "vm" ? "VMs" : server.type == "appliance" ? "Appliances" : "Servers") == section.name
-      ] : [
-      for service_key in [
-        for service_sort_key in sort([
-          for candidate_key, candidate in services : join("|", [
-            format("%09d", 100000 + tonumber(lookup(candidate.labels, "homepage.weight", "0"))),
-            lower(lookup(candidate.labels, "homepage.name", "")),
-            candidate_key,
-          ])
-          if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") == section.name && lookup(candidate.labels, "homepage.name", "") != ""
-        ]) : split("|", service_sort_key)[2]
-      ] : {
-        (services[service_key].labels["homepage.name"]) = merge(
-          {
-            for label_key, label_value in services[service_key].labels : trimprefix(label_key, "homepage.") => label_value
-            if startswith(label_key, "homepage.") && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key) && !startswith(label_key, "homepage.widget.")
-          },
-          contains(keys(services[service_key].labels), "homepage.widget.type") ? {
-            widget = {
-              for label_key, label_value in services[service_key].labels : trimprefix(label_key, "homepage.widget.") => label_value
-              if startswith(label_key, "homepage.widget.")
-            }
-          } : {}
-        )
-      }
-    ]
-  }
-])}
+%{ for group in sort(distinct([
+  for candidate in values(services) : candidate.labels["homepage.group"]
+  if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && !contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
+])) }
+- ${group}:
+  %{~ for service_key in [
+    for service_sort_key in sort([
+      for candidate_key, candidate in services : join("|", [
+        format("%09d", 100000 + tonumber(lookup(candidate.labels, "homepage.weight", "0"))),
+        lower(lookup(candidate.labels, "homepage.name", "")),
+        candidate_key,
+      ])
+      if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") == group && lookup(candidate.labels, "homepage.name", "") != ""
+    ]) : split("|", service_sort_key)[2]
+  ] ~}
+    - ${services[service_key].labels["homepage.name"]}:
+      %{~ for label_key, label_value in services[service_key].labels ~}
+      %{~ if startswith(label_key, "homepage.") && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key) && !startswith(label_key, "homepage.widget.") ~}
+        ${trimprefix(label_key, "homepage.")}: ${jsonencode(label_value)}
+      %{~ endif ~}
+      %{~ endfor ~}
+      %{~ if contains(keys(services[service_key].labels), "homepage.widget.type") ~}
+        widget:
+          %{~ for label_key, label_value in services[service_key].labels ~}
+          %{~ if startswith(label_key, "homepage.widget.") ~}
+          ${trimprefix(label_key, "homepage.widget.")}: ${jsonencode(label_value)}
+          %{~ endif ~}
+          %{~ endfor ~}
+      %{~ endif ~}
+  %{~ endfor ~}
+%{ endfor }
+%{ for group in sort(distinct([
+  for srv in values(servers) : srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers"
+])) }
+- ${group}:
+  %{~ for srv in values(servers) ~}
+  %{~ if (srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers") == group ~}
+    - ${srv.description}:
+        description: ${jsonencode(srv.platform)}
+        href: "https://${srv.fqdn_internal}"
+        icon: "mdi-${srv.type == "appliance" ? "devices" : srv.type == "router" ? "router-network" : "server"}-#ffffff"
+        ping: ${jsonencode(srv.fqdn_internal)}
+  %{~ endif ~}
+  %{~ endfor ~}
+%{ endfor }
+%{ for group in sort(distinct([
+  for candidate in values(services) : candidate.labels["homepage.group"]
+  if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
+])) }
+- ${group}:
+  %{~ for service_key in [
+    for service_sort_key in sort([
+      for candidate_key, candidate in services : join("|", [
+        format("%09d", 100000 + tonumber(lookup(candidate.labels, "homepage.weight", "0"))),
+        lower(lookup(candidate.labels, "homepage.name", "")),
+        candidate_key,
+      ])
+      if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") == group && lookup(candidate.labels, "homepage.name", "") != ""
+    ]) : split("|", service_sort_key)[2]
+  ] ~}
+    - ${services[service_key].labels["homepage.name"]}:
+      %{~ for label_key, label_value in services[service_key].labels ~}
+      %{~ if startswith(label_key, "homepage.") && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key) && !startswith(label_key, "homepage.widget.") ~}
+        ${trimprefix(label_key, "homepage.")}: ${jsonencode(label_value)}
+      %{~ endif ~}
+      %{~ endfor ~}
+      %{~ if contains(keys(services[service_key].labels), "homepage.widget.type") ~}
+        widget:
+          %{~ for label_key, label_value in services[service_key].labels ~}
+          %{~ if startswith(label_key, "homepage.widget.") ~}
+          ${trimprefix(label_key, "homepage.widget.")}: ${jsonencode(label_value)}
+          %{~ endif ~}
+          %{~ endfor ~}
+      %{~ endif ~}
+  %{~ endfor ~}
+%{ endfor }

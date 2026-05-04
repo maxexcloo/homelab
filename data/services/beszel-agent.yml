@@ -17,6 +17,8 @@ platform_config:
   docker:
     env:
       HUB_URL: http://localhost:${services.beszel.networking.port}
+      # Beszel hub SSH host key used by agents to verify the hub connection.
+      # If this key ever rotates, all agents must be updated.
       KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
       LISTEN: 45876
       TOKEN: ${service.token_sensitive}

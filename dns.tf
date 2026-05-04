@@ -1,4 +1,16 @@
 locals {
+  # DNS records are generated across seven categories and merged into a single
+  # cloudflare_dns_record resource keyed by a stable, collision-safe identifier.
+  #
+  # Categories (each is a map of key => record object):
+  #   manual          — records from data/dns/*.yml (e.g. MX, TXT, CNAME)
+  #   servers         — A/AAAA/CNAME for server public IPs (e.g. hsp.au.excloo.net)
+  #   services        — CNAME → tunnel for cloudflare-exposed services
+  #   services_fly    — CNAME → fly.dev for Fly.io deployments
+  #   services_urls   — CNAME for custom service URLs (e.g. reddit.excloo.com)
+  #   acme_delegation — _acme-challenge CNAMEs for all A/AAAA/CNAME records
+  #   wildcards       — *.hostname CNAMEs for eligible records
+  #
   # Final DNS input map: zone name -> list of manually declared records.
   dns_input = {
     for dns_file in [
@@ -142,7 +154,7 @@ locals {
       }
     )
     if(
-      contains(keys(local.servers_model_desired), service.target) &&
+      contains(local._servers_target_keys, service.target) &&
       local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel &&
       service.networking.expose == "cloudflare"
     )
@@ -191,7 +203,7 @@ locals {
       }
       if local.dns_zones_urls[url] != null
     ]
-    if contains(keys(local.servers_model_desired), service.target)
+    if contains(local._servers_target_keys, service.target)
   ])...)
 
   # Wildcards follow each eligible A/AAAA/CNAME record unless the source record
@@ -224,6 +236,11 @@ locals {
 
   # Pick the longest managed zone suffix for each custom URL, so nested domains
   # choose the most specific Cloudflare zone.
+  #
+  # Algorithm: for each zone that matches the URL, build a sortable string
+  # "{padded_length}:{zone_name}". Left-padding the length with zeros makes
+  # lexical sort equivalent to length sort. Reverse-sorting picks the longest
+  # (most specific) zone, then split(":")[1] extracts the zone name.
   dns_zones_urls = {
     for url in distinct(flatten([
       for service_key, service in local.services_model_desired : service.networking.urls

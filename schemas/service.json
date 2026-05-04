@@ -132,7 +132,7 @@
       "type": "object",
       "properties": {
         "services": {
-          "description": "Map of local alias to target-expanded service key. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and public ${services.*}.",
+          "description": "Map of local alias to target-expanded service key. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and public ${services.*}. Example: {\"beszel\": \"beszel-${service.target}\"} lets templates reference ${services.beszel.networking.port}.",
           "type": "object",
           "additionalProperties": {
             "pattern": "^[a-z0-9][a-z0-9-]*(\\$\\{[^}]+\\}[a-z0-9-]*)*$",

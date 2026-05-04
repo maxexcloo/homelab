@@ -5,16 +5,15 @@ locals {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
       {
-        for url_index, url in service.networking.urls : "url_${url_index}" => url
-      },
-      {
-        fqdn_internal = contains(keys(local.servers_model_desired), service.target) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_internal}" : service.fqdn_internal
+        fqdn_internal = contains(local._servers_target_keys, service.target) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_internal}" : service.fqdn_internal
         key           = service_key
 
+        # coalesce is safe here because defaults.yml sets app_name to null, and
+        # null is ignored by coalesce in favour of the fallback expression.
         fqdn_external = (
           service.target == "fly"
           ? "${coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
-          : contains(keys(local.servers_model_desired), service.target) && contains(["cloudflare", "external"], service.networking.expose)
+          : contains(local._servers_target_keys, service.target) && contains(["cloudflare", "external"], service.networking.expose)
           ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_external}"
           : service.fqdn_external
         )
@@ -23,7 +22,7 @@ locals {
           group = (
             service.identity.group != null
             ? service.identity.group
-            : contains(keys(local.servers_model_desired), service.target)
+            : contains(local._servers_target_keys, service.target)
             ? local.servers_model_desired[service.target].description
             : "Applications"
           )
@@ -54,7 +53,7 @@ locals {
         b2_application_key_id        = b2_application_key.service[service_key].application_key_id
         b2_application_key_sensitive = b2_application_key.service[service_key].application_key
         b2_bucket_name               = b2_bucket.service[service_key].bucket_name
-        b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
+        b2_endpoint                  = local.b2_endpoint
       } : {},
       service.features.password ? {
         password_hash_sensitive = bcrypt_hash.service[service_key].id

@@ -21,8 +21,13 @@ locals {
   }
 
   # Encrypted GitHub files consumed by the TrueNAS deploy workflow.
+  # Three categories are merged:
+  #   1) Custom Docker Compose apps (rendered from docker-compose.yaml.tftpl)
+  #   2) TrueNAS catalog apps (app.json.tftpl merged with service-specific values)
+  #   3) Generic sidecar files (env, configs, etc. from services/{service}/)
   truenas_render_files = merge(
     {
+      # 1) Custom Docker Compose apps
       for service_key, service in local.truenas_input_services : (
         "${service.target}/${service.identity.name}/compose.json"
         ) => {
@@ -33,7 +38,7 @@ locals {
 
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/truenas/compose.json.tftpl",
-          merge(local.services_render_context_vars[service_key], {
+          merge(local.services_render_context_final[service_key], {
             compose = local.services_render_files_compose[service_key]
           })
         )))
@@ -41,6 +46,7 @@ locals {
       if contains(keys(local.services_render_files_compose), service_key)
     },
     {
+      # 2) TrueNAS catalog apps — only when no custom compose file exists
       for service_key, service in local.truenas_input_services : (
         "${service.target}/${service.identity.name}/app.json"
         ) => {
@@ -52,11 +58,11 @@ locals {
         content_base64 = sensitive(base64encode(jsonencode(provider::deepmerge::mergo(
           jsondecode(templatefile(
             "${path.module}/templates/truenas/app.json.tftpl",
-            local.services_render_context_vars[service_key]
+            local.services_render_context_final[service_key]
           )),
           jsondecode(templatefile(
             local.truenas_prepare_catalog_templates[service_key].path,
-            local.services_render_context_vars[service_key]
+            local.services_render_context_final[service_key]
           ))
         ))))
       }
@@ -66,6 +72,7 @@ locals {
       )
     },
     {
+      # 3) Generic sidecar files (env, configs, etc.)
       for file_key, file_config in local.services_render_files_sidecars : (
         "${file_config.target}/${local.services_model_desired[file_config.stack].identity.name}/${file_config.rel_path}"
         ) => merge(file_config, {

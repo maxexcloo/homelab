@@ -14,7 +14,12 @@ locals {
   }
 
   servers_model_passwords = {
-    for server_key, server in local.servers_outputs_by_feature.password : server_key => sensitive(try(local.onepassword_server_existing_fields[server_key].password, random_password.server[server_key].result))
+    for server_key, server in local.servers_outputs_by_feature.password : server_key => sensitive(
+      try(
+        local.onepassword_server_existing_fields[server_key].password,
+        random_password.server[server_key].result
+      )
+    )
   }
 
   # Runtime server model: provider-backed values and generated secrets that are
@@ -38,7 +43,7 @@ locals {
         b2_application_key_id        = b2_application_key.server[server_key].application_key_id
         b2_application_key_sensitive = b2_application_key.server[server_key].application_key
         b2_bucket_name               = b2_bucket.server[server_key].bucket_name
-        b2_endpoint                  = replace(data.b2_account_info.default.s3_api_url, "https://", "")
+        b2_endpoint                  = local.b2_endpoint
       } : {},
       server.features.cloudflare_acme_token ? {
         cloudflare_acme_token_sensitive = cloudflare_account_token.server_acme[server_key].value

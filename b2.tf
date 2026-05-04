@@ -12,6 +12,9 @@ locals {
     "shareFiles",
     "writeFiles"
   ]
+
+  # B2 S3 endpoint with the https:// prefix stripped for service templates.
+  b2_endpoint = replace(data.b2_account_info.default.s3_api_url, "https://", "")
 }
 
 resource "b2_application_key" "server" {

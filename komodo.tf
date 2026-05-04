@@ -3,7 +3,7 @@ locals {
   # server targets.
   komodo_input_stacks = {
     for service_key, service in local.services_model_desired : service_key => service
-    if contains(keys(local.servers_model_desired), service.target) &&
+    if contains(local._servers_target_keys, service.target) &&
     local.servers_model_desired[service.target].features.docker &&
     contains(keys(local.services_render_files_compose), service_key)
   }
@@ -27,7 +27,7 @@ locals {
         file           = file_key
       })
       if(
-        contains(keys(local.servers_model_desired), file_config.target) &&
+        contains(local._servers_target_keys, file_config.target) &&
         local.servers_model_desired[file_config.target].features.docker
       )
     }

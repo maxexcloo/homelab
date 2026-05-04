@@ -11,7 +11,14 @@ locals {
   onepassword_server_fields = {
     for server_key, server in local.servers_outputs_private : server_key => {
       for field_name, field_value in server : field_name => field_value
-      if field_value != null && field_value != "" && field_value != false && !can(regex(local.defaults.onepassword.url_field_pattern, field_name)) && !contains(keys(local.defaults_server), field_name) && can(tostring(field_value))
+      if(
+        field_value != null &&
+        field_value != "" &&
+        field_value != false &&
+        !can(regex(local.defaults.onepassword.url_field_pattern, field_name)) &&
+        !contains(keys(local.defaults_server), field_name) &&
+        can(tostring(field_value))
+      )
     }
   }
 
@@ -53,16 +60,10 @@ locals {
       )
 
       urls = [
-        for url_index, url_field in concat(
-          contains(keys(local.onepassword_server_urls[server_key]), "url_0") ? ["url_0"] : [],
-          [
-            for url_field in sort(keys(local.onepassword_server_urls[server_key])) : url_field
-            if url_field != "url_0"
-          ]
-          ) : {
+        for url_index, url_field in sort(keys(local.onepassword_server_urls[server_key])) : {
           href    = local.onepassword_server_urls[server_key][url_field]
           label   = url_field
-          primary = contains(keys(local.onepassword_server_urls[server_key]), "url_0") ? url_field == "url_0" : url_index == 0
+          primary = url_index == 0
         }
       ]
       vault = {
@@ -107,12 +108,16 @@ locals {
   onepassword_service_fields = {
     for service_key, service in local.services_outputs_private : service_key => {
       for field_name, field_value in service : field_name => field_value
-      if field_value != null && field_value != false && !can(regex(local.defaults.onepassword.url_field_pattern, field_name)) && !contains(keys(local.defaults_service), field_name) && can(tostring(field_value)) && (
-        field_value != "" ||
-        contains([
-          for secret in service.features.secrets : "${secret.name}_sensitive"
-          if try(secret.bootstrap_type, null) == null
-        ], field_name)
+      if(
+        field_value != null &&
+        field_value != false &&
+        !can(regex(local.defaults.onepassword.url_field_pattern, field_name)) &&
+        !contains(keys(local.defaults_service), field_name) &&
+        can(tostring(field_value)) &&
+        (
+          field_value != "" ||
+          contains(local.onepassword_service_manual_secret_names[service_key], field_name)
+        )
       )
     }
   }
@@ -155,16 +160,10 @@ locals {
       )
 
       urls = [
-        for url_index, url_field in concat(
-          contains(keys(local.onepassword_service_urls[service_key]), "url_0") ? ["url_0"] : [],
-          [
-            for url_field in sort(keys(local.onepassword_service_urls[service_key])) : url_field
-            if url_field != "url_0"
-          ]
-          ) : {
+        for url_index, url_field in sort(keys(local.onepassword_service_urls[service_key])) : {
           href    = local.onepassword_service_urls[service_key][url_field]
           label   = url_field
-          primary = contains(keys(local.onepassword_service_urls[service_key]), "url_0") ? url_field == "url_0" : url_index == 0
+          primary = url_index == 0
         }
       ]
       vault = {
@@ -180,6 +179,15 @@ locals {
   onepassword_service_items = {
     for service_key, service in local.services_model_desired : service_key => service
     if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.networking.scheme != null
+  }
+
+  # Secret fields with bootstrap_type == null are manually supplied in
+  # 1Password; they should be synced even when the value is empty.
+  onepassword_service_manual_secret_names = {
+    for service_key, service in local.services_outputs_private : service_key => [
+      for secret in service.features.secrets : "${secret.name}_sensitive"
+      if try(secret.bootstrap_type, null) == null
+    ]
   }
 
   onepassword_service_read_write_fields = {

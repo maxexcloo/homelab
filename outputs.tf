@@ -4,17 +4,9 @@ output "summary" {
 
   value = {
     counts = {
-      dns_records = (
-        length(local.dns_records_acme_delegation) +
-        length(local.dns_records_manual) +
-        length(local.dns_records_servers) +
-        length(local.dns_records_services) +
-        length(local.dns_records_services_fly) +
-        length(local.dns_records_services_urls) +
-        length(local.dns_records_wildcards)
-      )
-      servers  = length(local.servers_model_desired)
-      services = length(local.services_model_desired)
+      dns_records = length(local.dns_records_all)
+      servers     = length(local.servers_model_desired)
+      services    = length(local.services_model_desired)
     }
 
     servers  = keys(local.servers_model_desired)

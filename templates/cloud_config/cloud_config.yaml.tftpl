@@ -43,10 +43,15 @@ write_files:
     permissions: "0755"
     content: |
       #!/bin/sh
+      # Detect the default NIC via a route lookup to Cloudflare DNS, then tune
+      # GRO for UDP forwarding performance (rx-gro-list off is required for
+      # rx-udp-gro-forwarding on many kernels).
       ethtool -K $(ip -o route get 1.1.1.1 | cut -d " " -f 5) rx-gro-list off rx-udp-gro-forwarding on
   - path: /etc/sysctl.d/50-network.conf
     content: |
+      # Increase socket buffers for high-throughput NICs
       net.core.rmem_max=8388608
       net.core.wmem_max=8388608
+      # Enable IP forwarding for Tailscale subnet routing / exit nodes
       net.ipv4.conf.all.forwarding=1
       net.ipv6.conf.all.forwarding=1
