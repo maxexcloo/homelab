@@ -4,17 +4,17 @@ layout:
 %{~ for group in sort(distinct([
   for svc_key, svc in services : svc.labels["homepage.group"]
   if svc_key != service.key && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != ""
-])) ~}
+])) }
   ${group}:
     columns: 2
     style: row
-    tab: %{~ if contains([for srv in values(servers) : srv.description], group) ~}Servers%{~ else ~}Services%{~ endif ~}
-%{~ endfor ~}
+    tab: ${contains([for srv in values(servers) : srv.description], group) ? "Servers" : "Services"}
+%{ endfor ~}
 %{~ for group in sort(distinct([
   for srv in values(servers) : srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers"
-])) ~}
+])) }
   ${group}:
     columns: 2
     style: row
     tab: Servers
-%{~ endfor ~}
+%{ endfor ~}
