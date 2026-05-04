@@ -4,7 +4,9 @@ locals {
   # without repeating expressions.
   servers_model_computed = {
     for server_key, server in local.servers_input : server_key => {
-      fqdn = server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
+      fqdn       = server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
+      type_icon  = local.defaults.types[server.type].icon
+      type_label = local.defaults.types[server.type].label
 
       description = (
         server.parent == "" ? server.identity.title :

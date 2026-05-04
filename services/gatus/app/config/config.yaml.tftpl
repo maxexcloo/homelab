@@ -40,7 +40,7 @@ endpoints:
     %{~ endif ~}
     conditions:
       - "[CONNECTED] == true"
-    group: "${server.type == "router" ? "Routers" : server.type == "vm" ? "VMs" : "Servers"}"
+    group: "${server.type_label}"
     name: "${server_key}"
     url: "icmp://${server.fqdn_internal}"
   %{~ endif ~}

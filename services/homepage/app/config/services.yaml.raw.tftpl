@@ -30,15 +30,15 @@
   %{~ endfor ~}
 %{~ endfor ~}
 %{~ for group in sort(distinct([
-  for srv in values(servers) : srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers"
+  for srv in values(servers) : srv.type_label
 ])) ~}
 - ${group}:
   %{~ for srv in values(servers) ~}
-  %{~ if (srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers") == group ~}
+  %{~ if srv.type_label == group ~}
     - ${srv.description}:
         description: ${jsonencode(srv.platform)}
         href: "https://${srv.fqdn_internal}"
-        icon: "mdi-${srv.type == "appliance" ? "devices" : srv.type == "router" ? "router-network" : "server"}-#ffffff"
+        icon: "mdi-${srv.type_icon}-#ffffff"
         ping: ${jsonencode(srv.fqdn_internal)}
   %{~ endif ~}
   %{~ endfor ~}

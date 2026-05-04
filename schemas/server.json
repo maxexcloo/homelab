@@ -336,8 +336,8 @@
       }
     },
     "type": {
-      "description": "Functional role of the server. Used for grouping in monitoring (Gatus) and display. appliance = dedicated device; router = network gateway; server = general-purpose machine; vm = virtual machine.",
-      "enum": ["appliance", "router", "server", "vm"],
+      "description": "Functional role of the server. Used for grouping in monitoring (Gatus) and display. appliance = dedicated device; cicd = CI/CD runner; ephemeral = temporary workload; router = network gateway; server = general-purpose machine; vm = virtual machine.",
+      "enum": ["appliance", "cicd", "ephemeral", "router", "server", "vm"],
       "type": "string"
     }
   }

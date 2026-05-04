@@ -22,6 +22,11 @@ locals {
     if server.parent != "" && !contains(keys(local.servers_input), server.parent)
   ]
 
+  servers_validation_invalid_types = [
+    for server_key, server in local.servers_input : server_key
+    if !contains(keys(local.defaults.types), server.type)
+  ]
+
   servers_validation_long_parent_chains = [
     for server_key, server in local.servers_input : server_key
     if server.parent != "" && try(local.servers_input[local.servers_input[server.parent].parent].parent != "", false)
@@ -66,6 +71,11 @@ resource "terraform_data" "servers_validation" {
     precondition {
       condition     = length(local.servers_validation_invalid_parents) == 0
       error_message = "Invalid parent references found in servers configuration: ${join(", ", local.servers_validation_invalid_parents)}"
+    }
+
+    precondition {
+      condition     = length(local.servers_validation_invalid_types) == 0
+      error_message = "Invalid server types found: ${join(", ", local.servers_validation_invalid_types)}"
     }
 
     # OpenTofu locals are not generally recursive; keep the supported inheritance

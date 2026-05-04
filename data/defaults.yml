@@ -34,6 +34,31 @@ resend:
   host: smtp.resend.com
   port: 465
   username: resend
+types:
+  appliance:
+    icon: devices
+    label: Appliances
+    tailscale_tag: appliance
+  cicd:
+    icon: server
+    label: CI/CD
+    tailscale_tag: cicd
+  ephemeral:
+    icon: server
+    label: Ephemeral
+    tailscale_tag: ephemeral
+  router:
+    icon: router-network
+    label: Routers
+    tailscale_tag: router
+  server:
+    icon: server
+    label: Servers
+    tailscale_tag: server
+  vm:
+    icon: server
+    label: VMs
+    tailscale_tag: vm
 servers:
   key: null
   parent: ""
@@ -148,10 +173,3 @@ tailscale:
   admin_identities:
     - max@excloo.com
     - maxexcloo@passkey
-  tags:
-    - appliance
-    - cicd
-    - ephemeral
-    - router
-    - server
-    - vm

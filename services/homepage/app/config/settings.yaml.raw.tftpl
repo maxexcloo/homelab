@@ -11,7 +11,7 @@ layout:
     tab: ${contains([for srv in values(servers) : srv.description], group) ? "Servers" : "Services"}
 %{ endfor ~}
 %{~ for group in sort(distinct([
-  for srv in values(servers) : srv.type == "appliance" ? "Appliances" : srv.type == "router" ? "Routers" : srv.type == "vm" ? "VMs" : "Servers"
+  for srv in values(servers) : srv.type_label
 ])) }
   ${group}:
     columns: 2

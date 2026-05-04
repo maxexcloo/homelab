@@ -214,15 +214,22 @@
           "items": {
             "type": "string"
           }
-        },
-        "tags": {
-          "description": "ACL tag names available to assign to devices and auth keys (e.g. 'server', 'vm', 'cicd').",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       }
+    },
+    "types": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "description": "Metadata for a single server type.",
+        "type": "object",
+        "properties": {
+          "icon": { "type": "string" },
+          "label": { "type": "string" },
+          "tailscale_tag": { "type": "string" }
+        }
+      },
+      "description": "Metadata for each valid server type, including display labels, icons, and Tailscale tag mappings.",
+      "type": "object"
     }
   }
 }
