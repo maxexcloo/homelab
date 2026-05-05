@@ -17,11 +17,12 @@ locals {
         "${service.platform_config.fly.app_name}/fly.toml"
         ) => {
         commit_message = "Update ${service.platform_config.fly.app_name} configuration"
+        file           = "${service.platform_config.fly.app_name}/fly.toml"
+
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/fly/fly.toml.tftpl",
           local.services_render_context_final[service_key]
         )))
-        file = "${service.platform_config.fly.app_name}/fly.toml"
       }
     },
     {
@@ -30,11 +31,12 @@ locals {
         "${service.platform_config.fly.app_name}/.certs"
         ) => {
         commit_message = "Update ${service.platform_config.fly.app_name} certificate hostnames"
+        file           = "${service.platform_config.fly.app_name}/.certs"
+
         content_base64 = base64encode(templatefile(
           "${path.module}/templates/fly/certs.tftpl",
           local.services_render_context_final[service_key]
         ))
-        file = "${service.platform_config.fly.app_name}/.certs"
       }
       if length(service.networking.urls) > 0
     },

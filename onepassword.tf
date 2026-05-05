@@ -115,6 +115,8 @@ locals {
         !contains(keys(local.defaults_service), field_name) &&
         can(tostring(field_value)) &&
         (
+          # Manually supplied secrets sync even when empty so 1Password gets the
+          # placeholder field for the operator to fill in on the first apply.
           field_value != "" ||
           contains(local.onepassword_service_manual_secret_names[service_key], field_name)
         )

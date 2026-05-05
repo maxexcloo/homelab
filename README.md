@@ -84,7 +84,7 @@ Feature flags either create provider-backed resources, expose values generated l
 
 ```bash
 mise run apply     # Apply infrastructure changes
-mise run check     # Format check, validate, and lint
+mise run check     # Format check, lint, and validate
 mise run fmt       # Format HCL and YAML data files
 mise run init      # Initialize OpenTofu providers and backend
 mise run lint      # Validate YAML data files against JSON schemas

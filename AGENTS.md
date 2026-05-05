@@ -6,15 +6,37 @@ Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are 
 
 Data flows through two model layers — **desired** (YAML + defaults + deterministic computed fields) and **runtime** (provider-backed values + generated secrets). Consumers select narrower views (public, private, feature-filtered) so dependency chains stay visible.
 
-Files follow a `{domain}_{layer}.tf` naming pattern grouped by data-flow stage: input → model → outputs → validation → render.
+## File Organization
+
+Root HCL files come in three shapes:
+
+- **Domain stages** — `{domain}_{layer}.tf` (`servers_input.tf`, `services_model.tf`, `dns_model.tf`, …) hold the input → model → outputs → validation → render pipeline for a domain that flows through every layer.
+- **Per-provider files** — one file per provider (`unifi.tf`, `github.tf`, `b2.tf`, `bcrypt.tf`, `random.tf`, `age.tf`, …) for resources and data sources that don't fit a staged domain. Includes utility providers (random/bcrypt/age) used as cross-cutting building blocks.
+- **Per-service templates** — under `services/<identity.service>/`. Use `docker-compose.yaml.tftpl` for custom Docker stacks and `app.json.tftpl` for TrueNAS catalog overlays. Any other files are deployed as sidecars (`.tftpl` rendered, `.raw.tftpl` rendered then binary-encrypted because SOPS structured encryption is unsuitable, e.g. top-level YAML arrays).
 
 ## Sorting Convention
 
-Within any object — YAML, HCL, or JSON Schema `properties` — sort single-line assignments alphabetically by key first, then multi-line assignments alphabetically by key.
+Sort within any object — YAML, HCL, or JSON Schema `properties`:
 
-Underscore-prefixed locals sort before non-prefixed ones (ASCII `_` = 95 < `a` = 97).
+- Single-line assignments alphabetical by key, first
+- Multi-line assignments alphabetical by key, after
+- Underscore-prefixed names sort before non-prefixed (`_` = ASCII 95 < `a` = 97)
 
-This applies consistently to `data/` YAML files, `schemas/*.json` property lists, resource attribute blocks, `environment {}` blocks, and `templatefile()` argument objects. Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by name and sort object attributes inside each local. Only assignments that span multiple lines count as multi-line values; a single-line assignment like `identity = v.identity` sorts alphabetically with every other single-line assignment. When `CONTENT = base64encode(...)` spans multiple lines it is multi-line and goes last; single-line `CONTENT` assignments sort alphabetically with the other single-line attributes.
+A "multi-line" assignment is one whose value spans multiple lines:
+
+- `identity = v.identity` is single-line and sorts with the other single-line keys
+- `CONTENT = base64encode(<spans multiple lines>)` is multi-line and sorts after the single-line block
+- Single-line `CONTENT = "value"` sorts alphabetically with the other single-line keys
+
+Applies consistently to:
+
+- `data/` YAML files
+- `schemas/*.json` property lists
+- HCL resource attribute blocks
+- HCL `environment {}` blocks
+- HCL `templatefile()` argument objects
+
+Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by name; the single-line/multi-line ordering applies inside each local's object value.
 
 ## HCL Standards
 
@@ -48,6 +70,6 @@ This applies consistently to `data/` YAML files, `schemas/*.json` property lists
 
 ## General
 
-- **Comments**: Only for non-obvious business logic
+- **Comments**: Only for non-obvious business logic, kept specific to the code at the call site. General explainers (architecture, data flow, usage) belong in `README.md`; conventions belong here in `AGENTS.md`
 - **KISS**: Prefer readable over clever
 - **Trailing newlines**: Required in all files

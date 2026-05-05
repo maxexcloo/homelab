@@ -4,7 +4,7 @@ output "summary" {
 
   value = {
     counts = {
-      dns_records = length(local.dns_records_all)
+      dns_records = length(local.dns_model_records_all)
       servers     = length(local.servers_model_desired)
       services    = length(local.services_model_desired)
     }

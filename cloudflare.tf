@@ -27,7 +27,7 @@ locals {
         for service_key, service in local.services_model_desired : [
           for hostname in distinct(concat(
             service.fqdn_external != null ? [service.fqdn_external] : [],
-            [for url in service.networking.urls : url if lookup(local.dns_zones_urls, url, null) != null]
+            [for url in service.networking.urls : url if lookup(local.dns_model_zones_urls, url, null) != null]
             )) : {
             hostname = hostname
             service  = "https://localhost"
@@ -71,7 +71,7 @@ resource "cloudflare_account_token" "server_acme" {
 }
 
 resource "cloudflare_dns_record" "all" {
-  for_each = local.dns_records_all
+  for_each = local.dns_model_records_all
 
   comment  = local.defaults.organization.managed_comment
   content  = each.value.content

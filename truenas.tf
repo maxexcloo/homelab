@@ -33,14 +33,15 @@ locals {
         ) => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} compose"
+        content_type   = "json"
+        file           = "${service.target}/${service.identity.name}/compose.json"
+
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/truenas/compose.json.tftpl",
           merge(local.services_render_context_final[service_key], {
             compose = local.services_render_files_compose[service_key]
           })
         )))
-        content_type = "json"
-        file         = "${service.target}/${service.identity.name}/compose.json"
       }
       if contains(keys(local.services_render_files_compose), service_key)
     },
@@ -51,6 +52,9 @@ locals {
         ) => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} catalog app"
+        content_type   = "json"
+        file           = "${service.target}/${service.identity.name}/app.json"
+
         content_base64 = sensitive(base64encode(jsonencode(provider::deepmerge::mergo(
           jsondecode(templatefile(
             "${path.module}/templates/truenas/app.json.tftpl",
@@ -61,8 +65,6 @@ locals {
             local.services_render_context_final[service_key]
           ))
         ))))
-        content_type = "json"
-        file         = "${service.target}/${service.identity.name}/app.json"
       }
       if(
         !contains(keys(local.services_render_files_compose), service_key) &&

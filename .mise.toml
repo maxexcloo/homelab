@@ -28,7 +28,7 @@ fi
 
 # Development
 [tasks.check]
-description = "Format check, lint and validate"
+description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
 prettier --check "data/**/*.yml" "templates/**/*.yml"

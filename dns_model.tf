@@ -3,9 +3,9 @@ locals {
   # cloudflare_dns_record resource keyed by a stable, collision-safe identifier.
   #
   # Nothing in this file is silently created — every generated record is visible
-  # in the final dns_records_all map, which is exported in the summary output.
-  # The categories below show how each record originates so you can trace a
-  # hostname back to its source data.
+  # in the final dns_model_records_all map, which is exported in the summary
+  # output. The categories below show how each record originates so you can
+  # trace a hostname back to its source data.
   #
   # Categories (each is a map of key => record object):
   #   manual          — records from data/dns/*.yml (e.g. MX, TXT, CNAME)
@@ -17,24 +17,16 @@ locals {
   #                     service hostnames (A/AAAA/CNAME types only); Fly.io and
   #                     wildcard records are excluded
   #   wildcards       — *.hostname CNAMEs for eligible records
-  #
-  # Final DNS input map: zone name -> list of manually declared records.
-  dns_input = {
-    for dns_file in [
-      for file_path in fileset(path.module, "data/dns/*.yml") :
-      yamldecode(file("${path.module}/${file_path}"))
-    ] : dns_file.name => try(dns_file.records, [])
-  }
 
   # Delegate ACME challenges for managed server and server-hosted service
   # hostnames back to the dedicated ACME zone.
-  dns_records_acme_delegation = {
+  dns_model_records_acme_delegation = {
     for record in distinct([
       for source_record in concat(
-        values(local.dns_records_manual),
-        values(local.dns_records_servers),
-        values(local.dns_records_services),
-        values(local.dns_records_services_urls)
+        values(local.dns_model_records_manual),
+        values(local.dns_model_records_servers),
+        values(local.dns_model_records_services),
+        values(local.dns_model_records_services_urls)
         ) : {
         name = source_record.name
         zone = source_record.zone
@@ -49,19 +41,19 @@ locals {
   }
 
   # Combined map of all DNS records for a single cloudflare_dns_record resource.
-  dns_records_all = merge(
-    local.dns_records_acme_delegation,
-    local.dns_records_manual,
-    local.dns_records_servers,
-    local.dns_records_services,
-    local.dns_records_services_fly,
-    local.dns_records_services_urls,
-    local.dns_records_wildcards,
+  dns_model_records_all = merge(
+    local.dns_model_records_acme_delegation,
+    local.dns_model_records_manual,
+    local.dns_model_records_servers,
+    local.dns_model_records_services,
+    local.dns_model_records_services_fly,
+    local.dns_model_records_services_urls,
+    local.dns_model_records_wildcards,
   )
 
   # Manual DNS records are keyed by either explicit id or stable record fields to
   # avoid identity churn when records are reordered in YAML.
-  dns_records_manual = merge([
+  dns_model_records_manual = merge([
     for zone, records in local.dns_input : {
       for record in records : (
         "${zone}-manual-${try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))}"
@@ -80,7 +72,7 @@ locals {
 
   # Server records combine explicit public addresses, OCI-assigned addresses, and
   # Tailscale device lookups into external/internal DNS records.
-  dns_records_servers = merge([
+  dns_model_records_servers = merge([
     for server_key, server in local.servers_model_desired : merge(
       server.public_address != null ? {
         "${local.defaults.domains.external}-${server_key}-cname" = {
@@ -147,7 +139,7 @@ locals {
   ]...)
 
   # Server-hosted Cloudflare services point at the target server's tunnel.
-  dns_records_services = {
+  dns_model_records_services = {
     for service_key, service in local.services_model_desired : (
       "${local.defaults.domains.external}-${service_key}"
       ) => provider::deepmerge::mergo(
@@ -169,7 +161,7 @@ locals {
 
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as
   # computed service FQDNs and served directly by Fly.
-  dns_records_services_fly = merge(flatten([
+  dns_model_records_services_fly = merge(flatten([
     for service_key, service in local.fly_input_services : [
       for url_index, url in service.networking.urls : {
         "${service_key}-url-${url_index}" = provider::deepmerge::mergo(
@@ -179,50 +171,51 @@ locals {
             name    = url
             proxied = service.networking.expose == "cloudflare"
             type    = "CNAME"
-            zone    = local.dns_zones_urls[url]
+            zone    = local.dns_model_zones_urls[url]
           }
         )
       }
-      if local.dns_zones_urls[url] != null
+      if local.dns_model_zones_urls[url] != null
     ]
   ])...)
 
   # Custom service URLs resolve to a tunnel when exposed through Cloudflare,
   # otherwise to the service's computed external or internal hostname.
-  dns_records_services_urls = merge(flatten([
+  dns_model_records_services_urls = merge(flatten([
     for service_key, service in local.services_model_desired : [
       for url_index, url in service.networking.urls : {
         "${service_key}-url-${url_index}" = provider::deepmerge::mergo(
           local.defaults_dns,
           {
+            name    = url
+            proxied = service.networking.expose == "cloudflare"
+            type    = "CNAME"
+            zone    = local.dns_model_zones_urls[url]
+
             content = (
               local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel
               && service.networking.expose == "cloudflare"
               ? "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
               : service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
             )
-            name    = url
-            proxied = service.networking.expose == "cloudflare"
-            type    = "CNAME"
-            zone    = local.dns_zones_urls[url]
           }
         )
       }
-      if local.dns_zones_urls[url] != null
+      if local.dns_model_zones_urls[url] != null
     ]
     if contains(local.servers_input_keys, service.target)
   ])...)
 
   # Wildcards follow each eligible A/AAAA/CNAME record unless the source record
   # explicitly opts out through wildcard = false.
-  dns_records_wildcards = {
+  dns_model_records_wildcards = {
     for hostname in distinct([
       for record in concat(
-        values(local.dns_records_manual),
-        values(local.dns_records_servers),
-        values(local.dns_records_services),
-        values(local.dns_records_services_fly),
-        values(local.dns_records_services_urls)
+        values(local.dns_model_records_manual),
+        values(local.dns_model_records_servers),
+        values(local.dns_model_records_services),
+        values(local.dns_model_records_services_fly),
+        values(local.dns_model_records_services_urls)
         ) : {
         name    = record.name
         proxied = record.proxied
@@ -238,22 +231,19 @@ locals {
     }
   }
 
-  # Managed Cloudflare zone names available for manual and generated records.
-  dns_zones = keys(local.dns_input)
-
   # For each custom URL, find all managed zones that match (exact or suffix).
   # The most specific (longest) zone wins so nested domains resolve correctly.
-  dns_zones_matching = {
+  dns_model_zones_matching = {
     for url in distinct(flatten([
       for service_key, service in local.services_model_desired : service.networking.urls
       ])) : url => [
-      for zone in local.dns_zones : { length = length(zone), name = zone }
+      for zone in local.dns_input_zones : { length = length(zone), name = zone }
       if url == zone || endswith(url, ".${zone}")
     ]
   }
 
-  dns_zones_urls = {
-    for url, matches in local.dns_zones_matching : url => try(
+  dns_model_zones_urls = {
+    for url, matches in local.dns_model_zones_matching : url => try(
       [for m in matches : m.name if m.length == max([for x in matches : x.length]...)][0],
       null
     )
