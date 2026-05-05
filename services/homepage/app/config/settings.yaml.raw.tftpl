@@ -3,7 +3,7 @@ title: ${service.identity.title}
 layout:
 %{~ for group in sort(distinct([
   for svc_key, svc in services : svc.labels["homepage.group"]
-  if svc_key != service.key && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != ""
+  if svc.target != service.target && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != ""
 ])) }
   ${group}:
     columns: 2

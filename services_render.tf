@@ -91,7 +91,8 @@ locals {
         "homepage.href" = (
           service.fqdn_internal != null ? "https://${service.fqdn_internal}"
           : service.fqdn_external != null ? "https://${service.fqdn_external}"
-          : service.networking.urls[0]
+          : length(service.networking.urls) > 0 ? service.networking.urls[0]
+          : null
         )
       } : {},
 
