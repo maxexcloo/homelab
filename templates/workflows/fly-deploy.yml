@@ -79,7 +79,12 @@ jobs:
       - name: Setup sops
         uses: nhedger/setup-sops@v2
       - name: Decrypt Files
-        run: find . -type f | xargs grep -l 'BEGIN AGE ENCRYPTED FILE' | xargs -n 1 -r sops --decrypt --in-place
+        run: |
+          find . -type f -print0 | while IFS= read -r -d '' f; do
+            if grep -qE 'BEGIN AGE ENCRYPTED FILE|ENC\[AES256_GCM' "$f"; then
+              sops --decrypt --output-type binary "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+            fi
+          done
       - name: Create Service
         run: flyctl apps create "$SERVICE" || true
       - name: Add Certificates
