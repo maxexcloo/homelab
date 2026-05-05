@@ -7,7 +7,9 @@
         services = {
           for svc_key, svc_val in yamldecode(compose).services : svc_key => merge(
             svc_val,
-            svc_key == service.identity.name ? { environment = env } : {}
+            svc_key == service.identity.name ? {
+              environment = merge(try(svc_val.environment, {}), env)
+            } : {}
           )
         }
       }
