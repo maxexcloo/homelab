@@ -46,9 +46,9 @@
   ]) ~}
     - ${servers[srv_key].description}:
         description: ${jsonencode(servers[srv_key].platform)}
-        href: https://${servers[srv_key].fqdn_internal}
+        href: https://${servers[srv_key].fqdn_internal}${servers[srv_key].networking.management_port != 443 ? ":${servers[srv_key].networking.management_port}" : ""}
         icon: ${servers[srv_key].type_icon}
-        ping: ${jsonencode(servers[srv_key].fqdn_internal)}
+        siteMonitor: https://${servers[srv_key].fqdn_internal}${servers[srv_key].networking.management_port != 443 ? ":${servers[srv_key].networking.management_port}" : ""}
   %{~ endfor ~}
 %{~ endfor ~}
 %{~ for group in sort(distinct([
