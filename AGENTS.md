@@ -43,9 +43,14 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - **Formatting**: `tofu fmt -recursive` (run via `mise run fmt`)
 - **`for_each`**: Always prefer over `count`; use a named local for filtered/shaped resource/data `for_each` inputs
 - **Comprehensions**: Use descriptive key/value names (`server_key`, `service`, `record`, `file_path`). Avoid `k`/`v` except in trivial, non-nested expressions
-- **Naming**: `snake_case` for all resources, locals, and variables
+- **Locals — naming and ordering**:
+  - `snake_case` for all resources, locals, and variables
+  - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_files_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
+  - **Helpers** (locals consumed only inside their defining file) are prefixed with `_` so they sort to the top of the `locals {}` block, ahead of the public locals other files depend on
+  - The single concrete output of a stage drops the qualifier: `services_render_context` instead of `..._final` or `..._merged`
 - **Sensitive data**: `sensitive = true` on all outputs containing secrets; generated secret fields end with `_sensitive`
 - **Defaults**: Set values in `data/defaults.yml` wherever possible; use `try()` / `coalesce()` only when no applicable default exists
+- **Merge functions**: Use `merge()` for shallow merges of flat objects; reach for `provider::deepmerge::mergo()` only when nested keys must combine recursively (server/service YAML overrides, config blob composition, JSON catalog overlays)
 - **Validation**: Use `terraform_data` preconditions for referential integrity checks
 
 ### Template authoring

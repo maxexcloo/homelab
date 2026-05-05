@@ -21,7 +21,7 @@ locals {
 
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/fly/fly.toml.tftpl",
-          local.services_render_context_final[service_key]
+          local.services_render_context[service_key]
         )))
       }
     },
@@ -35,7 +35,7 @@ locals {
 
         content_base64 = base64encode(templatefile(
           "${path.module}/templates/fly/certs.tftpl",
-          local.services_render_context_final[service_key]
+          local.services_render_context[service_key]
         ))
       }
       if length(service.networking.urls) > 0

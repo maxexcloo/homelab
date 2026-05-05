@@ -38,7 +38,7 @@ locals {
 
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/truenas/compose.json.tftpl",
-          merge(local.services_render_context_final[service_key], {
+          merge(local.services_render_context[service_key], {
             compose = local.services_render_files_compose[service_key]
           })
         )))
@@ -58,11 +58,11 @@ locals {
         content_base64 = sensitive(base64encode(jsonencode(provider::deepmerge::mergo(
           jsondecode(templatefile(
             "${path.module}/templates/truenas/app.json.tftpl",
-            local.services_render_context_final[service_key]
+            local.services_render_context[service_key]
           )),
           jsondecode(templatefile(
             local.truenas_prepare_catalog_templates[service_key].path,
-            local.services_render_context_final[service_key]
+            local.services_render_context[service_key]
           ))
         ))))
       }

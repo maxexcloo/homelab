@@ -2,7 +2,7 @@ locals {
   # Deterministic computed fields derived from YAML input and ancestor chains.
   # Kept as a focused local so the desired model below can reference them
   # without repeating expressions.
-  servers_model_computed = {
+  _servers_model_computed = {
     for server_key, server in local.servers_input : server_key => {
       fqdn       = server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
       type_icon  = local.defaults.types[server.type].icon
@@ -39,10 +39,10 @@ locals {
   servers_model_desired = {
     for server_key, server in local.servers_input : server_key => merge(
       server,
-      local.servers_model_computed[server_key],
+      local._servers_model_computed[server_key],
       {
-        fqdn_external = "${local.servers_model_computed[server_key].fqdn}.${local.defaults.domains.external}"
-        fqdn_internal = "${local.servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}"
+        fqdn_external = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.external}"
+        fqdn_internal = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}"
         key           = server_key
         slug          = server_key
       }

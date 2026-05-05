@@ -76,9 +76,9 @@ resource "cloudflare_dns_record" "all" {
   comment  = local.defaults.organization.managed_comment
   content  = each.value.content
   name     = each.value.name
-  priority = try(each.value.priority, null)
-  proxied  = try(each.value.proxied, local.defaults_dns.proxied)
-  ttl      = try(each.value.ttl, local.defaults_dns.ttl)
+  priority = each.value.priority
+  proxied  = each.value.proxied
+  ttl      = each.value.ttl
   type     = each.value.type
   zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
 }

@@ -1,4 +1,23 @@
 locals {
+  # Generated bootstrap value per declared service secret. Null when the secret
+  # has no bootstrap_type — those are operator-supplied via 1Password and the
+  # runtime model falls through to an empty placeholder until populated.
+  _services_model_secret_bootstrap = {
+    for entry in flatten([
+      for service_key, service in local.services_input_targets : [
+        for secret in service.features.secrets : {
+          key = "${service_key}-${secret.name}"
+          value = (
+            try(secret.bootstrap_type, null) == "hex" ? random_id.service_secret["${service_key}-${secret.name}"].hex
+            : try(secret.bootstrap_type, null) == "base64" ? random_id.service_secret["${service_key}-${secret.name}"].b64_std
+            : contains(["alphanumeric", "string"], try(secret.bootstrap_type, "")) ? random_password.service_secret["${service_key}-${secret.name}"].result
+            : null
+          )
+        }
+      ]
+    ]) : entry.key => entry.value
+  }
+
   # Desired service model: expanded deployment target data plus deterministic
   # names, URLs, and server FQDNs. Runtime credentials are added separately.
   services_model_desired = {
@@ -19,12 +38,10 @@ locals {
         )
 
         identity = {
-          group = (
-            service.identity.group != null
-            ? service.identity.group
-            : contains(local.servers_input_keys, service.target)
-            ? local.servers_model_desired[service.target].description
-            : "Applications"
+          group = coalesce(
+            service.identity.group,
+            try(local.servers_model_desired[service.target].description, null),
+            "Applications",
           )
         }
 
@@ -65,11 +82,7 @@ locals {
       {
         for secret in service.features.secrets : "${secret.name}_sensitive" => sensitive(try(coalesce(
           try(local.onepassword_service_existing_fields[service_key][secret.name], null),
-          contains(["hex", "base64"], try(secret.bootstrap_type, "")) ? (
-            try(secret.bootstrap_type, "") == "hex"
-            ? random_id.service_secret["${service_key}-${secret.name}"].hex
-            : random_id.service_secret["${service_key}-${secret.name}"].b64_std
-          ) : try(secret.bootstrap_type, null) != null ? random_password.service_secret["${service_key}-${secret.name}"].result : null
+          local._services_model_secret_bootstrap["${service_key}-${secret.name}"],
         ), ""))
       },
       service.features.tailscale ? {
