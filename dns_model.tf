@@ -149,11 +149,12 @@ locals {
   dns_model_records_services = {
     for service_key, service in local.services_model :
     "${local.defaults.domains.external}-${service_key}" => {
-      content = "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
-      name    = service.fqdn_external
-      proxied = true
-      type    = "CNAME"
-      zone    = local.defaults.domains.external
+      content  = "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
+      name     = service.fqdn_external
+      proxied  = true
+      type     = "CNAME"
+      wildcard = false
+      zone     = local.defaults.domains.external
     }
     if contains(local.servers_input_keys, service.target) &&
     local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
@@ -166,11 +167,12 @@ locals {
     for service_key, service in local.fly_input_services : [
       for url_index, url in service.networking.urls : {
         "${service_key}-url-${url_index}" = {
-          content = "${service.fly.app_name}.fly.dev"
-          name    = url
-          proxied = service.networking.expose == "cloudflare"
-          type    = "CNAME"
-          zone    = local.dns_model_zones_urls[url]
+          content  = "${service.fly.app_name}.fly.dev"
+          name     = url
+          proxied  = service.networking.expose == "cloudflare"
+          type     = "CNAME"
+          wildcard = false
+          zone     = local.dns_model_zones_urls[url]
         }
       }
       if local.dns_model_zones_urls[url] != null
@@ -183,10 +185,11 @@ locals {
     for service_key, service in local.services_model : [
       for url_index, url in service.networking.urls : {
         "${service_key}-url-${url_index}" = {
-          name    = url
-          proxied = service.networking.expose == "cloudflare"
-          type    = "CNAME"
-          zone    = local.dns_model_zones_urls[url]
+          name     = url
+          proxied  = service.networking.expose == "cloudflare"
+          type     = "CNAME"
+          wildcard = false
+          zone     = local.dns_model_zones_urls[url]
 
           content = (
             local.servers_model[service.target].features.cloudflare_zero_trust_tunnel

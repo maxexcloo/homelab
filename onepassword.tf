@@ -109,7 +109,7 @@ locals {
             value   = server.identity.username
           }
         ],
-        server.state.secrets.password != null ? [
+        server.features.password ? [
           {
             id      = "password"
             label   = "password_rw"
@@ -177,7 +177,7 @@ locals {
             value   = service.identity.username
           }
         ],
-        service.state.secrets.password != null ? [
+        service.features.password ? [
           {
             id      = "password"
             label   = "password_rw"

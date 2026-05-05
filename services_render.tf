@@ -120,8 +120,12 @@ locals {
       ) : {},
 
       {
-        for label_key, label_value in service.container.labels :
-        label_key => templatestring(tostring(label_value), local._services_render_pre_context[service_key])
+        for label_key, label_value in {
+          for k, v in service.container.labels :
+          k => try(templatestring(tostring(v), local._services_render_pre_context[service_key]), null)
+          if v != null
+        } :
+        label_key => label_value
         if label_value != null
       },
     )
