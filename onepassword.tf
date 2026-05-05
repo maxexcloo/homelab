@@ -75,7 +75,7 @@ locals {
         [
           for url_label, url_value in {
             ssh_internal  = server.state.urls.fqdn_internal
-            ssh_tailscale = server.state.urls.tailscale_hostname
+            ssh_tailscale = server.state.urls.tailscale_address
           } : {
             href  = "ssh://${server.identity.username}@${url_value}"
             label = url_label

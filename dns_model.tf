@@ -122,18 +122,18 @@ locals {
           zone    = local.defaults.domains.external
         }
       } : {},
-      local.servers_state[server_key].urls.tailscale_ipv4 != null ? {
+      local.servers[server_key].state.urls.tailscale_ipv4 != null ? {
         "${local.defaults.domains.internal}-${server_key}-a" = {
-          content = local.servers_state[server_key].urls.tailscale_ipv4
+          content = local.servers[server_key].state.urls.tailscale_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "A"
           zone    = local.defaults.domains.internal
         }
       } : {},
-      local.servers_state[server_key].urls.tailscale_ipv6 != null ? {
+      local.servers[server_key].state.urls.tailscale_ipv6 != null ? {
         "${local.defaults.domains.internal}-${server_key}-aaaa" = {
-          content = local.servers_state[server_key].urls.tailscale_ipv6
+          content = local.servers[server_key].state.urls.tailscale_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "AAAA"

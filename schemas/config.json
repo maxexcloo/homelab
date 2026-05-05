@@ -72,10 +72,6 @@
       "description": "1Password Connect integration settings for storing generated credentials.",
       "type": "object",
       "properties": {
-        "url_field_pattern": {
-          "description": "Regex matching server/service field names to store as 1Password item URLs rather than custom fields (e.g. fields containing IP addresses, FQDNs, or URLs).",
-          "type": "string"
-        },
         "vaults": {
           "additionalProperties": false,
           "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",

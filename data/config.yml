@@ -12,7 +12,6 @@ github:
     komodo: komodo
     truenas: truenas
 onepassword:
-  url_field_pattern: (^fqdn_|^url_|_(ipv[46]|address)$)
   vaults:
     servers:
       id: jfp5upb7y2wmr4hbz7enfpdh5e

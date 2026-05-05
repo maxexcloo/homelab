@@ -5,7 +5,7 @@ locals {
   # address of each family is used for generated internal DNS records.
   tailscale_device_addresses = {
     for device in data.tailscale_devices.all.devices : split(".", device.name)[0] => {
-      hostname = device.name
+      address  = device.name
       id       = try(device.id, null)
       ipv4     = try([for a in device.addresses : a if can(cidrhost("${a}/32", 0))][0], null)
       ipv6     = try([for a in device.addresses : a if can(cidrhost("${a}/128", 0))][0], null)
