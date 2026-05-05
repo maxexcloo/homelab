@@ -186,6 +186,15 @@ locals {
     if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.networking.scheme != null
   }
 
+  # Secret field IDs that 1Password may overwrite (treated as `_rw`). Includes
+  # the password field and every declared custom secret.
+  onepassword_service_read_write_secrets = {
+    for service_key, service in local.onepassword_service_items : service_key => concat(
+      service.features.password ? ["password"] : [],
+      [for secret in service.features.secrets : secret.name],
+    )
+  }
+
   # Non-null state secrets per service. Manually supplied secrets (declared
   # without bootstrap_type) sync even when empty so 1Password gets the
   # placeholder field for the operator to fill in on the first apply.
@@ -200,15 +209,6 @@ locals {
         ], secret_name)
       )
     }
-  }
-
-  # Secret field IDs that 1Password may overwrite (treated as `_rw`). Includes
-  # the password field and every declared custom secret.
-  onepassword_service_read_write_secrets = {
-    for service_key, service in local.onepassword_service_items : service_key => concat(
-      service.features.password ? ["password"] : [],
-      [for secret in service.features.secrets : secret.name],
-    )
   }
 
   # Formatted URL items per service. Scheme follows networking.ssl.

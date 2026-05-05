@@ -4,7 +4,7 @@
 
 Homelab infrastructure managed with OpenTofu (1.10+). YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across multiple providers.
 
-Data flows through two model layers — **desired** (YAML + defaults + deterministic computed fields) and **runtime** (provider-backed values + generated secrets). Consumers select narrower views (public, private, feature-filtered) so dependency chains stay visible.
+Each `server` and `service` is built in two layers: a **model** (input + deterministic computed fields, provider-independent) and a **state** sub-object (provider-backed values + generated secrets, split into `state.fields` / `state.secrets` / `state.urls`). The model is safe to use as `for_each` input for resources; consumers needing runtime data reach into `state.*`. Feature filters are derived from input only, so resource definitions never depend on the resources they create.
 
 ## File Organization
 

@@ -12,7 +12,7 @@
       "type": "object",
       "properties": {
         "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key. Exposes b2_bucket_name, b2_application_key_id, b2_application_key_sensitive and b2_endpoint.",
+          "description": "Provision a Backblaze B2 bucket and application key. Exposes state.fields.{b2_application_key_id, b2_bucket_name, b2_endpoint} and state.secrets.b2_application_key.",
           "type": "boolean"
         },
         "cloud_init": {
@@ -20,7 +20,7 @@
           "type": "boolean"
         },
         "cloudflare_acme_token": {
-          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes cloudflare_acme_token_sensitive for DNS-01 challenge clients.",
+          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes state.secrets.cloudflare_acme_token for DNS-01 challenge clients.",
           "type": "boolean"
         },
         "cloudflare_proxy": {
@@ -28,7 +28,7 @@
           "type": "boolean"
         },
         "cloudflare_zero_trust_tunnel": {
-          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes cloudflare_tunnel_read_token_sensitive, cloudflare_tunnel_id, and cloudflare_tunnel_token_sensitive. Services with networking.expose set to 'cloudflare' route through this tunnel.",
+          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes state.fields.cloudflare_tunnel_id and state.secrets.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with networking.expose set to 'cloudflare' route through this tunnel.",
           "type": "boolean"
         },
         "docker": {
@@ -44,19 +44,19 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random admin password. Exposes password_sensitive and password_hash_sensitive (bcrypt). Stored in 1Password.",
+          "description": "Generate a random admin password. Exposes state.secrets.password and state.secrets.password_hash (bcrypt). Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
-          "description": "Expose the configured Pushover application token and user/group key. Exposes pushover_application_token_sensitive and pushover_user_key_sensitive.",
+          "description": "Expose the configured Pushover application token and user/group key. Exposes state.secrets.pushover_application_token and state.secrets.pushover_user_key.",
           "type": "boolean"
         },
         "resend": {
-          "description": "Provision a Resend API key for outbound email. Exposes resend_api_key_sensitive.",
+          "description": "Provision a Resend API key for outbound email. Exposes state.secrets.resend_api_key.",
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key. Exposes tailscale_auth_key_sensitive for use in cloud-init or startup scripts.",
+          "description": "Generate a Tailscale auth key. Exposes state.secrets.tailscale_auth_key for use in cloud-init or startup scripts.",
           "type": "boolean"
         }
       }

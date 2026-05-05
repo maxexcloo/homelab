@@ -104,11 +104,13 @@ All generated credentials are stored automatically in **1Password** through 1Pas
 - **Servers vault** — one login entry per server; generated fields (passwords, API keys, tunnel tokens) are stored as fields, and IPs/FQDNs are stored as item URLs
 - **Services vault** — one login entry per service deployment with the same pattern, preserving all computed and custom URLs on the login item
 
-Set `onepassword.vaults.servers` and `onepassword.vaults.services` in `data/defaults.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
+Set `onepassword.vaults.servers.id` and `onepassword.vaults.services.id` in `data/config.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
 
-Manually supplied service secrets are declared in `features.secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back from 1Password Connect and exposes them as `{name}_sensitive` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
+Each server and service exposes runtime data through a `state` sub-object split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), and `state.urls` (URL items). Templates reach in via `${server.state.secrets.password}` or `${service.state.fields.b2_bucket_name}` etc. — no `_sensitive` suffix.
 
-Services can access another service's private fields only by declaring an `imports.services` alias. The normal `services` map remains public inventory, and declared private imports are overlaid by alias as `services.<alias>`.
+Manually supplied service secrets are declared in `features.secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back and exposes them as `service.state.secrets.{name}` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
+
+Services can access another service's full data (including secrets) only by declaring an `imports.services` alias. The normal `services` map remains the inventory, and declared imports are overlaid by alias as `services.<alias>`.
 
 Rendered sidecar files named `*.raw.tftpl` are templated, encrypted as binary, and deployed without the `.raw` segment. Use this for files where SOPS structured YAML/JSON encryption is unsuitable, such as top-level YAML arrays.
 

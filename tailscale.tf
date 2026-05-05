@@ -1,6 +1,14 @@
 data "tailscale_devices" "all" {}
 
 locals {
+  # Tags allowed to auto-approve exit nodes and subnet routes. Excludes
+  # appliance, cicd, and ephemeral because those nodes should not become
+  # subnet routers or exit nodes.
+  tailscale_approver_tags = toset([
+    for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
+    if !contains(["appliance", "cicd", "ephemeral"], type_key)
+  ])
+
   # Device names are matched back to server slugs; only the first IPv4/IPv6
   # address of each family is used for generated internal DNS records.
   tailscale_device_addresses = {
@@ -10,14 +18,6 @@ locals {
       ipv6 = try([for a in device.addresses : a if can(cidrhost("${a}/128", 0))][0], null)
     }
   }
-
-  # Tags allowed to auto-approve exit nodes and subnet routes. Excludes
-  # appliance, cicd, and ephemeral because those nodes should not become
-  # subnet routers or exit nodes.
-  tailscale_approver_tags = toset([
-    for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
-    if !contains(["appliance", "cicd", "ephemeral"], type_key)
-  ])
 
   # Full tag set used for ACL ownership declarations.
   tailscale_tags = toset([
