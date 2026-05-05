@@ -98,7 +98,7 @@ resource "tailscale_acl" "default" {
       }
     ]
 
-    # Exit nodes and subnet routes: routers, servers, and VMs may optionally advertise
+    # Exit nodes and subnet routes: routers, servers, and VMs may optionally advertise routes
     autoApprovers = {
       exitNode = tolist(local.tailscale_tags_approvers)
       routes = {

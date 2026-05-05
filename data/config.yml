@@ -11,16 +11,6 @@ github:
     fly: fly
     komodo: komodo
     truenas: truenas
-onepassword:
-  vaults:
-    servers:
-      id: jfp5upb7y2wmr4hbz7enfpdh5e
-      tags:
-        - Homelab
-    services:
-      id: vjxx2dvl7ukvsqcic3bboeazbi
-      tags:
-        - Homelab
 groups:
   Applications:
     columns: 4
@@ -37,6 +27,16 @@ networking:
     lan: 10.0.0.0/23
     localhost: 127.0.0.1/32
     tailscale: 100.64.0.0/10
+onepassword:
+  vaults:
+    servers:
+      id: jfp5upb7y2wmr4hbz7enfpdh5e
+      tags:
+        - Homelab
+    services:
+      id: vjxx2dvl7ukvsqcic3bboeazbi
+      tags:
+        - Homelab
 organization:
   email: max@excloo.com
   managed_comment: OpenTofu Managed

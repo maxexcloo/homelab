@@ -67,58 +67,6 @@
         }
       }
     },
-    "onepassword": {
-      "additionalProperties": false,
-      "description": "1Password Connect integration settings for storing generated credentials.",
-      "type": "object",
-      "properties": {
-        "vaults": {
-          "additionalProperties": false,
-          "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",
-          "type": "object",
-          "properties": {
-            "servers": {
-              "additionalProperties": false,
-              "description": "Vault for server credentials.",
-              "required": ["id"],
-              "type": "object",
-              "properties": {
-                "id": {
-                  "description": "Vault UUID for server credentials.",
-                  "type": "string"
-                },
-                "tags": {
-                  "description": "Tags applied to server items.",
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            },
-            "services": {
-              "additionalProperties": false,
-              "description": "Vault for service credentials.",
-              "required": ["id"],
-              "type": "object",
-              "properties": {
-                "id": {
-                  "description": "Vault UUID for service credentials.",
-                  "type": "string"
-                },
-                "tags": {
-                  "description": "Tags applied to service items.",
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "groups": {
       "additionalProperties": {
         "additionalProperties": false,
@@ -166,6 +114,58 @@
             "tailscale": {
               "description": "Tailscale CGNAT CIDR (e.g. '100.64.0.0/10').",
               "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "onepassword": {
+      "additionalProperties": false,
+      "description": "1Password Connect integration settings for storing generated credentials.",
+      "type": "object",
+      "properties": {
+        "vaults": {
+          "additionalProperties": false,
+          "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",
+          "type": "object",
+          "properties": {
+            "servers": {
+              "additionalProperties": false,
+              "description": "Vault for server credentials.",
+              "required": ["id"],
+              "type": "object",
+              "properties": {
+                "id": {
+                  "description": "Vault UUID for server credentials.",
+                  "type": "string"
+                },
+                "tags": {
+                  "description": "Tags applied to server items.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "services": {
+              "additionalProperties": false,
+              "description": "Vault for service credentials.",
+              "required": ["id"],
+              "type": "object",
+              "properties": {
+                "id": {
+                  "description": "Vault UUID for service credentials.",
+                  "type": "string"
+                },
+                "tags": {
+                  "description": "Tags applied to service items.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         }

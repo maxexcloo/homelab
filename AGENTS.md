@@ -46,7 +46,7 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - **Locals — naming and ordering**:
   - `snake_case` for all resources, locals, and variables
   - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_files_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
-  - **Helpers** (locals consumed only inside their defining file) are prefixed with `_` so they sort to the top of the `locals {}` block, ahead of the public locals other files depend on
+  - **Helpers** (locals consumed only inside their defining staged file) are prefixed with `_` so they sort to the top of the `locals {}` block, ahead of the public locals other files depend on. Per-provider files (`unifi.tf`, `github.tf`, `b2.tf`, …) don't follow the `{domain}_{layer}_{noun}` shape and don't use the `_` prefix — all locals there sort purely alphabetically regardless of scope
   - The single concrete output of a stage drops the qualifier: `services_render_context` instead of `..._final` or `..._merged`
 - **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies to map/object expressions inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes — consistency outweighs the small extra height.
 - **Runtime state shape**: Provider-backed and feature-gated values live under a `state` sub-object on each `server` / `service`, split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), `state.urls` (URL entries). Templates and consumers reach in via the typed sub-object instead of suffix conventions.

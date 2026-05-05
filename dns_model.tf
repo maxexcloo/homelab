@@ -30,7 +30,9 @@ locals {
   }
 
   # Delegate ACME challenges for managed server and server-hosted service
-  # hostnames back to the dedicated ACME zone.
+  # hostnames back to the dedicated ACME zone. Fly services are intentionally
+  # excluded: Fly provisions TLS certificates via its own ACME implementation
+  # and does not need external DNS-01 challenge delegation.
   dns_model_records_acme_delegation = {
     for record in distinct([
       for source_record in concat(

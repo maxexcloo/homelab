@@ -169,10 +169,7 @@ resource "oci_core_instance" "server" {
   availability_domain = data.oci_identity_availability_domain.default[each.value.identity.region].name
   compartment_id      = var.oci_tenancy_ocid
   display_name        = each.key
-  metadata = {
-    user_data = base64encode(local.cloud_config[each.key])
-  }
-  shape = each.value.platform_config.oci.shape
+  shape               = each.value.platform_config.oci.shape
 
   create_vnic_details {
     assign_ipv6ip             = true
@@ -184,6 +181,16 @@ resource "oci_core_instance" "server" {
     subnet_id                 = oci_core_subnet.default[each.value.identity.region].id
   }
 
+  lifecycle {
+    ignore_changes = [
+      metadata
+    ]
+  }
+
+  metadata = {
+    user_data = base64encode(local.cloud_config[each.key])
+  }
+
   shape_config {
     memory_in_gbs = each.value.platform_config.oci.memory
     ocpus         = each.value.platform_config.oci.cpus
@@ -193,12 +200,6 @@ resource "oci_core_instance" "server" {
     boot_volume_size_in_gbs = each.value.platform_config.oci.disk_size
     source_id               = each.value.platform_config.oci.image_id
     source_type             = "image"
-  }
-
-  lifecycle {
-    ignore_changes = [
-      metadata
-    ]
   }
 }
 
