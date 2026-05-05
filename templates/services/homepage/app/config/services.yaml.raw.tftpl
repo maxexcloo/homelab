@@ -1,6 +1,6 @@
 %{~ for group in sort(distinct([
   for candidate in values(services) : candidate.labels["homepage.group"]
-  if candidate.target != service.target
+  if candidate.key != service.key
   && lookup(candidate.labels, "homepage.group", "") != ""
   && lookup(candidate.labels, "homepage.name", "") != ""
   && !contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
@@ -13,7 +13,7 @@
         lower(lookup(candidate.labels, "homepage.name", "")),
         candidate_key,
       ])
-      if candidate.target != service.target
+      if candidate.key != service.key
       && lookup(candidate.labels, "homepage.group", "") == group
       && lookup(candidate.labels, "homepage.name", "") != ""
     ]) : split("|", service_sort_key)[2]
@@ -64,7 +64,7 @@
 %{~ endfor ~}
 %{~ for group in sort(distinct([
   for candidate in values(services) : candidate.labels["homepage.group"]
-  if candidate.target != service.target
+  if candidate.key != service.key
   && lookup(candidate.labels, "homepage.group", "") != ""
   && lookup(candidate.labels, "homepage.name", "") != ""
   && contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
@@ -77,7 +77,7 @@
         lower(lookup(candidate.labels, "homepage.name", "")),
         candidate_key,
       ])
-      if candidate.target != service.target
+      if candidate.key != service.key
       && lookup(candidate.labels, "homepage.group", "") == group
       && lookup(candidate.labels, "homepage.name", "") != ""
     ]) : split("|", service_sort_key)[2]
