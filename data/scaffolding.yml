@@ -1,13 +1,10 @@
 # yaml-language-server: $schema=../schemas/scaffolding.json
 # Placeholder fields kept in `local.defaults` so:
-#   1. servers/services models can reference these keys without try()
-#   2. their names sit in keys(defaults_server) / keys(defaults_service),
-#      which the 1Password field filter uses to exclude computed and runtime
-#      fields from the rendered field list (see onepassword.tf).
-servers:
-  key: null
-  password_hash_sensitive: null
-  password_sensitive: null
+#   1. service models can reference these keys without try()
+#   2. their names sit in keys(defaults_service), which the 1Password field
+#      filter uses to exclude computed and runtime fields from the rendered
+#      field list (see onepassword.tf).
+# Server scaffolding is gone — server runtime data lives under server.state.
 services:
   deploy_to: []
   fqdn_external: null

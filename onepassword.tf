@@ -1,6 +1,8 @@
 locals {
   # 1Password fields store scalar values only. Field labels end in _rw when
-  # 1Password can become source of truth, and _ro when OpenTofu remains source.
+  # 1Password can become source of truth (only `password` for now), and _ro
+  # when OpenTofu remains source.
+
   onepassword_server_existing_fields = {
     for server_key, item in data.http.onepassword_server_item : server_key => {
       for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
@@ -8,17 +10,11 @@ locals {
     }
   }
 
+  # Non-null state fields per server, ready for 1Password STRING entries.
   onepassword_server_fields = {
     for server_key, server in local.servers : server_key => {
-      for field_name, field_value in server : field_name => field_value
-      if(
-        field_value != null &&
-        field_value != "" &&
-        field_value != false &&
-        !can(regex(local.defaults.onepassword.url_field_pattern, field_name)) &&
-        !contains(keys(local.defaults_server), field_name) &&
-        can(tostring(field_value))
-      )
+      for field_name, field_value in server.state.fields : field_name => field_value
+      if field_value != null && field_value != ""
     }
   }
 
@@ -27,7 +23,7 @@ locals {
   }
 
   onepassword_server_item_payloads = {
-    for server_key, server in local.servers_model : server_key => {
+    for server_key, server in local.servers : server_key => {
       category = "LOGIN"
       tags     = local.defaults.onepassword.vaults.servers.tags
       title    = server_key
@@ -38,31 +34,40 @@ locals {
             id      = "username"
             label   = "username_ro"
             purpose = "USERNAME"
-            value   = local.servers[server_key].identity.username
+            value   = server.identity.username
           }
         ],
-        local.servers[server_key].password_sensitive != null ? [
+        server.state.secrets.password != null ? [
           {
             id      = "password"
             label   = "password_rw"
             purpose = "PASSWORD"
-            value   = local.servers[server_key].password_sensitive
+            value   = server.state.secrets.password
           }
         ] : [],
         [
           for field_name, field_value in local.onepassword_server_fields[server_key] : {
-            id    = trimsuffix(field_name, "_sensitive")
-            label = "${trimsuffix(field_name, "_sensitive")}_${contains(local.onepassword_server_read_write_fields[server_key], trimsuffix(field_name, "_sensitive")) ? "rw" : "ro"}"
-            type  = endswith(field_name, "_sensitive") ? "CONCEALED" : "STRING"
+            id    = field_name
+            label = "${field_name}_ro"
+            type  = "STRING"
             value = tostring(field_value)
           }
-        ]
+        ],
+        [
+          for field_name, field_value in local.onepassword_server_secrets[server_key] : {
+            id    = field_name
+            label = "${field_name}_ro"
+            type  = "CONCEALED"
+            value = tostring(field_value)
+          }
+          if field_name != "password"
+        ],
       )
 
       urls = [
-        for url_index, url_field in sort(keys(local.onepassword_server_urls[server_key])) : {
-          href    = local.onepassword_server_urls[server_key][url_field]
-          label   = url_field
+        for url_index, url_label in sort(keys(local.onepassword_server_urls[server_key])) : {
+          href    = local.onepassword_server_urls[server_key][url_label]
+          label   = url_label
           primary = url_index == 0
         }
       ]
@@ -72,30 +77,25 @@ locals {
     }
   }
 
-  onepassword_server_read_write_fields = {
-    for server_key, server in local.servers_model : server_key => compact([
-      server.features.password ? "password" : null
-    ])
+  # Non-null state secrets per server, ready for 1Password CONCEALED entries.
+  onepassword_server_secrets = {
+    for server_key, server in local.servers : server_key => {
+      for secret_name, secret_value in server.state.secrets : secret_name => secret_value
+      if secret_value != null && secret_value != ""
+    }
   }
 
+  # Formatted URL items per server. Bare addresses from state.urls become
+  # https://<host>[:<port>] — IPv6 gets brackets, port appended when not 443.
   onepassword_server_urls = {
-    for server_key, server in local.servers : server_key => merge(
-      {
-        for field_name, field_value in server : field_name => format(
-          "https://%s%s",
-          can(cidrhost("${field_value}/128", 0)) ? "[${field_value}]" : field_value,
-          server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
-        )
-        if field_value != null && field_value != "" && field_value != false && can(regex(local.defaults.onepassword.url_field_pattern, field_name)) && can(tostring(field_value))
-      },
-      server.networking.management_address != "" ? {
-        management_address = format(
-          "https://%s%s",
-          can(cidrhost("${server.networking.management_address}/128", 0)) ? "[${server.networking.management_address}]" : server.networking.management_address,
-          server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
-        )
-      } : {}
-    )
+    for server_key, server in local.servers : server_key => {
+      for url_label, url_value in server.state.urls : url_label => format(
+        "https://%s%s",
+        can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
+        server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
+      )
+      if url_value != null && url_value != ""
+    }
   }
 
   onepassword_service_existing_fields = {

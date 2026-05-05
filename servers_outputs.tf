@@ -1,9 +1,9 @@
 locals {
-  # Consolidated server view: model fields plus runtime state.
+  # Consolidated server view: model fields plus runtime state under `state`.
   servers = {
     for server_key, server in local.servers_model : server_key => merge(
       server,
-      local.servers_state[server_key],
+      { state = local.servers_state[server_key] },
     )
   }
 

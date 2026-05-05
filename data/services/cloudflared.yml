@@ -9,9 +9,9 @@ identity:
 platform_config:
   docker:
     labels:
-      homepage.href: https://dash.cloudflare.com/${server.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.cloudflare_tunnel_id}/edit?tab=overview
+      homepage.href: https://dash.cloudflare.com/${server.state.fields.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.state.fields.cloudflare_tunnel_id}/edit?tab=overview
       homepage.icon: cloudflare
-      homepage.widget.accountid: ${server.cloudflare_account_id}
-      homepage.widget.key: ${server.cloudflare_tunnel_read_token_sensitive}
-      homepage.widget.tunnelid: ${server.cloudflare_tunnel_id}
+      homepage.widget.accountid: ${server.state.fields.cloudflare_account_id}
+      homepage.widget.key: ${server.state.secrets.cloudflare_tunnel_read_token}
+      homepage.widget.tunnelid: ${server.state.fields.cloudflare_tunnel_id}
       homepage.widget.type: ${service.identity.service}

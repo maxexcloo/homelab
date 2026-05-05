@@ -12,7 +12,7 @@ identity:
 platform_config:
   docker:
     labels:
-      homepage.href: https://login.tailscale.com/admin/machines/${server.tailscale_ipv4}
-      homepage.widget.deviceid: ${server.tailscale_device_id}
+      homepage.href: https://login.tailscale.com/admin/machines/${server.state.urls.tailscale_ipv4}
+      homepage.widget.deviceid: ${server.state.fields.tailscale_device_id}
       homepage.widget.key: ${service.homepage_widget_key_sensitive}
       homepage.widget.type: ${service.identity.service}

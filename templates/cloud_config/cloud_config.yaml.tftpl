@@ -19,20 +19,20 @@ runcmd:
   %{~ endif ~}
   %{~ if server.features.cloudflare_zero_trust_tunnel ~}
   - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
-  - cloudflared service install ${server.cloudflare_tunnel_token_sensitive}
+  - cloudflared service install ${server.state.secrets.cloudflare_tunnel_token}
   %{~ endif ~}
   %{~ if server.features.tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
-  - tailscale up --advertise-exit-node --authkey ${server.tailscale_auth_key_sensitive} --hostname ${server.slug}
+  - tailscale up --advertise-exit-node --authkey ${server.state.secrets.tailscale_auth_key} --hostname ${server.key}
   %{~ endif ~}
 users:
   - name: ${server.identity.username}
-    %{~ if server.password_hash_sensitive != null ~}
-    hashed_passwd: ${server.password_hash_sensitive}
+    %{~ if server.state.secrets.password_hash != null ~}
+    hashed_passwd: ${server.state.secrets.password_hash}
     %{~ endif ~}
     lock_passwd: false
     shell: ${defaults.system.shell}
-    ssh_authorized_keys: ${jsonencode(server.ssh_keys)}
+    ssh_authorized_keys: ${jsonencode(server.state.ssh_keys)}
     groups:
       %{~ if server.features.docker ~}
       - docker

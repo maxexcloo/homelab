@@ -16,9 +16,9 @@
       "accept_dns": true,
       "accept_routes": false,
       "advertise_exit_node": true,
-      "auth_key": "${server.tailscale_auth_key_sensitive}",
+      "auth_key": "${server.state.secrets.tailscale_auth_key}",
       "auth_once": true,
-      "hostname": "${server.slug}",
+      "hostname": "${server.key}",
       "reset": false,
       "userspace": false
     }
