@@ -123,6 +123,57 @@
         }
       }
     },
+    "groups": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "description": "Layout settings for a single Homepage service group.",
+        "properties": {
+          "columns": {
+            "description": "Column count in the Homepage layout (2 or 4).",
+            "enum": [2, 4],
+            "type": "integer"
+          },
+          "style": {
+            "description": "Card layout direction for this group (row or column).",
+            "enum": ["column", "row"],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "description": "Homepage layout settings keyed by group name. Groups not listed use 2 columns.",
+      "type": "object"
+    },
+    "networking": {
+      "additionalProperties": false,
+      "description": "Network CIDR ranges referenced by services for IP allowlist middleware.",
+      "type": "object",
+      "properties": {
+        "cidrs": {
+          "additionalProperties": false,
+          "description": "Named CIDR blocks used in Traefik IP allowlist middleware labels.",
+          "type": "object",
+          "properties": {
+            "docker": {
+              "description": "Docker bridge network CIDR (e.g. '172.16.0.0/12').",
+              "type": "string"
+            },
+            "lan": {
+              "description": "Local area network CIDR (e.g. '10.0.0.0/23').",
+              "type": "string"
+            },
+            "localhost": {
+              "description": "Loopback CIDR (e.g. '127.0.0.1/32').",
+              "type": "string"
+            },
+            "tailscale": {
+              "description": "Tailscale CGNAT CIDR (e.g. '100.64.0.0/10').",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "organization": {
       "additionalProperties": false,
       "description": "Organisation-level metadata used across resources.",

@@ -15,10 +15,17 @@ services:
       - --entrypoints.websecure.http.tls.domains[0].sans=*.${server.fqdn_internal}
       - --providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.compose.project" | trimPrefix "ix-"}}.${server.fqdn_internal}`)
       - --providers.docker.exposedbydefault=false
+      - --ping=true
       - --providers.docker=true
       - --serverstransport.insecureskipverify=true
     environment:
       CF_DNS_API_TOKEN: ${server.state.secrets.cloudflare_acme_token}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      timeout: 5s
     image: traefik:v3.6.15
     labels:
       ${labels_yaml}

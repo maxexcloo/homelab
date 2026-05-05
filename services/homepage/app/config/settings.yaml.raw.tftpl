@@ -1,17 +1,29 @@
 headerStyle: clean
 title: ${service.identity.title}
+useEqualHeights: true
 layout:
 %{~ for group in sort(distinct([
   for svc_key, svc in services : svc.labels["homepage.group"]
-  if svc.target != service.target && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != ""
+  if svc.target != service.target && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != "" && !contains([for srv in values(servers) : srv.description], svc.labels["homepage.group"])
+])) }
+  ${group}:
+    columns: ${try(defaults.groups[group].columns, 2)}
+    style: ${try(defaults.groups[group].style, "row")}
+    tab: Services
+%{ endfor ~}
+  Providers:
+    tab: Services
+%{~ for group in sort(distinct([
+  for srv in values(servers) : srv.type_label
 ])) }
   ${group}:
     columns: 2
     style: row
-    tab: ${contains([for srv in values(servers) : srv.description], group) ? "Servers" : "Services"}
+    tab: Servers
 %{ endfor ~}
 %{~ for group in sort(distinct([
-  for srv in values(servers) : srv.type_label
+  for svc_key, svc in services : svc.labels["homepage.group"]
+  if svc.target != service.target && lookup(svc.labels, "homepage.group", "") != "" && lookup(svc.labels, "homepage.name", "") != "" && contains([for srv in values(servers) : srv.description], svc.labels["homepage.group"])
 ])) }
   ${group}:
     columns: 2

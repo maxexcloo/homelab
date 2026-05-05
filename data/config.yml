@@ -22,6 +22,19 @@ onepassword:
       id: vjxx2dvl7ukvsqcic3bboeazbi
       tags:
         - Homelab
+groups:
+  Applications:
+    columns: 4
+  Infrastructure:
+    columns: 2
+  Media:
+    columns: 4
+networking:
+  cidrs:
+    docker: 172.16.0.0/12
+    lan: 10.0.0.0/23
+    localhost: 127.0.0.1/32
+    tailscale: 100.64.0.0/10
 organization:
   email: max@excloo.com
   managed_comment: OpenTofu Managed
