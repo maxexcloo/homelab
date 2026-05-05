@@ -40,10 +40,12 @@ Server and service data is modeled in two layers: desired values from YAML/defau
 
 ```
 data/
-├── defaults.yml        # Global defaults and base schemas
 ├── dns/*.yml           # DNS zones and manual records
 ├── servers/*.yml       # Server definitions
-└── services/*.yml      # Service deployments
+├── services/*.yml      # Service deployments
+├── config.yml          # Global configuration (domains, accounts, system, types)
+├── defaults.yml        # Field defaults merged into every server/service/DNS record
+└── scaffolding.yml     # Placeholder fields for computed/runtime values
     │
     ▼
 OpenTofu

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "description": "Placeholder fields kept in local.defaults so server/service models can reference computed and runtime field names without try() and so the 1Password field filter excludes them. Values are intentionally null/empty.",
+  "title": "Scaffolding",
+  "type": "object",
+  "properties": {
+    "servers": {
+      "description": "Placeholder server fields populated at runtime (model layer or generated secrets).",
+      "type": "object"
+    },
+    "services": {
+      "description": "Placeholder service fields populated at runtime (model layer, target expansion, or generated secrets).",
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=../schemas/config.json
+cloudflare:
+  account_name: excloo
+domains:
+  acme: 043847.xyz
+  external: excloo.net
+  internal: excloo.dev
+github:
+  owner: excloo
+  repositories:
+    fly: fly
+    komodo: komodo
+    truenas: truenas
+onepassword:
+  url_field_pattern: (^fqdn_|^url_|_(ipv[46]|address)$)
+  vaults:
+    servers:
+      id: jfp5upb7y2wmr4hbz7enfpdh5e
+      tags:
+        - Homelab
+    services:
+      id: vjxx2dvl7ukvsqcic3bboeazbi
+      tags:
+        - Homelab
+organization:
+  email: max@excloo.com
+  managed_comment: OpenTofu Managed
+  name: excloo
+resend:
+  host: smtp.resend.com
+  port: 465
+  username: resend
+system:
+  locale: en_AU
+  shell: /bin/bash
+  timezone: Australia/Sydney
+tailscale:
+  admin_identities:
+    - max@excloo.com
+    - maxexcloo@passkey
+types:
+  appliance:
+    icon: devices
+    label: Appliances
+    tailscale_tag: appliance
+  cicd:
+    icon: server
+    label: CI/CD
+    tailscale_tag: cicd
+  ephemeral:
+    icon: server
+    label: Ephemeral
+    tailscale_tag: ephemeral
+  router:
+    icon: router-network
+    label: Routers
+    tailscale_tag: router
+  server:
+    icon: server
+    label: Servers
+    tailscale_tag: server
+  vm:
+    icon: server
+    label: VMs
+    tailscale_tag: vm

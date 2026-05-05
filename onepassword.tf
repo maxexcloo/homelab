@@ -29,7 +29,7 @@ locals {
   onepassword_server_item_payloads = {
     for server_key, server in local.servers_model_desired : server_key => {
       category = "LOGIN"
-      tags     = local.defaults.onepassword.tags.servers
+      tags     = local.defaults.onepassword.vaults.servers.tags
       title    = server_key
 
       fields = concat(
@@ -67,7 +67,7 @@ locals {
         }
       ]
       vault = {
-        id = local.defaults.onepassword.vaults.servers
+        id = local.defaults.onepassword.vaults.servers.id
       }
     }
   }
@@ -131,7 +131,7 @@ locals {
   onepassword_service_item_payloads = {
     for service_key, service in local.onepassword_service_items : service_key => {
       category = "LOGIN"
-      tags     = local.defaults.onepassword.tags.services
+      tags     = local.defaults.onepassword.vaults.services.tags
       title    = local.onepassword_service_item_titles[service_key]
 
       fields = concat(
@@ -169,7 +169,7 @@ locals {
         }
       ]
       vault = {
-        id = local.defaults.onepassword.vaults.services
+        id = local.defaults.onepassword.vaults.services.id
       }
     }
   }
@@ -214,9 +214,9 @@ resource "restapi_object" "onepassword_server" {
 
   id_attribute            = "id"
   ignore_server_additions = true
-  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.servers}/items"
+  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items"
   provider                = restapi.onepassword
-  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.servers}/items/{id}"
+  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/{id}"
   update_data             = sensitive(jsonencode(merge(local.onepassword_server_item_payloads[each.key], { id = local.onepassword_server_item_ids[each.key] })))
 
   data = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
@@ -227,9 +227,9 @@ resource "restapi_object" "onepassword_service" {
 
   id_attribute            = "id"
   ignore_server_additions = true
-  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.services}/items"
+  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items"
   provider                = restapi.onepassword
-  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.services}/items/{id}"
+  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/{id}"
   update_data             = sensitive(jsonencode(merge(local.onepassword_service_item_payloads[each.key], { id = local.onepassword_service_item_ids[each.key] })))
 
   data = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
@@ -241,7 +241,7 @@ data "http" "onepassword_server_item" {
     if item_id != null
   }
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers}/items/${each.value}"
+  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/${each.value}"
 
   request_headers = {
     "Authorization" = "Bearer ${var.onepassword_connect_token}"
@@ -252,7 +252,7 @@ data "http" "onepassword_server_item" {
 data "http" "onepassword_server_search" {
   for_each = local.servers_model_desired
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers}/items?filter=${urlencode("title eq \"${each.key}\"")}"
+  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items?filter=${urlencode("title eq \"${each.key}\"")}"
 
   request_headers = {
     "Authorization" = "Bearer ${var.onepassword_connect_token}"
@@ -266,7 +266,7 @@ data "http" "onepassword_service_item" {
     if item_id != null
   }
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services}/items/${each.value}"
+  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/${each.value}"
 
   request_headers = {
     "Authorization" = "Bearer ${var.onepassword_connect_token}"
@@ -277,7 +277,7 @@ data "http" "onepassword_service_item" {
 data "http" "onepassword_service_search" {
   for_each = local.onepassword_service_items
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services}/items?filter=${urlencode("title eq \"${local.onepassword_service_item_titles[each.key]}\"")}"
+  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${local.onepassword_service_item_titles[each.key]}\"")}"
 
   request_headers = {
     "Authorization" = "Bearer ${var.onepassword_connect_token}"

@@ -1,44 +1,11 @@
 # yaml-language-server: $schema=../schemas/defaults.json
-cloudflare:
-  account_name: excloo
 dns:
   priority: null
   proxied: false
   ttl: 1
   wildcard: false
-domains:
-  acme: 043847.xyz
-  external: excloo.net
-  internal: excloo.dev
-github:
-  owner: excloo
-  repositories:
-    fly: fly
-    komodo: komodo
-    truenas: truenas
-onepassword:
-  url_field_pattern: (^fqdn_|^url_|_(ipv[46]|address)$)
-  tags:
-    servers:
-      - Homelab
-    services:
-      - Homelab
-  vaults:
-    servers: jfp5upb7y2wmr4hbz7enfpdh5e
-    services: vjxx2dvl7ukvsqcic3bboeazbi
-organization:
-  email: max@excloo.com
-  managed_comment: OpenTofu Managed
-  name: excloo
-resend:
-  host: smtp.resend.com
-  port: 465
-  username: resend
 servers:
-  key: null
   parent: ""
-  password_hash_sensitive: null
-  password_sensitive: null
   features:
     b2: false
     cloud_init: false
@@ -92,13 +59,6 @@ servers:
         - 80
         - 443
 services:
-  deploy_to: []
-  fqdn_external: null
-  fqdn_internal: null
-  key: null
-  password_hash_sensitive: null
-  password_sensitive: null
-  target: null
   features:
     b2: false
     monitoring: true
@@ -140,36 +100,3 @@ services:
       containers: []
       port_key: web_port
       train: community
-system:
-  locale: en_AU
-  shell: /bin/bash
-  timezone: Australia/Sydney
-tailscale:
-  admin_identities:
-    - max@excloo.com
-    - maxexcloo@passkey
-types:
-  appliance:
-    icon: devices
-    label: Appliances
-    tailscale_tag: appliance
-  cicd:
-    icon: server
-    label: CI/CD
-    tailscale_tag: cicd
-  ephemeral:
-    icon: server
-    label: Ephemeral
-    tailscale_tag: ephemeral
-  router:
-    icon: router-network
-    label: Routers
-    tailscale_tag: router
-  server:
-    icon: server
-    label: Servers
-    tailscale_tag: server
-  vm:
-    icon: server
-    label: VMs
-    tailscale_tag: vm

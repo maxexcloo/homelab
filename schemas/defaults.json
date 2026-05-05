@@ -1,22 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
-  "description": "Global configuration and default values merged into all server and service definitions.",
-  "required": ["organization", "domains", "system"],
+  "description": "Default field values deep-merged into every server, service, and DNS record before processing. Loaded into local.defaults alongside data/config.yml and data/scaffolding.yml.",
   "title": "Defaults",
   "type": "object",
   "properties": {
-    "cloudflare": {
-      "additionalProperties": false,
-      "description": "Cloudflare account settings used for account-scoped resources.",
-      "type": "object",
-      "properties": {
-        "account_name": {
-          "description": "Cloudflare account name to look up for account-scoped resources.",
-          "type": "string"
-        }
-      }
-    },
     "dns": {
       "additionalProperties": false,
       "description": "Default values merged into all auto-generated DNS records. Individual records may override these.",
@@ -40,142 +28,6 @@
         }
       }
     },
-    "domains": {
-      "additionalProperties": false,
-      "description": "Domain names used to construct server and service FQDNs.",
-      "required": ["acme", "external", "internal"],
-      "type": "object",
-      "properties": {
-        "acme": {
-          "description": "Domain used for DNS-01 ACME challenge delegation. _acme-challenge CNAMEs on the external and internal domains point here, allowing a single token to issue certificates for all hostnames.",
-          "type": "string"
-        },
-        "external": {
-          "description": "Public-facing domain. Server FQDNs are {name}.{region}.{external}; service FQDNs are {service}.{server_fqdn}.",
-          "type": "string"
-        },
-        "internal": {
-          "description": "Internal Tailscale domain. Used for private service access via Tailscale IPs.",
-          "type": "string"
-        }
-      }
-    },
-    "github": {
-      "additionalProperties": false,
-      "description": "GitHub organisation and repository names used to push encrypted configuration files.",
-      "type": "object",
-      "properties": {
-        "owner": {
-          "description": "GitHub organisation or user that owns the deployment repositories.",
-          "type": "string"
-        },
-        "repositories": {
-          "additionalProperties": false,
-          "description": "Names of the repositories that store deployment configurations for each platform.",
-          "type": "object",
-          "properties": {
-            "fly": {
-              "description": "Repository for Fly.io service configs (fly.toml, .env, service templates). A GitHub Actions workflow deploys from here.",
-              "type": "string"
-            },
-            "komodo": {
-              "description": "Repository for Komodo ResourceSync configs (stacks.toml, servers.toml, compose files). Komodo polls this repo.",
-              "type": "string"
-            },
-            "truenas": {
-              "description": "Repository for TrueNAS service configs (compose.json, app.json, service config files). A GitHub Actions workflow applies these.",
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    "onepassword": {
-      "additionalProperties": false,
-      "description": "1Password Connect integration settings for storing generated credentials.",
-      "type": "object",
-      "properties": {
-        "tags": {
-          "additionalProperties": false,
-          "description": "Tags assigned to generated 1Password items.",
-          "type": "object",
-          "properties": {
-            "servers": {
-              "description": "Tags for server credentials.",
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "services": {
-              "description": "Tags for service credentials.",
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "url_field_pattern": {
-          "description": "Regex matching server/service field names to store as 1Password item URLs rather than custom fields (e.g. fields containing IP addresses, FQDNs, or URLs).",
-          "type": "string"
-        },
-        "vaults": {
-          "additionalProperties": false,
-          "description": "1Password vault UUIDs for generated credentials.",
-          "type": "object",
-          "properties": {
-            "servers": {
-              "description": "Vault UUID for server credentials.",
-              "type": "string"
-            },
-            "services": {
-              "description": "Vault UUID for service credentials.",
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    "organization": {
-      "additionalProperties": false,
-      "description": "Organisation-level metadata used across resources.",
-      "required": ["name", "email"],
-      "type": "object",
-      "properties": {
-        "email": {
-          "description": "Primary contact email address. Used as the sender and recipient for alert emails (e.g. Gatus notifications via Resend).",
-          "type": "string"
-        },
-        "managed_comment": {
-          "description": "Comment string attached to all Cloudflare DNS records to indicate they are managed by OpenTofu.",
-          "type": "string"
-        },
-        "name": {
-          "description": "Organisation short name used in resource display names and identifiers.",
-          "type": "string"
-        }
-      }
-    },
-    "resend": {
-      "additionalProperties": false,
-      "description": "SMTP settings for the Resend email relay used by services that send alerts or notifications.",
-      "type": "object",
-      "properties": {
-        "host": {
-          "description": "SMTP server hostname (e.g. 'smtp.resend.com').",
-          "type": "string"
-        },
-        "port": {
-          "description": "SMTP port (e.g. 465 for implicit TLS, 587 for STARTTLS).",
-          "type": "integer"
-        },
-        "username": {
-          "description": "SMTP username. Resend uses 'resend' as the fixed username; the API key is the password.",
-          "type": "string"
-        }
-      }
-    },
     "servers": {
       "description": "Default field values deep-merged into every server definition before processing. Keys mirror the server schema.",
       "type": "object"
@@ -183,53 +35,6 @@
     "services": {
       "description": "Default field values deep-merged into every service definition before processing. Keys mirror the service schema.",
       "type": "object"
-    },
-    "system": {
-      "additionalProperties": false,
-      "description": "Default OS-level settings injected into cloud-init for provisioned servers.",
-      "type": "object",
-      "properties": {
-        "locale": {
-          "description": "System locale (e.g. 'en_AU').",
-          "type": "string"
-        },
-        "shell": {
-          "description": "Default login shell path (e.g. '/bin/bash').",
-          "type": "string"
-        },
-        "timezone": {
-          "description": "System timezone in tz database format (e.g. 'Australia/Sydney').",
-          "type": "string"
-        }
-      }
-    },
-    "tailscale": {
-      "additionalProperties": false,
-      "description": "Tailscale network configuration applied when provisioning Tailscale keys.",
-      "type": "object",
-      "properties": {
-        "admin_identities": {
-          "description": "Tailscale identity emails or passkey names granted admin access to the tailnet.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "types": {
-      "description": "Metadata for each valid server type, including display labels, icons, and Tailscale tag mappings.",
-      "type": "object",
-      "additionalProperties": {
-        "additionalProperties": false,
-        "description": "Metadata for a single server type.",
-        "type": "object",
-        "properties": {
-          "icon": { "type": "string" },
-          "label": { "type": "string" },
-          "tailscale_tag": { "type": "string" }
-        }
-      }
     }
   }
 }

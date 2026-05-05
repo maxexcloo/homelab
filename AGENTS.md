@@ -59,7 +59,11 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 
 - **Formatting**: Prettier (run via `mise run fmt`)
 - **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, `@`, DNS TXT content with literal quotes, and JSON-like string values
-- **Defaults**: `data/defaults.yml` defines the full schema; per-resource files only include overrides
+- **Defaults are split across three files**, all deep-merged into `local.defaults`:
+  - `data/config.yml` — global parameters (cloudflare, domains, github, onepassword, organization, resend, system, tailscale, types)
+  - `data/defaults.yml` — field values merged into every server/service/DNS record
+  - `data/scaffolding.yml` — null placeholders for computed/runtime fields; their names sit in `keys(defaults_server)` / `keys(defaults_service)` so the 1Password filter excludes them and models can reference them without `try()`
+- Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
 - **Descriptions**: Short, title case
 
 ## JSON Schema Standards
@@ -73,4 +77,5 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 
 - **Comments**: Only for non-obvious business logic, kept specific to the code at the call site. General explainers (architecture, data flow, usage) belong in `README.md`; conventions belong here in `AGENTS.md`
 - **KISS**: Prefer readable over clever
+- **Listing order**: When listing both folders and files (docs file trees, multi-line lint commands, etc.) put folders above files; sort alphabetically within each group
 - **Trailing newlines**: Required in all files
