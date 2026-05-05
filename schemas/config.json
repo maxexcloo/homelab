@@ -111,8 +111,16 @@
               "description": "Loopback CIDR (e.g. '127.0.0.1/32').",
               "type": "string"
             },
+            "localhost_ipv6": {
+              "description": "Loopback IPv6 CIDR (e.g. '::1/128').",
+              "type": "string"
+            },
             "tailscale": {
               "description": "Tailscale CGNAT CIDR (e.g. '100.64.0.0/10').",
+              "type": "string"
+            },
+            "tailscale_ipv6": {
+              "description": "Tailscale IPv6 ULA CIDR (e.g. 'fd7a:115c:a1e0::/48').",
               "type": "string"
             }
           }

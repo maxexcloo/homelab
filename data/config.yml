@@ -26,7 +26,9 @@ networking:
     docker: 172.16.0.0/12
     lan: 10.0.0.0/23
     localhost: 127.0.0.1/32
+    localhost_ipv6: ::1/128
     tailscale: 100.64.0.0/10
+    tailscale_ipv6: fd7a:115c:a1e0::/48
 onepassword:
   vaults:
     servers:
