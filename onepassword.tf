@@ -252,21 +252,23 @@ locals {
 resource "restapi_object" "onepassword_server" {
   for_each = local.servers_model
 
-  data         = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
-  id_attribute = "id"
-  path         = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items"
-  provider     = restapi.onepassword
-  read_path    = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/{id}"
-  update_data  = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
+  data                    = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
+  id_attribute            = "id"
+  ignore_server_additions = true
+  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items"
+  provider                = restapi.onepassword
+  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/{id}"
+  update_data             = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
 }
 
 resource "restapi_object" "onepassword_service" {
   for_each = local.onepassword_service_items
 
-  data         = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
-  id_attribute = "id"
-  path         = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items"
-  provider     = restapi.onepassword
-  read_path    = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/{id}"
-  update_data  = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
+  data                    = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
+  id_attribute            = "id"
+  ignore_server_additions = true
+  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items"
+  provider                = restapi.onepassword
+  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/{id}"
+  update_data             = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
 }

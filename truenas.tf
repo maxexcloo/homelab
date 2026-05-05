@@ -124,6 +124,12 @@ resource "github_repository_file" "truenas_deploy_request" {
       }))
     }
   })
+
+  depends_on = [
+    github_repository_file.truenas_sops_config,
+    github_repository_file.truenas_workflow_deploy,
+    module.encrypted_github_file_truenas,
+  ]
 }
 
 module "encrypted_github_file_truenas" {
