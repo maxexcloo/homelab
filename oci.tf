@@ -14,8 +14,8 @@ data "oci_core_vnic_attachments" "server" {
 data "oci_identity_availability_domain" "default" {
   for_each = local.oci_regions
 
-  compartment_id = var.oci_tenancy_ocid
   ad_number      = 1
+  compartment_id = var.oci_tenancy_ocid
 }
 
 locals {
@@ -169,11 +169,10 @@ resource "oci_core_instance" "server" {
   availability_domain = data.oci_identity_availability_domain.default[each.value.identity.region].name
   compartment_id      = var.oci_tenancy_ocid
   display_name        = each.key
-  shape               = each.value.platform_config.oci.shape
-
   metadata = {
     user_data = base64encode(local.cloud_config[each.key])
   }
+  shape = each.value.platform_config.oci.shape
 
   create_vnic_details {
     assign_ipv6ip             = true

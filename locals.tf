@@ -4,16 +4,11 @@ locals {
   # doesn't churn merge defaults.
   config = yamldecode(file("${path.module}/data/config.yml"))
 
-  # Single defaults blob every consumer reads. Two sources are deep-merged:
-  #   config — global parameters (cloudflare/domains/github/...)
-  #   raw    — values merged into each server/service/DNS record
-  defaults = provider::deepmerge::mergo(local.config, local.defaults_raw)
+  # Single defaults blob every consumer reads: config merged with data/defaults.yml.
+  defaults = provider::deepmerge::mergo(local.config, yamldecode(file("${path.module}/data/defaults.yml")))
 
   # Default DNS record attributes merged into manual and generated records.
   defaults_dns = local.defaults.dns
-
-  # Raw deep-merge defaults loaded from data/defaults.yml.
-  defaults_raw = yamldecode(file("${path.module}/data/defaults.yml"))
 
   # Schema-shaped defaults merged into each server YAML file.
   defaults_server = local.defaults.servers

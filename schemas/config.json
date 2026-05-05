@@ -241,9 +241,12 @@
         "admin_identities": {
           "description": "Tailscale identity emails or passkey names granted admin access to the tailnet.",
           "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "items": { "type": "string" }
+        },
+        "approver_excludes": {
+          "description": "Type keys excluded from auto-approving exit nodes and subnet routes.",
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
     },

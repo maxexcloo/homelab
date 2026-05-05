@@ -24,7 +24,7 @@ locals {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
       {
-        fqdn_internal = contains(local.servers_input_keys, service.target) ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
+        fqdn_internal = contains(local.servers_input_keys, service.target) && service.networking.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
         key           = service_key
 
         # coalesce is safe here because defaults.yml sets app_name to null, and

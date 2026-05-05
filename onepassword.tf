@@ -64,13 +64,25 @@ locals {
         ],
       )
 
-      urls = [
-        for url_index, url_label in sort(keys(local.onepassword_server_urls[server_key])) : {
-          href    = local.onepassword_server_urls[server_key][url_label]
-          label   = url_label
-          primary = url_index == 0
-        }
-      ]
+      urls = concat(
+        [
+          for url_index, url_label in sort(keys(local.onepassword_server_urls[server_key])) : {
+            href    = local.onepassword_server_urls[server_key][url_label]
+            label   = url_label
+            primary = url_index == 0
+          }
+        ],
+        [
+          for url_label, url_value in {
+            ssh_internal  = server.state.urls.fqdn_internal
+            ssh_tailscale = server.state.urls.tailscale_hostname
+          } : {
+            href  = "ssh://${server.identity.username}@${url_value}"
+            label = url_label
+          }
+          if url_value != null && url_value != ""
+        ]
+      )
       vault = {
         id = local.defaults.onepassword.vaults.servers.id
       }
@@ -227,37 +239,33 @@ locals {
 resource "restapi_object" "onepassword_server" {
   for_each = local.servers_model
 
-  id_attribute            = "id"
-  ignore_server_additions = true
-  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items"
-  provider                = restapi.onepassword
-  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/{id}"
-  update_data = sensitive(jsonencode(merge(
+  data         = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
+  id_attribute = "id"
+  path         = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items"
+  provider     = restapi.onepassword
+  read_path    = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/{id}"
+  update_data  = sensitive(jsonencode(merge(
     local.onepassword_server_item_payloads[each.key],
     {
       id = local.onepassword_server_item_ids[each.key]
     },
   )))
-
-  data = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
 }
 
 resource "restapi_object" "onepassword_service" {
   for_each = local.onepassword_service_items
 
-  id_attribute            = "id"
-  ignore_server_additions = true
-  path                    = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items"
-  provider                = restapi.onepassword
-  read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/{id}"
-  update_data = sensitive(jsonencode(merge(
+  data         = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
+  id_attribute = "id"
+  path         = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items"
+  provider     = restapi.onepassword
+  read_path    = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/{id}"
+  update_data  = sensitive(jsonencode(merge(
     local.onepassword_service_item_payloads[each.key],
     {
       id = local.onepassword_service_item_ids[each.key]
     },
   )))
-
-  data = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
 }
 
 data "http" "onepassword_server_item" {

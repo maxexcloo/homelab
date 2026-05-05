@@ -310,7 +310,7 @@
           "type": ["integer", "null"]
         },
         "scheme": {
-          "description": "Backend scheme. Required for Traefik routing and URL DNS record generation. fqdn_internal is always computed for server-targeted services regardless of this field; fqdn_external is computed when expose is 'external' or 'cloudflare'. Null disables URL DNS records.",
+          "description": "Backend scheme. Required for Traefik routing and URL DNS record generation. fqdn_internal is computed for server-targeted services when scheme is non-null; fqdn_external is computed when expose is 'external' or 'cloudflare'. Null disables URL DNS records and fqdn computation.",
           "enum": ["http", "https", null]
         },
         "ssl": {

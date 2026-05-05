@@ -54,6 +54,10 @@ tailscale:
   admin_identities:
     - max@excloo.com
     - maxexcloo@passkey
+  approver_excludes:
+    - appliance
+    - cicd
+    - ephemeral
 types:
   appliance:
     icon: devices

@@ -1,27 +1,4 @@
 locals {
-  # DNS records are generated across seven categories and merged into a single
-  # cloudflare_dns_record resource keyed by a stable, collision-safe identifier.
-  #
-  # Nothing in this file is silently created — every generated record is visible
-  # in the final dns_model_records_all map, which is exported in the summary
-  # output. The categories below show how each record originates so you can
-  # trace a hostname back to its source data.
-  #
-  # Categories (each is a map of key => record object):
-  #   manual          — records from data/dns/*.yml (e.g. MX, TXT, CNAME)
-  #   servers         — A/AAAA/CNAME for server public IPs (e.g. hsp.au.excloo.net)
-  #   services        — CNAME → tunnel for cloudflare-exposed services
-  #   services_fly    — CNAME → fly.dev for Fly.io deployments
-  #   services_urls   — CNAME for custom service URLs (e.g. reddit.excloo.com)
-  #   acme_delegation — _acme-challenge CNAMEs for manual, server, and server-hosted
-  #                     service hostnames (A/AAAA/CNAME types only); Fly.io and
-  #                     wildcard records are excluded
-  #   wildcards       — *.hostname CNAMEs for eligible records
-  #
-  # defaults_dns is merged in once at the dns_model_records_all step so every
-  # record has a complete priority/proxied/ttl/wildcard set without each
-  # category needing to remember to do it.
-
   # Per-record key generation for manual records. Records may declare an
   # explicit `id`; otherwise a stable type-name-priority triplet is used.
   _dns_model_records_manual_input = flatten([
@@ -176,11 +153,9 @@ locals {
       type    = "CNAME"
       zone    = local.defaults.domains.external
     }
-    if(
-      contains(local.servers_input_keys, service.target) &&
+    if contains(local.servers_input_keys, service.target) &&
       local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
       service.networking.expose == "cloudflare"
-    )
   }
 
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as

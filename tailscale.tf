@@ -1,27 +1,25 @@
 data "tailscale_devices" "all" {}
 
 locals {
-  # Tags allowed to auto-approve exit nodes and subnet routes. Excludes
-  # appliance, cicd, and ephemeral because those nodes should not become
-  # subnet routers or exit nodes.
-  tailscale_approver_tags = toset([
-    for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
-    if !contains(["appliance", "cicd", "ephemeral"], type_key)
-  ])
-
   # Device names are matched back to server slugs; only the first IPv4/IPv6
   # address of each family is used for generated internal DNS records.
   tailscale_device_addresses = {
     for device in data.tailscale_devices.all.devices : split(".", device.name)[0] => {
-      id   = try(device.id, null)
-      ipv4 = try([for a in device.addresses : a if can(cidrhost("${a}/32", 0))][0], null)
-      ipv6 = try([for a in device.addresses : a if can(cidrhost("${a}/128", 0))][0], null)
+      hostname = device.name
+      id       = try(device.id, null)
+      ipv4     = try([for a in device.addresses : a if can(cidrhost("${a}/32", 0))][0], null)
+      ipv6     = try([for a in device.addresses : a if can(cidrhost("${a}/128", 0))][0], null)
     }
   }
 
   # Full tag set used for ACL ownership declarations.
   tailscale_tags = toset([
     for type in values(local.defaults.types) : "tag:${type.tailscale_tag}"
+  ])
+
+  tailscale_tags_approvers = toset([
+    for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
+    if !contains(local.defaults.tailscale.approver_excludes, type_key)
   ])
 }
 
@@ -102,10 +100,10 @@ resource "tailscale_acl" "default" {
 
     # Exit nodes and subnet routes: routers, servers, and VMs may optionally advertise
     autoApprovers = {
-      exitNode = tolist(local.tailscale_approver_tags)
+      exitNode = tolist(local.tailscale_tags_approvers)
       routes = {
-        "0.0.0.0/0" = tolist(local.tailscale_approver_tags)
-        "::/0"      = tolist(local.tailscale_approver_tags)
+        "0.0.0.0/0" = tolist(local.tailscale_tags_approvers)
+        "::/0"      = tolist(local.tailscale_tags_approvers)
       }
     }
 

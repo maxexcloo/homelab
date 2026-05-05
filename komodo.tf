@@ -26,10 +26,8 @@ locals {
         commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
         file           = file_key
       })
-      if(
-        contains(local.servers_input_keys, file_config.target) &&
+      if contains(local.servers_input_keys, file_config.target) &&
         local.servers_model[file_config.target].features.docker
-      )
     }
   )
 }
