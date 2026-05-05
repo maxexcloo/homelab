@@ -9,7 +9,7 @@ container:
     traefik.http.routers.dashboard.middlewares: tailscale-only@docker
     traefik.http.routers.dashboard.rule: Host(`${service.fqdn_internal}`)
     traefik.http.routers.dashboard.service: api@internal
-    traefik.http.services.traefik.loadbalancer.server.port: "8080"
+    traefik.http.services.traefik.loadbalancer.server.port: "8082"
 identity:
   description: Reverse Proxy
   name: traefik
