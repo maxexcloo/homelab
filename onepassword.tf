@@ -49,6 +49,45 @@ data "http" "onepassword_service_search" {
 }
 
 locals {
+  _onepassword_server_item_fields = {
+    for server_key, server in local.servers : server_key => concat(
+      [
+        {
+          id      = "username"
+          label   = "username"
+          purpose = "USERNAME"
+          value   = server.identity.username
+        }
+      ],
+      server.features.password ? [
+        {
+          id      = "password"
+          label   = "password"
+          purpose = "PASSWORD"
+          value   = server.state.secrets.password
+        }
+      ] : [],
+      [
+        for field_name, field_value in server.state.fields : {
+          id    = field_name
+          label = "${field_name}_ro"
+          type  = "STRING"
+          value = tostring(field_value)
+        }
+        if field_value != null && field_value != ""
+      ],
+      [
+        for field_name, field_value in server.state.secrets : {
+          id    = field_name
+          label = "${field_name}_ro"
+          type  = "CONCEALED"
+          value = tostring(field_value)
+        }
+        if field_name != "password" && field_value != null && field_value != ""
+      ],
+    )
+  }
+
   _onepassword_server_urls = {
     for server_key, server in local.servers : server_key => merge(
       {
@@ -69,6 +108,51 @@ locals {
     )
   }
 
+  _onepassword_service_item_fields = {
+    for service_key, service in local.services : service_key => concat(
+      [
+        {
+          id      = "username"
+          label   = "username"
+          purpose = "USERNAME"
+          value   = service.identity.username
+        }
+      ],
+      service.features.password ? [
+        {
+          id      = "password"
+          label   = "password"
+          purpose = "PASSWORD"
+          value   = service.state.secrets.password
+        }
+      ] : [],
+      [
+        for field_name, field_value in service.state.fields : {
+          id    = field_name
+          label = "${field_name}_ro"
+          type  = "STRING"
+          value = tostring(field_value)
+        }
+        if field_value != null && field_value != ""
+      ],
+      # Manually supplied secrets (no bootstrap_type) sync even when empty so
+      # 1Password gets the placeholder for the operator to fill in.
+      [
+        for secret_name, secret_value in service.state.secrets : {
+          id    = secret_name
+          label = "${secret_name}_${contains(concat(service.features.password ? ["password"] : [], [for s in service.features.secrets : s.name]), secret_name) ? "rw" : "ro"}"
+          type  = "CONCEALED"
+          value = tostring(secret_value)
+        }
+        if secret_name != "password" && secret_value != null && (
+          secret_value != "" ||
+          contains([for s in service.features.secrets : s.name if try(s.bootstrap_type, null) == null], secret_name)
+        )
+      ],
+    )
+    if contains(keys(local.onepassword_service_items), service_key)
+  }
+
   _onepassword_service_urls = {
     for service_key, service in local.services : service_key => {
       for url_label, url_value in service.state.urls : url_label => format(
@@ -80,17 +164,6 @@ locals {
     }
   }
 
-  onepassword_server_existing_fields = {
-    for server_key, item in data.http.onepassword_server_item : server_key => {
-      for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
-      if try(field.id, "") != "" && try(field.value, "") != ""
-    }
-  }
-
-  onepassword_server_existing_ids = {
-    for server_key, item in data.http.onepassword_server_search : server_key => try(jsondecode(item.response_body)[0].id, null)
-  }
-
   # Field labels end in _rw when 1Password can become source of truth (password,
   # operator-supplied secrets), and _ro when OpenTofu remains source.
   onepassword_server_item_payloads = {
@@ -100,42 +173,10 @@ locals {
       tags     = local.defaults.onepassword.vaults.servers.tags
       title    = server_key
 
-      fields = concat(
-        [
-          {
-            id      = "username"
-            label   = "username_ro"
-            purpose = "USERNAME"
-            value   = server.identity.username
-          }
-        ],
-        server.features.password ? [
-          {
-            id      = "password"
-            label   = "password_rw"
-            purpose = "PASSWORD"
-            value   = server.state.secrets.password
-          }
-        ] : [],
-        [
-          for field_name, field_value in server.state.fields : {
-            id    = field_name
-            label = "${field_name}_ro"
-            type  = "STRING"
-            value = tostring(field_value)
-          }
-          if field_value != null && field_value != ""
-        ],
-        [
-          for field_name, field_value in server.state.secrets : {
-            id    = field_name
-            label = "${field_name}_ro"
-            type  = "CONCEALED"
-            value = tostring(field_value)
-          }
-          if field_name != "password" && field_value != null && field_value != ""
-        ],
-      )
+      fields = [
+        for label in sort([for f in local._onepassword_server_item_fields[server_key] : f.label]) :
+        [for f in local._onepassword_server_item_fields[server_key] : f if f.label == label][0]
+      ]
 
       urls = [
         for url_index, url_label in sort(keys(local._onepassword_server_urls[server_key])) : {
@@ -148,6 +189,17 @@ locals {
         id = local.defaults.onepassword.vaults.servers.id
       }
     }
+  }
+
+  onepassword_server_existing_fields = {
+    for server_key, item in data.http.onepassword_server_item : server_key => {
+      for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
+      if try(field.id, "") != "" && try(field.value, "") != ""
+    }
+  }
+
+  onepassword_server_existing_ids = {
+    for server_key, item in data.http.onepassword_server_search : server_key => try(jsondecode(item.response_body)[0].id, null)
   }
 
   onepassword_service_existing_fields = {
@@ -168,47 +220,10 @@ locals {
       tags     = local.defaults.onepassword.vaults.services.tags
       title    = "${service.identity.title} (${service.target})"
 
-      fields = concat(
-        [
-          {
-            id      = "username"
-            label   = "username_ro"
-            purpose = "USERNAME"
-            value   = service.identity.username
-          }
-        ],
-        service.features.password ? [
-          {
-            id      = "password"
-            label   = "password_rw"
-            purpose = "PASSWORD"
-            value   = service.state.secrets.password
-          }
-        ] : [],
-        [
-          for field_name, field_value in service.state.fields : {
-            id    = field_name
-            label = "${field_name}_ro"
-            type  = "STRING"
-            value = tostring(field_value)
-          }
-          if field_value != null && field_value != ""
-        ],
-        # Manually supplied secrets (no bootstrap_type) sync even when empty so
-        # 1Password gets the placeholder for the operator to fill in.
-        [
-          for secret_name, secret_value in service.state.secrets : {
-            id    = secret_name
-            label = "${secret_name}_${contains(concat(service.features.password ? ["password"] : [], [for s in service.features.secrets : s.name]), secret_name) ? "rw" : "ro"}"
-            type  = "CONCEALED"
-            value = tostring(secret_value)
-          }
-          if secret_name != "password" && secret_value != null && (
-            secret_value != "" ||
-            contains([for s in service.features.secrets : s.name if try(s.bootstrap_type, null) == null], secret_name)
-          )
-        ],
-      )
+      fields = [
+        for label in sort([for f in local._onepassword_service_item_fields[service_key] : f.label]) :
+        [for f in local._onepassword_service_item_fields[service_key] : f if f.label == label][0]
+      ]
 
       urls = [
         for url_index, url_label in sort(keys(local._onepassword_service_urls[service_key])) : {
