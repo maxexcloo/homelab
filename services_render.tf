@@ -35,12 +35,12 @@ locals {
     }
   }
 
-  # Pre-computed path metadata for every file under services/* so the sidecar
+  # Pre-computed path metadata for every file under templates/services/* so the sidecar
   # loop only adds deployment context (stack key and target).
   _services_render_file_path_info = {
-    for file_path in fileset(path.module, "services/*/**") : file_path => {
+    for file_path in fileset(path.module, "templates/services/*/**") : file_path => {
       raw_encrypt     = endswith(trimsuffix(file_path, ".tftpl"), ".raw")
-      rel_path        = trimsuffix(trimsuffix(trimprefix(file_path, "services/${split("/", file_path)[1]}/"), ".tftpl"), ".raw")
+      rel_path        = trimsuffix(trimsuffix(trimprefix(file_path, "templates/services/${split("/", file_path)[2]}/"), ".tftpl"), ".raw")
       render_template = endswith(file_path, ".tftpl")
     }
   }
@@ -58,7 +58,7 @@ locals {
   # Other files use filebase64(), so static and binary assets share one path.
   _services_render_files_inputs = flatten([
     for service_key, service in local.services : [
-      for file_path in fileset(path.module, "services/${service.identity.service}/**") : merge(
+      for file_path in fileset(path.module, "templates/services/${service.identity.service}/**") : merge(
         local._services_render_file_path_info[file_path],
         {
           path   = "${path.module}/${file_path}"
@@ -184,10 +184,10 @@ locals {
   # Rendered Docker Compose content keyed by expanded service stack.
   services_render_files_compose = {
     for service_key, service in local.services : service_key => templatefile(
-      "${path.module}/services/${service.identity.service}/docker-compose.yaml.tftpl",
+      "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
       local.services_render_context[service_key]
     )
-    if fileexists("${path.module}/services/${service.identity.service}/docker-compose.yaml.tftpl")
+    if fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
   }
 
   # Deployed sidecar files include encrypted content metadata used by Fly,

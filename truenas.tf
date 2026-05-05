@@ -15,9 +15,9 @@ locals {
   # Catalog app templates live beside each service with app-specific chart values.
   truenas_prepare_catalog_templates = {
     for service_key, service in local.truenas_input_services : service_key => {
-      path = "${path.module}/services/${service.identity.service}/app.json.tftpl"
+      path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
     }
-    if fileexists("${path.module}/services/${service.identity.service}/app.json.tftpl")
+    if fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
   }
 
   # Encrypted GitHub files consumed by the TrueNAS deploy workflow.
@@ -175,7 +175,7 @@ resource "terraform_data" "truenas_validation" {
         if !contains(keys(local.services_render_files_compose), service_key) &&
         !contains(keys(local.truenas_prepare_catalog_templates), service_key)
       ]) == 0
-      error_message = "TrueNAS catalog services require services/{identity.service}/app.json.tftpl: ${join(", ", [
+      error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", [
         for service_key, service in local.truenas_input_services : service_key
         if !contains(keys(local.services_render_files_compose), service_key) &&
         !contains(keys(local.truenas_prepare_catalog_templates), service_key)

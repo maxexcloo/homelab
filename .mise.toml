@@ -4,11 +4,11 @@ TF_CLI_ARGS_apply = "-parallelism=20"
 TF_CLI_ARGS_plan = "-parallelism=20"
 
 [tools]
-"pipx:check-jsonschema" = "0.37.1"
+"pipx:check-jsonschema" = "0.37.2"
 opentofu = "1"
 prettier = "3"
 sops = "3"
-uv = "latest"
+uv = "0"
 
 # Setup
 [tasks.init]

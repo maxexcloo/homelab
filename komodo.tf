@@ -27,7 +27,7 @@ locals {
         file           = file_key
       })
       if contains(local.servers_input_keys, file_config.target) &&
-        local.servers_model[file_config.target].features.docker
+      local.servers_model[file_config.target].features.docker
     }
   )
 }

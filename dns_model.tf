@@ -156,8 +156,8 @@ locals {
       zone    = local.defaults.domains.external
     }
     if contains(local.servers_input_keys, service.target) &&
-      local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
-      service.networking.expose == "cloudflare"
+    local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
+    service.networking.expose == "cloudflare"
   }
 
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as

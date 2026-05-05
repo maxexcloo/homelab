@@ -40,11 +40,13 @@ Server and service data is modeled in two layers: desired values from YAML/defau
 
 ```
 data/
-├── dns/*.yml           # DNS zones and manual records
-├── servers/*.yml       # Server definitions
-├── services/*.yml      # Service deployments
-├── config.yml          # Global configuration (domains, accounts, system, types) — kept separate from defaults.yml so edits to one don't churn the other
-└── defaults.yml        # Field defaults merged into every server/service/DNS record
+├── dns/*.yml                           # DNS zones and manual records
+├── servers/*.yml                       # Server definitions
+├── services/*.yml                      # Service deployments
+├── config.yml                          # Global configuration (domains, accounts, system, types) — kept separate from defaults.yml so edits to one don't churn the other
+└── defaults.yml                        # Field defaults merged into every server/service/DNS record
+templates/
+└── services/<identity.service>/        # Per-service templates (compose, sidecars, app configs)
     │
     ▼
 OpenTofu
@@ -79,7 +81,7 @@ Feature flags either create provider-backed resources, expose values generated l
 2. Fill in `features`, `identity`, `networking`, and at least one entry under `targets:` (server key or `fly`)
 3. Each target may carry per-platform sections (`docker`, `fly`, `truenas`) and an optional `features` overlay that overrides the service-level flags
 4. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
-5. Optionally add deploy artifacts under `services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
+5. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
 6. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands
