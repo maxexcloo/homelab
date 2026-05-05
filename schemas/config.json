@@ -127,6 +127,7 @@
       "additionalProperties": {
         "additionalProperties": false,
         "description": "Layout settings for a single Homepage service group.",
+        "required": ["columns", "style"],
         "properties": {
           "columns": {
             "description": "Column count in the Homepage layout (2 or 4).",

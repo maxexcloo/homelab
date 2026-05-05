@@ -25,10 +25,13 @@ onepassword:
 groups:
   Applications:
     columns: 4
+    style: row
   Infrastructure:
     columns: 2
+    style: row
   Media:
     columns: 4
+    style: row
 networking:
   cidrs:
     docker: 172.16.0.0/12

@@ -86,6 +86,7 @@ container:
       - usbchardware
       - wallstreetbets
 features:
+  monitoring_alerts: false
   secrets:
     - name: ctrld_endpoint
 identity:

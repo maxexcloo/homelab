@@ -1,6 +1,9 @@
 %{~ for group in sort(distinct([
   for candidate in values(services) : candidate.labels["homepage.group"]
-  if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && !contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
+  if candidate.target != service.target
+  && lookup(candidate.labels, "homepage.group", "") != ""
+  && lookup(candidate.labels, "homepage.name", "") != ""
+  && !contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
 ])) ~}
 - ${group}:
   %{~ for service_key in [
@@ -10,12 +13,16 @@
         lower(lookup(candidate.labels, "homepage.name", "")),
         candidate_key,
       ])
-      if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") == group && lookup(candidate.labels, "homepage.name", "") != ""
+      if candidate.target != service.target
+      && lookup(candidate.labels, "homepage.group", "") == group
+      && lookup(candidate.labels, "homepage.name", "") != ""
     ]) : split("|", service_sort_key)[2]
   ] ~}
     - ${services[service_key].labels["homepage.name"]}:
       %{~ for label_key, label_value in services[service_key].labels ~}
-      %{~ if startswith(label_key, "homepage.") && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key) && !startswith(label_key, "homepage.widget.") ~}
+      %{~ if startswith(label_key, "homepage.")
+      && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key)
+      && !startswith(label_key, "homepage.widget.") ~}
         ${trimprefix(label_key, "homepage.")}: ${jsonencode(label_value)}
       %{~ endif ~}
       %{~ endfor ~}
@@ -42,7 +49,8 @@
         href: "https://${servers[srv_key].fqdn_internal}"
         icon: "mdi-${servers[srv_key].type_icon}-#ffffff"
         ping: ${jsonencode(servers[srv_key].fqdn_internal)}
-        %{~ if lookup(services, "beszel-agent-${srv_key}", null) != null && lookup(services, "beszel-${srv_key}", null) != null ~}
+        %{~ if lookup(services, "beszel-agent-${srv_key}", null) != null
+        && lookup(services, "beszel-${srv_key}", null) != null ~}
         widget:
           type: beszel
           url: https://${services["beszel-${srv_key}"].fqdn_internal}
@@ -56,7 +64,10 @@
 %{~ endfor ~}
 %{~ for group in sort(distinct([
   for candidate in values(services) : candidate.labels["homepage.group"]
-  if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") != "" && lookup(candidate.labels, "homepage.name", "") != "" && contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
+  if candidate.target != service.target
+  && lookup(candidate.labels, "homepage.group", "") != ""
+  && lookup(candidate.labels, "homepage.name", "") != ""
+  && contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
 ])) ~}
 - ${group}:
   %{~ for service_key in [
@@ -66,12 +77,16 @@
         lower(lookup(candidate.labels, "homepage.name", "")),
         candidate_key,
       ])
-      if candidate.target != service.target && lookup(candidate.labels, "homepage.group", "") == group && lookup(candidate.labels, "homepage.name", "") != ""
+      if candidate.target != service.target
+      && lookup(candidate.labels, "homepage.group", "") == group
+      && lookup(candidate.labels, "homepage.name", "") != ""
     ]) : split("|", service_sort_key)[2]
   ] ~}
     - ${services[service_key].labels["homepage.name"]}:
       %{~ for label_key, label_value in services[service_key].labels ~}
-      %{~ if startswith(label_key, "homepage.") && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key) && !startswith(label_key, "homepage.widget.") ~}
+      %{~ if startswith(label_key, "homepage.")
+      && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key)
+      && !startswith(label_key, "homepage.widget.") ~}
         ${trimprefix(label_key, "homepage.")}: ${jsonencode(label_value)}
       %{~ endif ~}
       %{~ endfor ~}
