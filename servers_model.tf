@@ -44,6 +44,7 @@ locals {
         fqdn_external = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.external}"
         fqdn_internal = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}"
         key           = server_key
+        ssh_keys      = data.github_user.default.ssh_keys
       }
     )
   }

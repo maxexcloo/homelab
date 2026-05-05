@@ -50,8 +50,6 @@ locals {
             } : {},
           )
 
-          ssh_keys = data.github_user.default.ssh_keys
-
           urls = {
             fqdn_external      = server.fqdn_external
             fqdn_internal      = server.fqdn_internal

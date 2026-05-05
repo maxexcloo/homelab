@@ -32,7 +32,7 @@ users:
     %{~ endif ~}
     lock_passwd: false
     shell: ${defaults.system.shell}
-    ssh_authorized_keys: ${jsonencode(server.state.ssh_keys)}
+    ssh_authorized_keys: ${jsonencode(server.ssh_keys)}
     groups:
       %{~ if server.features.docker ~}
       - docker

@@ -1,4 +1,11 @@
 locals {
+  # Resolved Fly app name per service. coalesce is safe because defaults.yml
+  # sets app_name to null, which coalesce skips in favour of the fallback.
+  _services_model_fly_app_names = {
+    for service_key, service in local.services_input_targets : service_key =>
+    service.target == "fly" ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}") : service.fly.app_name
+  }
+
   # Generated bootstrap value per declared service secret. Null when the secret
   # has no bootstrap_type — those are operator-supplied via 1Password and the
   # state secret falls through to an empty placeholder until populated.
@@ -19,7 +26,7 @@ locals {
   }
 
   # Desired service model: expanded deployment target data plus deterministic
-  # names, URLs, and server FQDNs. Runtime state lives in services_state.tf.
+  # names, URLs, and server FQDNs.
   services_model = {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
@@ -27,11 +34,13 @@ locals {
         fqdn_internal = contains(local.servers_input_keys, service.target) && service.networking.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
         key           = service_key
 
-        # coalesce is safe here because defaults.yml sets app_name to null, and
-        # null is ignored by coalesce in favour of the fallback expression.
+        fly = {
+          app_name = local._services_model_fly_app_names[service_key]
+        }
+
         fqdn_external = (
           service.target == "fly"
-          ? "${coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
+          ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
           : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.networking.expose)
           ? "${service.identity.name}.${local.servers_model[service.target].fqdn_external}"
           : null
@@ -42,14 +51,6 @@ locals {
             service.identity.group,
             try(local.servers_model[service.target].description, null),
             "Applications",
-          )
-        }
-
-        fly = {
-          app_name = (
-            service.target == "fly"
-            ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")
-            : service.fly.app_name
           )
         }
       }
