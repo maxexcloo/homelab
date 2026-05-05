@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  labels:
+    homepage.icon: sh-aiostreams
 features:
   password: true
   secrets:
@@ -16,10 +17,8 @@ identity:
 networking:
   port: 30375
   scheme: http
-platform_config:
-  docker:
-    labels:
-      homepage.icon: sh-aiostreams
-  truenas:
-    containers:
-      - aiostreams
+targets:
+  au-truenas:
+    truenas:
+      containers:
+        - aiostreams

@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - fly
 features:
   resend: true
   tailscale: true
@@ -15,3 +13,5 @@ networking:
   scheme: http
   urls:
     - status.excloo.com
+targets:
+  fly: {}

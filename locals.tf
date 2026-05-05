@@ -20,4 +20,8 @@ locals {
 
   # Schema-shaped defaults merged into each service YAML file.
   defaults_service = local.defaults.services
+
+  # Per-platform defaults merged into each service deployment target during
+  # expansion (services_input.tf).
+  defaults_target = local.defaults.target_defaults
 }

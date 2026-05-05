@@ -31,7 +31,7 @@ locals {
         # null is ignored by coalesce in favour of the fallback expression.
         fqdn_external = (
           service.target == "fly"
-          ? "${coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
+          ? "${coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
           : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.networking.expose)
           ? "${service.identity.name}.${local.servers_model[service.target].fqdn_external}"
           : null
@@ -45,14 +45,12 @@ locals {
           )
         }
 
-        platform_config = {
-          fly = {
-            app_name = (
-              service.target == "fly"
-              ? coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")
-              : service.platform_config.fly.app_name
-            )
-          }
+        fly = {
+          app_name = (
+            service.target == "fly"
+            ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")
+            : service.fly.app_name
+          )
         }
       }
     )

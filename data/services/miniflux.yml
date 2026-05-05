@@ -1,6 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  env:
+    BASE_URL: https://${service.fqdn_internal}
+  labels:
+    homepage.widget.key: ${service.state.secrets.homepage_widget_key}
+    homepage.widget.type: ${service.identity.service}
+    homepage.widget.url: https://${service.fqdn_internal}
 features:
   password: true
   secrets:
@@ -18,11 +23,5 @@ identity:
 networking:
   port: 30285
   scheme: http
-platform_config:
-  docker:
-    env:
-      BASE_URL: https://${service.fqdn_internal}
-    labels:
-      homepage.widget.key: ${service.state.secrets.homepage_widget_key}
-      homepage.widget.type: ${service.identity.service}
-      homepage.widget.url: https://${service.fqdn_internal}
+targets:
+  au-truenas: {}

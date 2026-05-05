@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
-  "description": "Default field values deep-merged into every server, service, and DNS record before processing. Loaded into local.defaults alongside data/config.yml and data/scaffolding.yml.",
+  "description": "Default field values deep-merged into every server, service, and DNS record before processing. Loaded into local.defaults alongside data/config.yml.",
   "title": "Defaults",
   "type": "object",
   "properties": {
@@ -33,8 +33,27 @@
       "type": "object"
     },
     "services": {
-      "description": "Default field values deep-merged into every service definition before processing. Keys mirror the service schema.",
+      "description": "Default field values deep-merged into every service definition before processing. Keys mirror the service schema (excluding `targets`, which carries per-deployment data only).",
       "type": "object"
+    },
+    "target_defaults": {
+      "additionalProperties": false,
+      "description": "Per-platform defaults merged into each service deployment target during expansion (services_input.tf). Keys must be one of container, fly, truenas.",
+      "type": "object",
+      "properties": {
+        "container": {
+          "description": "Defaults for container-runtime config (Compose env and labels). Used by Komodo stacks and TrueNAS custom apps.",
+          "type": "object"
+        },
+        "fly": {
+          "description": "Defaults for Fly.io deployments.",
+          "type": "object"
+        },
+        "truenas": {
+          "description": "Defaults for TrueNAS catalog app deployments.",
+          "type": "object"
+        }
+      }
     }
   }
 }

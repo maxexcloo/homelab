@@ -1,6 +1,17 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  labels:
+    homepage.href: https://${server.fqdn_internal}:${server.networking.management_port}
+    homepage.widget.enablePools: "true"
+    homepage.widget.key: ${service.state.secrets.homepage_widget_key}
+    homepage.widget.type: ${service.identity.service}
+    homepage.widget.url: https://${server.fqdn_internal}:${server.networking.management_port}
+    homepage.widget.version: "2"
+    traefik.enable: "true"
+    traefik.http.routers.truenas.middlewares: tailscale-only@docker
+    traefik.http.routers.truenas.rule: Host(`${server.fqdn_internal}`)
+    traefik.http.routers.truenas.service: truenas
+    traefik.http.services.truenas.loadbalancer.server.url: https://localhost:${server.networking.management_port}
 features:
   secrets:
     - name: homepage_widget_key
@@ -10,17 +21,5 @@ identity:
   name: truenas
   service: truenas
   title: TrueNAS
-platform_config:
-  docker:
-    labels:
-      homepage.href: https://${server.fqdn_internal}:${server.networking.management_port}
-      homepage.widget.enablePools: "true"
-      homepage.widget.key: ${service.state.secrets.homepage_widget_key}
-      homepage.widget.type: ${service.identity.service}
-      homepage.widget.url: https://${server.fqdn_internal}:${server.networking.management_port}
-      homepage.widget.version: "2"
-      traefik.enable: "true"
-      traefik.http.routers.truenas.middlewares: tailscale-only@docker
-      traefik.http.routers.truenas.rule: Host(`${server.fqdn_internal}`)
-      traefik.http.routers.truenas.service: truenas
-      traefik.http.services.truenas.loadbalancer.server.url: https://localhost:${server.networking.management_port}
+targets:
+  au-truenas: {}

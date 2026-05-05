@@ -1,14 +1,14 @@
-app = "${service.platform_config.fly.app_name}"
-primary_region = "${service.platform_config.fly.region}"
+app = "${service.fly.app_name}"
+primary_region = "${service.fly.region}"
 
 [build]
-${service.platform_config.fly.image != null ? "image = \"${service.platform_config.fly.image}\"" : "dockerfile = \"Dockerfile\""}
+${service.fly.image != null ? "image = \"${service.fly.image}\"" : "dockerfile = \"Dockerfile\""}
 
 [http_service]
 force_https = ${service.networking.ssl}
 internal_port = ${service.networking.port}
 
 [[vm]]
-cpu_kind = "${service.platform_config.fly.cpu_kind}"
-cpus = ${service.platform_config.fly.cpus}
-memory_mb = ${service.platform_config.fly.memory_mb}
+cpu_kind = "${service.fly.cpu_kind}"
+cpus = ${service.fly.cpus}
+memory_mb = ${service.fly.memory_mb}

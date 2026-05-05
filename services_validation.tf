@@ -1,7 +1,7 @@
 locals {
   services_validation_cloudflare_tunnel_missing = flatten([
     for service_key, service in local.services_input : [
-      for target in service.deploy_to : "${service_key} -> ${target}"
+      for target in keys(service.targets) : "${service_key} -> ${target}"
       if contains(local.servers_input_keys, target) &&
       service.networking.expose == "cloudflare" &&
       !local.servers_model[target].features.cloudflare_zero_trust_tunnel
@@ -10,7 +10,7 @@ locals {
 
   services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
-    if contains(service.deploy_to, "fly") && service.networking.port == null
+    if contains(keys(service.targets), "fly") && service.networking.port == null
   ]
 
   services_validation_import_alias_conflicts = flatten([
@@ -35,7 +35,7 @@ locals {
 
   services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
-      for target in service.deploy_to : "${service_key} -> ${target}"
+      for target in keys(service.targets) : "${service_key} -> ${target}"
       if !contains(local.servers_input_keys, target) && target != "fly"
     ]
   ])

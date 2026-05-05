@@ -1,6 +1,24 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  env:
+    HUB_URL: http://localhost:${services.beszel.networking.port}
+    # Beszel hub SSH host key used by agents to verify the hub connection.
+    # If this key ever rotates, all agents must be updated.
+    KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
+    LISTEN: 45876
+    TOKEN: ${service.state.secrets.token}
+  labels:
+    homepage.description: ${services.beszel.identity.description}
+    homepage.href: https://${services.beszel.fqdn_internal}/system/${service.state.secrets.system_id}
+    homepage.icon: ${services.beszel.identity.name}
+    homepage.name: ${services.beszel.identity.title}
+    homepage.widget.fields: ${jsonencode(split(",", "status,cpu,memory,network"))}
+    homepage.widget.password: ${services.beszel.state.secrets.password}
+    homepage.widget.systemId: ${service.state.secrets.system_id}
+    homepage.widget.type: beszel
+    homepage.widget.url: https://${services.beszel.fqdn_internal}
+    homepage.widget.username: ${defaults.organization.email}
+    homepage.widget.version: "2"
 features:
   secrets:
     - name: system_id
@@ -13,24 +31,5 @@ identity:
 imports:
   services:
     beszel: beszel-${service.target}
-platform_config:
-  docker:
-    env:
-      HUB_URL: http://localhost:${services.beszel.networking.port}
-      # Beszel hub SSH host key used by agents to verify the hub connection.
-      # If this key ever rotates, all agents must be updated.
-      KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
-      LISTEN: 45876
-      TOKEN: ${service.state.secrets.token}
-    labels:
-      homepage.description: ${services.beszel.identity.description}
-      homepage.href: https://${services.beszel.fqdn_internal}/system/${service.state.secrets.system_id}
-      homepage.icon: ${services.beszel.identity.name}
-      homepage.name: ${services.beszel.identity.title}
-      homepage.widget.fields: ${jsonencode(split(",", "status,cpu,memory,network"))}
-      homepage.widget.password: ${services.beszel.state.secrets.password}
-      homepage.widget.systemId: ${service.state.secrets.system_id}
-      homepage.widget.type: beszel
-      homepage.widget.url: https://${services.beszel.fqdn_internal}
-      homepage.widget.username: ${defaults.organization.email}
-      homepage.widget.version: "2"
+targets:
+  au-truenas: {}

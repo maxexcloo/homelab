@@ -1,6 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  env:
+    HASHEOUS_API_ENABLED: true
+    SCAN_TIMEOUT: 86400
+    SCREENSCRAPER_PASSWORD: ${service.state.secrets.screenscraper_password}
+    SCREENSCRAPER_USER: ${defaults.organization.email}
+  labels:
+    homepage.widget.type: ${service.identity.service}
+    homepage.widget.url: https://${service.fqdn_internal}
 features:
   password: true
   secrets:
@@ -27,13 +34,5 @@ identity:
 networking:
   port: 30061
   scheme: http
-platform_config:
-  docker:
-    env:
-      HASHEOUS_API_ENABLED: true
-      SCAN_TIMEOUT: 86400
-      SCREENSCRAPER_PASSWORD: ${service.state.secrets.screenscraper_password}
-      SCREENSCRAPER_USER: ${defaults.organization.email}
-    labels:
-      homepage.widget.type: ${service.identity.service}
-      homepage.widget.url: https://${service.fqdn_internal}
+targets:
+  au-truenas: {}

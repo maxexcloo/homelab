@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
 identity:
   description: Network Speed Test
   name: openspeedtest
@@ -9,9 +7,10 @@ identity:
 networking:
   port: 30116
   scheme: http
-platform_config:
-  truenas:
-    catalog_app: open-speed-test
-    port_key: http_port
-    containers:
-      - open-speed-test
+targets:
+  au-truenas:
+    truenas:
+      catalog_app: open-speed-test
+      port_key: http_port
+      containers:
+        - open-speed-test

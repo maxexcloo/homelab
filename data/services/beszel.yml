@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
 features:
   password: true
   resend: true
@@ -14,6 +12,7 @@ identity:
 networking:
   port: 30333
   scheme: http
-platform_config:
-  truenas:
-    catalog_app: beszel-hub
+targets:
+  au-truenas:
+    truenas:
+      catalog_app: beszel-hub

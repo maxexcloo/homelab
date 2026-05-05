@@ -16,7 +16,7 @@ locals {
   # Docker env stored as typed YAML, rendered as strings for deployment.
   _services_render_env = {
     for service_key, service in local.services : service_key => {
-      for env_key, env_value in service.platform_config.docker.env : env_key => local._services_render_env_string[service_key][env_key]
+      for env_key, env_value in service.container.env : env_key => local._services_render_env_string[service_key][env_key]
       if env_value != null && local._services_render_env_string[service_key][env_key] != ""
     }
   }
@@ -27,7 +27,7 @@ locals {
   # is the cleanest way to switch on the YAML schema's value types.
   _services_render_env_string = {
     for service_key, service in local.services : service_key => {
-      for env_key, env_value in service.platform_config.docker.env : env_key => (
+      for env_key, env_value in service.container.env : env_key => (
         can(tostring(env_value))
         ? templatestring(tostring(env_value), local._services_render_pre_context[service_key])
         : join("+", [for env_item in env_value : templatestring(tostring(env_item), local._services_render_pre_context[service_key])])
@@ -76,17 +76,17 @@ locals {
   # win:
   #   1. Homepage dashboard labels (auto-suppressed when homelab.homepage.enabled=false)
   #   2. Traefik routing labels (only when networking.port is set)
-  #   3. User-defined labels from platform_config.docker.labels, with template
+  #   3. User-defined labels from service.container.labels, with template
   #      interpolation against the pre-context (labels can reference imports).
   _services_render_labels = {
     for service_key, service in local.services : service_key => merge(
-      (service.networking.port != null || length(service.platform_config.docker.labels) > 0) &&
-      lookup(service.platform_config.docker.labels, "homelab.homepage.enabled", true) ? {
+      (service.networking.port != null || length(service.container.labels) > 0) &&
+      lookup(service.container.labels, "homelab.homepage.enabled", true) ? {
         "homepage.description" = service.identity.description
         "homepage.group"       = service.identity.group
         "homepage.icon"        = service.identity.name
         "homepage.name"        = service.identity.title
-        "homepage.weight"      = contains(keys(service.platform_config.docker.labels), "homepage.widget.type") ? "-10" : "0"
+        "homepage.weight"      = contains(keys(service.container.labels), "homepage.widget.type") ? "-10" : "0"
 
         "homepage.href" = (
           service.fqdn_internal != null ? "https://${service.fqdn_internal}"
@@ -119,7 +119,7 @@ locals {
       ) : {},
 
       {
-        for label_key, label_value in service.platform_config.docker.labels :
+        for label_key, label_value in service.container.labels :
         label_key => templatestring(tostring(label_value), local._services_render_pre_context[service_key])
         if label_value != null
       },

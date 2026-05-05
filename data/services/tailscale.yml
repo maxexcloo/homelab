@@ -1,6 +1,10 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  labels:
+    homepage.href: https://login.tailscale.com/admin/machines/${server.state.urls.tailscale_ipv4}
+    homepage.widget.deviceid: ${server.state.fields.tailscale_device_id}
+    homepage.widget.key: ${service.state.secrets.homepage_widget_key}
+    homepage.widget.type: ${service.identity.service}
 features:
   secrets:
     - name: homepage_widget_key
@@ -9,10 +13,5 @@ identity:
   name: tailscale
   service: tailscale
   title: Tailscale
-platform_config:
-  docker:
-    labels:
-      homepage.href: https://login.tailscale.com/admin/machines/${server.state.urls.tailscale_ipv4}
-      homepage.widget.deviceid: ${server.state.fields.tailscale_device_id}
-      homepage.widget.key: ${service.state.secrets.homepage_widget_key}
-      homepage.widget.type: ${service.identity.service}
+targets:
+  au-truenas: {}

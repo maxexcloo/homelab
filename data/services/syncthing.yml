@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
 features:
   password: true
 identity:
@@ -12,6 +10,7 @@ identity:
 networking:
   port: 20910
   scheme: http
-platform_config:
-  truenas:
-    train: stable
+targets:
+  au-truenas:
+    truenas:
+      train: stable

@@ -1,6 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  labels:
+    homepage.icon: sh-grimmory
+    homepage.widget.password: ${service.state.secrets.password}
+    homepage.widget.type: booklore
+    homepage.widget.url: https://${service.fqdn_internal}
+    homepage.widget.username: ${service.identity.username}
 features:
   password: true
   secrets:
@@ -20,14 +25,8 @@ identity:
 networking:
   port: 30396
   scheme: http
-platform_config:
-  docker:
-    labels:
-      homepage.icon: sh-grimmory
-      homepage.widget.password: ${service.state.secrets.password}
-      homepage.widget.type: booklore
-      homepage.widget.url: https://${service.fqdn_internal}
-      homepage.widget.username: ${service.identity.username}
-  truenas:
-    containers:
-      - grimmory
+targets:
+  au-truenas:
+    truenas:
+      containers:
+        - grimmory

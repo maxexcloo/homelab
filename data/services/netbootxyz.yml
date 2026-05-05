@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
 identity:
   description: Network Boot Server
   group: Infrastructure
@@ -10,8 +8,9 @@ identity:
 networking:
   port: 31010
   scheme: http
-platform_config:
-  truenas:
-    port_key: web_http_port
-    containers:
-      - netboot
+targets:
+  au-truenas:
+    truenas:
+      port_key: web_http_port
+      containers:
+        - netboot

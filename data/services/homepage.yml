@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
-deploy_to:
-  - au-truenas
+container:
+  labels:
+    homelab.homepage.enabled: false
 identity:
   description: Application Dashboard
   group: Applications
@@ -10,7 +11,5 @@ identity:
 networking:
   port: 30054
   scheme: http
-platform_config:
-  docker:
-    labels:
-      homelab.homepage.enabled: false
+targets:
+  au-truenas: {}

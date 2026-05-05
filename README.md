@@ -76,10 +76,11 @@ Feature flags either create provider-backed resources, expose values generated l
 ### Adding Services
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
-2. Fill in `deploy_to`, `features`, `identity`, `networking`
-3. For Fly.io deployments, optionally set `platform_config.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
-4. Optionally add deploy artifacts under `services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
-5. Run `mise run plan` to review, `mise run apply` to provision
+2. Fill in `features`, `identity`, `networking`, and at least one entry under `targets:` (server key or `fly`)
+3. Each target may carry per-platform sections (`docker`, `fly`, `truenas`) and an optional `features` overlay that overrides the service-level flags
+4. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
+5. Optionally add deploy artifacts under `services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
+6. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands
 

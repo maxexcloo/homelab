@@ -1,28 +1,181 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
-  "description": "An application or daemon deployed to one or more servers or to Fly.io. Each deploy_to target produces an independent service instance with its own DNS records, secrets, and config files.",
-  "required": ["identity"],
+  "description": "An application or daemon deployed to one or more servers or to Fly.io. Each entry in `targets` produces an independent service instance with its own DNS records, secrets, and config files.",
+  "required": ["identity", "targets"],
   "title": "Service",
   "type": "object",
-  "properties": {
-    "deploy_to": {
-      "description": "Server keys to deploy this service on (e.g. 'au-malatang'). Use 'fly' for Fly.io deployments. Each entry produces a separate service instance keyed as {service}-{target}.",
-      "minItems": 1,
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "pattern": "^(fly|[a-z0-9-]+)$",
-        "type": "string"
+  "definitions": {
+    "container_target": {
+      "additionalProperties": false,
+      "description": "Container-runtime config (Compose env and labels) for Komodo stacks and TrueNAS custom apps. May be set at the service level (applied to every target) or per-target as an overlay.",
+      "type": "object",
+      "properties": {
+        "env": {
+          "description": "Extra environment variables merged into the service's computed env map. Values are stringified and quoted by render templates. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "labels": {
+          "description": "Extra Docker labels merged into generated routing labels. Values are stringified during rendering except homelab.homepage.enabled, which may be false to suppress generated Homepage labels. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
       }
     },
-    "features": {
+    "features_overlay": {
       "additionalProperties": false,
-      "description": "Feature flags that provision resources, expose template values or control generated config for this service instance.",
+      "description": "Per-target feature overrides. Only specify the flags that differ from the service-level defaults.",
       "type": "object",
       "properties": {
         "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes b2_bucket_name, b2_application_key_id, b2_application_key_sensitive, and b2_endpoint as template variables.",
+          "type": "boolean"
+        },
+        "monitoring": {
+          "type": "boolean"
+        },
+        "monitoring_alerts": {
+          "type": "boolean"
+        },
+        "password": {
+          "type": "boolean"
+        },
+        "pushover": {
+          "type": "boolean"
+        },
+        "resend": {
+          "type": "boolean"
+        },
+        "tailscale": {
+          "type": "boolean"
+        }
+      }
+    },
+    "fly_target": {
+      "additionalProperties": false,
+      "description": "Configuration for Fly.io deployments.",
+      "type": "object",
+      "properties": {
+        "app_name": {
+          "description": "Fly.io app name override. If null, defaults to {organization.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "type": ["string", "null"]
+        },
+        "cpu_kind": {
+          "description": "CPU type. 'shared' is cheaper and suitable for most workloads; 'performance' provides dedicated CPU time.",
+          "enum": ["shared", "performance"],
+          "type": "string"
+        },
+        "cpus": {
+          "description": "Number of vCPUs to allocate.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "image": {
+          "description": "Pre-built Docker image to deploy (e.g. 'ghcr.io/owner/image:tag'). If null, a Dockerfile in the service's template directory is used instead.",
+          "type": ["string", "null"]
+        },
+        "machine_count": {
+          "description": "Desired number of Fly Machines for this app. Null leaves the existing machine count unchanged.",
+          "minimum": 1,
+          "type": ["integer", "null"]
+        },
+        "memory_mb": {
+          "description": "RAM in MiB to allocate to each machine.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "region": {
+          "description": "Fly.io primary region code (e.g. 'syd', 'lax'). Determines where machines are provisioned by default.",
+          "pattern": "^[a-z]{3}$",
+          "type": "string"
+        }
+      }
+    },
+    "truenas_target": {
+      "additionalProperties": false,
+      "description": "Configuration for TrueNAS catalog app deployments. Custom apps are inferred from docker-compose.yaml.tftpl in the service's template directory.",
+      "type": "object",
+      "properties": {
+        "catalog_app": {
+          "description": "TrueNAS catalog app name. Defaults to identity.service when null.",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "type": ["string", "null"]
+        },
+        "containers": {
+          "description": "Container names that should receive generated labels for TrueNAS catalog apps. Defaults to identity.service when empty.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "pattern": "^[a-z0-9-]+$",
+            "type": "string"
+          }
+        },
+        "port_key": {
+          "description": "Primary TrueNAS network port key that receives networking.port as port_number.",
+          "pattern": "^[a-z0-9_]+$",
+          "type": "string"
+        },
+        "train": {
+          "description": "TrueNAS catalog train.",
+          "minLength": 1,
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "container": {
+      "$ref": "#/definitions/container_target",
+      "description": "Container-runtime config applied to every target. Per-target `container` blocks deep-merge on top, with target values winning."
+    },
+    "features": {
+      "additionalProperties": false,
+      "description": "Service-level feature flags applied to every target unless a target overrides them.",
+      "type": "object",
+      "properties": {
+        "b2": {
+          "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes state.fields.b2_application_key_id, state.fields.b2_bucket_name, state.fields.b2_endpoint, and state.secrets.b2_application_key as template variables.",
           "type": "boolean"
         },
         "monitoring": {
@@ -34,19 +187,19 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random password for this service. Exposes password_sensitive and password_hash_sensitive (bcrypt) as template variables. Stored in 1Password.",
+          "description": "Generate a random password for this service. Exposes state.secrets.password and state.secrets.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
-          "description": "Expose the configured Pushover application token and user/group key for this service. Exposes pushover_application_token_sensitive and pushover_user_key_sensitive as template variables.",
+          "description": "Expose the configured Pushover application token and user/group key for this service. Exposes state.secrets.pushover_application_token and state.secrets.pushover_user_key as template variables.",
           "type": "boolean"
         },
         "resend": {
-          "description": "Provision a Resend API key for outbound email from this service. Exposes resend_api_key_sensitive as a template variable.",
+          "description": "Provision a Resend API key for outbound email from this service. Exposes state.secrets.resend_api_key as a template variable.",
           "type": "boolean"
         },
         "secrets": {
-          "description": "Additional secrets for this service. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as {name}_sensitive on the service object.",
+          "description": "Additional secrets for this service. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as state.secrets.{name} on the service object.",
           "type": "array",
           "items": {
             "additionalProperties": false,
@@ -79,7 +232,7 @@
                 "type": "string"
               },
               "name": {
-                "description": "Secret identifier. Exposed as {name}_sensitive on the service. Must be lowercase alphanumeric or underscore.",
+                "description": "Secret identifier. Exposed as state.secrets.{name} on the service. Must be lowercase alphanumeric or underscore.",
                 "pattern": "^[a-z0-9_]+$",
                 "type": "string"
               }
@@ -87,7 +240,7 @@
           }
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key for this service. Exposes tailscale_auth_key_sensitive as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
+          "description": "Generate a Tailscale auth key for this service. Exposes state.secrets.tailscale_auth_key as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
           "type": "boolean"
         }
       }
@@ -132,7 +285,7 @@
       "type": "object",
       "properties": {
         "services": {
-          "description": "Map of local alias to target-expanded service key. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and public ${services.*}. Example: {\"beszel\": \"beszel-${service.target}\"} lets templates reference ${services.beszel.networking.port}.",
+          "description": "Map of local alias to target-expanded service key. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. Example: {\"beszel\": \"beszel-${service.target}\"} lets templates reference ${services.beszel.networking.port}.",
           "type": "object",
           "additionalProperties": {
             "pattern": "^[a-z0-9][a-z0-9-]*(\\$\\{[^}]+\\}[a-z0-9-]*)*$",
@@ -161,7 +314,7 @@
           "enum": ["http", "https", null]
         },
         "ssl": {
-          "description": "Whether the service is accessed over HTTPS. Controls the URL scheme in health checks and monitoring. Defaults to true.",
+          "description": "Whether the service is accessed over HTTPS. Controls the URL scheme in 1Password URL items, health checks, and monitoring. Defaults to true.",
           "type": "boolean"
         },
         "ssl_validation": {
@@ -179,140 +332,31 @@
         }
       }
     },
-    "platform_config": {
-      "additionalProperties": false,
-      "description": "Platform-specific deployment configuration.",
+    "targets": {
+      "description": "Deployment targets for this service. Map keys are server keys (e.g. 'au-malatang') or 'fly' for Fly.io. Each entry produces a separate service instance keyed as {service}-{target}.",
+      "minProperties": 1,
       "type": "object",
-      "properties": {
-        "docker": {
-          "additionalProperties": false,
-          "description": "Configuration for Docker-based deployments (Komodo and TrueNAS custom apps).",
-          "type": ["object", "null"],
-          "properties": {
-            "env": {
-              "description": "Extra environment variables merged into the service's computed env map. Values are stringified and quoted by render templates. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
-              "type": "object",
-              "additionalProperties": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "array",
-                    "items": {
-                      "anyOf": [
-                        {
-                          "type": "boolean"
-                        },
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            },
-            "labels": {
-              "description": "Extra Docker labels merged into generated routing labels. Values are stringified during rendering except homelab.homepage.enabled, which may be false to suppress generated Homepage labels. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
-              "type": "object",
-              "additionalProperties": {
-                "anyOf": [
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "fly": {
-          "additionalProperties": false,
-          "description": "Configuration for Fly.io deployments.",
-          "type": "object",
-          "properties": {
-            "app_name": {
-              "description": "Fly.io app name override. If null, defaults to {organization.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
-              "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
-              "type": ["string", "null"]
-            },
-            "cpu_kind": {
-              "description": "CPU type. 'shared' is cheaper and suitable for most workloads; 'performance' provides dedicated CPU time.",
-              "enum": ["shared", "performance"],
-              "type": "string"
-            },
-            "cpus": {
-              "description": "Number of vCPUs to allocate.",
-              "minimum": 1,
-              "type": "integer"
-            },
-            "image": {
-              "description": "Pre-built Docker image to deploy (e.g. 'ghcr.io/owner/image:tag'). If null, a Dockerfile in the service's template directory is used instead.",
-              "type": ["string", "null"]
-            },
-            "machine_count": {
-              "description": "Desired number of Fly Machines for this app. Null leaves the existing machine count unchanged.",
-              "minimum": 1,
-              "type": ["integer", "null"]
-            },
-            "memory_mb": {
-              "description": "RAM in MiB to allocate to each machine.",
-              "minimum": 1,
-              "type": "integer"
-            },
-            "region": {
-              "description": "Fly.io primary region code (e.g. 'syd', 'lax'). Determines where machines are provisioned by default.",
-              "pattern": "^[a-z]{3}$",
-              "type": "string"
-            }
-          }
-        },
-        "truenas": {
-          "additionalProperties": false,
-          "description": "Configuration for TrueNAS catalog app deployments. Custom apps are inferred from docker-compose.yaml or docker-compose.yaml.tftpl files.",
-          "type": "object",
-          "properties": {
-            "catalog_app": {
-              "description": "TrueNAS catalog app name. Defaults to identity.service when null.",
-              "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
-              "type": ["string", "null"]
-            },
-            "containers": {
-              "description": "Container names that should receive generated labels for TrueNAS catalog apps. Defaults to identity.service when empty.",
-              "type": "array",
-              "uniqueItems": true,
-              "items": {
-                "pattern": "^[a-z0-9-]+$",
-                "type": "string"
-              }
-            },
-            "port_key": {
-              "description": "Primary TrueNAS network port key that receives networking.port as port_number.",
-              "pattern": "^[a-z0-9_]+$",
-              "type": "string"
-            },
-            "train": {
-              "description": "TrueNAS catalog train.",
-              "minLength": 1,
-              "type": "string"
-            }
+      "additionalProperties": {
+        "additionalProperties": false,
+        "description": "Per-target configuration. Each section is optional and only the platforms relevant to the target need be present.",
+        "type": "object",
+        "properties": {
+          "container": {
+            "$ref": "#/definitions/container_target"
+          },
+          "features": {
+            "$ref": "#/definitions/features_overlay"
+          },
+          "fly": {
+            "$ref": "#/definitions/fly_target"
+          },
+          "truenas": {
+            "$ref": "#/definitions/truenas_target"
           }
         }
+      },
+      "propertyNames": {
+        "pattern": "^(fly|[a-z0-9-]+)$"
       }
     }
   }

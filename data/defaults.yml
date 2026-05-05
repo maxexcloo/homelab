@@ -83,20 +83,20 @@ services:
     ssl: true
     ssl_validation: true
     urls: []
-  platform_config:
-    docker:
-      env: {}
-      labels: {}
-    fly:
-      app_name: null
-      cpu_kind: shared
-      cpus: 1
-      image: null
-      machine_count: 1
-      memory_mb: 256
-      region: syd
-    truenas:
-      catalog_app: null
-      containers: []
-      port_key: web_port
-      train: community
+target_defaults:
+  container:
+    env: {}
+    labels: {}
+  fly:
+    app_name: null
+    cpu_kind: shared
+    cpus: 1
+    image: null
+    machine_count: 1
+    memory_mb: 256
+    region: syd
+  truenas:
+    catalog_app: null
+    containers: []
+    port_key: web_port
+    train: community

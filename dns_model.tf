@@ -189,7 +189,7 @@ locals {
     for service_key, service in local.fly_input_services : [
       for url_index, url in service.networking.urls : {
         "${service_key}-url-${url_index}" = {
-          content = "${service.platform_config.fly.app_name}.fly.dev"
+          content = "${service.fly.app_name}.fly.dev"
           name    = url
           proxied = service.networking.expose == "cloudflare"
           type    = "CNAME"
