@@ -2,9 +2,9 @@ locals {
   # Komodo only receives services with a rendered compose file on Docker-capable
   # server targets.
   komodo_input_stacks = {
-    for service_key, service in local.services_model_desired : service_key => service
+    for service_key, service in local.services_model : service_key => service
     if contains(local.servers_input_keys, service.target) &&
-    local.servers_model_desired[service.target].features.docker &&
+    local.servers_model[service.target].features.docker &&
     contains(keys(local.services_render_files_compose), service_key)
   }
 
@@ -28,7 +28,7 @@ locals {
       })
       if(
         contains(local.servers_input_keys, file_config.target) &&
-        local.servers_model_desired[file_config.target].features.docker
+        local.servers_model[file_config.target].features.docker
       )
     }
   )
@@ -54,7 +54,7 @@ resource "github_repository_file" "komodo_servers" {
   repository          = local.defaults.github.repositories.komodo
 
   content = sensitive(templatefile("${path.module}/templates/komodo/servers.toml.tftpl", {
-    servers = local.servers_model_desired
+    servers = local.servers_model
   }))
 }
 

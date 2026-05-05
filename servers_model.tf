@@ -36,7 +36,7 @@ locals {
 
   # Desired server model: YAML plus defaults plus deterministic computed fields.
   # This layer is safe for references that should not depend on generated secrets.
-  servers_model_desired = {
+  servers_model = {
     for server_key, server in local.servers_input : server_key => merge(
       server,
       local._servers_model_computed[server_key],
@@ -51,7 +51,7 @@ locals {
 
   # Runtime server model: provider-backed values and generated secrets that are
   # intentionally kept out of the desired model to make dependencies visible.
-  servers_model_runtime = {
+  servers_state = {
     for server_key, server in local.servers_input : server_key => merge(
       {
         age_public_key           = age_secret_key.server[server_key].public_key

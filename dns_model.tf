@@ -42,7 +42,7 @@ locals {
   # The most specific (longest) zone wins so nested domains resolve correctly.
   _dns_model_zones_matching = {
     for url in distinct(flatten([
-      for service_key, service in local.services_model_desired : service.networking.urls
+      for service_key, service in local.services_model : service.networking.urls
       ])) : url => [
       for zone in local.dns_input_zones : { length = length(zone), name = zone }
       if url == zone || endswith(url, ".${zone}")
@@ -98,7 +98,7 @@ locals {
   # Server records combine explicit public addresses, OCI-assigned addresses, and
   # Tailscale device lookups into external/internal DNS records.
   dns_model_records_servers = merge([
-    for server_key, server in local.servers_model_desired : merge(
+    for server_key, server in local.servers_model : merge(
       server.public_address != null ? {
         "${local.defaults.domains.external}-${server_key}-cname" = {
           content = server.public_address
@@ -142,18 +142,18 @@ locals {
           zone    = local.defaults.domains.external
         }
       } : {},
-      local.servers_model_runtime[server_key].tailscale_ipv4 != null ? {
+      local.servers_state[server_key].tailscale_ipv4 != null ? {
         "${local.defaults.domains.internal}-${server_key}-a" = {
-          content = local.servers_model_runtime[server_key].tailscale_ipv4
+          content = local.servers_state[server_key].tailscale_ipv4
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "A"
           zone    = local.defaults.domains.internal
         }
       } : {},
-      local.servers_model_runtime[server_key].tailscale_ipv6 != null ? {
+      local.servers_state[server_key].tailscale_ipv6 != null ? {
         "${local.defaults.domains.internal}-${server_key}-aaaa" = {
-          content = local.servers_model_runtime[server_key].tailscale_ipv6
+          content = local.servers_state[server_key].tailscale_ipv6
           name    = "${server.fqdn}.${local.defaults.domains.internal}"
           proxied = false
           type    = "AAAA"
@@ -165,7 +165,7 @@ locals {
 
   # Server-hosted Cloudflare services point at the target server's tunnel.
   dns_model_records_services = {
-    for service_key, service in local.services_model_desired :
+    for service_key, service in local.services_model :
     "${local.defaults.domains.external}-${service_key}" => {
       content = "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
       name    = service.fqdn_external
@@ -175,7 +175,7 @@ locals {
     }
     if(
       contains(local.servers_input_keys, service.target) &&
-      local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel &&
+      local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
       service.networking.expose == "cloudflare"
     )
   }
@@ -200,7 +200,7 @@ locals {
   # Custom service URLs resolve to a tunnel when exposed through Cloudflare,
   # otherwise to the service's computed external or internal hostname.
   dns_model_records_services_urls = merge(flatten([
-    for service_key, service in local.services_model_desired : [
+    for service_key, service in local.services_model : [
       for url_index, url in service.networking.urls : {
         "${service_key}-url-${url_index}" = {
           name    = url
@@ -209,7 +209,7 @@ locals {
           zone    = local.dns_model_zones_urls[url]
 
           content = (
-            local.servers_model_desired[service.target].features.cloudflare_zero_trust_tunnel
+            local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
             && service.networking.expose == "cloudflare"
             ? "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
             : service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal

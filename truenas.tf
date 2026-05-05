@@ -2,13 +2,13 @@ locals {
   # TrueNAS deploy artifacts are grouped by target server because each server has
   # its own self-hosted runner and age key.
   truenas_input_servers = {
-    for server_key, server in local.servers_model_desired : server_key => server
+    for server_key, server in local.servers_model : server_key => server
     if server.platform == "truenas"
   }
 
   # Expanded services targeting a TrueNAS server.
   truenas_input_services = {
-    for service_key, service in local.services_model_desired : service_key => service
+    for service_key, service in local.services_model : service_key => service
     if contains(keys(local.truenas_input_servers), service.target)
   }
 
@@ -74,12 +74,12 @@ locals {
     {
       # 3) Generic sidecar files (env, configs, etc.)
       for file_key, file_config in local.services_render_files_sidecars : (
-        "${file_config.target}/${local.services_model_desired[file_config.stack].identity.name}/${file_config.rel_path}"
+        "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
         ) => merge(file_config, {
           age_public_key = age_secret_key.server[file_config.target].public_key
           commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
           file = (
-            "${file_config.target}/${local.services_model_desired[file_config.stack].identity.name}/${file_config.rel_path}"
+            "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
           )
       })
       if contains(keys(local.truenas_input_servers), file_config.target)

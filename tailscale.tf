@@ -120,7 +120,7 @@ resource "tailscale_acl" "default" {
 }
 
 resource "tailscale_tailnet_key" "server" {
-  for_each = local.servers_outputs_by_feature.tailscale
+  for_each = local.servers_by_feature.tailscale
 
   description   = each.key
   preauthorized = true
@@ -131,7 +131,7 @@ resource "tailscale_tailnet_key" "server" {
 }
 
 resource "tailscale_tailnet_key" "service" {
-  for_each = local.services_outputs_by_feature.tailscale
+  for_each = local.services_by_feature.tailscale
 
   description   = each.key
   ephemeral     = true

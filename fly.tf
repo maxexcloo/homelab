@@ -1,7 +1,7 @@
 locals {
   # Expanded services whose deployment target is Fly.io.
   fly_input_services = {
-    for service_key, service in local.services_model_desired : service_key => service
+    for service_key, service in local.services_model : service_key => service
     if service.target == "fly"
   }
 

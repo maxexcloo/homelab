@@ -1,7 +1,17 @@
 locals {
+  # Per-service: import alias → resolved real service key. Built once and
+  # reused for both label/env rendering and the final template context.
+  _services_imports = {
+    for service_key, service in local.services : service_key => {
+      for import_alias, service_ref in service.imports.services :
+      import_alias => templatestring(service_ref, { service = service })
+      if contains(keys(local.services), templatestring(service_ref, { service = service }))
+    }
+  }
+
   # Docker env stored as typed YAML, rendered as strings for deployment.
   _services_render_env = {
-    for service_key, service in local.services_outputs_private : service_key => {
+    for service_key, service in local.services : service_key => {
       for env_key, env_value in service.platform_config.docker.env : env_key => local._services_render_env_string[service_key][env_key]
       if env_value != null && local._services_render_env_string[service_key][env_key] != ""
     }
@@ -12,11 +22,11 @@ locals {
   # `tostring()` succeeds for strings/numbers/bools and fails for lists, which
   # is the cleanest way to switch on the YAML schema's value types.
   _services_render_env_string = {
-    for service_key, service in local.services_outputs_private : service_key => {
+    for service_key, service in local.services : service_key => {
       for env_key, env_value in service.platform_config.docker.env : env_key => (
         can(tostring(env_value))
-        ? templatestring(tostring(env_value), local.services_template_context_base[service_key])
-        : join("+", [for env_item in env_value : templatestring(tostring(env_item), local.services_template_context_base[service_key])])
+        ? templatestring(tostring(env_value), local._services_render_pre_context[service_key])
+        : join("+", [for env_item in env_value : templatestring(tostring(env_item), local._services_render_pre_context[service_key])])
       )
     }
   }
@@ -43,7 +53,7 @@ locals {
   # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
   # Other files use filebase64(), so static and binary assets share one path.
   _services_render_files_inputs = flatten([
-    for service_key, service in local.services_model_desired : [
+    for service_key, service in local.services : [
       for file_path in fileset(path.module, "services/${service.identity.service}/**") : merge(
         local._services_render_file_path_info[file_path],
         {
@@ -63,9 +73,9 @@ locals {
   #   1. Homepage dashboard labels (auto-suppressed when homelab.homepage.enabled=false)
   #   2. Traefik routing labels (only when networking.port is set)
   #   3. User-defined labels from platform_config.docker.labels, with template
-  #      interpolation against the same context
+  #      interpolation against the pre-context (labels can reference imports).
   _services_render_labels = {
-    for service_key, service in local.services_outputs_private : service_key => merge(
+    for service_key, service in local.services : service_key => merge(
       (service.networking.port != null || length(service.platform_config.docker.labels) > 0) &&
       lookup(service.platform_config.docker.labels, "homelab.homepage.enabled", true) ? {
         "homepage.description" = service.identity.description
@@ -106,17 +116,37 @@ locals {
 
       {
         for label_key, label_value in service.platform_config.docker.labels :
-        label_key => templatestring(tostring(label_value), local.services_template_context_base[service_key])
+        label_key => templatestring(tostring(label_value), local._services_render_pre_context[service_key])
         if label_value != null
       },
     )
   }
 
-  # Final template context merging the base context with rendered env, labels,
-  # and the public service inventory so templates see the complete picture.
+  # Pre-render context with import aliases overlaid. Used by env and label
+  # interpolation; cannot include the rendered env/labels themselves (those
+  # would be circular).
+  _services_render_pre_context = {
+    for service_key, service in local.services : service_key => {
+      defaults = local.defaults
+      server   = try(local.servers[service.target], null)
+      servers  = local.servers
+      service  = service
+      services = merge(
+        local.services,
+        {
+          for alias, real_key in local._services_imports[service_key] :
+          alias => local.services[real_key]
+        },
+      )
+    }
+  }
+
+  # Final template context for compose/sidecar templatefile renders. Adds the
+  # rendered env/labels/envs and reshapes the services map so each entry
+  # carries its own labels (used by Homepage dashboard inventory).
   services_render_context = {
-    for service_key, service in local.services_outputs_private : service_key => merge(
-      local.services_template_context_base[service_key],
+    for service_key, service in local.services : service_key => merge(
+      local._services_render_pre_context[service_key],
       {
         env         = local._services_render_env[service_key]
         labels      = local._services_render_labels[service_key]
@@ -129,20 +159,22 @@ locals {
           }
         ]
 
-        services = {
-          for public_service_key, public_service in local.services_outputs_public : public_service_key => merge(
-            public_service,
-            {
-              labels = local._services_render_labels[public_service_key]
-            }
-          )
-        }
-    })
+        services = merge(
+          {
+            for k, s in local.services : k => merge(s, { labels = local._services_render_labels[k] })
+          },
+          {
+            for alias, real_key in local._services_imports[service_key] :
+            alias => merge(local.services[real_key], { labels = local._services_render_labels[real_key] })
+          },
+        )
+      },
+    )
   }
 
   # Rendered Docker Compose content keyed by expanded service stack.
   services_render_files_compose = {
-    for service_key, service in local.services_model_desired : service_key => templatefile(
+    for service_key, service in local.services : service_key => templatefile(
       "${path.module}/services/${service.identity.service}/docker-compose.yaml.tftpl",
       local.services_render_context[service_key]
     )
@@ -167,19 +199,5 @@ locals {
         )
       }
     )
-  }
-
-  # First-pass template context used to resolve import aliases. Only public
-  # service data is available here to avoid circular dependencies on runtime
-  # fields (the runtime model depends on feature resources, which in turn
-  # depend on the feature maps built from input).
-  services_template_context_public = {
-    for service_key, service in local.services_model_desired : service_key => {
-      defaults = local.defaults
-      server   = try(local.servers_outputs_public[service.target], null)
-      servers  = local.servers_outputs_public
-      service  = service
-      services = local.services_outputs_public
-    }
   }
 }

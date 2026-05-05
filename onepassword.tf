@@ -9,7 +9,7 @@ locals {
   }
 
   onepassword_server_fields = {
-    for server_key, server in local.servers_outputs_private : server_key => {
+    for server_key, server in local.servers : server_key => {
       for field_name, field_value in server : field_name => field_value
       if(
         field_value != null &&
@@ -27,7 +27,7 @@ locals {
   }
 
   onepassword_server_item_payloads = {
-    for server_key, server in local.servers_model_desired : server_key => {
+    for server_key, server in local.servers_model : server_key => {
       category = "LOGIN"
       tags     = local.defaults.onepassword.vaults.servers.tags
       title    = server_key
@@ -38,15 +38,15 @@ locals {
             id      = "username"
             label   = "username_ro"
             purpose = "USERNAME"
-            value   = local.servers_outputs_private[server_key].identity.username
+            value   = local.servers[server_key].identity.username
           }
         ],
-        local.servers_outputs_private[server_key].password_sensitive != null ? [
+        local.servers[server_key].password_sensitive != null ? [
           {
             id      = "password"
             label   = "password_rw"
             purpose = "PASSWORD"
-            value   = local.servers_outputs_private[server_key].password_sensitive
+            value   = local.servers[server_key].password_sensitive
           }
         ] : [],
         [
@@ -73,13 +73,13 @@ locals {
   }
 
   onepassword_server_read_write_fields = {
-    for server_key, server in local.servers_model_desired : server_key => compact([
+    for server_key, server in local.servers_model : server_key => compact([
       server.features.password ? "password" : null
     ])
   }
 
   onepassword_server_urls = {
-    for server_key, server in local.servers_outputs_private : server_key => merge(
+    for server_key, server in local.servers : server_key => merge(
       {
         for field_name, field_value in server : field_name => format(
           "https://%s%s",
@@ -106,7 +106,7 @@ locals {
   }
 
   onepassword_service_fields = {
-    for service_key, service in local.services_outputs_private : service_key => {
+    for service_key, service in local.services : service_key => {
       for field_name, field_value in service : field_name => field_value
       if(
         field_value != null &&
@@ -140,15 +140,15 @@ locals {
             id      = "username"
             label   = "username_ro"
             purpose = "USERNAME"
-            value   = local.services_outputs_private[service_key].identity.username
+            value   = local.services[service_key].identity.username
           }
         ],
-        local.services_outputs_private[service_key].password_sensitive != null ? [
+        local.services[service_key].password_sensitive != null ? [
           {
             id      = "password"
             label   = "password_rw"
             purpose = "PASSWORD"
-            value   = local.services_outputs_private[service_key].password_sensitive
+            value   = local.services[service_key].password_sensitive
           }
         ] : [],
         [
@@ -179,14 +179,14 @@ locals {
   }
 
   onepassword_service_items = {
-    for service_key, service in local.services_model_desired : service_key => service
+    for service_key, service in local.services_model : service_key => service
     if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.networking.scheme != null
   }
 
   # Secret fields with bootstrap_type == null are manually supplied in
   # 1Password; they should be synced even when the value is empty.
   onepassword_service_manual_secret_names = {
-    for service_key, service in local.services_outputs_private : service_key => [
+    for service_key, service in local.services : service_key => [
       for secret in service.features.secrets : "${secret.name}_sensitive"
       if try(secret.bootstrap_type, null) == null
     ]
@@ -202,7 +202,7 @@ locals {
   }
 
   onepassword_service_urls = {
-    for service_key, service in local.services_outputs_private : service_key => {
+    for service_key, service in local.services : service_key => {
       for field_name, field_value in service : field_name => startswith(field_value, "http://") || startswith(field_value, "https://") ? field_value : "https://${field_value}"
       if field_value != null && field_value != "" && field_value != false && can(regex(local.defaults.onepassword.url_field_pattern, field_name)) && can(tostring(field_value))
     }
@@ -210,7 +210,7 @@ locals {
 }
 
 resource "restapi_object" "onepassword_server" {
-  for_each = local.servers_model_desired
+  for_each = local.servers_model
 
   id_attribute            = "id"
   ignore_server_additions = true
@@ -250,7 +250,7 @@ data "http" "onepassword_server_item" {
 }
 
 data "http" "onepassword_server_search" {
-  for_each = local.servers_model_desired
+  for_each = local.servers_model
 
   url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items?filter=${urlencode("title eq \"${each.key}\"")}"
 

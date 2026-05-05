@@ -22,9 +22,9 @@ data "cloudflare_zone" "all" {
 locals {
   # Pre-computed tunnel ingress rules per server so the module receives a clean list.
   cloudflare_tunnel_ingress = {
-    for server_key, server in local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel : server_key => concat(
+    for server_key, server in local.servers_by_feature.cloudflare_zero_trust_tunnel : server_key => concat(
       flatten([
-        for service_key, service in local.services_model_desired : [
+        for service_key, service in local.services_model : [
           for hostname in distinct(concat(
             service.fqdn_external != null ? [service.fqdn_external] : [],
             [for url in service.networking.urls : url if lookup(local.dns_model_zones_urls, url, null) != null]
@@ -50,7 +50,7 @@ locals {
 }
 
 resource "cloudflare_account_token" "server_acme" {
-  for_each = local.servers_outputs_by_feature.cloudflare_acme_token
+  for_each = local.servers_by_feature.cloudflare_acme_token
 
   account_id = data.cloudflare_account.default.id
   name       = each.key
@@ -85,7 +85,7 @@ resource "cloudflare_dns_record" "all" {
 
 module "cloudflare_tunnel" {
   source   = "./modules/cloudflare_tunnel"
-  for_each = local.servers_outputs_by_feature.cloudflare_zero_trust_tunnel
+  for_each = local.servers_by_feature.cloudflare_zero_trust_tunnel
 
   account_id = data.cloudflare_account.default.id
   ingress    = local.cloudflare_tunnel_ingress[each.key]

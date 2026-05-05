@@ -20,11 +20,11 @@ locals {
 
   # Desired service model: expanded deployment target data plus deterministic
   # names, URLs, and server FQDNs. Runtime credentials are added separately.
-  services_model_desired = {
+  services_model = {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
       {
-        fqdn_internal = contains(local.servers_input_keys, service.target) ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_internal}" : service.fqdn_internal
+        fqdn_internal = contains(local.servers_input_keys, service.target) ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : service.fqdn_internal
         key           = service_key
 
         # coalesce is safe here because defaults.yml sets app_name to null, and
@@ -33,14 +33,14 @@ locals {
           service.target == "fly"
           ? "${coalesce(service.platform_config.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
           : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.networking.expose)
-          ? "${service.identity.name}.${local.servers_model_desired[service.target].fqdn_external}"
+          ? "${service.identity.name}.${local.servers_model[service.target].fqdn_external}"
           : service.fqdn_external
         )
 
         identity = {
           group = coalesce(
             service.identity.group,
-            try(local.servers_model_desired[service.target].description, null),
+            try(local.servers_model[service.target].description, null),
             "Applications",
           )
         }
@@ -60,7 +60,7 @@ locals {
 
   # Runtime service model: generated credentials and provider-backed values.
   # Keeping this separate makes secret dependencies easier to spot.
-  services_model_runtime = {
+  services_state = {
     for service_key, service in local.services_input_targets : service_key => merge(
       service.features.b2 ? {
         b2_application_key_id        = b2_application_key.service[service_key].application_key_id

@@ -4,7 +4,7 @@ locals {
       for target in service.deploy_to : "${service_key} -> ${target}"
       if contains(local.servers_input_keys, target) &&
       service.networking.expose == "cloudflare" &&
-      !local.servers_model_desired[target].features.cloudflare_zero_trust_tunnel
+      !local.servers_model[target].features.cloudflare_zero_trust_tunnel
     ]
   ])
 
@@ -14,16 +14,16 @@ locals {
   ]
 
   services_validation_import_alias_conflicts = flatten([
-    for service_key, service in local.services_model_desired : [
-      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, local.services_template_context_public[service_key])}"
-      if contains(keys(local.services_model_desired), import_alias)
+    for service_key, service in local.services_model : [
+      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, { service = service })}"
+      if contains(keys(local.services_model), import_alias)
     ]
   ])
 
   services_validation_invalid_imports = flatten([
-    for service_key, service in local.services_model_desired : [
-      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, local.services_template_context_public[service_key])}"
-      if !contains(keys(local.services_model_desired), templatestring(service_ref, local.services_template_context_public[service_key]))
+    for service_key, service in local.services_model : [
+      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, { service = service })}"
+      if !contains(keys(local.services_model), templatestring(service_ref, { service = service }))
     ]
   ])
 
