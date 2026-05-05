@@ -46,20 +46,9 @@
   ]) ~}
     - ${servers[srv_key].description}:
         description: ${jsonencode(servers[srv_key].platform)}
-        href: "https://${servers[srv_key].fqdn_internal}"
-        icon: "mdi-${servers[srv_key].type_icon}-#ffffff"
+        href: https://${servers[srv_key].fqdn_internal}
+        icon: ${servers[srv_key].type_icon}
         ping: ${jsonencode(servers[srv_key].fqdn_internal)}
-        %{~ if lookup(services, "beszel-agent-${srv_key}", null) != null
-        && lookup(services, "beszel-${srv_key}", null) != null ~}
-        widget:
-          type: beszel
-          url: https://${services["beszel-${srv_key}"].fqdn_internal}
-          username: ${jsonencode(defaults.organization.email)}
-          password: ${services["beszel-${srv_key}"].state.secrets.password}
-          systemId: ${services["beszel-agent-${srv_key}"].state.secrets.system_id}
-          version: "2"
-          fields: ${jsonencode(["status", "cpu", "memory", "network"])}
-        %{~ endif ~}
   %{~ endfor ~}
 %{~ endfor ~}
 %{~ for group in sort(distinct([

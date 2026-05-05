@@ -61,26 +61,26 @@ tailscale:
     - ephemeral
 types:
   appliance:
-    icon: devices
+    icon: mdi-devices-#ffffff
     label: Appliances
     tailscale_tag: appliance
   cicd:
-    icon: server
+    icon: mdi-server-#ffffff
     label: CI/CD
     tailscale_tag: cicd
   ephemeral:
-    icon: server
+    icon: mdi-server-#ffffff
     label: Ephemeral
     tailscale_tag: ephemeral
   router:
-    icon: router-network
+    icon: mdi-router-network-#ffffff
     label: Routers
     tailscale_tag: router
   server:
-    icon: server
+    icon: mdi-server-#ffffff
     label: Servers
     tailscale_tag: server
   vm:
-    icon: server
+    icon: mdi-server-#ffffff
     label: VMs
     tailscale_tag: vm
