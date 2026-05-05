@@ -21,10 +21,30 @@ data "oci_identity_availability_domain" "default" {
 locals {
   # Protocol/family combinations used when expanding ingress ports.
   oci_ingress_protocols = [
-    { family = "ipv4", name = "tcp", protocol = "6", source = "0.0.0.0/0" },
-    { family = "ipv4", name = "udp", protocol = "17", source = "0.0.0.0/0" },
-    { family = "ipv6", name = "tcp", protocol = "6", source = "::/0" },
-    { family = "ipv6", name = "udp", protocol = "17", source = "::/0" },
+    {
+      family   = "ipv4"
+      name     = "tcp"
+      protocol = "6"
+      source   = "0.0.0.0/0"
+    },
+    {
+      family   = "ipv4"
+      name     = "udp"
+      protocol = "17"
+      source   = "0.0.0.0/0"
+    },
+    {
+      family   = "ipv6"
+      name     = "tcp"
+      protocol = "6"
+      source   = "::/0"
+    },
+    {
+      family   = "ipv6"
+      name     = "udp"
+      protocol = "17"
+      source   = "::/0"
+    },
   ]
 
   # OCI network primitives are created once per region used by managed OCI VMs.
@@ -44,14 +64,29 @@ locals {
     for vm_key, vm in local.oci_vms : merge(
       {
         for rule in [
-          { family = "ipv4", port = null, protocol = "1", source = "0.0.0.0/0", vm_key = vm_key },
-          { family = "ipv6", port = null, protocol = "1", source = "::/0", vm_key = vm_key },
+          {
+            family   = "ipv4"
+            port     = null
+            protocol = "1"
+            source   = "0.0.0.0/0"
+            vm_key   = vm_key
+          },
+          {
+            family   = "ipv6"
+            port     = null
+            protocol = "1"
+            source   = "::/0"
+            vm_key   = vm_key
+          },
         ] : "${rule.vm_key}-icmp-${rule.family}" => rule
       },
       {
         for rule in flatten([
           for port in vm.platform_config.oci.ingress_ports : [
-            for combo in local.oci_ingress_protocols : merge(combo, { port = port, vm_key = vm_key })
+            for combo in local.oci_ingress_protocols : merge(combo, {
+              port   = port
+              vm_key = vm_key
+            })
           ]
         ]) : "${rule.vm_key}-${rule.name}-${rule.family}-${rule.port}" => rule
       }

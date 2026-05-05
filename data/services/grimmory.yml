@@ -24,7 +24,7 @@ platform_config:
   docker:
     labels:
       homepage.icon: sh-grimmory
-      homepage.widget.password: ${service.password_sensitive}
+      homepage.widget.password: ${service.state.secrets.password}
       homepage.widget.type: booklore
       homepage.widget.url: https://${service.fqdn_internal}
       homepage.widget.username: ${service.identity.username}

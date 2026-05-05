@@ -3,7 +3,9 @@ locals {
   servers = {
     for server_key, server in local.servers_model : server_key => merge(
       server,
-      { state = local.servers_state[server_key] },
+      {
+        state = local.servers_state[server_key]
+      },
     )
   }
 

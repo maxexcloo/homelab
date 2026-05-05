@@ -4,8 +4,12 @@ locals {
   _services_imports = {
     for service_key, service in local.services : service_key => {
       for import_alias, service_ref in service.imports.services :
-      import_alias => templatestring(service_ref, { service = service })
-      if contains(keys(local.services), templatestring(service_ref, { service = service }))
+      import_alias => templatestring(service_ref, {
+        service = service
+      })
+      if contains(keys(local.services), templatestring(service_ref, {
+        service = service
+      }))
     }
   }
 
@@ -161,11 +165,15 @@ locals {
 
         services = merge(
           {
-            for k, s in local.services : k => merge(s, { labels = local._services_render_labels[k] })
+            for k, s in local.services : k => merge(s, {
+              labels = local._services_render_labels[k]
+            })
           },
           {
             for alias, real_key in local._services_imports[service_key] :
-            alias => merge(local.services[real_key], { labels = local._services_render_labels[real_key] })
+            alias => merge(local.services[real_key], {
+              labels = local._services_render_labels[real_key]
+            })
           },
         )
       },

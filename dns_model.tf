@@ -44,7 +44,10 @@ locals {
     for url in distinct(flatten([
       for service_key, service in local.services_model : service.networking.urls
       ])) : url => [
-      for zone in local.dns_input_zones : { length = length(zone), name = zone }
+      for zone in local.dns_input_zones : {
+        length = length(zone)
+        name   = zone
+      }
       if url == zone || endswith(url, ".${zone}")
     ]
   }

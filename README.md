@@ -44,8 +44,7 @@ data/
 ├── servers/*.yml       # Server definitions
 ├── services/*.yml      # Service deployments
 ├── config.yml          # Global configuration (domains, accounts, system, types)
-├── defaults.yml        # Field defaults merged into every server/service/DNS record
-└── scaffolding.yml     # Placeholder fields for computed/runtime values
+└── defaults.yml        # Field defaults merged into every server/service/DNS record
     │
     ▼
 OpenTofu

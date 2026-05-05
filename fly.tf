@@ -83,7 +83,9 @@ resource "github_repository_file" "fly_deploy_request" {
       for service_key, service in local.fly_input_services : service.platform_config.fly.app_name => sha256(jsonencode({
         sops = sha256(yamlencode({
           creation_rules = [
-            { age = age_secret_key.fly.public_key }
+            {
+              age = age_secret_key.fly.public_key
+            }
           ]
         }))
         workflow = filesha256("${path.module}/templates/workflows/fly-deploy.yml")
@@ -112,10 +114,17 @@ module "encrypted_github_file_fly" {
 
 resource "github_repository_file" "fly_sops_config" {
   commit_message      = "Update SOPS configuration"
-  content             = yamlencode({ creation_rules = [{ age = age_secret_key.fly.public_key }] })
   file                = ".sops.yaml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.fly
+
+  content = yamlencode({
+    creation_rules = [
+      {
+        age = age_secret_key.fly.public_key
+      }
+    ]
+  })
 }
 
 resource "github_repository_file" "fly_workflow_deploy" {

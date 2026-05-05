@@ -1,8 +1,8 @@
 {
   "values": {
     "grimmory": {
-      "db_password": "${service.db_password_sensitive}",
-      "db_root_password": "${service.mysql_root_password_sensitive}"
+      "db_password": "${service.state.secrets.db_password}",
+      "db_root_password": "${service.state.secrets.mysql_root_password}"
     },
     "network": {
       "web_port": {

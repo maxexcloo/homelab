@@ -48,7 +48,9 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
   - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_files_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
   - **Helpers** (locals consumed only inside their defining file) are prefixed with `_` so they sort to the top of the `locals {}` block, ahead of the public locals other files depend on
   - The single concrete output of a stage drops the qualifier: `services_render_context` instead of `..._final` or `..._merged`
-- **Sensitive data**: `sensitive = true` on all outputs containing secrets; generated secret fields end with `_sensitive`
+- **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies to map/object expressions inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes — consistency outweighs the small extra height.
+- **Runtime state shape**: Provider-backed and feature-gated values live under a `state` sub-object on each `server` / `service`, split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), `state.urls` (URL entries). Templates and consumers reach in via the typed sub-object instead of suffix conventions.
+- **Sensitive data**: `sensitive = true` on all outputs containing secrets; secret fields live under `state.secrets`
 - **Defaults**: Set values in `data/defaults.yml` wherever possible; use `try()` / `coalesce()` only when no applicable default exists
 - **Merge functions**: Use `merge()` for shallow merges of flat objects; reach for `provider::deepmerge::mergo()` only when nested keys must combine recursively (server/service YAML overrides, config blob composition, JSON catalog overlays)
 - **Validation**: Use `terraform_data` preconditions for referential integrity checks
@@ -64,10 +66,9 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 
 - **Formatting**: Prettier (run via `mise run fmt`)
 - **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, `@`, DNS TXT content with literal quotes, and JSON-like string values
-- **Defaults are split across three files**, all deep-merged into `local.defaults`:
+- **Defaults are split across two files**, both deep-merged into `local.defaults`:
   - `data/config.yml` — global parameters (cloudflare, domains, github, onepassword, organization, resend, system, tailscale, types)
   - `data/defaults.yml` — field values merged into every server/service/DNS record
-  - `data/scaffolding.yml` — null placeholders for computed/runtime fields; their names sit in `keys(defaults_server)` / `keys(defaults_service)` so the 1Password filter excludes them and models can reference them without `try()`
 - Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
 - **Descriptions**: Short, title case
 

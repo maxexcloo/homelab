@@ -14,5 +14,5 @@ platform_config:
     labels:
       homepage.href: https://login.tailscale.com/admin/machines/${server.state.urls.tailscale_ipv4}
       homepage.widget.deviceid: ${server.state.fields.tailscale_device_id}
-      homepage.widget.key: ${service.homepage_widget_key_sensitive}
+      homepage.widget.key: ${service.state.secrets.homepage_widget_key}
       homepage.widget.type: ${service.identity.service}

@@ -1,10 +1,12 @@
 locals {
-  # Consolidated service view: model fields plus runtime state. The template
-  # context that overlays import aliases lives in services_render.tf.
+  # Consolidated service view: model fields plus runtime state under `state`.
+  # The template context that overlays import aliases lives in services_render.tf.
   services = {
     for service_key, service in local.services_model : service_key => merge(
       service,
-      local.services_state[service_key],
+      {
+        state = local.services_state[service_key]
+      },
     )
   }
 

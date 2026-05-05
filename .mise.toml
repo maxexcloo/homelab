@@ -52,7 +52,6 @@ check-jsonschema --schemafile schemas/server.json data/servers/*.yml
 check-jsonschema --schemafile schemas/service.json data/services/*.yml
 check-jsonschema --schemafile schemas/config.json data/config.yml
 check-jsonschema --schemafile schemas/defaults.json data/defaults.yml
-check-jsonschema --schemafile schemas/scaffolding.json data/scaffolding.yml
 """
 
 [tasks.sort-check]

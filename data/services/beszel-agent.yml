@@ -21,15 +21,15 @@ platform_config:
       # If this key ever rotates, all agents must be updated.
       KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
       LISTEN: 45876
-      TOKEN: ${service.token_sensitive}
+      TOKEN: ${service.state.secrets.token}
     labels:
       homepage.description: ${services.beszel.identity.description}
-      homepage.href: https://${services.beszel.fqdn_internal}/system/${service.system_id_sensitive}
+      homepage.href: https://${services.beszel.fqdn_internal}/system/${service.state.secrets.system_id}
       homepage.icon: ${services.beszel.identity.name}
       homepage.name: ${services.beszel.identity.title}
       homepage.widget.fields: ${jsonencode(split(",", "status,cpu,memory,network"))}
-      homepage.widget.password: ${services.beszel.password_sensitive}
-      homepage.widget.systemId: ${service.system_id_sensitive}
+      homepage.widget.password: ${services.beszel.state.secrets.password}
+      homepage.widget.systemId: ${service.state.secrets.system_id}
       homepage.widget.type: beszel
       homepage.widget.url: https://${services.beszel.fqdn_internal}
       homepage.widget.username: ${defaults.organization.email}

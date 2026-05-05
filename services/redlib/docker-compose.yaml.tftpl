@@ -1,6 +1,6 @@
 services:
   ctrld:
-    command: --cd=${service.ctrld_endpoint_sensitive}
+    command: --cd=${service.state.secrets.ctrld_endpoint}
     dns: 127.0.0.1
     image: controldns/ctrld:latest
     labels:

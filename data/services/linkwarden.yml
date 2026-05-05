@@ -30,9 +30,9 @@ platform_config:
     env:
       BASE_URL: https://${service.fqdn_internal}
       EMAIL_FROM: ${service.key}@${defaults.domains.internal}
-      EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.resend_api_key_sensitive)}@${defaults.resend.host}:${defaults.resend.port}
+      EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.state.secrets.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
       NEXT_PUBLIC_EMAIL_PROVIDER: true
     labels:
-      homepage.widget.key: ${service.homepage_widget_key_sensitive}
+      homepage.widget.key: ${service.state.secrets.homepage_widget_key}
       homepage.widget.type: ${service.identity.service}
       homepage.widget.url: https://${service.fqdn_internal}

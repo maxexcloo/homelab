@@ -23,6 +23,6 @@ platform_config:
     env:
       BASE_URL: https://${service.fqdn_internal}
     labels:
-      homepage.widget.key: ${service.homepage_widget_key_sensitive}
+      homepage.widget.key: ${service.state.secrets.homepage_widget_key}
       homepage.widget.type: ${service.identity.service}
       homepage.widget.url: https://${service.fqdn_internal}

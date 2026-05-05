@@ -32,7 +32,7 @@ platform_config:
     env:
       HASHEOUS_API_ENABLED: true
       SCAN_TIMEOUT: 86400
-      SCREENSCRAPER_PASSWORD: ${service.screenscraper_password_sensitive}
+      SCREENSCRAPER_PASSWORD: ${service.state.secrets.screenscraper_password}
       SCREENSCRAPER_USER: ${defaults.organization.email}
     labels:
       homepage.widget.type: ${service.identity.service}
