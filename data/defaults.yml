@@ -34,31 +34,6 @@ resend:
   host: smtp.resend.com
   port: 465
   username: resend
-types:
-  appliance:
-    icon: devices
-    label: Appliances
-    tailscale_tag: appliance
-  cicd:
-    icon: server
-    label: CI/CD
-    tailscale_tag: cicd
-  ephemeral:
-    icon: server
-    label: Ephemeral
-    tailscale_tag: ephemeral
-  router:
-    icon: router-network
-    label: Routers
-    tailscale_tag: router
-  server:
-    icon: server
-    label: Servers
-    tailscale_tag: server
-  vm:
-    icon: server
-    label: VMs
-    tailscale_tag: vm
 servers:
   key: null
   parent: ""
@@ -92,19 +67,19 @@ servers:
   platform_config:
     incus:
       cpus: 2
+      disks: []
       image: null
       memory: 4
       nested: false
+      networks: []
+      pci_devices: []
       privileged: false
       protection: false
       secureboot: false
       type: container
-      disks: []
-      networks: []
-      pci_devices: []
+      usb_devices: []
       profiles:
         - default
-      usb_devices: []
     oci:
       assign_public_ip: true
       cpus: 2
@@ -173,3 +148,28 @@ tailscale:
   admin_identities:
     - max@excloo.com
     - maxexcloo@passkey
+types:
+  appliance:
+    icon: devices
+    label: Appliances
+    tailscale_tag: appliance
+  cicd:
+    icon: server
+    label: CI/CD
+    tailscale_tag: cicd
+  ephemeral:
+    icon: server
+    label: Ephemeral
+    tailscale_tag: ephemeral
+  router:
+    icon: router-network
+    label: Routers
+    tailscale_tag: router
+  server:
+    icon: server
+    label: Servers
+    tailscale_tag: server
+  vm:
+    icon: server
+    label: VMs
+    tailscale_tag: vm

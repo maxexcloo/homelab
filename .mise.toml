@@ -8,6 +8,7 @@ TF_CLI_ARGS_plan = "-parallelism=20"
 opentofu = "1"
 prettier = "3"
 sops = "3"
+uv = "latest"
 
 # Setup
 [tasks.init]
@@ -44,12 +45,17 @@ tofu fmt -recursive
 
 [tasks.lint]
 description = "Validate YAML data files against JSON schemas"
+depends = ["sort-check"]
 run = """
 check-jsonschema --schemafile schemas/defaults.json data/defaults.yml
 check-jsonschema --schemafile schemas/dns.json data/dns/*.yml
 check-jsonschema --schemafile schemas/server.json data/servers/*.yml
 check-jsonschema --schemafile schemas/service.json data/services/*.yml
 """
+
+[tasks.sort-check]
+description = "Check YAML and JSON Schema key ordering"
+run = "uv run scripts/sort_check.py"
 
 [tasks.validate]
 description = "Validate configurations"

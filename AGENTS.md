@@ -67,6 +67,7 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - `"additionalProperties": false` on all object types
 - `"type": ["string", "null"]` for optional string fields
 - Feature flag descriptions state what resources are provisioned and what variables are exposed
+- The `if`/`then`/`else` conditional triplet keeps its canonical reading order, exempt from the sorting convention (the `mise run sort-check` linter skips it)
 
 ## General
 
