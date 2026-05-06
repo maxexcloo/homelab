@@ -91,37 +91,29 @@
     },
     "networking": {
       "additionalProperties": false,
-      "description": "Network CIDR ranges referenced by services for IP allowlist middleware.",
+      "description": "Network allowlists referenced by services for IP allowlist middleware.",
       "type": "object",
       "properties": {
-        "cidrs": {
+        "allowlists": {
           "additionalProperties": false,
-          "description": "Named CIDR blocks used in Traefik IP allowlist middleware labels.",
+          "description": "Named CIDR allowlists used in Traefik IP allowlist middleware labels.",
           "type": "object",
           "properties": {
-            "docker": {
-              "description": "Docker bridge network CIDR (e.g. '172.16.0.0/12').",
-              "type": "string"
-            },
-            "lan": {
-              "description": "Local area network CIDR (e.g. '10.0.0.0/23').",
-              "type": "string"
-            },
-            "localhost": {
-              "description": "Loopback CIDR (e.g. '127.0.0.1/32').",
-              "type": "string"
-            },
-            "localhost_ipv6": {
-              "description": "Loopback IPv6 CIDR (e.g. '::1/128').",
-              "type": "string"
+            "internal": {
+              "description": "CIDR ranges allowed through internal-only middleware.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "tailscale": {
-              "description": "Tailscale CGNAT CIDR (e.g. '100.64.0.0/10').",
-              "type": "string"
-            },
-            "tailscale_ipv6": {
-              "description": "Tailscale IPv6 ULA CIDR (e.g. 'fd7a:115c:a1e0::/48').",
-              "type": "string"
+              "description": "CIDR ranges allowed through tailscale-only middleware.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
