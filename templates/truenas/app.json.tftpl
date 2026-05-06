@@ -10,11 +10,11 @@
     ]) ~}
     "${container_key}": {
       "additional_envs": [
-        %{~ for env in containers[container_key].envs ~}
+        %{~ for env_key in sort(keys(containers[container_key].environment)) ~}
         {
-          "name": ${jsonencode(env.name)},
-          "value": ${jsonencode(env.value)}
-        }%{~ if env != containers[container_key].envs[length(containers[container_key].envs) - 1] ~},%{~ endif ~}
+          "name": ${jsonencode(env_key)},
+          "value": ${jsonencode(containers[container_key].environment[env_key])}
+        }%{~ if env_key != sort(keys(containers[container_key].environment))[length(sort(keys(containers[container_key].environment))) - 1] ~},%{~ endif ~}
         %{~ endfor ~}
       ]
     },

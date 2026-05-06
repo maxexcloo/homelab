@@ -4,8 +4,6 @@ services:
       redis:
         condition: service_healthy
     image: ghcr.io/cedya77/aiometadata:latest
-    labels:
-      ${containers.aiometadata.labels_yaml}
     restart: unless-stopped
     volumes:
       - data:/app/addon/data

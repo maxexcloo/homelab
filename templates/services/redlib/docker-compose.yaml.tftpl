@@ -3,14 +3,10 @@ services:
     command: --cd=${service.state.secrets.ctrld_endpoint}
     dns: 127.0.0.1
     image: controldns/ctrld:latest
-    labels:
-      ${containers.ctrld.labels_yaml}
     restart: unless-stopped
   redlib:
     healthcheck:
       disable: true
     image: ghcr.io/silvenga/redlib:latest
-    labels:
-      ${containers.redlib.labels_yaml}
     network_mode: service:ctrld
     restart: unless-stopped

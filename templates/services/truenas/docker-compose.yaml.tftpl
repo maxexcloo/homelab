@@ -4,6 +4,4 @@ services:
       - sleep
       - infinity
     image: alpine:latest
-    labels:
-      ${containers.truenas.labels_yaml}
     restart: unless-stopped

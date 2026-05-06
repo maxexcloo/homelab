@@ -171,17 +171,12 @@
       "description": "Homepage dashboard metadata. Defaults derive from identity and routing values; set enabled=false to hide the service.",
       "type": "object",
       "properties": {
-        "container": {
-          "description": "Container that receives generated Homepage labels. Null uses the only configured container when there is one, otherwise identity.service.",
-          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
-          "type": ["string", "null"]
-        },
         "description": {
           "description": "Dashboard description override. Null uses identity.description. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
           "type": ["string", "null"]
         },
         "enabled": {
-          "description": "Whether to include this service in generated Homepage configuration and emit Homepage Docker labels.",
+          "description": "Whether to include this service in generated Homepage configuration.",
           "type": "boolean"
         },
         "group": {

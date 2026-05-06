@@ -140,16 +140,6 @@ def compose_template() -> str:
   ${service.identity.name}:
     image: REPLACE_ME
     restart: unless-stopped
-%{~ if length(containers[service.identity.name].environment) > 0 ~}
-    environment:
-%{~ for env_key in sort(keys(containers[service.identity.name].environment)) ~}
-      ${env_key}: ${jsonencode(containers[service.identity.name].environment[env_key])}
-%{~ endfor ~}
-%{~ endif ~}
-%{~ if length(containers[service.identity.name].labels) > 0 ~}
-    labels:
-      ${containers[service.identity.name].labels_yaml}
-%{~ endif ~}
 """
 
 

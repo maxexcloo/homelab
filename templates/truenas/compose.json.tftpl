@@ -1,17 +1,5 @@
 {
   "app_name": "${service.identity.name}",
   "custom_app": true,
-  "custom_compose_config": ${jsonencode(merge(
-      yamldecode(compose),
-      {
-        services = {
-          for svc_key, svc_val in yamldecode(compose).services : svc_key => merge(
-            svc_val,
-            contains(keys(containers), svc_key) && length(containers[svc_key].environment) > 0 ? {
-              environment = merge(try(svc_val.environment, {}), containers[svc_key].environment)
-            } : {}
-          )
-        }
-      }
-    ))}
+  "custom_compose_config": ${jsonencode(yamldecode(compose))}
 }

@@ -1,6 +1,79 @@
 data "tailscale_devices" "all" {}
 
 locals {
+  # Rules are ordered by least to most permissive source.
+  tailscale_acls = [
+    # Ephemeral: health checks, ping, and dashboard traffic only
+    {
+      action = "accept"
+      dst    = ["tag:appliance:80", "tag:appliance:443"]
+      src    = ["tag:ephemeral"]
+    },
+    {
+      action = "accept"
+      dst    = ["tag:router:*"]
+      src    = ["tag:ephemeral"]
+    },
+    {
+      action = "accept"
+      dst    = ["tag:server:80", "tag:server:443"]
+      src    = ["tag:ephemeral"]
+    },
+    {
+      action = "accept"
+      dst    = ["tag:vm:80", "tag:vm:443"]
+      src    = ["tag:ephemeral"]
+    },
+
+    # VMs: service traffic and agent communication
+    {
+      action = "accept"
+      dst    = ["tag:appliance:80", "tag:appliance:443"]
+      src    = ["tag:vm"]
+    },
+    {
+      action = "accept"
+      dst    = ["tag:server:80", "tag:server:443", "tag:server:8120"]
+      src    = ["tag:vm"]
+    },
+    {
+      action = "accept"
+      dst    = ["tag:vm:80", "tag:vm:443", "tag:vm:8120"]
+      src    = ["tag:vm"]
+    },
+
+    # Servers: full access to managed VMs, appliances, and peer servers
+    {
+      action = "accept"
+      dst    = ["tag:appliance:*"]
+      src    = ["tag:server"]
+    },
+    {
+      action = "accept"
+      dst    = ["tag:server:*"]
+      src    = ["tag:server"]
+    },
+    {
+      action = "accept"
+      dst    = ["tag:vm:*"]
+      src    = ["tag:server"]
+    },
+
+    # Router: unrestricted as network gateway
+    {
+      action = "accept"
+      dst    = ["*:*"]
+      src    = ["tag:router"]
+    },
+
+    # Admin: unrestricted access from all personal devices and passkeys
+    {
+      action = "accept"
+      dst    = ["*:*"]
+      src    = ["group:admin"]
+    },
+  ]
+
   # Device names are matched back to server slugs; only the first IPv4/IPv6
   # address of each family is used for generated internal DNS records.
   tailscale_device_addresses = {
@@ -12,107 +85,37 @@ locals {
     }
   }
 
-  # Full tag set used for ACL ownership declarations.
-  tailscale_tags = toset([
-    for type in values(local.defaults.types) : "tag:${type.tailscale_tag}"
-  ])
+  # tagOwners object for every generated server type tag.
+  tailscale_tags = {
+    for tag in sort(distinct([
+      for type in values(local.defaults.types) : "tag:${type.tailscale_tag}"
+    ])) : tag => ["group:admin"]
+  }
 
-  tailscale_tags_approvers = toset([
-    for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
-    if !contains(local.defaults.tailscale.approver_excludes, type_key)
-  ])
+  # autoApprovers object for generated exit node and subnet route approvals.
+  tailscale_tags_approvers = {
+    exitNode = sort(distinct([
+      for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
+      if !contains(local.defaults.tailscale.approver_excludes, type_key)
+    ]))
+
+    routes = {
+      for route in ["0.0.0.0/0", "::/0"] : route => sort(distinct([
+        for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
+        if !contains(local.defaults.tailscale.approver_excludes, type_key)
+      ]))
+    }
+  }
 }
 
 resource "tailscale_acl" "default" {
   acl = jsonencode({
-    # Rules: ordered by least to most permissive source
-    acls = [
-      # Ephemeral: health checks, ping, and dashboard traffic only
-      {
-        action = "accept"
-        dst    = ["tag:appliance:80", "tag:appliance:443"]
-        src    = ["tag:ephemeral"]
-      },
-      {
-        action = "accept"
-        dst    = ["tag:router:*"]
-        src    = ["tag:ephemeral"]
-      },
-      {
-        action = "accept"
-        dst    = ["tag:server:80", "tag:server:443"]
-        src    = ["tag:ephemeral"]
-      },
-      {
-        action = "accept"
-        dst    = ["tag:vm:80", "tag:vm:443"]
-        src    = ["tag:ephemeral"]
-      },
-
-      # VMs: service traffic and agent communication
-      {
-        action = "accept"
-        dst    = ["tag:appliance:80", "tag:appliance:443"]
-        src    = ["tag:vm"]
-      },
-      {
-        action = "accept"
-        dst    = ["tag:server:80", "tag:server:443", "tag:server:8120"]
-        src    = ["tag:vm"]
-      },
-      {
-        action = "accept"
-        dst    = ["tag:vm:80", "tag:vm:443", "tag:vm:8120"]
-        src    = ["tag:vm"]
-      },
-
-      # Servers: full access to managed VMs, appliances, and peer servers
-      {
-        action = "accept"
-        dst    = ["tag:appliance:*"]
-        src    = ["tag:server"]
-      },
-      {
-        action = "accept"
-        dst    = ["tag:server:*"]
-        src    = ["tag:server"]
-      },
-      {
-        action = "accept"
-        dst    = ["tag:vm:*"]
-        src    = ["tag:server"]
-      },
-
-      # Router: unrestricted as network gateway
-      {
-        action = "accept"
-        dst    = ["*:*"]
-        src    = ["tag:router"]
-      },
-
-      # Admin: unrestricted access from all personal devices and passkeys
-      {
-        action = "accept"
-        dst    = ["*:*"]
-        src    = ["group:admin"]
-      }
-    ]
-
-    # Exit nodes and subnet routes: routers, servers, and VMs may optionally advertise routes
-    autoApprovers = {
-      exitNode = tolist(local.tailscale_tags_approvers)
-      routes = {
-        "0.0.0.0/0" = tolist(local.tailscale_tags_approvers)
-        "::/0"      = tolist(local.tailscale_tags_approvers)
-      }
-    }
+    acls          = local.tailscale_acls
+    autoApprovers = local.tailscale_tags_approvers
+    tagOwners     = local.tailscale_tags
 
     groups = {
       "group:admin" = local.defaults.tailscale.admin_identities
-    }
-
-    tagOwners = {
-      for tag in local.tailscale_tags : tag => ["group:admin"]
     }
   })
 }

@@ -67,8 +67,8 @@ resource "github_repository_file" "komodo_sops_config" {
   content = yamlencode({
     creation_rules = [
       for stack_key, stack in local.komodo_input_stacks : {
-        path_regex = "^${stack_key}/"
         age        = age_secret_key.server[stack.target].public_key
+        path_regex = "^${stack_key}/"
       }
     ]
   })

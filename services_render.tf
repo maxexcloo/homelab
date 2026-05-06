@@ -13,113 +13,40 @@ locals {
     }
   }
 
-  # Ensure every service has concrete container entries for generated labels,
-  # even when YAML only relies on the default identity.service fallback.
-  _services_render_container_inputs = {
-    for service_key, service in local.services : service_key => merge(
-      service.containers,
-      {
-        for container_key in toset(values(local._services_render_container_keys[service_key])) :
-        container_key => {}
-        if !contains(keys(service.containers), container_key)
-      },
-    )
-  }
-
-  # Container placement for generated labels. `primary` is the default target;
-  # dashboard/routing may override it independently.
-  _services_render_container_keys = {
-    for service_key, service in local.services : service_key => {
-      dashboard = coalesce(
-        service.dashboard.container,
-        length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service,
-      )
-      primary = length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service
-      routing = coalesce(
-        service.routing.container,
-        length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service,
-      )
-    }
-  }
-
-  # Final per-container render object exposed to templates. Compose uses
-  # environment/labels/labels_yaml; TrueNAS catalog apps use envs and labels.
+  # Final per-container runtime data exposed to templates. Generated Traefik
+  # labels attach only to routing.container; Homepage uses dashboard instead.
   _services_render_containers = {
-    for service_key, containers in local._services_render_container_inputs : service_key => {
-      for container_key, container in containers : container_key => {
-        environment = local._services_render_containers_environment[service_key][container_key]
-        labels      = local._services_render_containers_labels[service_key][container_key]
-        labels_yaml = indent(6, yamlencode(local._services_render_containers_labels[service_key][container_key]))
-
-        envs = [
-          for env_key in sort(nonsensitive(keys(local._services_render_containers_environment[service_key][container_key]))) : {
-            name  = env_key
-            value = local._services_render_containers_environment[service_key][container_key][env_key]
-          }
-        ]
-      }
-    }
-  }
-
-  # Render container environment values once. Lists become `+`-joined strings
-  # because several apps expect list-like env vars in that form.
-  _services_render_containers_environment = {
-    for service_key, containers in local._services_render_container_inputs : service_key => {
-      for container_key, container in containers : container_key => {
-        for env_key, env_value in {
-          for raw_key, raw_value in try(container.environment, {}) : raw_key => (
-            can(tostring(raw_value))
-            ? templatestring(tostring(raw_value), local._services_render_pre_context[service_key])
-            : join("+", [for env_item in raw_value : templatestring(tostring(env_item), local._services_render_pre_context[service_key])])
-          )
-          if raw_value != null
-        } :
-        env_key => env_value
-        if env_value != ""
-      }
-    }
-  }
-
-  # Generated Homepage labels, generated Traefik labels, and explicit
-  # per-container labels are merged onto their selected containers.
-  _services_render_containers_labels = {
-    for service_key, containers in local._services_render_container_inputs : service_key => {
-      for container_key, container in containers : container_key => merge(
-        container_key == local._services_render_container_keys[service_key].dashboard && local._services_render_dashboard[service_key].enabled ? merge(
-          {
-            "homepage.description" = local._services_render_dashboard[service_key].description
-            "homepage.group"       = local._services_render_dashboard[service_key].group
-            "homepage.icon"        = local._services_render_dashboard[service_key].icon
-            "homepage.name"        = local._services_render_dashboard[service_key].name
-            "homepage.weight"      = tostring(local._services_render_dashboard[service_key].weight)
-          },
-          local._services_render_dashboard[service_key].href != null ? {
-            "homepage.href" = local._services_render_dashboard[service_key].href
-          } : {},
-          local._services_render_dashboard[service_key].siteMonitor != null ? {
-            "homepage.siteMonitor" = local._services_render_dashboard[service_key].siteMonitor
-          } : {},
-          {
-            for widget_key, widget_value in local._services_render_dashboard[service_key].widget :
-            "homepage.widget.${widget_key}" => can(tostring(widget_value)) ? tostring(widget_value) : jsonencode(widget_value)
-          },
-        ) : {},
-        container_key == local._services_render_container_keys[service_key].routing ? local._services_render_routing_labels[service_key] : {},
-        {
-          for label_key, label_value in {
-            for k, v in try(container.labels, {}) :
-            k => try(templatestring(tostring(v), local._services_render_pre_context[service_key]), null)
-            if v != null
+    for service_key, service in local.services : service_key => {
+      for container_key in sort(distinct(concat(keys(service.containers), [local._services_render_routing_container[service_key]]))) : container_key => {
+        environment = {
+          for env_key, env_value in {
+            for raw_key, raw_value in try(service.containers[container_key].environment, {}) : raw_key => (
+              can(tostring(raw_value))
+              ? templatestring(tostring(raw_value), local._services_render_pre_context[service_key])
+              : join("+", [for env_item in raw_value : templatestring(tostring(env_item), local._services_render_pre_context[service_key])])
+            )
+            if raw_value != null
           } :
-          label_key => label_value
-          if label_value != null
-        },
-      )
+          env_key => env_value
+          if env_value != ""
+        }
+        labels = merge(
+          container_key == local._services_render_routing_container[service_key] ? local._services_render_routing_labels[service_key] : {},
+          {
+            for label_key, label_value in {
+              for k, v in try(service.containers[container_key].labels, {}) :
+              k => try(templatestring(tostring(v), local._services_render_pre_context[service_key]), null)
+              if v != null
+            } :
+            label_key => label_value
+            if label_value != null
+          },
+        )
+      }
     }
   }
 
-  # Structured Homepage data used both by the Homepage config template and by
-  # generated Homepage Docker labels.
+  # Structured Homepage data consumed by the Homepage config template.
   _services_render_dashboard = {
     for service_key, service in local.services : service_key => {
       description = service.dashboard.description != null ? templatestring(service.dashboard.description, local._services_render_pre_context[service_key]) : service.identity.description
@@ -154,19 +81,9 @@ locals {
     }
   }
 
-  # Pre-computed path metadata for every file under templates/services/* so the sidecar
-  # loop only adds deployment context (stack key and target).
-  _services_render_file_path_info = {
-    for file_path in fileset(path.module, "templates/services/*/**") : file_path => {
-      raw_encrypt     = endswith(trimsuffix(file_path, ".tftpl"), ".raw")
-      rel_path        = trimsuffix(trimsuffix(trimprefix(file_path, "templates/services/${split("/", file_path)[2]}/"), ".tftpl"), ".raw")
-      render_template = endswith(file_path, ".tftpl")
-    }
-  }
-
   # File extension -> SOPS input type. Files named *.raw or *.raw.tftpl are
   # encrypted as binary and deployed without the .raw suffix for exact decrypts.
-  _services_render_files_content_types = {
+  _services_render_file_content_types = {
     ".env"  = "dotenv"
     ".json" = "json"
     ".yaml" = "yaml"
@@ -175,7 +92,7 @@ locals {
 
   # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
   # Other files use filebase64(), so static and binary assets share one path.
-  _services_render_files_inputs = flatten([
+  _services_render_file_inputs = flatten([
     for service_key, service in local.services : [
       for file_path in fileset(path.module, "templates/services/${service.identity.service}/**") : merge(
         local._services_render_file_path_info[file_path],
@@ -190,6 +107,24 @@ locals {
       if !contains(["app.json.tftpl", "docker-compose.yaml.tftpl"], basename(file_path))
     ]
   ])
+
+  # Pre-computed path metadata for every file under templates/services/* so the sidecar
+  # loop only adds deployment context (stack key and target).
+  _services_render_file_path_info = {
+    for file_path in fileset(path.module, "templates/services/*/**") : file_path => {
+      raw_encrypt     = endswith(trimsuffix(file_path, ".tftpl"), ".raw")
+      rel_path        = trimsuffix(trimsuffix(trimprefix(file_path, "templates/services/${split("/", file_path)[2]}/"), ".tftpl"), ".raw")
+      render_template = endswith(file_path, ".tftpl")
+    }
+  }
+
+  _services_render_files_compose_raw = {
+    for service_key, service in local.services : service_key => yamldecode(templatefile(
+      "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
+      local.services_render_context[service_key]
+    ))
+    if fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+  }
 
   # Pre-render context with import aliases overlaid. It intentionally excludes
   # rendered containers/dashboard data because env, label, and dashboard strings
@@ -208,6 +143,13 @@ locals {
         },
       )
     }
+  }
+
+  _services_render_routing_container = {
+    for service_key, service in local.services : service_key => coalesce(
+      service.routing.container,
+      length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service,
+    )
   }
 
   # Generated Traefik labels plus routing.labels overrides. The result is
@@ -279,17 +221,34 @@ locals {
 
   # Rendered Docker Compose content keyed by expanded service stack.
   services_render_files_compose = {
-    for service_key, service in local.services : service_key => templatefile(
-      "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
-      local.services_render_context[service_key]
-    )
-    if fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+    for service_key, compose in local._services_render_files_compose_raw : service_key => yamlencode(merge(
+      compose,
+      {
+        services = {
+          for compose_service_key, compose_service in compose.services : compose_service_key => merge(
+            compose_service,
+            contains(keys(local._services_render_containers[service_key]), compose_service_key) && length(local._services_render_containers[service_key][compose_service_key].environment) > 0 ? {
+              environment = merge(
+                try(compose_service.environment, {}),
+                local._services_render_containers[service_key][compose_service_key].environment,
+              )
+            } : {},
+            contains(keys(local._services_render_containers[service_key]), compose_service_key) && length(local._services_render_containers[service_key][compose_service_key].labels) > 0 ? {
+              labels = merge(
+                try(compose_service.labels, {}),
+                local._services_render_containers[service_key][compose_service_key].labels,
+              )
+            } : {},
+          )
+        }
+      },
+    ))
   }
 
   # Deployed sidecar files include encrypted content metadata used by Fly,
   # Komodo, and TrueNAS GitHub repository file resources.
   services_render_files_sidecars = {
-    for file_input in local._services_render_files_inputs : "${file_input.stack}/${file_input.rel_path}" => merge(
+    for file_input in local._services_render_file_inputs : "${file_input.stack}/${file_input.rel_path}" => merge(
       file_input,
       {
         content_base64 = (
@@ -300,7 +259,7 @@ locals {
         content_type = (
           file_input.raw_encrypt
           ? "binary"
-          : lookup(local._services_render_files_content_types, try(regex("\\.[^.]+$", lower(file_input.rel_path)), ""), "binary")
+          : lookup(local._services_render_file_content_types, try(regex("\\.[^.]+$", lower(file_input.rel_path)), ""), "binary")
         )
       }
     )

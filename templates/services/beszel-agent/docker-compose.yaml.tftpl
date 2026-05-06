@@ -1,8 +1,6 @@
 services:
   beszel-agent:
     image: henrygd/beszel-agent
-    labels:
-      ${containers["beszel-agent"].labels_yaml}
     network_mode: host
     restart: unless-stopped
     volumes:

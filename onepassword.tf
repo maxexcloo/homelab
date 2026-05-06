@@ -164,6 +164,17 @@ locals {
     }
   }
 
+  onepassword_server_existing_fields = {
+    for server_key, item in data.http.onepassword_server_item : server_key => {
+      for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
+      if try(field.id, "") != "" && try(field.value, "") != ""
+    }
+  }
+
+  onepassword_server_existing_ids = {
+    for server_key, item in data.http.onepassword_server_search : server_key => try(jsondecode(item.response_body)[0].id, null)
+  }
+
   # Field labels end in _rw when 1Password can become source of truth (password,
   # operator-supplied secrets), and _ro when OpenTofu remains source.
   onepassword_server_item_payloads = {
@@ -189,17 +200,6 @@ locals {
         id = local.defaults.onepassword.vaults.servers.id
       }
     }
-  }
-
-  onepassword_server_existing_fields = {
-    for server_key, item in data.http.onepassword_server_item : server_key => {
-      for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
-      if try(field.id, "") != "" && try(field.value, "") != ""
-    }
-  }
-
-  onepassword_server_existing_ids = {
-    for server_key, item in data.http.onepassword_server_search : server_key => try(jsondecode(item.response_body)[0].id, null)
   }
 
   onepassword_service_existing_fields = {
