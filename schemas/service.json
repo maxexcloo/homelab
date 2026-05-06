@@ -6,63 +6,6 @@
   "title": "Service",
   "type": "object",
   "definitions": {
-    "container_config": {
-      "additionalProperties": false,
-      "description": "Per-container runtime config for Compose and TrueNAS catalog apps. May be set at the service level or per-target as an overlay.",
-      "type": "object",
-      "properties": {
-        "environment": {
-          "description": "Environment variables for this container. Values are stringified and quoted by render templates. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
-          "type": "object",
-          "additionalProperties": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        },
-        "labels": {
-          "description": "Extra Docker labels for this container. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
-          "type": "object",
-          "additionalProperties": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        }
-      }
-    },
     "features_overlay": {
       "additionalProperties": false,
       "description": "Per-target feature overrides. Only specify the flags that differ from the service-level defaults.",
@@ -142,6 +85,39 @@
           "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
           "type": ["string", "null"]
         },
+        "env": {
+          "description": "TrueNAS catalog app environment variables rendered into additional_envs. Custom compose apps should put environment directly in docker-compose.yaml.tftpl. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
         "port_key": {
           "description": "Primary TrueNAS network port key that receives routing.port as port_number.",
           "pattern": "^[a-z0-9_]+$",
@@ -156,16 +132,6 @@
     }
   },
   "properties": {
-    "containers": {
-      "description": "Container-runtime config keyed by container/service name. Per-target `containers` blocks deep-merge on top, with target values winning.",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/container_config"
-      },
-      "propertyNames": {
-        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-      }
-    },
     "dashboard": {
       "additionalProperties": false,
       "description": "Homepage dashboard metadata. Defaults derive from identity and routing values; set enabled=false to hide the service.",
@@ -365,7 +331,7 @@
       "type": "object",
       "properties": {
         "container": {
-          "description": "Container that receives generated Traefik routing labels. Null uses the only configured container when there is one, otherwise identity.service.",
+          "description": "Container that receives generated Traefik routing labels. Null uses identity.service.",
           "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
           "type": ["string", "null"]
         },
@@ -428,16 +394,6 @@
         "description": "Per-target configuration. Each section is optional and only the platforms relevant to the target need be present.",
         "type": "object",
         "properties": {
-          "containers": {
-            "description": "Per-target container-runtime overlays keyed by container/service name.",
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/definitions/container_config"
-            },
-            "propertyNames": {
-              "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-            }
-          },
           "features": {
             "$ref": "#/definitions/features_overlay"
           },

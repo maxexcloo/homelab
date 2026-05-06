@@ -1,8 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  miniflux:
-    environment:
-      BASE_URL: https://${service.fqdn_internal}
 dashboard:
   weight: -10
   widget:
@@ -27,4 +23,7 @@ routing:
   port: 30285
   scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        BASE_URL: https://${service.fqdn_internal}

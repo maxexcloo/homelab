@@ -1,11 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  linkwarden:
-    environment:
-      BASE_URL: https://${service.fqdn_internal}
-      EMAIL_FROM: ${service.key}@${defaults.domains.internal}
-      EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.state.secrets.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
-      NEXT_PUBLIC_EMAIL_PROVIDER: true
 dashboard:
   weight: -10
   widget:
@@ -37,4 +30,10 @@ routing:
   port: 30243
   scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        BASE_URL: https://${service.fqdn_internal}
+        EMAIL_FROM: ${service.key}@${defaults.domains.internal}
+        EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.state.secrets.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
+        NEXT_PUBLIC_EMAIL_PROVIDER: true

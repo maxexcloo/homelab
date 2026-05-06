@@ -20,6 +20,57 @@ locals {
     if fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
   }
 
+  truenas_prepare_env = {
+    for service_key, service in local.truenas_input_services : service_key => {
+      for env_key, env_value in {
+        for raw_key, raw_value in service.truenas.env : raw_key => (
+          can(tostring(raw_value))
+          ? templatestring(tostring(raw_value), local.services_render_context[service_key])
+          : join("+", [for env_item in raw_value : templatestring(tostring(env_item), local.services_render_context[service_key])])
+        )
+        if raw_value != null
+      } :
+      env_key => env_value
+      if env_value != ""
+    }
+  }
+
+  truenas_prepare_render_context = {
+    for service_key, context in local.services_render_context : service_key => merge(
+      context,
+      {
+        truenas_values = merge(
+          length(local.truenas_prepare_env[service_key]) > 0 ? {
+            (coalesce(context.service.truenas.catalog_app, context.service.identity.service)) = {
+              additional_envs = [
+                for env_key in sort(keys(local.truenas_prepare_env[service_key])) : {
+                  name  = env_key
+                  value = local.truenas_prepare_env[service_key][env_key]
+                }
+              ]
+            }
+          } : {},
+          {
+            labels = [
+              for label_key in sort(keys(context.routing_labels)) : {
+                containers = [context.routing_container]
+                key        = label_key
+                value      = context.routing_labels[label_key]
+              }
+            ]
+          },
+        )
+
+        service = merge(context.service, {
+          truenas = merge(context.service.truenas, {
+            env = local.truenas_prepare_env[service_key]
+          })
+        })
+      },
+    )
+    if contains(keys(local.truenas_input_services), service_key)
+  }
+
   # Encrypted GitHub files consumed by the TrueNAS deploy workflow.
   # Three categories are merged:
   #   1) Custom Docker Compose apps (rendered from docker-compose.yaml.tftpl)
@@ -38,7 +89,7 @@ locals {
 
         content_base64 = sensitive(base64encode(templatefile(
           "${path.module}/templates/truenas/compose.json.tftpl",
-          merge(local.services_render_context[service_key], {
+          merge(local.truenas_prepare_render_context[service_key], {
             compose = local.services_render_files_compose[service_key]
           })
         )))
@@ -58,11 +109,11 @@ locals {
         content_base64 = sensitive(base64encode(jsonencode(provider::deepmerge::mergo(
           jsondecode(templatefile(
             "${path.module}/templates/truenas/app.json.tftpl",
-            local.services_render_context[service_key]
+            local.truenas_prepare_render_context[service_key]
           )),
           jsondecode(templatefile(
             local.truenas_prepare_catalog_templates[service_key].path,
-            local.services_render_context[service_key]
+            local.truenas_prepare_render_context[service_key]
           ))
         ))))
       }

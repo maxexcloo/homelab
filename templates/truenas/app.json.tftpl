@@ -3,54 +3,5 @@
   "catalog_app": "${coalesce(service.truenas.catalog_app, service.identity.service)}",
   "custom_app": false,
   "train": "${service.truenas.train}",
-  "values": {
-    %{~ for container_key in sort([
-      for candidate_key, container in containers : candidate_key
-      if length(container.environment) > 0
-    ]) ~}
-    "${container_key}": {
-      "additional_envs": [
-        %{~ for env_key in sort(keys(containers[container_key].environment)) ~}
-        {
-          "name": ${jsonencode(env_key)},
-          "value": ${jsonencode(containers[container_key].environment[env_key])}
-        }%{~ if env_key != sort(keys(containers[container_key].environment))[length(sort(keys(containers[container_key].environment))) - 1] ~},%{~ endif ~}
-        %{~ endfor ~}
-      ]
-    },
-    %{~ endfor ~}
-    "labels": [
-      %{~ for label in flatten([
-        for container_key in sort(keys(containers)) : [
-          for label_key in sort(keys(containers[container_key].labels)) : {
-            container = container_key
-            key       = label_key
-            value     = containers[container_key].labels[label_key]
-          }
-        ]
-      ]) ~}
-      {
-        "containers": [${jsonencode(label.container)}],
-        "key": ${jsonencode(label.key)},
-        "value": ${jsonencode(label.value)}
-      }%{~ if label != flatten([
-        for container_key in sort(keys(containers)) : [
-          for label_key in sort(keys(containers[container_key].labels)) : {
-            container = container_key
-            key       = label_key
-            value     = containers[container_key].labels[label_key]
-          }
-        ]
-      ])[length(flatten([
-        for container_key in sort(keys(containers)) : [
-          for label_key in sort(keys(containers[container_key].labels)) : {
-            container = container_key
-            key       = label_key
-            value     = containers[container_key].labels[label_key]
-          }
-        ]
-      ])) - 1] ~},%{~ endif ~}
-      %{~ endfor ~}
-    ]
-  }
+  "values": ${jsonencode(truenas_values)}
 }

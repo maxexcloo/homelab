@@ -1,13 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  beszel-agent:
-    environment:
-      HUB_URL: http://localhost:${services.beszel.routing.port}
-      # Beszel hub SSH host key used by agents to verify the hub connection.
-      # If this key ever rotates, all agents must be updated.
-      KEY: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
-      LISTEN: 45876
-      TOKEN: ${service.state.secrets.token}
 dashboard:
   description: ${services.beszel.identity.description}
   href: https://${services.beszel.fqdn_internal}/system/${service.state.secrets.system_id}

@@ -72,9 +72,10 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
 - **Descriptions**: Short, title case
 - **Service shape — per-service vs per-target**:
-  - **Service-level** (root keys, apply to every target): `containers` (per-container environment + labels), `dashboard`, `features`, `identity`, `imports`, `routing`. `containers` and `features` deep-merge with per-target overlays; the others apply uniformly to every expansion.
-  - **Per-target** (under `targets.<key>`): `containers` overlay, `features` overlay, `fly` (Fly-specific), `truenas` (TrueNAS-specific). `fly` and `truenas` are inherently per-target (only the matching target uses them).
-  - **Generated labels**: `routing.container` selects the container that receives generated Traefik labels. When unset, a single configured container is used; otherwise the fallback is `identity.service`. Homepage is rendered from structured `dashboard` data, not Docker labels.
+  - **Service-level** (root keys, apply to every target): `dashboard`, `features`, `identity`, `imports`, `routing`. `features` may be overlaid per target; the others apply uniformly to every expansion.
+  - **Per-target** (under `targets.<key>`): `features` overlay, `fly` (Fly-specific), `truenas` (TrueNAS-specific). `fly` and `truenas` are inherently per-target (only the matching target uses them).
+  - **App config**: Custom Docker Compose app environment lives in `templates/services/<identity.service>/docker-compose.yaml.tftpl`. TrueNAS catalog app environment lives in `targets.<key>.truenas.env` and renders to `additional_envs`.
+  - **Generated labels**: `routing.container` selects the container that receives generated Traefik labels. When unset, the fallback is `identity.service`. Homepage is rendered from structured `dashboard` data, not Docker labels.
   - **Single-target shorthand**: when a service has one target and no per-target overrides, leave `targets.<key>: {}`.
 
 ## JSON Schema Standards

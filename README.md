@@ -79,8 +79,8 @@ Feature flags either create provider-backed resources, expose values generated l
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
 2. Fill in `features`, `identity`, `routing`, and at least one entry under `targets:` (server key or `fly`)
-3. Use `containers.<name>.environment` and `containers.<name>.labels` only when a container needs explicit runtime settings; `routing.container` selects where generated Traefik labels land, and Homepage is rendered from structured `dashboard` data
-4. Each target may carry `containers`, `features`, `fly`, and `truenas` overlays; target values win over service-level values
+3. Put custom Docker Compose app config directly in `templates/services/<identity.service>/docker-compose.yaml.tftpl`; use `targets.<key>.truenas.env` for TrueNAS catalog app environment
+4. Each target may carry `features`, `fly`, and `truenas` overlays; target values win over service-level values
 5. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
 6. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
 7. Run `mise run plan` to review, `mise run apply` to provision

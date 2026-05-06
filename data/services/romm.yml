@@ -1,11 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  romm:
-    environment:
-      HASHEOUS_API_ENABLED: true
-      SCAN_TIMEOUT: 86400
-      SCREENSCRAPER_PASSWORD: ${service.state.secrets.screenscraper_password}
-      SCREENSCRAPER_USER: ${defaults.organization.email}
 dashboard:
   weight: -10
   widget:
@@ -38,4 +31,10 @@ routing:
   port: 30061
   scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        HASHEOUS_API_ENABLED: true
+        SCAN_TIMEOUT: 86400
+        SCREENSCRAPER_PASSWORD: ${service.state.secrets.screenscraper_password}
+        SCREENSCRAPER_USER: ${defaults.organization.email}

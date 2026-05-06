@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  netboot: {}
 identity:
   description: Network Boot Server
   group: Infrastructure
@@ -8,6 +6,7 @@ identity:
   service: netbootxyz
   title: Netboot
 routing:
+  container: netboot
   port: 31010
   scheme: http
 targets:

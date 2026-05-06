@@ -1,12 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  open-speed-test: {}
 identity:
   description: Network Speed Test
   name: openspeedtest
   service: openspeedtest
   title: Open Speed Test
 routing:
+  container: open-speed-test
   port: 30116
   scheme: http
 targets:

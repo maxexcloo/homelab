@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  server: {}
 dashboard:
   weight: -10
   widget:
@@ -26,6 +24,7 @@ identity:
   title: Immich
   username: max@excloo.com
 routing:
+  container: server
   port: 30041
   scheme: http
 targets:

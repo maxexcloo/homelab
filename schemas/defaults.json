@@ -38,13 +38,9 @@
     },
     "target_defaults": {
       "additionalProperties": false,
-      "description": "Per-platform defaults merged into each service deployment target during expansion (services_input.tf). Keys must be one of container, fly, truenas.",
+      "description": "Per-platform defaults merged into each service deployment target during expansion (services_input.tf).",
       "type": "object",
       "properties": {
-        "containers": {
-          "description": "Defaults for per-target container-runtime overlays keyed by container/service name.",
-          "type": "object"
-        },
         "fly": {
           "description": "Defaults for Fly.io deployments.",
           "type": "object"

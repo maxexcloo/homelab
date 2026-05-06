@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=../../schemas/service.json
-containers:
-  aiostreams: {}
 dashboard:
   icon: sh-aiostreams
 features:

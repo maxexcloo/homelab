@@ -1,6 +1,6 @@
 locals {
   # Per-service: import alias → resolved real service key. Built once and
-  # reused for both label/env rendering and the final template context.
+  # reused for routing/dashboard rendering and the final template context.
   _services_imports = {
     for service_key, service in local.services : service_key => {
       for import_alias, service_ref in service.imports.services :
@@ -10,39 +10,6 @@ locals {
       if contains(keys(local.services), templatestring(service_ref, {
         service = service
       }))
-    }
-  }
-
-  # Final per-container runtime data exposed to templates. Generated Traefik
-  # labels attach only to routing.container; Homepage uses dashboard instead.
-  _services_render_containers = {
-    for service_key, service in local.services : service_key => {
-      for container_key in sort(distinct(concat(keys(service.containers), [local._services_render_routing_container[service_key]]))) : container_key => {
-        environment = {
-          for env_key, env_value in {
-            for raw_key, raw_value in try(service.containers[container_key].environment, {}) : raw_key => (
-              can(tostring(raw_value))
-              ? templatestring(tostring(raw_value), local._services_render_pre_context[service_key])
-              : join("+", [for env_item in raw_value : templatestring(tostring(env_item), local._services_render_pre_context[service_key])])
-            )
-            if raw_value != null
-          } :
-          env_key => env_value
-          if env_value != ""
-        }
-        labels = merge(
-          container_key == local._services_render_routing_container[service_key] ? local._services_render_routing_labels[service_key] : {},
-          {
-            for label_key, label_value in {
-              for k, v in try(service.containers[container_key].labels, {}) :
-              k => try(templatestring(tostring(v), local._services_render_pre_context[service_key]), null)
-              if v != null
-            } :
-            label_key => label_value
-            if label_value != null
-          },
-        )
-      }
     }
   }
 
@@ -127,8 +94,8 @@ locals {
   }
 
   # Pre-render context with import aliases overlaid. It intentionally excludes
-  # rendered containers/dashboard data because env, label, and dashboard strings
-  # are rendered from this context.
+  # rendered dashboard/routing data because those strings are rendered from
+  # this context.
   _services_render_pre_context = {
     for service_key, service in local.services : service_key => {
       defaults = local.defaults
@@ -148,7 +115,7 @@ locals {
   _services_render_routing_container = {
     for service_key, service in local.services : service_key => coalesce(
       service.routing.container,
-      length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service,
+      service.identity.service,
     )
   }
 
@@ -197,21 +164,24 @@ locals {
     for service_key, service in local.services : service_key => merge(
       local._services_render_pre_context[service_key],
       {
-        containers = local._services_render_containers[service_key]
-        dashboard  = local._services_render_dashboard[service_key]
+        dashboard         = local._services_render_dashboard[service_key]
+        routing_container = local._services_render_routing_container[service_key]
+        routing_labels    = local._services_render_routing_labels[service_key]
 
         services = merge(
           {
             for k, s in local.services : k => merge(s, {
-              containers = local._services_render_containers[k]
-              dashboard  = local._services_render_dashboard[k]
+              dashboard         = local._services_render_dashboard[k]
+              routing_container = local._services_render_routing_container[k]
+              routing_labels    = local._services_render_routing_labels[k]
             })
           },
           {
             for alias, real_key in local._services_imports[service_key] :
             alias => merge(local.services[real_key], {
-              containers = local._services_render_containers[real_key]
-              dashboard  = local._services_render_dashboard[real_key]
+              dashboard         = local._services_render_dashboard[real_key]
+              routing_container = local._services_render_routing_container[real_key]
+              routing_labels    = local._services_render_routing_labels[real_key]
             })
           },
         )
@@ -227,16 +197,10 @@ locals {
         services = {
           for compose_service_key, compose_service in compose.services : compose_service_key => merge(
             compose_service,
-            contains(keys(local._services_render_containers[service_key]), compose_service_key) && length(local._services_render_containers[service_key][compose_service_key].environment) > 0 ? {
-              environment = merge(
-                try(compose_service.environment, {}),
-                local._services_render_containers[service_key][compose_service_key].environment,
-              )
-            } : {},
-            contains(keys(local._services_render_containers[service_key]), compose_service_key) && length(local._services_render_containers[service_key][compose_service_key].labels) > 0 ? {
+            compose_service_key == local._services_render_routing_container[service_key] && length(local._services_render_routing_labels[service_key]) > 0 ? {
               labels = merge(
                 try(compose_service.labels, {}),
-                local._services_render_containers[service_key][compose_service_key].labels,
+                local._services_render_routing_labels[service_key],
               )
             } : {},
           )
