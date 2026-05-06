@@ -61,6 +61,7 @@ servers:
 services:
   containers: {}
   dashboard:
+    container: null
     description: null
     enabled: true
     group: null

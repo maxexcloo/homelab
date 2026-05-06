@@ -25,7 +25,7 @@ mise run apply  # Apply changes
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev/) for task management and tool installation
-- 1Password Connect server with access to the server and service credential vaults listed in `data/defaults.yml`
+- 1Password Connect server with access to the server and service credential vaults listed in `data/config.yml`
 - Terraform Cloud account for state backend
 
 Run `mise run setup` to create `.mise.local.toml` from the template, then fill in credentials for the providers used by the current data files. See `.mise.local.toml.default` for the full list.
@@ -61,9 +61,9 @@ OpenTofu
     └── Tailscale       VPN auth keys, ACLs, and device lookups
 ```
 
-Rendered service configs (Docker Compose, Fly.toml, TrueNAS app values) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/defaults.yml`. Each deploy repo also gets `.github/deploy-request.json`, written after rendered files, SOPS config, and the workflow. Push deploys only trigger from that manifest and compare fingerprints with the previous manifest, so changed Fly apps or TrueNAS `server/service` targets deploy after the render commits settle. TrueNAS deploys can also be started manually with an empty target for everything, a server key, a service key, or `server/service`. TrueNAS catalog updates apply desired values as an overlay on the current app config, so per-app values files only need to include managed keys.
+Rendered service configs (Docker Compose, Fly.toml, TrueNAS app values) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/config.yml`. Each deploy repo also gets `.github/deploy-request.json`, written after rendered files, SOPS config, and the workflow. Push deploys only trigger from that manifest and compare fingerprints with the previous manifest, so changed Fly apps or TrueNAS `server/service` targets deploy after the render commits settle. TrueNAS deploys can also be started manually with an empty target for everything, a server key, a service key, or `server/service`. TrueNAS catalog updates apply desired values as an overlay on the current app config, so per-app values files only need to include managed keys.
 
-Rendered plaintext can be written locally for debugging by setting `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`. Leave it unset for normal runs.
+Rendered plaintext can be written locally for debugging with `mise run render`, which writes through `debug_dir` to `.render` by default. For ad hoc runs, set `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`.
 
 Feature flags either create provider-backed resources, expose values generated locally by OpenTofu, or control rendered config. `password` and `monitoring`/`monitoring_alerts` are local-only; `b2`, `resend`, and `tailscale` call providers when enabled. Resend uses the generic REST API provider with `TF_VAR_resend_api_key`. Pushover has no provider-managed resource here, so `TF_VAR_pushover_application_token` and `TF_VAR_pushover_user_key` are pass-through values rendered into config when `features.pushover` is enabled.
 
@@ -78,11 +78,12 @@ Feature flags either create provider-backed resources, expose values generated l
 ### Adding Services
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
-2. Fill in `features`, `identity`, `networking`, and at least one entry under `targets:` (server key or `fly`)
-3. Each target may carry per-platform sections (`docker`, `fly`, `truenas`) and an optional `features` overlay that overrides the service-level flags
-4. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
-5. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
-6. Run `mise run plan` to review, `mise run apply` to provision
+2. Fill in `features`, `identity`, `routing`, and at least one entry under `targets:` (server key or `fly`)
+3. Use `containers.<name>.environment` and `containers.<name>.labels` only when a container needs explicit runtime settings; `dashboard.container` and `routing.container` select where generated Homepage and Traefik labels land
+4. Each target may carry `containers`, `features`, `fly`, and `truenas` overlays; target values win over service-level values
+5. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
+6. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
+7. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands
 

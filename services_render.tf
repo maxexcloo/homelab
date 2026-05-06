@@ -13,52 +13,42 @@ locals {
     }
   }
 
+  # Ensure every service has concrete container entries for generated labels,
+  # even when YAML only relies on the default identity.service fallback.
   _services_render_container_inputs = {
     for service_key, service in local.services : service_key => merge(
       service.containers,
-      contains(keys(service.containers), local._services_render_primary_container[service_key]) ? {} : {
-        (local._services_render_primary_container[service_key]) = {}
-      },
-      contains(keys(service.containers), local._services_render_routing_container[service_key]) ? {} : {
-        (local._services_render_routing_container[service_key]) = {}
+      {
+        for container_key in toset(values(local._services_render_container_keys[service_key])) :
+        container_key => {}
+        if !contains(keys(service.containers), container_key)
       },
     )
   }
 
-  _services_render_container_environment_string = {
-    for service_key, containers in local._services_render_container_inputs : service_key => {
-      for container_key, container in containers : container_key => {
-        for env_key, env_value in try(container.environment, {}) : env_key => (
-          can(tostring(env_value))
-          ? templatestring(tostring(env_value), local._services_render_pre_context[service_key])
-          : join("+", [for env_item in env_value : templatestring(tostring(env_item), local._services_render_pre_context[service_key])])
-        )
-      }
+  # Container placement for generated labels. `primary` is the default target;
+  # dashboard/routing may override it independently.
+  _services_render_container_keys = {
+    for service_key, service in local.services : service_key => {
+      dashboard = coalesce(
+        service.dashboard.container,
+        length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service,
+      )
+      primary = length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service
+      routing = coalesce(
+        service.routing.container,
+        length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service,
+      )
     }
   }
 
+  # Final per-container render object exposed to templates. Compose uses
+  # environment/labels/labels_yaml; TrueNAS catalog apps use envs and labels.
   _services_render_containers = {
     for service_key, containers in local._services_render_container_inputs : service_key => {
       for container_key, container in containers : container_key => {
-        environment = {
-          for env_key, env_value in try(container.environment, {}) :
-          env_key => local._services_render_container_environment_string[service_key][container_key][env_key]
-          if env_value != null && local._services_render_container_environment_string[service_key][container_key][env_key] != ""
-        }
-
-        labels = merge(
-          container_key == local._services_render_primary_container[service_key] ? local._services_render_dashboard_labels[service_key] : {},
-          container_key == local._services_render_routing_container[service_key] ? local._services_render_routing_labels[service_key] : {},
-          {
-            for label_key, label_value in {
-              for k, v in try(container.labels, {}) :
-              k => try(templatestring(tostring(v), local._services_render_pre_context[service_key]), null)
-              if v != null
-            } :
-            label_key => label_value
-            if label_value != null
-          },
-        )
+        environment = local._services_render_containers_environment[service_key][container_key]
+        labels      = local._services_render_containers_labels[service_key][container_key]
         labels_yaml = indent(6, yamlencode(local._services_render_containers_labels[service_key][container_key]))
 
         envs = [
@@ -71,21 +61,50 @@ locals {
     }
   }
 
+  # Render container environment values once. Lists become `+`-joined strings
+  # because several apps expect list-like env vars in that form.
   _services_render_containers_environment = {
     for service_key, containers in local._services_render_container_inputs : service_key => {
       for container_key, container in containers : container_key => {
-        for env_key, env_value in try(container.environment, {}) :
-        env_key => local._services_render_container_environment_string[service_key][container_key][env_key]
-        if env_value != null && local._services_render_container_environment_string[service_key][container_key][env_key] != ""
+        for env_key, env_value in {
+          for raw_key, raw_value in try(container.environment, {}) : raw_key => (
+            can(tostring(raw_value))
+            ? templatestring(tostring(raw_value), local._services_render_pre_context[service_key])
+            : join("+", [for env_item in raw_value : templatestring(tostring(env_item), local._services_render_pre_context[service_key])])
+          )
+          if raw_value != null
+        } :
+        env_key => env_value
+        if env_value != ""
       }
     }
   }
 
+  # Generated Homepage labels, generated Traefik labels, and explicit
+  # per-container labels are merged onto their selected containers.
   _services_render_containers_labels = {
     for service_key, containers in local._services_render_container_inputs : service_key => {
       for container_key, container in containers : container_key => merge(
-        container_key == local._services_render_primary_container[service_key] ? local._services_render_dashboard_labels[service_key] : {},
-        container_key == local._services_render_routing_container[service_key] ? local._services_render_routing_labels[service_key] : {},
+        container_key == local._services_render_container_keys[service_key].dashboard && local._services_render_dashboard[service_key].enabled ? merge(
+          {
+            "homepage.description" = local._services_render_dashboard[service_key].description
+            "homepage.group"       = local._services_render_dashboard[service_key].group
+            "homepage.icon"        = local._services_render_dashboard[service_key].icon
+            "homepage.name"        = local._services_render_dashboard[service_key].name
+            "homepage.weight"      = tostring(local._services_render_dashboard[service_key].weight)
+          },
+          local._services_render_dashboard[service_key].href != null ? {
+            "homepage.href" = local._services_render_dashboard[service_key].href
+          } : {},
+          local._services_render_dashboard[service_key].siteMonitor != null ? {
+            "homepage.siteMonitor" = local._services_render_dashboard[service_key].siteMonitor
+          } : {},
+          {
+            for widget_key, widget_value in local._services_render_dashboard[service_key].widget :
+            "homepage.widget.${widget_key}" => can(tostring(widget_value)) ? tostring(widget_value) : jsonencode(widget_value)
+          },
+        ) : {},
+        container_key == local._services_render_container_keys[service_key].routing ? local._services_render_routing_labels[service_key] : {},
         {
           for label_key, label_value in {
             for k, v in try(container.labels, {}) :
@@ -99,42 +118,40 @@ locals {
     }
   }
 
+  # Structured Homepage data used both by the Homepage config template and by
+  # generated Homepage Docker labels.
   _services_render_dashboard = {
-    for service_key, service in local.services : service_key => merge(
-      {
-        description = service.dashboard.description != null ? templatestring(service.dashboard.description, local._services_render_pre_context[service_key]) : service.identity.description
-        enabled     = service.dashboard.enabled
-        group       = service.dashboard.group != null ? templatestring(service.dashboard.group, local._services_render_pre_context[service_key]) : service.identity.group
-        href = (
-          service.dashboard.href != null ? templatestring(service.dashboard.href, local._services_render_pre_context[service_key])
-          : service.fqdn_internal != null ? "https://${service.fqdn_internal}"
-          : service.fqdn_external != null ? "https://${service.fqdn_external}"
-          : length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}"
-          : null
-        )
-        icon   = service.dashboard.icon != null ? templatestring(service.dashboard.icon, local._services_render_pre_context[service_key]) : service.identity.name
-        name   = service.dashboard.name != null ? templatestring(service.dashboard.name, local._services_render_pre_context[service_key]) : service.identity.title
-        weight = service.dashboard.weight
+    for service_key, service in local.services : service_key => {
+      description = service.dashboard.description != null ? templatestring(service.dashboard.description, local._services_render_pre_context[service_key]) : service.identity.description
+      enabled     = service.dashboard.enabled
+      group       = service.dashboard.group != null ? templatestring(service.dashboard.group, local._services_render_pre_context[service_key]) : service.identity.group
+      href = (
+        service.dashboard.href != null ? templatestring(service.dashboard.href, local._services_render_pre_context[service_key])
+        : service.fqdn_internal != null ? "https://${service.fqdn_internal}"
+        : service.fqdn_external != null ? "https://${service.fqdn_external}"
+        : length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}"
+        : null
+      )
+      icon = service.dashboard.icon != null ? templatestring(service.dashboard.icon, local._services_render_pre_context[service_key]) : service.identity.name
+      name = service.dashboard.name != null ? templatestring(service.dashboard.name, local._services_render_pre_context[service_key]) : service.identity.title
+      siteMonitor = service.features.monitoring ? (
+        service.dashboard.href != null ? templatestring(service.dashboard.href, local._services_render_pre_context[service_key])
+        : service.fqdn_internal != null ? "https://${service.fqdn_internal}"
+        : service.fqdn_external != null ? "https://${service.fqdn_external}"
+        : length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}"
+        : null
+      ) : null
+      weight = service.dashboard.weight
 
-        widget = {
-          for widget_key, widget_value in service.dashboard.widget : widget_key => (
-            can(tostring(widget_value))
-            ? templatestring(tostring(widget_value), local._services_render_pre_context[service_key])
-            : [for widget_item in widget_value : templatestring(tostring(widget_item), local._services_render_pre_context[service_key])]
-          )
-          if widget_value != null
-        }
-      },
-      service.features.monitoring ? {
-        siteMonitor = (
-          service.dashboard.href != null ? templatestring(service.dashboard.href, local._services_render_pre_context[service_key])
-          : service.fqdn_internal != null ? "https://${service.fqdn_internal}"
-          : service.fqdn_external != null ? "https://${service.fqdn_external}"
-          : length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}"
-          : null
+      widget = {
+        for widget_key, widget_value in service.dashboard.widget : widget_key => (
+          can(tostring(widget_value))
+          ? templatestring(tostring(widget_value), local._services_render_pre_context[service_key])
+          : [for widget_item in widget_value : templatestring(tostring(widget_item), local._services_render_pre_context[service_key])]
         )
-      } : {},
-    )
+        if widget_value != null
+      }
+    }
   }
 
   # Pre-computed path metadata for every file under templates/services/* so the sidecar
@@ -174,43 +191,27 @@ locals {
     ]
   ])
 
-  _services_render_dashboard_labels = {
-    for service_key, service in local.services : service_key => (
-      service.dashboard.enabled ? merge(
+  # Pre-render context with import aliases overlaid. It intentionally excludes
+  # rendered containers/dashboard data because env, label, and dashboard strings
+  # are rendered from this context.
+  _services_render_pre_context = {
+    for service_key, service in local.services : service_key => {
+      defaults = local.defaults
+      server   = try(local.servers[service.target], null)
+      servers  = local.servers
+      service  = service
+      services = merge(
+        local.services,
         {
-          "homepage.description" = local._services_render_dashboard[service_key].description
-          "homepage.group"       = local._services_render_dashboard[service_key].group
-          "homepage.icon"        = local._services_render_dashboard[service_key].icon
-          "homepage.name"        = local._services_render_dashboard[service_key].name
-          "homepage.weight"      = tostring(local._services_render_dashboard[service_key].weight)
+          for alias, real_key in local._services_imports[service_key] :
+          alias => local.services[real_key]
         },
-        local._services_render_dashboard[service_key].href != null ? {
-          "homepage.href" = local._services_render_dashboard[service_key].href
-        } : {},
-        try(local._services_render_dashboard[service_key].siteMonitor, null) != null ? {
-          "homepage.siteMonitor" = local._services_render_dashboard[service_key].siteMonitor
-        } : {},
-        {
-          for widget_key, widget_value in local._services_render_dashboard[service_key].widget :
-          "homepage.widget.${widget_key}" => can(tostring(widget_value)) ? tostring(widget_value) : jsonencode(widget_value)
-        },
-      ) : {}
-    )
+      )
+    }
   }
 
-  _services_render_primary_container = {
-    for service_key, service in local.services : service_key => (
-      length(keys(service.containers)) == 1 ? keys(service.containers)[0] : service.identity.service
-    )
-  }
-
-  _services_render_routing_container = {
-    for service_key, service in local.services : service_key => coalesce(
-      service.routing.container,
-      local._services_render_primary_container[service_key],
-    )
-  }
-
+  # Generated Traefik labels plus routing.labels overrides. The result is
+  # attached only to routing.container.
   _services_render_routing_labels = {
     for service_key, service in local.services : service_key => merge(
       service.routing.port != null ? merge(
@@ -248,47 +249,27 @@ locals {
     )
   }
 
-  # Pre-render context with import aliases overlaid. Used by env and label
-  # interpolation; cannot include the rendered env/labels themselves (those
-  # would be circular).
-  _services_render_pre_context = {
-    for service_key, service in local.services : service_key => {
-      defaults = local.defaults
-      server   = try(local.servers[service.target], null)
-      servers  = local.servers
-      service  = service
-      services = merge(
-        local.services,
-        {
-          for alias, real_key in local._services_imports[service_key] :
-          alias => local.services[real_key]
-        },
-      )
-    }
-  }
-
-  # Final template context for compose/sidecar templatefile renders. Adds the
-  # rendered containers and reshapes the services map so each entry carries its
-  # own dashboard data (used by Homepage dashboard inventory).
+  # Final template context for compose/sidecar renders. Imported service aliases
+  # are overlaid here so templates can reference `services.<alias>`.
   services_render_context = {
     for service_key, service in local.services : service_key => merge(
       local._services_render_pre_context[service_key],
       {
-        dashboard  = local._services_render_dashboard[service_key]
         containers = local._services_render_containers[service_key]
+        dashboard  = local._services_render_dashboard[service_key]
 
         services = merge(
           {
             for k, s in local.services : k => merge(s, {
-              dashboard  = local._services_render_dashboard[k]
               containers = local._services_render_containers[k]
+              dashboard  = local._services_render_dashboard[k]
             })
           },
           {
             for alias, real_key in local._services_imports[service_key] :
             alias => merge(local.services[real_key], {
-              dashboard  = local._services_render_dashboard[real_key]
               containers = local._services_render_containers[real_key]
+              dashboard  = local._services_render_dashboard[real_key]
             })
           },
         )
