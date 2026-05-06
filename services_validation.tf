@@ -3,7 +3,7 @@ locals {
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
       if contains(local.servers_input_keys, target) &&
-      service.networking.expose == "cloudflare" &&
+      service.routing.expose == "cloudflare" &&
       !local.servers_model[target].features.cloudflare_zero_trust_tunnel
     ]
   ])
@@ -15,7 +15,7 @@ locals {
 
   services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
-    if contains(keys(service.targets), "fly") && service.networking.port == null
+    if contains(keys(service.targets), "fly") && service.routing.port == null
   ]
 
   services_validation_import_alias_conflicts = flatten([
@@ -66,7 +66,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local.services_validation_fly_ports_missing) == 0
-      error_message = "Fly services must have networking.port set: ${join(", ", local.services_validation_fly_ports_missing)}"
+      error_message = "Fly services must have routing.port set: ${join(", ", local.services_validation_fly_ports_missing)}"
     }
 
     precondition {

@@ -31,7 +31,7 @@ locals {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
       {
-        fqdn_internal = contains(local.servers_input_keys, service.target) && service.networking.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
+        fqdn_internal = contains(local.servers_input_keys, service.target) && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
         key           = service_key
 
         fly = {
@@ -41,7 +41,7 @@ locals {
         fqdn_external = (
           service.target == "fly"
           ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
-          : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.networking.expose)
+          : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.routing.expose)
           ? "${service.identity.name}.${local.servers_model[service.target].fqdn_external}"
           : null
         )

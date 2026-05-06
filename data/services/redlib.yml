@@ -1,90 +1,92 @@
 # yaml-language-server: $schema=../../schemas/service.json
-container:
-  env:
-    REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: on
-    REDLIB_DEFAULT_SHOW_NSFW: on
-    REDLIB_DEFAULT_USE_HLS: on
-    REDLIB_FULL_URL: https://${service.fqdn_internal}
-    REDLIB_ROBOTS_DISABLE_INDEXING: on
-    REDLIB_DEFAULT_SUBSCRIPTIONS:
-      - anime_titties
-      - apple
-      - askanaustralian
-      - askhistorians
-      - askscience
-      - auscorp
-      - ausfinance
-      - aussiefrugal
-      - australia
-      - australiannostalgia
-      - bazzite
-      - boxoffice
-      - budgetaudiophile
-      - cars
-      - carsaustralia
-      - catastrophicfailure
-      - chatgptcoding
-      - crackwatch
-      - datahoarder
-      - eink
-      - electicvehicles
-      - emulation
-      - emulationonandroid
-      - flashlight
-      - flipperzero
-      - games
-      - handhelds
-      - hardware
-      - homeassistant
-      - homelab
-      - homenetworking
-      - internetisbeautiful
-      - korea
-      - linux
-      - linux_gaming
-      - living_in_korea
-      - localllama
-      - localllm
-      - minilab
-      - minimalism
-      - minipcs
-      - moonlightstreaming
-      - movies
-      - nbn
-      - netsec
-      - nixos
-      - odinhandheld
-      - onebag
-      - organizationporn
-      - outoftheloop
-      - pikvm
-      - programming
-      - proxmox
-      - raspberry_pi
-      - retroarch
-      - retroid
-      - roms
-      - sbcgaming
-      - sbcs
-      - selfhosted
-      - sffpc
-      - sideloaded
-      - singularity
-      - space
-      - steamdeck
-      - sydney
-      - sysadmin
-      - tailscale
-      - television
-      - thatlookedexpensive
-      - trance
-      - travel
-      - travelhacks
-      - trimui
-      - onnas
-      - ubiquiti
-      - usbchardware
-      - wallstreetbets
+containers:
+  ctrld: {}
+  redlib:
+    environment:
+      REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: on
+      REDLIB_DEFAULT_SHOW_NSFW: on
+      REDLIB_DEFAULT_USE_HLS: on
+      REDLIB_FULL_URL: https://${service.fqdn_internal}
+      REDLIB_ROBOTS_DISABLE_INDEXING: on
+      REDLIB_DEFAULT_SUBSCRIPTIONS:
+        - anime_titties
+        - apple
+        - askanaustralian
+        - askhistorians
+        - askscience
+        - auscorp
+        - ausfinance
+        - aussiefrugal
+        - australia
+        - australiannostalgia
+        - bazzite
+        - boxoffice
+        - budgetaudiophile
+        - cars
+        - carsaustralia
+        - catastrophicfailure
+        - chatgptcoding
+        - crackwatch
+        - datahoarder
+        - eink
+        - electicvehicles
+        - emulation
+        - emulationonandroid
+        - flashlight
+        - flipperzero
+        - games
+        - handhelds
+        - hardware
+        - homeassistant
+        - homelab
+        - homenetworking
+        - internetisbeautiful
+        - korea
+        - linux
+        - linux_gaming
+        - living_in_korea
+        - localllama
+        - localllm
+        - minilab
+        - minimalism
+        - minipcs
+        - moonlightstreaming
+        - movies
+        - nbn
+        - netsec
+        - nixos
+        - odinhandheld
+        - onebag
+        - organizationporn
+        - outoftheloop
+        - pikvm
+        - programming
+        - proxmox
+        - raspberry_pi
+        - retroarch
+        - retroid
+        - roms
+        - sbcgaming
+        - sbcs
+        - selfhosted
+        - sffpc
+        - sideloaded
+        - singularity
+        - space
+        - steamdeck
+        - sydney
+        - sysadmin
+        - tailscale
+        - television
+        - thatlookedexpensive
+        - trance
+        - travel
+        - travelhacks
+        - trimui
+        - onnas
+        - ubiquiti
+        - usbchardware
+        - wallstreetbets
 features:
   monitoring_alerts: false
   secrets:
@@ -95,7 +97,8 @@ identity:
   name: redlib
   service: redlib
   title: Redlib
-networking:
+routing:
+  container: ctrld
   expose: cloudflare
   port: 8080
   scheme: http

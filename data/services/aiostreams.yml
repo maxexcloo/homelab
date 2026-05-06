@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=../../schemas/service.json
-container:
-  labels:
-    homepage.icon: sh-aiostreams
+containers:
+  aiostreams: {}
+dashboard:
+  icon: sh-aiostreams
 features:
   password: true
   secrets:
@@ -14,11 +15,9 @@ identity:
   name: aiostreams
   service: aiostreams
   title: AIOStreams
-networking:
+routing:
   port: 30375
   scheme: http
 targets:
   au-truenas:
-    truenas:
-      containers:
-        - aiostreams
+    truenas: {}

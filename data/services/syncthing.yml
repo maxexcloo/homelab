@@ -7,7 +7,7 @@ identity:
   service: syncthing
   title: Syncthing
   username: max@excloo.com
-networking:
+routing:
   port: 20910
   scheme: http
 targets:

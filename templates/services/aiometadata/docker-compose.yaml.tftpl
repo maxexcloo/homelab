@@ -5,7 +5,7 @@ services:
         condition: service_healthy
     image: ghcr.io/cedya77/aiometadata:latest
     labels:
-      ${labels_yaml}
+      ${containers.aiometadata.labels_yaml}
     restart: unless-stopped
     volumes:
       - data:/app/addon/data

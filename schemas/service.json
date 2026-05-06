@@ -6,13 +6,13 @@
   "title": "Service",
   "type": "object",
   "definitions": {
-    "container_target": {
+    "container_config": {
       "additionalProperties": false,
-      "description": "Container-runtime config (Compose env and labels) for Komodo stacks and TrueNAS custom apps. May be set at the service level (applied to every target) or per-target as an overlay.",
+      "description": "Per-container runtime config for Compose and TrueNAS catalog apps. May be set at the service level or per-target as an overlay.",
       "type": "object",
       "properties": {
-        "env": {
-          "description": "Extra environment variables merged into the service's computed env map. Values are stringified and quoted by render templates. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
+        "environment": {
+          "description": "Environment variables for this container. Values are stringified and quoted by render templates. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
           "type": "object",
           "additionalProperties": {
             "anyOf": [
@@ -45,7 +45,7 @@
           }
         },
         "labels": {
-          "description": "Extra Docker labels merged into generated routing labels. Values are stringified during rendering except homelab.homepage.enabled, which may be false to suppress generated Homepage labels. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "description": "Extra Docker labels for this container. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
           "type": "object",
           "additionalProperties": {
             "anyOf": [
@@ -142,17 +142,8 @@
           "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
           "type": ["string", "null"]
         },
-        "containers": {
-          "description": "Container names that should receive generated labels for TrueNAS catalog apps. Defaults to identity.service when empty.",
-          "type": "array",
-          "uniqueItems": true,
-          "items": {
-            "pattern": "^[a-z0-9-]+$",
-            "type": "string"
-          }
-        },
         "port_key": {
-          "description": "Primary TrueNAS network port key that receives networking.port as port_number.",
+          "description": "Primary TrueNAS network port key that receives routing.port as port_number.",
           "pattern": "^[a-z0-9_]+$",
           "type": "string"
         },
@@ -165,9 +156,83 @@
     }
   },
   "properties": {
-    "container": {
-      "$ref": "#/definitions/container_target",
-      "description": "Container-runtime config applied to every target. Per-target `container` blocks deep-merge on top, with target values winning."
+    "containers": {
+      "description": "Container-runtime config keyed by container/service name. Per-target `containers` blocks deep-merge on top, with target values winning.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/container_config"
+      },
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+      }
+    },
+    "dashboard": {
+      "additionalProperties": false,
+      "description": "Homepage dashboard metadata. Defaults derive from identity and routing values; set enabled=false to hide the service.",
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Dashboard description override. Null uses identity.description. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": ["string", "null"]
+        },
+        "enabled": {
+          "description": "Whether to include this service in generated Homepage configuration and emit Homepage Docker labels.",
+          "type": "boolean"
+        },
+        "group": {
+          "description": "Dashboard group override. Null uses identity.group. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": ["string", "null"]
+        },
+        "href": {
+          "description": "Dashboard link override. Null uses the first computed service URL. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": ["string", "null"]
+        },
+        "icon": {
+          "description": "Homepage icon override. Null uses identity.name. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": ["string", "null"]
+        },
+        "name": {
+          "description": "Dashboard display name override. Null uses identity.title. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": ["string", "null"]
+        },
+        "weight": {
+          "description": "Homepage sort weight. Lower values sort first.",
+          "type": "integer"
+        },
+        "widget": {
+          "description": "Homepage widget configuration. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
     },
     "features": {
       "additionalProperties": false,
@@ -285,7 +350,7 @@
       "type": "object",
       "properties": {
         "services": {
-          "description": "Map of local alias to target-expanded service key. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. Example: {\"beszel\": \"beszel-${service.target}\"} lets templates reference ${services.beszel.networking.port}.",
+          "description": "Map of local alias to target-expanded service key. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. Example: {\"beszel\": \"beszel-${service.target}\"} lets templates reference ${services.beszel.routing.port}.",
           "type": "object",
           "additionalProperties": {
             "pattern": "^[a-z0-9][a-z0-9-]*(\\$\\{[^}]+\\}[a-z0-9-]*)*$",
@@ -294,14 +359,36 @@
         }
       }
     },
-    "networking": {
+    "routing": {
       "additionalProperties": false,
-      "description": "Network exposure configuration for this service.",
+      "description": "Network exposure and reverse-proxy routing configuration for this service.",
       "type": "object",
       "properties": {
+        "container": {
+          "description": "Container that receives generated Traefik routing labels. Null uses the only configured container when there is one, otherwise identity.service.",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "type": ["string", "null"]
+        },
         "expose": {
           "description": "Access level for this service. 'tailscale': accessible only via Tailscale (tailscale-only middleware). 'internal': accessible on the internal network and Tailscale (internal-only middleware). 'external': publicly accessible via direct DNS. 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. Null uses no middleware and creates no DNS records.",
           "enum": ["cloudflare", "external", "internal", "tailscale", null]
+        },
+        "labels": {
+          "description": "Extra Traefik labels merged after generated routing labels. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
         },
         "port": {
           "description": "Port the service listens on. Required for Fly.io deployments. Used as the Traefik backend port for TrueNAS standard services, and as the Fly.io internal_port.",
@@ -341,8 +428,15 @@
         "description": "Per-target configuration. Each section is optional and only the platforms relevant to the target need be present.",
         "type": "object",
         "properties": {
-          "container": {
-            "$ref": "#/definitions/container_target"
+          "containers": {
+            "description": "Per-target container-runtime overlays keyed by container/service name.",
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/definitions/container_config"
+            },
+            "propertyNames": {
+              "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+            }
           },
           "features": {
             "$ref": "#/definitions/features_overlay"

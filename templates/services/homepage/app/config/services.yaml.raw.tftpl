@@ -1,37 +1,35 @@
 %{~ for group in sort(distinct([
-  for candidate in values(services) : candidate.labels["homepage.group"]
+  for candidate in values(services) : candidate.dashboard.group
   if candidate.target != service.target
-  && lookup(candidate.labels, "homepage.group", "") != ""
-  && lookup(candidate.labels, "homepage.name", "") != ""
-  && !contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
+  && candidate.dashboard.enabled
+  && candidate.dashboard.group != ""
+  && candidate.dashboard.name != ""
+  && !contains([for srv in values(servers) : srv.description], candidate.dashboard.group)
 ])) ~}
 - ${group}:
   %{~ for service_key in [
     for service_sort_key in sort([
       for candidate_key, candidate in services : join("|", [
-        format("%09d", 100000 + tonumber(lookup(candidate.labels, "homepage.weight", "0"))),
-        lower(lookup(candidate.labels, "homepage.name", "")),
+        format("%09d", 100000 + candidate.dashboard.weight),
+        lower(candidate.dashboard.name),
         candidate_key,
       ])
       if candidate.target != service.target
-      && lookup(candidate.labels, "homepage.group", "") == group
-      && lookup(candidate.labels, "homepage.name", "") != ""
+      && candidate.dashboard.enabled
+      && candidate.dashboard.group == group
+      && candidate.dashboard.name != ""
     ]) : split("|", service_sort_key)[2]
   ] ~}
-    - ${services[service_key].labels["homepage.name"]}:
-      %{~ for label_key, label_value in services[service_key].labels ~}
-      %{~ if startswith(label_key, "homepage.")
-      && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key)
-      && !startswith(label_key, "homepage.widget.") ~}
-        ${trimprefix(label_key, "homepage.")}: ${jsonencode(label_value)}
+    - ${services[service_key].dashboard.name}:
+      %{~ for field_key, field_value in services[service_key].dashboard ~}
+      %{~ if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != "" ~}
+        ${field_key}: ${jsonencode(field_value)}
       %{~ endif ~}
       %{~ endfor ~}
-      %{~ if contains(keys(services[service_key].labels), "homepage.widget.type") ~}
+      %{~ if length(services[service_key].dashboard.widget) > 0 ~}
         widget:
-          %{~ for label_key, label_value in services[service_key].labels ~}
-          %{~ if startswith(label_key, "homepage.widget.") ~}
-          ${trimprefix(label_key, "homepage.widget.")}: ${jsonencode(label_value)}
-          %{~ endif ~}
+          %{~ for widget_key, widget_value in services[service_key].dashboard.widget ~}
+          ${widget_key}: ${jsonencode(widget_value)}
           %{~ endfor ~}
       %{~ endif ~}
   %{~ endfor ~}
@@ -52,39 +50,37 @@
   %{~ endfor ~}
 %{~ endfor ~}
 %{~ for group in sort(distinct([
-  for candidate in values(services) : candidate.labels["homepage.group"]
+  for candidate in values(services) : candidate.dashboard.group
   if candidate.target != service.target
-  && lookup(candidate.labels, "homepage.group", "") != ""
-  && lookup(candidate.labels, "homepage.name", "") != ""
-  && contains([for srv in values(servers) : srv.description], candidate.labels["homepage.group"])
+  && candidate.dashboard.enabled
+  && candidate.dashboard.group != ""
+  && candidate.dashboard.name != ""
+  && contains([for srv in values(servers) : srv.description], candidate.dashboard.group)
 ])) ~}
 - ${group}:
   %{~ for service_key in [
     for service_sort_key in sort([
       for candidate_key, candidate in services : join("|", [
-        format("%09d", 100000 + tonumber(lookup(candidate.labels, "homepage.weight", "0"))),
-        lower(lookup(candidate.labels, "homepage.name", "")),
+        format("%09d", 100000 + candidate.dashboard.weight),
+        lower(candidate.dashboard.name),
         candidate_key,
       ])
       if candidate.target != service.target
-      && lookup(candidate.labels, "homepage.group", "") == group
-      && lookup(candidate.labels, "homepage.name", "") != ""
+      && candidate.dashboard.enabled
+      && candidate.dashboard.group == group
+      && candidate.dashboard.name != ""
     ]) : split("|", service_sort_key)[2]
   ] ~}
-    - ${services[service_key].labels["homepage.name"]}:
-      %{~ for label_key, label_value in services[service_key].labels ~}
-      %{~ if startswith(label_key, "homepage.")
-      && !contains(["homepage.group", "homepage.name", "homepage.weight"], label_key)
-      && !startswith(label_key, "homepage.widget.") ~}
-        ${trimprefix(label_key, "homepage.")}: ${jsonencode(label_value)}
+    - ${services[service_key].dashboard.name}:
+      %{~ for field_key, field_value in services[service_key].dashboard ~}
+      %{~ if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != "" ~}
+        ${field_key}: ${jsonencode(field_value)}
       %{~ endif ~}
       %{~ endfor ~}
-      %{~ if contains(keys(services[service_key].labels), "homepage.widget.type") ~}
+      %{~ if length(services[service_key].dashboard.widget) > 0 ~}
         widget:
-          %{~ for label_key, label_value in services[service_key].labels ~}
-          %{~ if startswith(label_key, "homepage.widget.") ~}
-          ${trimprefix(label_key, "homepage.widget.")}: ${jsonencode(label_value)}
-          %{~ endif ~}
+          %{~ for widget_key, widget_value in services[service_key].dashboard.widget ~}
+          ${widget_key}: ${jsonencode(widget_value)}
           %{~ endfor ~}
       %{~ endif ~}
   %{~ endfor ~}

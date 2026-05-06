@@ -5,8 +5,8 @@ primary_region = "${service.fly.region}"
 ${service.fly.image != null ? "image = \"${service.fly.image}\"" : "dockerfile = \"Dockerfile\""}
 
 [http_service]
-force_https = ${service.networking.ssl}
-internal_port = ${service.networking.port}
+force_https = ${service.routing.ssl}
+internal_port = ${service.routing.port}
 
 [[vm]]
 cpu_kind = "${service.fly.cpu_kind}"

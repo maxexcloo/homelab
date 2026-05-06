@@ -59,6 +59,16 @@ servers:
         - 80
         - 443
 services:
+  containers: {}
+  dashboard:
+    description: null
+    enabled: true
+    group: null
+    href: null
+    icon: null
+    name: null
+    weight: 0
+    widget: {}
   features:
     b2: false
     monitoring: true
@@ -76,17 +86,17 @@ services:
     username: ""
   imports:
     services: {}
-  networking:
+  routing:
+    container: null
     expose: internal
+    labels: {}
     port: null
     scheme: null
     ssl: true
     ssl_validation: true
     urls: []
 target_defaults:
-  container:
-    env: {}
-    labels: {}
+  containers: {}
   fly:
     app_name: null
     cpu_kind: shared
@@ -97,6 +107,5 @@ target_defaults:
     region: syd
   truenas:
     catalog_app: null
-    containers: []
     port_key: web_port
     train: community

@@ -1,12 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
-container:
-  labels:
-    homepage.href: https://dash.cloudflare.com/${server.state.fields.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.state.fields.cloudflare_tunnel_id}/edit?tab=overview
-    homepage.icon: cloudflare
-    homepage.widget.accountid: ${server.state.fields.cloudflare_account_id}
-    homepage.widget.key: ${server.state.secrets.cloudflare_tunnel_read_token}
-    homepage.widget.tunnelid: ${server.state.fields.cloudflare_tunnel_id}
-    homepage.widget.type: ${service.identity.service}
+dashboard:
+  href: https://dash.cloudflare.com/${server.state.fields.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.state.fields.cloudflare_tunnel_id}/edit?tab=overview
+  icon: cloudflare
+  weight: -10
+  widget:
+    accountid: ${server.state.fields.cloudflare_account_id}
+    key: ${server.state.secrets.cloudflare_tunnel_read_token}
+    tunnelid: ${server.state.fields.cloudflare_tunnel_id}
+    type: ${service.identity.service}
 identity:
   description: VPN
   name: cloudflared

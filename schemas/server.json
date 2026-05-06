@@ -28,7 +28,7 @@
           "type": "boolean"
         },
         "cloudflare_zero_trust_tunnel": {
-          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes state.fields.cloudflare_tunnel_id and state.secrets.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with networking.expose set to 'cloudflare' route through this tunnel.",
+          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes state.fields.cloudflare_tunnel_id and state.secrets.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
           "type": "boolean"
         },
         "docker": {

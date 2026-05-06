@@ -140,15 +140,15 @@ def compose_template() -> str:
   ${service.identity.name}:
     image: REPLACE_ME
     restart: unless-stopped
-%{~ if length(env) > 0 ~}
+%{~ if length(containers[service.identity.name].environment) > 0 ~}
     environment:
-%{~ for env_key in sort(keys(env)) ~}
-      ${env_key}: ${jsonencode(env[env_key])}
+%{~ for env_key in sort(keys(containers[service.identity.name].environment)) ~}
+      ${env_key}: ${jsonencode(containers[service.identity.name].environment[env_key])}
 %{~ endfor ~}
 %{~ endif ~}
-%{~ if length(labels) > 0 ~}
+%{~ if length(containers[service.identity.name].labels) > 0 ~}
     labels:
-      ${labels_yaml}
+      ${containers[service.identity.name].labels_yaml}
 %{~ endif ~}
 """
 
@@ -284,7 +284,7 @@ def main() -> None:
 
     service["identity"] = identity
     if port is not None:
-        service["networking"] = {
+        service["routing"] = {
             "expose": prompt_choice(
                 args.expose,
                 "Exposure",

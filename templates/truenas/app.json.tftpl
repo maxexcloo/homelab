@@ -4,25 +4,52 @@
   "custom_app": false,
   "train": "${service.truenas.train}",
   "values": {
-    %{~ if length(envs) > 0 ~}
-    "${service.identity.service}": {
+    %{~ for container_key in sort([
+      for candidate_key, container in containers : candidate_key
+      if length(container.environment) > 0
+    ]) ~}
+    "${container_key}": {
       "additional_envs": [
-        %{~ for env in envs ~}
+        %{~ for env in containers[container_key].envs ~}
         {
           "name": ${jsonencode(env.name)},
           "value": ${jsonencode(env.value)}
-        }%{~ if env != envs[length(envs) - 1] ~},%{~ endif ~}
+        }%{~ if env != containers[container_key].envs[length(containers[container_key].envs) - 1] ~},%{~ endif ~}
         %{~ endfor ~}
       ]
     },
-    %{~ endif ~}
+    %{~ endfor ~}
     "labels": [
-      %{~ for label_key in sort(keys(labels)) ~}
+      %{~ for label in flatten([
+        for container_key in sort(keys(containers)) : [
+          for label_key in sort(keys(containers[container_key].labels)) : {
+            container = container_key
+            key       = label_key
+            value     = containers[container_key].labels[label_key]
+          }
+        ]
+      ]) ~}
       {
-        "containers": ${jsonencode(length(service.truenas.containers) > 0 ? service.truenas.containers : [service.identity.service])},
-        "key": ${jsonencode(label_key)},
-        "value": ${jsonencode(labels[label_key])}
-      }%{~ if label_key != sort(keys(labels))[length(sort(keys(labels))) - 1] ~},%{~ endif ~}
+        "containers": [${jsonencode(label.container)}],
+        "key": ${jsonencode(label.key)},
+        "value": ${jsonencode(label.value)}
+      }%{~ if label != flatten([
+        for container_key in sort(keys(containers)) : [
+          for label_key in sort(keys(containers[container_key].labels)) : {
+            container = container_key
+            key       = label_key
+            value     = containers[container_key].labels[label_key]
+          }
+        ]
+      ])[length(flatten([
+        for container_key in sort(keys(containers)) : [
+          for label_key in sort(keys(containers[container_key].labels)) : {
+            container = container_key
+            key       = label_key
+            value     = containers[container_key].labels[label_key]
+          }
+        ]
+      ])) - 1] ~},%{~ endif ~}
       %{~ endfor ~}
     ]
   }

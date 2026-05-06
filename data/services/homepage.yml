@@ -1,14 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
-container:
-  labels:
-    homelab.homepage.enabled: false
+dashboard:
+  enabled: false
 identity:
   description: Application Dashboard
   group: Applications
   name: homepage
   service: homepage
   title: Homepage
-networking:
+routing:
   port: 30054
   scheme: http
 targets:

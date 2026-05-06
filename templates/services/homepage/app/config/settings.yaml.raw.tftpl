@@ -3,11 +3,12 @@ title: ${service.identity.title}
 useEqualHeights: true
 layout:
 %{~ for group in sort(distinct([
-  for svc_key, svc in services : svc.labels["homepage.group"]
+  for svc_key, svc in services : svc.dashboard.group
   if svc.key != service.key
-  && lookup(svc.labels, "homepage.group", "") != ""
-  && lookup(svc.labels, "homepage.name", "") != ""
-  && !contains([for srv in values(servers) : srv.description], svc.labels["homepage.group"])
+  && svc.dashboard.enabled
+  && svc.dashboard.group != ""
+  && svc.dashboard.name != ""
+  && !contains([for srv in values(servers) : srv.description], svc.dashboard.group)
 ])) }
   ${group}:
     columns: ${defaults.groups[group].columns}
@@ -27,11 +28,12 @@ layout:
     tab: Servers
 %{ endfor ~}
 %{~ for group in sort(distinct([
-  for svc_key, svc in services : svc.labels["homepage.group"]
+  for svc_key, svc in services : svc.dashboard.group
   if svc.key != service.key
-  && lookup(svc.labels, "homepage.group", "") != ""
-  && lookup(svc.labels, "homepage.name", "") != ""
-  && contains([for srv in values(servers) : srv.description], svc.labels["homepage.group"])
+  && svc.dashboard.enabled
+  && svc.dashboard.group != ""
+  && svc.dashboard.name != ""
+  && contains([for srv in values(servers) : srv.description], svc.dashboard.group)
 ])) }
   ${group}:
     columns: 2

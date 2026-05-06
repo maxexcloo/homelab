@@ -15,7 +15,7 @@
           "type": ["integer", "null"]
         },
         "proxied": {
-          "description": "Whether to proxy records through Cloudflare by default. Individual service records override this based on their networking.expose setting.",
+          "description": "Whether to proxy records through Cloudflare by default. Individual service records override this based on their routing.expose setting.",
           "type": "boolean"
         },
         "ttl": {
@@ -41,8 +41,8 @@
       "description": "Per-platform defaults merged into each service deployment target during expansion (services_input.tf). Keys must be one of container, fly, truenas.",
       "type": "object",
       "properties": {
-        "container": {
-          "description": "Defaults for container-runtime config (Compose env and labels). Used by Komodo stacks and TrueNAS custom apps.",
+        "containers": {
+          "description": "Defaults for per-target container-runtime overlays keyed by container/service name.",
           "type": "object"
         },
         "fly": {

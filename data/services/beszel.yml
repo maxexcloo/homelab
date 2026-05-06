@@ -9,7 +9,7 @@ identity:
   service: beszel
   title: Beszel
   username: max@excloo.com
-networking:
+routing:
   port: 30333
   scheme: http
 targets:

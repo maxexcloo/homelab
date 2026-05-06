@@ -1,12 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
-container:
-  env:
-    ADMIN_KEY: ${service.state.secrets.password}
-    DATABASE_URI: sqlite://addon/data/db.sqlite
-    HOST_NAME: ${service.fqdn_internal}
-    REDIS_URL: redis://redis:6379
-  labels:
-    homepage.icon: sh-aiostreams
+containers:
+  aiometadata:
+    environment:
+      ADMIN_KEY: ${service.state.secrets.password}
+      DATABASE_URI: sqlite://addon/data/db.sqlite
+      HOST_NAME: ${service.fqdn_internal}
+      REDIS_URL: redis://redis:6379
+dashboard:
+  icon: sh-aiostreams
 features:
   password: true
 identity:
@@ -15,7 +16,7 @@ identity:
   name: aiometadata
   service: aiometadata
   title: AIOMetadata
-networking:
+routing:
   port: 3232
   scheme: http
 targets:

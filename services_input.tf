@@ -9,7 +9,7 @@ locals {
 
   # Each entry in `targets` becomes its own stack, so target-specific secrets
   # and rendered files have stable addresses like service-target. Per-target
-  # platform sections (container, fly, truenas) are flattened to the top level
+  # platform sections (containers, fly, truenas) are flattened to the top level
   # with target_defaults and service-level base merged in (target wins);
   # per-target feature overrides layer on top of the service-level features.
   services_input_targets = merge([
@@ -17,15 +17,15 @@ locals {
       for target_key, target_config in service.targets : "${service_key}-${target_key}" => merge(
         {
           for key, value in service : key => value
-          if !contains(["container", "targets"], key)
+          if !contains(["containers", "targets"], key)
         },
         {
           target = target_key
 
-          container = provider::deepmerge::mergo(
-            local.defaults_target.container,
-            try(service.container, {}),
-            try(target_config.container, {}),
+          containers = provider::deepmerge::mergo(
+            local.defaults_target.containers,
+            try(service.containers, {}),
+            try(target_config.containers, {}),
           )
 
           features = merge(

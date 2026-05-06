@@ -1,10 +1,12 @@
 # yaml-language-server: $schema=../../schemas/service.json
+containers:
+  open-speed-test: {}
 identity:
   description: Network Speed Test
   name: openspeedtest
   service: openspeedtest
   title: Open Speed Test
-networking:
+routing:
   port: 30116
   scheme: http
 targets:
@@ -12,5 +14,3 @@ targets:
     truenas:
       catalog_app: open-speed-test
       port_key: http_port
-      containers:
-        - open-speed-test

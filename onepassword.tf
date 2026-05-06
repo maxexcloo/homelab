@@ -157,7 +157,7 @@ locals {
     for service_key, service in local.services : service_key => {
       for url_label, url_value in service.state.urls : url_label => format(
         "%s://%s",
-        service.networking.ssl ? "https" : "http",
+        service.routing.ssl ? "https" : "http",
         url_value,
       )
       if url_value != null && url_value != ""
@@ -245,7 +245,7 @@ locals {
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
-    if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.networking.scheme != null
+    if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.routing.scheme != null
   }
 }
 

@@ -44,7 +44,7 @@ locals {
               fqdn_internal = service.fqdn_internal
             },
             {
-              for url in service.networking.urls : url => url
+              for url in service.routing.urls : url => url
             }
           )
         }

@@ -1,13 +1,16 @@
 # yaml-language-server: $schema=../../schemas/service.json
-container:
-  env:
-    HASHEOUS_API_ENABLED: true
-    SCAN_TIMEOUT: 86400
-    SCREENSCRAPER_PASSWORD: ${service.state.secrets.screenscraper_password}
-    SCREENSCRAPER_USER: ${defaults.organization.email}
-  labels:
-    homepage.widget.type: ${service.identity.service}
-    homepage.widget.url: https://${service.fqdn_internal}
+containers:
+  romm:
+    environment:
+      HASHEOUS_API_ENABLED: true
+      SCAN_TIMEOUT: 86400
+      SCREENSCRAPER_PASSWORD: ${service.state.secrets.screenscraper_password}
+      SCREENSCRAPER_USER: ${defaults.organization.email}
+dashboard:
+  weight: -10
+  widget:
+    type: ${service.identity.service}
+    url: https://${service.fqdn_internal}
 features:
   password: true
   secrets:
@@ -31,7 +34,7 @@ identity:
   service: romm
   title: RoMM
   username: max@excloo.com
-networking:
+routing:
   port: 30061
   scheme: http
 targets:

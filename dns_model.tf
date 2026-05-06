@@ -19,7 +19,7 @@ locals {
   # The most specific (longest) zone wins so nested domains resolve correctly.
   _dns_model_zones_matching = {
     for url in distinct(flatten([
-      for service_key, service in local.services_model : service.networking.urls
+      for service_key, service in local.services_model : service.routing.urls
       ])) : url => [
       for zone in local.dns_input_zones : {
         length = length(zone)
@@ -158,18 +158,18 @@ locals {
     }
     if contains(local.servers_input_keys, service.target) &&
     local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
-    service.networking.expose == "cloudflare"
+    service.routing.expose == "cloudflare"
   }
 
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as
   # computed service FQDNs and served directly by Fly.
   dns_model_records_services_fly = merge(flatten([
     for service_key, service in local.fly_input_services : [
-      for url_index, url in service.networking.urls : {
+      for url_index, url in service.routing.urls : {
         "${service_key}-url-${url_index}" = {
           content  = "${service.fly.app_name}.fly.dev"
           name     = url
-          proxied  = service.networking.expose == "cloudflare"
+          proxied  = service.routing.expose == "cloudflare"
           type     = "CNAME"
           wildcard = false
           zone     = local.dns_model_zones_urls[url]
@@ -183,17 +183,17 @@ locals {
   # otherwise to the service's computed external or internal hostname.
   dns_model_records_services_urls = merge(flatten([
     for service_key, service in local.services_model : [
-      for url_index, url in service.networking.urls : {
+      for url_index, url in service.routing.urls : {
         "${service_key}-url-${url_index}" = {
           name     = url
-          proxied  = service.networking.expose == "cloudflare"
+          proxied  = service.routing.expose == "cloudflare"
           type     = "CNAME"
           wildcard = false
           zone     = local.dns_model_zones_urls[url]
 
           content = (
             local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
-            && service.networking.expose == "cloudflare"
+            && service.routing.expose == "cloudflare"
             ? "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
             : service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
           )

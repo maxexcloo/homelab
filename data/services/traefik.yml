@@ -1,7 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
-container:
+dashboard:
+  href: https://traefik.${server.fqdn_internal}
+identity:
+  description: Reverse Proxy
+  name: traefik
+  service: traefik
+  title: Traefik
+routing:
   labels:
-    homepage.href: https://traefik.${server.fqdn_internal}
     traefik.enable: "true"
     traefik.http.middlewares.autocompress.compress: "true"
     traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${defaults.networking.cidrs.docker}, ${defaults.networking.cidrs.lan}, ${defaults.networking.cidrs.localhost}, ${defaults.networking.cidrs.localhost_ipv6}, ${defaults.networking.cidrs.tailscale}, ${defaults.networking.cidrs.tailscale_ipv6}
@@ -11,10 +17,5 @@ container:
     traefik.http.routers.dashboard.rule: Host(`${service.fqdn_internal}`)
     traefik.http.routers.dashboard.service: api@internal
     traefik.http.services.traefik.loadbalancer.server.port: "8082"
-identity:
-  description: Reverse Proxy
-  name: traefik
-  service: traefik
-  title: Traefik
 targets:
   au-truenas: {}

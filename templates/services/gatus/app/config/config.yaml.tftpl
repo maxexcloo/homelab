@@ -25,17 +25,17 @@ alerting:
   %{~ endif ~}
 endpoints:
   %{~ for service_key, monitored_service in services ~}
-  %{~ if monitored_service.features.monitoring && monitored_service.networking.scheme != null && length(monitored_service.networking.urls) > 0 ~}
-  %{~ for url in monitored_service.networking.urls ~}
+  %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null && length(monitored_service.routing.urls) > 0 ~}
+  %{~ for url in monitored_service.routing.urls ~}
   - conditions:
-      %{~ if monitored_service.networking.ssl && monitored_service.networking.ssl_validation ~}
+      %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation ~}
       - "[CERTIFICATE_EXPIRATION] > 48h"
       %{~ endif ~}
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
     group: "Services"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
-    url: "${monitored_service.networking.ssl ? "https" : "http"}://${url}"
+    url: "${monitored_service.routing.ssl ? "https" : "http"}://${url}"
     %{~ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
       %{~ if service.features.pushover ~}
@@ -45,7 +45,7 @@ endpoints:
       - type: email
       %{~ endif ~}
     %{~ endif ~}
-    %{~ if monitored_service.networking.ssl_validation == false ~}
+    %{~ if monitored_service.routing.ssl_validation == false ~}
     client:
       insecure: true
     %{~ endif ~}
@@ -53,16 +53,16 @@ endpoints:
   %{~ endif ~}
   %{~ endfor ~}
   %{~ for service_key, monitored_service in services ~}
-  %{~ if monitored_service.features.monitoring && monitored_service.networking.scheme != null && monitored_service.fqdn_external != null ~}
+  %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null && monitored_service.fqdn_external != null ~}
   - conditions:
-      %{~ if monitored_service.networking.ssl && monitored_service.networking.ssl_validation ~}
+      %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation ~}
       - "[CERTIFICATE_EXPIRATION] > 48h"
       %{~ endif ~}
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
     group: "Services (External)"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
-    url: "${monitored_service.networking.ssl ? "https" : "http"}://${monitored_service.fqdn_external}"
+    url: "${monitored_service.routing.ssl ? "https" : "http"}://${monitored_service.fqdn_external}"
     %{~ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
       %{~ if service.features.pushover ~}
@@ -72,23 +72,23 @@ endpoints:
       - type: email
       %{~ endif ~}
     %{~ endif ~}
-    %{~ if monitored_service.networking.ssl_validation == false ~}
+    %{~ if monitored_service.routing.ssl_validation == false ~}
     client:
       insecure: true
     %{~ endif ~}
   %{~ endif ~}
   %{~ endfor ~}
   %{~ for service_key, monitored_service in services ~}
-  %{~ if monitored_service.features.monitoring && monitored_service.networking.scheme != null && monitored_service.fqdn_internal != null ~}
+  %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null && monitored_service.fqdn_internal != null ~}
   - conditions:
-      %{~ if monitored_service.networking.ssl && monitored_service.networking.ssl_validation ~}
+      %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation ~}
       - "[CERTIFICATE_EXPIRATION] > 48h"
       %{~ endif ~}
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
     group: "Services (Internal)"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
-    url: "${monitored_service.networking.ssl ? "https" : "http"}://${monitored_service.fqdn_internal}"
+    url: "${monitored_service.routing.ssl ? "https" : "http"}://${monitored_service.fqdn_internal}"
     %{~ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
       %{~ if service.features.pushover ~}
@@ -98,7 +98,7 @@ endpoints:
       - type: email
       %{~ endif ~}
     %{~ endif ~}
-    %{~ if monitored_service.networking.ssl_validation == false ~}
+    %{~ if monitored_service.routing.ssl_validation == false ~}
     client:
       insecure: true
     %{~ endif ~}

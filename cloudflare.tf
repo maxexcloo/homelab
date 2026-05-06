@@ -27,7 +27,7 @@ locals {
         for service_key, service in local.services_model : [
           for hostname in distinct(concat(
             service.fqdn_external != null ? [service.fqdn_external] : [],
-            [for url in service.networking.urls : url if lookup(local.dns_model_zones_urls, url, null) != null]
+            [for url in service.routing.urls : url if lookup(local.dns_model_zones_urls, url, null) != null]
             )) : {
             hostname = hostname
             service  = "https://localhost"
@@ -38,7 +38,7 @@ locals {
             }
           }
         ]
-        if service.target == server_key && service.networking.expose == "cloudflare"
+        if service.target == server_key && service.routing.expose == "cloudflare"
       ]),
       [
         {

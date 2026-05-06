@@ -38,7 +38,7 @@ locals {
           local.services_render_context[service_key]
         ))
       }
-      if length(service.networking.urls) > 0
+      if length(service.routing.urls) > 0
     },
     {
       # 3) Machine count for scaling
