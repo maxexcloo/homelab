@@ -66,7 +66,7 @@ run = "tofu validate"
 # Deployment
 [tasks.apply]
 description = "Apply all changes"
-run = 'if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then tofu apply -auto-approve; else tofu apply; fi'
+run = 'tofu apply'
 
 [tasks.plan]
 description = "Plan all changes"
