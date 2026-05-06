@@ -1,6 +1,4 @@
-headerStyle: clean
-title: ${service.identity.title}
-useEqualHeights: true
+${yamlencode(data.settings)}
 layout:
 %{~ for group in sort(distinct([
   for candidate_group in keys(dashboard_services) : candidate_group

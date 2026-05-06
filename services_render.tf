@@ -235,9 +235,13 @@ locals {
         data               = local._services_render_data[service_key]
         routing_container  = local._services_render_routing_container[service_key]
         routing_labels     = local._services_render_routing_labels[service_key]
-        service = merge(service, {
-          data = local._services_render_data[service_key]
-        })
+
+        service = merge(
+          service,
+          {
+            data = local._services_render_data[service_key]
+          }
+        )
 
         services = merge(
           {

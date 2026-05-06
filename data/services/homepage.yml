@@ -44,6 +44,13 @@ data:
             - description: Network
               href: https://unifi.ui.com
               icon: si-ubiquiti-#ffffff
+  settings:
+    headerStyle: clean
+    title: ${service.identity.title}
+  widgets:
+    - search:
+        provider: google
+        target: _blank
 identity:
   description: Application Dashboard
   group: Applications

@@ -17,6 +17,9 @@ dashboard:
       - cpu
       - memory
       - network
+data:
+  listen: 45876
+  public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
 features:
   secrets:
     - name: system_id

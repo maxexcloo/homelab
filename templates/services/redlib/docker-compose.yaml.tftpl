@@ -7,13 +7,13 @@ services:
   redlib:
     healthcheck:
       disable: true
-    image: ghcr.io/silvenga/redlib:latest
     environment:
-      REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: "on"
-      REDLIB_DEFAULT_SHOW_NSFW: "on"
+      REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: ${jsonencode(service.data.settings.default_remove_default_feeds)}
+      REDLIB_DEFAULT_SHOW_NSFW: ${jsonencode(service.data.settings.default_show_nsfw)}
       REDLIB_DEFAULT_SUBSCRIPTIONS: ${join("+", service.data.subscriptions)}
-      REDLIB_DEFAULT_USE_HLS: "on"
+      REDLIB_DEFAULT_USE_HLS: ${jsonencode(service.data.settings.default_use_hls)}
       REDLIB_FULL_URL: https://${service.fqdn_internal}
-      REDLIB_ROBOTS_DISABLE_INDEXING: "on"
+      REDLIB_ROBOTS_DISABLE_INDEXING: ${jsonencode(service.data.settings.robots_disable_indexing)}
+    image: ghcr.io/silvenga/redlib:latest
     network_mode: service:ctrld
     restart: unless-stopped
