@@ -1,6 +1,49 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
   enabled: false
+data:
+  bookmarks:
+    - Providers:
+        - 1Password:
+            - description: Passwords & Secrets
+              href: https://my.1password.com
+              icon: si-1password-#ffffff
+        - Backblaze:
+            - description: Object Storage
+              href: https://secure.backblaze.com/b2_buckets.htm
+              icon: si-backblaze-#ffffff
+        - Cloudflare:
+            - description: DNS & Zero Trust
+              href: https://dash.cloudflare.com
+              icon: si-cloudflare-#ffffff
+        - Fly.io:
+            - description: App Platform
+              href: https://fly.io/dashboard
+              icon: si-flydotio-#ffffff
+        - GitHub:
+            - description: Source Control
+              href: https://github.com/${defaults.github.owner}
+              icon: si-github-#ffffff
+        - Oracle Cloud:
+            - description: Cloud VMs
+              href: https://cloud.oracle.com
+              icon: si-oracle-#ffffff
+        - Pushover:
+            - description: Notifications API
+              href: https://pushover.net/
+              icon: sh-pushover
+        - Resend:
+            - description: Email API
+              href: https://resend.com/overview
+              icon: si-resend-#ffffff
+        - Tailscale:
+            - description: VPN
+              href: https://login.tailscale.com/admin
+              icon: si-tailscale-#ffffff
+        - Unifi:
+            - description: Network
+              href: https://unifi.ui.com
+              icon: si-ubiquiti-#ffffff
 identity:
   description: Application Dashboard
   group: Applications

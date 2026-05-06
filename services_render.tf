@@ -13,7 +13,7 @@ locals {
     }
   }
 
-  # Structured Homepage data consumed by the Homepage config template.
+  # Structured dashboard data consumed by service templates.
   _services_render_dashboard = {
     for service_key, service in local.services : service_key => {
       description = service.dashboard.description != null ? templatestring(service.dashboard.description, local._services_render_pre_context[service_key]) : service.identity.description
@@ -46,6 +46,71 @@ locals {
         if widget_value != null
       }
     }
+  }
+
+  _services_render_dashboard_server_cards = {
+    for server_key, server in local.servers : server_key => {
+      group  = server.type_label
+      name   = server.description
+      widget = {}
+
+      fields = {
+        description = server.platform
+        href        = "https://${server.fqdn_internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
+        icon        = server.type_icon
+        siteMonitor = "https://${server.fqdn_internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
+      }
+    }
+  }
+
+  _services_render_dashboard_server_groups = {
+    for group in sort(distinct([
+      for card in values(local._services_render_dashboard_server_cards) : card.group
+      ])) : group => [
+      for server_key in sort([
+        for candidate_key, candidate in local._services_render_dashboard_server_cards : candidate_key
+        if candidate.group == group
+      ]) : local._services_render_dashboard_server_cards[server_key]
+    ]
+  }
+
+  _services_render_dashboard_service_cards = {
+    for service_key, dashboard in local._services_render_dashboard : service_key => {
+      group  = dashboard.group
+      name   = dashboard.name
+      widget = dashboard.widget
+
+      fields = {
+        for field_key, field_value in dashboard : field_key => field_value
+        if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != ""
+      }
+    }
+    if dashboard.enabled && dashboard.group != "" && dashboard.name != ""
+  }
+
+  _services_render_dashboard_service_groups = {
+    for current_service_key, current_service in local.services : current_service_key => {
+      for group in sort(distinct([
+        for service_key, card in local._services_render_dashboard_service_cards : card.group
+        if service_key != current_service_key
+        ])) : group => [
+        for service_sort_key in sort([
+          for service_key, card in local._services_render_dashboard_service_cards : join("|", [
+            format("%09d", 100000 + local._services_render_dashboard[service_key].weight),
+            lower(card.name),
+            service_key,
+          ])
+          if service_key != current_service_key && card.group == group
+        ]) : local._services_render_dashboard_service_cards[split("|", service_sort_key)[2]]
+      ]
+    }
+  }
+
+  _services_render_data = {
+    for service_key, service in local.services : service_key => jsondecode(templatestring(
+      jsonencode(service.data),
+      local._services_render_pre_context[service_key],
+    ))
   }
 
   # File extension -> SOPS input type. Files named *.raw or *.raw.tftpl are
@@ -94,8 +159,8 @@ locals {
   }
 
   # Pre-render context with import aliases overlaid. It intentionally excludes
-  # rendered dashboard/routing data because those strings are rendered from
-  # this context.
+  # rendered data/dashboard/routing values because those strings are rendered
+  # from this context.
   _services_render_pre_context = {
     for service_key, service in local.services : service_key => {
       defaults = local.defaults
@@ -164,14 +229,21 @@ locals {
     for service_key, service in local.services : service_key => merge(
       local._services_render_pre_context[service_key],
       {
-        dashboard         = local._services_render_dashboard[service_key]
-        routing_container = local._services_render_routing_container[service_key]
-        routing_labels    = local._services_render_routing_labels[service_key]
+        dashboard          = local._services_render_dashboard[service_key]
+        dashboard_servers  = local._services_render_dashboard_server_groups
+        dashboard_services = local._services_render_dashboard_service_groups[service_key]
+        data               = local._services_render_data[service_key]
+        routing_container  = local._services_render_routing_container[service_key]
+        routing_labels     = local._services_render_routing_labels[service_key]
+        service = merge(service, {
+          data = local._services_render_data[service_key]
+        })
 
         services = merge(
           {
             for k, s in local.services : k => merge(s, {
               dashboard         = local._services_render_dashboard[k]
+              data              = local._services_render_data[k]
               routing_container = local._services_render_routing_container[k]
               routing_labels    = local._services_render_routing_labels[k]
             })
@@ -180,6 +252,7 @@ locals {
             for alias, real_key in local._services_imports[service_key] :
             alias => merge(local.services[real_key], {
               dashboard         = local._services_render_dashboard[real_key]
+              data              = local._services_render_data[real_key]
               routing_container = local._services_render_routing_container[real_key]
               routing_labels    = local._services_render_routing_labels[real_key]
             })

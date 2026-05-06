@@ -1,85 +1,43 @@
 %{~ for group in sort(distinct([
-  for candidate in values(services) : candidate.dashboard.group
-  if candidate.target != service.target
-  && candidate.dashboard.enabled
-  && candidate.dashboard.group != ""
-  && candidate.dashboard.name != ""
-  && !contains([for srv in values(servers) : srv.description], candidate.dashboard.group)
+  for candidate_group in keys(dashboard_services) : candidate_group
+  if !contains([for srv in values(servers) : srv.description], candidate_group)
 ])) ~}
 - ${group}:
-  %{~ for service_key in [
-    for service_sort_key in sort([
-      for candidate_key, candidate in services : join("|", [
-        format("%09d", 100000 + candidate.dashboard.weight),
-        lower(candidate.dashboard.name),
-        candidate_key,
-      ])
-      if candidate.target != service.target
-      && candidate.dashboard.enabled
-      && candidate.dashboard.group == group
-      && candidate.dashboard.name != ""
-    ]) : split("|", service_sort_key)[2]
-  ] ~}
-    - ${services[service_key].dashboard.name}:
-      %{~ for field_key, field_value in services[service_key].dashboard ~}
-      %{~ if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != "" ~}
+  %{~ for card in dashboard_services[group] ~}
+    - ${card.name}:
+      %{~ for field_key, field_value in card.fields ~}
         ${field_key}: ${jsonencode(field_value)}
-      %{~ endif ~}
       %{~ endfor ~}
-      %{~ if length(services[service_key].dashboard.widget) > 0 ~}
+      %{~ if length(card.widget) > 0 ~}
         widget:
-          %{~ for widget_key, widget_value in services[service_key].dashboard.widget ~}
+          %{~ for widget_key, widget_value in card.widget ~}
           ${widget_key}: ${jsonencode(widget_value)}
           %{~ endfor ~}
       %{~ endif ~}
   %{~ endfor ~}
 %{~ endfor ~}
-%{~ for group in sort(distinct([
-  for srv in values(servers) : srv.type_label
-])) ~}
+%{~ for group in sort(keys(dashboard_servers)) ~}
 - ${group}:
-  %{~ for srv_key in sort([
-    for k, srv in servers : k
-    if srv.type_label == group
-  ]) ~}
-    - ${servers[srv_key].description}:
-        description: ${jsonencode(servers[srv_key].platform)}
-        href: https://${servers[srv_key].fqdn_internal}${servers[srv_key].networking.management_port != 443 ? ":${servers[srv_key].networking.management_port}" : ""}
-        icon: ${servers[srv_key].type_icon}
-        siteMonitor: https://${servers[srv_key].fqdn_internal}${servers[srv_key].networking.management_port != 443 ? ":${servers[srv_key].networking.management_port}" : ""}
+  %{~ for card in dashboard_servers[group] ~}
+    - ${card.name}:
+      %{~ for field_key, field_value in card.fields ~}
+        ${field_key}: ${jsonencode(field_value)}
+      %{~ endfor ~}
   %{~ endfor ~}
 %{~ endfor ~}
 %{~ for group in sort(distinct([
-  for candidate in values(services) : candidate.dashboard.group
-  if candidate.target != service.target
-  && candidate.dashboard.enabled
-  && candidate.dashboard.group != ""
-  && candidate.dashboard.name != ""
-  && contains([for srv in values(servers) : srv.description], candidate.dashboard.group)
+  for candidate_group in keys(dashboard_services) : candidate_group
+  if contains([for srv in values(servers) : srv.description], candidate_group)
 ])) ~}
 - ${group}:
-  %{~ for service_key in [
-    for service_sort_key in sort([
-      for candidate_key, candidate in services : join("|", [
-        format("%09d", 100000 + candidate.dashboard.weight),
-        lower(candidate.dashboard.name),
-        candidate_key,
-      ])
-      if candidate.target != service.target
-      && candidate.dashboard.enabled
-      && candidate.dashboard.group == group
-      && candidate.dashboard.name != ""
-    ]) : split("|", service_sort_key)[2]
-  ] ~}
-    - ${services[service_key].dashboard.name}:
-      %{~ for field_key, field_value in services[service_key].dashboard ~}
-      %{~ if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != "" ~}
+  %{~ for card in dashboard_services[group] ~}
+    - ${card.name}:
+      %{~ for field_key, field_value in card.fields ~}
         ${field_key}: ${jsonencode(field_value)}
-      %{~ endif ~}
       %{~ endfor ~}
-      %{~ if length(services[service_key].dashboard.widget) > 0 ~}
+      %{~ if length(card.widget) > 0 ~}
         widget:
-          %{~ for widget_key, widget_value in services[service_key].dashboard.widget ~}
+          %{~ for widget_key, widget_value in card.widget ~}
           ${widget_key}: ${jsonencode(widget_value)}
           %{~ endfor ~}
       %{~ endif ~}

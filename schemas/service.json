@@ -75,6 +75,35 @@
         }
       }
     },
+    "json_data": {
+      "description": "Arbitrary JSON-compatible value.",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/json_data"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/json_data"
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "truenas_target": {
       "additionalProperties": false,
       "description": "Configuration for TrueNAS catalog app deployments. Custom apps are inferred from docker-compose.yaml.tftpl in the service's template directory.",
@@ -199,6 +228,10 @@
           }
         }
       }
+    },
+    "data": {
+      "$ref": "#/definitions/json_data",
+      "description": "General-purpose service data exposed to templates as service.data and data. Values may be any JSON shape. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}."
     },
     "features": {
       "additionalProperties": false,
@@ -394,6 +427,10 @@
         "description": "Per-target configuration. Each section is optional and only the platforms relevant to the target need be present.",
         "type": "object",
         "properties": {
+          "data": {
+            "$ref": "#/definitions/json_data",
+            "description": "Per-target service data overlay. Object values deep-merge with service-level data; arrays, strings, numbers, booleans, and null replace service-level data."
+          },
           "features": {
             "$ref": "#/definitions/features_overlay"
           },

@@ -1,4 +1,23 @@
 locals {
+  # Generated bootstrap value per declared service secret. Null when the secret
+  # has no bootstrap_type, so the state secret falls through to an empty
+  # operator-filled 1Password placeholder.
+  _services_outputs_secret_bootstrap = {
+    for entry in flatten([
+      for service_key, service in local.services_input_targets : [
+        for secret in service.features.secrets : {
+          key = "${service_key}-${secret.name}"
+          value = (
+            try(secret.bootstrap_type, null) == "hex" ? random_id.service_secret["${service_key}-${secret.name}"].hex
+            : try(secret.bootstrap_type, null) == "base64" ? random_id.service_secret["${service_key}-${secret.name}"].b64_std
+            : contains(["alphanumeric", "string"], try(secret.bootstrap_type, "")) ? random_password.service_secret["${service_key}-${secret.name}"].result
+            : null
+          )
+        }
+      ]
+    ]) : entry.key => entry.value
+  }
+
   services = {
     for service_key, service in local.services_model : service_key => merge(
       service,
@@ -16,7 +35,7 @@ locals {
             {
               for secret in service.features.secrets : secret.name => sensitive(try(coalesce(
                 try(local.onepassword_service_existing_fields[service_key][secret.name], null),
-                local._services_model_secret_bootstrap["${service_key}-${secret.name}"],
+                local._services_outputs_secret_bootstrap["${service_key}-${secret.name}"],
               ), ""))
             },
             service.features.b2 ? {

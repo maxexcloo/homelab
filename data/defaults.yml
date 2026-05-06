@@ -59,6 +59,7 @@ servers:
         - 80
         - 443
 services:
+  data: {}
   dashboard:
     description: null
     enabled: true

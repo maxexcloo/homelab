@@ -3,40 +3,30 @@ title: ${service.identity.title}
 useEqualHeights: true
 layout:
 %{~ for group in sort(distinct([
-  for svc_key, svc in services : svc.dashboard.group
-  if svc.key != service.key
-  && svc.dashboard.enabled
-  && svc.dashboard.group != ""
-  && svc.dashboard.name != ""
-  && !contains([for srv in values(servers) : srv.description], svc.dashboard.group)
-])) }
+  for candidate_group in keys(dashboard_services) : candidate_group
+  if !contains([for srv in values(servers) : srv.description], candidate_group)
+])) ~}
   ${group}:
     columns: ${defaults.groups[group].columns}
     style: ${defaults.groups[group].style}
     tab: Services
-%{ endfor ~}
+%{~ endfor ~}
   Providers:
     columns: 2
     style: row
     tab: Services
-%{~ for group in sort(distinct([
-  for srv in values(servers) : srv.type_label
-])) }
+%{~ for group in sort(keys(dashboard_servers)) ~}
   ${group}:
     columns: 2
     style: row
     tab: Servers
-%{ endfor ~}
+%{~ endfor ~}
 %{~ for group in sort(distinct([
-  for svc_key, svc in services : svc.dashboard.group
-  if svc.key != service.key
-  && svc.dashboard.enabled
-  && svc.dashboard.group != ""
-  && svc.dashboard.name != ""
-  && contains([for srv in values(servers) : srv.description], svc.dashboard.group)
-])) }
+  for candidate_group in keys(dashboard_services) : candidate_group
+  if contains([for srv in values(servers) : srv.description], candidate_group)
+])) ~}
   ${group}:
     columns: 2
     style: row
     tab: Servers
-%{ endfor ~}
+%{~ endfor ~}

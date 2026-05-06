@@ -22,6 +22,12 @@ locals {
         {
           target = target_key
 
+          data = (
+            !can(target_config.data) ? service.data
+            : can(keys(service.data)) && can(keys(target_config.data)) ? provider::deepmerge::mergo(service.data, target_config.data)
+            : target_config.data
+          )
+
           features = merge(
             service.features,
             try(target_config.features, {}),
