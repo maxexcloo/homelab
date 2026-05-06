@@ -1,5 +1,6 @@
 [env]
 API_DATA_IS_SENSITIVE = "true"
+RENDER_DIR = ".render"
 TF_CLI_ARGS_apply = "-parallelism=20"
 TF_CLI_ARGS_plan = "-parallelism=20"
 
@@ -83,6 +84,10 @@ run = "uv run scripts/new_server.py \"$@\""
 [tasks.new-service]
 description = "Create a new service YAML file and starter template"
 run = "uv run scripts/new_service.py \"$@\""
+
+[tasks.render]
+description = "Render plaintext deployment artifacts via debug_dir"
+run = "tofu plan -refresh=false -var debug_dir=$RENDER_DIR"
 
 [tasks.sort-check]
 description = "Check YAML and JSON Schema key ordering"
