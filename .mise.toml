@@ -7,6 +7,7 @@ TF_CLI_ARGS_plan = "-parallelism=20"
 "pipx:check-jsonschema" = "0.37.2"
 opentofu = "1"
 prettier = "3"
+ruff = "0"
 sops = "3"
 uv = "0"
 
@@ -33,6 +34,7 @@ description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
 prettier --check "data/**/*.yml" "templates/**/*.yml"
+ruff format --check scripts
 tofu fmt -check -recursive
 """
 
@@ -40,6 +42,7 @@ tofu fmt -check -recursive
 description = "Format all files"
 run = """
 prettier --log-level warn --write "data/**/*.yml" "templates/**/*.yml"
+ruff format scripts
 tofu fmt -recursive
 """
 
@@ -52,11 +55,8 @@ check-jsonschema --schemafile schemas/server.json data/servers/*.yml
 check-jsonschema --schemafile schemas/service.json data/services/*.yml
 check-jsonschema --schemafile schemas/config.json data/config.yml
 check-jsonschema --schemafile schemas/defaults.json data/defaults.yml
+ruff check scripts
 """
-
-[tasks.sort-check]
-description = "Check YAML and JSON Schema key ordering"
-run = "uv run scripts/sort_check.py"
 
 [tasks.validate]
 description = "Validate configurations"
@@ -65,14 +65,7 @@ run = "tofu validate"
 # Deployment
 [tasks.apply]
 description = "Apply all changes"
-run = """
-# Apply all changes
-if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then
-  tofu apply -auto-approve
-else
-  tofu apply
-fi
-"""
+run = 'if [[ -n "$CI" ]] || [[ "$MISE_YES" == "true" ]]; then tofu apply -auto-approve; else tofu apply; fi'
 
 [tasks.plan]
 description = "Plan all changes"
@@ -81,3 +74,16 @@ run = "tofu plan"
 [tasks.refresh]
 description = "Check for configuration drift"
 run = "tofu refresh"
+
+# Scripts
+[tasks.new-server]
+description = "Create a new server YAML file"
+run = "uv run scripts/new_server.py \"$@\""
+
+[tasks.new-service]
+description = "Create a new service YAML file and starter template"
+run = "uv run scripts/new_service.py \"$@\""
+
+[tasks.sort-check]
+description = "Check YAML and JSON Schema key ordering"
+run = "uv run scripts/sort_check.py"

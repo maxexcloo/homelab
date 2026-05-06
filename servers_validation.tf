@@ -27,6 +27,15 @@ locals {
     if !contains(keys(local.defaults.types), server.type)
   ]
 
+  servers_validation_key_mismatches = [
+    for server_key, server in local.servers_input : "${server_key} -> ${server.identity.name}"
+    if server_key != (
+      server.identity.name == server.identity.region ? server.identity.region :
+      server.parent != "" ? "${server.parent}-${server.identity.name}" :
+      "${server.identity.region}-${server.identity.name}"
+    )
+  ]
+
   servers_validation_long_parent_chains = [
     for server_key, server in local.servers_input : server_key
     if server.parent != "" && try(local.servers_input[local.servers_input[server.parent].parent].parent != "", false)
@@ -76,6 +85,13 @@ resource "terraform_data" "servers_validation" {
     precondition {
       condition     = length(local.servers_validation_invalid_types) == 0
       error_message = "Invalid server types found: ${join(", ", local.servers_validation_invalid_types)}"
+    }
+
+    precondition {
+      condition = length(local.servers_validation_key_mismatches) == 0
+      error_message = (
+        "Server YAML filenames must match the derived key (region for region roots, parent-name when parent is set, otherwise region-name): ${join(", ", local.servers_validation_key_mismatches)}"
+      )
     }
 
     # OpenTofu locals are not generally recursive; keep the supported inheritance

@@ -8,6 +8,11 @@ locals {
     ]
   ])
 
+  services_validation_file_key_mismatches = [
+    for service_key, service in local.services_input : "${service_key} -> ${service.identity.name}"
+    if service_key != service.identity.name
+  ]
+
   services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
     if contains(keys(service.targets), "fly") && service.networking.port == null
@@ -62,6 +67,13 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local.services_validation_fly_ports_missing) == 0
       error_message = "Fly services must have networking.port set: ${join(", ", local.services_validation_fly_ports_missing)}"
+    }
+
+    precondition {
+      condition = length(local.services_validation_file_key_mismatches) == 0
+      error_message = (
+        "Service YAML filenames must match identity.name: ${join(", ", local.services_validation_file_key_mismatches)}"
+      )
     }
 
     precondition {

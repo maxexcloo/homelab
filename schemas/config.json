@@ -68,10 +68,13 @@
       }
     },
     "groups": {
+      "description": "Homepage layout settings keyed by group name. Groups not listed use 2 columns.",
+      "type": "object",
       "additionalProperties": {
         "additionalProperties": false,
         "description": "Layout settings for a single Homepage service group.",
         "required": ["columns", "style"],
+        "type": "object",
         "properties": {
           "columns": {
             "description": "Column count in the Homepage layout (2 or 4).",
@@ -83,11 +86,8 @@
             "enum": ["column", "row"],
             "type": "string"
           }
-        },
-        "type": "object"
-      },
-      "description": "Homepage layout settings keyed by group name. Groups not listed use 2 columns.",
-      "type": "object"
+        }
+      }
     },
     "networking": {
       "additionalProperties": false,

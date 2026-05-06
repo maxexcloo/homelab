@@ -10,10 +10,10 @@ multi-line keys (alphabetical).
 
 What counts as "multi-line" depends on the file format:
 
-  YAML  — non-empty mappings and sequences are always block style here, so
+  YAML  - non-empty mappings and sequences are always block style here, so
           any non-empty container is multi-line; empty `{}` / `[]` is single.
 
-  JSON  — Prettier inlines short scalar arrays like `"required": ["a", "b"]`
+  JSON  - Prettier inlines short scalar arrays like `"required": ["a", "b"]`
           and `"enum": [...]`, so a list is only multi-line when it contains
           a nested object or list. Mappings stay multi-line whenever non-empty.
 """
@@ -62,7 +62,7 @@ def expected_order(data, kind):
 def walk(path, data, location, errors, kind):
     if isinstance(data, dict):
         keys = list(data.keys())
-        if len(keys) >= 2 and not is_json_schema_conditional(keys):
+        if len(keys) >= 2 and not (kind == "json" and is_json_schema_conditional(keys)):
             expected = expected_order(data, kind)
             if keys != expected:
                 loc = "/" + "/".join(location) if location else "(root)"
@@ -113,7 +113,7 @@ def main():
         print(f"\nsort-check: {len(errors)} issue(s)", file=sys.stderr)
         sys.exit(1)
 
-    print(f"sort-check: {len(yaml_paths)} YAML + {len(json_paths)} JSON — clean")
+    print(f"sort-check: {len(yaml_paths)} YAML + {len(json_paths)} JSON - clean")
 
 
 if __name__ == "__main__":
