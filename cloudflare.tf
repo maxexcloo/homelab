@@ -22,7 +22,7 @@ data "cloudflare_zone" "all" {
 locals {
   # Only services with expose = "cloudflare" are routed through the tunnel.
   # Custom routing.urls are included only when backed by a managed DNS record
-  # (lookup against dns_model_zones_urls) to prevent routing unmanaged hostnames.
+  # (lookup against dns_render_zones_urls) to prevent routing unmanaged hostnames.
   # distinct() guards against fqdn_external appearing in routing.urls twice.
   # The http_status:503 catch-all is required by Cloudflare Tunnel for unmatched requests.
   cloudflare_tunnel_ingress = {
@@ -31,7 +31,7 @@ locals {
         for service_key, service in local.services_model : [
           for hostname in distinct(concat(
             service.fqdn_external != null ? [service.fqdn_external] : [],
-            [for url in service.routing.urls : url if lookup(local.dns_model_zones_urls, url, null) != null]
+            [for url in service.routing.urls : url if lookup(local.dns_render_zones_urls, url, null) != null]
             )) : {
             hostname = hostname
             service  = "https://localhost"
@@ -75,7 +75,7 @@ resource "cloudflare_account_token" "server_acme" {
 }
 
 resource "cloudflare_dns_record" "all" {
-  for_each = local.dns_model_records_all
+  for_each = local.dns_render_records_all
 
   comment  = local.defaults.organization.managed_comment
   content  = each.value.content
