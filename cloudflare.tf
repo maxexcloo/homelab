@@ -84,8 +84,8 @@ resource "cloudflare_dns_record" "all" {
 }
 
 module "cloudflare_tunnel" {
-  source   = "./modules/cloudflare_tunnel"
   for_each = local.servers_by_feature.cloudflare_zero_trust_tunnel
+  source   = "./modules/cloudflare_tunnel"
 
   account_id = data.cloudflare_account.default.id
   ingress    = local.cloudflare_tunnel_ingress[each.key]

@@ -14,6 +14,8 @@ resource "cloudflare_account_token" "tunnel_read" {
   account_id = var.account_id
   name       = "${var.name}-tunnel-read"
 
+  # The deploy target only needs to read tunnel metadata/token material for its
+  # own connector; write permissions stay in the root module.
   policies = [
     {
       effect = "allow"
@@ -39,6 +41,8 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "tunnel" {
   account_id = var.account_id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.tunnel.id
 
+  # Ingress is assembled by the root module from service routing data so this
+  # module stays focused on the Cloudflare tunnel resources.
   config = {
     ingress = var.ingress
 

@@ -100,8 +100,8 @@ resource "github_repository_file" "fly_deploy_request" {
 }
 
 module "encrypted_github_file_fly" {
-  source   = "./modules/github_file_encrypted"
   for_each = local.fly_render_files
+  source   = "./modules/github_file_encrypted"
 
   age_public_key = age_secret_key.fly.public_key
   commit_message = each.value.commit_message

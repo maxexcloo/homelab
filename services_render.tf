@@ -1,111 +1,13 @@
 locals {
-  # Per-service: import alias → resolved real service key. Built once and
-  # reused for routing/dashboard rendering and the final template context.
-  _services_imports = {
-    for service_key, service in local.services : service_key => {
-      for import_alias, service_ref in service.imports.services :
-      import_alias => templatestring(service_ref, {
-        service = service
-      })
-      if contains(keys(local.services), templatestring(service_ref, {
-        service = service
-      }))
-    }
-  }
-
-  # Structured dashboard data consumed by service templates.
   _services_render_dashboard = {
-    for service_key, service in local.services : service_key => {
-      description = service.dashboard.description != null ? templatestring(service.dashboard.description, local._services_render_pre_context[service_key]) : service.identity.description
-      enabled     = service.dashboard.enabled
-      group       = service.dashboard.group != null ? templatestring(service.dashboard.group, local._services_render_pre_context[service_key]) : service.identity.group
-      href = (
-        service.dashboard.href != null ? templatestring(service.dashboard.href, local._services_render_pre_context[service_key])
-        : service.fqdn_internal != null ? "https://${service.fqdn_internal}"
-        : service.fqdn_external != null ? "https://${service.fqdn_external}"
-        : length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}"
-        : null
-      )
-      icon = service.dashboard.icon != null ? templatestring(service.dashboard.icon, local._services_render_pre_context[service_key]) : service.identity.name
-      name = service.dashboard.name != null ? templatestring(service.dashboard.name, local._services_render_pre_context[service_key]) : service.identity.title
-      siteMonitor = service.features.monitoring ? (
-        service.dashboard.href != null ? templatestring(service.dashboard.href, local._services_render_pre_context[service_key])
-        : service.fqdn_internal != null ? "https://${service.fqdn_internal}"
-        : service.fqdn_external != null ? "https://${service.fqdn_external}"
-        : length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}"
-        : null
-      ) : null
-      weight = service.dashboard.weight
-
-      widget = {
-        for widget_key, widget_value in service.dashboard.widget : widget_key => (
-          can(tostring(widget_value))
-          ? templatestring(tostring(widget_value), local._services_render_pre_context[service_key])
-          : [for widget_item in widget_value : templatestring(tostring(widget_item), local._services_render_pre_context[service_key])]
-        )
-        if widget_value != null
-      }
-    }
+    for service_key, service in local.services : service_key => jsondecode(templatestring(
+      jsonencode(service.dashboard),
+      local._services_render_pre_context[service_key],
+    ))
   }
 
-  _services_render_dashboard_server_cards = {
-    for server_key, server in local.servers : server_key => {
-      group  = server.type_label
-      name   = server.description
-      widget = {}
-
-      fields = {
-        description = server.platform
-        href        = "https://${server.fqdn_internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
-        icon        = server.type_icon
-        siteMonitor = "https://${server.fqdn_internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
-      }
-    }
-  }
-
-  _services_render_dashboard_server_groups = {
-    for group in sort(distinct([
-      for card in values(local._services_render_dashboard_server_cards) : card.group
-      ])) : group => [
-      for server_key in sort([
-        for candidate_key, candidate in local._services_render_dashboard_server_cards : candidate_key
-        if candidate.group == group
-      ]) : local._services_render_dashboard_server_cards[server_key]
-    ]
-  }
-
-  _services_render_dashboard_service_cards = {
-    for service_key, dashboard in local._services_render_dashboard : service_key => {
-      group  = dashboard.group
-      name   = dashboard.name
-      widget = dashboard.widget
-
-      fields = {
-        for field_key, field_value in dashboard : field_key => field_value
-        if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != ""
-      }
-    }
-    if dashboard.enabled && dashboard.group != "" && dashboard.name != ""
-  }
-
-  _services_render_dashboard_service_groups = {
-    for current_service_key, current_service in local.services : current_service_key => {
-      for group in sort(distinct([
-        for service_key, card in local._services_render_dashboard_service_cards : card.group
-        if service_key != current_service_key
-        ])) : group => [
-        for service_sort_key in sort([
-          for service_key, card in local._services_render_dashboard_service_cards : join("|", [
-            format("%09d", 100000 + local._services_render_dashboard[service_key].weight),
-            lower(card.name),
-            service_key,
-          ])
-          if service_key != current_service_key && card.group == group
-        ]) : local._services_render_dashboard_service_cards[split("|", service_sort_key)[2]]
-      ]
-    }
-  }
-
+  # Arbitrary JSON data is encoded first so templates can interpolate strings
+  # anywhere in the tree without losing the original JSON shape.
   _services_render_data = {
     for service_key, service in local.services : service_key => jsondecode(templatestring(
       jsonencode(service.data),
@@ -170,57 +72,68 @@ locals {
       services = merge(
         local.services,
         {
-          for alias, real_key in local._services_imports[service_key] :
+          for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services[real_key]
+          if contains(keys(local.services), real_key)
         },
       )
     }
   }
 
-  _services_render_routing_container = {
-    for service_key, service in local.services : service_key => coalesce(
-      service.routing.container,
-      service.identity.service,
-    )
+  _services_render_routing = {
+    for service_key, service in local.services : service_key => {
+      container = coalesce(
+        service.routing.container,
+        service.identity.service,
+      )
+
+      labels = merge(
+        service.routing.port != null ? merge(
+          {
+            "traefik.enable"                                                          = "true"
+            "traefik.http.routers.${service.identity.name}.entrypoints"               = service.routing.ssl ? "websecure" : "web"
+            "traefik.http.services.${service.identity.name}.loadbalancer.server.port" = tostring(service.routing.port)
+
+            "traefik.http.routers.${service.identity.name}.rule" = join(" || ", concat(
+              service.fqdn_internal != null ? ["Host(`${service.fqdn_internal}`)"] : [],
+              service.fqdn_external != null ? ["Host(`${service.fqdn_external}`)"] : [],
+              [for url in service.routing.urls : "Host(`${url}`)"],
+            ))
+          },
+          service.routing.expose == "internal" ? {
+            "traefik.http.routers.${service.identity.name}.middlewares" = "internal-only@docker"
+          } : {},
+          service.routing.expose == "tailscale" ? {
+            "traefik.http.routers.${service.identity.name}.middlewares" = "tailscale-only@docker"
+          } : {},
+          service.routing.scheme == "https" ? {
+            "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = "https"
+          } : {},
+        ) : {},
+
+        {
+          for label_key, label_value in {
+            for raw_label_key, raw_label_value in service.routing.labels :
+            raw_label_key => try(templatestring(tostring(raw_label_value), local._services_render_pre_context[service_key]), null)
+            if raw_label_value != null
+          } :
+          label_key => label_value
+          if label_value != null
+        },
+      )
+    }
   }
 
-  # Generated Traefik labels plus routing.labels overrides. The result is
-  # attached only to routing.container.
-  _services_render_routing_labels = {
-    for service_key, service in local.services : service_key => merge(
-      service.routing.port != null ? merge(
-        {
-          "traefik.enable"                                                          = "true"
-          "traefik.http.routers.${service.identity.name}.entrypoints"               = service.routing.ssl ? "websecure" : "web"
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.port" = tostring(service.routing.port)
+  # Render-time service inventory with derived dashboard/data/routing values.
+  # This keeps the final context from repeating the same merge for every alias.
+  _services_render_services = {
+    for service_key, service in local.services : service_key => merge(service, {
+      data              = local._services_render_data[service_key]
+      routing_container = local._services_render_routing[service_key].container
+      routing_labels    = local._services_render_routing[service_key].labels
 
-          "traefik.http.routers.${service.identity.name}.rule" = join(" || ", concat(
-            service.fqdn_internal != null ? ["Host(`${service.fqdn_internal}`)"] : [],
-            service.fqdn_external != null ? ["Host(`${service.fqdn_external}`)"] : [],
-            [for url in service.routing.urls : "Host(`${url}`)"],
-          ))
-        },
-        service.routing.expose == "internal" ? {
-          "traefik.http.routers.${service.identity.name}.middlewares" = "internal-only@docker"
-        } : {},
-        service.routing.expose == "tailscale" ? {
-          "traefik.http.routers.${service.identity.name}.middlewares" = "tailscale-only@docker"
-        } : {},
-        service.routing.scheme == "https" ? {
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = "https"
-        } : {},
-      ) : {},
-
-      {
-        for label_key, label_value in {
-          for k, v in service.routing.labels :
-          k => try(templatestring(tostring(v), local._services_render_pre_context[service_key]), null)
-          if v != null
-        } :
-        label_key => label_value
-        if label_value != null
-      },
-    )
+      dashboard = local._services_render_dashboard[service_key]
+    })
   }
 
   # Final template context for compose/sidecar renders. Imported service aliases
@@ -229,37 +142,14 @@ locals {
     for service_key, service in local.services : service_key => merge(
       local._services_render_pre_context[service_key],
       {
-        dashboard          = local._services_render_dashboard[service_key]
-        dashboard_servers  = local._services_render_dashboard_server_groups
-        dashboard_services = local._services_render_dashboard_service_groups[service_key]
-        data               = local._services_render_data[service_key]
-        routing_container  = local._services_render_routing_container[service_key]
-        routing_labels     = local._services_render_routing_labels[service_key]
-
-        service = merge(
-          service,
-          {
-            data = local._services_render_data[service_key]
-          }
-        )
+        service = local._services_render_services[service_key]
 
         services = merge(
+          local._services_render_services,
           {
-            for k, s in local.services : k => merge(s, {
-              dashboard         = local._services_render_dashboard[k]
-              data              = local._services_render_data[k]
-              routing_container = local._services_render_routing_container[k]
-              routing_labels    = local._services_render_routing_labels[k]
-            })
-          },
-          {
-            for alias, real_key in local._services_imports[service_key] :
-            alias => merge(local.services[real_key], {
-              dashboard         = local._services_render_dashboard[real_key]
-              data              = local._services_render_data[real_key]
-              routing_container = local._services_render_routing_container[real_key]
-              routing_labels    = local._services_render_routing_labels[real_key]
-            })
+            for alias, real_key in local.services_model_imports[service_key] :
+            alias => local._services_render_services[real_key]
+            if contains(keys(local._services_render_services), real_key)
           },
         )
       },
@@ -274,10 +164,10 @@ locals {
         services = {
           for compose_service_key, compose_service in compose.services : compose_service_key => merge(
             compose_service,
-            compose_service_key == local._services_render_routing_container[service_key] && length(local._services_render_routing_labels[service_key]) > 0 ? {
+            compose_service_key == local._services_render_routing[service_key].container && length(local._services_render_routing[service_key].labels) > 0 ? {
               labels = merge(
                 try(compose_service.labels, {}),
-                local._services_render_routing_labels[service_key],
+                local._services_render_routing[service_key].labels,
               )
             } : {},
           )

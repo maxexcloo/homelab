@@ -52,10 +52,10 @@ locals {
           } : {},
           {
             labels = [
-              for label_key in sort(keys(context.routing_labels)) : {
-                containers = [context.routing_container]
+              for label_key in sort(keys(context.service.routing_labels)) : {
+                containers = [context.service.routing_container]
                 key        = label_key
-                value      = context.routing_labels[label_key]
+                value      = context.service.routing_labels[label_key]
               }
             ]
           },
@@ -184,8 +184,8 @@ resource "github_repository_file" "truenas_deploy_request" {
 }
 
 module "encrypted_github_file_truenas" {
-  source   = "./modules/github_file_encrypted"
   for_each = local.truenas_render_files
+  source   = "./modules/github_file_encrypted"
 
   age_public_key = each.value.age_public_key
   commit_message = each.value.commit_message

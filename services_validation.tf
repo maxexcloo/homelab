@@ -19,22 +19,16 @@ locals {
   ]
 
   services_validation_import_alias_conflicts = flatten([
-    for service_key, service in local.services_model : [
-      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, {
-        service = service
-      })}"
+    for service_key, imports in local.services_model_imports : [
+      for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
       if contains(keys(local.services_model), import_alias)
     ]
   ])
 
   services_validation_invalid_imports = flatten([
-    for service_key, service in local.services_model : [
-      for import_alias, service_ref in service.imports.services : "${service_key}.${import_alias} -> ${templatestring(service_ref, {
-        service = service
-      })}"
-      if !contains(keys(local.services_model), templatestring(service_ref, {
-        service = service
-      }))
+    for service_key, imports in local.services_model_imports : [
+      for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
+      if !contains(keys(local.services_model), service_ref)
     ]
   ])
 

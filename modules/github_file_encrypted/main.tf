@@ -1,3 +1,5 @@
+# Small composition module: encrypt content first, then write the encrypted
+# payload to GitHub with a stable file resource.
 module "sops_encrypt" {
   source = "../sops_encrypt"
 

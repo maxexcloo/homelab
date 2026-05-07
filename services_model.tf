@@ -1,40 +1,73 @@
 locals {
-  # Resolved Fly app name per service. coalesce is safe because defaults.yml
-  # sets app_name to null, which coalesce skips in favour of the fallback.
-  _services_model_fly_app_names = {
-    for service_key, service in local.services_input_targets : service_key =>
-    service.target == "fly" ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}") : service.fly.app_name
+  _services_model_fqdns = {
+    for service_key, service in local.services_input_targets : service_key => {
+      fqdn_internal = contains(local.servers_input_keys, service.target) && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
+
+      fqdn_external = (
+        service.target == "fly"
+        ? "${coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
+        : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.routing.expose)
+        ? "${service.identity.name}.${local.servers_model[service.target].fqdn_external}"
+        : null
+      )
+    }
   }
 
-  # Desired service model: expanded deployment target data plus deterministic
-  # names, URLs, and server FQDNs.
+  _services_model_groups = {
+    for service_key, service in local.services_input_targets : service_key => coalesce(
+      service.identity.group,
+      try(local.servers_model[service.target].description, null),
+      "Applications",
+    )
+  }
+
+  _services_model_hrefs = {
+    for service_key, service in local.services_input_targets : service_key => try([
+      for href in [
+        service.dashboard.href,
+        local._services_model_fqdns[service_key].fqdn_internal != null ? "https://${local._services_model_fqdns[service_key].fqdn_internal}" : null,
+        local._services_model_fqdns[service_key].fqdn_external != null ? "https://${local._services_model_fqdns[service_key].fqdn_external}" : null,
+        length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}" : null,
+      ] : href
+      if href != null && href != ""
+    ][0], null)
+  }
+
   services_model = {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
-      {
-        fqdn_internal = contains(local.servers_input_keys, service.target) && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
-        key           = service_key
+      merge(
+        local._services_model_fqdns[service_key],
+        {
+          key = service_key
 
-        fly = {
-          app_name = local._services_model_fly_app_names[service_key]
-        }
+          dashboard = merge(service.dashboard, {
+            description = coalesce(service.dashboard.description, service.identity.description)
+            group       = coalesce(service.dashboard.group, local._services_model_groups[service_key])
+            href        = local._services_model_hrefs[service_key]
+            icon        = coalesce(service.dashboard.icon, service.identity.name)
+            name        = coalesce(service.dashboard.name, service.identity.title)
+            siteMonitor = service.features.monitoring ? local._services_model_hrefs[service_key] : null
+          })
 
-        fqdn_external = (
-          service.target == "fly"
-          ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
-          : contains(local.servers_input_keys, service.target) && contains(["cloudflare", "external"], service.routing.expose)
-          ? "${service.identity.name}.${local.servers_model[service.target].fqdn_external}"
-          : null
-        )
+          fly = {
+            app_name = service.target == "fly" ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}") : service.fly.app_name
+          }
 
-        identity = {
-          group = coalesce(
-            service.identity.group,
-            try(local.servers_model[service.target].description, null),
-            "Applications",
-          )
-        }
-      }
+          identity = {
+            group = local._services_model_groups[service_key]
+          }
+        },
+      )
     )
+  }
+
+  services_model_imports = {
+    for service_key, service in local.services_model : service_key => {
+      for import_alias, service_ref in service.imports.services :
+      import_alias => templatestring(service_ref, {
+        service = service
+      })
+    }
   }
 }

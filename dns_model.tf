@@ -231,7 +231,7 @@ locals {
 
   dns_model_zones_urls = {
     for url, matches in local._dns_model_zones_matching : url => try(
-      [for m in matches : m.name if m.length == max([for x in matches : x.length]...)][0],
+      [for match in matches : match.name if match.length == max([for candidate in matches : candidate.length]...)][0],
       null
     )
   }

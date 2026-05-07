@@ -9,9 +9,8 @@ locals {
 
   # Each entry in `targets` becomes its own stack, so target-specific secrets
   # and rendered files have stable addresses like service-target. Per-target
-  # platform sections are flattened to the top level with target_defaults
-  # merged in (target wins); per-target feature overrides layer on top of the
-  # service-level features.
+  # data, features, and platform sections are flattened to the top level with
+  # target_defaults merged in (target wins).
   services_input_targets = merge([
     for service_key, service in local.services_input : {
       for target_key, target_config in service.targets : "${service_key}-${target_key}" => merge(

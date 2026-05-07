@@ -36,7 +36,7 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 
 YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers. Some service credentials are rendered directly because no provider resource manages them.
 
-Server and service data is modeled in two layers: desired values from YAML/defaults plus deterministic fields, and runtime values from providers or generated secrets. Consumers use narrower views for 1Password, templates, public inventory, and outputs so dependencies stay visible.
+Server and service data is modeled in two layers: desired values from YAML/defaults plus deterministic fields, and runtime values from providers or generated secrets. Consumers use narrower views for 1Password, templates, public inventory, and outputs so dependencies stay visible. Service dashboard defaults are resolved in the model layer; render-time code only templates strings and shapes platform artifacts.
 
 ```
 data/
@@ -67,6 +67,20 @@ Rendered plaintext can be written locally for debugging with `mise run render`, 
 
 Feature flags either create provider-backed resources, expose values generated locally by OpenTofu, or control rendered config. `password` and `monitoring`/`monitoring_alerts` are local-only; `b2`, `resend`, and `tailscale` call providers when enabled. Resend uses the generic REST API provider with `TF_VAR_resend_api_key`. Pushover has no provider-managed resource here, so `TF_VAR_pushover_application_token` and `TF_VAR_pushover_user_key` are pass-through values rendered into config when `features.pushover` is enabled.
 
+## Service Data And Templates
+
+Service YAML can include a root `data` value with any JSON-compatible shape: objects, arrays, strings, numbers, booleans, or null. Templates receive the rendered value as `service.data`. String values anywhere inside that JSON tree support OpenTofu template interpolation using `defaults`, `server`, `servers`, `service`, and `services`.
+
+Targets can also set `targets.<key>.data`. If both service-level and target-level values are objects, they are deep-merged with target values winning. If either side is a scalar, array, or null, the target value replaces the service value. Use this for general application data such as bookmark lists, dashboard settings, upstream URLs, or provider-neutral config that belongs with the service but should not become root HCL logic.
+
+Templates can reference:
+
+- `defaults` - merged global defaults and config
+- `server` - the target server when the service runs on a managed server, otherwise null
+- `servers` - all modeled servers
+- `service` - the current expanded service, including rendered `data`, `dashboard`, `routing_container`, and `routing_labels`
+- `services` - all expanded services plus declared `imports.services` aliases overlaid by alias
+
 ## Workflow
 
 ### Adding Servers
@@ -81,9 +95,10 @@ Feature flags either create provider-backed resources, expose values generated l
 2. Fill in `features`, `identity`, `routing`, and at least one entry under `targets:` (server key or `fly`)
 3. Put custom Docker Compose app config directly in `templates/services/<identity.service>/docker-compose.yaml.tftpl`; use `targets.<key>.truenas.env` for TrueNAS catalog app environment
 4. Each target may carry `features`, `fly`, and `truenas` overlays; target values win over service-level values
-5. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
-6. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
-7. Run `mise run plan` to review, `mise run apply` to provision
+5. Put provider-neutral app lists/settings under `data`; use `targets.<key>.data` for per-target overrides
+6. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
+7. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
+8. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands
 

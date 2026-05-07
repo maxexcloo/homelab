@@ -42,6 +42,7 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 
 - **Formatting**: `tofu fmt -recursive` (run via `mise run fmt`)
 - **`for_each`**: Always prefer over `count`; use a named local for filtered/shaped resource/data `for_each` inputs
+- **Block ordering**: In resource/data/module blocks, put `for_each` and module `source` first, sorted alphabetically, then add a blank line before regular arguments
 - **Comprehensions**: Use descriptive key/value names (`server_key`, `service`, `record`, `file_path`). Avoid `k`/`v` except in trivial, non-nested expressions
 - **Locals — naming and ordering**:
   - `snake_case` for all resources, locals, and variables
@@ -58,7 +59,7 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 ### Template authoring
 
 - Always use `~` on all template directives to prevent unwanted blank lines
-- Keep root HCL service-agnostic. Service-specific behavior belongs in YAML data or per-service templates
+- Keep root HCL service-agnostic. Service-specific behavior belongs in YAML `data` or per-service templates
 - Use `.tftpl` for files needing template rendering (suffix stripped on deploy); `.raw.tftpl` for binary-encrypted files where SOPS structured encryption is unsuitable (e.g. top-level arrays)
 - Guard `templatefile()` with `fileexists()` when the template may not be present
 
@@ -72,8 +73,9 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
 - **Descriptions**: Short, title case
 - **Service shape — per-service vs per-target**:
-  - **Service-level** (root keys, apply to every target): `dashboard`, `features`, `identity`, `imports`, `routing`. `features` may be overlaid per target; the others apply uniformly to every expansion.
-  - **Per-target** (under `targets.<key>`): `features` overlay, `fly` (Fly-specific), `truenas` (TrueNAS-specific). `fly` and `truenas` are inherently per-target (only the matching target uses them).
+  - **Service-level** (root keys, apply to every target): `dashboard`, `data`, `features`, `identity`, `imports`, `routing`. `data` and `features` may be overlaid per target; the others apply uniformly to every expansion.
+  - **Per-target** (under `targets.<key>`): `data` overlay, `features` overlay, `fly` (Fly-specific), `truenas` (TrueNAS-specific). `fly` and `truenas` are inherently per-target (only the matching target uses them).
+  - **General service data**: `data` may be any JSON-compatible shape and is exposed to templates as `data` and `service.data`. Object overlays deep-merge; scalar/array/null target values replace the service value. Use this for provider-neutral app lists, dashboard settings, bookmarks, upstream URLs, and other service-owned data rather than adding service-specific root HCL.
   - **App config**: Custom Docker Compose app environment lives in `templates/services/<identity.service>/docker-compose.yaml.tftpl`. TrueNAS catalog app environment lives in `targets.<key>.truenas.env` and renders to `additional_envs`.
   - **Generated labels**: `routing.container` selects the container that receives generated Traefik labels. When unset, the fallback is `identity.service`. Homepage is rendered from structured `dashboard` data, not Docker labels.
   - **Single-target shorthand**: when a service has one target and no per-target overrides, leave `targets.<key>: {}`.

@@ -1,3 +1,6 @@
+# SOPS has no native OpenTofu provider here, so encryption runs through a small
+# sensitive shell wrapper. Triggers hash inputs so encrypted GitHub files update
+# when plaintext, recipient, filename, or script behavior changes.
 resource "shell_sensitive_script" "encrypt" {
   environment = {
     AGE_PUBLIC_KEY = var.age_public_key

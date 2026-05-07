@@ -80,8 +80,8 @@ locals {
     for device in data.tailscale_devices.all.devices : split(".", device.name)[0] => {
       address = device.name
       id      = try(device.id, null)
-      ipv4    = try([for a in device.addresses : a if can(cidrhost("${a}/32", 0))][0], null)
-      ipv6    = try([for a in device.addresses : a if can(cidrhost("${a}/128", 0))][0], null)
+      ipv4    = try([for address in device.addresses : address if can(cidrhost("${address}/32", 0))][0], null)
+      ipv6    = try([for address in device.addresses : address if can(cidrhost("${address}/128", 0))][0], null)
     }
   }
 
@@ -128,7 +128,9 @@ resource "tailscale_tailnet_key" "server" {
   reusable      = true
   tags          = ["tag:${each.value.type}"]
 
-  depends_on = [tailscale_acl.default]
+  depends_on = [
+    tailscale_acl.default,
+  ]
 }
 
 resource "tailscale_tailnet_key" "service" {
@@ -140,5 +142,7 @@ resource "tailscale_tailnet_key" "service" {
   reusable      = true
   tags          = ["tag:ephemeral"]
 
-  depends_on = [tailscale_acl.default]
+  depends_on = [
+    tailscale_acl.default,
+  ]
 }
