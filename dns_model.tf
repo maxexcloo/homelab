@@ -149,7 +149,7 @@ locals {
   dns_model_records_services = {
     for service_key, service in local.services_model :
     "${local.defaults.domains.external}-${service_key}" => {
-      content  = "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
+      content  = "${local.servers[service.target].state.fields.cloudflare_tunnel_id}.cfargotunnel.com"
       name     = service.fqdn_external
       proxied  = true
       type     = "CNAME"
@@ -164,7 +164,7 @@ locals {
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as
   # computed service FQDNs and served directly by Fly.
   dns_model_records_services_fly = merge(flatten([
-    for service_key, service in local.fly_input_services : [
+    for service_key, service in local.services_model : [
       for url_index, url in service.routing.urls : {
         "${service_key}-url-${url_index}" = {
           content  = "${service.fly.app_name}.fly.dev"
@@ -177,6 +177,7 @@ locals {
       }
       if local.dns_model_zones_urls[url] != null
     ]
+    if service.target == "fly"
   ])...)
 
   # Custom service URLs resolve to a tunnel when exposed through Cloudflare,
@@ -194,7 +195,7 @@ locals {
           content = (
             local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
             && service.routing.expose == "cloudflare"
-            ? "${module.cloudflare_tunnel[service.target].tunnel_id}.cfargotunnel.com"
+            ? "${local.servers[service.target].state.fields.cloudflare_tunnel_id}.cfargotunnel.com"
             : service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
           )
         }

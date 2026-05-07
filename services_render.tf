@@ -114,9 +114,13 @@ locals {
         ) : {},
 
         {
-          for label_key, raw_value in service.routing.labels :
-          label_key => templatestring(tostring(raw_value), local._services_render_base_context[service_key])
-          if raw_value != null
+          for label_key, label_value in {
+            for raw_label_key, raw_label_value in service.routing.labels :
+            raw_label_key => try(templatestring(tostring(raw_label_value), local._services_render_base_context[service_key]), null)
+            if raw_label_value != null
+          } :
+          label_key => label_value
+          if label_value != null
         },
       )
     }
