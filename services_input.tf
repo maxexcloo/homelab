@@ -4,7 +4,7 @@ locals {
     for service_key, service in {
       for file_path in fileset(path.module, "data/services/*.yml") :
       trimsuffix(basename(file_path), ".yml") => yamldecode(file("${path.module}/${file_path}"))
-    } : service_key => provider::deepmerge::mergo(local.defaults_service, service)
+    } : service_key => provider::deepmerge::mergo(local.defaults.services, service)
   }
 
   # Each entry in `targets` becomes its own stack, so target-specific secrets
@@ -35,12 +35,12 @@ locals {
           )
 
           fly = provider::deepmerge::mergo(
-            local.defaults_target.fly,
+            local.defaults.target_defaults.fly,
             try(target_config.fly, {}),
           )
 
           truenas = provider::deepmerge::mergo(
-            local.defaults_target.truenas,
+            local.defaults.target_defaults.truenas,
             try(target_config.truenas, {}),
           )
         },

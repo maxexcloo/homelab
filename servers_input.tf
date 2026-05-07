@@ -4,7 +4,7 @@ locals {
     for server_key, server in {
       for file_path in fileset(path.module, "data/servers/*.yml") :
       trimsuffix(basename(file_path), ".yml") => yamldecode(file("${path.module}/${file_path}"))
-    } : server_key => provider::deepmerge::mergo(local.defaults_server, server)
+    } : server_key => provider::deepmerge::mergo(local.defaults.servers, server)
   }
 
   # Inheritance is intentionally bounded to self, parent, and grandparent; the

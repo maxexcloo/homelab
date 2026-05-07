@@ -43,6 +43,12 @@ locals {
     for service_key, service in local.services_input_targets : service_key
     if service.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")
   ]
+
+  services_validation_truenas_missing_template = [
+    for service_key, service in local.truenas_input_services : service_key
+    if !contains(keys(local.services_render_files_compose), service_key) &&
+    !contains(keys(local.truenas_prepare_catalog_templates), service_key)
+  ]
 }
 
 resource "terraform_data" "services_validation" {
@@ -98,6 +104,13 @@ resource "terraform_data" "services_validation" {
       error_message = (
         "Services with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", local.services_validation_pushover_missing_credentials)}"
       )
+    }
+
+    # A TrueNAS service is either a custom app from docker-compose.yaml.tftpl
+    # or a catalog app with app-specific values.
+    precondition {
+      condition     = length(local.services_validation_truenas_missing_template) == 0
+      error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", local.services_validation_truenas_missing_template)}"
     }
   }
 }

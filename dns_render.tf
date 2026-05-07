@@ -64,14 +64,14 @@ locals {
       local.dns_render_records_services_fly,
       local.dns_render_records_services_urls,
       local.dns_render_records_wildcards,
-    ) : key => merge(local.defaults_dns, record)
+    ) : key => merge(local.defaults.dns, record)
   }
 
   # Manual DNS records are keyed by either explicit id or stable record fields to
   # avoid identity churn when records are reordered in YAML.
   dns_render_records_manual = {
     for entry in local._dns_render_records_manual_input :
-    "${entry.zone}-manual-${entry.key}" => merge(local.defaults_dns, entry.record, {
+    "${entry.zone}-manual-${entry.key}" => merge(local.defaults.dns, entry.record, {
       name = entry.record.name == "@" ? entry.zone : "${entry.record.name}.${entry.zone}"
       zone = entry.zone
     })

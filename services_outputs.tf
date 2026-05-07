@@ -72,7 +72,7 @@ locals {
   }
 
   services_by_feature = {
-    for feature, default_value in local.defaults_service.features : feature => {
+    for feature, default_value in local.defaults.services.features : feature => {
       for service_key, service in local.services_input_targets : service_key => service
       if service.features[feature]
     }

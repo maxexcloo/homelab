@@ -69,7 +69,7 @@ locals {
   }
 
   servers_by_feature = {
-    for feature in keys(local.defaults_server.features) : feature => {
+    for feature in keys(local.defaults.servers.features) : feature => {
       for server_key, server in local.servers_input : server_key => server
       if server.features[feature]
     }
