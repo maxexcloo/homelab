@@ -4,7 +4,7 @@ locals {
   random_service_secret_bytes = {
     for secret_config in flatten([
       for service_key, service in local.services_input_targets : [
-        for secret in service.features.secrets : {
+        for secret in service.secrets : {
           byte_length = secret.bootstrap_length
           key         = "${service_key}-${secret.name}"
         }
@@ -16,7 +16,7 @@ locals {
   random_service_secret_passwords = {
     for secret_config in flatten([
       for service_key, service in local.services_input_targets : [
-        for secret in service.features.secrets : {
+        for secret in service.secrets : {
           key     = "${service_key}-${secret.name}"
           length  = secret.bootstrap_length
           special = try(secret.bootstrap_type, "") == "string"

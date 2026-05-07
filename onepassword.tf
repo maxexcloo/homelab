@@ -252,14 +252,14 @@ locals {
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
-    if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.routing.scheme != null
+    if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.secrets) > 0 || service.routing.scheme != null
   }
 
   # Secrets without a bootstrap_type are manually filled by an operator in
   # 1Password and must sync even when the value is still empty.
   onepassword_service_manual_secret_names = {
     for service_key, service in local.services : service_key => toset([
-      for secret in service.features.secrets : secret.name
+      for secret in service.secrets : secret.name
       if try(secret.bootstrap_type, null) == null
     ])
     if contains(keys(local.onepassword_service_items), service_key)
@@ -268,7 +268,7 @@ locals {
   onepassword_service_rw_secret_names = {
     for service_key, service in local.services : service_key => toset(concat(
       service.features.password ? ["password"] : [],
-      [for secret in service.features.secrets : secret.name],
+      [for secret in service.secrets : secret.name],
     ))
     if contains(keys(local.onepassword_service_items), service_key)
   }

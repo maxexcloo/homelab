@@ -6,20 +6,6 @@ dashboard:
     url: https://${service.fqdn_internal}
 features:
   password: true
-  secrets:
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: auth_secret_key
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: db_password
-    - name: igdb_client_id
-    - name: igdb_client_secret
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: redis_password
-    - name: screenscraper_password
-    - name: steamgriddb_api_key
 identity:
   description: Game & ROM Library
   group: Media
@@ -30,6 +16,20 @@ identity:
 routing:
   port: 30061
   scheme: http
+secrets:
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: auth_secret_key
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: db_password
+  - name: igdb_client_id
+  - name: igdb_client_secret
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: redis_password
+  - name: screenscraper_password
+  - name: steamgriddb_api_key
 targets:
   au-truenas:
     truenas:

@@ -8,17 +8,6 @@ dashboard:
 features:
   password: true
   resend: true
-  secrets:
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: db_password
-    - name: homepage_widget_key
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: meilisearch_master_key
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: nextauth_secret
 identity:
   description: Bookmark Manager
   group: Applications
@@ -29,6 +18,17 @@ identity:
 routing:
   port: 30243
   scheme: http
+secrets:
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: db_password
+  - name: homepage_widget_key
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: meilisearch_master_key
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: nextauth_secret
 targets:
   au-truenas:
     truenas:

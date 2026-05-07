@@ -34,6 +34,8 @@ locals {
             try(target_config.features, {}),
           )
 
+          secrets = concat(service.secrets, try(target_config.secrets, []))
+
           fly = provider::deepmerge::mergo(
             local.defaults.target_defaults.fly,
             try(target_config.fly, {}),

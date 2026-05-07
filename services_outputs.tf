@@ -5,7 +5,7 @@ locals {
   _services_outputs_secret_bootstrap = {
     for entry in flatten([
       for service_key, service in local.services_input_targets : [
-        for secret in service.features.secrets : {
+        for secret in service.secrets : {
           key = "${service_key}-${secret.name}"
           value = (
             try(secret.bootstrap_type, null) == "hex" ? random_id.service_secret["${service_key}-${secret.name}"].hex
@@ -33,7 +33,7 @@ locals {
 
           secrets = merge(
             {
-              for secret in service.features.secrets : secret.name => sensitive(try(coalesce(
+              for secret in service.secrets : secret.name => sensitive(try(coalesce(
                 try(local.onepassword_service_existing_fields[service_key][secret.name], null),
                 local._services_outputs_secret_bootstrap["${service_key}-${secret.name}"],
               ), ""))

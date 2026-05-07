@@ -20,10 +20,6 @@ dashboard:
 data:
   listen: 45876
   public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
-features:
-  secrets:
-    - name: system_id
-    - name: token
 identity:
   description: Resource Monitoring Agent
   name: beszel-agent
@@ -32,5 +28,8 @@ identity:
 imports:
   services:
     beszel: beszel-${service.target}
+secrets:
+  - name: system_id
+  - name: token
 targets:
   au-truenas: {}

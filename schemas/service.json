@@ -104,6 +104,43 @@
         }
       ]
     },
+    "secret_item": {
+      "additionalProperties": false,
+      "required": ["name"],
+      "type": "object",
+      "allOf": [
+        {
+          "if": {
+            "required": ["bootstrap_type"]
+          },
+          "then": {
+            "required": ["bootstrap_length"]
+          },
+          "else": {
+            "not": {
+              "required": ["bootstrap_length"]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "bootstrap_length": {
+          "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for manually supplied 1Password fields.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "bootstrap_type": {
+          "description": "Initial generated secret format. Omit to create an empty concealed 1Password field; hex/base64/string/alphanumeric bootstrap generated values and then read back from 1Password.",
+          "enum": ["alphanumeric", "base64", "hex", "string"],
+          "type": "string"
+        },
+        "name": {
+          "description": "Secret identifier. Exposed as state.secrets.{name} on the service. Must be lowercase alphanumeric or underscore.",
+          "pattern": "^[a-z0-9_]+$",
+          "type": "string"
+        }
+      }
+    },
     "truenas_target": {
       "additionalProperties": false,
       "description": "Configuration for TrueNAS catalog app deployments. Custom apps are inferred from docker-compose.yaml.tftpl in the service's template directory.",
@@ -262,47 +299,6 @@
           "description": "Provision a Resend API key for outbound email from this service. Exposes state.secrets.resend_api_key as a template variable.",
           "type": "boolean"
         },
-        "secrets": {
-          "description": "Additional secrets for this service. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as state.secrets.{name} on the service object.",
-          "type": "array",
-          "items": {
-            "additionalProperties": false,
-            "required": ["name"],
-            "type": "object",
-            "allOf": [
-              {
-                "if": {
-                  "required": ["bootstrap_type"]
-                },
-                "then": {
-                  "required": ["bootstrap_length"]
-                },
-                "else": {
-                  "not": {
-                    "required": ["bootstrap_length"]
-                  }
-                }
-              }
-            ],
-            "properties": {
-              "bootstrap_length": {
-                "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for manually supplied 1Password fields.",
-                "minimum": 1,
-                "type": "integer"
-              },
-              "bootstrap_type": {
-                "description": "Initial generated secret format. Omit to create an empty concealed 1Password field; hex/base64/string/alphanumeric bootstrap generated values and then read back from 1Password.",
-                "enum": ["alphanumeric", "base64", "hex", "string"],
-                "type": "string"
-              },
-              "name": {
-                "description": "Secret identifier. Exposed as state.secrets.{name} on the service. Must be lowercase alphanumeric or underscore.",
-                "pattern": "^[a-z0-9_]+$",
-                "type": "string"
-              }
-            }
-          }
-        },
         "tailscale": {
           "description": "Generate a Tailscale auth key for this service. Exposes state.secrets.tailscale_auth_key as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
           "type": "boolean"
@@ -418,6 +414,13 @@
         }
       }
     },
+    "secrets": {
+      "description": "Service secrets. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as state.secrets.{name} on the service object.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/secret_item"
+      }
+    },
     "targets": {
       "description": "Deployment targets for this service. Map keys are server keys (e.g. 'au-malatang') or 'fly' for Fly.io. Each entry produces a separate service instance keyed as {service}-{target}.",
       "minProperties": 1,
@@ -436,6 +439,13 @@
           },
           "fly": {
             "$ref": "#/definitions/fly_target"
+          },
+          "secrets": {
+            "description": "Per-target secrets list. Replaces the service-level secrets list when provided.",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/secret_item"
+            }
           },
           "truenas": {
             "$ref": "#/definitions/truenas_target"

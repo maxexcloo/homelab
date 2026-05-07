@@ -6,13 +6,12 @@ dashboard:
     deviceid: ${server.state.fields.tailscale_device_id}
     key: ${service.state.secrets.homepage_widget_key}
     type: ${service.identity.service}
-features:
-  secrets:
-    - name: homepage_widget_key
 identity:
   description: VPN
   name: tailscale
   service: tailscale
   title: Tailscale
+secrets:
+  - name: homepage_widget_key
 targets:
   au-truenas: {}

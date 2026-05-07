@@ -7,11 +7,6 @@ dashboard:
     url: https://${service.fqdn_internal}
 features:
   password: true
-  secrets:
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: db_password
-    - name: homepage_widget_key
 identity:
   description: RSS Reader
   group: Applications
@@ -22,6 +17,11 @@ identity:
 routing:
   port: 30285
   scheme: http
+secrets:
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: db_password
+  - name: homepage_widget_key
 targets:
   au-truenas:
     truenas:

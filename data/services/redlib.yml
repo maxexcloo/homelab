@@ -86,8 +86,6 @@ data:
     - wallstreetbets
 features:
   monitoring_alerts: false
-  secrets:
-    - name: ctrld_endpoint
 identity:
   description: Reddit Frontend
   group: Applications
@@ -101,5 +99,7 @@ routing:
   scheme: http
   urls:
     - reddit.excloo.com
+secrets:
+  - name: ctrld_endpoint
 targets:
   au-truenas: {}

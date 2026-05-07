@@ -60,6 +60,7 @@ servers:
         - 443
 services:
   data: {}
+  secrets: []
   dashboard:
     description: null
     enabled: true
@@ -76,7 +77,6 @@ services:
     password: false
     pushover: false
     resend: false
-    secrets: []
     tailscale: false
   identity:
     description: ""

@@ -8,14 +8,6 @@ dashboard:
     version: "2"
 features:
   password: true
-  secrets:
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: db_password
-    - name: homepage_widget_key
-    - bootstrap_length: 32
-      bootstrap_type: alphanumeric
-      name: redis_password
 identity:
   description: Photo Manager
   group: Media
@@ -29,6 +21,14 @@ routing:
   scheme: http
   urls:
     - photos.excloo.com
+secrets:
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: db_password
+  - name: homepage_widget_key
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: redis_password
 targets:
   au-truenas:
     truenas: {}

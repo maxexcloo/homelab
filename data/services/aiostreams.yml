@@ -3,10 +3,6 @@ dashboard:
   icon: sh-aiostreams
 features:
   password: true
-  secrets:
-    - bootstrap_length: 32
-      bootstrap_type: hex
-      name: secret_key
 identity:
   description: Stremio Aggregator
   group: Media
@@ -16,6 +12,10 @@ identity:
 routing:
   port: 30375
   scheme: http
+secrets:
+  - bootstrap_length: 32
+    bootstrap_type: hex
+    name: secret_key
 targets:
   au-truenas:
     truenas: {}
