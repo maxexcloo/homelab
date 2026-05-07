@@ -105,9 +105,6 @@ locals {
           service.routing.expose == "internal" ? {
             "traefik.http.routers.${service.identity.name}.middlewares" = "internal-only@docker"
           } : {},
-          service.routing.expose == "tailscale" ? {
-            "traefik.http.routers.${service.identity.name}.middlewares" = "tailscale-only@docker"
-          } : {},
           service.routing.scheme == "https" ? {
             "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = "https"
           } : {},

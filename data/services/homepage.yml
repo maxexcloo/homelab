@@ -30,8 +30,8 @@ data:
               icon: si-oracle-#ffffff
         - Pushover:
             - description: Notifications API
-              href: https://pushover.net/
-              icon: sh-pushover
+              href: https://pushover.net
+              icon: si-apple-#ffffff
         - Resend:
             - description: Email API
               href: https://resend.com/overview
@@ -58,7 +58,10 @@ identity:
   service: homepage
   title: Homepage
 routing:
+  expose: internal
   port: 30054
   scheme: http
+  urls:
+    - home.excloo.com
 targets:
   au-truenas: {}

@@ -1,6 +1,7 @@
 .claude
 .mise.local.toml
 .render
+.ruff_cache
 .terraform
 *.tfplan
 *.tfstate

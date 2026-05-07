@@ -24,17 +24,11 @@ groups:
 networking:
   allowlists:
     internal:
-      - 172.16.0.0/12
       - 10.0.0.0/23
-      - 127.0.0.1/32
-      - ::1/128
       - 100.64.0.0/10
-      - fd7a:115c:a1e0::/48
-    tailscale:
+      - 127.0.0.1/32
       - 172.16.0.0/12
-      - 127.0.0.1/32
       - ::1/128
-      - 100.64.0.0/10
       - fd7a:115c:a1e0::/48
 onepassword:
   vaults:
@@ -80,7 +74,7 @@ types:
     label: Ephemeral
     tailscale_tag: ephemeral
   router:
-    icon: mdi-network-#ffffff
+    icon: mdi-router-wireless-#ffffff
     label: Routers
     tailscale_tag: router
   server:

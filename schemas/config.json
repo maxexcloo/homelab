@@ -106,14 +106,6 @@
               "items": {
                 "type": "string"
               }
-            },
-            "tailscale": {
-              "description": "CIDR ranges allowed through tailscale-only middleware.",
-              "minItems": 1,
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
             }
           }
         }

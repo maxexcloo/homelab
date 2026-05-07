@@ -10,10 +10,9 @@ routing:
   labels:
     traefik.enable: "true"
     traefik.http.middlewares.autocompress.compress: "true"
-    traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}
-    traefik.http.middlewares.tailscale-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.tailscale)}
+    traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", concat(defaults.networking.allowlists.internal, defaults.networking.allowlists.tailscale))}
     traefik.http.routers.dashboard.entrypoints: websecure
-    traefik.http.routers.dashboard.middlewares: tailscale-only@docker
+    traefik.http.routers.dashboard.middlewares: internal-only@docker
     traefik.http.routers.dashboard.rule: Host(`${service.fqdn_internal}`)
     traefik.http.routers.dashboard.service: api@internal
     traefik.http.services.traefik.loadbalancer.server.port: "8082"

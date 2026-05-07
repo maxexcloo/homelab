@@ -82,16 +82,26 @@ jobs:
         run: |
           find . -type f -print0 | while IFS= read -r -d '' f; do
             if grep -qE 'BEGIN AGE ENCRYPTED FILE|ENC\[AES256_GCM' "$f"; then
-              sops --decrypt --output-type binary "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+              sops --decrypt --output-type binary "$f" > "$f.tmp"
+              mv "$f.tmp" "$f"
             fi
           done
       - name: Create Service
-        run: flyctl apps create "$SERVICE" || true
+        run: flyctl apps info "$SERVICE" > /dev/null 2>&1 || flyctl apps create "$SERVICE"
       - name: Add Certificates
-        run: test -f .certs && xargs -a .certs -I{} flyctl certs add {} --app "$SERVICE" || true
+        run: |
+          if [ -f .certs ]; then
+            xargs -a .certs -I{} flyctl certs add {} --app "$SERVICE"
+          fi
       - name: Import Secrets
-        run: test -f .env && grep -v '^sops_' .env | flyctl secrets import --app "$SERVICE" || true
+        run: |
+          if [ -f .env ]; then
+            grep -v '^sops_' .env | flyctl secrets import --app "$SERVICE"
+          fi
       - name: Deploy
         run: flyctl deploy --app "$SERVICE" --config fly.toml > /dev/null
       - name: Scale Machines
-        run: test -f .machine-count && flyctl scale count "$(tr -d '[:space:]' < .machine-count)" --app "$SERVICE" || true
+        run: |
+          if [ -f .machine-count ]; then
+            flyctl scale count "$(tr -d '[:space:]' < .machine-count)" --app "$SERVICE"
+          fi

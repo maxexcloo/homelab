@@ -20,7 +20,7 @@ identity:
 routing:
   labels:
     traefik.enable: "true"
-    traefik.http.routers.truenas.middlewares: tailscale-only@docker
+    traefik.http.routers.truenas.middlewares: internal-only@docker
     traefik.http.routers.truenas.rule: Host(`${server.fqdn_internal}`)
     traefik.http.routers.truenas.service: truenas
     traefik.http.services.truenas.loadbalancer.server.url: https://localhost:${server.networking.management_port}

@@ -369,8 +369,8 @@
           "type": ["string", "null"]
         },
         "expose": {
-          "description": "Access level for this service. 'tailscale': accessible only via Tailscale (tailscale-only middleware). 'internal': accessible on the internal network and Tailscale (internal-only middleware). 'external': publicly accessible via direct DNS. 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. Null uses no middleware and creates no DNS records.",
-          "enum": ["cloudflare", "external", "internal", "tailscale", null]
+          "description": "Access level for this service. 'internal' (default): accessible on the internal network and via Tailscale (internal-only middleware, covers LAN and Tailscale IP ranges). 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. 'external': publicly accessible via direct DNS. Null uses no middleware and creates no DNS records.",
+          "enum": ["cloudflare", "external", "internal", null]
         },
         "labels": {
           "description": "Extra Traefik labels merged after generated routing labels. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",

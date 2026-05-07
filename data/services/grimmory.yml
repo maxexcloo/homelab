@@ -24,8 +24,11 @@ identity:
   title: Grimmory
   username: maxexcloo
 routing:
+  expose: cloudflare
   port: 30396
   scheme: http
+  urls:
+    - books.excloo.com
 targets:
   au-truenas:
     truenas: {}

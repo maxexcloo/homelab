@@ -38,6 +38,7 @@ jobs:
             exit 1
           fi
 
+          REMOVALS=""
           if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -z "$INPUT_TARGET" ]; then
             TARGETS=$(find . -maxdepth 2 -mindepth 2 -type d ! -path './.*' -printf '%P\n')
           elif [ "$EVENT_NAME" = "workflow_dispatch" ] && printf '%s' "$INPUT_TARGET" | grep -q '/'; then
@@ -52,6 +53,13 @@ jobs:
             TARGETS=$(find . -maxdepth 2 -mindepth 2 -type d -name "$INPUT_TARGET" -printf '%P\n')
           else
             git show "$BEFORE:.github/deploy-request.json" > before.json 2>/dev/null || printf '{"deployments":{}}' > before.json
+            REMOVALS=$(jq -r --slurpfile before before.json '
+              ($before[0].deployments // {}) as $old
+              | (.deployments // {}) as $new
+              | $old | to_entries[]
+              | select($new[.key] == null)
+              | .key
+            ' .github/deploy-request.json)
             TARGETS=$(jq -r --slurpfile before before.json '
               ($before[0].deployments // {}) as $old
               | (.deployments // {})
@@ -61,19 +69,15 @@ jobs:
             ' .github/deploy-request.json)
           fi
 
-          printf '%s\n' "$TARGETS" | jq -Rsc '
-            [
-              split("\n")[]
-              | select(test("^[^./][^/]*/[^/]+$"))
-              | split("/") as $parts
-              | {path: ., server: $parts[0], service: $parts[1]}
-            ]
-            | sort_by(.server, .service)
-            | group_by(.server)
-            | map({
-                paths: map(.path) | sort,
-                secret_name: ("AGE_KEY_" + (.[0].server | ascii_upcase | gsub("-"; "_"))),
-                server: .[0].server
+          printf '%s\n' "$TARGETS" | jq -Rsc --arg removals "$REMOVALS" '
+            [split("\n")[] | select(test("^[^./][^/]*/[^/]+$")) | split("/") as $p | {path: ., server: $p[0]}] as $targets
+            | ($removals | [split("\n")[] | select(test("^[^./][^/]*/[^/]+$")) | split("/") as $p | {server: $p[0], service: $p[1]}]) as $rm
+            | (($targets | map(.server)) + ($rm | map(.server))) | unique
+            | map(. as $server | {
+                paths: [$targets[] | select(.server == $server) | .path] | sort,
+                removals: [$rm[] | select(.server == $server) | .service] | sort,
+                secret_name: ("AGE_KEY_" + ($server | ascii_upcase | gsub("-"; "_"))),
+                server: $server
               })
           ' | sed 's/^/deployments=/' >> "$GITHUB_OUTPUT"
 
@@ -88,6 +92,7 @@ jobs:
       matrix:
         target: ${{ fromJSON(needs.deployments.outputs.matrix) }}
     env:
+      REMOVALS: ${{ toJSON(matrix.target.removals) }}
       SERVER: ${{ matrix.target.server }}
       SOPS_AGE_KEY: ${{ secrets[matrix.target.secret_name] }}
       TARGET_PATHS: ${{ toJSON(matrix.target.paths) }}
@@ -99,7 +104,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v8.1.0
       - name: Setup midclt
-        run: uv tool install --python 3.12 git+https://github.com/truenas/api_client.git
+        run: uv tool install --python 3.12 git+https://github.com/truenas/api_client.git@b96ff63967962aa78d422d57a364722a1cda328f
       - name: Decrypt Files
         run: |
           find "$SERVER" -type f -print0 | while IFS= read -r -d '' f; do
@@ -158,4 +163,14 @@ jobs:
                 echo "⚠ no container found matching ix-${SERVICE}-${CONTAINER_SERVICE}-* or ix-${SERVICE}-${SERVICE}-*"
               fi
             done
+          done
+      - name: Delete Services
+        run: |
+          printf '%s' "$REMOVALS" | jq -r '.[]' | while read -r SERVICE; do
+            if midclt call app.get_instance "$SERVICE" > /dev/null 2>&1; then
+              midclt call -j app.delete "$SERVICE" > /dev/null
+              echo "✓ $SERVICE deleted"
+            else
+              echo "⚠ $SERVICE not found, skipping deletion"
+            fi
           done
