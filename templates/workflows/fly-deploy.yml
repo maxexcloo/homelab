@@ -82,7 +82,7 @@ jobs:
         run: |
           find . -type f -print0 | while IFS= read -r -d '' f; do
             if grep -qE 'BEGIN AGE ENCRYPTED FILE|ENC\[AES256_GCM' "$f"; then
-              sops --decrypt --output-type binary "$f" > "$f.tmp"
+              sops --decrypt --input-type json --output-type binary "$f" > "$f.tmp"
               mv "$f.tmp" "$f"
             fi
           done
