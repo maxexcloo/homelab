@@ -59,7 +59,7 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 ### Template authoring
 
 - Always use `~` on all template directives to prevent unwanted blank lines
-- Keep root HCL service-agnostic. Service-specific behavior belongs in YAML `data` or per-service templates
+- Keep root HCL service-agnostic. Root HCL may transform any YAML field uniformly across all services (e.g. building Traefik labels from `routing.*`); logic that branches on `identity.service` or a specific service key belongs in YAML `data` or per-service templates
 - Use `.tftpl` for files needing template rendering (suffix stripped on deploy); `.raw.tftpl` for binary-encrypted files where SOPS structured encryption is unsuitable (e.g. top-level arrays)
 - Guard `templatefile()` with `fileexists()` when the template may not be present
 

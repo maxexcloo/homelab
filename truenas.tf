@@ -1,4 +1,31 @@
 locals {
+  # Catalog chart values per service: optional per-app env block plus Traefik
+  # routing labels in the shape the TrueNAS custom app runner expects.
+  truenas_catalog_values = {
+    for service_key, context in local.services_render_context : service_key => merge(
+      length(local.truenas_prepare_env[service_key]) > 0 ? {
+        (coalesce(context.service.truenas.catalog_app, context.service.identity.service)) = {
+          additional_envs = [
+            for env_key in sort(keys(local.truenas_prepare_env[service_key])) : {
+              name  = env_key
+              value = local.truenas_prepare_env[service_key][env_key]
+            }
+          ]
+        }
+      } : {},
+      {
+        labels = [
+          for label_key in sort(keys(context.service.routing_labels)) : {
+            containers = [context.service.routing_container]
+            key        = label_key
+            value      = context.service.routing_labels[label_key]
+          }
+        ]
+      },
+    )
+    if contains(keys(local.truenas_input_services), service_key)
+  }
+
   # TrueNAS deploy artifacts are grouped by target server because each server has
   # its own self-hosted runner and age key.
   truenas_input_servers = {
@@ -39,27 +66,7 @@ locals {
     for service_key, context in local.services_render_context : service_key => merge(
       context,
       {
-        truenas_values = merge(
-          length(local.truenas_prepare_env[service_key]) > 0 ? {
-            (coalesce(context.service.truenas.catalog_app, context.service.identity.service)) = {
-              additional_envs = [
-                for env_key in sort(keys(local.truenas_prepare_env[service_key])) : {
-                  name  = env_key
-                  value = local.truenas_prepare_env[service_key][env_key]
-                }
-              ]
-            }
-          } : {},
-          {
-            labels = [
-              for label_key in sort(keys(context.service.routing_labels)) : {
-                containers = [context.service.routing_container]
-                key        = label_key
-                value      = context.service.routing_labels[label_key]
-              }
-            ]
-          },
-        )
+        truenas_values = local.truenas_catalog_values[service_key]
 
         service = merge(context.service, {
           truenas = merge(context.service.truenas, {
@@ -71,11 +78,9 @@ locals {
     if contains(keys(local.truenas_input_services), service_key)
   }
 
-  # Encrypted GitHub files consumed by the TrueNAS deploy workflow.
-  # Three categories are merged:
-  #   1) Custom Docker Compose apps (rendered from docker-compose.yaml.tftpl)
-  #   2) TrueNAS catalog apps (app.json.tftpl merged with service-specific values)
-  #   3) Generic sidecar files (env, configs, etc. from services/{service}/)
+  # Encrypted GitHub files consumed by the TrueNAS deploy workflow. Compose wins
+  # over catalog: a service with docker-compose.yaml.tftpl deploys as a custom
+  # stack; otherwise the catalog app.json.tftpl is used. Sidecars are always included.
   truenas_render_files = merge(
     {
       # 1) Custom Docker Compose apps
@@ -124,18 +129,19 @@ locals {
     },
     {
       # 3) Generic sidecar files (env, configs, etc.)
-      for file_key, file_config in local.services_render_files_sidecars : (
-        "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
-        ) => merge(file_config, {
-          age_public_key = age_secret_key.server[file_config.target].public_key
-          commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
-          file = (
-            "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
-          )
+      for file_key, file_config in local.services_render_files_sidecars : local.truenas_sidecar_paths[file_key] => merge(file_config, {
+        age_public_key = age_secret_key.server[file_config.target].public_key
+        commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
+        file           = local.truenas_sidecar_paths[file_key]
       })
       if contains(keys(local.truenas_input_servers), file_config.target)
     }
   )
+
+  truenas_sidecar_paths = {
+    for file_key, file_config in local.services_render_files_sidecars : file_key =>
+    "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
+  }
 
 }
 

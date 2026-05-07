@@ -198,13 +198,13 @@ locals {
         [
           for secret_name, secret_value in service.state.secrets : {
             id    = secret_name
-            label = "${secret_name}_${contains(concat(service.features.password ? ["password"] : [], [for secret in service.features.secrets : secret.name]), secret_name) ? "rw" : "ro"}"
+            label = "${secret_name}_${contains(local.onepassword_service_rw_secret_names[service_key], secret_name) ? "rw" : "ro"}"
             type  = "CONCEALED"
             value = tostring(secret_value)
           }
           if secret_name != "password" && secret_value != null && (
             secret_value != "" ||
-            contains([for secret in service.features.secrets : secret.name if try(secret.bootstrap_type, null) == null], secret_name)
+            contains(local.onepassword_service_manual_secret_names[service_key], secret_name)
           )
         ],
       ) : field.label => field
@@ -245,6 +245,24 @@ locals {
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
     if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.features.secrets) > 0 || service.routing.scheme != null
+  }
+
+  # Secrets without a bootstrap_type are manually filled by an operator in
+  # 1Password and must sync even when the value is still empty.
+  onepassword_service_manual_secret_names = {
+    for service_key, service in local.services : service_key => toset([
+      for secret in service.features.secrets : secret.name
+      if try(secret.bootstrap_type, null) == null
+    ])
+    if contains(keys(local.onepassword_service_items), service_key)
+  }
+
+  onepassword_service_rw_secret_names = {
+    for service_key, service in local.services : service_key => toset(concat(
+      service.features.password ? ["password"] : [],
+      [for secret in service.features.secrets : secret.name],
+    ))
+    if contains(keys(local.onepassword_service_items), service_key)
   }
 
   onepassword_service_urls = {
