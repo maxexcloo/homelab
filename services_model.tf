@@ -24,16 +24,26 @@ locals {
     )
   }
 
-  _services_model_hrefs = {
-    for service_key, service in local.services_input_targets : service_key => try([
-      for href in [
-        service.dashboard.href,
-        local._services_model_fqdns[service_key].fqdn_internal != null ? "https://${local._services_model_fqdns[service_key].fqdn_internal}" : null,
-        local._services_model_fqdns[service_key].fqdn_external != null ? "https://${local._services_model_fqdns[service_key].fqdn_external}" : null,
-        length(service.routing.urls) > 0 ? "${service.routing.ssl ? "https" : "http"}://${service.routing.urls[0]}" : null,
-      ] : href
-      if href != null && href != ""
-    ][0], null)
+  _services_model_urls = {
+    for service_key, service in local.services_input_targets : service_key => concat(
+      [
+        for url in service.routing.urls : {
+          href  = "${service.routing.ssl ? "https" : "http"}://${url}"
+          label = "website"
+          zone  = local.defaults.domains.external
+        }
+      ],
+      local._services_model_fqdns[service_key].fqdn_external != null ? [{
+        href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_fqdns[service_key].fqdn_external}"
+        label = "fqdn_external"
+        zone  = service.target == "fly" ? "fly.dev" : local.defaults.domains.external
+      }] : [],
+      local._services_model_fqdns[service_key].fqdn_internal != null ? [{
+        href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_fqdns[service_key].fqdn_internal}"
+        label = "fqdn_internal"
+        zone  = local.defaults.domains.internal
+      }] : [],
+    )
   }
 
   services_model = {
@@ -42,15 +52,16 @@ locals {
       merge(
         local._services_model_fqdns[service_key],
         {
-          key = service_key
+          key  = service_key
+          urls = local._services_model_urls[service_key]
 
           dashboard = merge(service.dashboard, {
             description = coalesce(service.dashboard.description, service.identity.description)
             group       = coalesce(service.dashboard.group, local._services_model_groups[service_key])
-            href        = local._services_model_hrefs[service_key]
+            href        = try(coalesce(service.dashboard.href, local._services_model_urls[service_key][0].href), null)
             icon        = coalesce(service.dashboard.icon, service.identity.name)
             name        = coalesce(service.dashboard.name, service.identity.title)
-            siteMonitor = service.features.monitoring ? local._services_model_hrefs[service_key] : null
+            siteMonitor = service.features.monitoring ? try(coalesce(service.dashboard.href, local._services_model_urls[service_key][0].href), null) : null
           })
 
           fly = {

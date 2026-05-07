@@ -97,6 +97,12 @@ resource "github_repository_file" "fly_deploy_request" {
       }))
     }
   })
+
+  depends_on = [
+    github_repository_file.fly_sops_config,
+    github_repository_file.fly_workflow_deploy,
+    module.encrypted_github_file_fly,
+  ]
 }
 
 module "encrypted_github_file_fly" {

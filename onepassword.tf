@@ -120,35 +120,42 @@ locals {
       ]
 
       urls = [
-        for url_index, url_label in sort(keys(local.onepassword_server_urls[server_key])) : {
-          href    = local.onepassword_server_urls[server_key][url_label]
-          label   = url_label
+        for url_index, url_entry in local.onepassword_server_item_urls[server_key] : {
+          href    = url_entry.href
+          label   = url_entry.label
           primary = url_index == 0
         }
       ]
+
       vault = {
         id = local.defaults.onepassword.vaults.servers.id
       }
     }
   }
 
-  onepassword_server_urls = {
-    for server_key, server in local.servers : server_key => merge(
-      {
-        for url_label, url_value in server.state.urls : url_label => format(
-          "https://%s%s",
-          can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
-          server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
-        )
+  onepassword_server_item_urls = {
+    for server_key, server in local.servers : server_key => concat(
+      [
+        for url_label, url_value in server.state.urls : {
+          href = format(
+            "https://%s%s",
+            can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
+            server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
+          )
+          label = url_label
+        }
         if url_value != null && url_value != ""
-      },
-      {
+      ],
+      [
         for url_label, url_value in {
-          ssh_internal  = server.state.urls.fqdn_internal
-          ssh_tailscale = server.state.urls.tailscale_address
-        } : url_label => "ssh://${server.identity.username}@${url_value}"
+          ssh_private_address   = server.state.urls.private_address
+          ssh_tailscale_address = server.state.urls.tailscale_address
+          } : {
+          href  = "ssh://${server.identity.username}@${url_value}"
+          label = url_label
+        }
         if url_value != null && url_value != ""
-      },
+      ],
     )
   }
 
@@ -225,12 +232,13 @@ locals {
       ]
 
       urls = [
-        for url_index, url_label in sort(keys(local.onepassword_service_urls[service_key])) : {
-          href    = local.onepassword_service_urls[service_key][url_label]
-          label   = url_label
+        for url_index, url_entry in service.urls : {
+          href    = url_entry.href
+          label   = url_entry.label
           primary = url_index == 0
         }
       ]
+
       vault = {
         id = local.defaults.onepassword.vaults.services.id
       }
@@ -265,16 +273,6 @@ locals {
     if contains(keys(local.onepassword_service_items), service_key)
   }
 
-  onepassword_service_urls = {
-    for service_key, service in local.services : service_key => {
-      for url_label, url_value in service.state.urls : url_label => format(
-        "%s://%s",
-        service.routing.ssl ? "https" : "http",
-        url_value,
-      )
-      if url_value != null && url_value != ""
-    }
-  }
 }
 
 # The REST resource owns item creation/update while existing 1Password fields
