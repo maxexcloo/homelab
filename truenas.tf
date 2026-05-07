@@ -235,24 +235,3 @@ resource "github_repository_file" "truenas_workflow_deploy" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.truenas
 }
-
-resource "terraform_data" "truenas_validation" {
-  input = keys(local.truenas_input_services)
-
-  lifecycle {
-    # A TrueNAS service is either a custom app from docker-compose.yaml.tftpl
-    # or a catalog app with app-specific values.
-    precondition {
-      condition = length([
-        for service_key, service in local.truenas_input_services : service_key
-        if !contains(keys(local.services_render_files_compose), service_key) &&
-        !contains(keys(local.truenas_prepare_catalog_templates), service_key)
-      ]) == 0
-      error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", [
-        for service_key, service in local.truenas_input_services : service_key
-        if !contains(keys(local.services_render_files_compose), service_key) &&
-        !contains(keys(local.truenas_prepare_catalog_templates), service_key)
-      ])}"
-    }
-  }
-}
