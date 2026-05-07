@@ -27,6 +27,8 @@ routing:
   container: server
   port: 30041
   scheme: http
+  urls:
+    - photos.excloo.com
 targets:
   au-truenas:
     truenas: {}
