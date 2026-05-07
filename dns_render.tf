@@ -19,7 +19,7 @@ locals {
   # The most specific (longest) zone wins so nested domains resolve correctly.
   _dns_render_zones_matching = {
     for url in distinct(flatten([
-      for service_key, service in local.services_model : service.routing.urls
+      for service_key, service in local.services_input_targets : service.routing.urls
       ])) : url => [
       for zone in local.dns_input_zones : {
         length = length(zone)

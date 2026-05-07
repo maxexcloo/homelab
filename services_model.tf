@@ -30,7 +30,7 @@ locals {
         for url in service.routing.urls : {
           href  = "${service.routing.ssl ? "https" : "http"}://${url}"
           label = "website"
-          zone  = local.defaults.domains.external
+          zone  = local.dns_render_zones_urls[url]
         }
       ],
       local._services_model_fqdns[service_key].fqdn_external != null ? [{
