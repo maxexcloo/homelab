@@ -33,10 +33,13 @@ locals {
           zone  = local.dns_render_zones_urls[url]
         }
       ],
-      local._services_model_fqdns[service_key].fqdn_external != null ? [{
-        href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_fqdns[service_key].fqdn_external}"
-        label = "fqdn_external"
-        zone  = service.target == "fly" ? "fly.dev" : local.defaults.domains.external
+      local._services_model_fqdns[service_key].fqdn_external != null && !(
+        service.routing.expose == "cloudflare" &&
+        length(compact([for url in service.routing.urls : lookup(local.dns_render_zones_urls, url, null)])) > 0
+        ) ? [{
+          href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_fqdns[service_key].fqdn_external}"
+          label = "fqdn_external"
+          zone  = service.target == "fly" ? "fly.dev" : local.defaults.domains.external
       }] : [],
       local._services_model_fqdns[service_key].fqdn_internal != null ? [{
         href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_fqdns[service_key].fqdn_internal}"

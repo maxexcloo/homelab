@@ -146,6 +146,9 @@ locals {
   ]...)
 
   # Server-hosted Cloudflare services point at the target server's tunnel.
+  # Skipped when the service already has managed routing.urls that cover external
+  # access: deep fqdn_external subdomains exceed Cloudflare Universal SSL coverage
+  # (one wildcard level), so custom short-form URLs are the canonical entry point.
   dns_render_records_services = {
     for service_key, service in local.services_model :
     "${local.defaults.domains.external}-${service_key}" => {
@@ -158,7 +161,8 @@ locals {
     }
     if contains(local.servers_input_keys, service.target) &&
     local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
-    service.routing.expose == "cloudflare"
+    service.routing.expose == "cloudflare" &&
+    length(compact([for url in service.routing.urls : lookup(local.dns_render_zones_urls, url, null)])) == 0
   }
 
   # Fly services get records for custom URLs; fly.dev hostnames are exposed as

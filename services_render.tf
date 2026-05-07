@@ -108,6 +108,10 @@ locals {
           service.routing.scheme == "https" ? {
             "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = "https"
           } : {},
+          service.routing.ssl && service.routing.expose != "cloudflare" ? {
+            for url_idx, url in service.routing.urls :
+            "traefik.http.routers.${service.identity.name}.tls.domains[${url_idx}].main" => url
+          } : {},
         ) : {},
 
         {
