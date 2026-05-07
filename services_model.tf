@@ -3,6 +3,9 @@ locals {
     for service_key, service in local.services_input_targets : service_key => {
       fqdn_internal = contains(local.servers_input_keys, service.target) && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
 
+      # Fly always gets a fly.dev hostname. Managed-server services only get an
+      # external FQDN when explicitly exposed as cloudflare or external; internal
+      # and tailscale services are not publicly routable via external DNS.
       fqdn_external = (
         service.target == "fly"
         ? "${coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"

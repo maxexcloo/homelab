@@ -20,7 +20,11 @@ data "cloudflare_zone" "all" {
 }
 
 locals {
-  # Pre-computed tunnel ingress rules per server so the module receives a clean list.
+  # Only services with expose = "cloudflare" are routed through the tunnel.
+  # Custom routing.urls are included only when backed by a managed DNS record
+  # (lookup against dns_model_zones_urls) to prevent routing unmanaged hostnames.
+  # distinct() guards against fqdn_external appearing in routing.urls twice.
+  # The http_status:503 catch-all is required by Cloudflare Tunnel for unmatched requests.
   cloudflare_tunnel_ingress = {
     for server_key, server in local.servers_by_feature.cloudflare_zero_trust_tunnel : server_key => concat(
       flatten([

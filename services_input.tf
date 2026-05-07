@@ -21,6 +21,8 @@ locals {
         {
           target = target_key
 
+          # can(keys()) detects whether a value is an object; non-objects
+          # (scalars, arrays, null) replace instead of merging.
           data = (
             !can(target_config.data) ? service.data
             : can(keys(service.data)) && can(keys(target_config.data)) ? provider::deepmerge::mergo(service.data, target_config.data)

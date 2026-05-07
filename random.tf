@@ -21,6 +21,7 @@ locals {
           length  = secret.bootstrap_length
           special = try(secret.bootstrap_type, "") == "string"
         }
+        # "alphanumeric" disables special characters; "string" allows them.
         if contains(["string", "alphanumeric"], try(secret.bootstrap_type, ""))
       ]
     ]) : secret_config.key => secret_config

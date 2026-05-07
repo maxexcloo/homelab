@@ -8,6 +8,9 @@ locals {
       type_icon  = local.defaults.types[server.type].icon
       type_label = local.defaults.types[server.type].label
 
+      # Root servers use the title alone. Children whose region matches their
+      # parent's name (e.g. a VM inside an "au" host) omit the parent prefix
+      # since the region already implies it; other children prepend parent title.
       description = (
         server.parent == "" ? server.identity.title :
         try(server.identity.region == local.servers_input[server.parent].identity.name, false)

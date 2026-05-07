@@ -1,8 +1,10 @@
 locals {
+  # Arbitrary JSON data is encoded first so templates can interpolate strings
+  # anywhere in the tree without losing the original JSON shape.
   _services_render_dashboard = {
     for service_key, service in local.services : service_key => jsondecode(templatestring(
       jsonencode(service.dashboard),
-      local._services_render_pre_context[service_key],
+      local._services_render_base_context[service_key],
     ))
   }
 
@@ -11,7 +13,7 @@ locals {
   _services_render_data = {
     for service_key, service in local.services : service_key => jsondecode(templatestring(
       jsonencode(service.data),
-      local._services_render_pre_context[service_key],
+      local._services_render_base_context[service_key],
     ))
   }
 
@@ -63,7 +65,7 @@ locals {
   # Pre-render context with import aliases overlaid. It intentionally excludes
   # rendered data/dashboard/routing values because those strings are rendered
   # from this context.
-  _services_render_pre_context = {
+  _services_render_base_context = {
     for service_key, service in local.services : service_key => {
       defaults = local.defaults
       server   = try(local.servers[service.target], null)
@@ -113,7 +115,7 @@ locals {
 
         {
           for label_key, raw_value in service.routing.labels :
-          label_key => templatestring(tostring(raw_value), local._services_render_pre_context[service_key])
+          label_key => templatestring(tostring(raw_value), local._services_render_base_context[service_key])
           if raw_value != null
         },
       )
@@ -136,7 +138,7 @@ locals {
   # are overlaid here so templates can reference `services.<alias>`.
   services_render_context = {
     for service_key, service in local.services : service_key => merge(
-      local._services_render_pre_context[service_key],
+      local._services_render_base_context[service_key],
       {
         service = local._services_render_services[service_key]
 
