@@ -14,6 +14,7 @@ identity:
   title: Komodo
   username: max@excloo.com
 routing:
+  container: core
   expose: cloudflare
   port: 9120
   scheme: http
