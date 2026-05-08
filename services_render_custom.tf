@@ -36,12 +36,12 @@ locals {
 
   _services_render_custom_homepage_layout_groups_server = sort(distinct([
     for candidate_key, candidate in local._services_render_services : candidate.dashboard.group
-    if candidate_key == candidate.key && candidate_key != "homepage-${candidate.target}" && candidate.dashboard.enabled && candidate.dashboard.group != "" && candidate.dashboard.name != "" && contains(local._services_render_custom_homepage_derived_server_names, candidate.dashboard.group)
+    if candidate_key != "homepage-${candidate.target}" && candidate.dashboard.enabled && candidate.dashboard.group != "" && candidate.dashboard.name != "" && contains(local._services_render_custom_homepage_derived_server_names, candidate.dashboard.group)
   ]))
 
   _services_render_custom_homepage_layout_groups_service = sort(distinct([
     for candidate_key, candidate in local._services_render_services : candidate.dashboard.group
-    if candidate_key == candidate.key && candidate_key != "homepage-${candidate.target}" && candidate.dashboard.enabled && candidate.dashboard.group != "" && candidate.dashboard.name != "" && !contains(local._services_render_custom_homepage_derived_server_names, candidate.dashboard.group)
+    if candidate_key != "homepage-${candidate.target}" && candidate.dashboard.enabled && candidate.dashboard.group != "" && candidate.dashboard.name != "" && !contains(local._services_render_custom_homepage_derived_server_names, candidate.dashboard.group)
   ]))
 
   _services_render_custom_homepage_template_data = {

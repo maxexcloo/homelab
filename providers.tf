@@ -24,20 +24,6 @@ provider "oci" {
 }
 
 provider "restapi" {
-  alias                 = "resend"
-  create_returns_object = true
-  rate_limit            = 1
-  uri                   = "https://api.resend.com"
-
-  # Resend is modeled through the generic REST provider because no native
-  # provider resource is used in this stack.
-  headers = {
-    "Authorization" = "Bearer ${var.resend_api_key}",
-    "Content-Type"  = "application/json"
-  }
-}
-
-provider "restapi" {
   alias                 = "onepassword"
   create_returns_object = true
   rate_limit            = 1
@@ -47,6 +33,20 @@ provider "restapi" {
   # native provider does not support all login item URL entries needed here.
   headers = {
     "Authorization" = "Bearer ${var.onepassword_connect_token}"
+    "Content-Type"  = "application/json"
+  }
+}
+
+provider "restapi" {
+  alias                 = "resend"
+  create_returns_object = true
+  rate_limit            = 1
+  uri                   = "https://api.resend.com"
+
+  # Resend is modeled through the generic REST provider because no native
+  # provider resource is used in this stack.
+  headers = {
+    "Authorization" = "Bearer ${var.resend_api_key}",
     "Content-Type"  = "application/json"
   }
 }

@@ -33,6 +33,8 @@ locals {
           zone  = local.dns_render_zones_urls[url]
         }
       ],
+      # Skip auto-generated fqdn_external when cloudflare-exposed and custom URLs
+      # already have managed DNS zones — those URLs are the canonical entry point.
       local._services_model_fqdns[service_key].fqdn_external != null && !(
         service.routing.expose == "cloudflare" &&
         length(compact([for url in service.routing.urls : lookup(local.dns_render_zones_urls, url, null)])) > 0
