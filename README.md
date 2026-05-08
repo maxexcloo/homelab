@@ -36,7 +36,57 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 
 YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers. Some service credentials are rendered directly because no provider resource manages them.
 
-Server and service data is modeled in two layers: desired values from YAML/defaults plus deterministic fields, and runtime values from providers or generated secrets. Consumers use narrower views for 1Password, templates, public inventory, and outputs so dependencies stay visible. Service dashboard defaults are resolved in the model layer; render-time code only templates strings and shapes platform artifacts.
+Server and service data flows through four pipeline stages: **input** (YAML with defaults merged, then target keys expanded), **model** (FQDNs, groups, and URLs computed deterministically — safe for `for_each`), **state** (provider-backed secrets and fields attached), and **render** (dashboard and data strings templated, Traefik labels generated, Compose and sidecar artifacts produced). Consumers use narrower views for 1Password, templates, public inventory, and outputs so dependencies stay visible.
+
+### Services Pipeline
+
+```mermaid
+flowchart TD
+    YAML["data/services/*.yml"]
+    SRVS["servers / servers_model"]
+    PROV["provider resources\n1Password · B2 · Tailscale …"]
+    TMPL["templates/services/*/"]
+
+    subgraph input ["Input — services_input.tf"]
+        SI["services_input"]
+        SIT["services_input_targets"]
+        SI --> SIT
+    end
+
+    subgraph model ["Model — services_model.tf"]
+        SM["services_model"]
+        SMI["services_model_imports"]
+        SM --> SMI
+    end
+
+    subgraph state ["State — services_outputs.tf"]
+        SVC["services"]
+    end
+
+    subgraph render ["Render — services_render.tf + services_render_custom.tf"]
+        BC["_render_base_context"]
+        SCS["render_custom_service\nrouting_container · labels"]
+        RS["_render_services\nrendered strings + routing"]
+        RCC["render_custom_context\nhomepage data"]
+        RC["render_context"]
+        BC & SCS --> RS
+        RS --> RCC
+        RS & RCC & SMI --> RC
+    end
+
+    FC["render_files_compose"]
+    FS["render_files_sidecars"]
+
+    YAML --> SI
+    SIT --> SM
+    SRVS --> SM & RCC
+    SM & PROV --> SVC
+    SVC & SMI --> BC
+    SVC & BC --> SCS
+    TMPL --> FC & FS
+    RS & RC --> FC
+    RC --> FS
+```
 
 ```
 data/

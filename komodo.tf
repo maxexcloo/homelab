@@ -21,11 +21,14 @@ locals {
       }
     },
     {
-      for file_key, file_config in local.services_render_files_sidecars : file_key => merge(file_config, {
-        age_public_key = age_secret_key.server[file_config.target].public_key
-        commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
-        file           = file_key
-      })
+      for file_key, file_config in local.services_render_files_sidecars : file_key => merge(
+        file_config,
+        {
+          age_public_key = age_secret_key.server[file_config.target].public_key
+          commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
+          file           = file_key
+        },
+      )
       if contains(local.servers_input_keys, file_config.target) &&
       local.servers_model[file_config.target].features.docker
     }
@@ -38,11 +41,14 @@ resource "github_repository_file" "komodo_resource_sync" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = templatefile("${path.module}/templates/komodo/resource_sync.toml.tftpl", {
-    github_user = data.github_user.default.login
-    owner       = local.defaults.github.owner
-    repository  = local.defaults.github.repositories.komodo
-  })
+  content = templatefile(
+    "${path.module}/templates/komodo/resource_sync.toml.tftpl",
+    {
+      github_user = data.github_user.default.login
+      owner       = local.defaults.github.owner
+      repository  = local.defaults.github.repositories.komodo
+    },
+  )
 }
 
 resource "github_repository_file" "komodo_servers" {
@@ -51,9 +57,14 @@ resource "github_repository_file" "komodo_servers" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = sensitive(templatefile("${path.module}/templates/komodo/servers.toml.tftpl", {
-    servers = local.servers_model
-  }))
+  content = sensitive(
+    templatefile(
+      "${path.module}/templates/komodo/servers.toml.tftpl",
+      {
+        servers = local.servers_model
+      },
+    ),
+  )
 }
 
 # Per-stack SOPS rules let each target server decrypt only the stacks assigned
@@ -80,11 +91,14 @@ resource "github_repository_file" "komodo_stacks" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = templatefile("${path.module}/templates/komodo/stacks.toml.tftpl", {
-    owner      = local.defaults.github.owner
-    repository = local.defaults.github.repositories.komodo
-    stacks     = local.komodo_input_stacks
-  })
+  content = templatefile(
+    "${path.module}/templates/komodo/stacks.toml.tftpl",
+    {
+      owner      = local.defaults.github.owner
+      repository = local.defaults.github.repositories.komodo
+      stacks     = local.komodo_input_stacks
+    },
+  )
 }
 
 module "encrypted_github_file_komodo" {

@@ -27,8 +27,19 @@ locals {
       for env_key, env_value in {
         for raw_key, raw_value in service.truenas.env : raw_key => (
           can(tostring(raw_value))
-          ? templatestring(tostring(raw_value), local.services_render_context[service_key])
-          : join("+", [for env_item in raw_value : templatestring(tostring(env_item), local.services_render_context[service_key])])
+          ? templatestring(
+            tostring(raw_value),
+            local.services_render_context[service_key],
+          )
+          : join(
+            "+",
+            [
+              for env_item in raw_value : templatestring(
+                tostring(env_item),
+                local.services_render_context[service_key],
+              )
+            ],
+          )
         )
         if raw_value != null
       } :
@@ -46,11 +57,17 @@ locals {
       {
         truenas_values = local.truenas_prepare_values[service_key]
 
-        service = merge(context.service, {
-          truenas = merge(context.service.truenas, {
-            env = local.truenas_prepare_env[service_key]
-          })
-        })
+        service = merge(
+          context.service,
+          {
+            truenas = merge(
+              context.service.truenas,
+              {
+                env = local.truenas_prepare_env[service_key]
+              },
+            )
+          },
+        )
       },
     )
     if contains(keys(local.truenas_input_services), service_key)
@@ -98,43 +115,56 @@ locals {
   truenas_render_files = merge(
     {
       # 1) Custom Docker Compose apps
-      for service_key, service in local.truenas_input_services : (
-        "${service.target}/${service.identity.name}/compose.json"
-        ) => {
+      for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}/compose.json" => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} compose"
         content_type   = "json"
         file           = "${service.target}/${service.identity.name}/compose.json"
 
-        content_base64 = sensitive(base64encode(templatefile(
-          "${path.module}/templates/truenas/compose.json.tftpl",
-          merge(local.truenas_prepare_render_context[service_key], {
-            compose = local.services_render_files_compose[service_key]
-          })
-        )))
+        content_base64 = sensitive(
+          base64encode(
+            templatefile(
+              "${path.module}/templates/truenas/compose.json.tftpl",
+              merge(
+                local.truenas_prepare_render_context[service_key],
+                {
+                  compose = local.services_render_files_compose[service_key]
+                },
+              ),
+            ),
+          ),
+        )
       }
       if contains(keys(local.services_render_files_compose), service_key)
     },
     {
       # 2) TrueNAS catalog apps — only when no custom compose file exists
-      for service_key, service in local.truenas_input_services : (
-        "${service.target}/${service.identity.name}/app.json"
-        ) => {
+      for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}/app.json" => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} catalog app"
         content_type   = "json"
         file           = "${service.target}/${service.identity.name}/app.json"
 
-        content_base64 = sensitive(base64encode(jsonencode(provider::deepmerge::mergo(
-          jsondecode(templatefile(
-            "${path.module}/templates/truenas/app.json.tftpl",
-            local.truenas_prepare_render_context[service_key]
-          )),
-          jsondecode(templatefile(
-            local.truenas_prepare_catalog_templates[service_key].path,
-            local.truenas_prepare_render_context[service_key]
-          ))
-        ))))
+        content_base64 = sensitive(
+          base64encode(
+            jsonencode(
+              provider::deepmerge::mergo(
+                jsondecode(
+                  templatefile(
+                    "${path.module}/templates/truenas/app.json.tftpl",
+                    local.truenas_prepare_render_context[service_key],
+                  ),
+                ),
+                jsondecode(
+                  templatefile(
+                    local.truenas_prepare_catalog_templates[service_key].path,
+                    local.truenas_prepare_render_context[service_key],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
       }
       if(
         !contains(keys(local.services_render_files_compose), service_key) &&
@@ -143,15 +173,17 @@ locals {
     },
     {
       # 3) Generic sidecar files (env, configs, etc.)
-      for file_key, file_config in local.services_render_files_sidecars : local.truenas_prepare_sidecar_paths[file_key] => merge(file_config, {
-        age_public_key = age_secret_key.server[file_config.target].public_key
-        commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
-        file           = local.truenas_prepare_sidecar_paths[file_key]
-      })
+      for file_key, file_config in local.services_render_files_sidecars : local.truenas_prepare_sidecar_paths[file_key] => merge(
+        file_config,
+        {
+          age_public_key = age_secret_key.server[file_config.target].public_key
+          commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
+          file           = local.truenas_prepare_sidecar_paths[file_key]
+        },
+      )
       if contains(keys(local.truenas_input_servers), file_config.target)
     }
   )
-
 }
 
 # GitHub secret names cannot contain hyphens, so the workflow matrix computes

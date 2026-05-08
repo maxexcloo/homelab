@@ -58,14 +58,14 @@ locals {
           key  = service_key
           urls = local._services_model_urls[service_key]
 
-          dashboard = merge(service.dashboard, {
+          dashboard = {
             description = coalesce(service.dashboard.description, service.identity.description)
             group       = coalesce(service.dashboard.group, local._services_model_groups[service_key])
             href        = try(coalesce(service.dashboard.href, try(local._services_model_urls[service_key][0].href, null)), null)
             icon        = coalesce(service.dashboard.icon, service.identity.name)
             name        = coalesce(service.dashboard.name, service.identity.title)
             siteMonitor = service.features.monitoring ? try(coalesce(service.dashboard.href, try(local._services_model_urls[service_key][0].href, null)), null) : null
-          })
+          }
 
           fly = {
             app_name = service.target == "fly" ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}") : service.fly.app_name
@@ -82,9 +82,12 @@ locals {
   services_model_imports = {
     for service_key, service in local.services_model : service_key => {
       for import_alias, service_ref in service.imports.services :
-      import_alias => templatestring(service_ref, {
-        service = service
-      })
+      import_alias => templatestring(
+        service_ref,
+        {
+          service = service
+        },
+      )
     }
   }
 }

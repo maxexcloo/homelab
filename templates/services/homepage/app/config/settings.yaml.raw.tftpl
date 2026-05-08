@@ -1,24 +1,6 @@
-${yamlencode(service.data.settings)}
-layout:
-%{ for group in sort(distinct([for service_key, candidate in services : candidate.dashboard.group if service_key == candidate.key && service_key != service.key && candidate.dashboard.enabled && candidate.dashboard.group != "" && candidate.dashboard.name != "" && !contains([for server in values(servers) : server.description], candidate.dashboard.group)])) ~}
-  ${group}:
-    columns: ${defaults.groups[group].columns}
-    style: ${defaults.groups[group].style}
-    tab: Services
-%{ endfor ~}
-  Providers:
-    columns: 2
-    style: row
-    tab: Services
-%{ for group in sort(distinct([for server in values(servers) : server.type_label])) ~}
-  ${group}:
-    columns: 2
-    style: row
-    tab: Servers
-%{ endfor ~}
-%{ for group in sort(distinct([for service_key, candidate in services : candidate.dashboard.group if service_key == candidate.key && service_key != service.key && candidate.dashboard.enabled && candidate.dashboard.group != "" && candidate.dashboard.name != "" && contains([for server in values(servers) : server.description], candidate.dashboard.group)])) ~}
-  ${group}:
-    columns: 2
-    style: row
-    tab: Servers
-%{ endfor ~}
+${yamlencode(merge(
+  service.data.settings,
+  {
+    layout = custom.homepage.layout
+  },
+))}

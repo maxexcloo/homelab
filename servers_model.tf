@@ -4,9 +4,7 @@ locals {
   # without repeating expressions.
   _servers_model_computed = {
     for server_key, server in local.servers_input : server_key => {
-      fqdn       = server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
-      type_icon  = local.defaults.types[server.type].icon
-      type_label = local.defaults.types[server.type].label
+      fqdn = server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
 
       # Root servers use the title alone. Children whose region matches their
       # parent's name (e.g. a VM inside an "au" host) omit the parent prefix
@@ -44,10 +42,11 @@ locals {
       server,
       local._servers_model_computed[server_key],
       {
-        fqdn_external = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.external}"
-        fqdn_internal = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}"
-        key           = server_key
-        ssh_keys      = data.github_user.default.ssh_keys
+        fqdn_external  = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.external}"
+        fqdn_internal  = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}"
+        key            = server_key
+        management_url = "https://${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
+        ssh_keys       = data.github_user.default.ssh_keys
       }
     )
   }

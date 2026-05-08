@@ -8,7 +8,7 @@ locals {
       {
         defaults = local.defaults
         server   = local.servers[server_key]
-      }
+      },
     )
   }
 }
