@@ -61,10 +61,10 @@ locals {
           dashboard = merge(service.dashboard, {
             description = coalesce(service.dashboard.description, service.identity.description)
             group       = coalesce(service.dashboard.group, local._services_model_groups[service_key])
-            href        = try(coalesce(service.dashboard.href, local._services_model_urls[service_key][0].href), null)
+            href        = try(coalesce(service.dashboard.href, try(local._services_model_urls[service_key][0].href, null)), null)
             icon        = coalesce(service.dashboard.icon, service.identity.name)
             name        = coalesce(service.dashboard.name, service.identity.title)
-            siteMonitor = service.features.monitoring ? try(coalesce(service.dashboard.href, local._services_model_urls[service_key][0].href), null) : null
+            siteMonitor = service.features.monitoring ? try(coalesce(service.dashboard.href, try(local._services_model_urls[service_key][0].href, null)), null) : null
           })
 
           fly = {
