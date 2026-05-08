@@ -1,4 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  widget:
+    password: ${service.state.secrets.password}
+    type: beszel
+    url: https://${service.fqdn_internal}
+    username: ${service.identity.username}
+    version: 2
 features:
   password: true
   resend: true
