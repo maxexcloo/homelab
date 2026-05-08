@@ -5,13 +5,13 @@
     - ${card.name}:
       %{~ for field_key, field_value in card ~}
         %{~ if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != "" ~}
-        ${field_key}: ${replace(replace(replace(jsonencode(field_value), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
+        ${replace(trimspace(yamlencode({ (field_key) = field_value })), "\n", "\n        ")}
         %{~ endif ~}
       %{~ endfor ~}
       %{~ if length(card.widget) > 0 ~}
         widget:
           %{~ for widget_key, widget_value in card.widget ~}
-          ${widget_key}: ${replace(replace(replace(jsonencode(widget_value), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
+          ${replace(trimspace(yamlencode({ (widget_key) = widget_value })), "\n", "\n            ")}
           %{~ endfor ~}
       %{~ endif ~}
     %{~ endfor ~}
@@ -21,10 +21,10 @@
 - ${group}:
   %{~ for server_key in sort([for candidate_key, candidate in servers : candidate_key if candidate.type_label == group]) ~}
     - ${servers[server_key].description}:
-        description: ${replace(replace(replace(jsonencode(servers[server_key].platform), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
-        href: ${replace(replace(replace(jsonencode("https://${servers[server_key].fqdn_internal}${servers[server_key].networking.management_port != 443 ? ":${servers[server_key].networking.management_port}" : ""}"), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
-        icon: ${replace(replace(replace(jsonencode(servers[server_key].type_icon), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
-        siteMonitor: ${replace(replace(replace(jsonencode("https://${servers[server_key].fqdn_internal}${servers[server_key].networking.management_port != 443 ? ":${servers[server_key].networking.management_port}" : ""}"), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
+        ${replace(trimspace(yamlencode({ description = servers[server_key].platform })), "\n", "\n        ")}
+        ${replace(trimspace(yamlencode({ href = "https://${servers[server_key].fqdn_internal}${servers[server_key].networking.management_port != 443 ? ":${servers[server_key].networking.management_port}" : ""}" })), "\n", "\n        ")}
+        ${replace(trimspace(yamlencode({ icon = servers[server_key].type_icon })), "\n", "\n        ")}
+        ${replace(trimspace(yamlencode({ siteMonitor = "https://${servers[server_key].fqdn_internal}${servers[server_key].networking.management_port != 443 ? ":${servers[server_key].networking.management_port}" : ""}" })), "\n", "\n        ")}
   %{~ endfor ~}
 %{~ endfor ~}
 %{~ for group in sort(distinct([for service_key, candidate in services : candidate.dashboard.group if service_key == candidate.key && service_key != service.key && candidate.dashboard.enabled && candidate.dashboard.group != "" && candidate.dashboard.name != "" && contains([for server in values(servers) : server.description], candidate.dashboard.group)])) ~}
@@ -34,13 +34,13 @@
     - ${card.name}:
       %{~ for field_key, field_value in card ~}
         %{~ if !contains(["enabled", "group", "name", "weight", "widget"], field_key) && field_value != null && field_value != "" ~}
-        ${field_key}: ${replace(replace(replace(jsonencode(field_value), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
+        ${replace(trimspace(yamlencode({ (field_key) = field_value })), "\n", "\n        ")}
         %{~ endif ~}
       %{~ endfor ~}
       %{~ if length(card.widget) > 0 ~}
         widget:
           %{~ for widget_key, widget_value in card.widget ~}
-          ${widget_key}: ${replace(replace(replace(jsonencode(widget_value), "\\u003c", "<"), "\\u003e", ">"), "\\u0026", "&")}
+          ${replace(trimspace(yamlencode({ (widget_key) = widget_value })), "\n", "\n            ")}
           %{~ endfor ~}
       %{~ endif ~}
     %{~ endfor ~}
