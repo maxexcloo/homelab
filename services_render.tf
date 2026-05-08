@@ -94,7 +94,7 @@ locals {
           {
             "traefik.enable"                                                          = "true"
             "traefik.http.routers.${service.identity.name}.entrypoints"               = service.routing.ssl ? "websecure" : "web"
-            "traefik.http.services.${service.identity.name}.loadbalancer.server.port" = tostring(service.routing.port)
+            "traefik.http.services.${service.identity.name}.loadbalancer.server.port" = tostring(coalesce(service.routing.backend_port, service.routing.port))
 
             "traefik.http.routers.${service.identity.name}.rule" = join(" || ", concat(
               service.fqdn_internal != null ? ["Host(`${service.fqdn_internal}`)"] : [],

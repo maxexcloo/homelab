@@ -87,6 +87,7 @@ services:
   imports:
     services: {}
   routing:
+    backend_port: null
     container: null
     expose: internal
     labels: {}

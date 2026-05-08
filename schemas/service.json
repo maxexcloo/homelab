@@ -359,6 +359,12 @@
       "description": "Network exposure and reverse-proxy routing configuration for this service.",
       "type": "object",
       "properties": {
+        "backend_port": {
+          "description": "Container backend port for generated Traefik Docker labels. Null uses routing.port. Set this when a TrueNAS published port differs from the container's listening port.",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": ["integer", "null"]
+        },
         "container": {
           "description": "Container that receives generated Traefik routing labels. Null uses identity.service.",
           "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
@@ -386,7 +392,7 @@
           }
         },
         "port": {
-          "description": "Port the service listens on. Required for Fly.io deployments. Used as the Traefik backend port for TrueNAS standard services, and as the Fly.io internal_port.",
+          "description": "Primary service port. Required for Fly.io deployments. Used as the TrueNAS published port for catalog apps and as the Fly.io internal_port. Generated Traefik labels use routing.backend_port when set, otherwise this port.",
           "maximum": 65535,
           "minimum": 1,
           "type": ["integer", "null"]
