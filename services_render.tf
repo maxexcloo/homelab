@@ -131,11 +131,10 @@ locals {
   # This keeps the final context from repeating the same merge for every alias.
   _services_render_services = {
     for service_key, service in local.services : service_key => merge(service, {
+      dashboard         = local._services_render_dashboard[service_key]
       data              = local._services_render_data[service_key]
       routing_container = local._services_render_routing[service_key].container
       routing_labels    = local._services_render_routing[service_key].labels
-
-      dashboard = local._services_render_dashboard[service_key]
     })
   }
 
