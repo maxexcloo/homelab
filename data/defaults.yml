@@ -68,7 +68,6 @@ services:
     href: null
     icon: null
     name: null
-    weight: 0
     widget: {}
   features:
     b2: false

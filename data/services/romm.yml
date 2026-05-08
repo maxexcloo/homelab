@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  weight: -10
   widget:
     type: ${service.identity.service}
     url: https://${service.fqdn_internal}

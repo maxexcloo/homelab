@@ -4,14 +4,13 @@ dashboard:
   href: https://${services.beszel.fqdn_internal}/system/${service.state.secrets.system_id}
   icon: ${services.beszel.identity.name}
   name: ${services.beszel.identity.title}
-  weight: -10
   widget:
     password: ${services.beszel.state.secrets.password}
     systemId: ${service.state.secrets.system_id}
     type: beszel
     url: https://${services.beszel.fqdn_internal}
     username: ${defaults.organization.email}
-    version: "2"
+    version: 2
     fields:
       - status
       - cpu

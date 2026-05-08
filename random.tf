@@ -17,11 +17,9 @@ locals {
     for secret_config in flatten([
       for service_key, service in local.services_input_targets : [
         for secret in service.secrets : {
-          key     = "${service_key}-${secret.name}"
-          length  = secret.bootstrap_length
-          special = try(secret.bootstrap_type, "") == "string"
+          key    = "${service_key}-${secret.name}"
+          length = secret.bootstrap_length
         }
-        # "alphanumeric" disables special characters; "string" allows them.
         if contains(["string", "alphanumeric"], try(secret.bootstrap_type, ""))
       ]
     ]) : secret_config.key => secret_config
@@ -37,20 +35,22 @@ resource "random_id" "service_secret" {
 resource "random_password" "server" {
   for_each = local.servers_by_feature.password
 
-  length = 32
+  length  = 32
+  special = false
 }
 
 resource "random_password" "service" {
   for_each = local.services_by_feature.password
 
-  length = 32
+  length  = 32
+  special = false
 }
 
 resource "random_password" "service_secret" {
   for_each = local.random_service_secret_passwords
 
   length  = each.value.length
-  special = each.value.special
+  special = false
 }
 
 resource "random_string" "b2_server" {

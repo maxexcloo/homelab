@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  weight: -10
   widget:
     key: ${service.state.secrets.homepage_widget_key}
     type: ${service.identity.service}

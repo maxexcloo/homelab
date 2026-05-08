@@ -85,10 +85,16 @@ locals {
           ))) : {
           (group) = concat(
             [
-              for service in values(local._services_render_services) : {
+              for service in [
+                for entry in sort([
+                  for service in values(local._services_render_services) :
+                  "${length(service.dashboard.widget) > 0 ? "0" : "1"}:${service.key}"
+                  if service.identity.service != "homepage" && service.dashboard.enabled && service.dashboard.name != ""
+                ]) : local._services_render_services[split(":", entry)[1]]
+                ] : {
                 (service.dashboard.name) = local._services_render_custom_homepage_derived_service_cards[service.key]
               }
-              if service.identity.service != "homepage" && service.dashboard.enabled && service.dashboard.group == group && service.dashboard.name != ""
+              if service.dashboard.group == group
             ],
             [
               for server in values(local._services_render_custom_homepage_base_servers) : {
