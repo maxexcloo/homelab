@@ -84,7 +84,7 @@ locals {
       server.public_address != null ? {
         "${local.defaults.domains.external}-${server_key}-cname" = {
           content = server.public_address
-          name    = "${server.fqdn}.${local.defaults.domains.external}"
+          name    = server.fqdn_external
           proxied = server.features.cloudflare_proxy
           type    = "CNAME"
           zone    = local.defaults.domains.external
@@ -93,14 +93,14 @@ locals {
       server.platform == "oci" ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
           content = data.oci_core_vnic.server[server_key].public_ip_address
-          name    = "${server.fqdn}.${local.defaults.domains.external}"
+          name    = server.fqdn_external
           proxied = server.features.cloudflare_proxy
           type    = "A"
           zone    = local.defaults.domains.external
         }
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
           content = data.oci_core_vnic.server[server_key].ipv6addresses[0]
-          name    = "${server.fqdn}.${local.defaults.domains.external}"
+          name    = server.fqdn_external
           proxied = server.features.cloudflare_proxy
           type    = "AAAA"
           zone    = local.defaults.domains.external
@@ -109,7 +109,7 @@ locals {
       server.public_ipv4 != null && server.platform != "oci" ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
           content = server.public_ipv4
-          name    = "${server.fqdn}.${local.defaults.domains.external}"
+          name    = server.fqdn_external
           proxied = server.features.cloudflare_proxy
           type    = "A"
           zone    = local.defaults.domains.external
@@ -118,7 +118,7 @@ locals {
       server.public_ipv6 != null && server.platform != "oci" ? {
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
           content = server.public_ipv6
-          name    = "${server.fqdn}.${local.defaults.domains.external}"
+          name    = server.fqdn_external
           proxied = server.features.cloudflare_proxy
           type    = "AAAA"
           zone    = local.defaults.domains.external
@@ -127,7 +127,7 @@ locals {
       local.servers[server_key].state.urls.tailscale_ipv4 != null ? {
         "${local.defaults.domains.internal}-${server_key}-a" = {
           content = local.servers[server_key].state.urls.tailscale_ipv4
-          name    = "${server.fqdn}.${local.defaults.domains.internal}"
+          name    = server.fqdn_internal
           proxied = false
           type    = "A"
           zone    = local.defaults.domains.internal
@@ -136,7 +136,7 @@ locals {
       local.servers[server_key].state.urls.tailscale_ipv6 != null ? {
         "${local.defaults.domains.internal}-${server_key}-aaaa" = {
           content = local.servers[server_key].state.urls.tailscale_ipv6
-          name    = "${server.fqdn}.${local.defaults.domains.internal}"
+          name    = server.fqdn_internal
           proxied = false
           type    = "AAAA"
           zone    = local.defaults.domains.internal

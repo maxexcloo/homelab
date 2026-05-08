@@ -1,5 +1,4 @@
 %{~ for server_key, server in servers ~}
-%{~ if server.features.docker ~}
 [[server]]
 description = "${server.description}"
 name = "${server_key}"
@@ -7,7 +6,7 @@ name = "${server_key}"
 [server.config]
 address = "https://${server.fqdn_internal}:8120"
 enabled = true
+passkey = "${server.state.secrets.komodo_passkey}"
 region = "${server.identity.region}"
 
-%{~ endif ~}
 %{~ endfor ~}

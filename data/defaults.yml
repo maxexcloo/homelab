@@ -5,7 +5,17 @@ dns:
   ttl: 1
   wildcard: false
 servers:
+  data: {}
   parent: ""
+  secrets: []
+  dashboard:
+    description: null
+    enabled: true
+    href: null
+    icon: null
+    items: []
+    name: null
+    widget: {}
   features:
     b2: false
     cloud_init: false
@@ -62,11 +72,13 @@ services:
   data: {}
   secrets: []
   dashboard:
+    container: null
     description: null
     enabled: true
     group: null
     href: null
     icon: null
+    items: []
     name: null
     widget: {}
   features:

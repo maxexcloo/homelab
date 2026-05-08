@@ -4,7 +4,7 @@ locale: ${defaults.system.locale}
 package_reboot_if_required: true
 package_update: true
 package_upgrade: true
-packages: [curl, sudo]
+packages: [age, curl, sudo]
 ssh_pwauth: false
 timezone: ${defaults.system.timezone}
 groups:
@@ -16,6 +16,9 @@ runcmd:
   - sysctl --system
   %{~ if server.features.docker ~}
   - curl -fsLS https://get.docker.com | sh
+  - curl -fsLSo /usr/local/bin/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
+  - chmod +x /usr/local/bin/sops
+  - docker compose -f /etc/komodo/periphery.compose.yaml up -d
   %{~ endif ~}
   %{~ if server.features.cloudflare_zero_trust_tunnel ~}
   - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
@@ -55,3 +58,18 @@ write_files:
       # Enable IP forwarding for Tailscale subnet routing / exit nodes
       net.ipv4.conf.all.forwarding=1
       net.ipv6.conf.all.forwarding=1
+  %{~ if server.features.docker ~}
+  - path: /etc/komodo/periphery.compose.yaml
+    permissions: "0600"
+    content: |
+      services:
+        periphery:
+          environment:
+            PERIPHERY_PASSKEY: ${server.state.secrets.komodo_passkey}
+            SOPS_AGE_KEY: ${server.state.secrets.age_secret_key}
+          image: ghcr.io/moghtech/komodo-periphery:latest
+          network_mode: host
+          restart: unless-stopped
+          volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+  %{~ endif ~}

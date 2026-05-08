@@ -61,7 +61,7 @@ resource "github_repository_file" "komodo_servers" {
     templatefile(
       "${path.module}/templates/komodo/servers.toml.tftpl",
       {
-        servers = local.servers_model
+        servers = local.servers
       },
     ),
   )

@@ -1,4 +1,20 @@
 locals {
+  _servers_outputs_secret_bootstrap = {
+    for entry in flatten([
+      for server_key, server in local.servers_input : [
+        for secret in server.secrets : {
+          key = "${server_key}-${secret.name}"
+          value = (
+            try(secret.bootstrap_type, null) == "hex" ? random_id.server_secret["${server_key}-${secret.name}"].hex
+            : try(secret.bootstrap_type, null) == "base64" ? random_id.server_secret["${server_key}-${secret.name}"].b64_std
+            : contains(["alphanumeric", "string"], try(secret.bootstrap_type, "")) ? random_password.server_secret["${server_key}-${secret.name}"].result
+            : null
+          )
+        }
+      ]
+    ]) : entry.key => entry.value
+  }
+
   servers = {
     for server_key, server in local.servers_model : server_key => merge(
       server,
@@ -23,6 +39,13 @@ locals {
           secrets = merge(
             {
               age_secret_key = age_secret_key.server[server_key].secret_key
+              komodo_passkey = random_password.server_komodo_passkey[server_key].result
+            },
+            {
+              for secret in server.secrets : secret.name => sensitive(try(coalesce(
+                try(local.onepassword_server_existing_fields[server_key][secret.name], null),
+                local._servers_outputs_secret_bootstrap["${server_key}-${secret.name}"],
+              ), ""))
             },
             server.features.b2 ? {
               b2_application_key = b2_application_key.server[server_key].application_key

@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  widget:
+    key: ${service.state.secrets.homepage_widget_key}
+    type: komodo
+    url: https://${service.fqdn_internal}
+features:
+  password: true
+identity:
+  description: Container Orchestration
+  group: Infrastructure
+  name: komodo
+  service: komodo
+  title: Komodo
+  username: max@excloo.com
+routing:
+  expose: cloudflare
+  port: 9120
+  scheme: http
+secrets:
+  - bootstrap_length: 32
+    bootstrap_type: alphanumeric
+    name: db_password
+  - name: homepage_widget_key
+  - bootstrap_length: 32
+    bootstrap_type: hex
+    name: webhook_secret
+targets:
+  au-truenas:
+    truenas:
+      catalog_app: komodo
+      env:
+        KOMODO_HOST: https://${service.fqdn_internal}
+        KOMODO_WEBHOOK_SECRET: ${service.state.secrets.webhook_secret}
+        SOPS_AGE_KEY: ${server.state.secrets.age_secret_key}

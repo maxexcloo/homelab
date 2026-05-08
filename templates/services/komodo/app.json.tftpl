@@ -1,0 +1,31 @@
+{
+  "values": {
+    "komodo": {
+      "db_password": "${service.state.secrets.db_password}",
+      "passkey": "${server.state.secrets.komodo_passkey}"
+    },
+    "network": {
+      "host_network": false,
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.port}
+      }
+    },
+    "storage": {
+      "config_keys": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "config_keys"
+        },
+        "type": "ix_volume"
+      },
+      "mongodb_data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "mongodb_data"
+        },
+        "type": "ix_volume"
+      }
+    }
+  }
+}

@@ -1,15 +1,36 @@
 locals {
   _services_render_custom_homepage_base_servers = {
     for server_key, server in local.servers : server_key => {
-      group = local.defaults.types[server.type].label
-      name  = server.description
+      enabled = server.dashboard.enabled
+      group   = local.defaults.types[server.type].label
+      name    = server.dashboard.name
 
       card = {
-        description = server.platform
-        href        = server.management_url
-        icon        = local.defaults.types[server.type].icon
-        siteMonitor = server.management_url
+        for field, value in {
+          description = server.dashboard.description
+          href        = server.dashboard.href
+          icon        = server.dashboard.icon
+          siteMonitor = server.dashboard.siteMonitor
+          widget      = length(server.dashboard.widget) > 0 ? yamldecode(templatestring(yamlencode(server.dashboard.widget), { server = server })) : null
+        } : field => value
+        if value != null
       }
+
+      items = [
+        for item in server.dashboard.items : {
+          name = templatestring(tostring(item.name), { server = server })
+          card = {
+            for field, value in yamldecode(templatestring(yamlencode({
+              description = try(item.description, null)
+              href        = try(item.href, null)
+              icon        = try(item.icon, null)
+              siteMonitor = try(item.siteMonitor, null)
+              widget      = length(try(item.widget, {})) > 0 ? item.widget : null
+            }), { server = server })) : field => value
+            if value != null
+          }
+        }
+      ]
     }
   }
 
@@ -24,9 +45,11 @@ locals {
   _services_render_custom_homepage_derived_service_cards = {
     for service_key, service in local._services_render_services : service_key => {
       for field, value in {
+        container   = service.dashboard.container
         description = service.dashboard.description != "" ? service.dashboard.description : null
         href        = service.dashboard.href
         icon        = service.dashboard.icon
+        server      = service.dashboard.container != null ? service.target : null
         siteMonitor = service.dashboard.siteMonitor
         widget      = length(service.dashboard.widget) > 0 ? service.dashboard.widget : null
       } : field => value
@@ -84,24 +107,42 @@ locals {
           local._services_render_custom_homepage_derived_server_groups,
           ))) : {
           (group) = concat(
-            [
+            flatten([
               for service in [
                 for entry in sort([
                   for service in values(local._services_render_services) :
                   "${length(service.dashboard.widget) > 0 ? "0" : "1"}:${service.key}"
                   if service.identity.service != "homepage" && service.dashboard.enabled && service.dashboard.name != ""
                 ]) : local._services_render_services[split(":", entry)[1]]
-                ] : {
-                (service.dashboard.name) = local._services_render_custom_homepage_derived_service_cards[service.key]
-              }
+                ] : concat(
+                [{
+                  (service.dashboard.name) = local._services_render_custom_homepage_derived_service_cards[service.key]
+                }],
+                [
+                  for item in service.dashboard.items : {
+                    (item.name) = {
+                      for field, value in {
+                        description = try(item.description, null) != "" ? try(item.description, null) : null
+                        href        = try(item.href, null)
+                        icon        = try(item.icon, null)
+                        siteMonitor = try(item.siteMonitor, null)
+                        widget      = length(try(item.widget, {})) > 0 ? item.widget : null
+                      } : field => value
+                      if value != null
+                    }
+                  }
+                  if try(item.name, "") != ""
+                ]
+              )
               if service.dashboard.group == group
-            ],
-            [
-              for server in values(local._services_render_custom_homepage_base_servers) : {
-                (server.name) = server.card
-              }
-              if server.group == group
-            ],
+            ]),
+            flatten([
+              for server in values(local._services_render_custom_homepage_base_servers) : concat(
+                server.enabled ? [{ (server.name) = server.card }] : [],
+                [for item in server.items : { (item.name) = item.card }]
+              )
+              if server.group == group && (server.enabled || length(server.items) > 0)
+            ]),
           )
         }
       ]

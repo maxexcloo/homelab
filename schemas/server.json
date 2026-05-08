@@ -5,7 +5,124 @@
   "required": ["identity", "platform", "type"],
   "title": "Server",
   "type": "object",
+  "definitions": {
+    "dashboard_item": {
+      "additionalProperties": false,
+      "description": "An additional Homepage card rendered in the same group as this server.",
+      "required": ["name"],
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Card description. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "href": {
+          "description": "Card link URL. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "icon": {
+          "description": "Homepage icon. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "name": {
+          "description": "Card display name. Supports template interpolation with ${server.*}.",
+          "type": "string"
+        },
+        "siteMonitor": {
+          "description": "URL for Homepage site monitoring. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "widget": {
+          "description": "Homepage widget configuration. Supports template interpolation with ${server.*}.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/json_data" }
+        }
+      }
+    },
+    "json_data": {
+      "description": "Arbitrary JSON-compatible value.",
+      "anyOf": [
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "array", "items": { "$ref": "#/definitions/json_data" } },
+        { "type": "object", "additionalProperties": { "$ref": "#/definitions/json_data" } },
+        { "type": "null" }
+      ]
+    },
+    "secret_item": {
+      "additionalProperties": false,
+      "required": ["name"],
+      "type": "object",
+      "allOf": [
+        {
+          "if": { "required": ["bootstrap_type"] },
+          "then": { "required": ["bootstrap_length"] },
+          "else": { "not": { "required": ["bootstrap_length"] } }
+        }
+      ],
+      "properties": {
+        "bootstrap_length": {
+          "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for manually supplied 1Password fields.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "bootstrap_type": {
+          "description": "Initial generated secret format. Omit to create an empty concealed 1Password field; hex/base64/string/alphanumeric bootstrap generated values and then read back from 1Password.",
+          "enum": ["alphanumeric", "base64", "hex", "string"],
+          "type": "string"
+        },
+        "name": {
+          "description": "Secret identifier. Exposed as state.secrets.{name} on the server. Must be lowercase alphanumeric or underscore.",
+          "pattern": "^[a-z0-9_]+$",
+          "type": "string"
+        }
+      }
+    }
+  },
   "properties": {
+    "dashboard": {
+      "additionalProperties": false,
+      "description": "Homepage dashboard card configuration for this server.",
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Card description override. Null uses the server platform string. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "enabled": {
+          "description": "Whether to include the auto-generated server card in Homepage. Set to false to suppress the default card while still rendering items.",
+          "type": "boolean"
+        },
+        "href": {
+          "description": "Card link override. Null uses the server management URL. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "icon": {
+          "description": "Homepage icon override. Null uses the server type icon. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "items": {
+          "description": "Additional Homepage cards rendered in this server's group. Each item supports template interpolation with ${server.*}.",
+          "type": "array",
+          "items": { "$ref": "#/definitions/dashboard_item" }
+        },
+        "name": {
+          "description": "Card display name override. Null uses the server description. Supports template interpolation with ${server.*}.",
+          "type": ["string", "null"]
+        },
+        "widget": {
+          "description": "Homepage widget configuration. Supports template interpolation with ${server.*}.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/json_data" }
+        }
+      }
+    },
+    "data": {
+      "description": "Arbitrary JSON-compatible data exposed to templates as server.data.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/json_data" }
+    },
     "features": {
       "additionalProperties": false,
       "description": "Feature flags that provision additional resources for this server.",
@@ -334,6 +451,11 @@
           }
         }
       }
+    },
+    "secrets": {
+      "description": "Additional named secrets to provision for this server. Each produces a state.secrets.{name} field and a 1Password CONCEALED entry.",
+      "type": "array",
+      "items": { "$ref": "#/definitions/secret_item" }
     },
     "type": {
       "description": "Functional role of the server. Used for grouping in monitoring (Gatus) and display. appliance = dedicated device; cicd = CI/CD runner; ephemeral = temporary workload; router = network gateway; server = general-purpose machine; vm = virtual machine.",

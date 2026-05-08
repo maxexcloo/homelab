@@ -92,14 +92,19 @@ locals {
           }
           if field_value != null && field_value != ""
         ],
+        # Manually supplied secrets (no bootstrap_type) sync even when empty so
+        # 1Password gets the placeholder for the operator to fill in.
         [
-          for field_name, field_value in server.state.secrets : {
-            id    = field_name
-            label = "${field_name}_ro"
+          for secret_name, secret_value in server.state.secrets : {
+            id    = secret_name
+            label = "${secret_name}_${contains(local.onepassword_server_rw_secret_names[server_key], secret_name) ? "rw" : "ro"}"
             type  = "CONCEALED"
-            value = tostring(field_value)
+            value = tostring(secret_value)
           }
-          if field_name != "password" && field_value != null && field_value != ""
+          if secret_name != "password" && secret_value != null && (
+            secret_value != "" ||
+            contains(local.onepassword_server_manual_secret_names[server_key], secret_name)
+          )
         ],
       ) : field.label => field
     }
@@ -157,6 +162,22 @@ locals {
         if url_value != null && url_value != ""
       ],
     )
+  }
+
+  # Secrets without a bootstrap_type are manually filled by an operator in
+  # 1Password and must sync even when the value is still empty.
+  onepassword_server_manual_secret_names = {
+    for server_key, server in local.servers : server_key => toset([
+      for secret in server.secrets : secret.name
+      if try(secret.bootstrap_type, null) == null
+    ])
+  }
+
+  onepassword_server_rw_secret_names = {
+    for server_key, server in local.servers : server_key => toset(concat(
+      server.features.password ? ["password"] : [],
+      [for secret in server.secrets : secret.name],
+    ))
   }
 
   onepassword_service_existing_fields = {

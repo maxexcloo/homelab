@@ -4,7 +4,7 @@ locals {
   # without repeating expressions.
   _servers_model_computed = {
     for server_key, server in local.servers_input : server_key => {
-      fqdn = server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
+      management_url = "https://${local._servers_model_fqdns[server_key]}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
 
       # Root servers use the title alone. Children whose region matches their
       # parent's name (e.g. a VM inside an "au" host) omit the parent prefix
@@ -35,6 +35,11 @@ locals {
     }
   }
 
+  _servers_model_fqdns = {
+    for server_key, server in local.servers_input : server_key =>
+    server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
+  }
+
   # Desired server model: YAML plus defaults plus deterministic computed fields.
   # This layer is safe for references that should not depend on generated secrets.
   servers_model = {
@@ -42,11 +47,21 @@ locals {
       server,
       local._servers_model_computed[server_key],
       {
-        fqdn_external  = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.external}"
-        fqdn_internal  = "${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}"
-        key            = server_key
-        management_url = "https://${local._servers_model_computed[server_key].fqdn}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
-        ssh_keys       = data.github_user.default.ssh_keys
+        fqdn_external = "${local._servers_model_fqdns[server_key]}.${local.defaults.domains.external}"
+        fqdn_internal = "${local._servers_model_fqdns[server_key]}.${local.defaults.domains.internal}"
+        key           = server_key
+        ssh_keys      = data.github_user.default.ssh_keys
+
+        dashboard = {
+          description = coalesce(server.dashboard.description, server.identity.description, server.platform)
+          enabled     = server.dashboard.enabled
+          href        = coalesce(server.dashboard.href, local._servers_model_computed[server_key].management_url)
+          icon        = coalesce(server.dashboard.icon, local.defaults.types[server.type].icon)
+          items       = server.dashboard.items
+          name        = coalesce(server.dashboard.name, local._servers_model_computed[server_key].description)
+          siteMonitor = coalesce(server.dashboard.href, local._servers_model_computed[server_key].management_url)
+          widget      = server.dashboard.widget
+        }
       }
     )
   }

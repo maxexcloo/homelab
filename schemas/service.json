@@ -6,6 +6,39 @@
   "title": "Service",
   "type": "object",
   "definitions": {
+    "dashboard_item": {
+      "additionalProperties": false,
+      "description": "An additional Homepage card rendered in the same group as the parent service or server.",
+      "required": ["name"],
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Card description. Supports template interpolation.",
+          "type": ["string", "null"]
+        },
+        "href": {
+          "description": "Card link URL. Supports template interpolation.",
+          "type": ["string", "null"]
+        },
+        "icon": {
+          "description": "Homepage icon. Supports template interpolation.",
+          "type": ["string", "null"]
+        },
+        "name": {
+          "description": "Card display name. Supports template interpolation.",
+          "type": "string"
+        },
+        "siteMonitor": {
+          "description": "URL for Homepage site monitoring. Supports template interpolation.",
+          "type": ["string", "null"]
+        },
+        "widget": {
+          "description": "Homepage widget configuration. Supports template interpolation.",
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/json_data" }
+        }
+      }
+    },
     "features_overlay": {
       "additionalProperties": false,
       "description": "Per-target feature overrides. Only specify the flags that differ from the service-level defaults.",
@@ -203,6 +236,10 @@
       "description": "Homepage dashboard metadata. Defaults derive from identity and routing values; set enabled=false to hide the service.",
       "type": "object",
       "properties": {
+        "container": {
+          "description": "Docker container name to link for Docker integration. When set, Homepage renders server and container fields on the service card using the my-docker host.",
+          "type": ["string", "null"]
+        },
         "description": {
           "description": "Dashboard description override. Null uses identity.description. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
           "type": ["string", "null"]
@@ -222,6 +259,11 @@
         "icon": {
           "description": "Homepage icon override. Null uses identity.name. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
           "type": ["string", "null"]
+        },
+        "items": {
+          "description": "Additional Homepage cards rendered in the same group as this service. Each item supports template interpolation with the same variables as the service.",
+          "type": "array",
+          "items": { "$ref": "#/definitions/dashboard_item" }
         },
         "name": {
           "description": "Dashboard display name override. Null uses identity.title. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",

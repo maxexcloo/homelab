@@ -8,6 +8,7 @@ dashboard:
     username: ${service.identity.username}
 features:
   password: true
+  resend: true
 identity:
   description: Digital Library
   group: Media
