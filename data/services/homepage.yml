@@ -45,12 +45,15 @@ data:
               href: https://unifi.ui.com
               icon: si-ubiquiti-#ffffff
   settings:
-    cardBlur: sm
+    cardBlur: xs
     disableCollapse: true
     headerStyle: clean
     hideVersion: true
     title: ${service.identity.title}
-    useEqualHeights: true
+    background:
+      brightness: 50
+      image: /images/background-desat.jpg
+      opacity: 80
   widgets:
     - search:
         provider: google

@@ -1,28 +1,15 @@
 :root {
   --homepage-card-radius: 15px;
-  --homepage-panel-background: #00000033;
-  --homepage-status-dot-size: calc(var(--spacing) * 1.5);
-  --homepage-status-padding: calc(var(--spacing) * 2) calc(var(--spacing) * 2) 0 0;
+  --homepage-panel-background: #00000040;
 }
 
 html {
   font-size: 120%;
 }
 
-body {
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.32)),
-    url("/images/background-desat.jpg") no-repeat center center fixed;
-  background-size: cover;
-}
-
-#page_container {
-  background: transparent !important;
-}
-
 #page_container * {
   color: white !important;
-  text-shadow: 0 0 0 rgba(0, 0, 0, 0.5), 1px 2px 1px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
 }
 
 .rounded,
@@ -30,19 +17,27 @@ body {
   border-radius: var(--homepage-card-radius) !important;
 }
 
-.service > div {
-  box-shadow:
-    0 0 6px -1px var(--tw-shadow-color, #0000001a),
-    0 0 4px 0 var(--tw-shadow-color, #0000001a);
-}
-
 .service-block {
   background-color: transparent !important;
   box-shadow: none !important;
 }
 
-.service div .service-container {
+.service-container {
   background: var(--homepage-panel-background);
+}
+
+.service-container-stats .rounded-full {
+  width: calc(var(--spacing) * 1.5);
+}
+
+.service-container-stats:has(.rounded-full) {
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 2) 0 0;
+}
+
+.service > div {
+  box-shadow:
+    0 0 6px -1px var(--tw-shadow-color, #0000001a),
+    0 0 4px 0 var(--tw-shadow-color, #0000001a);
 }
 
 .service div > :nth-child(2).service-container {
@@ -60,12 +55,10 @@ body {
   padding-top: 0 !important;
 }
 
-.site-monitor-status > .rounded-full,
-.service-container-stats .rounded-full {
-  width: var(--homepage-status-dot-size);
+.site-monitor-status > .rounded-full {
+  width: calc(var(--spacing) * 1.5);
 }
 
-.site-monitor-status:has(> .rounded-full),
-.service-container-stats:has(.rounded-full) {
-  padding: var(--homepage-status-padding);
+.site-monitor-status:has(> .rounded-full) {
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 2) 0 0;
 }
