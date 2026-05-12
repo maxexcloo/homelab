@@ -1,5 +1,5 @@
 locals {
-  # Pre-render context with import aliases overlaid. References local.services
+  # Pre-render context with imported services overlaid. References local.services
   # rather than _services_render_services so dashboard and data strings can be
   # template-rendered from this context without circularity.
   _services_render_base_context = {
@@ -10,7 +10,12 @@ locals {
       service  = service
 
       services = merge(
-        local.services,
+        {
+          for rendered_service_key, rendered_service in local.services : rendered_service_key => {
+            for field_name, field_value in rendered_service : field_name => field_value
+            if field_name != "state"
+          }
+        },
         {
           for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services[real_key]
@@ -76,7 +81,12 @@ locals {
         service = local._services_render_services[service_key]
 
         services = merge(
-          local._services_render_services,
+          {
+            for rendered_service_key, rendered_service in local._services_render_services : rendered_service_key => {
+              for field_name, field_value in rendered_service : field_name => field_value
+              if field_name != "state"
+            }
+          },
           {
             for alias, real_key in local.services_model_imports[service_key] :
             alias => local._services_render_services[real_key]

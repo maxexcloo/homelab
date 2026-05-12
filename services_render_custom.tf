@@ -11,6 +11,7 @@ locals {
           href        = server.dashboard.href
           icon        = server.dashboard.icon
           siteMonitor = server.dashboard.siteMonitor
+          statusStyle = server.dashboard.siteMonitor != null ? "dot" : null
           widget      = length(server.dashboard.widget) > 0 ? yamldecode(templatestring(yamlencode(server.dashboard.widget), { server = server })) : null
         } : field => value
         if value != null
@@ -25,6 +26,7 @@ locals {
               href        = try(item.href, null)
               icon        = try(item.icon, null)
               siteMonitor = try(item.siteMonitor, null)
+              statusStyle = try(item.siteMonitor, null) != null ? "dot" : null
               widget      = length(try(item.widget, {})) > 0 ? item.widget : null
             }), { server = server })) : field => value
             if value != null
@@ -51,6 +53,7 @@ locals {
         icon        = service.dashboard.icon
         server      = service.dashboard.container != null ? service.target : null
         siteMonitor = service.dashboard.siteMonitor
+        statusStyle = service.dashboard.siteMonitor != null ? "dot" : null
         widget      = length(service.dashboard.widget) > 0 ? service.dashboard.widget : null
       } : field => value
       if value != null
@@ -126,6 +129,7 @@ locals {
                         href        = try(item.href, null)
                         icon        = try(item.icon, null)
                         siteMonitor = try(item.siteMonitor, null)
+                        statusStyle = try(item.siteMonitor, null) != null ? "dot" : null
                         widget      = length(try(item.widget, {})) > 0 ? item.widget : null
                       } : field => value
                       if value != null

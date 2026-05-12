@@ -46,7 +46,10 @@
         { "type": "number" },
         { "type": "string" },
         { "type": "array", "items": { "$ref": "#/definitions/json_data" } },
-        { "type": "object", "additionalProperties": { "$ref": "#/definitions/json_data" } },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/json_data" }
+        },
         { "type": "null" }
       ]
     },

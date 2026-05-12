@@ -1,3 +1,4 @@
 locals {
-  script = file("${path.module}/encrypt.sh")
+  script      = "python3 ${path.module}/encrypt.py"
+  script_hash = filesha256("${path.module}/encrypt.py")
 }

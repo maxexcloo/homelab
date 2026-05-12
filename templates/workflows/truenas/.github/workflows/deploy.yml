@@ -1,0 +1,68 @@
+name: Deploy
+
+on:
+  push:
+    paths:
+      - .github/deploy-request.json
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy all, a server, a service, or server/service"
+
+concurrency:
+  cancel-in-progress: false
+  group: deploy
+
+permissions:
+  contents: read
+
+jobs:
+  deployments:
+    name: Select Deployments
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.deployments.outputs.deployments }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Select Deployments
+        id: deployments
+        env:
+          BEFORE: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TARGET: ${{ inputs.target }}
+        run: python3 .github/scripts/select-deployments.py
+
+  deploy:
+    if: needs.deployments.outputs.matrix != '[]'
+    name: Deploy ${{ matrix.target.server }}
+    needs: [deployments]
+    runs-on: [self-hosted, "${{ matrix.target.server }}-privileged"]
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        target: ${{ fromJSON(needs.deployments.outputs.matrix) }}
+    env:
+      REMOVALS: ${{ toJSON(matrix.target.removals) }}
+      SOPS_AGE_KEY: ${{ secrets[matrix.target.secret_name] }}
+      TARGET_PATHS: ${{ toJSON(matrix.target.paths) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup sops
+        uses: nhedger/setup-sops@v2
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
+      - name: Setup midclt
+        run: uv tool install --python 3.12 git+https://github.com/truenas/api_client.git@b96ff63967962aa78d422d57a364722a1cda328f
+      - name: Decrypt Files
+        env:
+          DECRYPT_ROOT: ${{ matrix.target.server }}
+        run: python3 .github/scripts/decrypt.py
+      - name: Deploy Services
+        run: python3 .github/scripts/deploy.py
+      - name: Delete Services
+        run: python3 .github/scripts/delete.py

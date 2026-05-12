@@ -205,8 +205,6 @@ resource "github_repository_file" "truenas_deploy_request" {
   content = jsonencode({
     deployments = {
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => sha256(jsonencode({
-        workflow = filesha256("${path.module}/templates/workflows/truenas-deploy.yml")
-
         files = {
           for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
           if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
@@ -220,13 +218,15 @@ resource "github_repository_file" "truenas_deploy_request" {
             }
           ]
         }))
+
+        workflow_files = local.github_workflow_file_hashes.truenas
       }))
     }
   })
 
   depends_on = [
     github_repository_file.truenas_sops_config,
-    github_repository_file.truenas_workflow_deploy,
+    github_repository_file.workflow_file,
     module.encrypted_github_file_truenas,
   ]
 }
@@ -258,12 +258,4 @@ resource "github_repository_file" "truenas_sops_config" {
       }
     ]
   })
-}
-
-resource "github_repository_file" "truenas_workflow_deploy" {
-  commit_message      = "Update deploy workflow"
-  content             = file("${path.module}/templates/workflows/truenas-deploy.yml")
-  file                = ".github/workflows/deploy.yml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.truenas
 }

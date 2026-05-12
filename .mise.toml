@@ -34,16 +34,17 @@ fi
 description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
-prettier --check "data/**/*.yml" "templates/**/*.yml"
-ruff format --check scripts
+prettier --check "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
+ruff format --check scripts modules templates/workflows
 tofu fmt -check -recursive
 """
 
 [tasks.fmt]
 description = "Format all files"
 run = """
-prettier --log-level warn --write "data/**/*.yml" "templates/**/*.yml"
-ruff format scripts
+prettier --log-level warn --write "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
+ruff check --fix --select I scripts modules templates/workflows
+ruff format scripts modules templates/workflows
 tofu fmt -recursive
 """
 
@@ -56,7 +57,7 @@ check-jsonschema --schemafile schemas/server.json data/servers/*.yml
 check-jsonschema --schemafile schemas/service.json data/services/*.yml
 check-jsonschema --schemafile schemas/config.json data/config.yml
 check-jsonschema --schemafile schemas/defaults.json data/defaults.yml
-ruff check scripts
+ruff check --extend-select I scripts modules templates/workflows
 """
 
 [tasks.validate]

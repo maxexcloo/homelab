@@ -1,6 +1,10 @@
+.memsearch
 .mise.local.toml
 .render
+.ruff_cache
 .terraform
+__pycache__
+*.pyc
 *.tfplan
 *.tfstate
 *.tfstate.*

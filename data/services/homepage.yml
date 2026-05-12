@@ -45,8 +45,12 @@ data:
               href: https://unifi.ui.com
               icon: si-ubiquiti-#ffffff
   settings:
+    cardBlur: sm
+    disableCollapse: true
     headerStyle: clean
+    hideVersion: true
     title: ${service.identity.title}
+    useEqualHeights: true
   widgets:
     - search:
         provider: google

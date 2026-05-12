@@ -1,5 +1,5 @@
 # SOPS has no native OpenTofu provider here, so encryption runs through a small
-# sensitive shell wrapper. Triggers hash inputs so encrypted GitHub files update
+# sensitive Python wrapper. Triggers hash inputs so encrypted GitHub files update
 # when plaintext, recipient, filename, or script behavior changes.
 resource "shell_sensitive_script" "encrypt" {
   environment = {
@@ -23,6 +23,6 @@ resource "shell_sensitive_script" "encrypt" {
     content_hash        = sha256(var.content_base64)
     content_type        = var.content_type
     filename_hash       = sha256(var.filename)
-    script_hash         = sha256(local.script)
+    script_hash         = local.script_hash
   }
 }

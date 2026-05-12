@@ -82,12 +82,11 @@ resource "github_repository_file" "fly_deploy_request" {
   content = jsonencode({
     deployments = {
       for service_key, service in local.fly_input_services : service.fly.app_name => sha256(jsonencode({
-        workflow = filesha256("${path.module}/templates/workflows/fly-deploy.yml")
-
         files = {
           for file_key, file_config in local.fly_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
           if startswith(local.fly_render_files[file_key].file, "${service.fly.app_name}/")
         }
+
         sops = sha256(yamlencode({
           creation_rules = [
             {
@@ -95,13 +94,15 @@ resource "github_repository_file" "fly_deploy_request" {
             }
           ]
         }))
+
+        workflow_files = local.github_workflow_file_hashes.fly
       }))
     }
   })
 
   depends_on = [
     github_repository_file.fly_sops_config,
-    github_repository_file.fly_workflow_deploy,
+    github_repository_file.workflow_file,
     module.encrypted_github_file_fly,
   ]
 }
@@ -132,12 +133,4 @@ resource "github_repository_file" "fly_sops_config" {
       }
     ]
   })
-}
-
-resource "github_repository_file" "fly_workflow_deploy" {
-  commit_message      = "Update deploy workflow"
-  content             = file("${path.module}/templates/workflows/fly-deploy.yml")
-  file                = ".github/workflows/deploy.yml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
 }
