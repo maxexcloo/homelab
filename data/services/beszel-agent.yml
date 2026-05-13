@@ -31,7 +31,4 @@ secrets:
   - name: system_id
   - name: token
 targets:
-  au-haos: {}
-  au-hsp: {}
   au-truenas: {}
-  us-hotdog: {}
