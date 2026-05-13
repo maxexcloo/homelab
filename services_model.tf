@@ -92,6 +92,10 @@ locals {
           identity = {
             group = local._services_model_groups[service_key]
           }
+
+          routing = {
+            container = coalesce(service.routing.container, service.identity.service)
+          }
         },
       )
     )

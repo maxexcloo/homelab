@@ -203,8 +203,7 @@ locals {
 
   services_render_custom_service = {
     for service_key, service in local.services : service_key => {
-      routing_container = coalesce(service.routing.container, service.identity.service)
-      routing_labels    = local._services_render_custom_traefik_labels[service_key]
+      routing_labels = local._services_render_custom_traefik_labels[service_key]
     }
   }
 }

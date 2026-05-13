@@ -99,7 +99,7 @@ locals {
       {
         labels = [
           for label_key in sort(keys(context.service.routing_labels)) : {
-            containers = [context.service.routing_container]
+            containers = [context.service.routing.container]
             key        = label_key
             value      = context.service.routing_labels[label_key]
           }

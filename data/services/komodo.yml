@@ -2,6 +2,7 @@
 dashboard:
   widget:
     key: ${service.state.secrets.homepage_widget_key}
+    secret: ${service.state.secrets.homepage_widget_secret}
     type: komodo
     url: ${service.url}
 features:
@@ -22,6 +23,7 @@ secrets:
     bootstrap_type: alphanumeric
     name: db_password
   - name: homepage_widget_key
+  - name: homepage_widget_secret
   - bootstrap_length: 32
     bootstrap_type: hex
     name: webhook_secret

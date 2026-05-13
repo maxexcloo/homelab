@@ -54,7 +54,7 @@ locals {
   }
 
   # Render-time service inventory: dashboard/data strings template-rendered,
-  # routing_container and routing_labels merged in from services_render_custom_service.
+  # routing_labels merged in from services_render_custom_service.
   _services_render_services = {
     for service_key, service in local.services : service_key => merge(
       service,
@@ -106,7 +106,7 @@ locals {
           services = {
             for compose_service_key, compose_service in compose.services : compose_service_key => merge(
               compose_service,
-              compose_service_key == local._services_render_services[service_key].routing_container && length(local._services_render_services[service_key].routing_labels) > 0 ? {
+              compose_service_key == local._services_render_services[service_key].routing.container && length(local._services_render_services[service_key].routing_labels) > 0 ? {
                 labels = merge(
                   try(compose_service.labels, {}),
                   local._services_render_services[service_key].routing_labels,
