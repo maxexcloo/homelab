@@ -49,6 +49,16 @@ locals {
     if !contains(keys(local.services_render_files_compose), service_key) &&
     !contains(keys(local.truenas_prepare_catalog_templates), service_key)
   ]
+
+  services_validation_unmanaged_urls = flatten([
+    for service_key, service in local.services_model : [
+      for url in service.routing.urls : "${service_key} -> ${url}"
+      if lookup(local.dns_render_zones_urls, url, null) == null
+      && service.routing.ssl
+      && service.target != "fly"
+      && service.routing.expose != "cloudflare"
+    ]
+  ])
 }
 
 resource "terraform_data" "services_validation" {
@@ -111,6 +121,15 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local.services_validation_truenas_missing_template) == 0
       error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", local.services_validation_truenas_missing_template)}"
+    }
+
+    # routing.urls for SSL-terminated services must be in a managed DNS zone so
+    # Traefik's DNS-01 ACME challenge has a delegation record to resolve against.
+    precondition {
+      condition = length(local.services_validation_unmanaged_urls) == 0
+      error_message = (
+        "Service routing.urls must be in a managed DNS zone (data/dns/) for ACME delegation: ${join(", ", local.services_validation_unmanaged_urls)}"
+      )
     }
   }
 }

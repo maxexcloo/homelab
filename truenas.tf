@@ -25,23 +25,23 @@ locals {
   truenas_prepare_env = {
     for service_key, service in local.truenas_input_services : service_key => {
       for env_key, env_value in {
-        for raw_key, raw_value in service.truenas.env : raw_key => (
-          can(tostring(raw_value))
+        for input_key, input_value in service.truenas.env : input_key => (
+          can(tostring(input_value))
           ? templatestring(
-            tostring(raw_value),
+            tostring(input_value),
             local.services_render_context[service_key],
           )
           : join(
             "+",
             [
-              for env_item in raw_value : templatestring(
+              for env_item in input_value : templatestring(
                 tostring(env_item),
                 local.services_render_context[service_key],
               )
             ],
           )
         )
-        if raw_value != null
+        if input_value != null
       } :
       env_key => env_value
       if env_value != ""

@@ -112,6 +112,8 @@ locals {
           (group) = concat(
             flatten([
               for service in [
+                # "0:" prefix sorts widget-bearing services before plain entries ("1:")
+                # so each group renders with its widget cards at the top.
                 for entry in sort([
                   for service in values(local._services_render_services) :
                   "${length(service.dashboard.widget) > 0 ? "0" : "1"}:${service.key}"
@@ -173,8 +175,15 @@ locals {
         service.routing.scheme == "https" ? {
           "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = "https"
         } : {},
+        # Cloudflare-exposed services use the tunnel cert; ACME is only needed for
+        # direct TLS termination at Traefik. Only emit tls.domains for URLs in a
+        # managed DNS zone — unmanaged domains have no ACME delegation record and
+        # would cause DNS-01 challenges to fail silently.
         service.routing.ssl && service.routing.expose != "cloudflare" ? {
-          for url_idx, url in service.routing.urls :
+          for url_idx, url in [
+            for url in service.routing.urls : url
+            if lookup(local.dns_render_zones_urls, url, null) != null
+          ] :
           "traefik.http.routers.${service.identity.name}.tls.domains[${url_idx}].main" => url
         } : {},
       ) : {},

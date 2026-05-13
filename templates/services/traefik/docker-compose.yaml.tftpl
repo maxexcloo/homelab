@@ -12,8 +12,10 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.middlewares=autocompress@docker
       - --entrypoints.websecure.http.tls.certResolver=cloudflare
-      - --entrypoints.websecure.http.tls.domains[0].main=${server.fqdn_internal}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.${server.fqdn_internal}
+      - --entrypoints.websecure.http.tls.domains[0].main=${server.fqdn_external}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.${server.fqdn_external}
+      - --entrypoints.websecure.http.tls.domains[1].main=${server.fqdn_internal}
+      - --entrypoints.websecure.http.tls.domains[1].sans=*.${server.fqdn_internal}
       - --providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.compose.project" | trimPrefix "ix-"}}.${server.fqdn_internal}`)
       - --providers.docker.exposedbydefault=false
       - --providers.docker=true
