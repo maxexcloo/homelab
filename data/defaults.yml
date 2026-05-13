@@ -9,10 +9,10 @@ servers:
   parent: ""
   secrets: []
   dashboard:
-    - description: null
+    - name: null
+      description: null
       href: null
       icon: null
-      name: null
       siteMonitor: null
       widgets: []
   features:
@@ -71,12 +71,12 @@ services:
   data: {}
   secrets: []
   dashboard:
-    - container: null
+    - name: null
+      container: null
       description: null
       group: null
       href: null
       icon: null
-      name: null
       siteMonitor: null
       widgets: []
   features:

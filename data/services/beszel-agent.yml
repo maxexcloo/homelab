@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - description: ${services.beszel.identity.description}
+  - name: ${services.beszel.identity.title}
+    description: ${services.beszel.identity.description}
     href: ${services.beszel.url}/system/${service.state.secrets.system_id}
     icon: ${services.beszel.identity.name}
-    name: ${services.beszel.identity.title}
     widgets:
       - password: ${services.beszel.state.secrets.password}
         systemId: ${service.state.secrets.system_id}

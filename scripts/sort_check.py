@@ -34,6 +34,7 @@ JSON_GLOBS = ["schemas/*.json"]
 # before the condition. Skip ordering for objects whose keys are a subset of
 # this triplet.
 JSON_SCHEMA_CONDITIONAL = {"if", "then", "else"}
+IDENTIFIER_KEYS = ["name", "id"]
 
 
 def is_json_schema_conditional(keys):
@@ -52,18 +53,22 @@ def is_multi(value, kind):
     return False
 
 
-def expected_order(data, kind):
+def expected_order(data, kind, identifier_first=False):
     keys = list(data.keys())
-    singles = sorted(k for k in keys if not is_multi(data[k], kind))
-    multis = sorted(k for k in keys if is_multi(data[k], kind))
-    return singles + multis
+    identifiers = (
+        [key for key in IDENTIFIER_KEYS if key in keys] if identifier_first else []
+    )
+    sortable_keys = [key for key in keys if key not in identifiers]
+    singles = sorted(k for k in sortable_keys if not is_multi(data[k], kind))
+    multis = sorted(k for k in sortable_keys if is_multi(data[k], kind))
+    return identifiers + singles + multis
 
 
-def walk(path, data, location, errors, kind):
+def walk(path, data, location, errors, kind, identifier_first=False):
     if isinstance(data, dict):
         keys = list(data.keys())
         if len(keys) >= 2 and not (kind == "json" and is_json_schema_conditional(keys)):
-            expected = expected_order(data, kind)
+            expected = expected_order(data, kind, identifier_first)
             if keys != expected:
                 loc = "/" + "/".join(location) if location else "(root)"
                 errors.append(
@@ -75,7 +80,14 @@ def walk(path, data, location, errors, kind):
             walk(path, value, location + [str(key)], errors, kind)
     elif isinstance(data, list):
         for index, item in enumerate(data):
-            walk(path, item, location + [f"[{index}]"], errors, kind)
+            walk(
+                path,
+                item,
+                location + [f"[{index}]"],
+                errors,
+                kind,
+                isinstance(item, dict),
+            )
 
 
 def collect(globs):

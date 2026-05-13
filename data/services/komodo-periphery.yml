@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - description: ${services.komodo.identity.description}
+  - name: Komodo Periphery
+    description: ${services.komodo.identity.description}
     href: ${services.komodo.url}/servers/${server.key}
     icon: ${services.komodo.identity.name}
-    name: Komodo Periphery
     widgets:
       - key: ${services.komodo.state.secrets.homepage_widget_key}
         secret: ${services.komodo.state.secrets.homepage_widget_secret}

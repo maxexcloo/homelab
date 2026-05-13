@@ -41,14 +41,14 @@ locals {
     ],
   )
 
-  _services_render_custom_homepage_server_names = [
-    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.name
-  ]
-
   _services_render_custom_homepage_server_name_groups = sort(distinct([
     for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
     if contains(local._services_render_custom_homepage_server_names, dashboard_card.group)
   ]))
+
+  _services_render_custom_homepage_server_names = [
+    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.name
+  ]
 
   _services_render_custom_homepage_service_cards = flatten([
     for service_key, service in local.services_render_services : [

@@ -1,7 +1,7 @@
 locals {
   _services_model_fqdns = {
     for service_key, service in local.services_input_targets : service_key => {
-      fqdn_internal = contains(toset(keys(local.servers_input)), service.target) && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
+      fqdn_internal = local._services_model_target_is_server[service_key] && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].fqdn_internal}" : null
 
       # Fly always gets a fly.dev hostname. Managed-server services only get an
       # external FQDN when explicitly exposed as cloudflare or external; internal
@@ -9,7 +9,7 @@ locals {
       fqdn_external = (
         service.target == "fly"
         ? "${coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
-        : contains(toset(keys(local.servers_input)), service.target) && contains(["cloudflare", "external"], service.routing.expose)
+        : local._services_model_target_is_server[service_key] && contains(["cloudflare", "external"], service.routing.expose)
         ? "${service.identity.name}.${local.servers_model[service.target].fqdn_external}"
         : null
       )
@@ -22,6 +22,34 @@ locals {
       try(local.servers_model[service.target].description, null),
       "Applications",
     )
+  }
+
+  _services_model_import_auto_targets = {
+    for service_key, service in local.services_input : service_key => "${service_key}-${keys(service.targets)[0]}"
+    if length(service.targets) == 1
+  }
+
+  # Render import references before services_render templating so validation can
+  # catch missing dependencies instead of failing inside templatestring().
+  _services_model_import_refs = flatten([
+    for service_key, service in local.services_model : [
+      for import_alias, import_ref in service.imports.services : {
+        alias       = import_alias
+        service_key = service_key
+        target = templatestring(
+          import_ref,
+          {
+            service = service
+          },
+        )
+      }
+    ]
+  ])
+
+  _services_model_server_keys = toset(keys(local.servers_input))
+
+  _services_model_target_is_server = {
+    for service_key, service in local.services_input_targets : service_key => contains(local._services_model_server_keys, service.target)
   }
 
   _services_model_url = {
@@ -38,11 +66,15 @@ locals {
     )[0]
   }
 
+  _services_model_url_scheme = {
+    for service_key, service in local.services_input_targets : service_key => service.routing.ssl ? "https" : "http"
+  }
+
   _services_model_urls = {
     for service_key, service in local.services_input_targets : service_key => merge(
       {
         for url in service.routing.urls : url => {
-          href  = "${service.routing.ssl ? "https" : "http"}://${url}"
+          href  = "${local._services_model_url_scheme[service_key]}://${url}"
           label = "website"
           zone  = local.dns_render_zones_urls[url]
         }
@@ -54,14 +86,14 @@ locals {
         length(compact([for url in service.routing.urls : lookup(local.dns_render_zones_urls, url, null)])) > 0
         ) ? {
         fqdn_external = {
-          href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_fqdns[service_key].fqdn_external}"
+          href  = "${local._services_model_url_scheme[service_key]}://${local._services_model_fqdns[service_key].fqdn_external}"
           label = "fqdn_external"
           zone  = service.target == "fly" ? "fly.dev" : local.defaults.domains.external
         }
       } : {},
       local._services_model_fqdns[service_key].fqdn_internal != null ? {
         fqdn_internal = {
-          href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_fqdns[service_key].fqdn_internal}"
+          href  = "${local._services_model_url_scheme[service_key]}://${local._services_model_fqdns[service_key].fqdn_internal}"
           label = "fqdn_internal"
           zone  = local.defaults.domains.internal
         }
@@ -125,23 +157,15 @@ locals {
 
   services_model_imports = {
     for service_key, service in local.services_model : service_key => {
-      for import_alias, service_ref in {
-        for import_alias, import_ref in service.imports.services : import_alias => templatestring(
-          import_ref,
-          {
-            service = service
-          },
-        )
-      } :
-      # "auto" resolves the import alias to a same-named service when that
-      # service has exactly one target. Ambiguous or missing targets fall
-      # through to services_validation_invalid_imports.
-      import_alias => (
-        contains(keys(local.services_input), service_ref == "auto" ? import_alias : service_ref) &&
-        length(local.services_input[service_ref == "auto" ? import_alias : service_ref].targets) == 1
-        ? "${service_ref == "auto" ? import_alias : service_ref}-${keys(local.services_input[service_ref == "auto" ? import_alias : service_ref].targets)[0]}"
-        : service_ref == "auto" ? import_alias : service_ref
+      for import_ref in local._services_model_import_refs :
+      # "auto" imports use the alias as the base service name, then resolve only
+      # when that base service has exactly one expanded target.
+      import_ref.alias => (
+        import_ref.target == "auto"
+        ? lookup(local._services_model_import_auto_targets, import_ref.alias, import_ref.alias)
+        : import_ref.target
       )
+      if import_ref.service_key == service_key
     }
   }
 }

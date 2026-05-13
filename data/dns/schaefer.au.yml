@@ -1,31 +1,31 @@
 # yaml-language-server: $schema=../../schemas/dns.json
 name: schaefer.au
 records:
-  - content: fm1.schaefer.au.dkim.fmhosted.com
-    name: fm1._domainkey
+  - name: fm1._domainkey
+    content: fm1.schaefer.au.dkim.fmhosted.com
     type: CNAME
-  - content: fm2.schaefer.au.dkim.fmhosted.com
-    name: fm2._domainkey
+  - name: fm2._domainkey
+    content: fm2.schaefer.au.dkim.fmhosted.com
     type: CNAME
-  - content: fm3.schaefer.au.dkim.fmhosted.com
-    name: fm3._domainkey
+  - name: fm3._domainkey
+    content: fm3.schaefer.au.dkim.fmhosted.com
     type: CNAME
-  - content: mesmtp.schaefer.au.dkim.fmhosted.com
-    name: mesmtp._domainkey
+  - name: mesmtp._domainkey
+    content: mesmtp.schaefer.au.dkim.fmhosted.com
     type: CNAME
-  - content: in1-smtp.messagingengine.com
-    name: "@"
+  - name: "@"
+    content: in1-smtp.messagingengine.com
     priority: 10
     type: MX
-  - content: in2-smtp.messagingengine.com
-    name: "@"
+  - name: "@"
+    content: in2-smtp.messagingengine.com
     priority: 20
     type: MX
-  - content: '"v=DMARC1; p=none;"'
+  - name: "@"
     id: txt-apex-dmarc
-    name: "@"
+    content: '"v=DMARC1; p=none;"'
     type: TXT
-  - content: '"v=spf1 include:spf.messagingengine.com ?all"'
+  - name: "@"
     id: txt-apex-spf
-    name: "@"
+    content: '"v=spf1 include:spf.messagingengine.com ?all"'
     type: TXT
