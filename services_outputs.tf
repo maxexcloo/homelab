@@ -4,13 +4,13 @@ locals {
   # operator-filled 1Password placeholder.
   _services_outputs_secret_bootstrap = {
     for entry in flatten([
-      for service_key, service in local.services_input_targets : [
+      for service_key, service in local.services_model : [
         for secret in service.secrets : {
           key = "${service_key}-${secret.name}"
           value = (
-            try(secret.bootstrap_type, null) == "hex" ? random_id.service_secret["${service_key}-${secret.name}"].hex
-            : try(secret.bootstrap_type, null) == "base64" ? random_id.service_secret["${service_key}-${secret.name}"].b64_std
-            : contains(["alphanumeric", "string"], try(secret.bootstrap_type, "")) ? random_password.service_secret["${service_key}-${secret.name}"].result
+            secret.bootstrap_type == "hex" ? random_id.service_secret["${service_key}-${secret.name}"].hex
+            : secret.bootstrap_type == "base64" ? random_id.service_secret["${service_key}-${secret.name}"].b64_std
+            : secret.bootstrap_type != null && contains(["alphanumeric", "string"], secret.bootstrap_type) ? random_password.service_secret["${service_key}-${secret.name}"].result
             : null
           )
         }
@@ -42,7 +42,7 @@ locals {
               b2_application_key = b2_application_key.service[service_key].application_key
             } : {},
             service.features.password ? {
-              password      = sensitive(try(local.onepassword_service_existing_fields[service_key].password, random_password.service[service_key].result))
+              password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key]["password"], null), random_password.service[service_key].result))
               password_hash = bcrypt_hash.service[service_key].id
             } : {},
             service.features.pushover ? {
@@ -73,7 +73,7 @@ locals {
 
   services_by_feature = {
     for feature, default_value in local.defaults.services.features : feature => {
-      for service_key, service in local.services_input_targets : service_key => service
+      for service_key, service in local.services_model : service_key => service
       if service.features[feature]
     }
     if can(tobool(default_value))

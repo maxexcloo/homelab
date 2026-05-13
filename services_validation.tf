@@ -13,11 +13,23 @@ locals {
   services_validation_cloudflare_tunnel_missing = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
-      if contains(local.servers_input_keys, target) &&
+      if contains(toset(keys(local.servers_input)), target) &&
       service.routing.expose == "cloudflare" &&
       !local.servers_model[target].features.cloudflare_zero_trust_tunnel
     ]
   ])
+
+  services_validation_compose_invalid_targets = [
+    for service_key, service in local.services_model : service_key
+    if contains(keys(local.services_render_files_compose), service_key) &&
+    !(
+      contains(keys(local.truenas_input_servers), service.target) ||
+      (
+        contains(toset(keys(local.servers_input)), service.target) &&
+        local.servers_model[service.target].features.docker
+      )
+    )
+  ]
 
   services_validation_file_key_mismatches = [
     for service_key, service in local.services_input : "${service_key} -> ${service.identity.name}"
@@ -46,13 +58,24 @@ locals {
   services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
-      if !contains(local.servers_input_keys, target) && target != "fly"
+      if !contains(toset(keys(local.servers_input)), target) && target != "fly"
     ]
   ])
 
   services_validation_pushover_missing_credentials = [
     for service_key, service in local.services_input_targets : service_key
     if service.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")
+  ]
+
+  services_validation_truenas_config_invalid_targets = [
+    for service_key, service in local.services_model : service_key
+    if !contains(keys(local.truenas_input_servers), service.target) &&
+    (
+      service.truenas.catalog_app != null ||
+      length(service.truenas.env) > 0 ||
+      service.truenas.port_key != local.defaults.targets.truenas.port_key ||
+      service.truenas.train != local.defaults.targets.truenas.train
+    )
   ]
 
   services_validation_truenas_missing_template = [
@@ -89,6 +112,16 @@ resource "terraform_data" "services_validation" {
       condition = length(local.services_validation_cloudflare_tunnel_missing) == 0
       error_message = (
         "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", local.services_validation_cloudflare_tunnel_missing)}"
+      )
+    }
+
+    # Custom compose services deploy through either Komodo (Docker-capable
+    # servers) or the TrueNAS custom-app path. Other targets would render files
+    # with no deploy consumer.
+    precondition {
+      condition = length(local.services_validation_compose_invalid_targets) == 0
+      error_message = (
+        "Services with docker-compose.yaml.tftpl must target a Docker-capable server or TrueNAS server: ${join(", ", local.services_validation_compose_invalid_targets)}"
       )
     }
 
@@ -131,6 +164,15 @@ resource "terraform_data" "services_validation" {
       condition = length(local.services_validation_pushover_missing_credentials) == 0
       error_message = (
         "Services with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", local.services_validation_pushover_missing_credentials)}"
+      )
+    }
+
+    # TrueNAS catalog metadata is meaningful only for TrueNAS targets. Custom
+    # compose apps remain portable between TrueNAS and Komodo.
+    precondition {
+      condition = length(local.services_validation_truenas_config_invalid_targets) == 0
+      error_message = (
+        "targets.<key>.truenas settings are only valid for services targeting TrueNAS servers: ${join(", ", local.services_validation_truenas_config_invalid_targets)}"
       )
     }
 

@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  widget:
-    password: ${service.state.secrets.password}
-    type: beszel
-    url: ${service.url}
-    username: ${service.identity.username}
-    version: 2
+  - widgets:
+      - password: ${service.state.secrets.password}
+        type: beszel
+        url: ${service.url}
+        username: ${service.identity.username}
+        version: 2
 features:
   password: true
   resend: true

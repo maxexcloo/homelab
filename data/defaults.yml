@@ -9,13 +9,12 @@ servers:
   parent: ""
   secrets: []
   dashboard:
-    description: null
-    enabled: true
-    href: null
-    icon: null
-    items: []
-    name: null
-    widget: {}
+    - description: null
+      href: null
+      icon: null
+      name: null
+      siteMonitor: null
+      widgets: []
   features:
     b2: false
     cloud_init: false
@@ -72,15 +71,14 @@ services:
   data: {}
   secrets: []
   dashboard:
-    container: null
-    description: null
-    enabled: true
-    group: null
-    href: null
-    icon: null
-    items: []
-    name: null
-    widget: {}
+    - container: null
+      description: null
+      group: null
+      href: null
+      icon: null
+      name: null
+      siteMonitor: null
+      widgets: []
   features:
     b2: false
     monitoring: true
@@ -107,7 +105,7 @@ services:
     ssl: true
     ssl_validation: true
     urls: []
-target_defaults:
+targets:
   fly:
     app_name: null
     cpu_kind: shared

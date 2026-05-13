@@ -26,7 +26,6 @@ provider "oci" {
 provider "restapi" {
   alias                 = "onepassword"
   create_returns_object = true
-  rate_limit            = 1
   uri                   = var.onepassword_connect_url
 
   # 1Password Connect is modeled through the generic REST provider because the

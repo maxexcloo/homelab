@@ -55,21 +55,34 @@ locals {
       server,
       local._servers_model_computed[server_key],
       {
-        fqdn     = regex("^https?://([^/:]+)", local._servers_model_url[server_key])[0]
+        fqdn     = local._servers_model_computed[server_key].fqdn_internal
         key      = server_key
         ssh_keys = data.github_user.default.ssh_keys
         url      = local._servers_model_url[server_key]
 
-        dashboard = {
-          description = coalesce(server.dashboard.description, local._servers_model_computed[server_key].description, server.platform)
-          enabled     = server.dashboard.enabled
-          href        = coalesce(server.dashboard.href, local._servers_model_url[server_key])
-          icon        = coalesce(server.dashboard.icon, local.defaults.types[server.type].icon)
-          items       = server.dashboard.items
-          name        = coalesce(server.dashboard.name, local._servers_model_computed[server_key].description)
-          siteMonitor = coalesce(server.dashboard.href, local._servers_model_url[server_key])
-          widget      = server.dashboard.widget
-        }
+        dashboard = [
+          for dashboard_card in [
+            for input_card in jsondecode(jsonencode(server.dashboard)) : merge(local.defaults.servers.dashboard[0], input_card)
+            ] : {
+            description = coalesce(dashboard_card.description, local._servers_model_computed[server_key].description, server.platform)
+            group       = local.defaults.server_types[server.type].label
+            href        = coalesce(dashboard_card.href, local._servers_model_url[server_key])
+            icon        = coalesce(dashboard_card.icon, local.defaults.server_types[server.type].icon)
+            name        = coalesce(dashboard_card.name, local._servers_model_computed[server_key].description)
+            siteMonitor = coalesce(dashboard_card.siteMonitor, dashboard_card.href, local._servers_model_url[server_key])
+            widgets     = dashboard_card.widgets
+          }
+        ]
+
+        secrets = [
+          for secret in server.secrets : merge(
+            {
+              bootstrap_length = null,
+              bootstrap_type   = null
+            },
+            secret
+          )
+        ]
       }
     )
   }

@@ -3,48 +3,48 @@ locals {
   # secrets use random_password for character and special-character controls.
   random_server_secret_bytes = {
     for secret in flatten([
-      for server_key, server in local.servers_input : [
+      for server_key, server in local.servers_model : [
         for secret in server.secrets : {
           byte_length = secret.bootstrap_length
           key         = "${server_key}-${secret.name}"
         }
-        if contains(["hex", "base64"], try(secret.bootstrap_type, ""))
+        if secret.bootstrap_type != null && contains(["hex", "base64"], secret.bootstrap_type)
       ]
     ]) : secret.key => secret
   }
 
   random_server_secret_passwords = {
     for secret in flatten([
-      for server_key, server in local.servers_input : [
+      for server_key, server in local.servers_model : [
         for secret in server.secrets : {
           key    = "${server_key}-${secret.name}"
           length = secret.bootstrap_length
         }
-        if contains(["string", "alphanumeric"], try(secret.bootstrap_type, ""))
+        if secret.bootstrap_type != null && contains(["string", "alphanumeric"], secret.bootstrap_type)
       ]
     ]) : secret.key => secret
   }
 
   random_service_secret_bytes = {
     for secret in flatten([
-      for service_key, service in local.services_input_targets : [
+      for service_key, service in local.services_model : [
         for secret in service.secrets : {
           byte_length = secret.bootstrap_length
           key         = "${service_key}-${secret.name}"
         }
-        if contains(["hex", "base64"], try(secret.bootstrap_type, ""))
+        if secret.bootstrap_type != null && contains(["hex", "base64"], secret.bootstrap_type)
       ]
     ]) : secret.key => secret
   }
 
   random_service_secret_passwords = {
     for secret in flatten([
-      for service_key, service in local.services_input_targets : [
+      for service_key, service in local.services_model : [
         for secret in service.secrets : {
           key    = "${service_key}-${secret.name}"
           length = secret.bootstrap_length
         }
-        if contains(["string", "alphanumeric"], try(secret.bootstrap_type, ""))
+        if secret.bootstrap_type != null && contains(["string", "alphanumeric"], secret.bootstrap_type)
       ]
     ]) : secret.key => secret
   }
@@ -70,7 +70,7 @@ resource "random_password" "server" {
 }
 
 resource "random_password" "server_komodo_passkey" {
-  for_each = local.servers_input
+  for_each = local.servers_model
 
   length  = 32
   special = false

@@ -88,20 +88,20 @@ locals {
   # tagOwners object for every generated server type tag.
   tailscale_tags = {
     for tag in sort(distinct([
-      for type in values(local.defaults.types) : "tag:${type.tailscale_tag}"
+      for type in values(local.defaults.server_types) : "tag:${type.tailscale_tag}"
     ])) : tag => ["group:admin"]
   }
 
   # autoApprovers object for generated exit node and subnet route approvals.
   tailscale_tags_approvers = {
     exitNode = sort(distinct([
-      for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
+      for type_key, type in local.defaults.server_types : "tag:${type.tailscale_tag}"
       if !contains(local.defaults.tailscale.approver_excludes, type_key)
     ]))
 
     routes = {
       for route in ["0.0.0.0/0", "::/0"] : route => sort(distinct([
-        for type_key, type in local.defaults.types : "tag:${type.tailscale_tag}"
+        for type_key, type in local.defaults.server_types : "tag:${type.tailscale_tag}"
         if !contains(local.defaults.tailscale.approver_excludes, type_key)
       ]))
     }

@@ -36,6 +36,8 @@ Applies consistently to:
 - HCL `environment {}` blocks
 - HCL `templatefile()` argument objects
 
+**Identifier fields first**: Within list-item objects, `name` (or another primary identifier such as `id`) always comes first, before any other fields regardless of alphabetical order. Applies to `secrets:` entries, DNS records, and any other keyed list items.
+
 Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by name; the single-line/multi-line ordering applies inside each local's object value.
 
 ## HCL Standards
@@ -52,8 +54,10 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies to map/object expressions inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes — consistency outweighs the small extra height.
 - **Runtime state shape**: Provider-backed and feature-gated values live under a `state` sub-object on each `server` / `service`, split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), `state.urls` (URL entries). Templates and consumers reach in via the typed sub-object instead of suffix conventions.
 - **Sensitive data**: `sensitive = true` on all outputs containing secrets; secret fields live under `state.secrets`
+- **Consumer data source**: Resources and output locals that iterate over servers or services should reference `local.servers_model` / `local.services_model`, not `local.servers_input` / `local.services_input_targets`. The model layer normalises secrets fields and adds computed attributes; it is the correct source for all downstream consumers. Use input-layer locals only within their own staged file.
 - **Defaults**: Set values in `data/defaults.yml` wherever possible; use `try()` / `coalesce()` only when no applicable default exists
 - **Merge functions**: Use `merge()` for shallow merges of flat objects; reach for `provider::deepmerge::mergo()` only when nested keys must combine recursively (server/service YAML overrides, config blob composition, JSON catalog overlays)
+- **`try()` vs `lookup()`**: Use `try(map[key], fallback)` for provider-controlled or external maps where keys or types are not guaranteed (e.g. 1Password field lookups). Use `lookup(map, key, default)` for internal maps where shape is guaranteed by defaults.
 - **Validation**: Use `terraform_data` preconditions for referential integrity checks
 
 ### Template authoring
@@ -68,7 +72,7 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - **Formatting**: Prettier (run via `mise run fmt`)
 - **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, `@`, DNS TXT content with literal quotes, and JSON-like string values
 - **Defaults are split across two files**, both deep-merged into `local.defaults`:
-  - `data/config.yml` — global parameters (cloudflare, domains, github, onepassword, organization, resend, system, tailscale, types)
+  - `data/config.yml` — global parameters (cloudflare, domains, github, networking, onepassword, organization, resend, server_types, system, tailscale)
   - `data/defaults.yml` — field values merged into every server/service/DNS record
 - Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
 - **Descriptions**: Short, title case

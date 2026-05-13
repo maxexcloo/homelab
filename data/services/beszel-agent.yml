@@ -1,21 +1,21 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  description: ${services.beszel.identity.description}
-  href: ${services.beszel.url}/system/${service.state.secrets.system_id}
-  icon: ${services.beszel.identity.name}
-  name: ${services.beszel.identity.title}
-  widget:
-    password: ${services.beszel.state.secrets.password}
-    systemId: ${service.state.secrets.system_id}
-    type: beszel
-    url: ${services.beszel.url}
-    username: ${defaults.organization.email}
-    version: 2
-    fields:
-      - status
-      - cpu
-      - memory
-      - network
+  - description: ${services.beszel.identity.description}
+    href: ${services.beszel.url}/system/${service.state.secrets.system_id}
+    icon: ${services.beszel.identity.name}
+    name: ${services.beszel.identity.title}
+    widgets:
+      - password: ${services.beszel.state.secrets.password}
+        systemId: ${service.state.secrets.system_id}
+        type: beszel
+        url: ${services.beszel.url}
+        username: ${defaults.organization.email}
+        version: 2
+        fields:
+          - status
+          - cpu
+          - memory
+          - network
 data:
   listen: 45876
   public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
@@ -31,4 +31,7 @@ secrets:
   - name: system_id
   - name: token
 targets:
+  au-haos: {}
+  au-hsp: {}
   au-truenas: {}
+  us-hotdog: {}

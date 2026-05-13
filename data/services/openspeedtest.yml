@@ -9,6 +9,7 @@ routing:
   port: 30116
   scheme: http
 targets:
+  au-hsp: {}
   au-truenas:
     truenas:
       catalog_app: open-speed-test

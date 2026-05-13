@@ -36,7 +36,7 @@
       "description": "Default field values deep-merged into every service definition before processing. Keys mirror the service schema (excluding `targets`, which carries per-deployment data only).",
       "type": "object"
     },
-    "target_defaults": {
+    "targets": {
       "additionalProperties": false,
       "description": "Per-platform defaults merged into each service deployment target during expansion (services_input.tf).",
       "type": "object",

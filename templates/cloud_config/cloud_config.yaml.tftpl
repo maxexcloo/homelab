@@ -16,12 +16,12 @@ runcmd:
   - sysctl --system
   %{~ if server.features.docker ~}
   - curl -fsLS https://get.docker.com | sh
-  - curl -fsLSo /usr/local/bin/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
+  - curl -fsLS -o /usr/local/bin/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
   - chmod +x /usr/local/bin/sops
-  - docker compose -f /etc/komodo/periphery.compose.yaml up -d
+  - docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d
   %{~ endif ~}
   %{~ if server.features.cloudflare_zero_trust_tunnel ~}
-  - curl -fsLS https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb -o /tmp/cloudflared.deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
+  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
   - cloudflared service install ${server.state.secrets.cloudflare_tunnel_token}
   %{~ endif ~}
   %{~ if server.features.tailscale ~}

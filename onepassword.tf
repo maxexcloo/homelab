@@ -169,7 +169,7 @@ locals {
   onepassword_server_manual_secret_names = {
     for server_key, server in local.servers : server_key => toset([
       for secret in server.secrets : secret.name
-      if try(secret.bootstrap_type, null) == null
+      if secret.bootstrap_type == null
     ])
   }
 
@@ -252,13 +252,24 @@ locals {
         local.onepassword_service_item_fields[service_key][label]
       ]
 
-      urls = [
-        for url in values(service.urls) : {
-          href    = url.href
-          label   = url.label
-          primary = url.href == service.url
-        }
-      ]
+      urls = concat(
+        [
+          for url in values(service.urls) : {
+            href    = url.href
+            label   = url.label
+            primary = url.href == service.url
+          }
+        ],
+        [
+          for dashboard_card in local.services_render_context[service_key].service.dashboard : {
+            href    = dashboard_card.href
+            label   = dashboard_card.name
+            primary = dashboard_card.href == service.url
+          }
+          if dashboard_card.href != null && dashboard_card.href != ""
+          && !contains([for url in values(service.urls) : url.href], dashboard_card.href)
+        ],
+      )
 
       vault = {
         id = local.defaults.onepassword.vaults.services.id
@@ -273,7 +284,7 @@ locals {
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
-    if anytrue([for feature_enabled in values(service.features) : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.secrets) > 0 || service.routing.scheme != null
+    if anytrue([for feature_enabled in values(service.features) : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.secrets) > 0 || length(service.dashboard) > 0 || service.routing.scheme != null
   }
 
   # Secrets without a bootstrap_type are manually filled by an operator in
@@ -281,7 +292,7 @@ locals {
   onepassword_service_manual_secret_names = {
     for service_key, service in local.services : service_key => toset([
       for secret in service.secrets : secret.name
-      if try(secret.bootstrap_type, null) == null
+      if secret.bootstrap_type == null
     ])
     if contains(keys(local.onepassword_service_items), service_key)
   }

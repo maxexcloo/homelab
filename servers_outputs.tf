@@ -1,13 +1,13 @@
 locals {
   _servers_outputs_secret_bootstrap = {
     for entry in flatten([
-      for server_key, server in local.servers_input : [
+      for server_key, server in local.servers_model : [
         for secret in server.secrets : {
           key = "${server_key}-${secret.name}"
           value = (
-            try(secret.bootstrap_type, null) == "hex" ? random_id.server_secret["${server_key}-${secret.name}"].hex
-            : try(secret.bootstrap_type, null) == "base64" ? random_id.server_secret["${server_key}-${secret.name}"].b64_std
-            : contains(["alphanumeric", "string"], try(secret.bootstrap_type, "")) ? random_password.server_secret["${server_key}-${secret.name}"].result
+            secret.bootstrap_type == "hex" ? random_id.server_secret["${server_key}-${secret.name}"].hex
+            : secret.bootstrap_type == "base64" ? random_id.server_secret["${server_key}-${secret.name}"].b64_std
+            : secret.bootstrap_type != null && contains(["alphanumeric", "string"], secret.bootstrap_type) ? random_password.server_secret["${server_key}-${secret.name}"].result
             : null
           )
         }
@@ -58,7 +58,7 @@ locals {
               cloudflare_tunnel_token      = module.cloudflare_tunnel[server_key].tunnel_token
             } : {},
             server.features.password ? {
-              password      = sensitive(try(local.onepassword_server_existing_fields[server_key].password, random_password.server[server_key].result))
+              password      = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key]["password"], null), random_password.server[server_key].result))
               password_hash = bcrypt_hash.server[server_key].id
             } : {},
             server.features.pushover ? {
@@ -93,7 +93,7 @@ locals {
 
   servers_by_feature = {
     for feature in keys(local.defaults.servers.features) : feature => {
-      for server_key, server in local.servers_input : server_key => server
+      for server_key, server in local.servers_model : server_key => server
       if server.features[feature]
     }
   }

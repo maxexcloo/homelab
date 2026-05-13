@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schemas/service.json
-dashboard:
-  enabled: false
+dashboard: []
 data:
   bookmarks:
     - Providers:
@@ -44,6 +43,19 @@ data:
             - description: Network
               href: https://unifi.ui.com
               icon: si-ubiquiti-#ffffff
+  groups:
+    Applications:
+      columns: 4
+      style: row
+    Home Automation:
+      columns: 4
+      style: row
+    Infrastructure:
+      columns: 2
+      style: row
+    Media:
+      columns: 4
+      style: row
   settings:
     cardBlur: xs
     color: slate

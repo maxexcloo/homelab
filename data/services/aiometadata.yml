@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  icon: sh-aiostreams
+  - icon: sh-aiostreams
 features:
   password: true
 identity:

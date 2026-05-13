@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  widget:
-    type: ${service.identity.service}
-    url: ${service.url}
+  - widgets:
+      - type: ${service.identity.service}
+        url: ${service.url}
 features:
   password: true
 identity:
@@ -17,17 +17,17 @@ routing:
   port: 30061
   scheme: http
 secrets:
-  - bootstrap_length: 32
+  - name: auth_secret_key
+    bootstrap_length: 32
     bootstrap_type: alphanumeric
-    name: auth_secret_key
-  - bootstrap_length: 32
+  - name: db_password
+    bootstrap_length: 32
     bootstrap_type: alphanumeric
-    name: db_password
   - name: igdb_client_id
   - name: igdb_client_secret
-  - bootstrap_length: 32
+  - name: redis_password
+    bootstrap_length: 32
     bootstrap_type: alphanumeric
-    name: redis_password
   - name: screenscraper_password
   - name: steamgriddb_api_key
 targets:

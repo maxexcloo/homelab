@@ -1,30 +1,4 @@
 locals {
-  # Pre-render context with imported services overlaid. References local.services
-  # rather than _services_render_services so dashboard and data strings can be
-  # template-rendered from this context without circularity.
-  _services_render_base_context = {
-    for service_key, service in local.services : service_key => {
-      defaults = local.defaults
-      server   = try(local.servers[service.target], null)
-      servers  = local.servers
-      service  = service
-
-      services = merge(
-        {
-          for rendered_service_key, rendered_service in local.services : rendered_service_key => {
-            for field_name, field_value in rendered_service : field_name => field_value
-            if field_name != "state"
-          }
-        },
-        {
-          for alias, real_key in local.services_model_imports[service_key] :
-          alias => local.services[real_key]
-          if contains(keys(local.services), real_key)
-        },
-      )
-    }
-  }
-
   # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
   # Other files use filebase64(), so static and binary assets share one path.
   _services_render_file_inputs = flatten([
@@ -53,44 +27,54 @@ locals {
     if fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
   }
 
-  # Render-time service inventory: dashboard/data strings template-rendered,
-  # routing_labels merged in from services_render_custom_service.
-  _services_render_services = {
-    for service_key, service in local.services : service_key => merge(
-      service,
-      jsondecode(
-        templatestring(
-          jsonencode({
-            dashboard = service.dashboard
-            data      = service.data
-          }),
-          local._services_render_base_context[service_key],
-        ),
-      ),
-      lookup(local.services_render_custom_service, service_key, {}),
-    )
+  _services_render_rendered_services_no_state = {
+    for service_key, service in local.services_render_services : service_key => {
+      for k, v in service : k => v if k != "state"
+    }
+  }
+
+  _services_render_services_no_state = {
+    for service_key, service in local.services : service_key => {
+      for k, v in service : k => v if k != "state"
+    }
+  }
+
+  # Pre-render context with imported services overlaid. References local.services
+  # rather than services_render_services so dashboard and data strings can be
+  # template-rendered from this context without circularity.
+  services_render_base_context = {
+    for service_key, service in local.services : service_key => {
+      defaults = local.defaults
+      server   = try(local.servers[service.target], null)
+      servers  = local.servers
+      service  = service
+
+      services = merge(
+        local._services_render_services_no_state,
+        {
+          for alias, real_key in local.services_model_imports[service_key] :
+          alias => local.services[real_key]
+          if contains(keys(local.services), real_key)
+        },
+      )
+    }
   }
 
   # Final template context for compose/sidecar renders. Imported service aliases
   # are overlaid here so templates can reference `services.<alias>`.
   services_render_context = {
     for service_key, service in local.services : service_key => merge(
-      local._services_render_base_context[service_key],
+      local.services_render_base_context[service_key],
       {
         custom  = lookup(local.services_render_custom_context, service_key, {})
-        service = local._services_render_services[service_key]
+        service = local.services_render_services[service_key]
 
         services = merge(
-          {
-            for rendered_service_key, rendered_service in local._services_render_services : rendered_service_key => {
-              for field_name, field_value in rendered_service : field_name => field_value
-              if field_name != "state"
-            }
-          },
+          local._services_render_rendered_services_no_state,
           {
             for alias, real_key in local.services_model_imports[service_key] :
-            alias => local._services_render_services[real_key]
-            if contains(keys(local._services_render_services), real_key)
+            alias => local.services_render_services[real_key]
+            if contains(keys(local.services_render_services), real_key)
           },
         )
       },
@@ -106,10 +90,10 @@ locals {
           services = {
             for compose_service_key, compose_service in compose.services : compose_service_key => merge(
               compose_service,
-              compose_service_key == local._services_render_services[service_key].routing.container && length(local._services_render_services[service_key].routing_labels) > 0 ? {
+              compose_service_key == local.services_render_services[service_key].routing.container && length(local.services_render_services[service_key].routing_labels) > 0 ? {
                 labels = merge(
-                  try(compose_service.labels, {}),
-                  local._services_render_services[service_key].routing_labels,
+                  lookup(compose_service, "labels", {}),
+                  local.services_render_services[service_key].routing_labels,
                 )
               } : {},
             )
@@ -150,6 +134,24 @@ locals {
           )
         )
       }
+    )
+  }
+
+  # Render-time service inventory: dashboard/data strings template-rendered,
+  # routing_labels merged in from services_render_custom_service.
+  services_render_services = {
+    for service_key, service in local.services : service_key => merge(
+      service,
+      jsondecode(
+        templatestring(
+          jsonencode({
+            dashboard = service.dashboard
+            data      = service.data
+          }),
+          local.services_render_base_context[service_key],
+        ),
+      ),
+      lookup(local.services_render_custom_service, service_key, {}),
     )
   }
 }

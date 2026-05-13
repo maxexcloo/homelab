@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  icon: sh-aiostreams
+  - icon: sh-aiostreams
 features:
   password: true
 identity:
@@ -13,9 +13,9 @@ routing:
   port: 30375
   scheme: http
 secrets:
-  - bootstrap_length: 32
+  - name: secret_key
+    bootstrap_length: 32
     bootstrap_type: hex
-    name: secret_key
 targets:
   au-truenas:
     truenas: {}

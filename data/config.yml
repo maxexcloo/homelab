@@ -11,16 +11,6 @@ github:
     fly: fly
     komodo: komodo
     truenas: truenas
-groups:
-  Applications:
-    columns: 4
-    style: row
-  Infrastructure:
-    columns: 2
-    style: row
-  Media:
-    columns: 4
-    style: row
 networking:
   allowlists:
     internal:
@@ -48,19 +38,7 @@ resend:
   host: smtp.resend.com
   port: 465
   username: resend
-system:
-  locale: en_AU
-  shell: /bin/bash
-  timezone: Australia/Sydney
-tailscale:
-  admin_identities:
-    - max@excloo.com
-    - maxexcloo@passkey
-  approver_excludes:
-    - appliance
-    - cicd
-    - ephemeral
-types:
+server_types:
   appliance:
     icon: mdi-devices-#ffffff
     label: Appliances
@@ -85,3 +63,15 @@ types:
     icon: mdi-cloud-#ffffff
     label: VMs
     tailscale_tag: vm
+system:
+  locale: en_AU
+  shell: /bin/bash
+  timezone: Australia/Sydney
+tailscale:
+  admin_identities:
+    - max@excloo.com
+    - maxexcloo@passkey
+  approver_excludes:
+    - appliance
+    - cicd
+    - ephemeral

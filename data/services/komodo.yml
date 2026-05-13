@@ -1,10 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  widget:
-    key: ${service.state.secrets.homepage_widget_key}
-    secret: ${service.state.secrets.homepage_widget_secret}
-    type: komodo
-    url: ${service.url}
+  - widgets:
+      - key: ${service.state.secrets.homepage_widget_key}
+        secret: ${service.state.secrets.homepage_widget_secret}
+        showSummary: true
+        type: komodo
+        url: ${service.url}
 features:
   password: true
 identity:
@@ -19,14 +20,14 @@ routing:
   port: 9120
   scheme: http
 secrets:
-  - bootstrap_length: 32
+  - name: db_password
+    bootstrap_length: 32
     bootstrap_type: alphanumeric
-    name: db_password
   - name: homepage_widget_key
   - name: homepage_widget_secret
-  - bootstrap_length: 32
+  - name: webhook_secret
+    bootstrap_length: 32
     bootstrap_type: hex
-    name: webhook_secret
 targets:
   au-truenas:
     truenas:
@@ -34,4 +35,3 @@ targets:
       env:
         KOMODO_HOST: ${service.url}
         KOMODO_WEBHOOK_SECRET: ${service.state.secrets.webhook_secret}
-        SOPS_AGE_KEY: ${server.state.secrets.age_secret_key}

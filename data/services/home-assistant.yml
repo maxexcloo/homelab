@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - description: ESP Device Builder
+    href: ${server.url}/5c53de3b_esphome
+    icon: esphome
+    name: ESPHome
+    widgets:
+      - password: ${server.state.secrets.password}
+        type: esphome
+        url: http://${server.fqdn}:6052
+        username: ${server.identity.username}
+  - href: ${server.url}
+    icon: homeassistant
+    widgets:
+      - key: ${service.state.secrets.homepage_widget_key}
+        type: homeassistant
+        url: ${server.url}
+  - description: Room Presence
+    href: ${server.url}/f32ea98b_espresense-companion
+    icon: espressif
+    name: ESPresense
+  - description: Matter Bridge
+    href: ${server.url}/3fd9e6b0_hamh
+    icon: sh-home-assistant-matter-hub
+    name: Home Assistant Matter Hub
+  - description: Browser IDE
+    href: ${server.url}/a0d7b954_vscode
+    icon: visual-studio-code
+    name: Studio Code Server
+  - description: Zigbee Coordinator
+    href: ${server.url}/45df7312_zigbee2mqtt
+    icon: zigbee2mqtt
+    name: Zigbee2MQTT
+identity:
+  description: Smart Home
+  group: Home Automation
+  name: home-assistant
+  service: home-assistant
+  title: Home Assistant
+secrets:
+  - name: homepage_widget_key
+targets:
+  au-haos: {}

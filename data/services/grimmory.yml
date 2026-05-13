@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  icon: sh-grimmory
-  widget:
-    password: ${service.state.secrets.password}
-    type: booklore
-    url: ${service.url}
-    username: ${service.identity.username}
+  - icon: sh-grimmory
+    widgets:
+      - password: ${service.state.secrets.password}
+        type: booklore
+        url: ${service.url}
+        username: ${service.identity.username}
 features:
   password: true
   resend: true
@@ -23,12 +23,12 @@ routing:
   urls:
     - books.excloo.com
 secrets:
-  - bootstrap_length: 32
+  - name: db_password
+    bootstrap_length: 32
     bootstrap_type: alphanumeric
-    name: db_password
-  - bootstrap_length: 32
+  - name: mysql_root_password
+    bootstrap_length: 32
     bootstrap_type: alphanumeric
-    name: mysql_root_password
 targets:
   au-truenas:
     truenas: {}

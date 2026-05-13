@@ -67,28 +67,6 @@
         }
       }
     },
-    "groups": {
-      "description": "Homepage layout settings keyed by group name. Groups not listed use 2 columns.",
-      "type": "object",
-      "additionalProperties": {
-        "additionalProperties": false,
-        "description": "Layout settings for a single Homepage service group.",
-        "required": ["columns", "style"],
-        "type": "object",
-        "properties": {
-          "columns": {
-            "description": "Column count in the Homepage layout (2 or 4).",
-            "enum": [2, 4],
-            "type": "integer"
-          },
-          "style": {
-            "description": "Card layout direction for this group (row or column).",
-            "enum": ["column", "row"],
-            "type": "string"
-          }
-        }
-      }
-    },
     "networking": {
       "additionalProperties": false,
       "description": "Network allowlists referenced by services for IP allowlist middleware.",
@@ -202,6 +180,20 @@
         }
       }
     },
+    "server_types": {
+      "description": "Metadata for each valid server type, including display labels, icons, and Tailscale tag mappings.",
+      "type": "object",
+      "additionalProperties": {
+        "additionalProperties": false,
+        "description": "Metadata for a single server type.",
+        "type": "object",
+        "properties": {
+          "icon": { "type": "string" },
+          "label": { "type": "string" },
+          "tailscale_tag": { "type": "string" }
+        }
+      }
+    },
     "system": {
       "additionalProperties": false,
       "description": "Default OS-level settings injected into cloud-init for provisioned servers.",
@@ -235,20 +227,6 @@
           "description": "Type keys excluded from auto-approving exit nodes and subnet routes.",
           "type": "array",
           "items": { "type": "string" }
-        }
-      }
-    },
-    "types": {
-      "description": "Metadata for each valid server type, including display labels, icons, and Tailscale tag mappings.",
-      "type": "object",
-      "additionalProperties": {
-        "additionalProperties": false,
-        "description": "Metadata for a single server type.",
-        "type": "object",
-        "properties": {
-          "icon": { "type": "string" },
-          "label": { "type": "string" },
-          "tailscale_tag": { "type": "string" }
         }
       }
     }

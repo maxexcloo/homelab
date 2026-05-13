@@ -159,7 +159,7 @@ locals {
       wildcard = false
       zone     = local.defaults.domains.external
     }
-    if contains(local.servers_input_keys, service.target) &&
+    if contains(toset(keys(local.servers_input)), service.target) &&
     local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
     service.routing.expose == "cloudflare" &&
     length(compact([for url in service.routing.urls : lookup(local.dns_render_zones_urls, url, null)])) == 0
@@ -206,7 +206,7 @@ locals {
       }
       if local.dns_render_zones_urls[url] != null
     ]
-    if contains(local.servers_input_keys, service.target)
+    if contains(toset(keys(local.servers_input)), service.target)
   ])...)
 
   # Wildcards follow each eligible A/AAAA/CNAME record unless the source record
@@ -236,7 +236,7 @@ locals {
 
   dns_render_zones_urls = {
     for url, matches in local._dns_render_zones_matching : url => try(
-      [for match in matches : match.name if match.length == max([for candidate in matches : candidate.length]...)][0],
+      [for match in matches : match.name if match.length == max(matches[*].length...)][0],
       null
     )
   }

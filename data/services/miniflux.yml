@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  widget:
-    key: ${service.state.secrets.homepage_widget_key}
-    type: ${service.identity.service}
-    url: ${service.url}
+  - widgets:
+      - key: ${service.state.secrets.homepage_widget_key}
+        type: ${service.identity.service}
+        url: ${service.url}
 features:
   password: true
 identity:
@@ -17,9 +17,9 @@ routing:
   port: 30285
   scheme: http
 secrets:
-  - bootstrap_length: 32
+  - name: db_password
+    bootstrap_length: 32
     bootstrap_type: alphanumeric
-    name: db_password
   - name: homepage_widget_key
 targets:
   au-truenas:

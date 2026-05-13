@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  href: https://traefik.${server.fqdn}
+  - href: https://traefik.${server.fqdn}
 identity:
   description: Reverse Proxy
   name: traefik
@@ -13,4 +13,5 @@ routing:
     traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}
     traefik.http.routers.traefik.service: api@internal
 targets:
+  au-hsp: {}
   au-truenas: {}

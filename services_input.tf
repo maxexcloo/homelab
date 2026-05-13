@@ -1,16 +1,16 @@
 locals {
-  # Merge schema defaults into each source service before expanding targets.
   services_input = {
-    for service_key, service in {
-      for file_path in fileset(path.module, "data/services/*.yml") :
-      trimsuffix(basename(file_path), ".yml") => yamldecode(file("${path.module}/${file_path}"))
-    } : service_key => provider::deepmerge::mergo(local.defaults.services, service)
+    for file_path in fileset(path.module, "data/services/*.yml") :
+    trimsuffix(basename(file_path), ".yml") => provider::deepmerge::mergo(
+      local.defaults.services,
+      yamldecode(file("${path.module}/${file_path}")),
+    )
   }
 
   # Each entry in `targets` becomes its own stack, so target-specific secrets
   # and rendered files have stable addresses like service-target. Per-target
   # data, features, and platform sections are flattened to the top level with
-  # target_defaults merged in (target wins).
+  # target defaults merged in (target wins).
   services_input_targets = merge([
     for service_key, service in local.services_input : {
       for target_key, target_config in service.targets : "${service_key}-${target_key}" => merge(
@@ -19,31 +19,30 @@ locals {
           if key != "targets"
         },
         {
-          target = target_key
+          secrets = concat(service.secrets, lookup(target_config, "secrets", []))
+          target  = target_key
 
           # can(keys()) detects whether a value is an object; non-objects
           # (scalars, arrays, null) replace instead of merging.
           data = (
-            !can(target_config.data) ? service.data
-            : can(keys(service.data)) && can(keys(target_config.data)) ? provider::deepmerge::mergo(service.data, target_config.data)
-            : target_config.data
+            can(keys(service.data)) && can(keys(target_config.data))
+            ? provider::deepmerge::mergo(service.data, target_config.data)
+            : try(target_config.data, service.data)
           )
 
           features = merge(
             service.features,
-            try(target_config.features, {}),
+            lookup(target_config, "features", {}),
           )
 
-          secrets = concat(service.secrets, try(target_config.secrets, []))
-
           fly = provider::deepmerge::mergo(
-            local.defaults.target_defaults.fly,
-            try(target_config.fly, {}),
+            local.defaults.targets.fly,
+            lookup(target_config, "fly", {}),
           )
 
           truenas = provider::deepmerge::mergo(
-            local.defaults.target_defaults.truenas,
-            try(target_config.truenas, {}),
+            local.defaults.targets.truenas,
+            lookup(target_config, "truenas", {}),
           )
         },
       )

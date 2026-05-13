@@ -24,7 +24,7 @@ locals {
 
   servers_validation_invalid_types = [
     for server_key, server in local.servers_input : server_key
-    if !contains(keys(local.defaults.types), server.type)
+    if !contains(keys(local.defaults.server_types), server.type)
   ]
 
   servers_validation_key_mismatches = [

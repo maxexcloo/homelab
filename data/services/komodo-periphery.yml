@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - description: ${services.komodo.identity.description}
+    href: ${services.komodo.url}/servers/${server.key}
+    icon: ${services.komodo.identity.name}
+    name: Komodo Periphery
+    widgets:
+      - key: ${services.komodo.state.secrets.homepage_widget_key}
+        secret: ${services.komodo.state.secrets.homepage_widget_secret}
+        showStacks: true
+        type: komodo
+        url: ${services.komodo.url}
+identity:
+  description: Container Agent
+  name: komodo-periphery
+  service: komodo-periphery
+  title: Komodo Periphery
+imports:
+  services:
+    komodo: komodo-au-truenas
+targets:
+  au-hsp: {}
+  au-truenas: {}
