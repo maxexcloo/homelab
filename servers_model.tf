@@ -68,7 +68,7 @@ locals {
             group       = local.defaults.server_types[server.type].label
             href        = coalesce(dashboard_card.href, local._servers_model_url[server_key])
             icon        = coalesce(dashboard_card.icon, local.defaults.server_types[server.type].icon)
-            name        = coalesce(dashboard_card.name, local._servers_model_computed[server_key].description)
+            name        = coalesce(dashboard_card.name, "${server.identity.title} (${upper(server.identity.region)})")
             siteMonitor = coalesce(dashboard_card.siteMonitor, dashboard_card.href, local._servers_model_url[server_key])
             widgets     = dashboard_card.widgets
           }
