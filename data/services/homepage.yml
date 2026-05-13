@@ -51,9 +51,8 @@ data:
     hideVersion: true
     title: ${service.identity.title}
     background:
-      brightness: 50
-      image: /images/background-desat.jpg
-      opacity: 80
+      brightness: 80
+      image: /images/background.jpg
   widgets:
     - search:
         provider: google
