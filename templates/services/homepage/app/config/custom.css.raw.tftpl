@@ -1,28 +1,48 @@
 :root {
+  --homepage-card-bg: rgba(0, 0, 0, 0.20);
   --homepage-card-radius: 15px;
-  --homepage-panel-background: rgba(0, 0, 0, 0.60);
 }
 
 html,
 body {
-  -webkit-font-smoothing: auto;
-  font-size: 120%;
-  text-rendering: auto;
+  -webkit-font-smoothing: auto !important;
+  font-size: 120% !important;
+  text-rendering: auto !important;
+}
+
+.rounded,
+.rounded-md {
+  border-radius: var(--homepage-card-radius) !important;
 }
 
 .bookmark,
 .service-card {
-  border-radius: var(--homepage-card-radius) !important;
+  background: var(--homepage-card-bg) !important;
+}
+
+.service-card {
+  overflow: hidden !important;
 }
 
 .service-block {
-  background: var(--homepage-panel-background) !important;
-  border-radius: var(--homepage-card-radius) !important;
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.4),
-    0 1px 4px rgba(0, 0, 0, 0.3);
+  background: transparent !important;
 }
 
 .service-container {
-  background: transparent !important;
+  background: var(--homepage-card-bg) !important;
+}
+
+.service-card > :nth-child(2).service-container {
+  border-top-left-radius: var(--homepage-card-radius);
+  border-top-right-radius: var(--homepage-card-radius);
+}
+
+.service-card > :last-child.service-container {
+  border-bottom-left-radius: var(--homepage-card-radius);
+  border-bottom-right-radius: var(--homepage-card-radius);
+}
+
+.service-card > *:nth-child(n + 3) > div {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
