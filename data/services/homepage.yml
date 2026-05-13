@@ -51,7 +51,7 @@ data:
     hideVersion: true
     title: ${service.identity.title}
     background:
-      brightness: 80
+      brightness: 50
       image: /images/background.jpg
   widgets:
     - search:
