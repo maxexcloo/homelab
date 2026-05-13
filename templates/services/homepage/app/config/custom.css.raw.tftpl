@@ -1,5 +1,5 @@
 :root {
-  --homepage-card-bg: rgba(0, 0, 0, 0.10);
+  --homepage-card-bg: rgba(0, 0, 0, 0.15);
   --homepage-card-radius: 15px;
   --tw-shadow-color: none;
 }
@@ -19,6 +19,11 @@ body {
 .bookmark > a,
 .service-card {
   background: var(--homepage-card-bg) !important;
+  box-shadow: none !important;
+}
+
+.service-card {
+  transition: none !important;
 }
 
 .service-block {
@@ -27,19 +32,29 @@ body {
 
 .service-container {
   background: var(--homepage-card-bg) !important;
-}
-
-.service-card > :nth-child(2).service-container {
-  border-top-left-radius: var(--homepage-card-radius);
-  border-top-right-radius: var(--homepage-card-radius);
-}
-
-.service-card > :last-child.service-container {
-  border-bottom-left-radius: var(--homepage-card-radius);
-  border-bottom-right-radius: var(--homepage-card-radius);
+  border-radius: var(--homepage-card-radius);
 }
 
 .service-card > *:nth-child(n + 3) > div {
   margin-top: 0 !important;
   padding-top: 0 !important;
+}
+
+.service-title {
+  position: relative;
+}
+
+.service-tags {
+  bottom: 0;
+}
+
+.site-monitor-status {
+  height: 100%;
+  padding: 8px 4px !important;
+}
+
+.site-monitor-status > .rounded-full {
+  border-radius: var(--homepage-card-radius) !important;
+  height: 100% !important;
+  width: 6px !important;
 }

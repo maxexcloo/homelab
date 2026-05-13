@@ -46,10 +46,12 @@ data:
               icon: si-ubiquiti-#ffffff
   settings:
     cardBlur: xs
+    color: slate
     disableCollapse: true
     headerStyle: clean
     hideVersion: true
     statusStyle: dot
+    theme: dark
     title: ${service.identity.title}
     background:
       brightness: 50
