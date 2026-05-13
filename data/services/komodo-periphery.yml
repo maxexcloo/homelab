@@ -17,7 +17,7 @@ identity:
   title: Komodo Periphery
 imports:
   services:
-    komodo: komodo-au-truenas
+    komodo: auto
 targets:
   au-hsp: {}
   au-truenas: {}

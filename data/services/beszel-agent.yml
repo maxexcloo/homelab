@@ -26,9 +26,12 @@ identity:
   title: Beszel Agent
 imports:
   services:
-    beszel: beszel-${service.target}
+    beszel: auto
 secrets:
   - name: system_id
   - name: token
 targets:
+  au-haos: {}
+  au-hsp: {}
   au-truenas: {}
+  us-hotdog: {}

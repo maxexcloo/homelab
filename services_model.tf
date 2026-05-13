@@ -125,12 +125,22 @@ locals {
 
   services_model_imports = {
     for service_key, service in local.services_model : service_key => {
-      for import_alias, service_ref in service.imports.services :
-      import_alias => templatestring(
-        service_ref,
-        {
-          service = service
-        },
+      for import_alias, service_ref in {
+        for import_alias, import_ref in service.imports.services : import_alias => templatestring(
+          import_ref,
+          {
+            service = service
+          },
+        )
+      } :
+      # "auto" resolves the import alias to a same-named service when that
+      # service has exactly one target. Ambiguous or missing targets fall
+      # through to services_validation_invalid_imports.
+      import_alias => (
+        contains(keys(local.services_input), service_ref == "auto" ? import_alias : service_ref) &&
+        length(local.services_input[service_ref == "auto" ? import_alias : service_ref].targets) == 1
+        ? "${service_ref == "auto" ? import_alias : service_ref}-${keys(local.services_input[service_ref == "auto" ? import_alias : service_ref].targets)[0]}"
+        : service_ref == "auto" ? import_alias : service_ref
       )
     }
   }

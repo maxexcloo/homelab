@@ -325,7 +325,7 @@
       "type": "object",
       "properties": {
         "services": {
-          "description": "Map of local alias to target-expanded service key. Values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. Example: {\"beszel\": \"beszel-${service.target}\"} lets templates reference ${services.beszel.routing.port}.",
+          "description": "Map of local alias to imported service reference. Use \"auto\" to resolve the alias to a same-named service with exactly one target, e.g. {\"beszel\": \"auto\"} resolves to beszel-au-truenas when Beszel has only that target. Use an explicit target-expanded key or template when the target is ambiguous, e.g. {\"beszel\": \"beszel-${service.target}\"}. Imported services are exposed to templates as services.{alias}.",
           "type": "object",
           "additionalProperties": {
             "pattern": "^[a-z0-9][a-z0-9-]*(\\$\\{[^}]+\\}[a-z0-9-]*)*$",

@@ -12,7 +12,7 @@ identity:
   title: Tailscale
 imports:
   services:
-    homepage: homepage-au-truenas
+    homepage: auto
 targets:
   au-haos: {}
   au-hsp: {}
