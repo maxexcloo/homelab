@@ -5,7 +5,6 @@ dashboard:
     group: ${server.dashboard[0].name}
     href: https://login.tailscale.com/admin/machines/${server.state.urls.tailscale_ipv4}
     icon: ${service.identity.name}
-    siteMonitor: null
     widgets:
       - deviceid: ${server.state.fields.tailscale_device_id}
         key: ${services.homepage.state.secrets.tailscale_homepage_widget_key}

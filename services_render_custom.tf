@@ -24,14 +24,8 @@ locals {
         sort  = "1:${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${server_key}:${card_index}"
 
         card = {
-          for field, value in yamldecode(templatestring(yamlencode({
-            description = dashboard_card.description
-            href        = dashboard_card.href
-            icon        = dashboard_card.icon
-            siteMonitor = dashboard_card.siteMonitor
-            widgets     = length(try(dashboard_card.widgets, [])) > 0 ? dashboard_card.widgets : null
-          }), { server = server })) : field => value
-          if value != null
+          for field, value in yamldecode(templatestring(yamlencode(dashboard_card), { server = server })) : field => value
+          if value != null && !contains(["group", "name"], field)
         }
       }
     ]
@@ -64,16 +58,8 @@ locals {
         sort  = "0:${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${service_key}:${card_index}"
 
         card = {
-          for field, value in {
-            container   = try(dashboard_card.container, null)
-            description = dashboard_card.description != "" ? dashboard_card.description : null
-            href        = dashboard_card.href
-            icon        = dashboard_card.icon
-            server      = try(dashboard_card.container, null) != null ? service.target : null
-            siteMonitor = dashboard_card.siteMonitor
-            widgets     = length(try(dashboard_card.widgets, [])) > 0 ? dashboard_card.widgets : null
-          } : field => value
-          if value != null
+          for field, value in dashboard_card : field => value
+          if value != null && !contains(["group", "name"], field)
         }
       }
       if service.identity.name != "homepage" && dashboard_card.name != ""

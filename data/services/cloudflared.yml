@@ -5,7 +5,6 @@ dashboard:
     group: ${server.dashboard[0].name}
     href: https://dash.cloudflare.com/${server.state.fields.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.state.fields.cloudflare_tunnel_id}/edit?tab=overview
     icon: cloudflare
-    siteMonitor: null
     widgets:
       - accountid: ${server.state.fields.cloudflare_account_id}
         key: ${server.state.secrets.cloudflare_tunnel_read_token}

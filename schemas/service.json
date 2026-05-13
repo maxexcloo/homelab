@@ -7,55 +7,10 @@
   "type": "object",
   "definitions": {
     "dashboard": {
-      "additionalProperties": false,
-      "description": "A Homepage service card rendered for this service. Omit dashboard or set it to [] to render none.",
-      "required": [
-        "description",
-        "group",
-        "href",
-        "icon",
-        "name",
-        "siteMonitor"
-      ],
+      "description": "Homepage service card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
+      "properties": {},
       "type": "object",
-      "properties": {
-        "container": {
-          "description": "Docker container name to link for Docker integration. When set, Homepage renders server and container fields on the service card.",
-          "type": ["string", "null"]
-        },
-        "description": {
-          "description": "Card description. Supports template interpolation.",
-          "type": ["string", "null"]
-        },
-        "group": {
-          "description": "Dashboard group. Supports template interpolation.",
-          "type": ["string", "null"]
-        },
-        "href": {
-          "description": "Card link URL. Supports template interpolation.",
-          "type": ["string", "null"]
-        },
-        "icon": {
-          "description": "Homepage icon. Supports template interpolation.",
-          "type": ["string", "null"]
-        },
-        "name": {
-          "description": "Card display name. Supports template interpolation.",
-          "type": "string"
-        },
-        "siteMonitor": {
-          "description": "URL for Homepage site monitoring. Supports template interpolation.",
-          "type": ["string", "null"]
-        },
-        "widgets": {
-          "description": "Homepage widget configurations rendered as the multi-widget widgets list. Supports template interpolation.",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": { "$ref": "#/definitions/json_data" }
-          }
-        }
-      }
+      "additionalProperties": { "$ref": "#/definitions/json_data" }
     },
     "features_overlay": {
       "additionalProperties": false,
@@ -250,7 +205,7 @@
   },
   "properties": {
     "dashboard": {
-      "description": "Homepage dashboard cards for this service. Omit to generate one default card; [] renders no cards.",
+      "description": "Homepage dashboard cards for this service. Omit or set [] to render no cards. Card objects are passed through to Homepage after template interpolation.",
       "type": "array",
       "items": { "$ref": "#/definitions/dashboard" }
     },
