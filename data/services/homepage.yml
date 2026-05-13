@@ -49,6 +49,7 @@ data:
     disableCollapse: true
     headerStyle: clean
     hideVersion: true
+    statusStyle: dot
     title: ${service.identity.title}
     background:
       brightness: 50
