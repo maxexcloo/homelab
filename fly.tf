@@ -2,7 +2,7 @@ locals {
   # Expanded services whose deployment target is Fly.io.
   fly_input_services = {
     for service_key, service in local.services_model : service_key => service
-    if service.target == "fly"
+    if service.deploy && service.target == "fly"
   }
 
   # GitHub files written to the Fly deployment repository. Four categories:

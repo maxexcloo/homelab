@@ -9,7 +9,7 @@ locals {
   # Expanded services targeting a TrueNAS server.
   truenas_input_services = {
     for service_key, service in local.services_model : service_key => service
-    if contains(keys(local.truenas_input_servers), service.target)
+    if service.deploy && contains(keys(local.truenas_input_servers), service.target)
   }
 
   # Catalog app templates live beside each service with app-specific chart values.

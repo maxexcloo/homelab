@@ -114,6 +114,15 @@ locals {
           url_internal = try(local._services_model_urls[service_key].fqdn_internal.href, null)
           urls         = local._services_model_urls[service_key]
 
+          deploy = (
+            service.target == "fly" ||
+            try(local.servers_model[service.target].platform == "truenas", false) ||
+            (
+              local._services_model_target_is_server[service_key] &&
+              local.servers_model[service.target].features.docker
+            )
+          )
+
           dashboard = [
             for dashboard_card in [
               for input_card in jsondecode(jsonencode(service.dashboard)) : merge(local.defaults.services.dashboard[0], input_card)

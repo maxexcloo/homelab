@@ -14,6 +14,7 @@ locals {
       # These two files are handled by platform-specific renderers (TrueNAS catalog
       # apps and Komodo/Fly compose) rather than generic sidecars.
       if !contains(["app.json.tftpl", "docker-compose.yaml.tftpl"], basename(file_path))
+      && service.deploy
     ]
   ])
 
@@ -24,7 +25,7 @@ locals {
         local.services_render_context[service_key],
       ),
     )
-    if fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+    if service.deploy && fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
   }
 
   _services_render_rendered_services_no_state = {
