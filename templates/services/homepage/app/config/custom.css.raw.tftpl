@@ -3,46 +3,26 @@
   --homepage-panel-background: rgba(0, 0, 0, 0.60);
 }
 
-html {
+html,
+body {
+  -webkit-font-smoothing: auto;
   font-size: 120%;
+  text-rendering: auto;
 }
 
-#page_container * {
-  color: white !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-}
-
-.rounded,
-.rounded-md {
+.bookmark,
+.service-card {
   border-radius: var(--homepage-card-radius) !important;
 }
 
 .service-block {
-  background-color: transparent !important;
-  box-shadow: none !important;
-}
-
-.service-container {
-  background: var(--homepage-panel-background);
-}
-
-.service > div {
+  background: var(--homepage-panel-background) !important;
+  border-radius: var(--homepage-card-radius) !important;
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.4),
     0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
-.service div > :nth-child(2).service-container {
-  border-top-left-radius: var(--homepage-card-radius);
-  border-top-right-radius: var(--homepage-card-radius);
-}
-
-.service div > :last-child.service-container {
-  border-bottom-left-radius: var(--homepage-card-radius);
-  border-bottom-right-radius: var(--homepage-card-radius);
-}
-
-.service div > *:nth-child(n + 3) > div {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
+.service-container {
+  background: transparent !important;
 }
