@@ -1,6 +1,6 @@
 services:
   beszel-agent:
-    image: henrygd/beszel-agent
+    image: henrygd/beszel-agent:latest
     environment:
       HUB_URL: ${services.beszel.url}
       KEY: ${service.data.public_key}

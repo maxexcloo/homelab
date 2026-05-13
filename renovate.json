@@ -32,6 +32,14 @@
     {
       "description": "Group OpenTofu provider updates",
       "groupName": "OpenTofu providers",
+      "matchDatasources": ["terraform-module", "terraform-provider"],
+      "registryUrls": ["https://registry.opentofu.org"]
+    },
+    {
+      "description": "Ignore Terraform runtime updates from OpenTofu required_version constraints",
+      "enabled": false,
+      "matchDepNames": ["hashicorp/terraform"],
+      "matchDepTypes": ["required_version"],
       "matchManagers": ["terraform"]
     },
     {
