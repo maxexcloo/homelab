@@ -3,15 +3,16 @@ dashboard:
   - href: https://login.tailscale.com/admin/machines/${server.state.urls.tailscale_ipv4}
     widgets:
       - deviceid: ${server.state.fields.tailscale_device_id}
-        key: ${service.state.secrets.homepage_widget_key}
+        key: ${services.homepage.state.secrets.tailscale_homepage_widget_key}
         type: ${service.identity.service}
 identity:
   description: VPN
   name: tailscale
   service: tailscale
   title: Tailscale
-secrets:
-  - name: homepage_widget_key
+imports:
+  services:
+    homepage: homepage-au-truenas
 targets:
   au-haos: {}
   au-hsp: {}
