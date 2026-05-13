@@ -34,7 +34,7 @@ JSON_GLOBS = ["schemas/*.json"]
 # before the condition. Skip ordering for objects whose keys are a subset of
 # this triplet.
 JSON_SCHEMA_CONDITIONAL = {"if", "then", "else"}
-IDENTIFIER_KEYS = ["name", "id"]
+IDENTIFIER_KEYS = ["type", "name", "id"]
 
 
 def is_json_schema_conditional(keys):

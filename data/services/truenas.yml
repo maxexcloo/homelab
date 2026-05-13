@@ -7,9 +7,9 @@ dashboard:
     icon: ${service.identity.name}
     siteMonitor: ${server.url}
     widgets:
-      - enablePools: "true"
+      - type: ${service.identity.name}
+        enablePools: "true"
         key: ${service.state.secrets.homepage_widget_key}
-        type: ${service.identity.name}
         url: ${server.url}
         version: 2
 identity:

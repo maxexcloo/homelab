@@ -7,8 +7,8 @@ dashboard:
     icon: ${service.identity.name}
     siteMonitor: ${service.url}
     widgets:
-      - password: ${service.state.secrets.password}
-        type: ${service.identity.name}
+      - type: ${service.identity.name}
+        password: ${service.state.secrets.password}
         url: ${service.url}
         username: ${service.identity.username}
         version: 2

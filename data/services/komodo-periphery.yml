@@ -7,10 +7,10 @@ dashboard:
     icon: ${services.komodo.identity.name}
     siteMonitor: ${services.komodo.url}
     widgets:
-      - key: ${services.komodo.state.secrets.homepage_widget_key}
+      - type: komodo
+        key: ${services.komodo.state.secrets.homepage_widget_key}
         secret: ${services.komodo.state.secrets.homepage_widget_secret}
         showStacks: true
-        type: komodo
         url: ${services.komodo.url}
 identity:
   description: Container Agent

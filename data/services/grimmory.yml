@@ -7,8 +7,8 @@ dashboard:
     icon: sh-grimmory
     siteMonitor: ${service.url}
     widgets:
-      - password: ${service.state.secrets.password}
-        type: booklore
+      - type: booklore
+        password: ${service.state.secrets.password}
         url: ${service.url}
         username: ${service.identity.username}
 features:

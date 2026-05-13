@@ -6,9 +6,9 @@ dashboard:
     href: ${services.beszel.url}/system/${service.state.secrets.system_id}
     icon: ${services.beszel.identity.name}
     widgets:
-      - password: ${services.beszel.state.secrets.password}
+      - type: beszel
+        password: ${services.beszel.state.secrets.password}
         systemId: ${service.state.secrets.system_id}
-        type: beszel
         url: ${services.beszel.url}
         username: ${defaults.organization.email}
         version: 2

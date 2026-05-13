@@ -1,16 +1,16 @@
 # yaml-language-server: $schema=../../schemas/dns.json
 name: excloo.dev
 records:
-  - name: resend
+  - type: MX
+    name: resend
     content: feedback-smtp.ap-northeast-1.amazonses.com
     priority: 10
-    type: MX
-  - name: _dmarc
+  - type: TXT
+    name: _dmarc
     content: '"v=DMARC1; p=none;"'
-    type: TXT
-  - name: resend
+  - type: TXT
+    name: resend
     content: '"v=spf1 include:amazonses.com ~all"'
-    type: TXT
-  - name: resend._domainkey
+  - type: TXT
+    name: resend._domainkey
     content: '"p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCxe6Q7J4m+QlXFTyLNSE8Dwzv8sI9K1KLcqOnnS+SUUP0mKagFqRzgUZgd8+3sfVJIqrJcEg/Y+dfdTtCJE78ryTq5WVpxOEmss1mkbIJlNPFRZHji9w6iQ3AdMOlM3GlFYdY5TK/tCW4zd7a0RLd3YzcY/S+TcpZ3GEeydDukewIDAQAB"'
-    type: TXT

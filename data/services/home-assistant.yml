@@ -7,8 +7,8 @@ dashboard:
     icon: homeassistant
     siteMonitor: ${server.url}
     widgets:
-      - key: ${service.state.secrets.homepage_widget_key}
-        type: homeassistant
+      - type: homeassistant
+        key: ${service.state.secrets.homepage_widget_key}
         url: ${server.url}
   - name: ESPHome
     description: ESP Device Builder
@@ -17,8 +17,8 @@ dashboard:
     icon: esphome
     siteMonitor: ${server.url}/5c53de3b_esphome
     widgets:
-      - password: ${server.state.secrets.password}
-        type: esphome
+      - type: esphome
+        password: ${server.state.secrets.password}
         url: http://${server.fqdn}:6052
         username: ${server.identity.username}
   - name: ESPresense
