@@ -10,6 +10,12 @@ locals {
     for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) : dashboard_card.sort => dashboard_card
   }
 
+  _services_render_custom_homepage_group_order = concat(
+    local._services_render_custom_homepage_service_group_order,
+    ["Providers"],
+    local._services_render_custom_homepage_server_group_order,
+  )
+
   _services_render_custom_homepage_server_cards = flatten([
     for server_key, server in local.servers : [
       for card_index, dashboard_card in server.dashboard : {
@@ -81,37 +87,31 @@ locals {
 
   _services_render_custom_homepage_template_data = {
     homepage = {
-      layout = merge(
-        {
-          for group in local._services_render_custom_homepage_service_group_order : group => {
-            columns = local.services_input["homepage"].data.groups[group].columns
-            style   = local.services_input["homepage"].data.groups[group].style
-            tab     = "Services"
-          }
-        },
-        {
-          Providers = {
-            columns = 2
-            style   = "row"
-            tab     = "Services"
-          }
-        },
-        {
-          for group in local._services_render_custom_homepage_server_group_order : group => {
-            columns = 2
-            style   = "row"
-            tab     = "Servers"
-          }
-        },
-      )
+      layout = [
+        for group in local._services_render_custom_homepage_group_order : {
+          (group) = (
+            group == "Providers" ? {
+              columns = 2
+              style   = "row"
+              tab     = "Services"
+              } : contains(local._services_render_custom_homepage_service_group_order, group) ? {
+              columns = local.services_input["homepage"].data.groups[group].columns
+              style   = local.services_input["homepage"].data.groups[group].style
+              tab     = "Services"
+              } : {
+              columns = 2
+              style   = "row"
+              tab     = "Servers"
+            }
+          )
+        }
+      ]
 
       services = [
-        for group in concat(
-          local._services_render_custom_homepage_service_group_order,
-          local._services_render_custom_homepage_server_group_order,
-          ) : {
+        for group in local._services_render_custom_homepage_group_order : {
           (group) = try(local._services_render_custom_homepage_cards_by_group[group], [])
         }
+        if group != "Providers"
       ]
     }
   }

@@ -1,6 +1,10 @@
-${yamlencode(merge(
-  service.data.settings,
-  {
-    layout = custom.homepage.layout
-  },
-))}
+${yamlencode(service.data.settings)}
+layout:
+%{ for group_layout in custom.homepage.layout ~}
+%{ for group, options in group_layout ~}
+  ${jsonencode(group)}:
+    columns: ${options.columns}
+    style: ${options.style}
+    tab: ${options.tab}
+%{ endfor ~}
+%{ endfor ~}

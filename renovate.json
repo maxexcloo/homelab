@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "docker",
+      "fileMatch": ["(^|/)templates/.+\\.ya?ml\\.tftpl$"],
+      "matchStrings": [
+        "(?m)^\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*):(?<currentValue>[^\\s@#]+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
+      "fileMatch": ["(^|/)templates/.+\\.ya?ml\\.tftpl$"],
+      "matchStrings": [
+        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/(?<currentValue>[^/]+)/download/",
+        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/(?<currentValue>[^/]+)/"
+      ],
+      "versioningTemplate": "loose"
+    }
+  ],
+  "dependencyDashboard": true,
+  "extends": ["config:recommended"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Group GitHub Actions updates from workflow templates",
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"]
+    },
+    {
+      "description": "Group OpenTofu provider updates",
+      "groupName": "OpenTofu providers",
+      "matchManagers": ["terraform"]
+    },
+    {
+      "description": "Group mise tool updates",
+      "groupName": "mise tools",
+      "matchManagers": ["mise"]
+    },
+    {
+      "description": "Pin floating Docker image tags in templates and Dockerfiles",
+      "matchDatasources": ["docker"],
+      "matchCurrentValue": "/^(latest|stable)$/",
+      "pinDigests": true
+    }
+  ],
+  "rangeStrategy": "bump"
+}
