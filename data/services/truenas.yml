@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  href: https://${server.fqdn_internal}:${server.networking.management_port}
+  href: ${server.url}
   widget:
     enablePools: "true"
     key: ${service.state.secrets.homepage_widget_key}
     type: ${service.identity.service}
-    url: https://${server.fqdn_internal}:${server.networking.management_port}
+    url: ${server.url}
     version: 2
 identity:
   description: Network Attached Storage
@@ -17,7 +17,7 @@ routing:
   labels:
     traefik.enable: "true"
     traefik.http.routers.truenas.middlewares: internal-only@docker
-    traefik.http.routers.truenas.rule: Host(`${server.fqdn_internal}`)
+    traefik.http.routers.truenas.rule: Host(`${server.fqdn}`)
     traefik.http.routers.truenas.service: truenas
     traefik.http.services.truenas.loadbalancer.server.url: https://localhost:${server.networking.management_port}
 secrets:

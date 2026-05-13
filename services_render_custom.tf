@@ -157,7 +157,7 @@ locals {
 
   _services_render_custom_traefik_labels = {
     for service_key, service in local.services : service_key => {
-      for k, v in merge(
+      for label_key, label_value in merge(
         service.routing.port != null ? {
           # Explicit certresolver required — without it Traefik won't proactively
           # request per-router certs at startup; first HTTPS hit fails with no cert.
@@ -178,19 +178,19 @@ locals {
         # Only emit tls.domains for managed DNS zones — unmanaged domains have no
         # ACME delegation record and would cause DNS-01 challenges to fail silently.
         service.routing.port != null && service.routing.ssl && service.routing.expose != "cloudflare" ? {
-          for url_idx, url in [
+          for url_index, url in [
             for url in service.routing.urls : url
             if lookup(local.dns_render_zones_urls, url, null) != null
           ] :
-          "traefik.http.routers.${service.identity.name}.tls.domains[${url_idx}].main" => url
+          "traefik.http.routers.${service.identity.name}.tls.domains[${url_index}].main" => url
         } : {},
         {
           for label_key, label_value in service.routing.labels :
           label_key => try(templatestring(tostring(label_value), local._services_render_base_context[service_key]), null)
           if label_value != null
         }
-      ) : k => v
-      if v != null
+      ) : label_key => label_value
+      if label_value != null
     }
   }
 

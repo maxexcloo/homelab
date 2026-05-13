@@ -2,7 +2,7 @@
 dashboard:
   widget:
     type: ${service.identity.service}
-    url: https://${service.fqdn_internal}
+    url: ${service.url}
 features:
   password: true
 identity:

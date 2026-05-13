@@ -1,7 +1,7 @@
 {
   "values": {
     "aiostreams": {
-      "base_url": "https://${service.fqdn_internal}",
+      "base_url": "${service.url}",
       "secret_key": "${service.state.secrets.secret_key}"
     },
     "network": {

@@ -3,7 +3,7 @@ dashboard:
   widget:
     key: ${service.state.secrets.homepage_widget_key}
     type: ${service.identity.service}
-    url: https://${service.fqdn_internal}
+    url: ${service.url}
     version: 2
 features:
   password: true

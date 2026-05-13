@@ -200,7 +200,7 @@ locals {
             local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
             && service.routing.expose == "cloudflare"
             ? "${local.servers[service.target].state.fields.cloudflare_tunnel_id}.cfargotunnel.com"
-            : service.fqdn_external != null ? service.fqdn_external : service.fqdn_internal
+            : service.fqdn
           )
         }
       }

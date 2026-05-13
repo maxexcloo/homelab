@@ -3,7 +3,7 @@ dashboard:
   widget:
     key: ${service.state.secrets.homepage_widget_key}
     type: ${service.identity.service}
-    url: https://${service.fqdn_internal}
+    url: ${service.url}
 features:
   password: true
 identity:
@@ -25,4 +25,4 @@ targets:
   au-truenas:
     truenas:
       env:
-        BASE_URL: https://${service.fqdn_internal}
+        BASE_URL: ${service.url}

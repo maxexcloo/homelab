@@ -3,7 +3,7 @@ dashboard:
   widget:
     key: ${service.state.secrets.homepage_widget_key}
     type: komodo
-    url: https://${service.fqdn_internal}
+    url: ${service.url}
 features:
   password: true
 identity:
@@ -30,6 +30,6 @@ targets:
     truenas:
       catalog_app: komodo
       env:
-        KOMODO_HOST: https://${service.fqdn_internal}
+        KOMODO_HOST: ${service.url}
         KOMODO_WEBHOOK_SECRET: ${service.state.secrets.webhook_secret}
         SOPS_AGE_KEY: ${server.state.secrets.age_secret_key}

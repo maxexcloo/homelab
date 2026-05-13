@@ -125,10 +125,10 @@ locals {
       ]
 
       urls = [
-        for url_index, url_entry in local.onepassword_server_item_urls[server_key] : {
-          href    = url_entry.href
-          label   = url_entry.label
-          primary = url_index == 0
+        for url in local.onepassword_server_item_urls[server_key] : {
+          href    = url.href
+          label   = url.label
+          primary = url.href == local.servers_model[server_key].url
         }
       ]
 
@@ -253,10 +253,10 @@ locals {
       ]
 
       urls = [
-        for url_index, url_entry in service.urls : {
-          href    = url_entry.href
-          label   = url_entry.label
-          primary = url_index == 0
+        for url in values(service.urls) : {
+          href    = url.href
+          label   = url.label
+          primary = url.href == service.url
         }
       ]
 
@@ -273,7 +273,7 @@ locals {
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
-    if anytrue([for feature_name, feature_enabled in service.features : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.secrets) > 0 || service.routing.scheme != null
+    if anytrue([for feature_enabled in values(service.features) : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.secrets) > 0 || service.routing.scheme != null
   }
 
   # Secrets without a bootstrap_type are manually filled by an operator in

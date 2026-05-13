@@ -3,7 +3,7 @@ dashboard:
   widget:
     password: ${service.state.secrets.password}
     type: beszel
-    url: https://${service.fqdn_internal}
+    url: ${service.url}
     username: ${service.identity.username}
     version: 2
 features:

@@ -2,7 +2,7 @@ services:
   beszel-agent:
     image: henrygd/beszel-agent
     environment:
-      HUB_URL: ${services.beszel.routing.ssl ? "https" : "http"}://${services.beszel.fqdn_internal}
+      HUB_URL: ${services.beszel.url}
       KEY: ${service.data.public_key}
       LISTEN: ${service.data.listen}
       TOKEN: ${service.state.secrets.token}

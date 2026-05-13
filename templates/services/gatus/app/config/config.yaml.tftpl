@@ -26,16 +26,16 @@ alerting:
 endpoints:
   %{~ for service_key, monitored_service in services ~}
   %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null ~}
-  %{~ for url_entry in monitored_service.urls ~}
+  %{~ for url in values(monitored_service.urls) ~}
   - conditions:
       %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation ~}
       - "[CERTIFICATE_EXPIRATION] > 48h"
       %{~ endif ~}
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
-    group: "\u00A0${url_entry.zone}"
+    group: "\u00A0${url.zone}"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
-    url: "${url_entry.href}"
+    url: "${url.href}"
     %{~ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
       %{~ if service.features.pushover ~}
@@ -58,7 +58,7 @@ endpoints:
       - "[CONNECTED] == true"
     group: "${defaults.types[server.type].label}"
     name: "${server_key}"
-    url: "icmp://${server.fqdn_internal}"
+    url: "icmp://${server.fqdn}"
     %{~ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
       %{~ if service.features.pushover ~}

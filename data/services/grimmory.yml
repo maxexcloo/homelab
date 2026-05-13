@@ -4,7 +4,7 @@ dashboard:
   widget:
     password: ${service.state.secrets.password}
     type: booklore
-    url: https://${service.fqdn_internal}
+    url: ${service.url}
     username: ${service.identity.username}
 features:
   password: true

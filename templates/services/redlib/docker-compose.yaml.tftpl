@@ -12,7 +12,7 @@ services:
       REDLIB_DEFAULT_SHOW_NSFW: ${jsonencode(service.data.settings.default_show_nsfw)}
       REDLIB_DEFAULT_SUBSCRIPTIONS: ${join("+", service.data.subscriptions)}
       REDLIB_DEFAULT_USE_HLS: ${jsonencode(service.data.settings.default_use_hls)}
-      REDLIB_FULL_URL: https://${service.fqdn_internal}
+      REDLIB_FULL_URL: ${service.url}
       REDLIB_ROBOTS_DISABLE_INDEXING: ${jsonencode(service.data.settings.robots_disable_indexing)}
     image: ghcr.io/silvenga/redlib:latest
     network_mode: service:ctrld

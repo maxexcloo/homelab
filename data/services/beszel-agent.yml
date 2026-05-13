@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
   description: ${services.beszel.identity.description}
-  href: https://${services.beszel.fqdn_internal}/system/${service.state.secrets.system_id}
+  href: ${services.beszel.url}/system/${service.state.secrets.system_id}
   icon: ${services.beszel.identity.name}
   name: ${services.beszel.identity.title}
   widget:
     password: ${services.beszel.state.secrets.password}
     systemId: ${service.state.secrets.system_id}
     type: beszel
-    url: https://${services.beszel.fqdn_internal}
+    url: ${services.beszel.url}
     username: ${defaults.organization.email}
     version: 2
     fields:

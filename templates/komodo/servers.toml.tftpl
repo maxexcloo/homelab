@@ -4,7 +4,7 @@ description = "${server.description}"
 name = "${server_key}"
 
 [server.config]
-address = "https://${server.fqdn_internal}:8120"
+address = "${server.url_internal}:8120"
 enabled = true
 passkey = "${server.state.secrets.komodo_passkey}"
 region = "${server.identity.region}"

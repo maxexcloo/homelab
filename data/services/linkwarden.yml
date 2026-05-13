@@ -3,7 +3,7 @@ dashboard:
   widget:
     key: ${service.state.secrets.homepage_widget_key}
     type: ${service.identity.service}
-    url: https://${service.fqdn_internal}
+    url: ${service.url}
 features:
   password: true
   resend: true
@@ -32,7 +32,7 @@ targets:
   au-truenas:
     truenas:
       env:
-        BASE_URL: https://${service.fqdn_internal}
+        BASE_URL: ${service.url}
         EMAIL_FROM: ${service.key}@${defaults.domains.internal}
         EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.state.secrets.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
         NEXT_PUBLIC_EMAIL_PROVIDER: true
