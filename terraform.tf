@@ -1,18 +1,18 @@
 terraform {
-  required_version = ">= 1.11, < 2.0"
+  required_version = "~> 1.11"
 
   required_providers {
     age = {
       source  = "clementblaise/age"
-      version = ">= 0.1, < 1.0"
+      version = "~> 0.1"
     }
     b2 = {
       source  = "backblaze/b2"
-      version = ">= 0.12, < 1.0"
+      version = "~> 0.12"
     }
     bcrypt = {
       source  = "viktorradnai/bcrypt"
-      version = ">= 0.1, < 1.0"
+      version = "~> 0.1"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
@@ -52,11 +52,11 @@ terraform {
     }
     tailscale = {
       source  = "tailscale/tailscale"
-      version = ">= 0.28, < 1.0"
+      version = "~> 0.28"
     }
     unifi = {
       source  = "ubiquiti-community/unifi"
-      version = ">= 0.41, < 1.0"
+      version = "~> 0.41"
     }
   }
 }

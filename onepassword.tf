@@ -51,6 +51,14 @@ data "http" "onepassword_service_search" {
 }
 
 locals {
+  onepassword_service_credential_features = toset([
+    "b2",
+    "password",
+    "pushover",
+    "resend",
+    "tailscale",
+  ])
+
   onepassword_server_existing_fields = {
     for server_key, item in data.http.onepassword_server_item : server_key => {
       for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
@@ -278,13 +286,15 @@ locals {
     if contains(keys(local.onepassword_service_items), service_key)
   }
 
-  # Services that get a 1Password item: any with a feature enabled, declared
-  # secrets, or a backend scheme that produces accessible URLs. Iterates
+  # Services that get a 1Password item: any with credential material to store.
+  # Dashboard cards and routable URLs alone are not credentials. Iterates
   # services_model (no state) so the search/fetch HTTP calls don't depend on
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
-    if anytrue([for feature_enabled in values(service.features) : tobool(feature_enabled) if can(tobool(feature_enabled))]) || length(service.secrets) > 0 || length(service.dashboard) > 0 || service.routing.scheme != null
+    if service.identity.username != "" || length(service.secrets) > 0 || anytrue([
+      for feature in local.onepassword_service_credential_features : try(tobool(service.features[feature]), false)
+    ])
   }
 
   # Secrets without a bootstrap_type are manually filled by an operator in

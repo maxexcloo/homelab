@@ -11,17 +11,26 @@
     },
     {
       "customType": "regex",
+      "fileMatch": ["(^|/)templates/.+\\.ya?ml\\.tftpl$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?(?: versioning=(?<versioning>\\S+))?\\s*\\n\\s*-\\s*[A-Z0-9_]*VERSION=(?<currentValue>[^\\s]+)"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
       "datasourceTemplate": "github-releases",
       "fileMatch": ["(^|/)templates/.+\\.ya?ml\\.tftpl$"],
       "matchStrings": [
-        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/(?<currentValue>[^/]+)/download/",
-        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/(?<currentValue>[^/]+)/"
+        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/(?<currentValue>v?\\d[^/$]*)/download/",
+        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/(?<currentValue>v?\\d[^/$]*)/"
       ],
       "versioningTemplate": "loose"
     }
   ],
   "dependencyDashboard": true,
   "extends": ["config:recommended"],
+  "ignoreDeps": ["hashicorp/terraform"],
   "labels": ["dependencies"],
   "packageRules": [
     {
@@ -36,21 +45,13 @@
       "registryUrls": ["https://registry.opentofu.org"]
     },
     {
-      "description": "Ignore Terraform runtime updates from OpenTofu required_version constraints",
-      "enabled": false,
-      "matchDepNames": ["hashicorp/terraform"],
-      "matchDepTypes": ["required_version"],
-      "matchManagers": ["terraform"]
-    },
-    {
       "description": "Group mise tool updates",
       "groupName": "mise tools",
       "matchManagers": ["mise"]
     },
     {
-      "description": "Pin floating Docker image tags in templates and Dockerfiles",
+      "description": "Pin Docker image digests in templates and Dockerfiles",
       "matchDatasources": ["docker"],
-      "matchCurrentValue": "/^(latest|stable)$/",
       "pinDigests": true
     }
   ],
