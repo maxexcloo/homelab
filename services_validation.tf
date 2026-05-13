@@ -1,4 +1,15 @@
 locals {
+  # Cloudflare Universal SSL covers the zone apex and one wildcard level (*.zone).
+  # Count dots in the subdomain part (name minus zone); anything > 1 is too deep.
+  services_validation_cloudflare_deep_subdomains = [
+    for record_key, record in merge(
+      local.dns_render_records_services,
+      local.dns_render_records_services_urls,
+    ) : "${record_key} (${record.name})"
+    if try(record.proxied, false) &&
+    length(split(".", record.name)) - length(split(".", record.zone)) > 1
+  ]
+
   services_validation_cloudflare_tunnel_missing = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
@@ -65,6 +76,13 @@ resource "terraform_data" "services_validation" {
   input = keys(local.services_input)
 
   lifecycle {
+    # Cloudflare Universal SSL covers only the zone apex and one wildcard level
+    # (*.zone). Deeper subdomains are not covered and will show SSL errors.
+    precondition {
+      condition     = length(local.services_validation_cloudflare_deep_subdomains) == 0
+      error_message = "Cloudflare-proxied hostnames exceed Universal SSL coverage (max one subdomain level): ${join(", ", local.services_validation_cloudflare_deep_subdomains)}"
+    }
+
     # Cloudflare-exposed services on servers need a tunnel token available from
     # the target server feature set.
     precondition {

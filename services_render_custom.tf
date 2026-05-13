@@ -156,53 +156,42 @@ locals {
   }
 
   _services_render_custom_traefik_labels = {
-    for service_key, service in local.services : service_key => merge(
-      service.routing.port != null ? merge(
-        {
-          "traefik.enable"                                                          = "true"
-          "traefik.http.routers.${service.identity.name}.entrypoints"               = service.routing.ssl ? "websecure" : "web"
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.port" = tostring(coalesce(service.routing.backend_port, service.routing.port))
+    for service_key, service in local.services : service_key => {
+      for k, v in merge(
+        service.routing.port != null ? {
+          # Explicit certresolver required — without it Traefik won't proactively
+          # request per-router certs at startup; first HTTPS hit fails with no cert.
+          # Null for Cloudflare-exposed services; the tunnel cert covers them.
+          "traefik.enable"                                                            = "true"
+          "traefik.http.routers.${service.identity.name}.entrypoints"                 = service.routing.ssl ? "websecure" : "web"
+          "traefik.http.routers.${service.identity.name}.middlewares"                 = service.routing.expose == "internal" ? "internal-only@docker" : null
+          "traefik.http.routers.${service.identity.name}.tls.certresolver"            = service.routing.ssl && service.routing.expose != "cloudflare" ? "cloudflare" : null
+          "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(coalesce(service.routing.backend_port, service.routing.port))
+          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.scheme == "https" ? "https" : null
 
           "traefik.http.routers.${service.identity.name}.rule" = join(" || ", concat(
             service.fqdn_internal != null ? ["Host(`${service.fqdn_internal}`)"] : [],
             service.fqdn_external != null ? ["Host(`${service.fqdn_external}`)"] : [],
             [for url in service.routing.urls : "Host(`${url}`)"],
           ))
-        },
-        service.routing.expose == "internal" ? {
-          "traefik.http.routers.${service.identity.name}.middlewares" = "internal-only@docker"
         } : {},
-        service.routing.scheme == "https" ? {
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = "https"
-        } : {},
-        # Cloudflare-exposed services use the tunnel cert; ACME is only needed for
-        # direct TLS termination at Traefik. Only emit tls.domains for URLs in a
-        # managed DNS zone — unmanaged domains have no ACME delegation record and
-        # would cause DNS-01 challenges to fail silently.
-        service.routing.ssl && service.routing.expose != "cloudflare" ? {
+        # Only emit tls.domains for managed DNS zones — unmanaged domains have no
+        # ACME delegation record and would cause DNS-01 challenges to fail silently.
+        service.routing.port != null && service.routing.ssl && service.routing.expose != "cloudflare" ? {
           for url_idx, url in [
             for url in service.routing.urls : url
             if lookup(local.dns_render_zones_urls, url, null) != null
           ] :
           "traefik.http.routers.${service.identity.name}.tls.domains[${url_idx}].main" => url
         } : {},
-      ) : {},
-      {
-        for label_key, label_value in {
-          for raw_label_key, raw_label_value in service.routing.labels :
-          raw_label_key => try(
-            templatestring(
-              tostring(raw_label_value),
-              local._services_render_base_context[service_key],
-            ),
-            null,
-          )
-          if raw_label_value != null
-        } :
-        label_key => label_value
-        if label_value != null
-      }
-    )
+        {
+          for label_key, label_value in service.routing.labels :
+          label_key => try(templatestring(tostring(label_value), local._services_render_base_context[service_key]), null)
+          if label_value != null
+        }
+      ) : k => v
+      if v != null
+    }
   }
 
   services_render_custom_context = {
