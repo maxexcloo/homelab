@@ -2,7 +2,10 @@ locals {
   # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
   # Other files use filebase64(), so static and binary assets share one path.
   _services_render_file_inputs = flatten([
-    for service_key, service in local.services : [
+    for service_key, service in {
+      for service_key, service in local.services : service_key => service
+      if service.identity.service != null
+      } : [
       for file_path in fileset(path.module, "templates/services/${service.identity.service}/**") : {
         path            = "${path.module}/${file_path}"
         raw_encrypt     = endswith(trimsuffix(file_path, ".tftpl"), ".raw")
@@ -14,7 +17,6 @@ locals {
       # These two files are handled by platform-specific renderers (TrueNAS catalog
       # apps and Komodo/Fly compose) rather than generic sidecars.
       if !contains(["app.json.tftpl", "docker-compose.yaml.tftpl"], basename(file_path))
-      && service.deploy
     ]
   ])
 
@@ -22,20 +24,28 @@ locals {
     for service_key, service in local.services : service_key => yamldecode(
       templatefile(
         "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
-        local.services_render_context[service_key],
+        local.services_render_template_context[service_key],
       ),
     )
-    if service.deploy && fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+    if service.identity.service != null &&
+    fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
+    (
+      contains(keys(local.truenas_input_servers), service.target) ||
+      (
+        contains(toset(keys(local.servers_input)), service.target) &&
+        local.servers_model[service.target].features.docker
+      )
+    )
   }
 
-  _services_render_rendered_services_no_state = {
-    for service_key, service in local.services_render_services : service_key => {
+  _services_render_public_raw_services = {
+    for service_key, service in local.services : service_key => {
       for k, v in service : k => v if k != "state"
     }
   }
 
-  _services_render_services_no_state = {
-    for service_key, service in local.services : service_key => {
+  _services_render_public_rendered_services = {
+    for service_key, service in local.services_render_services : service_key => {
       for k, v in service : k => v if k != "state"
     }
   }
@@ -43,7 +53,7 @@ locals {
   # Pre-render context with imported services overlaid. References local.services
   # rather than services_render_services so dashboard and data strings can be
   # template-rendered from this context without circularity.
-  services_render_base_context = {
+  services_render_pre_template_context = {
     for service_key, service in local.services : service_key => {
       defaults = local.defaults
       server   = try(local.servers[service.target], null)
@@ -51,7 +61,7 @@ locals {
       service  = service
 
       services = merge(
-        local._services_render_services_no_state,
+        local._services_render_public_raw_services,
         {
           for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services[real_key]
@@ -63,15 +73,15 @@ locals {
 
   # Final template context for compose/sidecar renders. Imported service aliases
   # are overlaid here so templates can reference `services.<alias>`.
-  services_render_context = {
+  services_render_template_context = {
     for service_key, service in local.services : service_key => merge(
-      local.services_render_base_context[service_key],
+      local.services_render_pre_template_context[service_key],
       {
         custom  = lookup(local.services_render_custom_context, service_key, {})
         service = local.services_render_services[service_key]
 
         services = merge(
-          local._services_render_rendered_services_no_state,
+          local._services_render_public_rendered_services,
           {
             for alias, real_key in local.services_model_imports[service_key] :
             alias => local.services_render_services[real_key]
@@ -115,7 +125,7 @@ locals {
           ? base64encode(
             templatefile(
               file_input.path,
-              local.services_render_context[file_input.stack],
+              local.services_render_template_context[file_input.stack],
             ),
           )
           : filebase64(file_input.path)
@@ -149,7 +159,7 @@ locals {
             dashboard = service.dashboard
             data      = service.data
           }),
-          local.services_render_base_context[service_key],
+          local.services_render_pre_template_context[service_key],
         ),
       ),
       lookup(local.services_render_custom_service, service_key, {}),

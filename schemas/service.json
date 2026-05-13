@@ -8,7 +8,15 @@
   "definitions": {
     "dashboard": {
       "additionalProperties": false,
-      "description": "A Homepage service card rendered for this service. Omit dashboard to generate one default card; set dashboard to [] to render none.",
+      "description": "A Homepage service card rendered for this service. Omit dashboard or set it to [] to render none.",
+      "required": [
+        "description",
+        "group",
+        "href",
+        "icon",
+        "name",
+        "siteMonitor"
+      ],
       "type": "object",
       "properties": {
         "container": {
@@ -20,7 +28,7 @@
           "type": ["string", "null"]
         },
         "group": {
-          "description": "Dashboard group override. Null uses identity.group.",
+          "description": "Dashboard group. Supports template interpolation.",
           "type": ["string", "null"]
         },
         "href": {
@@ -190,7 +198,7 @@
       "type": "object",
       "properties": {
         "catalog_app": {
-          "description": "TrueNAS catalog app name. Defaults to identity.service when null.",
+          "description": "TrueNAS catalog app name. Defaults to identity.service when null. Required when identity.service is null and this target should deploy a catalog app.",
           "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
           "type": ["string", "null"]
         },
@@ -288,7 +296,7 @@
     "identity": {
       "additionalProperties": false,
       "description": "Human-readable identifiers and dashboard metadata for this service.",
-      "required": ["name", "service", "title"],
+      "required": ["name", "title"],
       "type": "object",
       "properties": {
         "description": {
@@ -305,9 +313,9 @@
           "type": "string"
         },
         "service": {
-          "description": "Implementation key used to select templates from services/{service}.",
+          "description": "Implementation key used to select templates from services/{service}. Null means inventory/dashboard-only and no service-specific deploy artifacts.",
           "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
-          "type": "string"
+          "type": ["string", "null"]
         },
         "title": {
           "description": "Display name shown in Homepage, Komodo, 1Password, and monitoring (e.g. 'Vaultwarden').",
@@ -346,7 +354,7 @@
           "type": ["integer", "null"]
         },
         "container": {
-          "description": "Container that receives generated Traefik routing labels. Null uses identity.service.",
+          "description": "Container that receives generated Traefik routing labels. Null uses identity.service. Leave both null for dashboard/inventory-only services.",
           "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
           "type": ["string", "null"]
         },

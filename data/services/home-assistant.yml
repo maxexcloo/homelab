@@ -1,41 +1,54 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${server.url}
+    icon: homeassistant
+    siteMonitor: ${server.url}
+    widgets:
+      - key: ${service.state.secrets.homepage_widget_key}
+        type: homeassistant
+        url: ${server.url}
   - name: ESPHome
     description: ESP Device Builder
+    group: ${service.identity.group}
     href: ${server.url}/5c53de3b_esphome
     icon: esphome
+    siteMonitor: ${server.url}/5c53de3b_esphome
     widgets:
       - password: ${server.state.secrets.password}
         type: esphome
         url: http://${server.fqdn}:6052
         username: ${server.identity.username}
-  - href: ${server.url}
-    icon: homeassistant
-    widgets:
-      - key: ${service.state.secrets.homepage_widget_key}
-        type: homeassistant
-        url: ${server.url}
   - name: ESPresense
     description: Room Presence
+    group: ${service.identity.group}
     href: ${server.url}/f32ea98b_espresense-companion
     icon: espressif
+    siteMonitor: ${server.url}/f32ea98b_espresense-companion
   - name: Home Assistant Matter Hub
     description: Matter Bridge
+    group: ${service.identity.group}
     href: ${server.url}/3fd9e6b0_hamh
     icon: sh-home-assistant-matter-hub
+    siteMonitor: ${server.url}/3fd9e6b0_hamh
   - name: Studio Code Server
     description: Browser IDE
+    group: ${service.identity.group}
     href: ${server.url}/a0d7b954_vscode
     icon: visual-studio-code
+    siteMonitor: ${server.url}/a0d7b954_vscode
   - name: Zigbee2MQTT
     description: Zigbee Coordinator
+    group: ${service.identity.group}
     href: ${server.url}/45df7312_zigbee2mqtt
     icon: zigbee2mqtt
+    siteMonitor: ${server.url}/45df7312_zigbee2mqtt
 identity:
   description: Smart Home
   group: Home Automation
   name: home-assistant
-  service: home-assistant
   title: Home Assistant
 secrets:
   - name: homepage_widget_key

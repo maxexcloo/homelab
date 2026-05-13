@@ -1,4 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.url}
+    icon: ${service.identity.name}
+    siteMonitor: ${service.url}
 features:
   resend: true
   tailscale: true

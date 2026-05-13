@@ -1,7 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - widgets:
-      - type: ${service.identity.service}
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.url}
+    icon: ${service.identity.name}
+    siteMonitor: ${service.url}
+    widgets:
+      - type: ${service.identity.name}
         url: ${service.url}
 features:
   password: true

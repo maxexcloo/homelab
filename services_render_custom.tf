@@ -1,27 +1,27 @@
 locals {
-  _services_render_custom_homepage_cards_by_group = {
+  _homepage_cards_by_group = {
     for card in [
-      for sort_key in sort(keys(local._services_render_custom_homepage_cards_by_sort)) :
-      local._services_render_custom_homepage_cards_by_sort[sort_key]
+      for sort_key in sort(keys(local._homepage_cards_by_sort)) :
+      local._homepage_cards_by_sort[sort_key]
     ] : card.group => zipmap([card.name], [card.card])...
   }
 
-  _services_render_custom_homepage_cards_by_sort = {
-    for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) : dashboard_card.sort => dashboard_card
+  _homepage_cards_by_sort = {
+    for dashboard_card in concat(local._homepage_service_cards, local._homepage_server_cards) : dashboard_card.sort => dashboard_card
   }
 
-  _services_render_custom_homepage_group_order = concat(
-    local._services_render_custom_homepage_service_group_order,
+  _homepage_groups = concat(
+    local._homepage_service_groups,
     ["Providers"],
-    local._services_render_custom_homepage_server_group_order,
+    local._homepage_server_groups,
   )
 
-  _services_render_custom_homepage_server_cards = flatten([
+  _homepage_server_cards = flatten([
     for server_key, server in local.servers : [
       for card_index, dashboard_card in server.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "1:${length(dashboard_card.widgets) > 0 ? "0" : "1"}:${server_key}:${card_index}"
+        sort  = "1:${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${server_key}:${card_index}"
 
         card = {
           for field, value in yamldecode(templatestring(yamlencode({
@@ -29,7 +29,7 @@ locals {
             href        = dashboard_card.href
             icon        = dashboard_card.icon
             siteMonitor = dashboard_card.siteMonitor
-            widgets     = length(dashboard_card.widgets) > 0 ? dashboard_card.widgets : null
+            widgets     = length(try(dashboard_card.widgets, [])) > 0 ? dashboard_card.widgets : null
           }), { server = server })) : field => value
           if value != null
         }
@@ -37,64 +37,64 @@ locals {
     ]
   ])
 
-  _services_render_custom_homepage_server_group_order = concat(
-    local._services_render_custom_homepage_server_name_groups,
+  _homepage_server_groups = concat(
+    local._homepage_server_matched_groups,
     [
       for group in sort(distinct([
-        for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.group
+        for dashboard_card in local._homepage_server_cards : dashboard_card.group
       ])) : group
-      if !contains(local._services_render_custom_homepage_server_name_groups, group)
+      if !contains(local._homepage_server_matched_groups, group)
     ],
   )
 
-  _services_render_custom_homepage_server_name_groups = sort(distinct([
-    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
-    if contains(local._services_render_custom_homepage_server_names, dashboard_card.group)
+  _homepage_server_matched_groups = sort(distinct([
+    for dashboard_card in local._homepage_service_cards : dashboard_card.group
+    if contains(local._homepage_server_names, dashboard_card.group)
   ]))
 
-  _services_render_custom_homepage_server_names = [
-    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.name
+  _homepage_server_names = [
+    for dashboard_card in local._homepage_server_cards : dashboard_card.name
   ]
 
-  _services_render_custom_homepage_service_cards = flatten([
+  _homepage_service_cards = flatten([
     for service_key, service in local.services_render_services : [
       for card_index, dashboard_card in service.dashboard : {
-        group = dashboard_card.group == try(local.servers[service.target].description, null) ? local.servers[service.target].dashboard[0].name : dashboard_card.group
+        group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "0:${length(dashboard_card.widgets) > 0 ? "0" : "1"}:${service_key}:${card_index}"
+        sort  = "0:${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${service_key}:${card_index}"
 
         card = {
           for field, value in {
-            container   = dashboard_card.container
+            container   = try(dashboard_card.container, null)
             description = dashboard_card.description != "" ? dashboard_card.description : null
             href        = dashboard_card.href
             icon        = dashboard_card.icon
-            server      = dashboard_card.container != null ? service.target : null
+            server      = try(dashboard_card.container, null) != null ? service.target : null
             siteMonitor = dashboard_card.siteMonitor
-            widgets     = length(dashboard_card.widgets) > 0 ? dashboard_card.widgets : null
+            widgets     = length(try(dashboard_card.widgets, [])) > 0 ? dashboard_card.widgets : null
           } : field => value
           if value != null
         }
       }
-      if service.identity.service != "homepage" && dashboard_card.name != ""
+      if service.identity.name != "homepage" && dashboard_card.name != ""
     ]
   ])
 
-  _services_render_custom_homepage_service_group_order = sort(distinct([
-    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
-    if !contains(local._services_render_custom_homepage_server_names, dashboard_card.group)
+  _homepage_service_groups = sort(distinct([
+    for dashboard_card in local._homepage_service_cards : dashboard_card.group
+    if !contains(local._homepage_server_names, dashboard_card.group)
   ]))
 
-  _services_render_custom_homepage_template_data = {
+  _homepage_template_data = {
     homepage = {
       layout = [
-        for group in local._services_render_custom_homepage_group_order : {
+        for group in local._homepage_groups : {
           (group) = (
             group == "Providers" ? {
               columns = 2
               style   = "row"
               tab     = "Services"
-              } : contains(local._services_render_custom_homepage_service_group_order, group) ? {
+              } : contains(local._homepage_service_groups, group) ? {
               columns = local.services_input["homepage"].data.groups[group].columns
               style   = local.services_input["homepage"].data.groups[group].style
               tab     = "Services"
@@ -108,15 +108,15 @@ locals {
       ]
 
       services = [
-        for group in local._services_render_custom_homepage_group_order : {
-          (group) = try(local._services_render_custom_homepage_cards_by_group[group], [])
+        for group in local._homepage_groups : {
+          (group) = try(local._homepage_cards_by_group[group], [])
         }
         if group != "Providers"
       ]
     }
   }
 
-  _services_render_custom_traefik_labels = {
+  _traefik_labels = {
     for service_key, service in local.services : service_key => {
       for label_key, label_value in merge(
         service.routing.port != null ? {
@@ -147,7 +147,7 @@ locals {
         } : {},
         {
           for label_key, label_value in service.routing.labels :
-          label_key => try(templatestring(tostring(label_value), local.services_render_base_context[service_key]), null)
+          label_key => try(templatestring(tostring(label_value), local.services_render_pre_template_context[service_key]), null)
           if label_value != null
         }
       ) : label_key => label_value
@@ -158,13 +158,13 @@ locals {
   services_render_custom_context = {
     for service_key, service in local.services : service_key =>
     lookup({
-      homepage = local._services_render_custom_homepage_template_data
-    }, service.identity.service, {})
+      homepage = local._homepage_template_data
+    }, service.identity.name, {})
   }
 
   services_render_custom_service = {
     for service_key, service in local.services : service_key => {
-      routing_labels = local._services_render_custom_traefik_labels[service_key]
+      routing_labels = local._traefik_labels[service_key]
     }
   }
 }

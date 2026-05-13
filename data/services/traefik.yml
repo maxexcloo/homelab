@@ -1,6 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - href: https://traefik.${server.fqdn}
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${server.dashboard[0].name}
+    href: ${service.url}
+    icon: ${service.identity.name}
+    siteMonitor: ${service.url}
 identity:
   description: Reverse Proxy
   name: traefik
@@ -8,6 +13,7 @@ identity:
   title: Traefik
 routing:
   port: 8082
+  scheme: http
   labels:
     traefik.http.middlewares.autocompress.compress: "true"
     traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}

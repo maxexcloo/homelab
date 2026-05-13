@@ -1,6 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - icon: sh-aiostreams
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.url}
+    icon: sh-aiostreams
+    siteMonitor: ${service.url}
 features:
   password: true
 identity:

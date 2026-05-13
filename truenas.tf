@@ -9,7 +9,7 @@ locals {
   # Expanded services targeting a TrueNAS server.
   truenas_input_services = {
     for service_key, service in local.services_model : service_key => service
-    if service.deploy && contains(keys(local.truenas_input_servers), service.target)
+    if service.identity.service != null && contains(keys(local.truenas_input_servers), service.target)
   }
 
   # Catalog app templates live beside each service with app-specific chart values.
@@ -17,7 +17,7 @@ locals {
     for service_key, service in local.truenas_input_services : service_key => {
       path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
     }
-    if fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
+    if service.identity.service != null && fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
   }
 
   # Array env values are joined with '+' because the TrueNAS catalog runner
@@ -29,14 +29,14 @@ locals {
           can(tostring(input_value))
           ? templatestring(
             tostring(input_value),
-            local.services_render_context[service_key],
+            local.services_render_template_context[service_key],
           )
           : join(
             "+",
             [
               for env_item in input_value : templatestring(
                 tostring(env_item),
-                local.services_render_context[service_key],
+                local.services_render_template_context[service_key],
               )
             ],
           )
@@ -48,11 +48,11 @@ locals {
     }
   }
 
-  # Extends services_render_context with truenas_values and a patched
+  # Extends services_render_template_context with truenas_values and a patched
   # service.truenas.env so templates can reference rendered env vars
   # alongside chart values in one context object.
   truenas_prepare_render_context = {
-    for service_key, context in local.services_render_context : service_key => merge(
+    for service_key, context in local.services_render_template_context : service_key => merge(
       context,
       {
         truenas_values = local.truenas_prepare_values[service_key]
@@ -85,7 +85,7 @@ locals {
   # (keyed by catalog_app name, catalog services only) merged with Traefik
   # routing labels in the shape the TrueNAS deploy runner expects.
   truenas_prepare_values = {
-    for service_key, context in local.services_render_context : service_key => merge(
+    for service_key, context in local.services_render_template_context : service_key => merge(
       length(local.truenas_prepare_env[service_key]) > 0 ? {
         (coalesce(context.service.truenas.catalog_app, context.service.identity.service)) = {
           additional_envs = [

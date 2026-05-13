@@ -1,10 +1,16 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - widgets:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.url}
+    icon: ${service.identity.name}
+    siteMonitor: ${service.url}
+    widgets:
       - key: ${service.state.secrets.homepage_widget_key}
         secret: ${service.state.secrets.homepage_widget_secret}
         showSummary: true
-        type: komodo
+        type: ${service.identity.name}
         url: ${service.url}
 features:
   password: true

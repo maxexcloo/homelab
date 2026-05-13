@@ -1,6 +1,11 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - icon: sh-grimmory
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.url}
+    icon: sh-grimmory
+    siteMonitor: ${service.url}
     widgets:
       - password: ${service.state.secrets.password}
         type: booklore

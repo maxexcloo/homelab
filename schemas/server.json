@@ -211,6 +211,12 @@
           "description": "Public IPv6 address (bare, without prefix length). Creates an AAAA record on the external domain. Inherited from the parent chain up to 2 levels.",
           "pattern": "^$|^[0-9A-Fa-f:]+$",
           "type": "string"
+        },
+        "ssh_port": {
+          "description": "Port for SSH access. Defaults to 22.",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
         }
       }
     },

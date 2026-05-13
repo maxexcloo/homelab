@@ -40,6 +40,7 @@ servers:
     public_address: ""
     public_ipv4: ""
     public_ipv6: ""
+    ssh_port: 22
   platform_config:
     incus:
       cpus: 2
@@ -68,17 +69,9 @@ servers:
         - 80
         - 443
 services:
+  dashboard: []
   data: {}
   secrets: []
-  dashboard:
-    - name: null
-      container: null
-      description: null
-      group: null
-      href: null
-      icon: null
-      siteMonitor: null
-      widgets: []
   features:
     b2: false
     monitoring: true

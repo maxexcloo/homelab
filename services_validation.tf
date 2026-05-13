@@ -19,18 +19,6 @@ locals {
     ]
   ])
 
-  services_validation_compose_invalid_targets = [
-    for service_key, service in local.services_model : service_key
-    if contains(keys(local.services_render_files_compose), service_key) &&
-    !(
-      contains(keys(local.truenas_input_servers), service.target) ||
-      (
-        contains(toset(keys(local.servers_input)), service.target) &&
-        local.servers_model[service.target].features.docker
-      )
-    )
-  ]
-
   services_validation_file_key_mismatches = [
     for service_key, service in local.services_input : "${service_key} -> ${service.identity.name}"
     if service_key != service.identity.name
@@ -112,16 +100,6 @@ resource "terraform_data" "services_validation" {
       condition = length(local.services_validation_cloudflare_tunnel_missing) == 0
       error_message = (
         "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", local.services_validation_cloudflare_tunnel_missing)}"
-      )
-    }
-
-    # Custom compose services deploy through either Komodo (Docker-capable
-    # servers) or the TrueNAS custom-app path. Other targets would render files
-    # with no deploy consumer.
-    precondition {
-      condition = length(local.services_validation_compose_invalid_targets) == 0
-      error_message = (
-        "Services with docker-compose.yaml.tftpl must target a Docker-capable server or TrueNAS server: ${join(", ", local.services_validation_compose_invalid_targets)}"
       )
     }
 

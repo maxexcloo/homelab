@@ -96,7 +96,7 @@ data/
 ├── config.yml                          # Global configuration (domains, accounts, system, types) — kept separate from defaults.yml so edits to one don't churn the other
 └── defaults.yml                        # Field defaults merged into every server/service/DNS record
 templates/
-└── services/<identity.service>/        # Per-service templates (compose, sidecars, app configs)
+└── services/<identity.service>/        # Templates for services with an implementation key
     │
     ▼
 OpenTofu
@@ -143,10 +143,10 @@ Templates can reference:
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
 2. Fill in `features`, `identity`, `routing`, and at least one entry under `targets:` (server key or `fly`)
-3. Put custom Docker Compose app config directly in `templates/services/<identity.service>/docker-compose.yaml.tftpl`; use `targets.<key>.truenas.env` for TrueNAS catalog app environment
+3. Set `identity.service` only when the service has templates/deploy artifacts; omit it for dashboard/inventory-only services
 4. Each target may carry `features`, `fly`, and `truenas` overlays; target values win over service-level values
 5. Put provider-neutral app lists/settings under `data`; use `targets.<key>.data` for per-target overrides
-6. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<service>` and the Fly hostname is added to computed service URLs
+6. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<identity.name>` and the Fly hostname is added to computed service URLs
 7. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
 8. Run `mise run plan` to review, `mise run apply` to provision
 

@@ -114,46 +114,23 @@ locals {
           url_internal = try(local._services_model_urls[service_key].fqdn_internal.href, null)
           urls         = local._services_model_urls[service_key]
 
-          deploy = (
-            service.target == "fly" ||
-            try(local.servers_model[service.target].platform == "truenas", false) ||
-            (
-              local._services_model_target_is_server[service_key] &&
-              local.servers_model[service.target].features.docker
-            )
-          )
-
-          dashboard = [
-            for dashboard_card in [
-              for input_card in jsondecode(jsonencode(service.dashboard)) : merge(local.defaults.services.dashboard[0], input_card)
-              ] : {
-              container   = dashboard_card.container
-              description = coalesce(dashboard_card.description, service.identity.description)
-              group       = coalesce(dashboard_card.group, local._services_model_groups[service_key])
-              href        = concat([for candidate in [dashboard_card.href, local._services_model_url[service_key]] : candidate if candidate != null && candidate != ""], [null])[0]
-              icon        = coalesce(dashboard_card.icon, service.identity.name)
-              name        = coalesce(dashboard_card.name, service.identity.title)
-              siteMonitor = service.features.monitoring ? concat([for candidate in [dashboard_card.siteMonitor, dashboard_card.href, local._services_model_url[service_key]] : candidate if candidate != null && candidate != ""], [null])[0] : null
-              widgets     = dashboard_card.widgets
-            }
-          ]
-
           fly = {
             app_name = service.target == "fly" ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}") : service.fly.app_name
           }
 
           identity = {
-            group = local._services_model_groups[service_key]
+            group   = local._services_model_groups[service_key]
+            service = try(service.identity.service, null)
           }
 
           routing = {
-            container = coalesce(service.routing.container, service.identity.service)
+            container = service.routing.container != null ? service.routing.container : try(service.identity.service, null)
           }
 
           secrets = [
             for secret in service.secrets : merge(
               {
-                bootstrap_length = null,
+                bootstrap_length = null
                 bootstrap_type   = null
               },
               secret

@@ -2,7 +2,7 @@ locals {
   # Expanded services whose deployment target is Fly.io.
   fly_input_services = {
     for service_key, service in local.services_model : service_key => service
-    if service.deploy && service.target == "fly"
+    if service.identity.service != null && service.target == "fly"
   }
 
   # GitHub files written to the Fly deployment repository. Four categories:
@@ -21,7 +21,7 @@ locals {
           base64encode(
             templatefile(
               "${path.module}/templates/fly/fly.toml.tftpl",
-              local.services_render_context[service_key],
+              local.services_render_template_context[service_key],
             ),
           ),
         )
@@ -36,7 +36,7 @@ locals {
         content_base64 = base64encode(
           templatefile(
             "${path.module}/templates/fly/certs.tftpl",
-            local.services_render_context[service_key],
+            local.services_render_template_context[service_key],
           ),
         )
       }

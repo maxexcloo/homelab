@@ -12,7 +12,7 @@ Root HCL files come in three shapes:
 
 - **Domain stages** — `{domain}_{layer}.tf` (`servers_input.tf`, `services_model.tf`, `dns_model.tf`, …) hold the input → model → outputs → validation → render pipeline for a domain that flows through every layer.
 - **Per-provider files** — one file per provider (`unifi.tf`, `github.tf`, `b2.tf`, `bcrypt.tf`, `random.tf`, `age.tf`, …) for resources and data sources that don't fit a staged domain. Includes utility providers (random/bcrypt/age) used as cross-cutting building blocks.
-- **Per-service templates** — under `templates/services/<identity.service>/`. Use `docker-compose.yaml.tftpl` for custom Docker stacks and `app.json.tftpl` for TrueNAS catalog overlays. Any other files are deployed as sidecars (`.tftpl` rendered, `.raw.tftpl` rendered then binary-encrypted because SOPS structured encryption is unsuitable, e.g. top-level YAML arrays).
+- **Per-service templates** — under `templates/services/<identity.service>/` when `identity.service` is set. Use `docker-compose.yaml.tftpl` for custom Docker stacks and `app.json.tftpl` for TrueNAS catalog overlays. Any other files are deployed as sidecars (`.tftpl` rendered, `.raw.tftpl` rendered then binary-encrypted because SOPS structured encryption is unsuitable, e.g. top-level YAML arrays). Omit `identity.service` for dashboard/inventory-only services that should not render or deploy service-specific artifacts.
 
 ## Sorting Convention
 
@@ -50,7 +50,7 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
   - `snake_case` for all resources, locals, and variables
   - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_files_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
   - **Helpers** (locals consumed only inside their defining staged file) are prefixed with `_` so they sort to the top of the `locals {}` block, ahead of the public locals other files depend on. Per-provider files (`unifi.tf`, `github.tf`, `b2.tf`, …) don't follow the `{domain}_{layer}_{noun}` shape and don't use the `_` prefix — all locals there sort purely alphabetically regardless of scope
-  - The single concrete output of a stage drops the qualifier: `services_render_context` instead of `..._final` or `..._merged`
+  - The single concrete output of a stage drops the qualifier: `services_render_context` instead of `..._final` or `..._merged`; when a file intentionally exposes multiple phases, name the phase explicitly (for example `services_render_pre_template_context` and `services_render_template_context`)
 - **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies to map/object expressions inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes — consistency outweighs the small extra height.
 - **Runtime state shape**: Provider-backed and feature-gated values live under a `state` sub-object on each `server` / `service`, split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), `state.urls` (URL entries). Templates and consumers reach in via the typed sub-object instead of suffix conventions.
 - **Sensitive data**: `sensitive = true` on all outputs containing secrets; secret fields live under `state.secrets`
@@ -80,8 +80,8 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
   - **Service-level** (root keys, apply to every target): `dashboard`, `data`, `features`, `identity`, `imports`, `routing`. `data` and `features` may be overlaid per target; the others apply uniformly to every expansion.
   - **Per-target** (under `targets.<key>`): `data` overlay, `features` overlay, `fly` (Fly-specific), `truenas` (TrueNAS-specific). `fly` and `truenas` are inherently per-target (only the matching target uses them).
   - **General service data**: `data` may be any JSON-compatible shape and is exposed to templates as `data` and `service.data`. Object overlays deep-merge; scalar/array/null target values replace the service value. Use this for provider-neutral app lists, dashboard settings, bookmarks, upstream URLs, and other service-owned data rather than adding service-specific root HCL.
-  - **App config**: Custom Docker Compose app environment lives in `templates/services/<identity.service>/docker-compose.yaml.tftpl`. TrueNAS catalog app environment lives in `targets.<key>.truenas.env` and renders to `additional_envs`.
-  - **Generated labels**: `routing.container` selects the container that receives generated Traefik labels. When unset, the fallback is `identity.service`. Homepage is rendered from structured `dashboard` data, not Docker labels.
+  - **App config**: Custom Docker Compose app environment lives in `templates/services/<identity.service>/docker-compose.yaml.tftpl`. TrueNAS catalog app environment lives in `targets.<key>.truenas.env` and renders to `additional_envs`. `identity.service` is the implementation/template key; omit it for dashboard/inventory-only services.
+  - **Generated labels**: `routing.container` selects the container that receives generated Traefik labels. When unset, the fallback is `identity.service`; if both are null, no container-specific labels are attached. Homepage is rendered from structured `dashboard` data, not Docker labels.
   - **Single-target shorthand**: when a service has one target and no per-target overrides, leave `targets.<key>: {}`.
 
 ## JSON Schema Standards
