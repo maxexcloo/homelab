@@ -5,7 +5,6 @@ dashboard:
     group: ${server.dashboard[0].name}
     href: ${services.beszel.url}/system/${service.state.secrets.system_id}
     icon: ${services.beszel.identity.name}
-    siteMonitor: ${services.beszel.url}
     widgets:
       - password: ${services.beszel.state.secrets.password}
         systemId: ${service.state.secrets.system_id}
