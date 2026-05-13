@@ -53,7 +53,7 @@ locals {
   _services_render_custom_homepage_service_cards = flatten([
     for service_key, service in local.services_render_services : [
       for card_index, dashboard_card in service.dashboard : {
-        group = dashboard_card.group
+        group = dashboard_card.group == try(local.servers[service.target].description, null) ? local.servers[service.target].dashboard[0].name : dashboard_card.group
         name  = dashboard_card.name
         sort  = "0:${length(dashboard_card.widgets) > 0 ? "0" : "1"}:${service_key}:${card_index}"
 
