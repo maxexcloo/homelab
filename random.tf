@@ -2,7 +2,7 @@ locals {
   # Byte secrets use random_id so hex/base64 lengths mean bytes. Password
   # secrets use random_password for character and special-character controls.
   random_server_secret_bytes = {
-    for secret_config in flatten([
+    for secret in flatten([
       for server_key, server in local.servers_input : [
         for secret in server.secrets : {
           byte_length = secret.bootstrap_length
@@ -10,11 +10,11 @@ locals {
         }
         if contains(["hex", "base64"], try(secret.bootstrap_type, ""))
       ]
-    ]) : secret_config.key => secret_config
+    ]) : secret.key => secret
   }
 
   random_server_secret_passwords = {
-    for secret_config in flatten([
+    for secret in flatten([
       for server_key, server in local.servers_input : [
         for secret in server.secrets : {
           key    = "${server_key}-${secret.name}"
@@ -22,11 +22,11 @@ locals {
         }
         if contains(["string", "alphanumeric"], try(secret.bootstrap_type, ""))
       ]
-    ]) : secret_config.key => secret_config
+    ]) : secret.key => secret
   }
 
   random_service_secret_bytes = {
-    for secret_config in flatten([
+    for secret in flatten([
       for service_key, service in local.services_input_targets : [
         for secret in service.secrets : {
           byte_length = secret.bootstrap_length
@@ -34,11 +34,11 @@ locals {
         }
         if contains(["hex", "base64"], try(secret.bootstrap_type, ""))
       ]
-    ]) : secret_config.key => secret_config
+    ]) : secret.key => secret
   }
 
   random_service_secret_passwords = {
-    for secret_config in flatten([
+    for secret in flatten([
       for service_key, service in local.services_input_targets : [
         for secret in service.secrets : {
           key    = "${service_key}-${secret.name}"
@@ -46,7 +46,7 @@ locals {
         }
         if contains(["string", "alphanumeric"], try(secret.bootstrap_type, ""))
       ]
-    ]) : secret_config.key => secret_config
+    ]) : secret.key => secret
   }
 }
 

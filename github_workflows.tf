@@ -1,7 +1,7 @@
 locals {
   github_workflow_file_hashes = {
     for repository_key in keys(local.defaults.github.repositories) : repository_key => {
-      for file_key, file_config in local.github_workflow_files : file_config.file => filesha256(file_config.source)
+      for file_config in values(local.github_workflow_files) : file_config.file => filesha256(file_config.source)
       if file_config.repository_key == repository_key
     }
   }

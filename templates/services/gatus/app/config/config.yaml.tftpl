@@ -24,7 +24,7 @@ alerting:
       success-threshold: 5
   %{~ endif ~}
 endpoints:
-  %{~ for service_key, monitored_service in services ~}
+  %{~ for monitored_service in values(services) ~}
   %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null ~}
   %{~ for url in values(monitored_service.urls) ~}
   - conditions:
