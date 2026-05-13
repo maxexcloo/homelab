@@ -1,7 +1,13 @@
 locals {
-  _services_render_custom_homepage_layout_groups = {
-    server  = sort(distinct([for c in local._services_render_custom_homepage_service_cards : c.group if contains(local._services_render_custom_homepage_server_names, c.group)]))
-    service = sort(distinct([for c in local._services_render_custom_homepage_service_cards : c.group if !contains(local._services_render_custom_homepage_server_names, c.group)]))
+  _services_render_custom_homepage_cards_by_group = {
+    for card in [
+      for sort_key in sort(keys(local._services_render_custom_homepage_cards_by_sort)) :
+      local._services_render_custom_homepage_cards_by_sort[sort_key]
+    ] : card.group => zipmap([card.name], [card.card])...
+  }
+
+  _services_render_custom_homepage_cards_by_sort = {
+    for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) : dashboard_card.sort => dashboard_card
   }
 
   _services_render_custom_homepage_server_cards = flatten([
@@ -9,7 +15,7 @@ locals {
       for card_index, dashboard_card in server.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "${length(dashboard_card.widgets) > 0 ? "0" : "1"}:${server_key}:${card_index}"
+        sort  = "1:${length(dashboard_card.widgets) > 0 ? "0" : "1"}:${server_key}:${card_index}"
 
         card = {
           for field, value in yamldecode(templatestring(yamlencode({
@@ -25,31 +31,31 @@ locals {
     ]
   ])
 
-  _services_render_custom_homepage_server_cards_by_group = {
-    for card in [
-      for sort_key in sort(keys(local._services_render_custom_homepage_server_cards_by_sort)) :
-      local._services_render_custom_homepage_server_cards_by_sort[sort_key]
-    ] : card.group => zipmap([card.name], [card.card])...
-  }
-
-  _services_render_custom_homepage_server_cards_by_sort = {
-    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.sort => dashboard_card
-  }
-
-  _services_render_custom_homepage_server_groups = sort(distinct([
-    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.group
-  ]))
+  _services_render_custom_homepage_server_group_order = concat(
+    local._services_render_custom_homepage_server_name_groups,
+    [
+      for group in sort(distinct([
+        for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.group
+      ])) : group
+      if !contains(local._services_render_custom_homepage_server_name_groups, group)
+    ],
+  )
 
   _services_render_custom_homepage_server_names = [
     for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.name
   ]
+
+  _services_render_custom_homepage_server_name_groups = sort(distinct([
+    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
+    if contains(local._services_render_custom_homepage_server_names, dashboard_card.group)
+  ]))
 
   _services_render_custom_homepage_service_cards = flatten([
     for service_key, service in local.services_render_services : [
       for card_index, dashboard_card in service.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "${length(dashboard_card.widgets) > 0 ? "0" : "1"}:${service_key}:${card_index}"
+        sort  = "0:${length(dashboard_card.widgets) > 0 ? "0" : "1"}:${service_key}:${card_index}"
 
         card = {
           for field, value in {
@@ -68,22 +74,16 @@ locals {
     ]
   ])
 
-  _services_render_custom_homepage_service_cards_by_group = {
-    for card in [
-      for sort_key in sort(keys(local._services_render_custom_homepage_service_cards_by_sort)) :
-      local._services_render_custom_homepage_service_cards_by_sort[sort_key]
-    ] : card.group => zipmap([card.name], [card.card])...
-  }
-
-  _services_render_custom_homepage_service_cards_by_sort = {
-    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.sort => dashboard_card
-  }
+  _services_render_custom_homepage_service_group_order = sort(distinct([
+    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
+    if !contains(local._services_render_custom_homepage_server_names, dashboard_card.group)
+  ]))
 
   _services_render_custom_homepage_template_data = {
     homepage = {
       layout = merge(
         {
-          for group in local._services_render_custom_homepage_layout_groups.service : group => {
+          for group in local._services_render_custom_homepage_service_group_order : group => {
             columns = local.services_input["homepage"].data.groups[group].columns
             style   = local.services_input["homepage"].data.groups[group].style
             tab     = "Services"
@@ -97,10 +97,7 @@ locals {
           }
         },
         {
-          for group in sort(distinct(concat(
-            local._services_render_custom_homepage_server_groups,
-            local._services_render_custom_homepage_layout_groups.server,
-            ))) : group => {
+          for group in local._services_render_custom_homepage_server_group_order : group => {
             columns = 2
             style   = "row"
             tab     = "Servers"
@@ -109,15 +106,11 @@ locals {
       )
 
       services = [
-        for group in sort(distinct(concat(
-          local._services_render_custom_homepage_layout_groups.server,
-          local._services_render_custom_homepage_layout_groups.service,
-          local._services_render_custom_homepage_server_groups,
-          ))) : {
-          (group) = concat(
-            try(local._services_render_custom_homepage_service_cards_by_group[group], []),
-            try(local._services_render_custom_homepage_server_cards_by_group[group], []),
-          )
+        for group in concat(
+          local._services_render_custom_homepage_service_group_order,
+          local._services_render_custom_homepage_server_group_order,
+          ) : {
+          (group) = try(local._services_render_custom_homepage_cards_by_group[group], [])
         }
       ]
     }
