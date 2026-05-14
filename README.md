@@ -57,7 +57,7 @@ templates/
 
 Rendered service configs are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/config.yml`. `mise run render` can write plaintext render output locally through `debug_dir` for troubleshooting.
 
-Feature flags create provider resources, expose generated values, or control rendered config. `password` and monitoring flags are local-only. `b2`, `resend`, and `tailscale` call providers. Pushover values are pass-through variables.
+Feature flags create provider resources, expose generated values, or control rendered config. `password` and monitoring flags are local-only. `b2`, `resend`, and `tailscale` call providers. Pushover values are per-server/service 1Password fields.
 
 ## Service Data And Templates
 

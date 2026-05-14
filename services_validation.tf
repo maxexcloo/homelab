@@ -49,11 +49,6 @@ locals {
     ]
   ])
 
-  services_validation_pushover_missing_credentials = [
-    for service_key, service in local.services_input_targets : service_key
-    if service.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")
-  ]
-
   services_validation_truenas_config_invalid_targets = [
     for service_key, service in local.services_model : service_key
     if !contains(keys(local.truenas_input_servers), service.target) &&
@@ -100,13 +95,11 @@ resource "terraform_data" "services_validation" {
       )
     }
 
-    # Pushover is pass-through, so provider validation will not catch blanks.
     precondition {
       condition     = length(local.services_validation_fly_ports_missing) == 0
       error_message = "Fly services must have routing.port set: ${join(", ", local.services_validation_fly_ports_missing)}"
     }
 
-    # TrueNAS catalog metadata is meaningful only for TrueNAS targets.
     precondition {
       condition = length(local.services_validation_file_key_mismatches) == 0
       error_message = (
@@ -114,7 +107,6 @@ resource "terraform_data" "services_validation" {
       )
     }
 
-    # TrueNAS services need either a custom compose template or catalog template.
     precondition {
       condition = length(local.services_validation_import_alias_conflicts) == 0
       error_message = (
@@ -122,7 +114,6 @@ resource "terraform_data" "services_validation" {
       )
     }
 
-    # SSL service URLs need managed DNS so ACME delegation can resolve.
     precondition {
       condition = length(local.services_validation_invalid_imports) == 0
       error_message = (
@@ -138,24 +129,19 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition = length(local.services_validation_pushover_missing_credentials) == 0
-      error_message = (
-        "Services with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", local.services_validation_pushover_missing_credentials)}"
-      )
-    }
-
-    precondition {
       condition = length(local.services_validation_truenas_config_invalid_targets) == 0
       error_message = (
         "targets.<key>.truenas settings are only valid for services targeting TrueNAS servers: ${join(", ", local.services_validation_truenas_config_invalid_targets)}"
       )
     }
 
+    # TrueNAS services need either a custom compose template or catalog template.
     precondition {
       condition     = length(local.services_validation_truenas_missing_template) == 0
       error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", local.services_validation_truenas_missing_template)}"
     }
 
+    # SSL service URLs need managed DNS so ACME delegation can resolve.
     precondition {
       condition = length(local.services_validation_unmanaged_urls) == 0
       error_message = (

@@ -51,11 +51,11 @@ locals {
           }
         ],
         server.features.password ? [
-          {
-            id      = "password"
-            label   = "password"
+          for secret_name in local.defaults.onepassword.secret_names.password : {
+            id      = secret_name
+            label   = secret_name
             purpose = "PASSWORD"
-            value   = server.runtime.secrets.password
+            value   = server.runtime.secrets[secret_name]
           }
         ] : [],
         [
@@ -74,7 +74,7 @@ locals {
             type  = "CONCEALED"
             value = tostring(secret_value)
           }
-          if secret_name != "password" && secret_value != null && (
+          if !contains(local.defaults.onepassword.secret_names.password, secret_name) && secret_value != null && (
             secret_value != "" ||
             contains(local.onepassword_server_manual_secret_names[server_key], secret_name)
           )
@@ -141,8 +141,13 @@ locals {
 
   onepassword_server_manual_secret_names = {
     for server_key, server in local.servers : server_key => toset([
-      for secret in server.secrets : secret.name
-      if secret.bootstrap_type == null
+      for secret_name in concat(
+        server.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
+        [
+          for secret in server.secrets : secret.name
+          if secret.bootstrap_type == null
+        ],
+      ) : secret_name
     ])
   }
 
@@ -150,7 +155,8 @@ locals {
   # operator-supplied secrets), and _ro when OpenTofu remains source.
   onepassword_server_rw_secret_names = {
     for server_key, server in local.servers : server_key => toset(concat(
-      server.features.password ? ["password"] : [],
+      server.features.password ? local.defaults.onepassword.secret_names.password : [],
+      server.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
       [for secret in server.secrets : secret.name],
     ))
   }

@@ -41,13 +41,18 @@ locals {
             service.features.b2 ? {
               b2_application_key = b2_application_key.service[service_key].application_key
             } : {},
-            service.features.password ? {
-              password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key]["password"], null), random_password.service[service_key].result))
-              password_hash = bcrypt_hash.service[service_key].id
-            } : {},
+            service.features.password ? merge(
+              {
+                for secret_name in local.defaults.onepassword.secret_names.password :
+                secret_name => sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key][secret_name], null), random_password.service[service_key].result))
+              },
+              {
+                password_hash = bcrypt_hash.service[service_key].id
+              },
+            ) : {},
             service.features.pushover ? {
-              pushover_application_token = var.pushover_application_token
-              pushover_user_key          = var.pushover_user_key
+              for secret_name in local.defaults.onepassword.secret_names.pushover :
+              secret_name => sensitive(try(local.onepassword_service_existing_fields[service_key][secret_name], ""))
             } : {},
             service.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token

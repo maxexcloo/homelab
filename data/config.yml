@@ -21,6 +21,12 @@ networking:
       - ::1/128
       - fd7a:115c:a1e0::/48
 onepassword:
+  secret_names:
+    password:
+      - password
+    pushover:
+      - pushover_application_token
+      - pushover_user_key
   vaults:
     servers:
       id: jfp5upb7y2wmr4hbz7enfpdh5e

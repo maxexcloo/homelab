@@ -49,11 +49,6 @@ locals {
     )
   ]
 
-  servers_validation_pushover_missing_credentials = [
-    for server_key, server in local.servers_input : server_key
-    if server.features.pushover && (nonsensitive(var.pushover_application_token) == "" || nonsensitive(var.pushover_user_key) == "")
-  ]
-
   servers_validation_self_parents = [
     for server_key, server in local.servers_input : server_key
     if server.parent == server_key
@@ -106,15 +101,6 @@ resource "terraform_data" "servers_validation" {
       condition = length(local.servers_validation_parent_cycles) == 0
       error_message = (
         "Server parent references contain a cycle within the supported parent depth: ${join(", ", local.servers_validation_parent_cycles)}"
-      )
-    }
-
-    # Pushover values are pass-through variables, so provider validation will not
-    # catch missing credentials for enabled servers.
-    precondition {
-      condition = length(local.servers_validation_pushover_missing_credentials) == 0
-      error_message = (
-        "Servers with features.pushover enabled require pushover_application_token and pushover_user_key: ${join(", ", local.servers_validation_pushover_missing_credentials)}"
       )
     }
 

@@ -62,38 +62,6 @@ variable "onepassword_connect_url" {
   }
 }
 
-variable "pushover_application_token" {
-  default     = ""
-  description = "Pushover application API token"
-  sensitive   = true
-  type        = string
-
-  validation {
-    error_message = "Pushover application API token must be empty or a 30-character alphanumeric token."
-
-    condition = (
-      nonsensitive(var.pushover_application_token) == "" ||
-      can(regex("^[A-Za-z0-9]{30}$", nonsensitive(var.pushover_application_token)))
-    )
-  }
-}
-
-variable "pushover_user_key" {
-  default     = ""
-  description = "Pushover user or group key"
-  sensitive   = true
-  type        = string
-
-  validation {
-    error_message = "Pushover user or group key must be empty or a 30-character alphanumeric key."
-
-    condition = (
-      nonsensitive(var.pushover_user_key) == "" ||
-      can(regex("^[A-Za-z0-9]{30}$", nonsensitive(var.pushover_user_key)))
-    )
-  }
-}
-
 variable "resend_api_key" {
   description = "Resend API key"
   sensitive   = true

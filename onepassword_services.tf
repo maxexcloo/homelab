@@ -82,11 +82,11 @@ locals {
           }
         ],
         service.features.password ? [
-          {
-            id      = "password"
-            label   = "password"
+          for secret_name in local.defaults.onepassword.secret_names.password : {
+            id      = secret_name
+            label   = secret_name
             purpose = "PASSWORD"
-            value   = service.runtime.secrets.password
+            value   = service.runtime.secrets[secret_name]
           }
         ] : [],
         [
@@ -105,7 +105,7 @@ locals {
             type  = "CONCEALED"
             value = tostring(secret_value)
           }
-          if secret_name != "password" && secret_value != null && (
+          if !contains(local.defaults.onepassword.secret_names.password, secret_name) && secret_value != null && (
             secret_value != "" ||
             contains(local.onepassword_service_manual_secret_names[service_key], secret_name)
           )
@@ -162,15 +162,21 @@ locals {
 
   onepassword_service_manual_secret_names = {
     for service_key, service in local.services : service_key => toset([
-      for secret in service.secrets : secret.name
-      if secret.bootstrap_type == null
+      for secret_name in concat(
+        service.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
+        [
+          for secret in service.secrets : secret.name
+          if secret.bootstrap_type == null
+        ],
+      ) : secret_name
     ])
     if contains(keys(local.onepassword_service_items), service_key)
   }
 
   onepassword_service_rw_secret_names = {
     for service_key, service in local.services : service_key => toset(concat(
-      service.features.password ? ["password"] : [],
+      service.features.password ? local.defaults.onepassword.secret_names.password : [],
+      service.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
       [for secret in service.secrets : secret.name],
     ))
     if contains(keys(local.onepassword_service_items), service_key)

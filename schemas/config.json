@@ -94,6 +94,23 @@
       "description": "1Password Connect integration settings for storing generated credentials.",
       "type": "object",
       "properties": {
+        "secret_names": {
+          "additionalProperties": false,
+          "description": "Canonical 1Password secret field names grouped by feature.",
+          "type": "object",
+          "properties": {
+            "password": {
+              "minItems": 1,
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "pushover": {
+              "minItems": 1,
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
         "vaults": {
           "additionalProperties": false,
           "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",

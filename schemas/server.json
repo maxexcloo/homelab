@@ -109,7 +109,7 @@
           "type": "boolean"
         },
         "pushover": {
-          "description": "Expose the configured Pushover application token and user/group key. Exposes runtime.secrets.pushover_application_token and runtime.secrets.pushover_user_key.",
+          "description": "Create 1Password read/write fields for this server's Pushover application token and user/group key. Exposes runtime.secrets.pushover_application_token and runtime.secrets.pushover_user_key.",
           "type": "boolean"
         },
         "resend": {

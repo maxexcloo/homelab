@@ -74,13 +74,18 @@ locals {
               cloudflare_tunnel_read_token = module.cloudflare_tunnel[server_key].tunnel_read_token
               cloudflare_tunnel_token      = module.cloudflare_tunnel[server_key].tunnel_token
             } : {},
-            server.features.password ? {
-              password      = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key]["password"], null), random_password.server[server_key].result))
-              password_hash = bcrypt_hash.server[server_key].id
-            } : {},
+            server.features.password ? merge(
+              {
+                for secret_name in local.defaults.onepassword.secret_names.password :
+                secret_name => sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key][secret_name], null), random_password.server[server_key].result))
+              },
+              {
+                password_hash = bcrypt_hash.server[server_key].id
+              },
+            ) : {},
             server.features.pushover ? {
-              pushover_application_token = var.pushover_application_token
-              pushover_user_key          = var.pushover_user_key
+              for secret_name in local.defaults.onepassword.secret_names.pushover :
+              secret_name => sensitive(try(local.onepassword_server_existing_fields[server_key][secret_name], ""))
             } : {},
             server.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_server[server_key].create_response).token
