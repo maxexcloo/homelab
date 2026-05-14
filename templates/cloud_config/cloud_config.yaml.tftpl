@@ -15,20 +15,17 @@ groups:
 runcmd:
   - sysctl --system
   %{~ if server.features.docker ~}
-  # renovate: datasource=github-releases depName=docker/cli extractVersion=^v(?<version>.*)$
-  - DOCKER_VERSION=29.4.3 sh -c 'curl -fsLS https://raw.githubusercontent.com/docker/docker-install/2687d91ddeb3bd6aeae37a90947761efdee87030/install.sh | sh -s -- --version "$DOCKER_VERSION"'
-  # renovate: datasource=github-releases depName=getsops/sops extractVersion=^v(?<version>.*)$
-  - SOPS_VERSION=3.12.1 sh -c 'curl -fsLS -o /usr/local/bin/sops "https://github.com/getsops/sops/releases/download/v$SOPS_VERSION/sops-v$SOPS_VERSION.linux.$(dpkg --print-architecture)"'
+  - curl -fsLS https://get.docker.com | sh
+  - curl -fsLS -o /usr/local/bin/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
   - chmod +x /usr/local/bin/sops
   - docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d
   %{~ endif ~}
   %{~ if server.features.cloudflare_zero_trust_tunnel ~}
-  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/download/2026.3.0/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
+  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
   - cloudflared service install ${server.state.secrets.cloudflare_tunnel_token}
   %{~ endif ~}
   %{~ if server.features.tailscale ~}
-  # renovate: datasource=github-releases depName=tailscale/tailscale extractVersion=^v(?<version>.*)$
-  - TAILSCALE_VERSION=1.96.4 sh -c 'curl -fsLS https://raw.githubusercontent.com/tailscale/tailscale/v$TAILSCALE_VERSION/scripts/installer.sh | TAILSCALE_VERSION=$TAILSCALE_VERSION sh'
+  - curl -fsLS https://tailscale.com/install.sh | sh
   - tailscale up --advertise-exit-node --authkey ${server.state.secrets.tailscale_auth_key} --hostname ${server.key}
   %{~ endif ~}
 users:
@@ -70,7 +67,7 @@ write_files:
           environment:
             PERIPHERY_PASSKEY: ${server.state.secrets.komodo_passkey}
             SOPS_AGE_KEY: ${server.state.secrets.age_secret_key}
-          image: ghcr.io/moghtech/komodo-periphery:2.2.0
+          image: ghcr.io/moghtech/komodo-periphery:latest
           network_mode: host
           restart: unless-stopped
           volumes:
