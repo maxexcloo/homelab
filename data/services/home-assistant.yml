@@ -1,4 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    homepage_widget_key: {}
 dashboard:
   - name: ESPHome
     description: ESP Device Builder
@@ -8,7 +11,7 @@ dashboard:
     siteMonitor: ${server.urls.default.href}/5c53de3b_esphome
     widgets:
       - type: esphome
-        password: ${server.runtime.secrets.password}
+        password: ${server.runtime.credentials.password}
         url: http://${server.runtime.addresses.tailscale_ipv4}:6052
         username: ${server.identity.username}
   - name: ${service.identity.title}
@@ -19,7 +22,7 @@ dashboard:
     siteMonitor: ${server.urls.default.href}
     widgets:
       - type: homeassistant
-        key: ${service.runtime.secrets.homepage_widget_key}
+        key: ${service.runtime.credentials.homepage_widget_key}
         url: ${server.urls.default.href}
   - name: ESPresense
     description: Room Presence
@@ -50,7 +53,5 @@ identity:
   group: Home Automation
   name: home-assistant
   title: Home Assistant
-secrets:
-  - name: homepage_widget_key
 targets:
   au-haos: {}

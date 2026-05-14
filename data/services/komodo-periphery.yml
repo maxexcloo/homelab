@@ -8,8 +8,8 @@ dashboard:
     siteMonitor: ${services.komodo.urls.default.href}
     widgets:
       - type: komodo
-        key: ${services.komodo.runtime.secrets.homepage_widget_key}
-        secret: ${services.komodo.runtime.secrets.homepage_widget_secret}
+        key: ${services.komodo.runtime.credentials.homepage_widget_key}
+        secret: ${services.komodo.runtime.credentials.homepage_widget_secret}
         url: ${services.komodo.urls.default.href}
 identity:
   description: Container Agent

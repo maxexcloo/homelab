@@ -1,4 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    secret_key:
+      bootstrap_length: 32
+      bootstrap_type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -17,10 +22,6 @@ identity:
 routing:
   port: 30375
   scheme: http
-secrets:
-  - name: secret_key
-    bootstrap_length: 32
-    bootstrap_type: hex
 targets:
   au-truenas:
     truenas: {}

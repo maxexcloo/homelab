@@ -1,16 +1,15 @@
 locals {
-  # Generated bootstrap value per declared service secret. Null when the secret
-  # has no bootstrap_type, so the runtime secret falls through to an empty
-  # operator-filled 1Password placeholder.
-  _services_outputs_secret_bootstrap = {
+  # Generated bootstrap value per declared credential. Null when the credential
+  # has no bootstrap_type, so runtime falls through to an empty 1Password field.
+  _services_outputs_credentials_bootstrap = {
     for entry in flatten([
       for service_key, service in local.services_model : [
-        for secret in service.secrets : {
-          key = "${service_key}-${secret.name}"
+        for field_name, field in service.credentials.fields : {
+          key = "${service_key}-${field_name}"
           value = (
-            secret.bootstrap_type == "hex" ? random_id.service_secret["${service_key}-${secret.name}"].hex
-            : secret.bootstrap_type == "base64" ? random_id.service_secret["${service_key}-${secret.name}"].b64_std
-            : secret.bootstrap_type != null && contains(["alphanumeric", "string"], secret.bootstrap_type) ? random_password.service_secret["${service_key}-${secret.name}"].result
+            field.bootstrap_type == "hex" ? random_id.service_secret["${service_key}-${field_name}"].hex
+            : field.bootstrap_type == "base64" ? random_id.service_secret["${service_key}-${field_name}"].b64_std
+            : field.bootstrap_type != null && contains(["alphanumeric", "string"], field.bootstrap_type) ? random_password.service_secret["${service_key}-${field_name}"].result
             : null
           )
         }
@@ -31,28 +30,28 @@ locals {
             } : {},
           )
 
-          secrets = merge(
+          credentials = merge(
             {
-              for secret in service.secrets : secret.name => sensitive(try(coalesce(
-                try(local.onepassword_service_existing_fields[service_key][secret.name], null),
-                local._services_outputs_secret_bootstrap["${service_key}-${secret.name}"],
+              for field_name, field in service.credentials.fields : field_name => sensitive(try(coalesce(
+                try(local.onepassword_service_existing_fields[service_key][field_name], null),
+                local._services_outputs_credentials_bootstrap["${service_key}-${field_name}"],
               ), ""))
+              if field.bootstrap_type != null || field.mode == "rw"
             },
             service.features.b2 ? {
               b2_application_key = b2_application_key.service[service_key].application_key
             } : {},
             service.features.password ? merge(
               {
-                for secret_name in local.defaults.onepassword.secret_names.password :
-                secret_name => sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key][secret_name], null), random_password.service[service_key].result))
+                password = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service[service_key].result))
               },
               {
                 password_hash = bcrypt_hash.service[service_key].id
               },
             ) : {},
             service.features.pushover ? {
-              for secret_name in local.defaults.onepassword.secret_names.pushover :
-              secret_name => sensitive(try(local.onepassword_service_existing_fields[service_key][secret_name], ""))
+              pushover_application_token = sensitive(try(local.onepassword_service_existing_fields[service_key].pushover_application_token, ""))
+              pushover_user_key          = sensitive(try(local.onepassword_service_existing_fields[service_key].pushover_user_key, ""))
             } : {},
             service.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token

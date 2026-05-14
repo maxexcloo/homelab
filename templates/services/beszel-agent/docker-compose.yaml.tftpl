@@ -5,7 +5,7 @@ services:
       HUB_URL: ${services.beszel.urls.default.href}
       KEY: ${service.data.public_key}
       LISTEN: ${service.data.listen}
-      TOKEN: ${service.runtime.secrets.token}
+      TOKEN: ${service.runtime.credentials.token}
     network_mode: host
     restart: unless-stopped
     volumes:

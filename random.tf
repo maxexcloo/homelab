@@ -1,63 +1,63 @@
 locals {
-  # Byte secrets use random_id so hex/base64 lengths mean bytes. Password
-  # secrets use random_password for character and special-character controls.
-  random_server_secret_bytes = {
-    for secret in flatten([
+  # Byte credentials use random_id so hex/base64 lengths mean bytes. Password
+  # credentials use random_password for character and special-character controls.
+  random_server_credential_bytes = {
+    for field in flatten([
       for server_key, server in local.servers_model : [
-        for secret in server.secrets : {
-          byte_length = secret.bootstrap_length
-          key         = "${server_key}-${secret.name}"
+        for field_name, field in server.credentials.fields : {
+          byte_length = field.bootstrap_length
+          key         = "${server_key}-${field_name}"
         }
-        if secret.bootstrap_type != null && contains(["hex", "base64"], secret.bootstrap_type)
+        if field.bootstrap_type != null && contains(["hex", "base64"], field.bootstrap_type)
       ]
-    ]) : secret.key => secret
+    ]) : field.key => field
   }
 
-  random_server_secret_passwords = {
-    for secret in flatten([
+  random_server_credential_passwords = {
+    for field in flatten([
       for server_key, server in local.servers_model : [
-        for secret in server.secrets : {
-          key    = "${server_key}-${secret.name}"
-          length = secret.bootstrap_length
+        for field_name, field in server.credentials.fields : {
+          key    = "${server_key}-${field_name}"
+          length = field.bootstrap_length
         }
-        if secret.bootstrap_type != null && contains(["string", "alphanumeric"], secret.bootstrap_type)
+        if field.bootstrap_type != null && contains(["string", "alphanumeric"], field.bootstrap_type)
       ]
-    ]) : secret.key => secret
+    ]) : field.key => field
   }
 
-  random_service_secret_bytes = {
-    for secret in flatten([
+  random_service_credential_bytes = {
+    for field in flatten([
       for service_key, service in local.services_model : [
-        for secret in service.secrets : {
-          byte_length = secret.bootstrap_length
-          key         = "${service_key}-${secret.name}"
+        for field_name, field in service.credentials.fields : {
+          byte_length = field.bootstrap_length
+          key         = "${service_key}-${field_name}"
         }
-        if secret.bootstrap_type != null && contains(["hex", "base64"], secret.bootstrap_type)
+        if field.bootstrap_type != null && contains(["hex", "base64"], field.bootstrap_type)
       ]
-    ]) : secret.key => secret
+    ]) : field.key => field
   }
 
-  random_service_secret_passwords = {
-    for secret in flatten([
+  random_service_credential_passwords = {
+    for field in flatten([
       for service_key, service in local.services_model : [
-        for secret in service.secrets : {
-          key    = "${service_key}-${secret.name}"
-          length = secret.bootstrap_length
+        for field_name, field in service.credentials.fields : {
+          key    = "${service_key}-${field_name}"
+          length = field.bootstrap_length
         }
-        if secret.bootstrap_type != null && contains(["string", "alphanumeric"], secret.bootstrap_type)
+        if field.bootstrap_type != null && contains(["string", "alphanumeric"], field.bootstrap_type)
       ]
-    ]) : secret.key => secret
+    ]) : field.key => field
   }
 }
 
 resource "random_id" "server_secret" {
-  for_each = local.random_server_secret_bytes
+  for_each = local.random_server_credential_bytes
 
   byte_length = each.value.byte_length
 }
 
 resource "random_id" "service_secret" {
-  for_each = local.random_service_secret_bytes
+  for_each = local.random_service_credential_bytes
 
   byte_length = each.value.byte_length
 }
@@ -77,7 +77,7 @@ resource "random_password" "server_komodo_passkey" {
 }
 
 resource "random_password" "server_secret" {
-  for_each = local.random_server_secret_passwords
+  for_each = local.random_server_credential_passwords
 
   length  = each.value.length
   special = false
@@ -91,7 +91,7 @@ resource "random_password" "service" {
 }
 
 resource "random_password" "service_secret" {
-  for_each = local.random_service_secret_passwords
+  for_each = local.random_service_credential_passwords
 
   length  = each.value.length
   special = false

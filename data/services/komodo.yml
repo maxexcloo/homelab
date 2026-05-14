@@ -1,4 +1,14 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    homepage_widget_key: {}
+    homepage_widget_secret: {}
+    db_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    webhook_secret:
+      bootstrap_length: 32
+      bootstrap_type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -8,8 +18,8 @@ dashboard:
     siteMonitor: ${service.urls.default.href}
     widgets:
       - type: ${service.identity.name}
-        key: ${service.runtime.secrets.homepage_widget_key}
-        secret: ${service.runtime.secrets.homepage_widget_secret}
+        key: ${service.runtime.credentials.homepage_widget_key}
+        secret: ${service.runtime.credentials.homepage_widget_secret}
         showSummary: true
         url: ${service.urls.default.href}
 features:
@@ -25,19 +35,10 @@ routing:
   container: core
   port: 9120
   scheme: http
-secrets:
-  - name: db_password
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
-  - name: homepage_widget_key
-  - name: homepage_widget_secret
-  - name: webhook_secret
-    bootstrap_length: 32
-    bootstrap_type: hex
 targets:
   au-truenas:
     truenas:
       catalog_app: komodo
       env:
         KOMODO_HOST: ${service.urls.default.href}
-        KOMODO_WEBHOOK_SECRET: ${service.runtime.secrets.webhook_secret}
+        KOMODO_WEBHOOK_SECRET: ${service.runtime.credentials.webhook_secret}

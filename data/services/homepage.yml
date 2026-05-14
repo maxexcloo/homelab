@@ -1,5 +1,8 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard: []
+credentials:
+  fields:
+    tailscale_homepage_widget_key: {}
 data:
   bookmarks:
     - Providers:
@@ -84,7 +87,5 @@ routing:
   scheme: http
   urls:
     - home.excloo.com
-secrets:
-  - name: tailscale_homepage_widget_key
 targets:
   au-truenas: {}

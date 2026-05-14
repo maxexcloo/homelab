@@ -1,4 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    homepage_widget_key: {}
+    db_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    redis_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -8,7 +17,7 @@ dashboard:
     siteMonitor: ${service.urls.default.href}
     widgets:
       - type: ${service.identity.name}
-        key: ${service.runtime.secrets.homepage_widget_key}
+        key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
         version: 2
 features:
@@ -26,14 +35,6 @@ routing:
   scheme: http
   urls:
     - photos.excloo.com
-secrets:
-  - name: db_password
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
-  - name: homepage_widget_key
-  - name: redis_password
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
 targets:
   au-truenas:
     truenas: {}

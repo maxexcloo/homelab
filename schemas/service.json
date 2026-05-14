@@ -6,6 +6,50 @@
   "title": "Service",
   "type": "object",
   "definitions": {
+    "credential_field": {
+      "additionalProperties": false,
+      "type": "object",
+      "allOf": [
+        {
+          "if": {
+            "required": ["bootstrap_type"]
+          },
+          "then": {
+            "required": ["bootstrap_length"]
+          },
+          "else": {
+            "not": {
+              "required": ["bootstrap_length"]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "bootstrap_length": {
+          "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for manually supplied 1Password fields.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "bootstrap_type": {
+          "description": "Initial generated secret format. Omit to create an empty concealed 1Password field; hex/base64/string/alphanumeric bootstrap generated values and then read back from 1Password.",
+          "enum": ["alphanumeric", "base64", "hex", "string"],
+          "type": "string"
+        },
+        "mode": {
+          "description": "Whether 1Password may be the source of truth for this field. rw fields create placeholders; ro fields are written from provider-generated values.",
+          "enum": ["ro", "rw"],
+          "type": "string"
+        },
+        "purpose": {
+          "description": "Optional 1Password field purpose.",
+          "enum": ["PASSWORD", null]
+        },
+        "type": {
+          "description": "1Password field type when purpose is not set.",
+          "enum": ["CONCEALED", "STRING", null]
+        }
+      }
+    },
     "dashboard": {
       "description": "Homepage service card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
       "properties": {},
@@ -110,43 +154,6 @@
         }
       ]
     },
-    "secret_item": {
-      "additionalProperties": false,
-      "required": ["name"],
-      "type": "object",
-      "allOf": [
-        {
-          "if": {
-            "required": ["bootstrap_type"]
-          },
-          "then": {
-            "required": ["bootstrap_length"]
-          },
-          "else": {
-            "not": {
-              "required": ["bootstrap_length"]
-            }
-          }
-        }
-      ],
-      "properties": {
-        "bootstrap_length": {
-          "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for manually supplied 1Password fields.",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "bootstrap_type": {
-          "description": "Initial generated secret format. Omit to create an empty concealed 1Password field; hex/base64/string/alphanumeric bootstrap generated values and then read back from 1Password.",
-          "enum": ["alphanumeric", "base64", "hex", "string"],
-          "type": "string"
-        },
-        "name": {
-          "description": "Secret identifier. Exposed as runtime.secrets.{name} on the service. Must be lowercase alphanumeric or underscore.",
-          "pattern": "^[a-z0-9_]+$",
-          "type": "string"
-        }
-      }
-    },
     "truenas_target": {
       "additionalProperties": false,
       "description": "Configuration for TrueNAS catalog app deployments. Custom apps are inferred from docker-compose.yaml.tftpl in the service's template directory.",
@@ -204,6 +211,23 @@
     }
   },
   "properties": {
+    "credentials": {
+      "additionalProperties": false,
+      "description": "Credential fields exposed as runtime.credentials.{name}. Omit bootstrap_type for manually supplied 1Password fields.",
+      "type": "object",
+      "properties": {
+        "fields": {
+          "description": "Credential fields keyed by field name.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/credential_field"
+          },
+          "propertyNames": {
+            "pattern": "^[a-z0-9_]+$"
+          }
+        }
+      }
+    },
     "dashboard": {
       "description": "Homepage dashboard cards for this service. Omit or set [] to render no cards. Card objects are passed through to Homepage after template interpolation.",
       "type": "array",
@@ -219,7 +243,7 @@
       "type": "object",
       "properties": {
         "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes runtime.attributes.b2_application_key_id, runtime.attributes.b2_bucket_name, runtime.attributes.b2_endpoint, and runtime.secrets.b2_application_key as template variables.",
+          "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes runtime.attributes.b2_application_key_id, runtime.attributes.b2_bucket_name, runtime.attributes.b2_endpoint, and runtime.credentials.b2_application_key as template variables.",
           "type": "boolean"
         },
         "monitoring": {
@@ -231,19 +255,19 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random password for this service. Exposes runtime.secrets.password and runtime.secrets.password_hash (bcrypt) as template variables. Stored in 1Password.",
+          "description": "Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
-          "description": "Create 1Password read/write fields for this service's Pushover application token and user/group key. Exposes runtime.secrets.pushover_application_token and runtime.secrets.pushover_user_key.",
+          "description": "Create 1Password read/write fields for this service's Pushover application token and user/group key. Exposes runtime.credentials.pushover_application_token and runtime.credentials.pushover_user_key.",
           "type": "boolean"
         },
         "resend": {
-          "description": "Provision a Resend API key for outbound email from this service. Exposes runtime.secrets.resend_api_key as a template variable.",
+          "description": "Provision a Resend API key for outbound email from this service. Exposes runtime.credentials.resend_api_key as a template variable.",
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key for this service. Exposes runtime.secrets.tailscale_auth_key as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
+          "description": "Generate a Tailscale auth key for this service. Exposes runtime.credentials.tailscale_auth_key as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
           "type": "boolean"
         }
       }
@@ -363,13 +387,6 @@
         }
       }
     },
-    "secrets": {
-      "description": "Service secrets. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as runtime.secrets.{name} on the service object.",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/secret_item"
-      }
-    },
     "targets": {
       "description": "Deployment targets for this service. Map keys are server keys (e.g. 'au-malatang') or 'fly' for Fly.io. Each entry produces a separate service instance keyed as {service}-{target}.",
       "minProperties": 1,
@@ -379,6 +396,23 @@
         "description": "Per-target configuration. Each section is optional and only the platforms relevant to the target need be present.",
         "type": "object",
         "properties": {
+          "credentials": {
+            "additionalProperties": false,
+            "description": "Per-target credential fields merged with service-level fields.",
+            "type": "object",
+            "properties": {
+              "fields": {
+                "description": "Per-target credential fields keyed by field name.",
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/definitions/credential_field"
+                },
+                "propertyNames": {
+                  "pattern": "^[a-z0-9_]+$"
+                }
+              }
+            }
+          },
           "data": {
             "$ref": "#/definitions/json_data",
             "description": "Per-target service data overlay. Object values deep-merge with service-level data; arrays, strings, numbers, booleans, and null replace service-level data."
@@ -388,13 +422,6 @@
           },
           "fly": {
             "$ref": "#/definitions/fly_target"
-          },
-          "secrets": {
-            "description": "Per-target secrets list. Replaces the service-level secrets list when provided.",
-            "type": "array",
-            "items": {
-              "$ref": "#/definitions/secret_item"
-            }
           },
           "truenas": {
             "$ref": "#/definitions/truenas_target"

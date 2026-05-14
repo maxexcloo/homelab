@@ -7,7 +7,7 @@ Homelab infrastructure managed with OpenTofu 1.x (`>= 1.11, < 2.0`). YAML files 
 Each `server` and `service` has two layers:
 
 - **model**: YAML input plus deterministic computed fields. Safe for `for_each`.
-- **runtime**: provider-backed addresses, attributes, hosts, and secrets.
+- **runtime**: provider-backed addresses, attributes, hosts, URLs, and credential values.
 
 Feature filters come from model/input data only, so resource addresses never depend on values created by those resources.
 
@@ -41,7 +41,7 @@ Applies consistently to:
 - HCL `environment {}` blocks
 - HCL `templatefile()` argument objects
 
-**Identifier fields first**: Within list-item objects, `name` (or another primary identifier such as `id`) always comes first, before any other fields regardless of alphabetical order. Applies to `secrets:` entries, DNS records, and any other keyed list items.
+**Identifier fields first**: Within list-item objects, `name` (or another primary identifier such as `id`) always comes first, before any other fields regardless of alphabetical order. Applies to DNS records and any other keyed list items.
 
 Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by name; the single-line/multi-line ordering applies inside each local's object value.
 
@@ -57,10 +57,10 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
   - **Helpers** (locals consumed only inside their defining staged file) are prefixed with `_` so they sort to the top of the `locals {}` block, ahead of the public locals other files depend on. Per-provider files (`unifi.tf`, `github.tf`, `b2.tf`, …) don't follow the `{domain}_{layer}_{noun}` shape and don't use the `_` prefix — all locals there sort purely alphabetically regardless of scope
   - The main output of a stage drops suffixes like `_all`, `_final`, `_merged`, and `_write`: use `dns_render_records`, not `dns_render_records_all`. If that output depends on same-prefix intermediates, keep it at the bottom as a deliberate data-flow exception.
 - **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies to map/object expressions inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes — consistency outweighs the small extra height.
-- **Runtime shape**: Runtime values live under `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, and `runtime.secrets`. Use model fields unless the value is provider-backed.
+- **Runtime shape**: Runtime values live under `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, `runtime.urls`, and `runtime.credentials`. Use model fields unless the value is provider-backed.
 - **Host and URL shape**: Use server `hosts.*` for hostnames without a scheme. Use service `urls.*.host` for hostnames and `urls.*.href` for actual URLs. Use `runtime.addresses.*` for provider-discovered IP addresses. Avoid new scalar `fqdn_*`, `url_*`, or ambiguous `*_address` fields.
-- **Sensitive data**: `sensitive = true` on all outputs containing secrets; secret fields live under `runtime.secrets`
-- **Consumer data source**: Resources and output locals that iterate over servers or services should reference `local.servers_model` / `local.services_model`, not `local.servers_input` / `local.services_input_targets`. The model layer normalises secrets fields and adds computed attributes; it is the correct source for all downstream consumers. Use input-layer locals only within their own staged file.
+- **Sensitive data**: `sensitive = true` on all outputs containing credentials; credential values live under `runtime.credentials`
+- **Consumer data source**: Resources and output locals that iterate over servers or services should reference `local.servers_model` / `local.services_model`, not `local.servers_input` / `local.services_input_targets`. The model layer normalises credential fields and adds computed attributes; it is the correct source for all downstream consumers. Use input-layer locals only within their own staged file.
 - **Defaults**: Set values in `data/defaults.yml` wherever possible; use `try()` / `coalesce()` only when no applicable default exists
 - **Merge functions**: Use `merge()` for shallow merges of flat objects; reach for `provider::deepmerge::mergo()` only when nested keys must combine recursively (server/service YAML overrides, config blob composition, JSON catalog overlays)
 - **`try()` vs `lookup()`**: Use `try(map[key], fallback)` for provider-controlled or external maps where keys or types are not guaranteed (e.g. 1Password field lookups). Use `lookup(map, key, default)` for internal maps where shape is guaranteed by defaults.

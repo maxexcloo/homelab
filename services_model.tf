@@ -1,4 +1,86 @@
 locals {
+  _services_model_credentials = {
+    for service_key, service in local.services_input_targets : service_key => {
+      fields = merge(
+        {
+          for field_name, field in service.credentials.fields : field_name => merge(
+            {
+              bootstrap_length = null
+              bootstrap_type   = null
+              mode             = "rw"
+              purpose          = null
+              type             = "CONCEALED"
+            },
+            field,
+          )
+        },
+        service.features.b2 ? {
+          b2_application_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        service.features.password ? merge(
+          {
+            password = {
+              bootstrap_length = null
+              bootstrap_type   = null
+              mode             = "rw"
+              purpose          = "PASSWORD"
+              type             = null
+            }
+          },
+          {
+            password_hash = {
+              bootstrap_length = null
+              bootstrap_type   = null
+              mode             = "ro"
+              purpose          = null
+              type             = "CONCEALED"
+            }
+          },
+        ) : {},
+        service.features.pushover ? {
+          pushover_application_token = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "rw"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+          pushover_user_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "rw"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        service.features.resend ? {
+          resend_api_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        service.features.tailscale ? {
+          tailscale_auth_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+      )
+    }
+  }
+
   _services_model_groups = {
     for service_key, service in local.services_input_targets : service_key => coalesce(
       service.identity.group,
@@ -134,15 +216,7 @@ locals {
             container = service.routing.container != null ? service.routing.container : try(service.identity.service, null)
           }
 
-          secrets = [
-            for secret in service.secrets : merge(
-              {
-                bootstrap_length = null
-                bootstrap_type   = null
-              },
-              secret
-            )
-          ]
+          credentials = local._services_model_credentials[service_key]
 
           urls = merge(
             {

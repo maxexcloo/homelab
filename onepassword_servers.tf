@@ -37,25 +37,15 @@ locals {
     for server_key, item in data.http.onepassword_server_search : server_key => try(jsondecode(item.response_body)[0].id, null)
   }
 
-  # Keying fields by their final 1Password label gives deterministic ordering
-  # and avoids scanning the same field list repeatedly while building payloads.
   onepassword_server_item_fields = {
     for server_key, server in local.servers : server_key => {
       for field in concat(
-        [
+        server.identity.username != "" ? [
           {
             id      = "username"
             label   = "username"
             purpose = "USERNAME"
             value   = server.identity.username
-          }
-        ],
-        server.features.password ? [
-          for secret_name in local.defaults.onepassword.secret_names.password : {
-            id      = secret_name
-            label   = secret_name
-            purpose = "PASSWORD"
-            value   = server.runtime.secrets[secret_name]
           }
         ] : [],
         [
@@ -68,16 +58,23 @@ locals {
           if field_value != null && field_value != ""
         ],
         [
-          for secret_name, secret_value in server.runtime.secrets : {
-            id    = secret_name
-            label = "${secret_name}_${contains(local.onepassword_server_rw_secret_names[server_key], secret_name) ? "rw" : "ro"}"
-            type  = "CONCEALED"
-            value = tostring(secret_value)
+          for field_name, field_config in server.credentials.fields : {
+            for item_key, item_value in merge(
+              {
+                id    = field_name
+                label = field_config.purpose == "PASSWORD" ? field_name : "${field_name}_${field_config.mode}"
+                value = try(tostring(server.runtime.credentials[field_name]), "")
+              },
+              field_config.purpose != null ? {
+                purpose = field_config.purpose
+                } : {
+                type = field_config.type
+              },
+            ) : item_key => item_value
+            if item_value != null
           }
-          if !contains(local.defaults.onepassword.secret_names.password, secret_name) && secret_value != null && (
-            secret_value != "" ||
-            contains(local.onepassword_server_manual_secret_names[server_key], secret_name)
-          )
+          if try(server.runtime.credentials[field_name], null) != null &&
+          (try(server.runtime.credentials[field_name], "") != "" || field_config.mode == "rw")
         ],
       ) : field.label => field
     }
@@ -96,69 +93,18 @@ locals {
       ]
 
       urls = [
-        for label in sort(keys(local.onepassword_server_item_urls[server_key])) : {
-          href    = local.onepassword_server_item_urls[server_key][label].href
-          label   = label
-          primary = local.onepassword_server_item_urls[server_key][label].href == local.servers_model[server_key].urls.default.href
+        for label in sort(keys(server.runtime.urls)) : {
+          href    = server.runtime.urls[label].href
+          label   = server.runtime.urls[label].label
+          primary = server.runtime.urls[label].href == server.urls.default.href
         }
+        if label != "default"
       ]
 
       vault = {
         id = local.defaults.onepassword.vaults.servers.id
       }
     }
-  }
-
-  onepassword_server_item_urls = {
-    for server_key, server in local.servers : server_key => merge(
-      {
-        for url_label, url_value in merge(server.runtime.hosts, server.runtime.addresses) : url_label => {
-          href = format(
-            "https://%s%s",
-            can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
-            server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
-          )
-          label   = url_label
-          primary = false
-        }
-        if url_value != null && url_value != ""
-      },
-      {
-        for url_label, url_value in merge(server.runtime.hosts, server.runtime.addresses) : "${url_label}_ssh" => {
-          href = format(
-            "ssh://%s@%s%s",
-            server.identity.username,
-            can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
-            server.networking.ssh_port != 22 ? ":${server.networking.ssh_port}" : ""
-          )
-          label   = "${url_label}_ssh"
-          primary = false
-        }
-        if url_label != "management" && url_value != null && url_value != ""
-      },
-    )
-  }
-
-  onepassword_server_manual_secret_names = {
-    for server_key, server in local.servers : server_key => toset([
-      for secret_name in concat(
-        server.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
-        [
-          for secret in server.secrets : secret.name
-          if secret.bootstrap_type == null
-        ],
-      ) : secret_name
-    ])
-  }
-
-  # Field labels end in _rw when 1Password can become source of truth (password,
-  # operator-supplied secrets), and _ro when OpenTofu remains source.
-  onepassword_server_rw_secret_names = {
-    for server_key, server in local.servers : server_key => toset(concat(
-      server.features.password ? local.defaults.onepassword.secret_names.password : [],
-      server.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
-      [for secret in server.secrets : secret.name],
-    ))
   }
 }
 

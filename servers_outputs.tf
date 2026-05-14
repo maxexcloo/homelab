@@ -1,13 +1,70 @@
 locals {
-  _servers_outputs_secret_bootstrap = {
+  _servers_outputs_runtime_addresses = {
+    for server_key, server in local.servers_model : server_key => merge(
+      server.addresses,
+      {
+        private_ipv4   = try(local.unifi_clients[server_key].fixed_ip, null)
+        tailscale_ipv4 = try(local.tailscale_device_addresses[server_key].ipv4, null)
+        tailscale_ipv6 = try(local.tailscale_device_addresses[server_key].ipv6, null)
+      },
+    )
+  }
+
+  _servers_outputs_runtime_hosts = {
+    for server_key, server in local.servers_model : server_key => merge(
+      server.hosts,
+      {
+        private   = try(local.unifi_clients[server_key].local_dns_record, null)
+        tailscale = try(local.tailscale_device_addresses[server_key].address, null)
+      },
+    )
+  }
+
+  _servers_outputs_runtime_url_sources = {
+    for server_key, server in local.servers_model : server_key => merge(
+      local._servers_outputs_runtime_hosts[server_key],
+      local._servers_outputs_runtime_addresses[server_key],
+    )
+  }
+
+  _servers_outputs_runtime_urls = {
+    for server_key, server in local.servers_model : server_key => merge(
+      server.urls,
+      {
+        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : url_label => {
+          href = format(
+            "https://%s%s",
+            can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
+            server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
+          )
+          label = url_label
+        }
+        if !contains(keys(server.urls), url_label) && url_value != null && url_value != ""
+      },
+      {
+        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : "${url_label}_ssh" => {
+          href = format(
+            "ssh://%s@%s%s",
+            server.identity.username,
+            can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
+            server.networking.ssh_port != 22 ? ":${server.networking.ssh_port}" : ""
+          )
+          label = "${url_label}_ssh"
+        }
+        if url_label != "management" && url_value != null && url_value != ""
+      },
+    )
+  }
+
+  _servers_outputs_credentials_bootstrap = {
     for entry in flatten([
       for server_key, server in local.servers_model : [
-        for secret in server.secrets : {
-          key = "${server_key}-${secret.name}"
+        for field_name, field in server.credentials.fields : {
+          key = "${server_key}-${field_name}"
           value = (
-            secret.bootstrap_type == "hex" ? random_id.server_secret["${server_key}-${secret.name}"].hex
-            : secret.bootstrap_type == "base64" ? random_id.server_secret["${server_key}-${secret.name}"].b64_std
-            : secret.bootstrap_type != null && contains(["alphanumeric", "string"], secret.bootstrap_type) ? random_password.server_secret["${server_key}-${secret.name}"].result
+            field.bootstrap_type == "hex" ? random_id.server_secret["${server_key}-${field_name}"].hex
+            : field.bootstrap_type == "base64" ? random_id.server_secret["${server_key}-${field_name}"].b64_std
+            : field.bootstrap_type != null && contains(["alphanumeric", "string"], field.bootstrap_type) ? random_password.server_secret["${server_key}-${field_name}"].result
             : null
           )
         }
@@ -20,14 +77,7 @@ locals {
       server,
       {
         runtime = {
-          addresses = merge(
-            server.addresses,
-            {
-              private_ipv4   = try(local.unifi_clients[server_key].fixed_ip, null)
-              tailscale_ipv4 = try(local.tailscale_device_addresses[server_key].ipv4, null)
-              tailscale_ipv6 = try(local.tailscale_device_addresses[server_key].ipv6, null)
-            },
-          )
+          addresses = local._servers_outputs_runtime_addresses[server_key]
 
           attributes = merge(
             {
@@ -45,24 +95,21 @@ locals {
             } : {},
           )
 
-          hosts = merge(
-            server.hosts,
-            {
-              private   = try(local.unifi_clients[server_key].local_dns_record, null)
-              tailscale = try(local.tailscale_device_addresses[server_key].address, null)
-            },
-          )
+          hosts = local._servers_outputs_runtime_hosts[server_key]
 
-          secrets = merge(
+          urls = local._servers_outputs_runtime_urls[server_key]
+
+          credentials = merge(
             {
               age_secret_key = age_secret_key.server[server_key].secret_key
               komodo_passkey = random_password.server_komodo_passkey[server_key].result
             },
             {
-              for secret in server.secrets : secret.name => sensitive(try(coalesce(
-                try(local.onepassword_server_existing_fields[server_key][secret.name], null),
-                local._servers_outputs_secret_bootstrap["${server_key}-${secret.name}"],
+              for field_name, field in server.credentials.fields : field_name => sensitive(try(coalesce(
+                try(local.onepassword_server_existing_fields[server_key][field_name], null),
+                local._servers_outputs_credentials_bootstrap["${server_key}-${field_name}"],
               ), ""))
+              if field.bootstrap_type != null || field.mode == "rw"
             },
             server.features.b2 ? {
               b2_application_key = b2_application_key.server[server_key].application_key
@@ -76,16 +123,15 @@ locals {
             } : {},
             server.features.password ? merge(
               {
-                for secret_name in local.defaults.onepassword.secret_names.password :
-                secret_name => sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key][secret_name], null), random_password.server[server_key].result))
+                password = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key].password, null), random_password.server[server_key].result))
               },
               {
                 password_hash = bcrypt_hash.server[server_key].id
               },
             ) : {},
             server.features.pushover ? {
-              for secret_name in local.defaults.onepassword.secret_names.pushover :
-              secret_name => sensitive(try(local.onepassword_server_existing_fields[server_key][secret_name], ""))
+              pushover_application_token = sensitive(try(local.onepassword_server_existing_fields[server_key].pushover_application_token, ""))
+              pushover_user_key          = sensitive(try(local.onepassword_server_existing_fields[server_key].pushover_user_key, ""))
             } : {},
             server.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_server[server_key].create_response).token

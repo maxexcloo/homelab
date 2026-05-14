@@ -1,6 +1,6 @@
 services:
   ctrld:
-    command: --cd=${service.runtime.secrets.ctrld_endpoint}
+    command: --cd=${service.runtime.credentials.ctrld_endpoint}
     dns: 127.0.0.1
     image: controldns/ctrld:latest
     restart: unless-stopped

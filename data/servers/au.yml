@@ -10,7 +10,7 @@ dashboard:
     siteMonitor: ${server.urls.default.href}
     widgets:
       - type: unifi
-        password: ${server.runtime.secrets.password}
+        password: ${server.runtime.credentials.password}
         url: ${server.urls.default.href}
         username: ${server.identity.username}
 features:

@@ -8,7 +8,7 @@ dashboard:
     widgets:
       - type: ${service.identity.name}
         deviceid: ${server.runtime.attributes.tailscale_device_id}
-        key: ${services.homepage.runtime.secrets.tailscale_homepage_widget_key}
+        key: ${services.homepage.runtime.credentials.tailscale_homepage_widget_key}
 identity:
   description: VPN
   name: tailscale

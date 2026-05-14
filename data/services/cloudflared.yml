@@ -8,7 +8,7 @@ dashboard:
     widgets:
       - type: ${service.identity.name}
         accountid: ${server.runtime.attributes.cloudflare_account_id}
-        key: ${server.runtime.secrets.cloudflare_tunnel_read_token}
+        key: ${server.runtime.credentials.cloudflare_tunnel_read_token}
         tunnelid: ${server.runtime.attributes.cloudflare_tunnel_id}
 identity:
   description: VPN

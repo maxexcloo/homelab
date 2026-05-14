@@ -1,14 +1,14 @@
 {
   "values": {
     "immich": {
-      "db_password": "${service.runtime.secrets.db_password}",
+      "db_password": "${service.runtime.credentials.db_password}",
       "db_storage_type": "SSD",
       "enable_ml": true,
       "hugging_face_endpoint": "",
       "log_level": "log",
       "ml_image_selector": "ml_image",
       "postgres_image_selector": "vectorchord_18_image",
-      "redis_password": "${service.runtime.secrets.redis_password}"
+      "redis_password": "${service.runtime.credentials.redis_password}"
     },
     "network": {
       "api_metrics_port": {

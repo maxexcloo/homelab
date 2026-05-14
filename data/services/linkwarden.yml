@@ -1,4 +1,16 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    homepage_widget_key: {}
+    db_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    meilisearch_master_key:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    nextauth_secret:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -8,7 +20,7 @@ dashboard:
     siteMonitor: ${service.urls.default.href}
     widgets:
       - type: ${service.identity.name}
-        key: ${service.runtime.secrets.homepage_widget_key}
+        key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
 features:
   password: true
@@ -23,22 +35,11 @@ identity:
 routing:
   port: 30243
   scheme: http
-secrets:
-  - name: db_password
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
-  - name: homepage_widget_key
-  - name: meilisearch_master_key
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
-  - name: nextauth_secret
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
 targets:
   au-truenas:
     truenas:
       env:
         BASE_URL: ${service.urls.default.href}
         EMAIL_FROM: ${service.key}@${defaults.domains.internal}
-        EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.runtime.secrets.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
+        EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.runtime.credentials.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
         NEXT_PUBLIC_EMAIL_PROVIDER: true

@@ -8,7 +8,7 @@ dashboard:
     siteMonitor: ${service.urls.default.href}
     widgets:
       - type: ${service.identity.name}
-        password: ${service.runtime.secrets.password}
+        password: ${service.runtime.credentials.password}
         url: ${service.urls.default.href}
         username: ${service.identity.username}
         version: 2

@@ -1,4 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    homepage_widget_key: {}
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -9,7 +12,7 @@ dashboard:
     widgets:
       - type: ${service.identity.name}
         enablePools: "true"
-        key: ${service.runtime.secrets.homepage_widget_key}
+        key: ${service.runtime.credentials.homepage_widget_key}
         url: ${server.urls.default.href}
         version: 2
 identity:
@@ -17,7 +20,5 @@ identity:
   group: Infrastructure
   name: truenas
   title: TrueNAS
-secrets:
-  - name: homepage_widget_key
 targets:
   au-truenas: {}

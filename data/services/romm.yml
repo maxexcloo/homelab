@@ -1,4 +1,19 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    igdb_client_id: {}
+    igdb_client_secret: {}
+    screenscraper_password: {}
+    steamgriddb_api_key: {}
+    auth_secret_key:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    db_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    redis_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -22,25 +37,11 @@ routing:
   backend_port: 8080
   port: 30061
   scheme: http
-secrets:
-  - name: auth_secret_key
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
-  - name: db_password
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
-  - name: igdb_client_id
-  - name: igdb_client_secret
-  - name: redis_password
-    bootstrap_length: 32
-    bootstrap_type: alphanumeric
-  - name: screenscraper_password
-  - name: steamgriddb_api_key
 targets:
   au-truenas:
     truenas:
       env:
         HASHEOUS_API_ENABLED: true
         SCAN_TIMEOUT: 86400
-        SCREENSCRAPER_PASSWORD: ${service.runtime.secrets.screenscraper_password}
+        SCREENSCRAPER_PASSWORD: ${service.runtime.credentials.screenscraper_password}
         SCREENSCRAPER_USER: ${defaults.organization.email}

@@ -21,7 +21,7 @@ services:
       - --providers.docker=true
       - --serverstransport.insecureskipverify=true
     environment:
-      CF_DNS_API_TOKEN: ${server.runtime.secrets.cloudflare_acme_token}
+      CF_DNS_API_TOKEN: ${server.runtime.credentials.cloudflare_acme_token}
     image: traefik:v3.6.15
     network_mode: host
     restart: unless-stopped

@@ -7,7 +7,7 @@ locals {
     )
   }
 
-  # Each entry in `targets` becomes its own stack, so target-specific secrets
+  # Each entry in `targets` becomes its own stack, so target-specific credentials
   # and rendered files have stable addresses like service-target. Per-target
   # data, features, and platform sections are flattened to the top level with
   # target defaults merged in (target wins).
@@ -19,8 +19,7 @@ locals {
           if key != "targets"
         },
         {
-          secrets = concat(service.secrets, lookup(target_config, "secrets", []))
-          target  = target_key
+          target = target_key
 
           # can(keys()) detects whether a value is an object; non-objects
           # (scalars, arrays, null) replace instead of merging.
@@ -34,6 +33,13 @@ locals {
             service.features,
             lookup(target_config, "features", {}),
           )
+
+          credentials = {
+            fields = provider::deepmerge::mergo(
+              service.credentials.fields,
+              lookup(lookup(target_config, "credentials", {}), "fields", {}),
+            )
+          }
 
           fly = provider::deepmerge::mergo(
             local.defaults.targets.fly,

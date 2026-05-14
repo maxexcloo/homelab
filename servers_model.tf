@@ -1,4 +1,127 @@
 locals {
+  _servers_model_credentials = {
+    for server_key, server in local.servers_input : server_key => {
+      fields = merge(
+        {
+          for field_name, field in server.credentials.fields : field_name => merge(
+            {
+              bootstrap_length = null
+              bootstrap_type   = null
+              mode             = "rw"
+              purpose          = null
+              type             = "CONCEALED"
+            },
+            field,
+          )
+        },
+        {
+          age_secret_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+          komodo_passkey = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        },
+        server.features.b2 ? {
+          b2_application_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        server.features.cloudflare_acme_token ? {
+          cloudflare_acme_token = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        server.features.cloudflare_zero_trust_tunnel ? {
+          cloudflare_tunnel_read_token = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+          cloudflare_tunnel_token = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        server.features.password ? merge(
+          {
+            password = {
+              bootstrap_length = null
+              bootstrap_type   = null
+              mode             = "rw"
+              purpose          = "PASSWORD"
+              type             = null
+            }
+          },
+          {
+            password_hash = {
+              bootstrap_length = null
+              bootstrap_type   = null
+              mode             = "ro"
+              purpose          = null
+              type             = "CONCEALED"
+            }
+          },
+        ) : {},
+        server.features.pushover ? {
+          pushover_application_token = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "rw"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+          pushover_user_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "rw"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        server.features.resend ? {
+          resend_api_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+        server.features.tailscale ? {
+          tailscale_auth_key = {
+            bootstrap_length = null
+            bootstrap_type   = null
+            mode             = "ro"
+            purpose          = null
+            type             = "CONCEALED"
+          }
+        } : {},
+      )
+    }
+  }
+
   # Computed once so the final model can stay mostly declarative.
   _servers_model_computed = {
     for server_key, server in local.servers_input : server_key => {
@@ -36,18 +159,22 @@ locals {
       urls = merge(
         {
           default = {
-            href = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
+            href  = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
+            label = "default"
           }
           internal = {
-            href = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}"
+            href  = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}"
+            label = "internal"
           }
           management = {
-            href = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
+            href  = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
+            label = "management"
           }
         },
         local._servers_model_public_host[server_key] != null ? {
           public = {
-            href = "https://${local._servers_model_public_host[server_key]}"
+            href  = "https://${local._servers_model_public_host[server_key]}"
+            label = "public"
           }
         } : {},
       )
@@ -90,19 +217,10 @@ locals {
       server,
       local._servers_model_computed[server_key],
       {
-        dashboard = server.dashboard != null ? server.dashboard : local._servers_model_dashboard_default_cards[server_key]
-        key       = server_key
-        ssh_keys  = data.github_user.default.ssh_keys
-
-        secrets = [
-          for secret in server.secrets : merge(
-            {
-              bootstrap_length = null,
-              bootstrap_type   = null
-            },
-            secret
-          )
-        ]
+        dashboard   = server.dashboard != null ? server.dashboard : local._servers_model_dashboard_default_cards[server_key]
+        credentials = local._servers_model_credentials[server_key]
+        key         = server_key
+        ssh_keys    = data.github_user.default.ssh_keys
       }
     )
   }

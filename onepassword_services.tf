@@ -24,14 +24,6 @@ data "http" "onepassword_service_search" {
 }
 
 locals {
-  onepassword_service_credential_features = toset([
-    "b2",
-    "password",
-    "pushover",
-    "resend",
-    "tailscale",
-  ])
-
   onepassword_service_dashboard_urls = {
     for service_key, service in local.services : service_key => values({
       for card_index, dashboard_card in local.services_render_template_context[service_key].service.dashboard :
@@ -68,25 +60,15 @@ locals {
     ]
   }
 
-  # Service fields use the same label-keyed shape as server fields, with _rw
-  # labels reserved for values operators may maintain in 1Password.
   onepassword_service_item_fields = {
     for service_key, service in local.services : service_key => {
       for field in concat(
-        [
+        service.identity.username != "" ? [
           {
             id      = "username"
             label   = "username"
             purpose = "USERNAME"
             value   = service.identity.username
-          }
-        ],
-        service.features.password ? [
-          for secret_name in local.defaults.onepassword.secret_names.password : {
-            id      = secret_name
-            label   = secret_name
-            purpose = "PASSWORD"
-            value   = service.runtime.secrets[secret_name]
           }
         ] : [],
         [
@@ -99,16 +81,23 @@ locals {
           if field_value != null && field_value != ""
         ],
         [
-          for secret_name, secret_value in service.runtime.secrets : {
-            id    = secret_name
-            label = "${secret_name}_${contains(local.onepassword_service_rw_secret_names[service_key], secret_name) ? "rw" : "ro"}"
-            type  = "CONCEALED"
-            value = tostring(secret_value)
+          for field_name, field_config in service.credentials.fields : {
+            for item_key, item_value in merge(
+              {
+                id    = field_name
+                label = field_config.purpose == "PASSWORD" ? field_name : "${field_name}_${field_config.mode}"
+                value = try(tostring(service.runtime.credentials[field_name]), "")
+              },
+              field_config.purpose != null ? {
+                purpose = field_config.purpose
+                } : {
+                type = field_config.type
+              },
+            ) : item_key => item_value
+            if item_value != null
           }
-          if !contains(local.defaults.onepassword.secret_names.password, secret_name) && secret_value != null && (
-            secret_value != "" ||
-            contains(local.onepassword_service_manual_secret_names[service_key], secret_name)
-          )
+          if try(service.runtime.credentials[field_name], null) != null &&
+          (try(service.runtime.credentials[field_name], "") != "" || field_config.mode == "rw")
         ],
       ) : field.label => field
     }
@@ -155,31 +144,7 @@ locals {
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
-    if service.identity.username != "" || length(service.secrets) > 0 || anytrue([
-      for feature in local.onepassword_service_credential_features : try(tobool(service.features[feature]), false)
-    ])
-  }
-
-  onepassword_service_manual_secret_names = {
-    for service_key, service in local.services : service_key => toset([
-      for secret_name in concat(
-        service.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
-        [
-          for secret in service.secrets : secret.name
-          if secret.bootstrap_type == null
-        ],
-      ) : secret_name
-    ])
-    if contains(keys(local.onepassword_service_items), service_key)
-  }
-
-  onepassword_service_rw_secret_names = {
-    for service_key, service in local.services : service_key => toset(concat(
-      service.features.password ? local.defaults.onepassword.secret_names.password : [],
-      service.features.pushover ? local.defaults.onepassword.secret_names.pushover : [],
-      [for secret in service.secrets : secret.name],
-    ))
-    if contains(keys(local.onepassword_service_items), service_key)
+    if service.identity.username != "" || length(service.credentials.fields) > 0
   }
 }
 

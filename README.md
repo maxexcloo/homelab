@@ -37,7 +37,7 @@ Data flow:
 
 1. **input**: YAML plus defaults, with service targets expanded
 2. **model**: deterministic fields safe for `for_each`
-3. **runtime**: provider-backed values and generated secrets
+3. **runtime**: provider-backed values and generated credentials
 4. **render**: dashboards, labels, compose files, and sidecars
 
 Service endpoints use `service.urls.*.{host,href}`. Server hostnames use `server.hosts.*`.
@@ -116,11 +116,11 @@ Generated credentials are stored in **1Password** through 1Password Connect:
 
 Set `onepassword.vaults.servers.id` and `onepassword.vaults.services.id` in `data/config.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
 
-Each server and service exposes provider-backed values through `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, and `runtime.secrets`.
+Each server and service exposes provider-backed values through `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, `runtime.urls`, and `runtime.credentials`.
 
-Manually supplied service secrets are declared in `secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back and exposes them as `service.runtime.secrets.{name}` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
+Manually supplied service credentials are declared under `credentials.fields` with an empty object. OpenTofu creates empty concealed fields on the matching 1Password service item, then reads populated values back and exposes them as `service.runtime.credentials.{name}` in templates. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
 
-Services can access another service's full data (including secrets) only by declaring an `imports.services` alias. The normal `services` map remains the inventory, and declared imports are overlaid by alias as `services.<alias>`.
+Services can access another service's full data (including credentials) only by declaring an `imports.services` alias. The normal `services` map remains the inventory, and declared imports are overlaid by alias as `services.<alias>`.
 
 Rendered sidecar files named `*.raw.tftpl` are templated, encrypted as binary, and deployed without the `.raw` segment. Use this for files where SOPS structured YAML/JSON encryption is unsuitable, such as top-level YAML arrays.
 

@@ -6,29 +6,8 @@
   "title": "Server",
   "type": "object",
   "definitions": {
-    "dashboard": {
-      "description": "Homepage server card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
-      "properties": {},
-      "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/json_data" }
-    },
-    "json_data": {
-      "description": "Arbitrary JSON-compatible value.",
-      "anyOf": [
-        { "type": "boolean" },
-        { "type": "number" },
-        { "type": "string" },
-        { "type": "array", "items": { "$ref": "#/definitions/json_data" } },
-        {
-          "type": "object",
-          "additionalProperties": { "$ref": "#/definitions/json_data" }
-        },
-        { "type": "null" }
-      ]
-    },
-    "secret_item": {
+    "credential_field": {
       "additionalProperties": false,
-      "required": ["name"],
       "type": "object",
       "allOf": [
         {
@@ -48,15 +27,60 @@
           "enum": ["alphanumeric", "base64", "hex", "string"],
           "type": "string"
         },
-        "name": {
-          "description": "Secret identifier. Exposed as runtime.secrets.{name} on the server. Must be lowercase alphanumeric or underscore.",
-          "pattern": "^[a-z0-9_]+$",
+        "mode": {
+          "description": "Whether 1Password may be the source of truth for this field. rw fields create placeholders; ro fields are written from provider-generated values.",
+          "enum": ["ro", "rw"],
           "type": "string"
+        },
+        "purpose": {
+          "description": "Optional 1Password field purpose.",
+          "enum": ["PASSWORD", null]
+        },
+        "type": {
+          "description": "1Password field type when purpose is not set.",
+          "enum": ["CONCEALED", "STRING", null]
         }
       }
+    },
+    "dashboard": {
+      "description": "Homepage server card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
+      "properties": {},
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/json_data" }
+    },
+    "json_data": {
+      "description": "Arbitrary JSON-compatible value.",
+      "anyOf": [
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "array", "items": { "$ref": "#/definitions/json_data" } },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/json_data" }
+        },
+        { "type": "null" }
+      ]
     }
   },
   "properties": {
+    "credentials": {
+      "additionalProperties": false,
+      "description": "Credential fields exposed as runtime.credentials.{name}. Omit bootstrap_type for manually supplied 1Password fields.",
+      "type": "object",
+      "properties": {
+        "fields": {
+          "description": "Credential fields keyed by field name.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/credential_field"
+          },
+          "propertyNames": {
+            "pattern": "^[a-z0-9_]+$"
+          }
+        }
+      }
+    },
     "dashboard": {
       "description": "Homepage dashboard cards for this server. Null or omitted uses the auto-generated server card; [] renders no cards. Card objects are passed through to Homepage after template interpolation.",
       "type": ["array", "null"],
@@ -73,7 +97,7 @@
       "type": "object",
       "properties": {
         "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key. Exposes runtime.attributes.{b2_application_key_id, b2_bucket_name, b2_endpoint} and runtime.secrets.b2_application_key.",
+          "description": "Provision a Backblaze B2 bucket and application key. Exposes runtime.attributes.{b2_application_key_id, b2_bucket_name, b2_endpoint} and runtime.credentials.b2_application_key.",
           "type": "boolean"
         },
         "cloud_init": {
@@ -81,11 +105,11 @@
           "type": "boolean"
         },
         "cloudflare_acme_token": {
-          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes runtime.secrets.cloudflare_acme_token for DNS-01 challenge clients.",
+          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes runtime.credentials.cloudflare_acme_token for DNS-01 challenge clients.",
           "type": "boolean"
         },
         "cloudflare_zero_trust_tunnel": {
-          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.secrets.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
+          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
           "type": "boolean"
         },
         "cockpit": {
@@ -105,19 +129,19 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random admin password. Exposes runtime.secrets.password and runtime.secrets.password_hash (bcrypt). Stored in 1Password.",
+          "description": "Generate a random admin password. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt). Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
-          "description": "Create 1Password read/write fields for this server's Pushover application token and user/group key. Exposes runtime.secrets.pushover_application_token and runtime.secrets.pushover_user_key.",
+          "description": "Create 1Password read/write fields for this server's Pushover application token and user/group key. Exposes runtime.credentials.pushover_application_token and runtime.credentials.pushover_user_key.",
           "type": "boolean"
         },
         "resend": {
-          "description": "Provision a Resend API key for outbound email. Exposes runtime.secrets.resend_api_key.",
+          "description": "Provision a Resend API key for outbound email. Exposes runtime.credentials.resend_api_key.",
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key. Exposes runtime.secrets.tailscale_auth_key for use in cloud-init or startup scripts.",
+          "description": "Generate a Tailscale auth key. Exposes runtime.credentials.tailscale_auth_key for use in cloud-init or startup scripts.",
           "type": "boolean"
         }
       }
@@ -197,7 +221,7 @@
       "type": "string"
     },
     "platform": {
-      "description": "Provisioning platform. Controls which Terraform resources are created. incus = Incus container/VM; oci = Oracle Cloud instance; truenas = TrueNAS app; unifi = UniFi device; unmanaged = externally managed (DNS and secrets only).",
+      "description": "Provisioning platform. Controls which Terraform resources are created. incus = Incus container/VM; oci = Oracle Cloud instance; truenas = TrueNAS app; unifi = UniFi device; unmanaged = externally managed (DNS and credentials only).",
       "enum": ["incus", "oci", "truenas", "unifi", "unmanaged"],
       "type": "string"
     },
@@ -401,11 +425,6 @@
           }
         }
       }
-    },
-    "secrets": {
-      "description": "Additional named secrets to provision for this server. Each produces a runtime.secrets.{name} field and a 1Password CONCEALED entry.",
-      "type": "array",
-      "items": { "$ref": "#/definitions/secret_item" }
     },
     "type": {
       "description": "Functional role of the server. Used for grouping in monitoring (Gatus) and display. appliance = dedicated device; cicd = CI/CD runner; ephemeral = temporary workload; router = network gateway; server = general-purpose machine; vm = virtual machine.",
