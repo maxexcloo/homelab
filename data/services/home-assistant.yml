@@ -1,15 +1,5 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${server.url}
-    icon: homeassistant
-    siteMonitor: ${server.url}
-    widgets:
-      - type: homeassistant
-        key: ${service.state.secrets.homepage_widget_key}
-        url: ${server.url}
   - name: ESPHome
     description: ESP Device Builder
     group: ${service.identity.group}
@@ -21,6 +11,16 @@ dashboard:
         password: ${server.state.secrets.password}
         url: http://${server.fqdn}:6052
         username: ${server.identity.username}
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${server.url}
+    icon: homeassistant
+    siteMonitor: ${server.url}
+    widgets:
+      - type: homeassistant
+        key: ${service.state.secrets.homepage_widget_key}
+        url: ${server.url}
   - name: ESPresense
     description: Room Presence
     group: ${service.identity.group}

@@ -6,6 +6,9 @@ dashboard:
     href: ${service.url}
     icon: ${service.identity.name}
     siteMonitor: ${service.url}
+    widgets:
+      - type: gatus
+        url: ${service.url}
 features:
   resend: true
   tailscale: true

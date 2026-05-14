@@ -4,7 +4,6 @@ locale: ${defaults.system.locale}
 package_reboot_if_required: true
 package_update: true
 package_upgrade: true
-packages: [age, curl, sudo]
 ssh_pwauth: false
 timezone: ${defaults.system.timezone}
 groups:
@@ -12,6 +11,12 @@ groups:
   - docker
   %{~ endif ~}
   - sudo
+packages:
+  - age
+  - curl
+  - ethtool
+  - sudo
+  - zfsutils-linux
 runcmd:
   - sysctl --system
   %{~ if server.features.docker ~}
