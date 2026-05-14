@@ -48,6 +48,19 @@ locals {
     local._servers_model_computed[server_key].url_management
   }
 
+  _servers_model_dashboard_default_cards = {
+    for server_key, server in local.servers_input : server_key => [
+      {
+        description = local._servers_model_computed[server_key].description
+        group       = local.defaults.server_types[server.type].label
+        href        = local._servers_model_url[server_key]
+        icon        = local.defaults.server_types[server.type].icon
+        name        = "${server.identity.title} (${upper(server.identity.region)})"
+        siteMonitor = local._servers_model_url[server_key]
+      }
+    ]
+  }
+
   # Desired server model: YAML plus defaults plus deterministic computed fields.
   # This layer is safe for references that should not depend on generated secrets.
   servers_model = {
@@ -60,19 +73,7 @@ locals {
         ssh_keys = data.github_user.default.ssh_keys
         url      = local._servers_model_url[server_key]
 
-        dashboard = [
-          for dashboard_card in [
-            for input_card in jsondecode(jsonencode(server.dashboard)) : merge(local.defaults.servers.dashboard[0], input_card)
-            ] : {
-            description = coalesce(dashboard_card.description, local._servers_model_computed[server_key].description, server.platform)
-            group       = local.defaults.server_types[server.type].label
-            href        = coalesce(dashboard_card.href, local._servers_model_url[server_key])
-            icon        = coalesce(dashboard_card.icon, local.defaults.server_types[server.type].icon)
-            name        = coalesce(dashboard_card.name, "${server.identity.title} (${upper(server.identity.region)})")
-            siteMonitor = coalesce(dashboard_card.siteMonitor, dashboard_card.href, local._servers_model_url[server_key])
-            widgets     = dashboard_card.widgets
-          }
-        ]
+        dashboard = server.dashboard != null ? server.dashboard : local._servers_model_dashboard_default_cards[server_key]
 
         secrets = [
           for secret in server.secrets : merge(

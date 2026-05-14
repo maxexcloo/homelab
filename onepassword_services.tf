@@ -33,22 +33,17 @@ locals {
   ])
 
   onepassword_service_dashboard_urls = {
-    for service_key, urls in local.onepassword_service_dashboard_urls_by_sort : service_key => [
-      for sort_key in sort(keys(urls)) : urls[sort_key]
-    ]
-  }
-
-  onepassword_service_dashboard_urls_by_sort = {
-    for service_key, service in local.services : service_key => {
+    for service_key, service in local.services : service_key => values({
       for card_index, dashboard_card in local.services_render_template_context[service_key].service.dashboard :
-      "${lower(dashboard_card.name)}:${format("%05d", card_index)}" => {
-        href    = dashboard_card.href
-        label   = dashboard_card.name
-        primary = dashboard_card.href == service.url
+      "${lower(try(dashboard_card.name, ""))}:${format("%05d", card_index)}" => {
+        href    = try(dashboard_card.href, null)
+        label   = try(dashboard_card.name, null)
+        primary = try(dashboard_card.href, null) == service.url
       }
-      if dashboard_card.href != null && dashboard_card.href != ""
-      && !contains([for url in values(service.urls) : url.href], dashboard_card.href)
-    }
+      if try(dashboard_card.name, "") != ""
+      && try(dashboard_card.href, "") != ""
+      && !contains([for url in values(service.urls) : url.href], try(dashboard_card.href, ""))
+    })
   }
 
   onepassword_service_existing_fields = {

@@ -5,16 +5,10 @@ dns:
   ttl: 1
   wildcard: false
 servers:
+  dashboard: null
   data: {}
   parent: ""
   secrets: []
-  dashboard:
-    - name: null
-      description: null
-      href: null
-      icon: null
-      siteMonitor: null
-      widgets: []
   features:
     b2: false
     cloud_init: false

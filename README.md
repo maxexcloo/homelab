@@ -64,14 +64,14 @@ flowchart TD
     end
 
     subgraph render ["Render — services_render.tf + services_render_custom.tf"]
-        BC["_render_base_context"]
-        SCS["render_custom_service\nrouting_container · labels"]
-        RS["_render_services\nrendered strings + routing"]
+        PTC["pre_template_context"]
+        SCS["render_custom_service\nrouting labels"]
+        RS["render_services\nrendered strings + routing"]
         RCC["render_custom_context\nhomepage data"]
-        RC["render_context"]
-        BC & SCS --> RS
+        TC["template_context"]
+        PTC & SCS --> RS
         RS --> RCC
-        RS & RCC & SMI --> RC
+        RS & RCC & SMI --> TC
     end
 
     FC["render_files_compose"]
@@ -128,7 +128,7 @@ Templates can reference:
 - `defaults` - merged global defaults and config
 - `server` - the target server when the service runs on a managed server, otherwise null
 - `servers` - all modeled servers
-- `service` - the current expanded service, including rendered `data`, `dashboard`, `routing_container`, and `routing_labels`
+- `service` - the current expanded service, including rendered `data`, `dashboard`, and `routing_labels`
 - `services` - all expanded services plus declared `imports.services` aliases overlaid by alias
 
 ## Workflow
@@ -176,7 +176,7 @@ Set `onepassword.vaults.servers.id` and `onepassword.vaults.services.id` in `dat
 
 Each server and service exposes runtime data through a `state` sub-object split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), and `state.urls` (URL items). Templates reach in via `${server.state.secrets.password}` or `${service.state.fields.b2_bucket_name}` etc. — no `_sensitive` suffix.
 
-Manually supplied service secrets are declared in `features.secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back and exposes them as `service.state.secrets.{name}` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
+Manually supplied service secrets are declared in `secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back and exposes them as `service.state.secrets.{name}` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
 
 Services can access another service's full data (including secrets) only by declaring an `imports.services` alias. The normal `services` map remains the inventory, and declared imports are overlaid by alias as `services.<alias>`.
 

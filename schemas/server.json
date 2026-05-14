@@ -7,39 +7,10 @@
   "type": "object",
   "definitions": {
     "dashboard": {
-      "additionalProperties": false,
-      "description": "A Homepage service card rendered for this server. Omit dashboard to generate one default card; set dashboard to [] to render none.",
+      "description": "Homepage server card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
+      "properties": {},
       "type": "object",
-      "properties": {
-        "description": {
-          "description": "Card description. Supports template interpolation with ${server.*}.",
-          "type": ["string", "null"]
-        },
-        "href": {
-          "description": "Card link URL. Supports template interpolation with ${server.*}.",
-          "type": ["string", "null"]
-        },
-        "icon": {
-          "description": "Homepage icon. Supports template interpolation with ${server.*}.",
-          "type": ["string", "null"]
-        },
-        "name": {
-          "description": "Card display name. Supports template interpolation with ${server.*}.",
-          "type": "string"
-        },
-        "siteMonitor": {
-          "description": "URL for Homepage site monitoring. Supports template interpolation with ${server.*}.",
-          "type": ["string", "null"]
-        },
-        "widgets": {
-          "description": "Homepage widget configurations rendered as the multi-widget widgets list. Supports template interpolation with ${server.*}.",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": { "$ref": "#/definitions/json_data" }
-          }
-        }
-      }
+      "additionalProperties": { "$ref": "#/definitions/json_data" }
     },
     "json_data": {
       "description": "Arbitrary JSON-compatible value.",
@@ -87,8 +58,8 @@
   },
   "properties": {
     "dashboard": {
-      "description": "Homepage dashboard cards for this server. Omit to generate one default card; [] renders no cards.",
-      "type": "array",
+      "description": "Homepage dashboard cards for this server. Null or omitted uses the auto-generated server card; [] renders no cards. Card objects are passed through to Homepage after template interpolation.",
+      "type": ["array", "null"],
       "items": { "$ref": "#/definitions/dashboard" }
     },
     "data": {
