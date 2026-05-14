@@ -38,7 +38,7 @@ locals {
       "${lower(try(dashboard_card.name, ""))}:${format("%05d", card_index)}" => {
         href    = try(dashboard_card.href, null)
         label   = try(dashboard_card.name, null)
-        primary = try(dashboard_card.href, null) == service.url
+        primary = try(dashboard_card.href, null) == service.urls.default.href
       }
       if try(dashboard_card.name, "") != ""
       && try(dashboard_card.href, "") != ""
@@ -57,12 +57,12 @@ locals {
     for service_key, item in data.http.onepassword_service_search : service_key => try(jsondecode(item.response_body)[0].id, null)
   }
 
-  onepassword_service_fqdn_urls = {
+  onepassword_service_host_urls = {
     for service_key, service in local.services : service_key => [
-      for url_key in ["fqdn_external", "fqdn_internal"] : {
+      for url_key in ["external", "internal"] : {
         href    = service.urls[url_key].href
         label   = service.urls[url_key].label
-        primary = service.urls[url_key].href == service.url
+        primary = service.urls[url_key].href == service.urls.default.href
       }
       if contains(keys(service.urls), url_key)
     ]
@@ -86,11 +86,11 @@ locals {
             id      = "password"
             label   = "password"
             purpose = "PASSWORD"
-            value   = service.state.secrets.password
+            value   = service.runtime.secrets.password
           }
         ] : [],
         [
-          for field_name, field_value in service.state.fields : {
+          for field_name, field_value in service.runtime.attributes : {
             id    = field_name
             label = "${field_name}_ro"
             type  = "STRING"
@@ -99,7 +99,7 @@ locals {
           if field_value != null && field_value != ""
         ],
         [
-          for secret_name, secret_value in service.state.secrets : {
+          for secret_name, secret_value in service.runtime.secrets : {
             id    = secret_name
             label = "${secret_name}_${contains(local.onepassword_service_rw_secret_names[service_key], secret_name) ? "rw" : "ro"}"
             type  = "CONCEALED"
@@ -131,15 +131,15 @@ locals {
         [
           for url_key in sort([
             for key in keys(service.urls) : key
-            if !contains(["fqdn_external", "fqdn_internal"], key)
+            if !contains(["default", "external", "internal"], key)
             ]) : {
             href    = service.urls[url_key].href
             label   = service.urls[url_key].label
-            primary = service.urls[url_key].href == service.url
+            primary = service.urls[url_key].href == service.urls.default.href
           }
         ],
         local.onepassword_service_dashboard_urls[service_key],
-        local.onepassword_service_fqdn_urls[service_key],
+        local.onepassword_service_host_urls[service_key],
       )
 
       vault = {
@@ -151,7 +151,7 @@ locals {
 
   # Services that get a 1Password item: any with credential material to store.
   # Dashboard cards and routable URLs alone are not credentials. Iterates
-  # services_model (no state) so the search/fetch HTTP calls don't depend on
+  # services_model (no runtime) so the search/fetch HTTP calls don't depend on
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service

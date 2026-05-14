@@ -1,9 +1,9 @@
 {
   "values": {
     "linkwarden": {
-      "db_password": "${service.state.secrets.db_password}",
-      "meilisearch_master_key": "${service.state.secrets.meilisearch_master_key}",
-      "nextauth_secret": "${service.state.secrets.nextauth_secret}",
+      "db_password": "${service.runtime.secrets.db_password}",
+      "meilisearch_master_key": "${service.runtime.secrets.meilisearch_master_key}",
+      "nextauth_secret": "${service.runtime.secrets.nextauth_secret}",
       "postgres_image_selector": "postgres_18_image"
     },
     "network": {

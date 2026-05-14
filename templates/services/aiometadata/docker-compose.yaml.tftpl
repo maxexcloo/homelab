@@ -5,9 +5,9 @@ services:
         condition: service_healthy
     image: ghcr.io/cedya77/aiometadata:latest
     environment:
-      ADMIN_KEY: ${service.state.secrets.password}
+      ADMIN_KEY: ${service.runtime.secrets.password}
       DATABASE_URI: sqlite://addon/data/db.sqlite
-      HOST_NAME: ${service.fqdn}
+      HOST_NAME: ${service.urls.default.host}
       REDIS_URL: redis://redis:6379
     restart: unless-stopped
     volumes:

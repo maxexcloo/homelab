@@ -3,14 +3,14 @@ dashboard:
   - name: ${service.identity.title}
     description: ${services.komodo.identity.description}
     group: ${server.dashboard[0].name}
-    href: ${services.komodo.url}/servers/${server.key}
+    href: ${services.komodo.urls.default.href}/servers/${server.key}
     icon: ${services.komodo.identity.name}
-    siteMonitor: ${services.komodo.url}
+    siteMonitor: ${services.komodo.urls.default.href}
     widgets:
       - type: komodo
-        key: ${services.komodo.state.secrets.homepage_widget_key}
-        secret: ${services.komodo.state.secrets.homepage_widget_secret}
-        url: ${services.komodo.url}
+        key: ${services.komodo.runtime.secrets.homepage_widget_key}
+        secret: ${services.komodo.runtime.secrets.homepage_widget_secret}
+        url: ${services.komodo.urls.default.href}
 identity:
   description: Container Agent
   name: komodo-periphery

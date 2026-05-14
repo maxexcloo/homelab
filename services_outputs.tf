@@ -1,6 +1,6 @@
 locals {
   # Generated bootstrap value per declared service secret. Null when the secret
-  # has no bootstrap_type, so the state secret falls through to an empty
+  # has no bootstrap_type, so the runtime secret falls through to an empty
   # operator-filled 1Password placeholder.
   _services_outputs_secret_bootstrap = {
     for entry in flatten([
@@ -22,8 +22,8 @@ locals {
     for service_key, service in local.services_model : service_key => merge(
       service,
       {
-        state = {
-          fields = merge(
+        runtime = {
+          attributes = merge(
             service.features.b2 ? {
               b2_application_key_id = b2_application_key.service[service_key].application_key_id
               b2_bucket_name        = b2_bucket.service[service_key].bucket_name
@@ -55,16 +55,6 @@ locals {
             service.features.tailscale ? {
               tailscale_auth_key = tailscale_tailnet_key.service[service_key].key
             } : {},
-          )
-
-          urls = merge(
-            {
-              fqdn_external = service.fqdn_external
-              fqdn_internal = service.fqdn_internal
-            },
-            {
-              for url in service.routing.urls : url => url
-            }
           )
         }
       },

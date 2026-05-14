@@ -3,13 +3,13 @@ dashboard:
   - name: ${services.beszel.identity.title}
     description: ${services.beszel.identity.description}
     group: ${server.dashboard[0].name}
-    href: ${services.beszel.url}/system/${service.state.secrets.system_id}
+    href: ${services.beszel.urls.default.href}/system/${service.runtime.secrets.system_id}
     icon: ${services.beszel.identity.name}
     widgets:
       - type: beszel
-        password: ${services.beszel.state.secrets.password}
-        systemId: ${service.state.secrets.system_id}
-        url: ${services.beszel.url}
+        password: ${services.beszel.runtime.secrets.password}
+        systemId: ${service.runtime.secrets.system_id}
+        url: ${services.beszel.urls.default.href}
         username: ${defaults.organization.email}
         version: 2
         fields:

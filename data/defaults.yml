@@ -13,7 +13,6 @@ servers:
     b2: false
     cloud_init: false
     cloudflare_acme_token: false
-    cloudflare_proxy: false
     cloudflare_zero_trust_tunnel: false
     cockpit: false
     docker: false
@@ -30,9 +29,9 @@ servers:
     title: ""
     username: root
   networking:
-    management_address: ""
+    management_host: ""
     management_port: 443
-    public_address: ""
+    public_host: ""
     public_ipv4: ""
     public_ipv6: ""
     ssh_port: 22

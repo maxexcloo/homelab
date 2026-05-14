@@ -7,14 +7,14 @@
       }
     },
     "romm": {
-      "auth_secret_key": "${service.state.secrets.auth_secret_key}",
-      "db_password": "${service.state.secrets.db_password}",
-      "igdb_client_id": "${service.state.secrets.igdb_client_id}",
-      "igdb_client_secret": "${service.state.secrets.igdb_client_secret}",
+      "auth_secret_key": "${service.runtime.secrets.auth_secret_key}",
+      "db_password": "${service.runtime.secrets.db_password}",
+      "igdb_client_id": "${service.runtime.secrets.igdb_client_id}",
+      "igdb_client_secret": "${service.runtime.secrets.igdb_client_secret}",
       "mobygames_api_key": "",
       "postgres_image_selector": "postgres_18_image",
-      "redis_password": "${service.state.secrets.redis_password}",
-      "steamgriddb_api_key": "${service.state.secrets.steamgriddb_api_key}"
+      "redis_password": "${service.runtime.secrets.redis_password}",
+      "steamgriddb_api_key": "${service.runtime.secrets.steamgriddb_api_key}"
     },
     "storage": {
       "assets": {

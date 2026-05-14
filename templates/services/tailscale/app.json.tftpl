@@ -16,7 +16,7 @@
       "accept_dns": true,
       "accept_routes": false,
       "advertise_exit_node": true,
-      "auth_key": "${server.state.secrets.tailscale_auth_key}",
+      "auth_key": "${server.runtime.secrets.tailscale_auth_key}",
       "auth_once": true,
       "hostname": "${server.key}",
       "reset": false,

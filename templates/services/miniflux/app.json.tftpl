@@ -1,9 +1,9 @@
 {
   "values": {
     "miniflux": {
-      "admin_password": "${service.state.secrets.password}",
+      "admin_password": "${service.runtime.secrets.password}",
       "admin_username": "max@excloo.com",
-      "db_password": "${service.state.secrets.db_password}",
+      "db_password": "${service.runtime.secrets.db_password}",
       "postgres_image_selector": "postgres_18_image"
     },
     "network": {

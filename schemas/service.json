@@ -141,7 +141,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Secret identifier. Exposed as state.secrets.{name} on the service. Must be lowercase alphanumeric or underscore.",
+          "description": "Secret identifier. Exposed as runtime.secrets.{name} on the service. Must be lowercase alphanumeric or underscore.",
           "pattern": "^[a-z0-9_]+$",
           "type": "string"
         }
@@ -219,7 +219,7 @@
       "type": "object",
       "properties": {
         "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes state.fields.b2_application_key_id, state.fields.b2_bucket_name, state.fields.b2_endpoint, and state.secrets.b2_application_key as template variables.",
+          "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes runtime.attributes.b2_application_key_id, runtime.attributes.b2_bucket_name, runtime.attributes.b2_endpoint, and runtime.secrets.b2_application_key as template variables.",
           "type": "boolean"
         },
         "monitoring": {
@@ -231,19 +231,19 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random password for this service. Exposes state.secrets.password and state.secrets.password_hash (bcrypt) as template variables. Stored in 1Password.",
+          "description": "Generate a random password for this service. Exposes runtime.secrets.password and runtime.secrets.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
-          "description": "Expose the configured Pushover application token and user/group key for this service. Exposes state.secrets.pushover_application_token and state.secrets.pushover_user_key as template variables.",
+          "description": "Expose the configured Pushover application token and user/group key for this service. Exposes runtime.secrets.pushover_application_token and runtime.secrets.pushover_user_key as template variables.",
           "type": "boolean"
         },
         "resend": {
-          "description": "Provision a Resend API key for outbound email from this service. Exposes state.secrets.resend_api_key as a template variable.",
+          "description": "Provision a Resend API key for outbound email from this service. Exposes runtime.secrets.resend_api_key as a template variable.",
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key for this service. Exposes state.secrets.tailscale_auth_key as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
+          "description": "Generate a Tailscale auth key for this service. Exposes runtime.secrets.tailscale_auth_key as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
           "type": "boolean"
         }
       }
@@ -341,7 +341,7 @@
           "type": ["integer", "null"]
         },
         "scheme": {
-          "description": "Backend scheme. Required for Traefik routing and URL DNS record generation. fqdn_internal is computed for server-targeted services when scheme is non-null; fqdn_external is computed when expose is 'external' or 'cloudflare'. Null disables URL DNS records and fqdn computation.",
+          "description": "Backend scheme. Required for Traefik routing and URL DNS record generation. Service URLs get internal/external host entries when scheme is non-null. Null disables URL DNS records and host computation.",
           "enum": ["http", "https", null]
         },
         "ssl": {
@@ -364,7 +364,7 @@
       }
     },
     "secrets": {
-      "description": "Service secrets. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as state.secrets.{name} on the service object.",
+      "description": "Service secrets. Omit bootstrap_type for a manually supplied 1Password field; generated types bootstrap the field and then read it back. Each secret is exposed as runtime.secrets.{name} on the service object.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/secret_item"

@@ -4,9 +4,9 @@ description = "${server.description}"
 name = "${server_key}"
 
 [server.config]
-address = "${server.url_internal}:8120"
+address = "${server.urls.internal.href}:8120"
 enabled = true
-passkey = "${server.state.secrets.komodo_passkey}"
+passkey = "${server.runtime.secrets.komodo_passkey}"
 region = "${server.identity.region}"
 
 %{~ endfor ~}

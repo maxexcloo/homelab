@@ -42,7 +42,13 @@ locals {
       src    = ["tag:vm"]
     },
 
-    # Servers: full access to managed VMs, appliances, and peer servers
+    # Servers: dashboard traffic to routers; full access to managed VMs,
+    # appliances, and peer servers.
+    {
+      action = "accept"
+      dst    = ["tag:router:80", "tag:router:443"]
+      src    = ["tag:server"]
+    },
     {
       action = "accept"
       dst    = ["tag:appliance:*"]

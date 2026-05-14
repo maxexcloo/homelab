@@ -1,8 +1,8 @@
 {
   "values": {
     "aiostreams": {
-      "base_url": "${service.url}",
-      "secret_key": "${service.state.secrets.secret_key}"
+      "base_url": "${service.urls.default.href}",
+      "secret_key": "${service.runtime.secrets.secret_key}"
     },
     "network": {
       "web_port": {

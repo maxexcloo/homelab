@@ -5,13 +5,13 @@ dashboard:
   - name: ${server.identity.title}
     description: ${server.description}
     group: ${defaults.server_types[server.type].label}
-    href: ${server.url}
+    href: ${server.urls.default.href}
     icon: unifi
-    siteMonitor: ${server.url}
+    siteMonitor: ${server.urls.default.href}
     widgets:
       - type: unifi
-        password: ${server.state.secrets.password}
-        url: ${server.url}
+        password: ${server.runtime.secrets.password}
+        url: ${server.urls.default.href}
         username: ${server.identity.username}
 features:
   cloudflare_acme_token: true
@@ -22,4 +22,4 @@ identity:
   region: au
   title: AU
 networking:
-  public_address: excloo-au.controld.live
+  public_host: excloo-au.controld.live

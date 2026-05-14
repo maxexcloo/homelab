@@ -3,9 +3,9 @@ dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${server.dashboard[0].name}
-    href: ${service.url}
+    href: ${service.urls.default.href}
     icon: ${service.identity.name}
-    siteMonitor: ${service.url}
+    siteMonitor: ${service.urls.default.href}
 identity:
   description: Reverse Proxy
   name: traefik

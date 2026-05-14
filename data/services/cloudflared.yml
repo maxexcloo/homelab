@@ -3,13 +3,13 @@ dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${server.dashboard[0].name}
-    href: https://dash.cloudflare.com/${server.state.fields.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.state.fields.cloudflare_tunnel_id}/edit?tab=overview
+    href: https://dash.cloudflare.com/${server.runtime.attributes.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.runtime.attributes.cloudflare_tunnel_id}/edit?tab=overview
     icon: cloudflare
     widgets:
       - type: ${service.identity.name}
-        accountid: ${server.state.fields.cloudflare_account_id}
-        key: ${server.state.secrets.cloudflare_tunnel_read_token}
-        tunnelid: ${server.state.fields.cloudflare_tunnel_id}
+        accountid: ${server.runtime.attributes.cloudflare_account_id}
+        key: ${server.runtime.secrets.cloudflare_tunnel_read_token}
+        tunnelid: ${server.runtime.attributes.cloudflare_tunnel_id}
 identity:
   description: VPN
   name: cloudflared

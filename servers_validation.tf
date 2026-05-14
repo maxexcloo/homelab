@@ -6,7 +6,7 @@ locals {
       try(
         local.servers_input[server.parent].platform != "incus" ||
         local.servers_input[server.parent].type != "server" ||
-        local.servers_input[server.parent].networking.management_address == "",
+        local.servers_input[server.parent].networking.management_host == "",
         true
       )
     )
@@ -67,7 +67,7 @@ resource "terraform_data" "servers_validation" {
     # Incus remotes are configured from parent server management addresses.
     precondition {
       condition     = length(local.servers_validation_invalid_incus_vm_parents) == 0
-      error_message = "Incus VMs must reference an Incus server parent with networking.management_address set: ${join(", ", local.servers_validation_invalid_incus_vm_parents)}"
+      error_message = "Incus VMs must reference an Incus server parent with networking.management_host set: ${join(", ", local.servers_validation_invalid_incus_vm_parents)}"
     }
 
     # OCI resources in this stack only model VM instances, not bare metal or

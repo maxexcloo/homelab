@@ -49,7 +49,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Secret identifier. Exposed as state.secrets.{name} on the server. Must be lowercase alphanumeric or underscore.",
+          "description": "Secret identifier. Exposed as runtime.secrets.{name} on the server. Must be lowercase alphanumeric or underscore.",
           "pattern": "^[a-z0-9_]+$",
           "type": "string"
         }
@@ -73,7 +73,7 @@
       "type": "object",
       "properties": {
         "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key. Exposes state.fields.{b2_application_key_id, b2_bucket_name, b2_endpoint} and state.secrets.b2_application_key.",
+          "description": "Provision a Backblaze B2 bucket and application key. Exposes runtime.attributes.{b2_application_key_id, b2_bucket_name, b2_endpoint} and runtime.secrets.b2_application_key.",
           "type": "boolean"
         },
         "cloud_init": {
@@ -81,15 +81,11 @@
           "type": "boolean"
         },
         "cloudflare_acme_token": {
-          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes state.secrets.cloudflare_acme_token for DNS-01 challenge clients.",
-          "type": "boolean"
-        },
-        "cloudflare_proxy": {
-          "description": "Enable Cloudflare proxying on DNS records for this server.",
+          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes runtime.secrets.cloudflare_acme_token for DNS-01 challenge clients.",
           "type": "boolean"
         },
         "cloudflare_zero_trust_tunnel": {
-          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes state.fields.cloudflare_tunnel_id and state.secrets.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
+          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.secrets.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
           "type": "boolean"
         },
         "cockpit": {
@@ -109,19 +105,19 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random admin password. Exposes state.secrets.password and state.secrets.password_hash (bcrypt). Stored in 1Password.",
+          "description": "Generate a random admin password. Exposes runtime.secrets.password and runtime.secrets.password_hash (bcrypt). Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
-          "description": "Expose the configured Pushover application token and user/group key. Exposes state.secrets.pushover_application_token and state.secrets.pushover_user_key.",
+          "description": "Expose the configured Pushover application token and user/group key. Exposes runtime.secrets.pushover_application_token and runtime.secrets.pushover_user_key.",
           "type": "boolean"
         },
         "resend": {
-          "description": "Provision a Resend API key for outbound email. Exposes state.secrets.resend_api_key.",
+          "description": "Provision a Resend API key for outbound email. Exposes runtime.secrets.resend_api_key.",
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key. Exposes state.secrets.tailscale_auth_key for use in cloud-init or startup scripts.",
+          "description": "Generate a Tailscale auth key. Exposes runtime.secrets.tailscale_auth_key for use in cloud-init or startup scripts.",
           "type": "boolean"
         }
       }
@@ -161,7 +157,7 @@
       "description": "Network addressing for this server. Public IPs are used for external DNS records; Tailscale IPs are resolved automatically from the tailnet.",
       "type": "object",
       "properties": {
-        "management_address": {
+        "management_host": {
           "description": "Hostname or IP for management access (e.g. Incus API endpoint). Used by Komodo as the server address.",
           "pattern": "^$|^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$|^([0-9]{1,3}\\.){3}[0-9]{1,3}$|^[0-9A-Fa-f:]+$",
           "type": "string"
@@ -172,7 +168,7 @@
           "minimum": 1,
           "type": "integer"
         },
-        "public_address": {
+        "public_host": {
           "description": "Public CNAME target (e.g. a dynamic DNS hostname). Creates a CNAME external DNS record instead of A/AAAA. Inherited from the parent chain up to 2 levels.",
           "pattern": "^$|^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
           "type": "string"
@@ -407,7 +403,7 @@
       }
     },
     "secrets": {
-      "description": "Additional named secrets to provision for this server. Each produces a state.secrets.{name} field and a 1Password CONCEALED entry.",
+      "description": "Additional named secrets to provision for this server. Each produces a runtime.secrets.{name} field and a 1Password CONCEALED entry.",
       "type": "array",
       "items": { "$ref": "#/definitions/secret_item" }
     },

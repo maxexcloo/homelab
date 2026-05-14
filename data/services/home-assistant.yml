@@ -3,48 +3,48 @@ dashboard:
   - name: ESPHome
     description: ESP Device Builder
     group: ${service.identity.group}
-    href: ${server.url}/5c53de3b_esphome
+    href: ${server.urls.default.href}/5c53de3b_esphome
     icon: esphome
-    siteMonitor: ${server.url}/5c53de3b_esphome
+    siteMonitor: ${server.urls.default.href}/5c53de3b_esphome
     widgets:
       - type: esphome
-        password: ${server.state.secrets.password}
-        url: http://${server.state.urls.private_address}:6052
+        password: ${server.runtime.secrets.password}
+        url: http://${server.runtime.addresses.tailscale_ipv4}:6052
         username: ${server.identity.username}
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${service.identity.group}
-    href: ${server.url}
+    href: ${server.urls.default.href}
     icon: homeassistant
-    siteMonitor: ${server.url}
+    siteMonitor: ${server.urls.default.href}
     widgets:
       - type: homeassistant
-        key: ${service.state.secrets.homepage_widget_key}
-        url: ${server.url}
+        key: ${service.runtime.secrets.homepage_widget_key}
+        url: ${server.urls.default.href}
   - name: ESPresense
     description: Room Presence
     group: ${service.identity.group}
-    href: ${server.url}/f32ea98b_espresense-companion
+    href: ${server.urls.default.href}/f32ea98b_espresense-companion
     icon: espressif
-    siteMonitor: ${server.url}/f32ea98b_espresense-companion
+    siteMonitor: ${server.urls.default.href}/f32ea98b_espresense-companion
   - name: Home Assistant Matter Hub
     description: Matter Bridge
     group: ${service.identity.group}
-    href: ${server.url}/3fd9e6b0_hamh
+    href: ${server.urls.default.href}/3fd9e6b0_hamh
     icon: sh-home-assistant-matter-hub
-    siteMonitor: ${server.url}/3fd9e6b0_hamh
+    siteMonitor: ${server.urls.default.href}/3fd9e6b0_hamh
   - name: Studio Code Server
     description: Browser IDE
     group: ${service.identity.group}
-    href: ${server.url}/a0d7b954_vscode
+    href: ${server.urls.default.href}/a0d7b954_vscode
     icon: visual-studio-code
-    siteMonitor: ${server.url}/a0d7b954_vscode
+    siteMonitor: ${server.urls.default.href}/a0d7b954_vscode
   - name: Zigbee2MQTT
     description: Zigbee Coordinator
     group: ${service.identity.group}
-    href: ${server.url}/45df7312_zigbee2mqtt
+    href: ${server.urls.default.href}/45df7312_zigbee2mqtt
     icon: zigbee2mqtt
-    siteMonitor: ${server.url}/45df7312_zigbee2mqtt
+    siteMonitor: ${server.urls.default.href}/45df7312_zigbee2mqtt
 identity:
   description: Smart Home
   group: Home Automation

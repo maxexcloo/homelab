@@ -1,8 +1,8 @@
 {
   "values": {
     "komodo": {
-      "db_password": "${service.state.secrets.db_password}",
-      "passkey": "${server.state.secrets.komodo_passkey}"
+      "db_password": "${service.runtime.secrets.db_password}",
+      "passkey": "${server.runtime.secrets.komodo_passkey}"
     },
     "network": {
       "host_network": false,

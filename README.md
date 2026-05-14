@@ -9,17 +9,14 @@ Infrastructure as code for homelab management using OpenTofu.
 ## Quick Start
 
 ```bash
-# Clone repository
 git clone https://github.com/maxexcloo/homelab.git
 cd homelab
 
-# Setup
-mise run setup  # Creates .mise.local.toml template
-mise run init   # Initialize OpenTofu
+mise run setup
+mise run init
 
-# Deploy
-mise run plan   # Review changes
-mise run apply  # Apply changes
+mise run plan
+mise run apply
 ```
 
 ## Prerequisites
@@ -34,94 +31,39 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 
 ## Architecture
 
-YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, and provisions resources across the integrated providers. Some service credentials are rendered directly because no provider resource manages them.
+YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, provisions provider resources, and renders deploy artifacts.
 
-Server and service data flows through four pipeline stages: **input** (YAML with defaults merged, then target keys expanded), **model** (FQDNs, groups, and URLs computed deterministically — safe for `for_each`), **state** (provider-backed secrets and fields attached), and **render** (dashboard and data strings templated, Traefik labels generated, Compose and sidecar artifacts produced). Consumers use narrower views for 1Password, templates, public inventory, and outputs so dependencies stay visible.
+Data flow:
+
+1. **input**: YAML plus defaults, with service targets expanded
+2. **model**: deterministic fields safe for `for_each`
+3. **runtime**: provider-backed values and generated secrets
+4. **render**: dashboards, labels, compose files, and sidecars
+
+Service endpoints use `service.urls.*.{host,href}`. Server hostnames use `server.hosts.*`.
 
 ### Services Pipeline
 
-```mermaid
-flowchart TD
-    YAML["data/services/*.yml"]
-    SRVS["servers / servers_model"]
-    PROV["provider resources\n1Password · B2 · Tailscale …"]
-    TMPL["templates/services/*/"]
-
-    subgraph input ["Input — services_input.tf"]
-        SI["services_input"]
-        SIT["services_input_targets"]
-        SI --> SIT
-    end
-
-    subgraph model ["Model — services_model.tf"]
-        SM["services_model"]
-        SMI["services_model_imports"]
-        SM --> SMI
-    end
-
-    subgraph state ["State — services_outputs.tf"]
-        SVC["services"]
-    end
-
-    subgraph render ["Render — services_render.tf + services_render_custom.tf"]
-        PTC["pre_template_context"]
-        SCS["render_custom_service\nrouting labels"]
-        RS["render_services\nrendered strings + routing"]
-        RCC["render_custom_context\nhomepage data"]
-        TC["template_context"]
-        PTC & SCS --> RS
-        RS --> RCC
-        RS & RCC & SMI --> TC
-    end
-
-    FC["render_files_compose"]
-    FS["render_files_sidecars"]
-
-    YAML --> SI
-    SIT --> SM
-    SRVS --> SM & RCC
-    SM & PROV --> SVC
-    SVC & SMI --> BC
-    SVC & BC --> SCS
-    TMPL --> FC & FS
-    RS & RC --> FC
-    RC --> FS
-```
-
 ```
 data/
-├── dns/*.yml                           # DNS zones and manual records
-├── servers/*.yml                       # Server definitions
-├── services/*.yml                      # Service deployments
-├── config.yml                          # Global configuration (domains, accounts, system, types) — kept separate from defaults.yml so edits to one don't churn the other
-└── defaults.yml                        # Field defaults merged into every server/service/DNS record
+├── dns/*.yml
+├── servers/*.yml
+├── services/*.yml
+├── config.yml
+└── defaults.yml
 templates/
-└── services/<identity.service>/        # Templates for services with an implementation key
-    │
-    ▼
-OpenTofu
-    ├── 1Password       Credential storage (one entry per server/service)
-    ├── B2              Object storage buckets and keys
-    ├── Cloudflare      DNS records, Zero Trust tunnels, ACME tokens
-    ├── GitHub          SSH public keys; pushes Fly/Komodo/TrueNAS configs
-    ├── Incus           Containers and VMs on managed hosts
-    ├── OCI             Oracle Cloud VMs and networking
-    ├── Pushover        Pass-through alert notification credentials
-    ├── Resend          Email API keys
-    └── Tailscale       VPN auth keys, ACLs, and device lookups
+└── services/<identity.service>/
 ```
 
-Rendered service configs (Docker Compose, Fly.toml, TrueNAS app values) are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/config.yml`. Each deploy repo also gets `.github/deploy-request.json`, written after rendered files, SOPS config, and the workflow. Push deploys only trigger from that manifest and compare fingerprints with the previous manifest, so changed Fly apps or TrueNAS `server/service` targets deploy after the render commits settle. TrueNAS deploys can also be started manually with an empty target for everything, a server key, a service key, or `server/service`. TrueNAS catalog updates apply desired values as an overlay on the current app config, so per-app values files only need to include managed keys.
+Rendered service configs are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/config.yml`. `mise run render` can write plaintext render output locally through `debug_dir` for troubleshooting.
 
-Rendered plaintext can be written locally for debugging with `mise run render`, which writes through `debug_dir` to `.render` by default. For ad hoc runs, set `TF_VAR_debug_dir` to a scratch path such as `/tmp/homelab-debug`.
-
-Feature flags either create provider-backed resources, expose values generated locally by OpenTofu, or control rendered config. `password` and `monitoring`/`monitoring_alerts` are local-only; `b2`, `resend`, and `tailscale` call providers when enabled. Resend uses the generic REST API provider with `TF_VAR_resend_api_key`. Pushover has no provider-managed resource here, so `TF_VAR_pushover_application_token` and `TF_VAR_pushover_user_key` are pass-through values rendered into config when `features.pushover` is enabled.
+Feature flags create provider resources, expose generated values, or control rendered config. `password` and monitoring flags are local-only. `b2`, `resend`, and `tailscale` call providers. Pushover values are pass-through variables.
 
 ## Service Data And Templates
 
-Service YAML can include a root `data` value with any JSON-compatible shape: objects, arrays, strings, numbers, booleans, or null. Templates receive the rendered value as `service.data`. String values anywhere inside that JSON tree support OpenTofu template interpolation using `defaults`, `server`, `servers`, `service`, and `services`.
+Service YAML can include a root `data` value with any JSON-compatible shape. Templates receive the rendered value as `service.data`.
 
-Targets can also set `targets.<key>.data`. If both service-level and target-level values are objects, they are deep-merged with target values winning. If either side is a scalar, array, or null, the target value replaces the service value. Use this for general application data such as bookmark lists, dashboard settings, upstream URLs, or provider-neutral config that belongs with the service but should not become root HCL logic.
+Targets can set `targets.<key>.data`. Objects deep-merge with target values winning. Scalars, arrays, and null replace the service-level value.
 
 Templates can reference:
 
@@ -167,16 +109,16 @@ mise run validate    # Validate OpenTofu configuration
 
 ## Credential Storage
 
-All generated credentials are stored automatically in **1Password** through 1Password Connect:
+Generated credentials are stored in **1Password** through 1Password Connect:
 
-- **Servers vault** — one login entry per server; generated fields (passwords, API keys, tunnel tokens) are stored as fields, and IPs/FQDNs are stored as item URLs
-- **Services vault** — one login entry per service deployment with the same pattern, preserving all computed and custom URLs on the login item
+- **Servers vault**: one login entry per server
+- **Services vault**: one login entry per service deployment with credentials and URLs
 
 Set `onepassword.vaults.servers.id` and `onepassword.vaults.services.id` in `data/config.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
 
-Each server and service exposes runtime data through a `state` sub-object split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), and `state.urls` (URL items). Templates reach in via `${server.state.secrets.password}` or `${service.state.fields.b2_bucket_name}` etc. — no `_sensitive` suffix.
+Each server and service exposes provider-backed values through `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, and `runtime.secrets`.
 
-Manually supplied service secrets are declared in `secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back and exposes them as `service.state.secrets.{name}` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
+Manually supplied service secrets are declared in `secrets` with only a `name`. OpenTofu creates empty concealed fields for those secrets on the matching 1Password service item, then reads populated values back and exposes them as `service.runtime.secrets.{name}` in templates. After adding a new manual service secret, apply once to create the empty field, fill it in 1Password, then apply again to render and deploy the populated value. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
 
 Services can access another service's full data (including secrets) only by declaring an `imports.services` alias. The normal `services` map remains the inventory, and declared imports are overlaid by alias as `services.<alias>`.
 

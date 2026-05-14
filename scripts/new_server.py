@@ -215,12 +215,12 @@ def main() -> None:
     parser.add_argument("--docker", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--force", action="store_true")
-    parser.add_argument("--management-address")
+    parser.add_argument("--management-host")
     parser.add_argument("--management-port", type=int)
     parser.add_argument("--parent")
     parser.add_argument("--password", action="store_true")
     parser.add_argument("--platform")
-    parser.add_argument("--public-address")
+    parser.add_argument("--public-host")
     parser.add_argument("--public-ipv4")
     parser.add_argument("--public-ipv6")
     parser.add_argument("--region")
@@ -271,9 +271,9 @@ def main() -> None:
         if feature_values["password"]
         else args.username
     )
-    management_address = prompt_optional(args.management_address, "Management address")
+    management_host = prompt_optional(args.management_host, "Management host")
     management_port = prompt_optional_int(args.management_port, "Management port")
-    public_address = prompt_optional(args.public_address, "Public CNAME")
+    public_host = prompt_optional(args.public_host, "Public CNAME")
     public_ipv4 = prompt_optional(args.public_ipv4, "Public IPv4")
     public_ipv6 = prompt_optional(args.public_ipv6, "Public IPv6")
 
@@ -293,9 +293,9 @@ def main() -> None:
     networking = {
         key: value
         for key, value in {
-            "management_address": management_address,
+            "management_host": management_host,
             "management_port": management_port,
-            "public_address": public_address,
+            "public_host": public_host,
             "public_ipv4": public_ipv4,
             "public_ipv6": public_ipv6,
         }.items()

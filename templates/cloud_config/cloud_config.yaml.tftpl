@@ -33,16 +33,16 @@ runcmd:
   %{~ endif ~}
   %{~ if server.features.cloudflare_zero_trust_tunnel ~}
   - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
-  - cloudflared service install ${server.state.secrets.cloudflare_tunnel_token}
+  - cloudflared service install ${server.runtime.secrets.cloudflare_tunnel_token}
   %{~ endif ~}
   %{~ if server.features.tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
-  - tailscale up --advertise-exit-node --authkey ${server.state.secrets.tailscale_auth_key} --hostname ${server.key}
+  - tailscale up --advertise-exit-node --authkey ${server.runtime.secrets.tailscale_auth_key} --hostname ${server.key}
   %{~ endif ~}
 users:
   - name: ${server.identity.username}
-    %{~ if server.state.secrets.password_hash != null ~}
-    hashed_passwd: ${server.state.secrets.password_hash}
+    %{~ if server.runtime.secrets.password_hash != null ~}
+    hashed_passwd: ${server.runtime.secrets.password_hash}
     %{~ endif ~}
     lock_passwd: false
     shell: ${defaults.system.shell}
@@ -76,8 +76,8 @@ write_files:
       services:
         periphery:
           environment:
-            PERIPHERY_PASSKEY: ${server.state.secrets.komodo_passkey}
-            SOPS_AGE_KEY: ${server.state.secrets.age_secret_key}
+            PERIPHERY_PASSKEY: ${server.runtime.secrets.komodo_passkey}
+            SOPS_AGE_KEY: ${server.runtime.secrets.age_secret_key}
           image: ghcr.io/moghtech/komodo-periphery:latest
           network_mode: host
           restart: unless-stopped

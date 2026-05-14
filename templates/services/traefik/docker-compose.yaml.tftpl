@@ -12,16 +12,16 @@ services:
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.middlewares=autocompress@docker
       - --entrypoints.websecure.http.tls.certResolver=cloudflare
-      - --entrypoints.websecure.http.tls.domains[0].main=${server.fqdn_external}
-      - --entrypoints.websecure.http.tls.domains[0].sans=*.${server.fqdn_external}
-      - --entrypoints.websecure.http.tls.domains[1].main=${server.fqdn_internal}
-      - --entrypoints.websecure.http.tls.domains[1].sans=*.${server.fqdn_internal}
-      - --providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.compose.project" | trimPrefix "ix-"}}.${server.fqdn_internal}`)
+      - --entrypoints.websecure.http.tls.domains[0].main=${server.hosts.external}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.${server.hosts.external}
+      - --entrypoints.websecure.http.tls.domains[1].main=${server.hosts.internal}
+      - --entrypoints.websecure.http.tls.domains[1].sans=*.${server.hosts.internal}
+      - --providers.docker.defaultRule=Host(`{{ index .Labels "com.docker.compose.project" | trimPrefix "ix-"}}.${server.hosts.internal}`)
       - --providers.docker.exposedbydefault=false
       - --providers.docker=true
       - --serverstransport.insecureskipverify=true
     environment:
-      CF_DNS_API_TOKEN: ${server.state.secrets.cloudflare_acme_token}
+      CF_DNS_API_TOKEN: ${server.runtime.secrets.cloudflare_acme_token}
     image: traefik:v3.6.15
     network_mode: host
     restart: unless-stopped

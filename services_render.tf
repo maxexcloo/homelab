@@ -1,6 +1,5 @@
 locals {
-  # Only .tftpl files are rendered; the suffix is stripped from the deployed path.
-  # Other files use filebase64(), so static and binary assets share one path.
+  # Generic sidecars share one path model; templates render, static files copy.
   _services_render_file_inputs = flatten([
     for service_key, service in {
       for service_key, service in local.services : service_key => service
@@ -14,8 +13,7 @@ locals {
         stack           = service_key
         target          = service.target
       }
-      # These two files are handled by platform-specific renderers (TrueNAS catalog
-      # apps and Komodo/Fly compose) rather than generic sidecars.
+      # Platform renderers handle app.json.tftpl and docker-compose.yaml.tftpl.
       if !contains(["app.json.tftpl", "docker-compose.yaml.tftpl"], basename(file_path))
     ]
   ])
@@ -32,7 +30,7 @@ locals {
     (
       contains(keys(local.truenas_input_servers), service.target) ||
       (
-        contains(toset(keys(local.servers_input)), service.target) &&
+        contains(keys(local.servers_model), service.target) &&
         local.servers_model[service.target].features.docker
       )
     )
@@ -40,59 +38,53 @@ locals {
 
   _services_render_public_raw_services = {
     for service_key, service in local.services : service_key => {
-      for k, v in service : k => v if k != "state"
+      for k, v in service : k => v if k != "runtime"
     }
   }
 
   _services_render_public_rendered_services = {
     for service_key, service in local.services_render_services : service_key => {
-      for k, v in service : k => v if k != "state"
+      for k, v in service : k => v if k != "runtime"
     }
   }
 
-  # Pre-render context with imported services overlaid. References local.services
-  # rather than services_render_services so dashboard and data strings can be
-  # template-rendered from this context without circularity.
-  services_render_pre_template_context = {
+  _services_render_routing_labels = {
     for service_key, service in local.services : service_key => {
-      defaults = local.defaults
-      server   = try(local.servers[service.target], null)
-      servers  = local.servers
-      service  = service
+      for label_key, label_value in merge(
+        service.routing.port != null ? {
+          # Explicit resolver avoids first-hit TLS failures.
+          "traefik.enable"                                                            = "true"
+          "traefik.http.routers.${service.identity.name}.entrypoints"                 = service.routing.ssl ? "websecure" : "web"
+          "traefik.http.routers.${service.identity.name}.middlewares"                 = service.routing.expose == "internal" ? "internal-only@docker" : null
+          "traefik.http.routers.${service.identity.name}.tls.certresolver"            = service.routing.ssl && service.routing.expose != "cloudflare" ? "cloudflare" : null
+          "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(coalesce(service.routing.backend_port, service.routing.port))
+          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.scheme == "https" ? "https" : null
 
-      services = merge(
-        local._services_render_public_raw_services,
+          "traefik.http.routers.${service.identity.name}.rule" = join(" || ", [
+            for host in distinct([
+              for url_key, url in service.urls : url.host
+              if url_key != "default" && url.host != null && url.host != ""
+            ]) : "Host(`${host}`)"
+          ])
+        } : {},
+        # Only managed DNS zones can resolve ACME DNS-01 challenges.
+        service.routing.port != null && service.routing.ssl && service.routing.expose != "cloudflare" ? {
+          for url_index, url in [
+            for url in service.routing.urls : url
+            if lookup(local.dns_render_managed_zones_by_url, url, null) != null
+          ] :
+          "traefik.http.routers.${service.identity.name}.tls.domains[${url_index}].main" => url
+        } : {},
         {
-          for alias, real_key in local.services_model_imports[service_key] :
-          alias => local.services[real_key]
-          if contains(keys(local.services), real_key)
-        },
-      )
+          for label_key, label_value in service.routing.labels :
+          label_key => try(templatestring(tostring(label_value), local.services_render_pre_template_context[service_key]), null)
+          if label_value != null
+        }
+      ) : label_key => label_value
+      if label_value != null
     }
   }
 
-  # Final template context for compose/sidecar renders. Imported service aliases
-  # are overlaid here so templates can reference `services.<alias>`.
-  services_render_template_context = {
-    for service_key, service in local.services : service_key => merge(
-      local.services_render_pre_template_context[service_key],
-      {
-        custom  = lookup(local.services_render_custom_context, service_key, {})
-        service = local.services_render_services[service_key]
-
-        services = merge(
-          local._services_render_public_rendered_services,
-          {
-            for alias, real_key in local.services_model_imports[service_key] :
-            alias => local.services_render_services[real_key]
-            if contains(keys(local.services_render_services), real_key)
-          },
-        )
-      },
-    )
-  }
-
-  # Rendered Docker Compose content keyed by expanded service stack.
   services_render_files_compose = {
     for service_key, compose in local._services_render_files_compose_raw : service_key => yamlencode(
       merge(
@@ -114,8 +106,6 @@ locals {
     )
   }
 
-  # Deployed sidecar files include encrypted content metadata used by Fly,
-  # Komodo, and TrueNAS GitHub repository file resources.
   services_render_files_sidecars = {
     for file_input in local._services_render_file_inputs : "${file_input.stack}/${file_input.rel_path}" => merge(
       file_input,
@@ -148,8 +138,26 @@ locals {
     )
   }
 
-  # Render-time service inventory: dashboard/data strings template-rendered,
-  # routing_labels merged in from services_render_custom_service.
+  # Pre-render context avoids circular references while templating data strings.
+  services_render_pre_template_context = {
+    for service_key, service in local.services : service_key => {
+      defaults = local.defaults
+      server   = try(local.servers_runtime_rendered[service.target], null)
+      servers  = local.servers_runtime_rendered
+      service  = service
+
+      services = merge(
+        local._services_render_public_raw_services,
+        {
+          for alias, real_key in local.services_model_imports[service_key] :
+          alias => local.services[real_key]
+          if contains(keys(local.services), real_key)
+        },
+      )
+    }
+  }
+
+  # Rendered service inventory for templates and platform deployers.
   services_render_services = {
     for service_key, service in local.services : service_key => merge(
       service,
@@ -158,11 +166,33 @@ locals {
           jsonencode({
             dashboard = service.dashboard
             data      = service.data
+            truenas   = service.truenas
           }),
           local.services_render_pre_template_context[service_key],
         ),
       ),
-      lookup(local.services_render_custom_service, service_key, {}),
+      {
+        routing_labels = local._services_render_routing_labels[service_key]
+      },
+    )
+  }
+
+  services_render_template_context = {
+    for service_key, service in local.services : service_key => merge(
+      local.services_render_pre_template_context[service_key],
+      {
+        custom  = lookup(local.services_render_custom_context, service_key, {})
+        service = local.services_render_services[service_key]
+
+        services = merge(
+          local._services_render_public_rendered_services,
+          {
+            for alias, real_key in local.services_model_imports[service_key] :
+            alias => local.services_render_services[real_key]
+            if contains(keys(local.services_render_services), real_key)
+          },
+        )
+      },
     )
   }
 }

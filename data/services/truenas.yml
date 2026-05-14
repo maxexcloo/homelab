@@ -3,14 +3,14 @@ dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${service.identity.group}
-    href: ${server.url}
+    href: ${server.urls.default.href}
     icon: ${service.identity.name}
-    siteMonitor: ${server.url}
+    siteMonitor: ${server.urls.default.href}
     widgets:
       - type: ${service.identity.name}
         enablePools: "true"
-        key: ${service.state.secrets.homepage_widget_key}
-        url: ${server.url}
+        key: ${service.runtime.secrets.homepage_widget_key}
+        url: ${server.urls.default.href}
         version: 2
 identity:
   description: Network Attached Storage

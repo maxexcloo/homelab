@@ -55,11 +55,11 @@ locals {
             id      = "password"
             label   = "password"
             purpose = "PASSWORD"
-            value   = server.state.secrets.password
+            value   = server.runtime.secrets.password
           }
         ] : [],
         [
-          for field_name, field_value in server.state.fields : {
+          for field_name, field_value in server.runtime.attributes : {
             id    = field_name
             label = "${field_name}_ro"
             type  = "STRING"
@@ -68,7 +68,7 @@ locals {
           if field_value != null && field_value != ""
         ],
         [
-          for secret_name, secret_value in server.state.secrets : {
+          for secret_name, secret_value in server.runtime.secrets : {
             id    = secret_name
             label = "${secret_name}_${contains(local.onepassword_server_rw_secret_names[server_key], secret_name) ? "rw" : "ro"}"
             type  = "CONCEALED"
@@ -99,7 +99,7 @@ locals {
         for label in sort(keys(local.onepassword_server_item_urls[server_key])) : {
           href    = local.onepassword_server_item_urls[server_key][label].href
           label   = label
-          primary = local.onepassword_server_item_urls[server_key][label].href == local.servers_model[server_key].url
+          primary = local.onepassword_server_item_urls[server_key][label].href == local.servers_model[server_key].urls.default.href
         }
       ]
 
@@ -112,7 +112,7 @@ locals {
   onepassword_server_item_urls = {
     for server_key, server in local.servers : server_key => merge(
       {
-        for url_label, url_value in server.state.urls : url_label => {
+        for url_label, url_value in merge(server.runtime.hosts, server.runtime.addresses) : url_label => {
           href = format(
             "https://%s%s",
             can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
@@ -124,7 +124,7 @@ locals {
         if url_value != null && url_value != ""
       },
       {
-        for url_label, url_value in server.state.urls : "${url_label}_ssh" => {
+        for url_label, url_value in merge(server.runtime.hosts, server.runtime.addresses) : "${url_label}_ssh" => {
           href = format(
             "ssh://%s@%s%s",
             server.identity.username,
@@ -134,7 +134,7 @@ locals {
           label   = "${url_label}_ssh"
           primary = false
         }
-        if url_label != "management_address" && url_value != null && url_value != ""
+        if url_label != "management" && url_value != null && url_value != ""
       },
     )
   }

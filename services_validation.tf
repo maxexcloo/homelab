@@ -1,6 +1,5 @@
 locals {
-  # Cloudflare Universal SSL covers the zone apex and one wildcard level (*.zone).
-  # Count dots in the subdomain part (name minus zone); anything > 1 is too deep.
+  # Cloudflare Universal SSL covers only one subdomain level.
   services_validation_cloudflare_deep_subdomains = [
     for record_key, record in merge(
       local.dns_render_records_services,
@@ -75,7 +74,7 @@ locals {
   services_validation_unmanaged_urls = flatten([
     for service_key, service in local.services_model : [
       for url in service.routing.urls : "${service_key} -> ${url}"
-      if lookup(local.dns_render_zones_urls, url, null) == null
+      if lookup(local.dns_render_managed_zones_by_url, url, null) == null
       && service.routing.ssl
       && service.target != "fly"
       && service.routing.expose != "cloudflare"
@@ -87,15 +86,13 @@ resource "terraform_data" "services_validation" {
   input = keys(local.services_input)
 
   lifecycle {
-    # Cloudflare Universal SSL covers only the zone apex and one wildcard level
-    # (*.zone). Deeper subdomains are not covered and will show SSL errors.
+    # Deep generated service hostnames need custom short URLs or dedicated certs.
     precondition {
       condition     = length(local.services_validation_cloudflare_deep_subdomains) == 0
       error_message = "Cloudflare-proxied hostnames exceed Universal SSL coverage (max one subdomain level): ${join(", ", local.services_validation_cloudflare_deep_subdomains)}"
     }
 
-    # Cloudflare-exposed services on servers need a tunnel token available from
-    # the target server feature set.
+    # Cloudflare-exposed server services need a tunnel on the target server.
     precondition {
       condition = length(local.services_validation_cloudflare_tunnel_missing) == 0
       error_message = (
@@ -103,11 +100,13 @@ resource "terraform_data" "services_validation" {
       )
     }
 
+    # Pushover is pass-through, so provider validation will not catch blanks.
     precondition {
       condition     = length(local.services_validation_fly_ports_missing) == 0
       error_message = "Fly services must have routing.port set: ${join(", ", local.services_validation_fly_ports_missing)}"
     }
 
+    # TrueNAS catalog metadata is meaningful only for TrueNAS targets.
     precondition {
       condition = length(local.services_validation_file_key_mismatches) == 0
       error_message = (
@@ -115,6 +114,7 @@ resource "terraform_data" "services_validation" {
       )
     }
 
+    # TrueNAS services need either a custom compose template or catalog template.
     precondition {
       condition = length(local.services_validation_import_alias_conflicts) == 0
       error_message = (
@@ -122,6 +122,7 @@ resource "terraform_data" "services_validation" {
       )
     }
 
+    # SSL service URLs need managed DNS so ACME delegation can resolve.
     precondition {
       condition = length(local.services_validation_invalid_imports) == 0
       error_message = (
@@ -136,8 +137,6 @@ resource "terraform_data" "services_validation" {
       )
     }
 
-    # Pushover values are pass-through variables, so provider validation will not
-    # catch missing credentials for enabled services.
     precondition {
       condition = length(local.services_validation_pushover_missing_credentials) == 0
       error_message = (
@@ -145,8 +144,6 @@ resource "terraform_data" "services_validation" {
       )
     }
 
-    # TrueNAS catalog metadata is meaningful only for TrueNAS targets. Custom
-    # compose apps remain portable between TrueNAS and Komodo.
     precondition {
       condition = length(local.services_validation_truenas_config_invalid_targets) == 0
       error_message = (
@@ -154,15 +151,11 @@ resource "terraform_data" "services_validation" {
       )
     }
 
-    # A TrueNAS service is either a custom app from docker-compose.yaml.tftpl
-    # or a catalog app with app-specific values.
     precondition {
       condition     = length(local.services_validation_truenas_missing_template) == 0
       error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", local.services_validation_truenas_missing_template)}"
     }
 
-    # routing.urls for SSL-terminated services must be in a managed DNS zone so
-    # Traefik's DNS-01 ACME challenge has a delegation record to resolve against.
     precondition {
       condition = length(local.services_validation_unmanaged_urls) == 0
       error_message = (

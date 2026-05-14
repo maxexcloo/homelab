@@ -3,12 +3,12 @@ dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${server.dashboard[0].name}
-    href: https://login.tailscale.com/admin/machines/${server.state.urls.tailscale_ipv4}
+    href: https://login.tailscale.com/admin/machines/${server.runtime.addresses.tailscale_ipv4}
     icon: ${service.identity.name}
     widgets:
       - type: ${service.identity.name}
-        deviceid: ${server.state.fields.tailscale_device_id}
-        key: ${services.homepage.state.secrets.tailscale_homepage_widget_key}
+        deviceid: ${server.runtime.attributes.tailscale_device_id}
+        key: ${services.homepage.runtime.secrets.tailscale_homepage_widget_key}
 identity:
   description: VPN
   name: tailscale

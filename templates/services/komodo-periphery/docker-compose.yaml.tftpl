@@ -1,8 +1,8 @@
 services:
   periphery:
     environment:
-      PERIPHERY_PASSKEY: ${server.state.secrets.komodo_passkey}
-      SOPS_AGE_KEY: ${server.state.secrets.age_secret_key}
+      PERIPHERY_PASSKEY: ${server.runtime.secrets.komodo_passkey}
+      SOPS_AGE_KEY: ${server.runtime.secrets.age_secret_key}
     image: ghcr.io/moghtech/komodo-periphery:2.2.0
     network_mode: host
     restart: unless-stopped

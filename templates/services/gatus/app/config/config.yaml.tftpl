@@ -26,7 +26,8 @@ alerting:
 endpoints:
   %{~ for monitored_service in values(services) ~}
   %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null ~}
-  %{~ for url in values(monitored_service.urls) ~}
+  %{~ for url_key, url in monitored_service.urls ~}
+  %{~ if url_key != "default" && url.href != null ~}
   - conditions:
       %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation ~}
       - "[CERTIFICATE_EXPIRATION] > 48h"
@@ -49,6 +50,7 @@ endpoints:
     client:
       insecure: true
     %{~ endif ~}
+  %{~ endif ~}
   %{~ endfor ~}
   %{~ endif ~}
   %{~ endfor ~}
@@ -58,7 +60,7 @@ endpoints:
       - "[CONNECTED] == true"
     group: "${defaults.server_types[server.type].label}"
     name: "${server_key}"
-    url: "icmp://${server.fqdn}"
+    url: "icmp://${server.hosts.default}"
     %{~ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
     alerts:
       %{~ if service.features.pushover ~}

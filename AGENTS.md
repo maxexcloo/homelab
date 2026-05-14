@@ -4,15 +4,20 @@
 
 Homelab infrastructure managed with OpenTofu 1.x (`>= 1.11, < 2.0`). YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across multiple providers.
 
-Each `server` and `service` is built in two layers: a **model** (input + deterministic computed fields, provider-independent) and a **state** sub-object (provider-backed values + generated secrets, split into `state.fields` / `state.secrets` / `state.urls`). The model is safe to use as `for_each` input for resources; consumers needing runtime data reach into `state.*`. Feature filters are derived from input only, so resource definitions never depend on the resources they create.
+Each `server` and `service` has two layers:
+
+- **model**: YAML input plus deterministic computed fields. Safe for `for_each`.
+- **runtime**: provider-backed addresses, attributes, hosts, and secrets.
+
+Feature filters come from model/input data only, so resource addresses never depend on values created by those resources.
 
 ## File Organization
 
 Root HCL files come in three shapes:
 
-- **Domain stages** — `{domain}_{layer}.tf` (`servers_input.tf`, `services_model.tf`, `dns_model.tf`, …) hold the input → model → outputs → validation → render pipeline for a domain that flows through every layer.
-- **Per-provider files** — one file per provider (`unifi.tf`, `github.tf`, `b2.tf`, `bcrypt.tf`, `random.tf`, `age.tf`, …) for resources and data sources that don't fit a staged domain. Includes utility providers (random/bcrypt/age) used as cross-cutting building blocks.
-- **Per-service templates** — under `templates/services/<identity.service>/` when `identity.service` is set. Use `docker-compose.yaml.tftpl` for custom Docker stacks and `app.json.tftpl` for TrueNAS catalog overlays. Any other files are deployed as sidecars (`.tftpl` rendered, `.raw.tftpl` rendered then binary-encrypted because SOPS structured encryption is unsuitable, e.g. top-level YAML arrays). Omit `identity.service` for dashboard/inventory-only services that should not render or deploy service-specific artifacts.
+- **Domain stages**: `{domain}_{layer}.tf`, for example `servers_input.tf`, `services_model.tf`, `dns_render.tf`.
+- **Per-provider files**: one file per provider or utility provider, for example `cloudflare.tf`, `github.tf`, `random.tf`.
+- **Per-service templates**: `templates/services/<identity.service>/`. Omit `identity.service` for dashboard/inventory-only services.
 
 ## Sorting Convention
 
@@ -50,10 +55,11 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
   - `snake_case` for all resources, locals, and variables
   - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_files_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
   - **Helpers** (locals consumed only inside their defining staged file) are prefixed with `_` so they sort to the top of the `locals {}` block, ahead of the public locals other files depend on. Per-provider files (`unifi.tf`, `github.tf`, `b2.tf`, …) don't follow the `{domain}_{layer}_{noun}` shape and don't use the `_` prefix — all locals there sort purely alphabetically regardless of scope
-  - The single concrete output of a stage drops the qualifier: `services_render_context` instead of `..._final` or `..._merged`; when a file intentionally exposes multiple phases, name the phase explicitly (for example `services_render_pre_template_context` and `services_render_template_context`)
+  - The main output of a stage drops suffixes like `_all`, `_final`, `_merged`, and `_write`: use `dns_render_records`, not `dns_render_records_all`. If that output depends on same-prefix intermediates, keep it at the bottom as a deliberate data-flow exception.
 - **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies to map/object expressions inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes — consistency outweighs the small extra height.
-- **Runtime state shape**: Provider-backed and feature-gated values live under a `state` sub-object on each `server` / `service`, split into `state.fields` (1Password STRING entries), `state.secrets` (CONCEALED entries), `state.urls` (URL entries). Templates and consumers reach in via the typed sub-object instead of suffix conventions.
-- **Sensitive data**: `sensitive = true` on all outputs containing secrets; secret fields live under `state.secrets`
+- **Runtime shape**: Runtime values live under `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, and `runtime.secrets`. Use model fields unless the value is provider-backed.
+- **Host and URL shape**: Use server `hosts.*` for hostnames without a scheme. Use service `urls.*.host` for hostnames and `urls.*.href` for actual URLs. Use `runtime.addresses.*` for provider-discovered IP addresses. Avoid new scalar `fqdn_*`, `url_*`, or ambiguous `*_address` fields.
+- **Sensitive data**: `sensitive = true` on all outputs containing secrets; secret fields live under `runtime.secrets`
 - **Consumer data source**: Resources and output locals that iterate over servers or services should reference `local.servers_model` / `local.services_model`, not `local.servers_input` / `local.services_input_targets`. The model layer normalises secrets fields and adds computed attributes; it is the correct source for all downstream consumers. Use input-layer locals only within their own staged file.
 - **Defaults**: Set values in `data/defaults.yml` wherever possible; use `try()` / `coalesce()` only when no applicable default exists
 - **Merge functions**: Use `merge()` for shallow merges of flat objects; reach for `provider::deepmerge::mergo()` only when nested keys must combine recursively (server/service YAML overrides, config blob composition, JSON catalog overlays)
@@ -62,8 +68,8 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 
 ### Template authoring
 
-- Always use `~` on all template directives to prevent unwanted blank lines
-- Keep root HCL service-agnostic. Root HCL may transform any YAML field uniformly across all services (e.g. building Traefik labels from `routing.*`). Logic that branches on `identity.service` belongs in `services_render_custom.tf` (via the `lookup` dispatch map in `services_render_custom_context`) when cross-service aggregation is required; otherwise it belongs in YAML `data` or per-service templates
+- Always use `~` on template directives to avoid unwanted blank lines
+- Keep root HCL service-agnostic. Service-specific logic belongs in YAML `data`, per-service templates, or `services_render_custom.tf` for cross-service aggregation.
 - Use `.tftpl` for files needing template rendering (suffix stripped on deploy); `.raw.tftpl` for binary-encrypted files where SOPS structured encryption is unsuitable (e.g. top-level arrays)
 - Guard `templatefile()` with `fileexists()` when the template may not be present
 
@@ -71,18 +77,17 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 
 - **Formatting**: Prettier (run via `mise run fmt`)
 - **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, `@`, DNS TXT content with literal quotes, and JSON-like string values
-- **Defaults are split across two files**, both deep-merged into `local.defaults`:
+- **Defaults are split across two files**, both merged into `local.defaults`:
   - `data/config.yml` — global parameters (cloudflare, domains, github, networking, onepassword, organization, resend, server_types, system, tailscale)
   - `data/defaults.yml` — field values merged into every server/service/DNS record
 - Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
 - **Descriptions**: Short, title case
-- **Service shape — per-service vs per-target**:
-  - **Service-level** (root keys, apply to every target): `dashboard`, `data`, `features`, `identity`, `imports`, `routing`. `data` and `features` may be overlaid per target; the others apply uniformly to every expansion.
-  - **Per-target** (under `targets.<key>`): `data` overlay, `features` overlay, `fly` (Fly-specific), `truenas` (TrueNAS-specific). `fly` and `truenas` are inherently per-target (only the matching target uses them).
-  - **General service data**: `data` may be any JSON-compatible shape and is exposed to templates as `data` and `service.data`. Object overlays deep-merge; scalar/array/null target values replace the service value. Use this for provider-neutral app lists, dashboard settings, bookmarks, upstream URLs, and other service-owned data rather than adding service-specific root HCL.
-  - **App config**: Custom Docker Compose app environment lives in `templates/services/<identity.service>/docker-compose.yaml.tftpl`. TrueNAS catalog app environment lives in `targets.<key>.truenas.env` and renders to `additional_envs`. `identity.service` is the implementation/template key; omit it for dashboard/inventory-only services.
-  - **Generated labels**: `routing.container` selects the container that receives generated Traefik labels. When unset, the fallback is `identity.service`; if both are null, no container-specific labels are attached. Homepage is rendered from structured `dashboard` data, not Docker labels.
-  - **Single-target shorthand**: when a service has one target and no per-target overrides, leave `targets.<key>: {}`.
+- **Service shape**:
+  - Root keys apply to every target: `dashboard`, `data`, `features`, `identity`, `imports`, `routing`.
+  - `targets.<key>` may override `data`, `features`, `fly`, and `truenas`.
+  - Put app-owned config in `data` instead of root HCL when possible.
+  - Set `identity.service` only when templates or deploy artifacts exist.
+  - Use `targets.<key>: {}` for a single target with no overrides.
 
 ## JSON Schema Standards
 

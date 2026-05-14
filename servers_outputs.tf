@@ -19,8 +19,17 @@ locals {
     for server_key, server in local.servers_model : server_key => merge(
       server,
       {
-        state = {
-          fields = merge(
+        runtime = {
+          addresses = merge(
+            server.addresses,
+            {
+              private_ipv4   = try(local.unifi_clients[server_key].fixed_ip, null)
+              tailscale_ipv4 = try(local.tailscale_device_addresses[server_key].ipv4, null)
+              tailscale_ipv6 = try(local.tailscale_device_addresses[server_key].ipv6, null)
+            },
+          )
+
+          attributes = merge(
             {
               age_public_key        = age_secret_key.server[server_key].public_key
               cloudflare_account_id = data.cloudflare_account.default.id
@@ -34,6 +43,14 @@ locals {
             server.features.cloudflare_zero_trust_tunnel ? {
               cloudflare_tunnel_id = module.cloudflare_tunnel[server_key].tunnel_id
             } : {},
+          )
+
+          hosts = merge(
+            server.hosts,
+            {
+              private   = try(local.unifi_clients[server_key].local_dns_record, null)
+              tailscale = try(local.tailscale_device_addresses[server_key].address, null)
+            },
           )
 
           secrets = merge(
@@ -72,20 +89,6 @@ locals {
               tailscale_auth_key = tailscale_tailnet_key.server[server_key].key
             } : {},
           )
-
-          urls = {
-            fqdn_external      = server.fqdn_external
-            fqdn_internal      = server.fqdn_internal
-            management_address = server.networking.management_address
-            private_address    = try(local.unifi_clients[server_key].local_dns_record, null)
-            private_ipv4       = try(local.unifi_clients[server_key].fixed_ip, null)
-            public_address     = server.public_address
-            public_ipv4        = server.public_ipv4
-            public_ipv6        = server.public_ipv6
-            tailscale_address  = try(local.tailscale_device_addresses[server_key].address, null)
-            tailscale_ipv4     = try(local.tailscale_device_addresses[server_key].ipv4, null)
-            tailscale_ipv6     = try(local.tailscale_device_addresses[server_key].ipv6, null)
-          }
         }
       },
     )
