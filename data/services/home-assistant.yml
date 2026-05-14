@@ -9,7 +9,7 @@ dashboard:
     widgets:
       - type: esphome
         password: ${server.state.secrets.password}
-        url: http://${server.fqdn}:6052
+        url: http://${server.state.urls.private_address}:6052
         username: ${server.identity.username}
   - name: ${service.identity.title}
     description: ${service.identity.description}
