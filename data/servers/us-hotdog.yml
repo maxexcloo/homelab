@@ -14,6 +14,6 @@ identity:
   title: Hotdog
   username: max.schaefer
 networking:
-  management_port: 8007
+  management_port: 9090
   public_ipv4: 199.127.129.143
   public_ipv6: 2602:f831::4665:8aff:fee1:40ed
