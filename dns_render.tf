@@ -90,7 +90,7 @@ locals {
     for url in distinct(flatten([
       for service_key, service in local.services_input_targets : service.routing.urls
       ])) : url => [
-      for zone in local.dns_input_zones : {
+      for zone in keys(local.dns_input) : {
         length = length(zone)
         name   = zone
       }

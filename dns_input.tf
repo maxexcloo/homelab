@@ -6,7 +6,4 @@ locals {
       yamldecode(file("${path.module}/${file_path}"))
     ] : dns_file.name => try(dns_file.records, [])
   }
-
-  # Managed Cloudflare zone names available for manual and generated records.
-  dns_input_zones = keys(local.dns_input)
 }

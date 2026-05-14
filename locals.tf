@@ -1,4 +1,6 @@
 locals {
-  config   = yamldecode(file("${path.module}/data/config.yml"))
-  defaults = provider::deepmerge::mergo(local.config, yamldecode(file("${path.module}/data/defaults.yml")))
+  defaults = provider::deepmerge::mergo(
+    yamldecode(file("${path.module}/data/config.yml")),
+    yamldecode(file("${path.module}/data/defaults.yml")),
+  )
 }

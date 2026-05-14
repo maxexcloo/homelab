@@ -44,10 +44,8 @@ locals {
     ]
   ])
 
-  _services_model_server_keys = toset(keys(local.servers_input))
-
   _services_model_target_is_server = {
-    for service_key, service in local.services_input_targets : service_key => contains(local._services_model_server_keys, service.target)
+    for service_key, service in local.services_input_targets : service_key => contains(toset(keys(local.servers_input)), service.target)
   }
 
   _services_model_url_scheme = {
@@ -88,24 +86,31 @@ locals {
     )
   }
 
-  _services_model_urls_candidate_href = {
-    for service_key, service in local.services_input_targets : service_key => concat(
-      [
-        for candidate in [
-          length(service.routing.urls) > 0 ? local._services_model_urls[service_key][service.routing.urls[0]].href : null,
-          try(local._services_model_urls[service_key].external.href, null),
-          try(local._services_model_urls[service_key].internal.href, null),
-        ] : candidate
-        if candidate != null && candidate != ""
-      ],
-      [null],
-    )[0]
-  }
-
   _services_model_urls_default = {
-    for service_key, href in local._services_model_urls_candidate_href : service_key => {
-      host = href != null ? regex("^https?://([^/:]+)", href)[0] : null
-      href = href
+    for service_key, service in local.services_input_targets : service_key => {
+      host = try(regex("^https?://([^/:]+)", concat(
+        [
+          for candidate in [
+            length(service.routing.urls) > 0 ? local._services_model_urls[service_key][service.routing.urls[0]].href : null,
+            try(local._services_model_urls[service_key].external.href, null),
+            try(local._services_model_urls[service_key].internal.href, null),
+          ] : candidate
+          if candidate != null && candidate != ""
+        ],
+        [null],
+      )[0])[0], null)
+
+      href = concat(
+        [
+          for candidate in [
+            length(service.routing.urls) > 0 ? local._services_model_urls[service_key][service.routing.urls[0]].href : null,
+            try(local._services_model_urls[service_key].external.href, null),
+            try(local._services_model_urls[service_key].internal.href, null),
+          ] : candidate
+          if candidate != null && candidate != ""
+        ],
+        [null],
+      )[0]
     }
   }
 
