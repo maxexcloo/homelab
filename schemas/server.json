@@ -92,6 +92,10 @@
           "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes state.fields.cloudflare_tunnel_id and state.secrets.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
           "type": "boolean"
         },
+        "cockpit": {
+          "description": "Install Cockpit through cloud-init and enable cockpit.socket for browser-based server administration.",
+          "type": "boolean"
+        },
         "docker": {
           "description": "This server runs Docker and can host Komodo-managed stacks. Adds the server to the Komodo server list.",
           "type": "boolean"

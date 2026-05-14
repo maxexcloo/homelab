@@ -13,12 +13,18 @@ groups:
   - sudo
 packages:
   - age
+  %{~ if server.features.cockpit ~}
+  - cockpit
+  %{~ endif ~}
   - curl
   - ethtool
   - sudo
   - zfsutils-linux
 runcmd:
   - sysctl --system
+  %{~ if server.features.cockpit ~}
+  - systemctl enable --now cockpit.socket
+  %{~ endif ~}
   %{~ if server.features.docker ~}
   - curl -fsLS https://get.docker.com | sh
   - curl -fsLS -o /usr/local/bin/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
