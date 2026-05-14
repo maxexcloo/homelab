@@ -1,6 +1,18 @@
 # yaml-language-server: $schema=../../schemas/server.json
 platform: unifi
 type: router
+dashboard:
+  - name: ${server.identity.title}
+    description: ${server.description}
+    group: ${defaults.server_types[server.type].label}
+    href: ${server.url}
+    icon: unifi
+    siteMonitor: ${server.url}
+    widgets:
+      - type: unifi
+        password: ${server.state.secrets.password}
+        url: ${server.url}
+        username: ${server.identity.username}
 features:
   cloudflare_acme_token: true
   password: true

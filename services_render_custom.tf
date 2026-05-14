@@ -24,7 +24,10 @@ locals {
         sort  = "1:${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${server_key}:${card_index}"
 
         card = {
-          for field, value in yamldecode(templatestring(yamlencode(dashboard_card), { server = server })) : field => value
+          for field, value in yamldecode(templatestring(yamlencode(dashboard_card), {
+            defaults = local.defaults
+            server   = server
+          })) : field => value
           if value != null && !contains(["group", "name"], field)
         }
       }

@@ -57,6 +57,7 @@ locals {
         icon        = local.defaults.server_types[server.type].icon
         name        = "${server.identity.title} (${upper(server.identity.region)})"
         siteMonitor = local._servers_model_url[server_key]
+        widgets     = []
       }
     ]
   }
