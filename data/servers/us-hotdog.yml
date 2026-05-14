@@ -12,6 +12,7 @@ identity:
   name: hotdog
   region: us
   title: Hotdog
+  username: max.schaefer
 networking:
   management_port: 8007
   public_ipv4: 199.127.129.143
