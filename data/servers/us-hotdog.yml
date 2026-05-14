@@ -2,6 +2,7 @@
 platform: unmanaged
 type: vm
 features:
+  cloud_init: true
   cloudflare_acme_token: true
   cloudflare_zero_trust_tunnel: true
   password: true
