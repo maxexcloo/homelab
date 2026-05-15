@@ -1,7 +1,27 @@
 locals {
+  # Deploy artifacts are grouped by target server: each server has its own
+  # self-hosted runner and age key.
+  truenas_input_servers = {
+    for server_key, server in local.servers_model : server_key => server
+    if server.platform == "truenas"
+  }
+
+  truenas_input_services = {
+    for service_key, service in local.services_model : service_key => service
+    if lookup(local.truenas_input_servers, service.target, null) != null &&
+    service.identity.service != null
+  }
+
+  truenas_prepare_catalog_templates = {
+    for service_key, service in local.truenas_input_services : service_key => {
+      path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
+    }
+    if service.identity.service != null && fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
+  }
+
   # Compose wins over catalog: a service with docker-compose.yaml.tftpl deploys
   # as a custom stack; otherwise app.json.tftpl is used. Sidecars are always included.
-  _truenas_render_files = merge(
+  truenas_render_files = merge(
     {
       # 1) Custom Docker Compose apps
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}/compose.json" => {
@@ -71,26 +91,6 @@ locals {
       if lookup(local.truenas_input_servers, file_config.target, null) != null
     }
   )
-
-  # Deploy artifacts are grouped by target server: each server has its own
-  # self-hosted runner and age key.
-  truenas_input_servers = {
-    for server_key, server in local.servers_model : server_key => server
-    if server.platform == "truenas"
-  }
-
-  truenas_input_services = {
-    for service_key, service in local.services_model : service_key => service
-    if lookup(local.truenas_input_servers, service.target, null) != null &&
-    service.identity.service != null
-  }
-
-  truenas_prepare_catalog_templates = {
-    for service_key, service in local.truenas_input_services : service_key => {
-      path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
-    }
-    if service.identity.service != null && fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
-  }
 }
 
 # GitHub secret names cannot contain hyphens, so the workflow matrix computes
@@ -113,8 +113,8 @@ resource "github_repository_file" "truenas_deploy_request" {
     deployments = {
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => sha256(jsonencode({
         files = {
-          for file_key, file_config in local._truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
-          if startswith(local._truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
+          for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
+          if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
         }
 
         sops = sha256(yamlencode({
@@ -139,7 +139,7 @@ resource "github_repository_file" "truenas_deploy_request" {
 }
 
 module "encrypted_github_file_truenas" {
-  for_each = nonsensitive(local._truenas_render_files)
+  for_each = nonsensitive(local.truenas_render_files)
   source   = "./modules/github_file_encrypted"
 
   age_public_key = each.value.age_public_key

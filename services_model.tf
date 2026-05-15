@@ -15,10 +15,13 @@ locals {
         } : {},
         service.features.password ? merge(
           {
-            password = merge(local.defaults.credentials.rw, {
-              purpose = "PASSWORD"
-              type    = null
-            })
+            password = merge(
+              local.defaults.credentials.rw,
+              {
+                purpose = "PASSWORD"
+                type    = null
+              }
+            )
           },
           {
             password_hash = local.defaults.credentials.ro

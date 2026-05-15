@@ -6,9 +6,9 @@ locals {
   servers_runtime_rendered = {
     for server_key, server in local.servers : server_key => merge(
       server,
-      yamldecode(
+      jsondecode(
         templatestring(
-          yamlencode({
+          jsonencode({
             dashboard = server.dashboard
             data      = server.data
           }),

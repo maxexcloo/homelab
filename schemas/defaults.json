@@ -11,12 +11,58 @@
       "type": "object",
       "properties": {
         "ro": {
+          "additionalProperties": false,
           "description": "Default shape for read-only credential fields bootstrapped by a provider and read back from 1Password.",
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "bootstrap_length": {
+              "description": "Null in the default; overridden per-field when bootstrap_type is set.",
+              "type": ["integer", "null"]
+            },
+            "bootstrap_type": {
+              "description": "Null in the default; overridden per-field to hex, base64, string, or alphanumeric.",
+              "enum": ["alphanumeric", "base64", "hex", "string", null]
+            },
+            "mode": {
+              "description": "Read-only: value is written from a provider-generated secret.",
+              "enum": ["ro"]
+            },
+            "purpose": {
+              "description": "Optional 1Password field purpose.",
+              "enum": ["PASSWORD", null]
+            },
+            "type": {
+              "description": "1Password field type when purpose is not set.",
+              "enum": ["CONCEALED", "STRING", null]
+            }
+          }
         },
         "rw": {
+          "additionalProperties": false,
           "description": "Default shape for read-write credential fields written to 1Password for manual entry and read back at apply time.",
-          "type": "object"
+          "type": "object",
+          "properties": {
+            "bootstrap_length": {
+              "description": "Null in the default; overridden per-field when bootstrap_type is set.",
+              "type": ["integer", "null"]
+            },
+            "bootstrap_type": {
+              "description": "Null in the default; overridden per-field to hex, base64, string, or alphanumeric.",
+              "enum": ["alphanumeric", "base64", "hex", "string", null]
+            },
+            "mode": {
+              "description": "Read-write: value may be supplied or overridden via 1Password.",
+              "enum": ["rw"]
+            },
+            "purpose": {
+              "description": "Optional 1Password field purpose.",
+              "enum": ["PASSWORD", null]
+            },
+            "type": {
+              "description": "1Password field type when purpose is not set.",
+              "enum": ["CONCEALED", "STRING", null]
+            }
+          }
         }
       }
     },

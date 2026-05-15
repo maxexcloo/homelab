@@ -43,14 +43,10 @@ locals {
             service.features.b2 ? {
               b2_application_key = b2_application_key.service[service_key].application_key
             } : {},
-            service.features.password ? merge(
-              {
-                password = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service[service_key].result))
-              },
-              {
-                password_hash = bcrypt_hash.service[service_key].id
-              },
-            ) : {},
+            service.features.password ? {
+              password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service[service_key].result))
+              password_hash = bcrypt_hash.service[service_key].id
+            } : {},
             service.features.pushover ? {
               pushover_application_token = sensitive(try(local.onepassword_service_existing_fields[service_key].pushover_application_token, ""))
               pushover_user_key          = sensitive(try(local.onepassword_service_existing_fields[service_key].pushover_user_key, ""))

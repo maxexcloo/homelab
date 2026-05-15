@@ -131,14 +131,10 @@ locals {
               cloudflare_tunnel_read_token = module.cloudflare_tunnel[server_key].tunnel_read_token
               cloudflare_tunnel_token      = module.cloudflare_tunnel[server_key].tunnel_token
             } : {},
-            server.features.password ? merge(
-              {
-                password = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key].password, null), random_password.server[server_key].result))
-              },
-              {
-                password_hash = bcrypt_hash.server[server_key].id
-              },
-            ) : {},
+            server.features.password ? {
+              password      = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key].password, null), random_password.server[server_key].result))
+              password_hash = bcrypt_hash.server[server_key].id
+            } : {},
             server.features.pushover ? {
               pushover_application_token = sensitive(try(local.onepassword_server_existing_fields[server_key].pushover_application_token, ""))
               pushover_user_key          = sensitive(try(local.onepassword_server_existing_fields[server_key].pushover_user_key, ""))
