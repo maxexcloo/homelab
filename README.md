@@ -33,7 +33,7 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 
 YAML files in `data/` are the source of truth. OpenTofu reads them, computes derived values, provisions provider resources, and renders deploy artifacts.
 
-Data flow:
+Data flows through four stages:
 
 1. **input**: YAML plus defaults, with service targets expanded
 2. **model**: deterministic fields safe for `for_each`
@@ -42,36 +42,21 @@ Data flow:
 
 Service endpoints use `service.urls.*.{host,href}`. Server hostnames use `server.hosts.*`.
 
-### Services Pipeline
+Rendered service configs are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/config.yml`. `mise run render` can write plaintext render output locally via `debug_dir` for troubleshooting.
 
-```
-data/
-├── dns/*.yml
-├── servers/*.yml
-├── services/*.yml
-├── config.yml
-└── defaults.yml
-templates/
-└── services/<identity.service>/
-```
+## Service Data and Templates
 
-Rendered service configs are SOPS-encrypted and pushed to the platform-specific GitHub repos listed in `data/config.yml`. `mise run render` can write plaintext render output locally through `debug_dir` for troubleshooting.
+Service YAML can include a root `data` value with any JSON-compatible shape. Templates receive the rendered value as `service.data`. Targets can set `targets.<key>.data`; objects deep-merge with the target value winning, while scalars, arrays, and null replace the service-level value.
 
-Feature flags create provider resources, expose generated values, or control rendered config. `password` and monitoring flags are local-only. `b2`, `resend`, and `tailscale` call providers. Pushover values are per-server/service 1Password fields.
+Templates receive:
 
-## Service Data And Templates
+- `defaults` — merged global defaults and config
+- `server` — the target server when running on a managed server, otherwise null
+- `servers` — all modeled servers
+- `service` — the current expanded service, including rendered `data`, `dashboard`, and `routing_labels`
+- `services` — all expanded services plus declared `imports.services` aliases overlaid by alias
 
-Service YAML can include a root `data` value with any JSON-compatible shape. Templates receive the rendered value as `service.data`.
-
-Targets can set `targets.<key>.data`. Objects deep-merge with target values winning. Scalars, arrays, and null replace the service-level value.
-
-Templates can reference:
-
-- `defaults` - merged global defaults and config
-- `server` - the target server when the service runs on a managed server, otherwise null
-- `servers` - all modeled servers
-- `service` - the current expanded service, including rendered `data`, `dashboard`, and `routing_labels`
-- `services` - all expanded services plus declared `imports.services` aliases overlaid by alias
+Feature flags create provider resources or control rendered config. Some flags (`password`, monitoring) are local-only and don't call external providers. Others (`b2`, `resend`, `tailscale`) call provider APIs. Pushover credentials are read from per-server/service 1Password fields.
 
 ## Workflow
 
@@ -85,10 +70,10 @@ Templates can reference:
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
 2. Fill in `features`, `identity`, `routing`, and at least one entry under `targets:` (server key or `fly`)
-3. Set `identity.service` only when the service has templates/deploy artifacts; omit it for dashboard/inventory-only services
+3. Set `identity.service` only when the service has templates or deploy artifacts; omit it for dashboard/inventory-only services
 4. Each target may carry `features`, `fly`, and `truenas` overlays; target values win over service-level values
-5. Put provider-neutral app lists/settings under `data`; use `targets.<key>.data` for per-target overrides
-6. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<identity.name>` and the Fly hostname is added to computed service URLs
+5. Put provider-neutral app config under `data`; use `targets.<key>.data` for per-target overrides
+6. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<identity.name>`
 7. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
 8. Run `mise run plan` to review, `mise run apply` to provision
 
@@ -114,15 +99,11 @@ Generated credentials are stored in **1Password** through 1Password Connect:
 - **Servers vault**: one login entry per server
 - **Services vault**: one login entry per service deployment with credentials and URLs
 
-Set `onepassword.vaults.servers.id` and `onepassword.vaults.services.id` in `data/config.yml` to the target 1Password vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
+Set `onepassword.vaults.servers.id` and `onepassword.vaults.services.id` in `data/config.yml` to the target vault UUIDs, and set `TF_VAR_onepassword_connect_url` plus `TF_VAR_onepassword_connect_token` for the Connect API.
 
-Each server and service exposes provider-backed values through `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, `runtime.urls`, and `runtime.credentials`.
+Manually supplied service credentials are declared under `credentials.fields`. OpenTofu creates empty concealed fields on the matching 1Password item, reads populated values back, and exposes them as `service.runtime.credentials.<name>` in templates. Add `bootstrap_type` and `bootstrap_length` to have OpenTofu generate the initial value instead.
 
-Manually supplied service credentials are declared under `credentials.fields` with an empty object. OpenTofu creates empty concealed fields on the matching 1Password service item, then reads populated values back and exposes them as `service.runtime.credentials.{name}` in templates. Add `bootstrap_type` and `bootstrap_length` when OpenTofu should generate the initial value.
-
-Services can access another service's full data (including credentials) only by declaring an `imports.services` alias. The normal `services` map remains the inventory, and declared imports are overlaid by alias as `services.<alias>`.
-
-Rendered sidecar files named `*.raw.tftpl` are templated, encrypted as binary, and deployed without the `.raw` segment. Use this for files where SOPS structured YAML/JSON encryption is unsuitable, such as top-level YAML arrays.
+Services can access another service's credentials by declaring an `imports.services` alias. The alias is overlaid onto the `services` map under the declared alias key.
 
 ## Documentation
 

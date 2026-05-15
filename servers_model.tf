@@ -1,128 +1,56 @@
+# Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
+  # Credential field shape for each server. Runtime values are added in servers_outputs.tf.
   _servers_model_credentials = {
     for server_key, server in local.servers_input : server_key => {
       fields = merge(
         {
           for field_name, field in server.credentials.fields : field_name => merge(
-            {
-              bootstrap_length = null
-              bootstrap_type   = null
-              mode             = "rw"
-              purpose          = null
-              type             = "CONCEALED"
-            },
+            local.defaults.credentials.rw,
             field,
           )
         },
         {
-          age_secret_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
-          komodo_passkey = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          age_secret_key = local.defaults.credentials.ro
+          komodo_passkey = local.defaults.credentials.ro
         },
         server.features.b2 ? {
-          b2_application_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          b2_application_key = local.defaults.credentials.ro
         } : {},
         server.features.cloudflare_acme_token ? {
-          cloudflare_acme_token = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          cloudflare_acme_token = local.defaults.credentials.ro
         } : {},
         server.features.cloudflare_zero_trust_tunnel ? {
-          cloudflare_tunnel_read_token = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
-          cloudflare_tunnel_token = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          cloudflare_tunnel_read_token = local.defaults.credentials.ro
+          cloudflare_tunnel_token      = local.defaults.credentials.ro
         } : {},
         server.features.password ? merge(
           {
-            password = {
-              bootstrap_length = null
-              bootstrap_type   = null
-              mode             = "rw"
-              purpose          = "PASSWORD"
-              type             = null
-            }
+            password = merge(local.defaults.credentials.rw, {
+              purpose = "PASSWORD"
+              type    = null
+            })
           },
           {
-            password_hash = {
-              bootstrap_length = null
-              bootstrap_type   = null
-              mode             = "ro"
-              purpose          = null
-              type             = "CONCEALED"
-            }
+            password_hash = local.defaults.credentials.ro
           },
         ) : {},
         server.features.pushover ? {
-          pushover_application_token = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "rw"
-            purpose          = null
-            type             = "CONCEALED"
-          }
-          pushover_user_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "rw"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          pushover_application_token = local.defaults.credentials.rw
+          pushover_user_key          = local.defaults.credentials.rw
         } : {},
         server.features.resend ? {
-          resend_api_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          resend_api_key = local.defaults.credentials.ro
         } : {},
         server.features.tailscale ? {
-          tailscale_auth_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          tailscale_auth_key = local.defaults.credentials.ro
         } : {},
       )
     }
   }
 
-  # Computed once so the final model can stay mostly declarative.
+  # Extracted because description appears in both the top-level model and the default
+  # dashboard card; keeping it here avoids duplicating the parent-title ternary.
   _servers_model_computed = {
     for server_key, server in local.servers_input : server_key => {
       addresses = {
@@ -181,25 +109,13 @@ locals {
     }
   }
 
-  _servers_model_dashboard_default_cards = {
-    for server_key, server in local.servers_input : server_key => [
-      {
-        description = local._servers_model_computed[server_key].description
-        group       = local.defaults.server_types[server.type].label
-        href        = local._servers_model_url[server_key]
-        icon        = local.defaults.server_types[server.type].icon
-        name        = "${server.identity.title} (${upper(server.identity.region)})"
-        siteMonitor = local._servers_model_url[server_key]
-        widgets     = []
-      }
-    ]
-  }
-
+  # "name.region" for child servers; plain name when name equals region (region root).
   _servers_model_host_prefix = {
     for server_key, server in local.servers_input : server_key =>
     server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
   }
 
+  # Nearest ancestor with networking.public_host set; null when none declare one.
   _servers_model_public_host = {
     for server_key, server in local.servers_input : server_key => try([
       for ancestor_key in local.servers_input_ancestors[server_key] : local.servers_input[ancestor_key].networking.public_host
@@ -207,20 +123,25 @@ locals {
     ][0], null)
   }
 
-  _servers_model_url = {
-    for server_key, server in local.servers_input : server_key =>
-    local._servers_model_computed[server_key].urls.default.href
-  }
-
   servers_model = {
     for server_key, server in local.servers_input : server_key => merge(
       server,
       local._servers_model_computed[server_key],
       {
-        dashboard   = server.dashboard != null ? server.dashboard : local._servers_model_dashboard_default_cards[server_key]
         credentials = local._servers_model_credentials[server_key]
-        key         = server_key
-        ssh_keys    = data.github_user.default.ssh_keys
+        dashboard = server.dashboard != null ? server.dashboard : [
+          {
+            description = local._servers_model_computed[server_key].description
+            group       = local.defaults.server_types[server.type].label
+            href        = local._servers_model_computed[server_key].urls.default.href
+            icon        = local.defaults.server_types[server.type].icon
+            name        = "${server.identity.title} (${upper(server.identity.region)})"
+            siteMonitor = local._servers_model_computed[server_key].urls.default.href
+            widgets     = []
+          }
+        ]
+        key      = server_key
+        ssh_keys = data.github_user.default.ssh_keys
       }
     )
   }

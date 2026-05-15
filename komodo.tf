@@ -1,18 +1,18 @@
 locals {
   # Komodo only receives services with a rendered compose file on Docker-capable
   # server targets.
-  komodo_input_stacks = {
+  _komodo_input_stacks = {
     for service_key, service in local.services_model : service_key => service
-    if contains(keys(local.servers_model), service.target) &&
+    if lookup(local.servers_model, service.target, null) != null &&
     local.servers_model[service.target].features.docker &&
-    contains(keys(local.services_render_files_compose), service_key)
+    lookup(local.services_render_files_compose, service_key, null) != null
   }
 
   # Encrypted GitHub files consumed by Komodo ResourceSync. Service sidecar files
   # reuse the same relative paths as the service artifact model.
-  komodo_render_files = merge(
+  _komodo_render_files = merge(
     {
-      for stack_key, stack in local.komodo_input_stacks : "${stack_key}/compose.yaml" => {
+      for stack_key, stack in local._komodo_input_stacks : "${stack_key}/compose.yaml" => {
         age_public_key = age_secret_key.server[stack.target].public_key
         commit_message = "Update ${stack_key} compose"
         content_base64 = sensitive(base64encode(local.services_render_files_compose[stack_key]))
@@ -29,7 +29,7 @@ locals {
           file           = file_key
         },
       )
-      if contains(keys(local.servers_model), file_config.target) &&
+      if lookup(local.servers_model, file_config.target, null) != null &&
       local.servers_model[file_config.target].features.docker
     }
   )
@@ -77,7 +77,7 @@ resource "github_repository_file" "komodo_sops_config" {
 
   content = yamlencode({
     creation_rules = [
-      for stack_key, stack in local.komodo_input_stacks : {
+      for stack_key, stack in local._komodo_input_stacks : {
         age        = age_secret_key.server[stack.target].public_key
         path_regex = "^${stack_key}/"
       }
@@ -96,13 +96,13 @@ resource "github_repository_file" "komodo_stacks" {
     {
       owner      = local.defaults.github.owner
       repository = local.defaults.github.repositories.komodo
-      stacks     = local.komodo_input_stacks
+      stacks     = local._komodo_input_stacks
     },
   )
 }
 
 module "encrypted_github_file_komodo" {
-  for_each = local.komodo_render_files
+  for_each = local._komodo_render_files
   source   = "./modules/github_file_encrypted"
 
   age_public_key = each.value.age_public_key

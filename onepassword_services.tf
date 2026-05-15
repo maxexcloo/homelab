@@ -4,23 +4,15 @@ data "http" "onepassword_service_item" {
     if item_id != null
   }
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/${each.value}"
-
-  request_headers = {
-    "Authorization" = "Bearer ${var.onepassword_connect_token}"
-    "Content-Type"  = "application/json"
-  }
+  request_headers = local.onepassword_connect_request_headers
+  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/${each.value}"
 }
 
 data "http" "onepassword_service_search" {
   for_each = local.onepassword_service_items
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${each.value.identity.title} (${each.value.target})\"")}"
-
-  request_headers = {
-    "Authorization" = "Bearer ${var.onepassword_connect_token}"
-    "Content-Type"  = "application/json"
-  }
+  request_headers = local.onepassword_connect_request_headers
+  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${each.value.identity.title} (${each.value.target})\"")}"
 }
 
 locals {
@@ -56,7 +48,7 @@ locals {
         label   = service.urls[url_key].label
         primary = service.urls[url_key].href == service.urls.default.href
       }
-      if contains(keys(service.urls), url_key)
+      if lookup(service.urls, url_key, null) != null
     ]
   }
 
@@ -101,7 +93,7 @@ locals {
         ],
       ) : field.label => field
     }
-    if contains(keys(local.onepassword_service_items), service_key)
+    if lookup(local.onepassword_service_items, service_key, null) != null
   }
 
   onepassword_service_item_payloads = {
@@ -135,7 +127,7 @@ locals {
         id = local.defaults.onepassword.vaults.services.id
       }
     }
-    if contains(keys(local.onepassword_service_items), service_key)
+    if lookup(local.onepassword_service_items, service_key, null) != null
   }
 
   # Services that get a 1Password item: any with credential material to store.

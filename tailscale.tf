@@ -94,7 +94,7 @@ locals {
   # tagOwners object for every generated server type tag.
   tailscale_tags = {
     for tag in sort(distinct([
-      for type in values(local.defaults.server_types) : "tag:${type.tailscale_tag}"
+      for server_type in values(local.defaults.server_types) : "tag:${server_type.tailscale_tag}"
     ])) : tag => ["group:admin"]
   }
 

@@ -1,20 +1,17 @@
 locals {
   # Cloudflare Universal SSL covers only one subdomain level.
   services_validation_cloudflare_deep_subdomains = [
-    for record_key, record in merge(
-      local.dns_render_records_services,
-      local.dns_render_records_services_urls,
-    ) : "${record_key} (${record.name})"
-    if try(record.proxied, false) &&
-    length(split(".", record.name)) - length(split(".", record.zone)) > 1
+    for record_key, record in local.dns_render_records_services : "${record_key} (${record.name})"
+    if length(split(".", record.name)) - length(split(".", record.zone)) > 1 &&
+    try(record.proxied, false)
   ]
 
   services_validation_cloudflare_tunnel_missing = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
-      if contains(toset(keys(local.servers_input)), target) &&
-      service.routing.expose == "cloudflare" &&
-      !local.servers_model[target].features.cloudflare_zero_trust_tunnel
+      if lookup(local.servers_input, target, null) != null &&
+      !local.servers_model[target].features.cloudflare_zero_trust_tunnel &&
+      service.routing.expose == "cloudflare"
     ]
   ])
 
@@ -25,33 +22,35 @@ locals {
 
   services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
-    if contains(keys(service.targets), "fly") && service.routing.port == null
+    if lookup(service.targets, "fly", null) != null &&
+    service.routing.port == null
   ]
 
   services_validation_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
-      if contains(keys(local.services_model), import_alias)
+      if lookup(local.services_model, import_alias, null) != null
     ]
   ])
 
   services_validation_invalid_imports = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
-      if !contains(keys(local.services_model), service_ref)
+      if lookup(local.services_model, service_ref, null) == null
     ]
   ])
 
   services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
-      if !contains(toset(keys(local.servers_input)), target) && target != "fly"
+      if lookup(local.servers_input, target, null) == null &&
+      target != "fly"
     ]
   ])
 
   services_validation_truenas_config_invalid_targets = [
     for service_key, service in local.services_model : service_key
-    if !contains(keys(local.truenas_input_servers), service.target) &&
+    if lookup(local.truenas_input_servers, service.target, null) == null &&
     (
       service.truenas.catalog_app != null ||
       length(service.truenas.env) > 0 ||
@@ -62,17 +61,17 @@ locals {
 
   services_validation_truenas_missing_template = [
     for service_key, service in local.truenas_input_services : service_key
-    if !contains(keys(local.services_render_files_compose), service_key) &&
-    !contains(keys(local.truenas_prepare_catalog_templates), service_key)
+    if lookup(local.services_render_files_compose, service_key, null) == null &&
+    lookup(local.truenas_prepare_catalog_templates, service_key, null) == null
   ]
 
   services_validation_unmanaged_urls = flatten([
     for service_key, service in local.services_model : [
       for url in service.routing.urls : "${service_key} -> ${url}"
-      if lookup(local.dns_render_managed_zones_by_url, url, null) == null
-      && service.routing.ssl
-      && service.target != "fly"
-      && service.routing.expose != "cloudflare"
+      if lookup(local.dns_render_managed_zones_by_url, url, null) == null &&
+      service.routing.expose != "cloudflare" &&
+      service.routing.ssl &&
+      service.target != "fly"
     ]
   ])
 }

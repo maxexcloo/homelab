@@ -117,35 +117,16 @@ locals {
     local._dns_render_records_servers_internal,
   )
 
-  # Server-hosted Cloudflare services point at the target server's tunnel.
-  # Custom URLs in managed DNS are preferred over deep generated subdomains.
-  dns_render_records_services = {
-    for service_key, service in local.services_model :
-    "${local.defaults.domains.external}-${service_key}" => {
-      content  = "${local.servers[service.target].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
-      name     = service.urls.external.host
-      proxied  = true
-      type     = "CNAME"
-      wildcard = false
-      zone     = local.defaults.domains.external
-    }
-    if contains(keys(local.servers_model), service.target) &&
-    local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
-    service.routing.expose == "cloudflare" &&
-    length(compact([for url in service.routing.urls : lookup(local.dns_render_managed_zones_by_url, url, null)])) == 0
-  }
-
   # Fly's fly.dev hostnames are served directly by Fly; only custom URLs need DNS.
   dns_render_records_services_fly = merge(flatten([
     for service_key, service in local.services_model : [
       for url_index, url in service.routing.urls : {
         "${service_key}-url-${url_index}" = {
-          content  = "${service.fly.app_name}.fly.dev"
-          name     = url
-          proxied  = service.routing.expose == "cloudflare"
-          type     = "CNAME"
-          wildcard = false
-          zone     = local.dns_render_managed_zones_by_url[url]
+          content = "${service.fly.app_name}.fly.dev"
+          name    = url
+          proxied = service.routing.expose == "cloudflare"
+          type    = "CNAME"
+          zone    = local.dns_render_managed_zones_by_url[url]
         }
       }
       if local.dns_render_managed_zones_by_url[url] != null
@@ -154,15 +135,14 @@ locals {
   ])...)
 
   # Custom service URLs resolve to the tunnel when Cloudflare-exposed.
-  dns_render_records_services_urls = merge(flatten([
+  dns_render_records_services = merge(flatten([
     for service_key, service in local.services_model : [
       for url_index, url in service.routing.urls : {
         "${service_key}-url-${url_index}" = {
-          name     = url
-          proxied  = service.routing.expose == "cloudflare"
-          type     = "CNAME"
-          wildcard = false
-          zone     = local.dns_render_managed_zones_by_url[url]
+          name    = url
+          proxied = service.routing.expose == "cloudflare"
+          type    = "CNAME"
+          zone    = local.dns_render_managed_zones_by_url[url]
 
           content = (
             local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
@@ -174,7 +154,7 @@ locals {
       }
       if local.dns_render_managed_zones_by_url[url] != null
     ]
-    if contains(keys(local.servers_model), service.target)
+    if lookup(local.servers_model, service.target, null) != null
   ])...)
 
   # Delegate DNS-01 challenges to the ACME zone. Fly handles its own certs.
@@ -183,8 +163,7 @@ locals {
       for source_record in concat(
         values(local.dns_render_records_manual),
         values(local.dns_render_records_servers),
-        values(local.dns_render_records_services),
-        values(local.dns_render_records_services_urls)
+        values(local.dns_render_records_services)
         ) : {
         name = source_record.name
         zone = source_record.zone
@@ -204,9 +183,6 @@ locals {
       for record in concat(
         values(local.dns_render_records_manual),
         values(local.dns_render_records_servers),
-        values(local.dns_render_records_services),
-        values(local.dns_render_records_services_fly),
-        values(local.dns_render_records_services_urls)
         ) : {
         name    = record.name
         proxied = record.proxied
@@ -227,9 +203,8 @@ locals {
     for key, record in merge(
       local.dns_render_records_manual,
       local.dns_render_records_servers,
-      local.dns_render_records_services,
       local.dns_render_records_services_fly,
-      local.dns_render_records_services_urls,
+      local.dns_render_records_services,
       local.dns_render_records_tls_delegation,
       local.dns_render_records_wildcards,
     ) : key => merge(local.defaults.dns, record)

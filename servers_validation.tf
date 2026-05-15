@@ -19,12 +19,13 @@ locals {
 
   servers_validation_invalid_parents = [
     for server_key, server in local.servers_input : "${server_key} -> ${server.parent}"
-    if server.parent != "" && !contains(keys(local.servers_input), server.parent)
+    if server.parent != "" &&
+    lookup(local.servers_input, server.parent, null) == null
   ]
 
   servers_validation_invalid_types = [
     for server_key, server in local.servers_input : server_key
-    if !contains(keys(local.defaults.server_types), server.type)
+    if lookup(local.defaults.server_types, server.type, null) == null
   ]
 
   servers_validation_key_mismatches = [

@@ -1,6 +1,6 @@
 locals {
   # Expanded services whose deployment target is Fly.io.
-  fly_input_services = {
+  _fly_input_services = {
     for service_key, service in local.services_model : service_key => service
     if service.identity.service != null && service.target == "fly"
   }
@@ -10,10 +10,10 @@ locals {
   #   2) .certs — custom domain certificate hostnames
   #   3) .machine-count — desired machine count
   #   4) Sidecar files (env, configs, etc. from services/{service}/)
-  fly_render_files = merge(
+  _fly_render_files = merge(
     {
       # 1) Main Fly app configuration
-      for service_key, service in local.fly_input_services : "${service.fly.app_name}/fly.toml" => {
+      for service_key, service in local._fly_input_services : "${service.fly.app_name}/fly.toml" => {
         commit_message = "Update ${service.fly.app_name} configuration"
         file           = "${service.fly.app_name}/fly.toml"
 
@@ -29,7 +29,7 @@ locals {
     },
     {
       # 2) Custom domain certificate hostnames
-      for service_key, service in local.fly_input_services : "${service.fly.app_name}/.certs" => {
+      for service_key, service in local._fly_input_services : "${service.fly.app_name}/.certs" => {
         commit_message = "Update ${service.fly.app_name} certificate hostnames"
         file           = "${service.fly.app_name}/.certs"
 
@@ -44,7 +44,7 @@ locals {
     },
     {
       # 3) Machine count for scaling
-      for service_key, service in local.fly_input_services : "${service.fly.app_name}/.machine-count" => {
+      for service_key, service in local._fly_input_services : "${service.fly.app_name}/.machine-count" => {
         commit_message = "Update ${service.fly.app_name} machine count"
         content_base64 = base64encode("${service.fly.machine_count}\n")
         file           = "${service.fly.app_name}/.machine-count"
@@ -53,11 +53,11 @@ locals {
     },
     {
       # 4) Generic sidecar files (env, configs, etc.)
-      for file_config in values(local.services_render_files_sidecars) : "${local.fly_input_services[file_config.stack].fly.app_name}/${file_config.rel_path}" => merge(
+      for file_config in values(local.services_render_files_sidecars) : "${local._fly_input_services[file_config.stack].fly.app_name}/${file_config.rel_path}" => merge(
         file_config,
         {
           commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
-          file           = "${local.fly_input_services[file_config.stack].fly.app_name}/${file_config.rel_path}"
+          file           = "${local._fly_input_services[file_config.stack].fly.app_name}/${file_config.rel_path}"
         },
       )
       if file_config.target == "fly"
@@ -81,10 +81,10 @@ resource "github_repository_file" "fly_deploy_request" {
 
   content = jsonencode({
     deployments = {
-      for service_key, service in local.fly_input_services : service.fly.app_name => sha256(jsonencode({
+      for service_key, service in local._fly_input_services : service.fly.app_name => sha256(jsonencode({
         files = {
-          for file_key, file_config in local.fly_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
-          if startswith(local.fly_render_files[file_key].file, "${service.fly.app_name}/")
+          for file_key, file_config in local._fly_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
+          if startswith(local._fly_render_files[file_key].file, "${service.fly.app_name}/")
         }
 
         sops = sha256(yamlencode({
@@ -108,7 +108,7 @@ resource "github_repository_file" "fly_deploy_request" {
 }
 
 module "encrypted_github_file_fly" {
-  for_each = local.fly_render_files
+  for_each = local._fly_render_files
   source   = "./modules/github_file_encrypted"
 
   age_public_key = age_secret_key.fly.public_key

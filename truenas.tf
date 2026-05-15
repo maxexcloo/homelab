@@ -1,112 +1,40 @@
 locals {
-  # TrueNAS deploy artifacts are grouped by target server because each server has
-  # its own self-hosted runner and age key.
-  truenas_input_servers = {
-    for server_key, server in local.servers_model : server_key => server
-    if server.platform == "truenas"
-  }
+  # Internal helpers — only used within this file.
 
-  # Expanded services targeting a TrueNAS server.
-  truenas_input_services = {
-    for service_key, service in local.services_model : service_key => service
-    if service.identity.service != null && contains(keys(local.truenas_input_servers), service.target)
-  }
-
-  # Catalog app templates live beside each service with app-specific chart values.
-  truenas_prepare_catalog_templates = {
-    for service_key, service in local.truenas_input_services : service_key => {
-      path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
-    }
-    if service.identity.service != null && fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
-  }
-
-  # Array env values are joined with '+' because the TrueNAS catalog runner
-  # expects a single string per env var, not a list.
-  truenas_prepare_env = {
-    for service_key, service in local.truenas_input_services : service_key => {
-      for env_key, env_value in {
-        for input_key, input_value in local.services_render_services[service_key].truenas.env : input_key => (
-          can(tostring(input_value))
-          ? tostring(input_value)
-          : join(
-            "+",
-            [
-              for env_item in input_value : tostring(env_item)
-            ],
-          )
-        )
-        if input_value != null
-      } :
-      env_key => env_value
-      if env_value != ""
-    }
-  }
-
-  # Extends services_render_template_context with truenas_values and a patched
-  # service.truenas.env so templates can reference rendered env vars
-  # alongside chart values in one context object.
-  truenas_prepare_render_context = {
+  _truenas_render_context = {
     for service_key, context in local.services_render_template_context : service_key => merge(
       context,
       {
-        truenas_values = local.truenas_prepare_values[service_key]
-
-        service = merge(
-          context.service,
+        truenas_values = merge(
+          length(context.service.truenas.env) > 0 ? {
+            (coalesce(context.service.truenas.catalog_app, context.service.identity.service)) = {
+              additional_envs = [
+                for env_key in sort(keys(context.service.truenas.env)) : {
+                  name  = env_key
+                  value = context.service.truenas.env[env_key]
+                }
+                if context.service.truenas.env[env_key] != null
+              ]
+            }
+          } : {},
           {
-            truenas = merge(
-              context.service.truenas,
-              {
-                env = local.truenas_prepare_env[service_key]
-              },
-            )
+            labels = [
+              for label_key in sort(keys(context.service.routing_labels)) : {
+                containers = [context.service.routing.container]
+                key        = label_key
+                value      = context.service.routing_labels[label_key]
+              }
+            ]
           },
         )
       },
     )
-    if contains(keys(local.truenas_input_services), service_key)
+    if lookup(local.truenas_input_services, service_key, null) != null
   }
 
-  # Pre-computes `{target}/{service.name}/{rel_path}` so truenas_render_files
-  # can use the path in both the map key and the file attribute without
-  # repeating the service identity lookup.
-  truenas_prepare_sidecar_paths = {
-    for file_key, file_config in local.services_render_files_sidecars : file_key =>
-    "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
-  }
-
-  # Pre-computed truenas_values template variable: optional per-app env block
-  # (keyed by catalog_app name, catalog services only) merged with Traefik
-  # routing labels in the shape the TrueNAS deploy runner expects.
-  truenas_prepare_values = {
-    for service_key, context in local.services_render_template_context : service_key => merge(
-      length(local.truenas_prepare_env[service_key]) > 0 ? {
-        (coalesce(context.service.truenas.catalog_app, context.service.identity.service)) = {
-          additional_envs = [
-            for env_key in sort(keys(local.truenas_prepare_env[service_key])) : {
-              name  = env_key
-              value = local.truenas_prepare_env[service_key][env_key]
-            }
-          ]
-        }
-      } : {},
-      {
-        labels = [
-          for label_key in sort(keys(context.service.routing_labels)) : {
-            containers = [context.service.routing.container]
-            key        = label_key
-            value      = context.service.routing_labels[label_key]
-          }
-        ]
-      },
-    )
-    if contains(keys(local.truenas_input_services), service_key)
-  }
-
-  # Encrypted GitHub files consumed by the TrueNAS deploy workflow. Compose wins
-  # over catalog: a service with docker-compose.yaml.tftpl deploys as a custom
-  # stack; otherwise the catalog app.json.tftpl is used. Sidecars are always included.
-  truenas_render_files = merge(
+  # Compose wins over catalog: a service with docker-compose.yaml.tftpl deploys
+  # as a custom stack; otherwise app.json.tftpl is used. Sidecars are always included.
+  _truenas_render_files = merge(
     {
       # 1) Custom Docker Compose apps
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}/compose.json" => {
@@ -120,7 +48,7 @@ locals {
             templatefile(
               "${path.module}/templates/truenas/compose.json.tftpl",
               merge(
-                local.truenas_prepare_render_context[service_key],
+                local._truenas_render_context[service_key],
                 {
                   compose = local.services_render_files_compose[service_key]
                 },
@@ -129,7 +57,7 @@ locals {
           ),
         )
       }
-      if contains(keys(local.services_render_files_compose), service_key)
+      if lookup(local.services_render_files_compose, service_key, null) != null
     },
     {
       # 2) TrueNAS catalog apps — only when no custom compose file exists
@@ -146,13 +74,13 @@ locals {
                 jsondecode(
                   templatefile(
                     "${path.module}/templates/truenas/app.json.tftpl",
-                    local.truenas_prepare_render_context[service_key],
+                    local._truenas_render_context[service_key],
                   ),
                 ),
                 jsondecode(
                   templatefile(
                     local.truenas_prepare_catalog_templates[service_key].path,
-                    local.truenas_prepare_render_context[service_key],
+                    local._truenas_render_context[service_key],
                   ),
                 ),
               ),
@@ -160,28 +88,46 @@ locals {
           ),
         )
       }
-      if(
-        !contains(keys(local.services_render_files_compose), service_key) &&
-        contains(keys(local.truenas_prepare_catalog_templates), service_key)
-      )
+      if lookup(local.services_render_files_compose, service_key, null) == null &&
+      lookup(local.truenas_prepare_catalog_templates, service_key, null) != null
     },
     {
       # 3) Generic sidecar files (env, configs, etc.)
-      for file_key, file_config in local.services_render_files_sidecars : local.truenas_prepare_sidecar_paths[file_key] => merge(
+      for file_key, file_config in local.services_render_files_sidecars : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
         file_config,
         {
           age_public_key = age_secret_key.server[file_config.target].public_key
           commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
-          file           = local.truenas_prepare_sidecar_paths[file_key]
+          file           = "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
         },
       )
-      if contains(keys(local.truenas_input_servers), file_config.target)
+      if lookup(local.truenas_input_servers, file_config.target, null) != null
     }
   )
+
+  # Deploy artifacts are grouped by target server: each server has its own
+  # self-hosted runner and age key.
+  truenas_input_servers = {
+    for server_key, server in local.servers_model : server_key => server
+    if server.platform == "truenas"
+  }
+
+  truenas_input_services = {
+    for service_key, service in local.services_model : service_key => service
+    if lookup(local.truenas_input_servers, service.target, null) != null &&
+    service.identity.service != null
+  }
+
+  truenas_prepare_catalog_templates = {
+    for service_key, service in local.truenas_input_services : service_key => {
+      path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
+    }
+    if service.identity.service != null && fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
+  }
 }
 
 # GitHub secret names cannot contain hyphens, so the workflow matrix computes
-# the same uppercase underscore form from the server key.
+# the same uppercase-underscore form from the server key.
 resource "github_actions_secret" "truenas_age_key" {
   for_each = local.truenas_input_servers
 
@@ -200,8 +146,8 @@ resource "github_repository_file" "truenas_deploy_request" {
     deployments = {
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => sha256(jsonencode({
         files = {
-          for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
-          if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
+          for file_key, file_config in local._truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
+          if startswith(local._truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
         }
 
         sops = sha256(yamlencode({
@@ -226,7 +172,7 @@ resource "github_repository_file" "truenas_deploy_request" {
 }
 
 module "encrypted_github_file_truenas" {
-  for_each = local.truenas_render_files
+  for_each = local._truenas_render_files
   source   = "./modules/github_file_encrypted"
 
   age_public_key = each.value.age_public_key

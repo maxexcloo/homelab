@@ -20,11 +20,11 @@ data "cloudflare_zone" "all" {
 }
 
 locals {
-  # Only services with expose = "cloudflare" are routed through the tunnel.
-  # Custom routing.urls are included only when backed by a managed DNS record
-  # (lookup against dns_render_managed_zones_by_url) to prevent routing unmanaged hostnames.
-  # distinct() guards against the external service URL appearing in routing.urls twice.
-  # The http_status:503 catch-all is required by Cloudflare Tunnel for unmatched requests.
+  # Custom routing.urls are only routed when backed by a managed DNS record to prevent
+  # routing unmanaged hostnames through the tunnel. distinct() guards against the external
+  # hostname appearing in routing.urls twice. The http_status:503 catch-all is required
+  # by Cloudflare Tunnel — unmatched requests need an explicit fallback or the tunnel
+  # silently drops them.
   cloudflare_tunnel_ingress = {
     for server_key, server in local.servers_by_feature.cloudflare_zero_trust_tunnel : server_key => concat(
       flatten([

@@ -1,6 +1,7 @@
+# Stage: runtime — merges provider-backed credential values into services_model. Never used as for_each key.
 locals {
-  # Generated bootstrap value per declared credential. Null when the credential
-  # has no bootstrap_type, so runtime falls through to an empty 1Password field.
+  # Flat "service_key-field_name" → bootstrap_value table. Same pattern as
+  # _servers_outputs_credentials_bootstrap — see that local for rationale.
   _services_outputs_credentials_bootstrap = {
     for entry in flatten([
       for service_key, service in local.services_model : [
@@ -17,6 +18,7 @@ locals {
     ]) : entry.key => entry.value
   }
 
+  # Full runtime service object. Never used as a for_each key — use services_model instead.
   services = {
     for service_key, service in local.services_model : service_key => merge(
       service,
@@ -65,6 +67,7 @@ locals {
     )
   }
 
+  # Services indexed by feature flag. Model-only — safe for for_each in feature-specific resource files.
   services_by_feature = {
     for feature, default_value in local.defaults.services.features : feature => {
       for service_key, service in local.services_model : service_key => service

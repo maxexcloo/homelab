@@ -1,116 +1,68 @@
+# Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
+  # Credential field shape for each service. Runtime values are added in services_outputs.tf.
   _services_model_credentials = {
     for service_key, service in local.services_input_targets : service_key => {
       fields = merge(
         {
           for field_name, field in service.credentials.fields : field_name => merge(
-            {
-              bootstrap_length = null
-              bootstrap_type   = null
-              mode             = "rw"
-              purpose          = null
-              type             = "CONCEALED"
-            },
+            local.defaults.credentials.rw,
             field,
           )
         },
         service.features.b2 ? {
-          b2_application_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          b2_application_key = local.defaults.credentials.ro
         } : {},
         service.features.password ? merge(
           {
-            password = {
-              bootstrap_length = null
-              bootstrap_type   = null
-              mode             = "rw"
-              purpose          = "PASSWORD"
-              type             = null
-            }
+            password = merge(local.defaults.credentials.rw, {
+              purpose = "PASSWORD"
+              type    = null
+            })
           },
           {
-            password_hash = {
-              bootstrap_length = null
-              bootstrap_type   = null
-              mode             = "ro"
-              purpose          = null
-              type             = "CONCEALED"
-            }
+            password_hash = local.defaults.credentials.ro
           },
         ) : {},
         service.features.pushover ? {
-          pushover_application_token = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "rw"
-            purpose          = null
-            type             = "CONCEALED"
-          }
-          pushover_user_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "rw"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          pushover_application_token = local.defaults.credentials.rw
+          pushover_user_key          = local.defaults.credentials.rw
         } : {},
         service.features.resend ? {
-          resend_api_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          resend_api_key = local.defaults.credentials.ro
         } : {},
         service.features.tailscale ? {
-          tailscale_auth_key = {
-            bootstrap_length = null
-            bootstrap_type   = null
-            mode             = "ro"
-            purpose          = null
-            type             = "CONCEALED"
-          }
+          tailscale_auth_key = local.defaults.credentials.ro
         } : {},
       )
     }
   }
 
-  _services_model_groups = {
-    for service_key, service in local.services_input_targets : service_key => coalesce(
-      service.identity.group,
-      try(local.servers_model[service.target].description, null),
-      "Applications",
-    )
-  }
-
+  # Computed internal/external hostnames used to build _services_model_urls.
   _services_model_hosts = {
     for service_key, service in local.services_input_targets : service_key => {
-      internal = local._services_model_target_is_server[service_key] && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].hosts.internal}" : null
+      internal = lookup(local.servers_input, service.target, null) != null && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].hosts.internal}" : null
 
       # Only externally exposed services get generated external hostnames.
       external = (
         service.target == "fly"
         ? "${coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
-        : local._services_model_target_is_server[service_key] && contains(["cloudflare", "external"], service.routing.expose)
+        : lookup(local.servers_input, service.target, null) != null && contains(["cloudflare", "external"], service.routing.expose)
         ? "${service.identity.name}.${local.servers_model[service.target].hosts.external}"
         : null
       )
     }
   }
 
+  # Maps single-target services to their expanded key ("service-target") for `auto` import resolution.
   _services_model_import_auto_targets = {
     for service_key, service in local.services_input : service_key => "${service_key}-${keys(service.targets)[0]}"
     if length(service.targets) == 1
   }
 
-  # Render import references before services_render templating so missing
-  # dependencies fail validation, not templatestring().
+  # Flattened list of import alias declarations across all services. Self-references
+  # services_model, which is valid because OpenTofu resolves local dependencies lazily —
+  # the reference only reads keys and import declarations, not values produced by this local.
   _services_model_import_refs = flatten([
     for service_key, service in local.services_model : [
       for import_alias, import_ref in service.imports.services : {
@@ -126,20 +78,13 @@ locals {
     ]
   ])
 
-  _services_model_target_is_server = {
-    for service_key, service in local.services_input_targets : service_key => contains(toset(keys(local.servers_input)), service.target)
-  }
-
-  _services_model_url_scheme = {
-    for service_key, service in local.services_input_targets : service_key => service.routing.ssl ? "https" : "http"
-  }
-
+  # Full URL map per service: custom urls + generated external/internal hostnames.
   _services_model_urls = {
     for service_key, service in local.services_input_targets : service_key => merge(
       {
         for url in service.routing.urls : url => {
           host  = url
-          href  = "${local._services_model_url_scheme[service_key]}://${url}"
+          href  = "${service.routing.ssl ? "https" : "http"}://${url}"
           label = "website"
           zone  = local.dns_render_managed_zones_by_url[url]
         }
@@ -152,7 +97,7 @@ locals {
         ) ? {
         external = {
           host  = local._services_model_hosts[service_key].external
-          href  = "${local._services_model_url_scheme[service_key]}://${local._services_model_hosts[service_key].external}"
+          href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_hosts[service_key].external}"
           label = "external"
           zone  = service.target == "fly" ? "fly.dev" : local.defaults.domains.external
         }
@@ -160,7 +105,7 @@ locals {
       local._services_model_hosts[service_key].internal != null ? {
         internal = {
           host  = local._services_model_hosts[service_key].internal
-          href  = "${local._services_model_url_scheme[service_key]}://${local._services_model_hosts[service_key].internal}"
+          href  = "${service.routing.ssl ? "https" : "http"}://${local._services_model_hosts[service_key].internal}"
           label = "internal"
           zone  = local.defaults.domains.internal
         }
@@ -168,32 +113,20 @@ locals {
     )
   }
 
+  # First non-null href in priority order: custom url > external > internal.
+  # Extracted to avoid repeating the candidate list for both href and host derivation.
   _services_model_urls_default = {
-    for service_key, service in local.services_input_targets : service_key => {
-      host = try(regex("^https?://([^/:]+)", concat(
-        [
-          for candidate in [
-            length(service.routing.urls) > 0 ? local._services_model_urls[service_key][service.routing.urls[0]].href : null,
-            try(local._services_model_urls[service_key].external.href, null),
-            try(local._services_model_urls[service_key].internal.href, null),
-          ] : candidate
-          if candidate != null && candidate != ""
-        ],
-        [null],
-      )[0])[0], null)
-
-      href = concat(
-        [
-          for candidate in [
-            length(service.routing.urls) > 0 ? local._services_model_urls[service_key][service.routing.urls[0]].href : null,
-            try(local._services_model_urls[service_key].external.href, null),
-            try(local._services_model_urls[service_key].internal.href, null),
-          ] : candidate
-          if candidate != null && candidate != ""
-        ],
-        [null],
-      )[0]
-    }
+    for service_key, service in local.services_input_targets : service_key => concat(
+      [
+        for candidate in [
+          length(service.routing.urls) > 0 ? local._services_model_urls[service_key][service.routing.urls[0]].href : null,
+          try(local._services_model_urls[service_key].external.href, null),
+          try(local._services_model_urls[service_key].internal.href, null),
+        ] : candidate
+        if candidate != null && candidate != ""
+      ],
+      [null],
+    )[0]
   }
 
   services_model = {
@@ -201,14 +134,15 @@ locals {
       service,
       merge(
         {
-          key = service_key
+          credentials = local._services_model_credentials[service_key]
+          key         = service_key
 
           fly = {
             app_name = service.target == "fly" ? coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}") : service.fly.app_name
           }
 
           identity = {
-            group   = local._services_model_groups[service_key]
+            group   = coalesce(service.identity.group, try(local.servers_model[service.target].description, null), "Applications")
             service = try(service.identity.service, null)
           }
 
@@ -216,13 +150,11 @@ locals {
             container = service.routing.container != null ? service.routing.container : try(service.identity.service, null)
           }
 
-          credentials = local._services_model_credentials[service_key]
-
           urls = merge(
             {
               default = {
-                host  = local._services_model_urls_default[service_key].host
-                href  = local._services_model_urls_default[service_key].href
+                host  = try(regex("^https?://([^/:]+)", local._services_model_urls_default[service_key])[0], null)
+                href  = local._services_model_urls_default[service_key]
                 label = "default"
                 zone  = null
               }

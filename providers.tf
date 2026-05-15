@@ -1,3 +1,10 @@
+locals {
+  onepassword_connect_request_headers = {
+    "Authorization" = "Bearer ${var.onepassword_connect_token}"
+    "Content-Type"  = "application/json"
+  }
+}
+
 provider "github" {
   owner = local.defaults.github.owner
 }
@@ -26,14 +33,8 @@ provider "oci" {
 provider "restapi" {
   alias                 = "onepassword"
   create_returns_object = true
+  headers               = local.onepassword_connect_request_headers
   uri                   = var.onepassword_connect_url
-
-  # 1Password Connect is modeled through the generic REST provider because the
-  # native provider does not support all login item URL entries needed here.
-  headers = {
-    "Authorization" = "Bearer ${var.onepassword_connect_token}"
-    "Content-Type"  = "application/json"
-  }
 }
 
 provider "restapi" {

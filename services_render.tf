@@ -1,5 +1,8 @@
+# Stage: render — templates, routing labels, and deploy file content.
 locals {
-  # Generic sidecars share one path model; templates render, static files copy.
+  # Sidecar file inventory discovered from templates/services/**/. Platform-specific
+  # entry points (app.json.tftpl, docker-compose.yaml.tftpl) are handled by their
+  # respective platform deployers and excluded here.
   _services_render_file_inputs = flatten([
     for service_key, service in {
       for service_key, service in local.services : service_key => service
@@ -18,6 +21,8 @@ locals {
     ]
   ])
 
+  # Parsed compose YAML before routing label injection. Kept separate so
+  # services_render_files_compose can merge labels into the parsed structure.
   _services_render_files_compose_raw = {
     for service_key, service in local.services : service_key => yamldecode(
       templatefile(
@@ -28,26 +33,32 @@ locals {
     if service.identity.service != null &&
     fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
     (
-      contains(keys(local.truenas_input_servers), service.target) ||
+      lookup(local.truenas_input_servers, service.target, null) != null ||
       (
-        contains(keys(local.servers_model), service.target) &&
+        lookup(local.servers_model, service.target, null) != null &&
         local.servers_model[service.target].features.docker
       )
     )
   }
 
-  _services_render_public_raw_services = {
+  # Services with runtime stripped. Used in _services_render_context_base so that
+  # cross-service references in templatestring() calls cannot access other services'
+  # credentials.
+  _services_render_services_safe = {
     for service_key, service in local.services : service_key => {
-      for k, v in service : k => v if k != "runtime"
+      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
     }
   }
 
-  _services_render_public_rendered_services = {
+  # Rendered services with runtime stripped. Used in services_render_template_context
+  # for the same reason — file templates see adjacent services without their credentials.
+  _services_render_rendered_services_safe = {
     for service_key, service in local.services_render_services : service_key => {
-      for k, v in service : k => v if k != "runtime"
+      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
     }
   }
 
+  # Traefik routing labels derived from each service's routing configuration.
   _services_render_routing_labels = {
     for service_key, service in local.services : service_key => {
       for label_key, label_value in merge(
@@ -77,7 +88,7 @@ locals {
         } : {},
         {
           for label_key, label_value in service.routing.labels :
-          label_key => try(templatestring(tostring(label_value), local.services_render_pre_template_context[service_key]), null)
+          label_key => try(templatestring(tostring(label_value), local._services_render_context_base[service_key]), null)
           if label_value != null
         }
       ) : label_key => label_value
@@ -85,6 +96,7 @@ locals {
     }
   }
 
+  # Compose files with routing labels injected into the primary container's label map.
   services_render_files_compose = {
     for service_key, compose in local._services_render_files_compose_raw : service_key => yamlencode(
       merge(
@@ -106,6 +118,7 @@ locals {
     )
   }
 
+  # Sidecar files (env files, configs, etc.) with rendered content and SOPS content type.
   services_render_files_sidecars = {
     for file_input in local._services_render_file_inputs : "${file_input.stack}/${file_input.rel_path}" => merge(
       file_input,
@@ -138,8 +151,11 @@ locals {
     )
   }
 
-  # Pre-render context avoids circular references while templating data strings.
-  services_render_pre_template_context = {
+  # First-pass context for templatestring() calls on service.data and service.dashboard.
+  # Uses _services_render_services_safe (runtime stripped) to avoid circular
+  # dependencies — services reference each other during rendering, so each service's
+  # context must use the pre-render values of adjacent services.
+  _services_render_context_base = {
     for service_key, service in local.services : service_key => {
       defaults = local.defaults
       server   = try(local.servers_runtime_rendered[service.target], null)
@@ -147,17 +163,19 @@ locals {
       service  = service
 
       services = merge(
-        local._services_render_public_raw_services,
+        local._services_render_services_safe,
         {
           for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services[real_key]
-          if contains(keys(local.services), real_key)
+          if lookup(local.services, real_key, null) != null
         },
       )
     }
   }
 
-  # Rendered service inventory for templates and platform deployers.
+  # Services with data/dashboard/truenas fields rendered via templatestring() and
+  # routing_labels injected. Used as the service value in services_render_template_context
+  # and as the service inventory in services_render_custom.tf.
   services_render_services = {
     for service_key, service in local.services : service_key => merge(
       service,
@@ -168,7 +186,7 @@ locals {
             data      = service.data
             truenas   = service.truenas
           }),
-          local.services_render_pre_template_context[service_key],
+          local._services_render_context_base[service_key],
         ),
       ),
       {
@@ -177,19 +195,22 @@ locals {
     )
   }
 
+  # Full context passed to templatefile() for deploy artifact files. Uses rendered
+  # services (_services_render_rendered_services_safe) so templates see final data
+  # values while still being protected from adjacent services' credentials.
   services_render_template_context = {
     for service_key, service in local.services : service_key => merge(
-      local.services_render_pre_template_context[service_key],
+      local._services_render_context_base[service_key],
       {
         custom  = lookup(local.services_render_custom_context, service_key, {})
         service = local.services_render_services[service_key]
 
         services = merge(
-          local._services_render_public_rendered_services,
+          local._services_render_rendered_services_safe,
           {
             for alias, real_key in local.services_model_imports[service_key] :
             alias => local.services_render_services[real_key]
-            if contains(keys(local.services_render_services), real_key)
+            if lookup(local.services_render_services, real_key, null) != null
           },
         )
       },

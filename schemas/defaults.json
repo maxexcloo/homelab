@@ -5,6 +5,21 @@
   "title": "Defaults",
   "type": "object",
   "properties": {
+    "credentials": {
+      "additionalProperties": false,
+      "description": "Default shapes for credential field entries. Merged into each field declaration so only overrides need to be specified.",
+      "type": "object",
+      "properties": {
+        "ro": {
+          "description": "Default shape for read-only credential fields bootstrapped by a provider and read back from 1Password.",
+          "type": "object"
+        },
+        "rw": {
+          "description": "Default shape for read-write credential fields written to 1Password for manual entry and read back at apply time.",
+          "type": "object"
+        }
+      }
+    },
     "dns": {
       "additionalProperties": false,
       "description": "Default values merged into all auto-generated DNS records. Individual records may override these.",

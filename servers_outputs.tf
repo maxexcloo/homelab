@@ -1,4 +1,6 @@
+# Stage: runtime — merges provider-backed values into servers_model. Never used as for_each key.
 locals {
+  # Static model addresses plus runtime-discovered private and Tailscale IPs.
   _servers_outputs_runtime_addresses = {
     for server_key, server in local.servers_model : server_key => merge(
       server.addresses,
@@ -10,6 +12,7 @@ locals {
     )
   }
 
+  # Static model hostnames plus runtime-discovered private and Tailscale hostnames.
   _servers_outputs_runtime_hosts = {
     for server_key, server in local.servers_model : server_key => merge(
       server.hosts,
@@ -20,18 +23,16 @@ locals {
     )
   }
 
-  _servers_outputs_runtime_url_sources = {
-    for server_key, server in local.servers_model : server_key => merge(
-      local._servers_outputs_runtime_hosts[server_key],
-      local._servers_outputs_runtime_addresses[server_key],
-    )
-  }
-
+  # Generates https:// and ssh:// URLs for every known host and address source.
+  # Addresses are bracket-wrapped when they are IPv6 literals.
   _servers_outputs_runtime_urls = {
     for server_key, server in local.servers_model : server_key => merge(
       server.urls,
       {
-        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : url_label => {
+        for url_label, url_value in merge(
+          local._servers_outputs_runtime_hosts[server_key],
+          local._servers_outputs_runtime_addresses[server_key],
+          ) : url_label => {
           href = format(
             "https://%s%s",
             can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
@@ -39,10 +40,15 @@ locals {
           )
           label = url_label
         }
-        if !contains(keys(server.urls), url_label) && url_value != null && url_value != ""
+        if lookup(server.urls, url_label, null) == null &&
+        url_value != null &&
+        url_value != ""
       },
       {
-        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : "${url_label}_ssh" => {
+        for url_label, url_value in merge(
+          local._servers_outputs_runtime_hosts[server_key],
+          local._servers_outputs_runtime_addresses[server_key],
+          ) : "${url_label}_ssh" => {
           href = format(
             "ssh://%s@%s%s",
             server.identity.username,
@@ -51,11 +57,16 @@ locals {
           )
           label = "${url_label}_ssh"
         }
-        if url_label != "management" && url_value != null && url_value != ""
+        if url_label != "management" &&
+        url_value != null &&
+        url_value != ""
       },
     )
   }
 
+  # Flat "server_key-field_name" → bootstrap_value table. Nested resource for_each
+  # is not supported in HCL, so bootstrap secrets are materialized in random.tf
+  # under the same compound key and looked up here by string concatenation.
   _servers_outputs_credentials_bootstrap = {
     for entry in flatten([
       for server_key, server in local.servers_model : [
@@ -72,6 +83,7 @@ locals {
     ]) : entry.key => entry.value
   }
 
+  # Full runtime server object. Never used as a for_each key — use servers_model instead.
   servers = {
     for server_key, server in local.servers_model : server_key => merge(
       server,
@@ -145,6 +157,7 @@ locals {
     )
   }
 
+  # Servers indexed by feature flag. Model-only — safe for for_each in feature-specific resource files.
   servers_by_feature = {
     for feature in keys(local.defaults.servers.features) : feature => {
       for server_key, server in local.servers_model : server_key => server

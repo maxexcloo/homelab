@@ -1,3 +1,4 @@
+# Stage: input — loads raw YAML and expands each target into its own keyed entry.
 locals {
   services_input = {
     for file_path in fileset(path.module, "data/services/*.yml") :
@@ -7,10 +8,9 @@ locals {
     )
   }
 
-  # Each entry in `targets` becomes its own stack, so target-specific credentials
-  # and rendered files have stable addresses like service-target. Per-target
-  # data, features, and platform sections are flattened to the top level with
-  # target defaults merged in (target wins).
+  # Expands service × target into individual stacks keyed as "service-target"
+  # (e.g. "immich-truenas-01"). Data, features, fly, truenas, and credentials
+  # deep-merge with target values winning over service-level values.
   services_input_targets = merge([
     for service_key, service in local.services_input : {
       for target_key, target_config in service.targets : "${service_key}-${target_key}" => merge(
@@ -21,8 +21,8 @@ locals {
         {
           target = target_key
 
-          # can(keys()) detects whether a value is an object; non-objects
-          # (scalars, arrays, null) replace instead of merging.
+          # can(keys()) detects whether a value is a mergeable object; scalars,
+          # arrays, and null replace the service-level value rather than merging.
           data = (
             can(keys(service.data)) && can(keys(target_config.data))
             ? provider::deepmerge::mergo(service.data, target_config.data)

@@ -6,23 +6,15 @@ data "http" "onepassword_server_item" {
     if item_id != null
   }
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/${each.value}"
-
-  request_headers = {
-    "Authorization" = "Bearer ${var.onepassword_connect_token}"
-    "Content-Type"  = "application/json"
-  }
+  request_headers = local.onepassword_connect_request_headers
+  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/${each.value}"
 }
 
 data "http" "onepassword_server_search" {
   for_each = local.servers_model
 
-  url = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items?filter=${urlencode("title eq \"${each.key}\"")}"
-
-  request_headers = {
-    "Authorization" = "Bearer ${var.onepassword_connect_token}"
-    "Content-Type"  = "application/json"
-  }
+  request_headers = local.onepassword_connect_request_headers
+  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items?filter=${urlencode("title eq \"${each.key}\"")}"
 }
 
 locals {
