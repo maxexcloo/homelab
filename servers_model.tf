@@ -129,6 +129,9 @@ locals {
       local._servers_model_computed[server_key],
       {
         credentials = local._servers_model_credentials[server_key]
+        key         = server_key
+        ssh_keys    = data.github_user.default.ssh_keys
+
         dashboard = server.dashboard != null ? server.dashboard : [
           {
             description = local._servers_model_computed[server_key].description
@@ -140,8 +143,6 @@ locals {
             widgets     = []
           }
         ]
-        key      = server_key
-        ssh_keys = data.github_user.default.ssh_keys
       }
     )
   }

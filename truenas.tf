@@ -1,37 +1,4 @@
 locals {
-  # Internal helpers — only used within this file.
-
-  _truenas_render_context = {
-    for service_key, context in local.services_render_template_context : service_key => merge(
-      context,
-      {
-        truenas_values = merge(
-          length(context.service.truenas.env) > 0 ? {
-            (coalesce(context.service.truenas.catalog_app, context.service.identity.service)) = {
-              additional_envs = [
-                for env_key in sort(keys(context.service.truenas.env)) : {
-                  name  = env_key
-                  value = context.service.truenas.env[env_key]
-                }
-                if context.service.truenas.env[env_key] != null
-              ]
-            }
-          } : {},
-          {
-            labels = [
-              for label_key in sort(keys(context.service.routing_labels)) : {
-                containers = [context.service.routing.container]
-                key        = label_key
-                value      = context.service.routing_labels[label_key]
-              }
-            ]
-          },
-        )
-      },
-    )
-    if lookup(local.truenas_input_services, service_key, null) != null
-  }
-
   # Compose wins over catalog: a service with docker-compose.yaml.tftpl deploys
   # as a custom stack; otherwise app.json.tftpl is used. Sidecars are always included.
   _truenas_render_files = merge(
@@ -48,7 +15,7 @@ locals {
             templatefile(
               "${path.module}/templates/truenas/compose.json.tftpl",
               merge(
-                local._truenas_render_context[service_key],
+                local.services_render_template_context[service_key],
                 {
                   compose = local.services_render_files_compose[service_key]
                 },
@@ -74,13 +41,13 @@ locals {
                 jsondecode(
                   templatefile(
                     "${path.module}/templates/truenas/app.json.tftpl",
-                    local._truenas_render_context[service_key],
+                    local.services_render_template_context[service_key],
                   ),
                 ),
                 jsondecode(
                   templatefile(
                     local.truenas_prepare_catalog_templates[service_key].path,
-                    local._truenas_render_context[service_key],
+                    local.services_render_template_context[service_key],
                   ),
                 ),
               ),

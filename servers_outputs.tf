@@ -90,6 +90,8 @@ locals {
       {
         runtime = {
           addresses = local._servers_outputs_runtime_addresses[server_key]
+          hosts     = local._servers_outputs_runtime_hosts[server_key]
+          urls      = local._servers_outputs_runtime_urls[server_key]
 
           attributes = merge(
             {
@@ -106,10 +108,6 @@ locals {
               cloudflare_tunnel_id = module.cloudflare_tunnel[server_key].tunnel_id
             } : {},
           )
-
-          hosts = local._servers_outputs_runtime_hosts[server_key]
-
-          urls = local._servers_outputs_runtime_urls[server_key]
 
           credentials = merge(
             {
