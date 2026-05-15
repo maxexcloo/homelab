@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Homelab infrastructure managed with OpenTofu 1.x (`>= 1.11, < 2.0`). YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across multiple providers.
+Homelab infrastructure managed with OpenTofu. YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across multiple providers.
 
 Each `server` and `service` has two layers:
 
