@@ -93,14 +93,10 @@ def main() -> None:
             elif key == "routing" and val == {"labels": {}, "urls": []}:
                 del service[key]
 
-    # Order keys
-    order = ["features", "identity", "imports", "routing", "targets", "credentials", "dashboard", "data"]
+    # Order keys as they appear in the schema
     ordered = {}
-    for k in order:
+    for k in schema["properties"]:
         if k in service:
-            ordered[k] = service[k]
-    for k in service:
-        if k not in ordered:
             ordered[k] = service[k]
 
     body = yaml.dump(ordered, default_flow_style=False, sort_keys=False, width=1000)

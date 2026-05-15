@@ -59,7 +59,9 @@ def deep_merge(base: dict, overlay: dict) -> dict:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        raise SystemExit("usage: new_server.py <name> [region] [platform] [type] [parent]")
+        raise SystemExit(
+            "usage: new_server.py <name> [region] [platform] [type] [parent]"
+        )
 
     name = sys.argv[1]
     region = sys.argv[2] if len(sys.argv) > 2 else "au"
@@ -104,14 +106,10 @@ def main() -> None:
     if parent:
         key = f"{parent}-{name}"
 
-    # Order keys for readability
-    order = ["platform", "type", "parent", "features", "identity", "networking", "platform_config", "credentials", "dashboard", "data"]
+    # Order keys as they appear in the schema
     ordered = {}
-    for k in order:
+    for k in schema["properties"]:
         if k in server:
-            ordered[k] = server[k]
-    for k in server:
-        if k not in ordered:
             ordered[k] = server[k]
 
     body = yaml.dump(ordered, default_flow_style=False, sort_keys=False, width=1000)

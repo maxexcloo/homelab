@@ -137,7 +137,7 @@ resource "terraform_data" "services_validation" {
     # TrueNAS services need either a custom compose template or catalog template.
     precondition {
       condition     = length(local.services_validation_truenas_missing_template) == 0
-      error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", local.services_validation_truenas_missing_template)}"
+      error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", nonsensitive(local.services_validation_truenas_missing_template))}"
     }
 
     # SSL service URLs need managed DNS so ACME delegation can resolve.

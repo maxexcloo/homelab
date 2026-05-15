@@ -88,24 +88,24 @@ resource "terraform_data" "servers_validation" {
     # Incus remotes are configured from parent server management addresses.
     precondition {
       condition     = length(local.servers_validation_invalid_incus_vm_parents) == 0
-      error_message = "Incus VMs must reference an Incus server parent with networking.management_host set: ${join(", ", local.servers_validation_invalid_incus_vm_parents)}"
+      error_message = "Incus VMs must reference an Incus server parent with networking.management_host set: ${join(", ", nonsensitive(local.servers_validation_invalid_incus_vm_parents))}"
     }
 
     # OCI resources in this stack only model VM instances, not bare metal or
     # appliance/server abstractions.
     precondition {
       condition     = length(local.servers_validation_invalid_oci_types) == 0
-      error_message = "OCI servers must be type vm: ${join(", ", local.servers_validation_invalid_oci_types)}"
+      error_message = "OCI servers must be type vm: ${join(", ", nonsensitive(local.servers_validation_invalid_oci_types))}"
     }
 
     precondition {
       condition     = length(local.servers_validation_invalid_parents) == 0
-      error_message = "Invalid parent references found in servers configuration: ${join(", ", local.servers_validation_invalid_parents)}"
+      error_message = "Invalid parent references found in servers configuration: ${join(", ", nonsensitive(local.servers_validation_invalid_parents))}"
     }
 
     precondition {
       condition     = length(local.servers_validation_invalid_types) == 0
-      error_message = "Invalid server types found: ${join(", ", local.servers_validation_invalid_types)}"
+      error_message = "Invalid server types found: ${join(", ", nonsensitive(local.servers_validation_invalid_types))}"
     }
 
     precondition {
@@ -119,33 +119,33 @@ resource "terraform_data" "servers_validation" {
     # depth explicit so addressing behavior remains predictable.
     precondition {
       condition     = length(local.servers_validation_long_parent_chains) == 0
-      error_message = "Server parent inheritance supports at most two parent levels: ${join(", ", local.servers_validation_long_parent_chains)}"
+      error_message = "Server parent inheritance supports at most two parent levels: ${join(", ", nonsensitive(local.servers_validation_long_parent_chains))}"
     }
 
     # OCI Always Free quota enforcement. Only checked when var.oci_always_free is true.
     precondition {
       condition     = !var.oci_always_free || length(local.servers_validation_oci_always_free_shapes_invalid) == 0
-      error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", local.servers_validation_oci_always_free_shapes_invalid)}"
+      error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", nonsensitive(local.servers_validation_oci_always_free_shapes_invalid))}"
     }
 
     precondition {
       condition     = !var.oci_always_free || local.servers_validation_oci_always_free_a1_cpus <= 4
-      error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${local.servers_validation_oci_always_free_a1_cpus})."
+      error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${nonsensitive(local.servers_validation_oci_always_free_a1_cpus)})."
     }
 
     precondition {
       condition     = !var.oci_always_free || local.servers_validation_oci_always_free_a1_memory <= 24
-      error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${local.servers_validation_oci_always_free_a1_memory} GB)."
+      error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${nonsensitive(local.servers_validation_oci_always_free_a1_memory)} GB)."
     }
 
     precondition {
       condition     = !var.oci_always_free || local.servers_validation_oci_always_free_micro_instances <= 2
-      error_message = "Always Free Micro instances must not exceed 2 (got ${local.servers_validation_oci_always_free_micro_instances})."
+      error_message = "Always Free Micro instances must not exceed 2 (got ${nonsensitive(local.servers_validation_oci_always_free_micro_instances)})."
     }
 
     precondition {
       condition     = !var.oci_always_free || local.servers_validation_oci_always_free_boot_volume_gbs <= 200
-      error_message = "Always Free total boot volume size must not exceed 200 GB (got ${local.servers_validation_oci_always_free_boot_volume_gbs} GB)."
+      error_message = "Always Free total boot volume size must not exceed 200 GB (got ${nonsensitive(local.servers_validation_oci_always_free_boot_volume_gbs)} GB)."
     }
 
     # Catch short cycles before inherited address lookup hides the root cause.
@@ -158,7 +158,7 @@ resource "terraform_data" "servers_validation" {
 
     precondition {
       condition     = length(local.servers_validation_self_parents) == 0
-      error_message = "Servers cannot set themselves as their own parent: ${join(", ", local.servers_validation_self_parents)}"
+      error_message = "Servers cannot set themselves as their own parent: ${join(", ", nonsensitive(local.servers_validation_self_parents))}"
     }
   }
 }
