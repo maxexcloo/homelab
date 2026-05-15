@@ -25,7 +25,7 @@ locals {
         } : {},
         service.features.pushover ? {
           pushover_application_token = local.defaults.credentials.rw
-          pushover_user_key          = local.defaults.credentials.rw
+          pushover_user_key          = local.defaults.credentials.ro
         } : {},
         service.features.resend ? {
           resend_api_key = local.defaults.credentials.ro

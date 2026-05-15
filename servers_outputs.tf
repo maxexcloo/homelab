@@ -137,7 +137,7 @@ locals {
             } : {},
             server.features.pushover ? {
               pushover_application_token = sensitive(try(local.onepassword_server_existing_fields[server_key].pushover_application_token, ""))
-              pushover_user_key          = sensitive(try(local.onepassword_server_existing_fields[server_key].pushover_user_key, ""))
+              pushover_user_key          = sensitive(var.pushover_user_key)
             } : {},
             server.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_server[server_key].create_response).token

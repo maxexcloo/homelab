@@ -10,6 +10,13 @@ variable "debug_dir" {
   }
 }
 
+variable "oci_always_free" {
+  default     = true
+  description = "Enforce OCI Always Free quota limits during planning. Set to false if you have a paid tenancy."
+  sensitive   = false
+  type        = bool
+}
+
 variable "oci_private_key_base64" {
   description = "OCI private key (base64 encoded)"
   sensitive   = true
@@ -59,6 +66,17 @@ variable "onepassword_connect_url" {
       can(regex("^https?://[^/]+", var.onepassword_connect_url)) &&
       !endswith(var.onepassword_connect_url, "/")
     )
+  }
+}
+
+variable "pushover_user_key" {
+  description = "Pushover user key for notifications"
+  sensitive   = true
+  type        = string
+
+  validation {
+    condition     = length(nonsensitive(var.pushover_user_key)) > 0
+    error_message = "Pushover user key must not be empty."
   }
 }
 

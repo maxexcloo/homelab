@@ -49,7 +49,7 @@ locals {
             } : {},
             service.features.pushover ? {
               pushover_application_token = sensitive(try(local.onepassword_service_existing_fields[service_key].pushover_application_token, ""))
-              pushover_user_key          = sensitive(try(local.onepassword_service_existing_fields[service_key].pushover_user_key, ""))
+              pushover_user_key          = sensitive(var.pushover_user_key)
             } : {},
             service.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token

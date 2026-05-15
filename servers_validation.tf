@@ -42,6 +42,31 @@ locals {
     if server.parent != "" && try(local.servers_input[local.servers_input[server.parent].parent].parent != "", false)
   ]
 
+  servers_validation_oci_always_free_a1_cpus = sum([
+    for server in values(local.servers_input) : server.platform_config.oci.cpus
+    if server.platform == "oci" && server.type == "vm" && server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+  ])
+
+  servers_validation_oci_always_free_a1_memory = sum([
+    for server in values(local.servers_input) : server.platform_config.oci.memory
+    if server.platform == "oci" && server.type == "vm" && server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+  ])
+
+  servers_validation_oci_always_free_boot_volume_gbs = sum([
+    for server in values(local.servers_input) : server.platform_config.oci.disk_size
+    if server.platform == "oci" && server.type == "vm"
+  ])
+
+  servers_validation_oci_always_free_micro_instances = length([
+    for server in values(local.servers_input) : server
+    if server.platform == "oci" && server.type == "vm" && server.platform_config.oci.shape == "VM.Standard.E2.1.Micro"
+  ])
+
+  servers_validation_oci_always_free_shapes_invalid = [
+    for server_key, server in local.servers_input : server_key
+    if server.platform == "oci" && server.type == "vm" && !contains(["VM.Standard.A1.Flex", "VM.Standard.E2.1.Micro"], server.platform_config.oci.shape)
+  ]
+
   servers_validation_parent_cycles = [
     for server_key, server in local.servers_input : server_key
     if server.parent != "" && (
@@ -95,6 +120,32 @@ resource "terraform_data" "servers_validation" {
     precondition {
       condition     = length(local.servers_validation_long_parent_chains) == 0
       error_message = "Server parent inheritance supports at most two parent levels: ${join(", ", local.servers_validation_long_parent_chains)}"
+    }
+
+    # OCI Always Free quota enforcement. Only checked when var.oci_always_free is true.
+    precondition {
+      condition     = !var.oci_always_free || length(local.servers_validation_oci_always_free_shapes_invalid) == 0
+      error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", local.servers_validation_oci_always_free_shapes_invalid)}"
+    }
+
+    precondition {
+      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_a1_cpus <= 4
+      error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${local.servers_validation_oci_always_free_a1_cpus})."
+    }
+
+    precondition {
+      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_a1_memory <= 24
+      error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${local.servers_validation_oci_always_free_a1_memory} GB)."
+    }
+
+    precondition {
+      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_micro_instances <= 2
+      error_message = "Always Free Micro instances must not exceed 2 (got ${local.servers_validation_oci_always_free_micro_instances})."
+    }
+
+    precondition {
+      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_boot_volume_gbs <= 200
+      error_message = "Always Free total boot volume size must not exceed 200 GB (got ${local.servers_validation_oci_always_free_boot_volume_gbs} GB)."
     }
 
     # Catch short cycles before inherited address lookup hides the root cause.
