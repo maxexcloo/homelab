@@ -9,7 +9,7 @@
         additional_envs = [
           for env_key in sort(keys(service.truenas.env)) : {
             name  = env_key
-            value = service.truenas.env[env_key]
+            value = tostring(service.truenas.env[env_key])
           }
           if service.truenas.env[env_key] != null
         ]

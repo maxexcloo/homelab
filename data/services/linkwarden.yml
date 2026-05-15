@@ -42,4 +42,4 @@ targets:
         BASE_URL: ${service.urls.default.href}
         EMAIL_FROM: ${service.key}@${defaults.domains.internal}
         EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.runtime.credentials.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
-        NEXT_PUBLIC_EMAIL_PROVIDER: "true"
+        NEXT_PUBLIC_EMAIL_PROVIDER: true
