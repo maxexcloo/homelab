@@ -83,7 +83,7 @@ resource "terraform_data" "services_validation" {
     # Deep generated service hostnames need custom short URLs or dedicated certs.
     precondition {
       condition     = length(local.services_validation_cloudflare_deep_subdomains) == 0
-      error_message = "Cloudflare-proxied hostnames exceed Universal SSL coverage (max one subdomain level): ${join(", ", local.services_validation_cloudflare_deep_subdomains)}"
+      error_message = "Cloudflare-proxied hostnames exceed Universal SSL coverage (max one subdomain level): ${join(", ", nonsensitive(local.services_validation_cloudflare_deep_subdomains))}"
     }
 
     # Cloudflare-exposed server services need a tunnel on the target server.
@@ -96,7 +96,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local.services_validation_fly_ports_missing) == 0
-      error_message = "Fly services must have routing.port set: ${join(", ", local.services_validation_fly_ports_missing)}"
+      error_message = "Fly services must have routing.port set: ${join(", ", nonsensitive(local.services_validation_fly_ports_missing))}"
     }
 
     precondition {

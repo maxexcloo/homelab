@@ -79,11 +79,11 @@ run = "tofu refresh"
 
 # Scripts
 [tasks.new-server]
-description = "Create a new server YAML file"
+description = "Create a new server YAML from defaults and open in $EDITOR"
 run = "uv run scripts/new_server.py \"$@\""
 
 [tasks.new-service]
-description = "Create a new service YAML file and starter template"
+description = "Create a new service YAML from defaults and open in $EDITOR"
 run = "uv run scripts/new_service.py \"$@\""
 
 [tasks.render]
