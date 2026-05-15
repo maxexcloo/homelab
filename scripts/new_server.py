@@ -18,43 +18,6 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SERVER_SCHEMA = PROJECT_ROOT / "schemas" / "server.json"
 SERVERS_DIR = PROJECT_ROOT / "data" / "servers"
-DEFAULTS_YAML = PROJECT_ROOT / "data" / "defaults.yml"
-
-
-def default_for(prop: dict):
-    """Return a sensible default for a single schema property."""
-    if "default" in prop:
-        return prop["default"]
-
-    prop_type = prop.get("type")
-    if isinstance(prop_type, list):
-        prop_type = [t for t in prop_type if t != "null"][0]
-
-    if prop_type == "boolean":
-        return False
-    if prop_type == "string":
-        return ""
-    if prop_type == "integer":
-        return 0
-    if prop_type == "array":
-        return []
-    if prop_type == "object" and "properties" in prop:
-        return {k: default_for(v) for k, v in prop["properties"].items()}
-    if "enum" in prop and prop["enum"]:
-        return prop["enum"][0]
-
-    return None
-
-
-def deep_merge(base: dict, overlay: dict) -> dict:
-    """Recursively merge overlay into base."""
-    result = dict(base)
-    for key, value in overlay.items():
-        if isinstance(value, dict) and key in result and isinstance(result[key], dict):
-            result[key] = deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
 
 
 def main() -> None:
@@ -71,35 +34,17 @@ def main() -> None:
 
     schema = json.loads(SERVER_SCHEMA.read_text())
 
-    # Build base from schema defaults
-    server = {k: default_for(v) for k, v in schema["properties"].items()}
-
-    # Overlay defaults.yml server defaults
-    if DEFAULTS_YAML.exists():
-        defaults = yaml.safe_load(DEFAULTS_YAML.read_text())
-        if "servers" in defaults:
-            server = deep_merge(server, defaults["servers"])
-
-    # User overrides
-    server["identity"] = {
-        "name": name,
-        "region": region,
-        "title": name.replace("-", " ").title(),
+    server: dict = {
+        "identity": {
+            "name": name,
+            "region": region,
+            "title": name.replace("-", " ").title(),
+        },
+        "platform": platform,
+        "type": server_type,
     }
-    server["platform"] = platform
-    server["type"] = server_type
     if parent:
         server["parent"] = parent
-    else:
-        server.pop("parent", None)
-
-    # Remove empty networking fields
-    if "networking" in server:
-        networking = {k: v for k, v in server["networking"].items() if v}
-        if networking:
-            server["networking"] = networking
-        else:
-            server.pop("networking", None)
 
     # Build key
     key = name if name == region else f"{region}-{name}"

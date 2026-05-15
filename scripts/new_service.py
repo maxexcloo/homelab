@@ -18,43 +18,6 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SERVICE_SCHEMA = PROJECT_ROOT / "schemas" / "service.json"
 SERVICES_DIR = PROJECT_ROOT / "data" / "services"
-DEFAULTS_YAML = PROJECT_ROOT / "data" / "defaults.yml"
-
-
-def default_for(prop: dict):
-    """Return a sensible default for a single schema property."""
-    if "default" in prop:
-        return prop["default"]
-
-    prop_type = prop.get("type")
-    if isinstance(prop_type, list):
-        prop_type = [t for t in prop_type if t != "null"][0]
-
-    if prop_type == "boolean":
-        return False
-    if prop_type == "string":
-        return ""
-    if prop_type == "integer":
-        return 0
-    if prop_type == "array":
-        return []
-    if prop_type == "object" and "properties" in prop:
-        return {k: default_for(v) for k, v in prop["properties"].items()}
-    if "enum" in prop and prop["enum"]:
-        return prop["enum"][0]
-
-    return None
-
-
-def deep_merge(base: dict, overlay: dict) -> dict:
-    """Recursively merge overlay into base."""
-    result = dict(base)
-    for key, value in overlay.items():
-        if isinstance(value, dict) and key in result and isinstance(result[key], dict):
-            result[key] = deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
 
 
 def main() -> None:
@@ -67,31 +30,14 @@ def main() -> None:
 
     schema = json.loads(SERVICE_SCHEMA.read_text())
 
-    # Build base from schema defaults
-    service = {k: default_for(v) for k, v in schema["properties"].items()}
-
-    # Overlay defaults.yml service defaults
-    if DEFAULTS_YAML.exists():
-        defaults = yaml.safe_load(DEFAULTS_YAML.read_text())
-        if "services" in defaults:
-            service = deep_merge(service, defaults["services"])
-
-    # User overrides
-    service["identity"] = {
-        "name": name,
-        "service": name,
-        "title": title,
+    service = {
+        "identity": {
+            "name": name,
+            "service": name,
+            "title": title,
+        },
+        "targets": {target: {}},
     }
-    service["targets"] = {target: {}}
-
-    # Remove empty structures
-    for key in ["credentials", "dashboard", "data", "imports", "routing"]:
-        if key in service:
-            val = service[key]
-            if val == {} or val == []:
-                del service[key]
-            elif key == "routing" and val == {"labels": {}, "urls": []}:
-                del service[key]
 
     # Order keys as they appear in the schema
     ordered = {}
