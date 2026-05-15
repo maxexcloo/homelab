@@ -139,7 +139,7 @@ resource "github_repository_file" "truenas_deploy_request" {
 }
 
 module "encrypted_github_file_truenas" {
-  for_each = local._truenas_render_files
+  for_each = nonsensitive(local._truenas_render_files)
   source   = "./modules/github_file_encrypted"
 
   age_public_key = each.value.age_public_key

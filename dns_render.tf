@@ -21,6 +21,7 @@ locals {
         "${local.defaults.domains.external}-${server_key}-a" = {
           content = server.addresses.public_ipv4
           name    = server.hosts.external
+          proxied = false
           type    = "A"
           zone    = local.defaults.domains.external
         }
@@ -29,6 +30,7 @@ locals {
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
           content = server.addresses.public_ipv6
           name    = server.hosts.external
+          proxied = false
           type    = "AAAA"
           zone    = local.defaults.domains.external
         }
@@ -37,12 +39,14 @@ locals {
         "${local.defaults.domains.external}-${server_key}-a" = {
           content = data.oci_core_vnic.server[server_key].public_ip_address
           name    = server.hosts.external
+          proxied = false
           type    = "A"
           zone    = local.defaults.domains.external
         }
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
           content = data.oci_core_vnic.server[server_key].ipv6addresses[0]
           name    = server.hosts.external
+          proxied = false
           type    = "AAAA"
           zone    = local.defaults.domains.external
         }
@@ -51,6 +55,7 @@ locals {
         "${local.defaults.domains.external}-${server_key}-cname" = {
           content = server.hosts.public
           name    = server.hosts.external
+          proxied = false
           type    = "CNAME"
           zone    = local.defaults.domains.external
         }
@@ -64,6 +69,7 @@ locals {
         "${local.defaults.domains.internal}-${server_key}-a" = {
           content = local.servers[server_key].runtime.addresses.tailscale_ipv4
           name    = server.hosts.internal
+          proxied = false
           type    = "A"
           zone    = local.defaults.domains.internal
         }
@@ -72,6 +78,7 @@ locals {
         "${local.defaults.domains.internal}-${server_key}-aaaa" = {
           content = local.servers[server_key].runtime.addresses.tailscale_ipv6
           name    = server.hosts.internal
+          proxied = false
           type    = "AAAA"
           zone    = local.defaults.domains.internal
         }

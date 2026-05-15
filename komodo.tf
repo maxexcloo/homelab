@@ -102,7 +102,7 @@ resource "github_repository_file" "komodo_stacks" {
 }
 
 module "encrypted_github_file_komodo" {
-  for_each = local._komodo_render_files
+  for_each = nonsensitive(local._komodo_render_files)
   source   = "./modules/github_file_encrypted"
 
   age_public_key = each.value.age_public_key
