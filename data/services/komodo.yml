@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
   fields:
+    github_token: {}
     homepage_widget_key: {}
     homepage_widget_secret: {}
     db_password:

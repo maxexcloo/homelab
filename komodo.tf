@@ -36,7 +36,7 @@ locals {
 }
 
 resource "github_repository_file" "komodo_resource_sync" {
-  commit_message      = "Update Komodo ResourceSync configuration"
+  commit_message      = "Update Komodo resource sync configuration"
   file                = "resource_sync.toml"
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
@@ -44,9 +44,8 @@ resource "github_repository_file" "komodo_resource_sync" {
   content = templatefile(
     "${path.module}/templates/komodo/resource_sync.toml.tftpl",
     {
-      github_user = data.github_user.default.login
-      owner       = local.defaults.github.owner
-      repository  = local.defaults.github.repositories.komodo
+      owner      = local.defaults.github.owner
+      repository = local.defaults.github.repositories.komodo
     },
   )
 }
