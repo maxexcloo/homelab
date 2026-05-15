@@ -68,9 +68,9 @@ locals {
 # Shared age key for the Fly deployment repository; per-service files are
 # separated by directory rather than by recipient key.
 resource "github_actions_secret" "fly_age_key" {
-  plaintext_value = age_secret_key.fly.secret_key
-  repository      = local.defaults.github.repositories.fly
-  secret_name     = "AGE_KEY"
+  repository  = local.defaults.github.repositories.fly
+  secret_name = "AGE_KEY"
+  value       = age_secret_key.fly.secret_key
 }
 
 resource "github_repository_file" "fly_deploy_request" {

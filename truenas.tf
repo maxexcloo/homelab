@@ -185,9 +185,9 @@ locals {
 resource "github_actions_secret" "truenas_age_key" {
   for_each = local.truenas_input_servers
 
-  plaintext_value = age_secret_key.server[each.key].secret_key
-  repository      = local.defaults.github.repositories.truenas
-  secret_name     = "AGE_KEY_${upper(replace(each.key, "-", "_"))}"
+  repository  = local.defaults.github.repositories.truenas
+  secret_name = "AGE_KEY_${upper(replace(each.key, "-", "_"))}"
+  value       = age_secret_key.server[each.key].secret_key
 }
 
 resource "github_repository_file" "truenas_deploy_request" {
