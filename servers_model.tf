@@ -24,20 +24,16 @@ locals {
           cloudflare_tunnel_read_token = local.defaults.credentials.ro
           cloudflare_tunnel_token      = local.defaults.credentials.ro
         } : {},
-        server.features.password ? merge(
-          {
-            password = merge(
-              local.defaults.credentials.rw,
-              {
-                purpose = "PASSWORD"
-                type    = null
-              }
-            )
-          },
-          {
-            password_hash = local.defaults.credentials.ro
-          },
-        ) : {},
+        server.features.password ? {
+          password_hash = local.defaults.credentials.ro
+          password = merge(
+            local.defaults.credentials.rw,
+            {
+              purpose = "PASSWORD"
+              type    = null
+            }
+          )
+        } : {},
         server.features.pushover ? {
           pushover_application_token = local.defaults.credentials.rw
           pushover_user_key          = local.defaults.credentials.rw

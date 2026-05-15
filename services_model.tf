@@ -13,20 +13,16 @@ locals {
         service.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
         } : {},
-        service.features.password ? merge(
-          {
-            password = merge(
-              local.defaults.credentials.rw,
-              {
-                purpose = "PASSWORD"
-                type    = null
-              }
-            )
-          },
-          {
-            password_hash = local.defaults.credentials.ro
-          },
-        ) : {},
+        service.features.password ? {
+          password_hash = local.defaults.credentials.ro
+          password = merge(
+            local.defaults.credentials.rw,
+            {
+              purpose = "PASSWORD"
+              type    = null
+            }
+          )
+        } : {},
         service.features.pushover ? {
           pushover_application_token = local.defaults.credentials.rw
           pushover_user_key          = local.defaults.credentials.rw
