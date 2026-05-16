@@ -16,7 +16,7 @@ terraform {
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5.0"
+      version = "~> 5.19"
     }
     deepmerge = {
       source  = "isometry/deepmerge"
@@ -24,23 +24,23 @@ terraform {
     }
     github = {
       source  = "integrations/github"
-      version = "~> 6.0"
+      version = "~> 6.12"
     }
     http = {
       source  = "hashicorp/http"
-      version = "~> 3.0"
+      version = "~> 3.6"
     }
     incus = {
       source  = "lxc/incus"
-      version = "~> 1.0"
+      version = "~> 1.1"
     }
     oci = {
       source  = "oracle/oci"
-      version = "~> 8.0"
+      version = "~> 8.14"
     }
     random = {
       source  = "hashicorp/random"
-      version = "~> 3.0"
+      version = "~> 3.9"
     }
     restapi = {
       source  = "mastercard/restapi"
@@ -48,11 +48,11 @@ terraform {
     }
     shell = {
       source  = "linyinfeng/shell"
-      version = "~> 1.0"
+      version = "~> 1.7"
     }
     tailscale = {
       source  = "tailscale/tailscale"
-      version = "~> 0.28"
+      version = "~> 0.29"
     }
     unifi = {
       source  = "ubiquiti-community/unifi"
