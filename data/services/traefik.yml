@@ -17,6 +17,8 @@ routing:
   labels:
     traefik.http.middlewares.autocompress.compress: "true"
     traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}
+    traefik.http.middlewares.redirect-to-https.redirectscheme.permanent: "true"
+    traefik.http.middlewares.redirect-to-https.redirectscheme.scheme: https
     traefik.http.routers.traefik.service: api@internal
 targets:
   au-hsp: {}

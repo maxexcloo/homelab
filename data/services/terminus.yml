@@ -28,7 +28,10 @@ identity:
   username: max@excloo.com
 routing:
   container: web
+  expose: cloudflare
   port: 30230
   scheme: http
+  urls:
+    - terminus.excloo.com
 targets:
   au-truenas: {}

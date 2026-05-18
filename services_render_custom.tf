@@ -130,15 +130,19 @@ locals {
       for label_key, label_value in merge(
         service.routing.port != null ? {
           "traefik.enable"                                                            = "true"
-          "traefik.http.routers.${service.identity.name}.middlewares"                 = service.routing.expose == "internal" ? "internal-only@docker" : null
+          "traefik.http.routers.${service.identity.name}.entrypoints"                 = service.routing.expose == "cloudflare" || (service.routing.expose != null && startswith(service.routing.expose, "proxy-")) ? "web,websecure,webinternal" : "web,websecure"
           "traefik.http.routers.${service.identity.name}.tls.certresolver"            = service.routing.ssl && service.routing.expose != "cloudflare" && (service.routing.expose == null || !startswith(service.routing.expose, "proxy-")) ? "cloudflare" : null
           "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(coalesce(service.routing.backend_port, service.routing.port))
           "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.scheme == "https" ? "https" : null
 
-          "traefik.http.routers.${service.identity.name}.entrypoints" = (
-            service.routing.expose == "cloudflare" || (service.routing.expose != null && startswith(service.routing.expose, "proxy-"))
-            ? (service.routing.ssl ? "websecure,webinternal" : "web,webinternal")
-            : service.routing.ssl ? "websecure" : "web"
+          "traefik.http.routers.${service.identity.name}.middlewares" = (
+            service.routing.expose == "internal" && service.routing.ssl
+            ? "internal-only@docker,redirect-to-https@docker"
+            : service.routing.expose == "internal"
+            ? "internal-only@docker"
+            : service.routing.ssl
+            ? "redirect-to-https@docker"
+            : null
           )
 
           "traefik.http.routers.${service.identity.name}.rule" = join(" || ", [

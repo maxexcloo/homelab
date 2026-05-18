@@ -7,8 +7,6 @@ services:
       - --certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json
       - --entrypoints.traefik.address=:8082
       - --entrypoints.web.address=:80
-      - --entrypoints.web.http.redirections.entryPoint.scheme=https
-      - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.webinternal.address=:8000
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.middlewares=autocompress@docker
