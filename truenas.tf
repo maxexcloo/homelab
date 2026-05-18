@@ -44,7 +44,7 @@ locals {
           ),
         )
       }
-      if lookup(local.services_render_files_compose, service_key, null) != null
+      if fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
     },
     {
       # 2) TrueNAS catalog apps — only when no custom compose file exists
@@ -75,7 +75,7 @@ locals {
           ),
         )
       }
-      if lookup(local.services_render_files_compose, service_key, null) == null &&
+      if !fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
       lookup(local.truenas_prepare_catalog_templates, service_key, null) != null
     },
     {

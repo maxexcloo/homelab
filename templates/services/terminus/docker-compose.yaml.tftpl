@@ -1,0 +1,88 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: ${service.identity.service}
+      POSTGRES_PASSWORD: ${service.runtime.credentials.postgres_password}
+      POSTGRES_USER: ${service.identity.service}
+    healthcheck:
+      interval: 10s
+      retries: 3
+      test:
+        - CMD-SHELL
+        - pg_isready --dbname ${service.identity.service} --port 5432 --username ${service.identity.service}
+      timeout: 5s
+    image: postgres:18-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres:/var/lib/postgresql
+  valkey:
+    command: >-
+      valkey-server --maxmemory 512mb --maxmemory-policy noeviction --requirepass ${service.runtime.credentials.valkey_password}
+    healthcheck:
+      interval: 10s
+      retries: 3
+      start_period: 2s
+      test:
+        - CMD-SHELL
+        - valkey-cli ping || exit 1
+      timeout: 5s
+    image: valkey/valkey:9-alpine
+    restart: unless-stopped
+    volumes:
+      - valkey:/data
+  web:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    environment:
+      API_URI: ${service.urls.default.href}
+      APP_SECRET: ${service.runtime.credentials.app_secret}
+      APP_SETUP: "true"
+      DATABASE_URL: "postgres://${service.identity.service}:${service.runtime.credentials.postgres_password}@postgres:5432/${service.identity.service}"
+      HANAMI_PORT: ${service.routing.port}
+      KEYVALUE_URL: "redis://:${service.runtime.credentials.valkey_password}@valkey:6379/0"
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 45s
+      test:
+        - CMD-SHELL
+        - curl --fail --silent http://localhost:${service.routing.port}/up
+      timeout: 10s
+    image: ghcr.io/usetrmnl/terminus:latest
+    init: true
+    restart: unless-stopped
+    volumes:
+      - data:/app/public/uploads
+  worker:
+    command: bundle exec sidekiq -r ./config/sidekiq.rb
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      API_URI: ${service.urls.default.href}
+      APP_SECRET: ${service.runtime.credentials.app_secret}
+      DATABASE_URL: "postgres://${service.identity.service}:${service.runtime.credentials.postgres_password}@postgres:5432/${service.identity.service}"
+      HANAMI_PORT: ${service.routing.port}
+      KEYVALUE_URL: "redis://:${service.runtime.credentials.valkey_password}@valkey:6379/0"
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 45s
+      test:
+        - CMD
+        - pgrep
+        - -f
+        - sidekiq
+      timeout: 10s
+    image: ghcr.io/usetrmnl/terminus:latest
+    init: true
+    restart: unless-stopped
+    volumes:
+      - data:/app/public/uploads
+volumes:
+  data: {}
+  postgres: {}
+  valkey: {}

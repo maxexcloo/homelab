@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    app_secret:
+      bootstrap_length: 64
+      bootstrap_type: alphanumeric
+    postgres_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    valkey_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: sh-trmnl
+    siteMonitor: ${service.urls.default.href}
+features:
+  password: true
+identity:
+  description: TRMNL Device Manager
+  group: Applications
+  name: terminus
+  service: terminus
+  title: Terminus
+  username: max@excloo.com
+routing:
+  container: web
+  port: 30230
+  scheme: http
+targets:
+  au-truenas: {}
