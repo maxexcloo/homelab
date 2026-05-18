@@ -82,6 +82,8 @@ resource "github_repository_file" "fly_deploy_request" {
   content = jsonencode({
     deployments = {
       for service_key, service in local.fly_input_services : service.fly.app_name => sha256(jsonencode({
+        workflow_files = local.github_workflow_file_hashes.fly
+
         files = {
           for file_key, file_config in local.fly_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
           if startswith(local.fly_render_files[file_key].file, "${service.fly.app_name}/")
@@ -94,8 +96,6 @@ resource "github_repository_file" "fly_deploy_request" {
             }
           ]
         }))
-
-        workflow_files = local.github_workflow_file_hashes.fly
       }))
     }
   })

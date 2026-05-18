@@ -112,6 +112,8 @@ resource "github_repository_file" "truenas_deploy_request" {
   content = jsonencode({
     deployments = {
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => sha256(jsonencode({
+        workflow_files = local.github_workflow_file_hashes.truenas
+
         files = {
           for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
           if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
@@ -125,8 +127,6 @@ resource "github_repository_file" "truenas_deploy_request" {
             }
           ]
         }))
-
-        workflow_files = local.github_workflow_file_hashes.truenas
       }))
     }
   })

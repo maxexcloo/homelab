@@ -21,6 +21,13 @@ locals {
         {
           target = target_key
 
+          credentials = {
+            fields = provider::deepmerge::mergo(
+              service.credentials.fields,
+              lookup(lookup(target_config, "credentials", {}), "fields", {}),
+            )
+          }
+
           # can(keys()) detects whether a value is a mergeable object; scalars,
           # arrays, and null replace the service-level value rather than merging.
           data = (
@@ -33,13 +40,6 @@ locals {
             service.features,
             lookup(target_config, "features", {}),
           )
-
-          credentials = {
-            fields = provider::deepmerge::mergo(
-              service.credentials.fields,
-              lookup(lookup(target_config, "credentials", {}), "fields", {}),
-            )
-          }
 
           fly = provider::deepmerge::mergo(
             local.defaults.targets.fly,

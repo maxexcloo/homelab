@@ -11,9 +11,17 @@
       "type": "object",
       "allOf": [
         {
-          "if": { "required": ["bootstrap_type"] },
-          "then": { "required": ["bootstrap_length"] },
-          "else": { "not": { "required": ["bootstrap_length"] } }
+          "if": {
+            "required": ["bootstrap_type"]
+          },
+          "then": {
+            "required": ["bootstrap_length"]
+          },
+          "else": {
+            "not": {
+              "required": ["bootstrap_length"]
+            }
+          }
         }
       ],
       "properties": {
@@ -46,20 +54,37 @@
       "description": "Homepage server card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
       "properties": {},
       "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/json_data" }
+      "additionalProperties": {
+        "$ref": "#/definitions/json_data"
+      }
     },
     "json_data": {
       "description": "Arbitrary JSON-compatible value.",
       "anyOf": [
-        { "type": "boolean" },
-        { "type": "number" },
-        { "type": "string" },
-        { "type": "array", "items": { "$ref": "#/definitions/json_data" } },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/json_data"
+          }
+        },
         {
           "type": "object",
-          "additionalProperties": { "$ref": "#/definitions/json_data" }
+          "additionalProperties": {
+            "$ref": "#/definitions/json_data"
+          }
         },
-        { "type": "null" }
+        {
+          "type": "null"
+        }
       ]
     }
   },
@@ -84,12 +109,16 @@
     "dashboard": {
       "description": "Homepage dashboard cards for this server. Null or omitted uses the auto-generated server card; [] renders no cards. Card objects are passed through to Homepage after template interpolation.",
       "type": ["array", "null"],
-      "items": { "$ref": "#/definitions/dashboard" }
+      "items": {
+        "$ref": "#/definitions/dashboard"
+      }
     },
     "data": {
       "description": "Arbitrary JSON-compatible data exposed to templates as server.data.",
       "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/json_data" }
+      "additionalProperties": {
+        "$ref": "#/definitions/json_data"
+      }
     },
     "features": {
       "additionalProperties": false,

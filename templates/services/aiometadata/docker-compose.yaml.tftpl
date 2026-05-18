@@ -3,12 +3,12 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    image: ghcr.io/cedya77/aiometadata:latest
     environment:
       ADMIN_KEY: ${service.runtime.credentials.password}
       DATABASE_URI: sqlite://addon/data/db.sqlite
       HOST_NAME: ${service.urls.default.host}
       REDIS_URL: redis://redis:6379
+    image: ghcr.io/cedya77/aiometadata:latest
     restart: unless-stopped
     volumes:
       - data:/app/addon/data

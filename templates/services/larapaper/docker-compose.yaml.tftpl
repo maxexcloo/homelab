@@ -2,10 +2,12 @@ services:
   larapaper:
     environment:
       APP_KEY: base64:${service.runtime.credentials.app_key}
+      APP_TIMEZONE: ${defaults.system.timezone}
       APP_URL: ${service.urls.default.href}
       DB_DATABASE: database/storage/database.sqlite
+      FORCE_HTTPS: "1"
       PHP_OPCACHE_ENABLE: "1"
-      TRMNL_PROXY_REFRESH_MINUTES: "15"
+      REGISTRATION_ENABLED: "0"
     healthcheck:
       interval: 30s
       retries: 3

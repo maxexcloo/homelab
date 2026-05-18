@@ -1,11 +1,11 @@
 services:
   beszel-agent:
-    image: henrygd/beszel-agent:latest
     environment:
       HUB_URL: ${services.beszel.urls.default.href}
       KEY: ${service.data.public_key}
       LISTEN: ${service.data.listen}
       TOKEN: ${service.runtime.credentials.token}
+    image: henrygd/beszel-agent:latest
     network_mode: host
     restart: unless-stopped
     volumes:

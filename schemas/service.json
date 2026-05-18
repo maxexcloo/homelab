@@ -352,7 +352,7 @@
           "description": "Access level for this service. 'internal' (default): accessible on the internal network and via Tailscale (internal-only middleware, covers LAN and Tailscale IP ranges). 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. 'external': publicly accessible via direct DNS. 'proxy-{server-key}': publicly accessible via the named server's Traefik, which proxies to this service's host over Tailscale. Null uses no middleware and creates no DNS records.",
           "anyOf": [
             { "enum": ["cloudflare", "external", "internal", null] },
-            { "pattern": "^proxy-[a-z][a-z0-9-]+$", "type": "string" }
+            { "type": "string", "pattern": "^proxy-[a-z][a-z0-9-]+$" }
           ]
         },
         "host_port": {

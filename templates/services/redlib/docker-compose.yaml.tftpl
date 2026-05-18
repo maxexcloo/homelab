@@ -5,8 +5,6 @@ services:
     image: controldns/ctrld:latest
     restart: unless-stopped
   redlib:
-    healthcheck:
-      disable: true
     environment:
       REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: ${service.data.settings.default_remove_default_feeds}
       REDLIB_DEFAULT_SHOW_NSFW: ${service.data.settings.default_show_nsfw}
@@ -14,6 +12,8 @@ services:
       REDLIB_DEFAULT_USE_HLS: ${service.data.settings.default_use_hls}
       REDLIB_FULL_URL: ${service.urls.default.href}
       REDLIB_ROBOTS_DISABLE_INDEXING: ${service.data.settings.robots_disable_indexing}
+    healthcheck:
+      disable: true
     image: ghcr.io/silvenga/redlib:latest
     network_mode: service:ctrld
     restart: unless-stopped

@@ -1,27 +1,5 @@
 # Stage: render — templates, routing labels, and deploy file content.
 locals {
-  # First-pass context for templatestring() calls on service.data and service.dashboard.
-  # Uses _services_render_services_safe (runtime stripped) to avoid circular
-  # dependencies — services reference each other during rendering, so each service's
-  # context must use the pre-render values of adjacent services.
-  _services_render_context_base = {
-    for service_key, service in local.services : service_key => {
-      defaults = local.defaults
-      server   = try(local.servers_render_runtime[service.target], null)
-      servers  = local.servers_render_runtime
-      service  = service
-
-      services = merge(
-        local._services_render_services_safe,
-        {
-          for alias, real_key in local.services_model_imports[service_key] :
-          alias => local.services[real_key]
-          if lookup(local.services, real_key, null) != null
-        },
-      )
-    }
-  }
-
   # Sidecar file inventory discovered from templates/services/**/. Platform-specific
   # entry points (app.json.tftpl, docker-compose.yaml.tftpl) are handled by their
   # respective platform deployers and excluded here.
@@ -71,12 +49,34 @@ locals {
     }
   }
 
-  # Services with runtime stripped. Used in _services_render_context_base so that
+  # Services with runtime stripped. Used in services_render_context_base so that
   # cross-service references in templatestring() calls cannot access other services'
   # credentials.
   _services_render_services_safe = {
     for service_key, service in local.services : service_key => {
       for field_name, field_value in service : field_name => field_value if field_name != "runtime"
+    }
+  }
+
+  # First-pass context for templatestring() calls on service.data and service.dashboard.
+  # Uses _services_render_services_safe (runtime stripped) to avoid circular
+  # dependencies — services reference each other during rendering, so each service's
+  # context must use the pre-render values of adjacent services.
+  services_render_context_base = {
+    for service_key, service in local.services : service_key => {
+      defaults = local.defaults
+      server   = try(local.servers_render_runtime[service.target], null)
+      servers  = local.servers_render_runtime
+      service  = service
+
+      services = merge(
+        local._services_render_services_safe,
+        {
+          for alias, real_key in local.services_model_imports[service_key] :
+          alias => local.services[real_key]
+          if lookup(local.services, real_key, null) != null
+        },
+      )
     }
   }
 
@@ -148,7 +148,7 @@ locals {
             data      = service.data
             truenas   = service.truenas
           }),
-          local._services_render_context_base[service_key],
+          local.services_render_context_base[service_key],
         ),
       ),
       {
@@ -162,7 +162,7 @@ locals {
   # values while still being protected from adjacent services' credentials.
   services_render_template_context = {
     for service_key, service in local.services : service_key => merge(
-      local._services_render_context_base[service_key],
+      local.services_render_context_base[service_key],
       {
         custom  = lookup(local.services_render_custom_context, service_key, {})
         service = local.services_render_services[service_key]
