@@ -355,8 +355,14 @@
             { "pattern": "^proxy-[a-z][a-z0-9-]+$", "type": "string" }
           ]
         },
+        "host_port": {
+          "description": "Override for the TrueNAS catalog published port. Null uses routing.backend_port. Only set when the host-published port must differ from the container listening port.",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": ["integer", "null"]
+        },
         "https": {
-          "description": "Whether the public URL uses https://. Controls URL hrefs in 1Password, health checks, and monitoring. Also gates certresolver and HSTS redirect for non-Cloudflare services. Defaults to true.",
+          "description": "Whether the public URL uses https://. Controls URL hrefs in 1Password, health checks, and monitoring. Also gates certresolver and redirect-to-https middleware for internal and external services. Defaults to true.",
           "type": "boolean"
         },
         "https_verify": {
@@ -379,12 +385,6 @@
               }
             ]
           }
-        },
-        "host_port": {
-          "description": "Override for the TrueNAS catalog published port. Null uses routing.backend_port. Only set when the host-published port must differ from the container listening port.",
-          "maximum": 65535,
-          "minimum": 1,
-          "type": ["integer", "null"]
         },
         "urls": {
           "description": "Custom public hostnames for this service (e.g. 'status.example.com'). DNS records (CNAME, wildcard, ACME delegation) are automatically created for any hostname that ends with a managed zone.",
