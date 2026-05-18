@@ -111,7 +111,7 @@ locals {
         proxy_routes = {
           for svc in values(local.services_render_services) :
           svc.identity.name => {
-            backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8080"
+            backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8000"
             host        = svc.urls.default.host
           }
           if svc.routing.expose != null &&

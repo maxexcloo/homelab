@@ -9,7 +9,7 @@ services:
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
-      - --entrypoints.webinternal.address=:8080
+      - --entrypoints.webinternal.address=:8000
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.middlewares=autocompress@docker
       - --entrypoints.websecure.http.tls.certResolver=cloudflare

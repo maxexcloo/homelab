@@ -34,7 +34,7 @@ locals {
             [for url in service.routing.urls : url if lookup(local.dns_render_managed_zones_by_url, url, null) != null]
             )) : {
             hostname = hostname
-            service  = "http://localhost:8080"
+            service  = "http://localhost:8000"
           }
         ]
         if service.target == server_key && service.routing.expose == "cloudflare"
