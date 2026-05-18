@@ -3,7 +3,7 @@ locals {
   # the tunnel up; the long-running cloudflared service on TrueNAS hosts comes
   # from services/cloudflared instead. Same tunnel token, different lifecycle.
   cloud_config = {
-    for server_key, server in local.servers_runtime_rendered : server_key => templatefile(
+    for server_key, server in local.servers_render_runtime : server_key => templatefile(
       "${path.module}/templates/cloud_config/cloud_config.yaml.tftpl",
       {
         defaults = local.defaults

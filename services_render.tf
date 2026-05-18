@@ -1,5 +1,27 @@
 # Stage: render — templates, routing labels, and deploy file content.
 locals {
+  # First-pass context for templatestring() calls on service.data and service.dashboard.
+  # Uses _services_render_services_safe (runtime stripped) to avoid circular
+  # dependencies — services reference each other during rendering, so each service's
+  # context must use the pre-render values of adjacent services.
+  _services_render_context_base = {
+    for service_key, service in local.services : service_key => {
+      defaults = local.defaults
+      server   = try(local.servers_render_runtime[service.target], null)
+      servers  = local.servers_render_runtime
+      service  = service
+
+      services = merge(
+        local._services_render_services_safe,
+        {
+          for alias, real_key in local.services_model_imports[service_key] :
+          alias => local.services[real_key]
+          if lookup(local.services, real_key, null) != null
+        },
+      )
+    }
+  }
+
   # Sidecar file inventory discovered from templates/services/**/. Platform-specific
   # entry points (app.json.tftpl, docker-compose.yaml.tftpl) are handled by their
   # respective platform deployers and excluded here.
@@ -41,15 +63,6 @@ locals {
     )
   }
 
-  # Services with runtime stripped. Used in _services_render_context_base so that
-  # cross-service references in templatestring() calls cannot access other services'
-  # credentials.
-  _services_render_services_safe = {
-    for service_key, service in local.services : service_key => {
-      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
-    }
-  }
-
   # Rendered services with runtime stripped. Used in services_render_template_context
   # for the same reason — file templates see adjacent services without their credentials.
   _services_render_rendered_services_safe = {
@@ -58,41 +71,12 @@ locals {
     }
   }
 
-  # Traefik routing labels derived from each service's routing configuration.
-  _services_render_routing_labels = {
+  # Services with runtime stripped. Used in _services_render_context_base so that
+  # cross-service references in templatestring() calls cannot access other services'
+  # credentials.
+  _services_render_services_safe = {
     for service_key, service in local.services : service_key => {
-      for label_key, label_value in merge(
-        service.routing.port != null ? {
-          # Explicit resolver avoids first-hit TLS failures.
-          "traefik.enable"                                                            = "true"
-          "traefik.http.routers.${service.identity.name}.entrypoints"                 = service.routing.ssl ? "websecure" : "web"
-          "traefik.http.routers.${service.identity.name}.middlewares"                 = service.routing.expose == "internal" ? "internal-only@docker" : null
-          "traefik.http.routers.${service.identity.name}.tls.certresolver"            = service.routing.ssl && service.routing.expose != "cloudflare" ? "cloudflare" : null
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(coalesce(service.routing.backend_port, service.routing.port))
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.scheme == "https" ? "https" : null
-
-          "traefik.http.routers.${service.identity.name}.rule" = join(" || ", [
-            for host in distinct([
-              for url_key, url in service.urls : url.host
-              if url_key != "default" && url.host != null && url.host != ""
-            ]) : "Host(`${host}`)"
-          ])
-        } : {},
-        # Only managed DNS zones can resolve ACME DNS-01 challenges.
-        service.routing.port != null && service.routing.ssl && service.routing.expose != "cloudflare" ? {
-          for url_index, url in [
-            for url in service.routing.urls : url
-            if lookup(local.dns_render_managed_zones_by_url, url, null) != null
-          ] :
-          "traefik.http.routers.${service.identity.name}.tls.domains[${url_index}].main" => url
-        } : {},
-        {
-          for label_key, label_value in service.routing.labels :
-          label_key => try(templatestring(tostring(label_value), local._services_render_context_base[service_key]), null)
-          if label_value != null
-        }
-      ) : label_key => label_value
-      if label_value != null
+      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
     }
   }
 
@@ -151,28 +135,6 @@ locals {
     )
   }
 
-  # First-pass context for templatestring() calls on service.data and service.dashboard.
-  # Uses _services_render_services_safe (runtime stripped) to avoid circular
-  # dependencies — services reference each other during rendering, so each service's
-  # context must use the pre-render values of adjacent services.
-  _services_render_context_base = {
-    for service_key, service in local.services : service_key => {
-      defaults = local.defaults
-      server   = try(local.servers_runtime_rendered[service.target], null)
-      servers  = local.servers_runtime_rendered
-      service  = service
-
-      services = merge(
-        local._services_render_services_safe,
-        {
-          for alias, real_key in local.services_model_imports[service_key] :
-          alias => local.services[real_key]
-          if lookup(local.services, real_key, null) != null
-        },
-      )
-    }
-  }
-
   # Services with data/dashboard/truenas fields rendered via templatestring() and
   # routing_labels injected. Used as the service value in services_render_template_context
   # and as the service inventory in services_render_custom.tf.
@@ -190,7 +152,7 @@ locals {
         ),
       ),
       {
-        routing_labels = local._services_render_routing_labels[service_key]
+        routing_labels = local.services_render_custom_labels[service_key]
       },
     )
   }

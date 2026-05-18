@@ -29,8 +29,8 @@
         },
         "mode": {
           "description": "Whether 1Password may be the source of truth for this field. rw fields create placeholders; ro fields are written from provider-generated values.",
-          "enum": ["ro", "rw"],
-          "type": "string"
+          "enum": ["ro", "rw", null],
+          "type": ["string", "null"]
         },
         "purpose": {
           "description": "Optional 1Password field purpose.",

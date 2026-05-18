@@ -1,21 +1,46 @@
 locals {
-  # Manual records may declare `id`; otherwise derive a stable key from fields.
-  _dns_render_records_manual_input = flatten([
-    for zone, records in local.dns_input : [
-      for record in records : {
-        record = record
-        zone   = zone
 
-        key = try(record.id, join("-", compact([
-          record.type,
-          replace(record.name, "@", "apex"),
-          tostring(try(record.priority, "")),
-        ])))
+  # Longest matching zone wins for nested domains.
+  _dns_render_zones_matching = {
+    for url in distinct(flatten([
+      for service_key, service in local.services_input_targets : service.routing.urls
+      ])) : url => [
+      for zone in keys(local.dns_input) : {
+        length = length(zone)
+        name   = zone
       }
+      if url == zone || endswith(url, ".${zone}")
     ]
-  ])
+  }
 
-  _dns_render_records_servers_external = merge([
+  dns_render_managed_zones_by_url = {
+    for url, matches in local._dns_render_zones_matching : url => try(
+      [for match in matches : match.name if match.length == max(matches[*].length...)][0],
+      null
+    )
+  }
+
+  # Manual records are keyed independently from YAML list order.
+  dns_render_records_manual = {
+    for entry in flatten([
+      for zone, records in local.dns_input : [
+        for record in records : {
+          key    = try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))
+          record = record
+          zone   = zone
+        }
+      ]
+      ]) : "${entry.zone}-manual-${entry.key}" => merge(
+      local.defaults.dns,
+      entry.record,
+      {
+        name = entry.record.name == "@" ? entry.zone : "${entry.record.name}.${entry.zone}"
+        zone = entry.zone
+      },
+    )
+  }
+
+  dns_render_records_servers = merge([
     for server_key, server in local.servers_model : merge(
       server.addresses.public_ipv4 != null && server.platform != "oci" ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
@@ -60,11 +85,6 @@ locals {
           zone    = local.defaults.domains.external
         }
       } : {},
-    )
-  ]...)
-
-  _dns_render_records_servers_internal = merge([
-    for server_key, server in local.servers_model : merge(
       local.servers[server_key].runtime.addresses.tailscale_ipv4 != null ? {
         "${local.defaults.domains.internal}-${server_key}-a" = {
           content = local.servers[server_key].runtime.addresses.tailscale_ipv4
@@ -86,43 +106,30 @@ locals {
     )
   ]...)
 
-  # Longest matching zone wins for nested domains.
-  _dns_render_zones_matching = {
-    for url in distinct(flatten([
-      for service_key, service in local.services_input_targets : service.routing.urls
-      ])) : url => [
-      for zone in keys(local.dns_input) : {
-        length = length(zone)
-        name   = zone
+  # Custom service URLs resolve to the tunnel when Cloudflare-exposed.
+  dns_render_records_services = merge(flatten([
+    for service_key, service in local.services_model : [
+      for url_index, url in service.routing.urls : {
+        "${service_key}-url-${url_index}" = {
+          name    = url
+          proxied = service.routing.expose == "cloudflare"
+          type    = "CNAME"
+          zone    = local.dns_render_managed_zones_by_url[url]
+
+          content = (
+            local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
+            service.routing.expose == "cloudflare"
+            ? "${local.servers[service.target].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
+            : local.services_model_proxy_server[service_key] != null
+            ? local.servers_model[local.services_model_proxy_server[service_key]].hosts.external
+            : try(coalesce(try(service.urls.external.host, null), try(service.urls.internal.host, null)), null)
+          )
+        }
       }
-      if url == zone || endswith(url, ".${zone}")
+      if local.dns_render_managed_zones_by_url[url] != null
     ]
-  }
-
-  dns_render_managed_zones_by_url = {
-    for url, matches in local._dns_render_zones_matching : url => try(
-      [for match in matches : match.name if match.length == max(matches[*].length...)][0],
-      null
-    )
-  }
-
-  # Manual records are keyed independently from YAML list order.
-  dns_render_records_manual = {
-    for entry in local._dns_render_records_manual_input :
-    "${entry.zone}-manual-${entry.key}" => merge(
-      local.defaults.dns,
-      entry.record,
-      {
-        name = entry.record.name == "@" ? entry.zone : "${entry.record.name}.${entry.zone}"
-        zone = entry.zone
-      },
-    )
-  }
-
-  dns_render_records_servers = merge(
-    local._dns_render_records_servers_external,
-    local._dns_render_records_servers_internal,
-  )
+    if lookup(local.servers_model, service.target, null) != null
+  ])...)
 
   # Fly's fly.dev hostnames are served directly by Fly; only custom URLs need DNS.
   dns_render_records_services_fly = merge(flatten([
@@ -139,29 +146,6 @@ locals {
       if local.dns_render_managed_zones_by_url[url] != null
     ]
     if service.target == "fly"
-  ])...)
-
-  # Custom service URLs resolve to the tunnel when Cloudflare-exposed.
-  dns_render_records_services = merge(flatten([
-    for service_key, service in local.services_model : [
-      for url_index, url in service.routing.urls : {
-        "${service_key}-url-${url_index}" = {
-          name    = url
-          proxied = service.routing.expose == "cloudflare"
-          type    = "CNAME"
-          zone    = local.dns_render_managed_zones_by_url[url]
-
-          content = (
-            local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
-            && service.routing.expose == "cloudflare"
-            ? "${local.servers[service.target].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
-            : coalesce(try(service.urls.external.host, null), try(service.urls.internal.host, null))
-          )
-        }
-      }
-      if local.dns_render_managed_zones_by_url[url] != null
-    ]
-    if lookup(local.servers_model, service.target, null) != null
   ])...)
 
   # Delegate DNS-01 challenges to the ACME zone. Fly handles its own certs.

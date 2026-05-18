@@ -40,14 +40,23 @@ locals {
   # Computed internal/external hostnames used to build _services_model_urls.
   _services_model_hosts = {
     for service_key, service in local.services_input_targets : service_key => {
-      internal = lookup(local.servers_input, service.target, null) != null && service.routing.scheme != null ? "${service.identity.name}.${local.servers_model[service.target].hosts.internal}" : null
-
       # Only externally exposed services get generated external hostnames.
       external = (
         service.target == "fly"
         ? "${coalesce(service.fly.app_name, "${local.defaults.organization.name}-${service.identity.name}")}.fly.dev"
-        : lookup(local.servers_input, service.target, null) != null && contains(["cloudflare", "external"], service.routing.expose)
+        : lookup(local.servers_model, service.target, null) != null &&
+        contains(["cloudflare", "external"], service.routing.expose)
         ? "${service.identity.name}.${local.servers_model[service.target].hosts.external}"
+        : local.services_model_proxy_server[service_key] != null &&
+        lookup(local.servers_model, local.services_model_proxy_server[service_key], null) != null
+        ? "${service.identity.name}.${local.servers_model[local.services_model_proxy_server[service_key]].hosts.external}"
+        : null
+      )
+
+      internal = (
+        lookup(local.servers_model, service.target, null) != null &&
+        service.routing.scheme != null
+        ? "${service.identity.name}.${local.servers_model[service.target].hosts.internal}"
         : null
       )
     }
@@ -126,6 +135,13 @@ locals {
       ],
       [null],
     )[0]
+  }
+
+  # Maps each service to the proxy server key used for expose: proxy-{key}.
+  services_model_proxy_server = {
+    for service_key, service in local.services_input_targets : service_key =>
+    service.routing.expose != null && startswith(service.routing.expose, "proxy-") ? trimprefix(service.routing.expose, "proxy-")
+    : null
   }
 
   services_model = {

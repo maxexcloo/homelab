@@ -9,6 +9,7 @@ services:
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.webinternal.address=:8080
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.middlewares=autocompress@docker
       - --entrypoints.websecure.http.tls.certResolver=cloudflare
@@ -23,6 +24,15 @@ services:
     environment:
       CF_DNS_API_TOKEN: ${server.runtime.credentials.cloudflare_acme_token}
     image: traefik:v3.6.15
+%{~ if length(custom.proxy_routes) > 0 }
+    labels:
+%{~ for name, route in custom.proxy_routes }
+      traefik.http.routers.${name}.entryPoints: websecure
+      traefik.http.routers.${name}.rule: "Host(`${route.host}`)"
+      traefik.http.routers.${name}.service: ${name}
+      traefik.http.services.${name}.loadbalancer.server.url: "${route.backend_url}"
+%{~ endfor ~}
+%{~ endif }
     network_mode: host
     restart: unless-stopped
     volumes:

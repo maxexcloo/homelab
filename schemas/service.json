@@ -37,8 +37,8 @@
         },
         "mode": {
           "description": "Whether 1Password may be the source of truth for this field. rw fields create placeholders; ro fields are written from provider-generated values.",
-          "enum": ["ro", "rw"],
-          "type": "string"
+          "enum": ["ro", "rw", null],
+          "type": ["string", "null"]
         },
         "purpose": {
           "description": "Optional 1Password field purpose.",
@@ -62,24 +62,31 @@
       "type": "object",
       "properties": {
         "b2": {
+          "description": "Per-target override. Provision a Backblaze B2 bucket and application key for this service. Exposes runtime.attributes.b2_application_key_id, runtime.attributes.b2_bucket_name, runtime.attributes.b2_endpoint, and runtime.credentials.b2_application_key as template variables.",
           "type": "boolean"
         },
         "monitoring": {
+          "description": "Per-target override. Include this service in generated monitoring configuration. Does not provision resources or expose template variables.",
           "type": "boolean"
         },
         "monitoring_alerts": {
+          "description": "Per-target override. Attach generated monitoring alerts to this service when monitoring is enabled. Does not provision resources or expose template variables.",
           "type": "boolean"
         },
         "password": {
+          "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "pushover": {
+          "description": "Per-target override. Create 1Password read/write fields for this service's Pushover application token and user/group key. Exposes runtime.credentials.pushover_application_token and runtime.credentials.pushover_user_key.",
           "type": "boolean"
         },
         "resend": {
+          "description": "Per-target override. Provision a Resend API key for outbound email from this service. Exposes runtime.credentials.resend_api_key as a template variable.",
           "type": "boolean"
         },
         "tailscale": {
+          "description": "Per-target override. Generate a Tailscale auth key for this service. Exposes runtime.credentials.tailscale_auth_key as a template variable. Used by services that run their own Tailscale node (e.g. Gatus on Fly.io).",
           "type": "boolean"
         }
       }
@@ -338,8 +345,11 @@
           "type": ["string", "null"]
         },
         "expose": {
-          "description": "Access level for this service. 'internal' (default): accessible on the internal network and via Tailscale (internal-only middleware, covers LAN and Tailscale IP ranges). 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. 'external': publicly accessible via direct DNS. Null uses no middleware and creates no DNS records.",
-          "enum": ["cloudflare", "external", "internal", null]
+          "description": "Access level for this service. 'internal' (default): accessible on the internal network and via Tailscale (internal-only middleware, covers LAN and Tailscale IP ranges). 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. 'external': publicly accessible via direct DNS. 'proxy-{server-key}': publicly accessible via the named server's Traefik, which proxies to this service's host over Tailscale. Null uses no middleware and creates no DNS records.",
+          "anyOf": [
+            { "enum": ["cloudflare", "external", "internal", null] },
+            { "pattern": "^proxy-[a-z][a-z0-9-]+$", "type": "string" }
+          ]
         },
         "labels": {
           "description": "Extra Traefik labels merged after generated routing labels. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",

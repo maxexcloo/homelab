@@ -9,7 +9,7 @@ locals {
   services_validation_cloudflare_tunnel_missing = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
-      if lookup(local.servers_input, target, null) != null &&
+      if lookup(local.servers_model, target, null) != null &&
       !local.servers_model[target].features.cloudflare_zero_trust_tunnel &&
       service.routing.expose == "cloudflare"
     ]
@@ -43,10 +43,16 @@ locals {
   services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
-      if lookup(local.servers_input, target, null) == null &&
+      if lookup(local.servers_model, target, null) == null &&
       target != "fly"
     ]
   ])
+
+  services_validation_proxy_server_missing = [
+    for service_key, server_key in local.services_model_proxy_server : "${service_key} -> ${server_key}"
+    if server_key != null &&
+    lookup(local.servers_model, server_key, null) == null
+  ]
 
   services_validation_truenas_config_invalid_targets = [
     for service_key, service in local.services_model : service_key
@@ -95,15 +101,15 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition     = length(local.services_validation_fly_ports_missing) == 0
-      error_message = "Fly services must have routing.port set: ${join(", ", nonsensitive(local.services_validation_fly_ports_missing))}"
-    }
-
-    precondition {
       condition = length(local.services_validation_file_key_mismatches) == 0
       error_message = (
         "Service YAML filenames must match identity.name: ${join(", ", local.services_validation_file_key_mismatches)}"
       )
+    }
+
+    precondition {
+      condition     = length(local.services_validation_fly_ports_missing) == 0
+      error_message = "Fly services must have routing.port set: ${join(", ", nonsensitive(local.services_validation_fly_ports_missing))}"
     }
 
     precondition {
@@ -125,6 +131,11 @@ resource "terraform_data" "services_validation" {
       error_message = (
         "Invalid server references found in services configuration: ${join(", ", local.services_validation_invalid_targets)}"
       )
+    }
+
+    precondition {
+      condition     = length(local.services_validation_proxy_server_missing) == 0
+      error_message = "Proxy-exposed services reference a non-existent server: ${join(", ", local.services_validation_proxy_server_missing)}"
     }
 
     precondition {
