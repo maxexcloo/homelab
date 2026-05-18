@@ -23,7 +23,7 @@ services:
       - --serverstransport.insecureskipverify=true
     environment:
       CF_DNS_API_TOKEN: ${server.runtime.credentials.cloudflare_acme_token}
-    image: traefik:v3.6.15
+    image: traefik:v3.7.1
 %{~ if length(custom.proxy_routes) > 0 }
     labels:
 %{~ for name, route in custom.proxy_routes }
