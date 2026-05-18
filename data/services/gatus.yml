@@ -19,8 +19,8 @@ identity:
   service: gatus
   title: Gatus
 routing:
-  port: 8080
-  scheme: http
+  backend_port: 8080
+  backend_scheme: http
   urls:
     - status.excloo.com
 targets:

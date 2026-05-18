@@ -103,10 +103,10 @@ identity:
   service: redlib
   title: Redlib
 routing:
+  backend_port: 8080
+  backend_scheme: http
   container: ctrld
   expose: cloudflare
-  port: 8080
-  scheme: http
   urls:
     - reddit.excloo.com
 targets:

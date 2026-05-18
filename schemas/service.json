@@ -334,10 +334,14 @@
       "type": "object",
       "properties": {
         "backend_port": {
-          "description": "Container backend port for generated Traefik Docker labels. Null uses routing.port. Set this when a TrueNAS published port differs from the container's listening port.",
+          "description": "Container listening port. Used by Traefik for backend routing and as the Fly.io internal_port. Required for any service with routing. Use routing.host_port to override the TrueNAS published port when it differs.",
           "maximum": 65535,
           "minimum": 1,
           "type": ["integer", "null"]
+        },
+        "backend_scheme": {
+          "description": "Traefik-to-container protocol. Required for URL DNS record generation — null disables URL host computation. Set to https only when the container itself terminates TLS.",
+          "enum": ["http", "https", null]
         },
         "container": {
           "description": "Container that receives generated Traefik routing labels. Null uses identity.service. Leave both null for dashboard/inventory-only services.",
@@ -350,6 +354,14 @@
             { "enum": ["cloudflare", "external", "internal", null] },
             { "pattern": "^proxy-[a-z][a-z0-9-]+$", "type": "string" }
           ]
+        },
+        "https": {
+          "description": "Whether the public URL uses https://. Controls URL hrefs in 1Password, health checks, and monitoring. Also gates certresolver and HSTS redirect for non-Cloudflare services. Defaults to true.",
+          "type": "boolean"
+        },
+        "https_verify": {
+          "description": "Whether to validate the TLS certificate when health-checking this service. Set to false for self-signed certificates. Defaults to true.",
+          "type": "boolean"
         },
         "labels": {
           "description": "Extra Traefik labels merged after generated routing labels. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
@@ -368,23 +380,11 @@
             ]
           }
         },
-        "port": {
-          "description": "Primary service port. Required for Fly.io deployments. Used as the TrueNAS published port for catalog apps and as the Fly.io internal_port. Generated Traefik labels use routing.backend_port when set, otherwise this port.",
+        "host_port": {
+          "description": "Override for the TrueNAS catalog published port. Null uses routing.backend_port. Only set when the host-published port must differ from the container listening port.",
           "maximum": 65535,
           "minimum": 1,
           "type": ["integer", "null"]
-        },
-        "scheme": {
-          "description": "Backend scheme. Required for Traefik routing and URL DNS record generation. Service URLs get internal/external host entries when scheme is non-null. Null disables URL DNS records and host computation.",
-          "enum": ["http", "https", null]
-        },
-        "ssl": {
-          "description": "Whether the service is accessed over HTTPS. Controls the URL scheme in 1Password URL items, health checks, and monitoring. Defaults to true.",
-          "type": "boolean"
-        },
-        "ssl_validation": {
-          "description": "Whether to validate the TLS certificate when health-checking this service. Set to false for self-signed certificates. Defaults to true.",
-          "type": "boolean"
         },
         "urls": {
           "description": "Custom public hostnames for this service (e.g. 'status.example.com'). DNS records (CNAME, wildcard, ACME delegation) are automatically created for any hostname that ends with a managed zone.",

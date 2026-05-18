@@ -12,9 +12,9 @@ identity:
   service: openspeedtest
   title: Open Speed Test
 routing:
+  backend_port: 30116
+  backend_scheme: http
   container: open-speed-test
-  port: 30116
-  scheme: http
 targets:
   au-hsp: {}
   au-truenas:

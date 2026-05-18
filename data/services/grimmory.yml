@@ -30,9 +30,9 @@ identity:
   title: Grimmory
   username: maxexcloo
 routing:
+  backend_port: 30396
+  backend_scheme: http
   expose: cloudflare
-  port: 30396
-  scheme: http
   urls:
     - books.excloo.com
 targets:

@@ -15,7 +15,7 @@ identity:
   service: aiometadata
   title: AIOMetadata
 routing:
-  port: 3232
-  scheme: http
+  backend_port: 3232
+  backend_scheme: http
 targets:
   au-truenas: {}

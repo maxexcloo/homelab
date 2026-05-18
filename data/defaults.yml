@@ -99,13 +99,13 @@ services:
     services: {}
   routing:
     backend_port: null
+    backend_scheme: null
     container: null
     expose: internal
+    host_port: null
+    https: true
+    https_verify: true
     labels: {}
-    port: null
-    scheme: null
-    ssl: true
-    ssl_validation: true
     urls: []
 targets:
   fly:

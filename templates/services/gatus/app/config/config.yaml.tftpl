@@ -25,11 +25,11 @@ alerting:
   %{~ endif }
 endpoints:
   %{~ for monitored_service in values(services) }
-  %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null }
+  %{~ if monitored_service.features.monitoring && monitored_service.routing.backend_scheme != null }
   %{~ for url_key, url in monitored_service.urls }
   %{~ if url_key != "default" && url.href != null }
   - conditions:
-      %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation }
+      %{~ if monitored_service.routing.https && monitored_service.routing.https_verify }
       - "[CERTIFICATE_EXPIRATION] > 48h"
       %{~ endif }
       - "[RESPONSE_TIME] < 5000"
@@ -46,7 +46,7 @@ endpoints:
       - type: email
       %{~ endif }
     %{~ endif }
-    %{~ if monitored_service.routing.ssl_validation == false }
+    %{~ if monitored_service.routing.https_verify == false }
     client:
       insecure: true
     %{~ endif }

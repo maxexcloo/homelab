@@ -33,8 +33,8 @@ identity:
   title: Linkwarden
   username: max@excloo.com
 routing:
-  port: 30243
-  scheme: http
+  backend_port: 30243
+  backend_scheme: http
 targets:
   au-truenas:
     truenas:

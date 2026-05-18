@@ -12,8 +12,8 @@ identity:
   service: traefik
   title: Traefik
 routing:
-  port: 8082
-  scheme: http
+  backend_port: 8082
+  backend_scheme: http
   labels:
     traefik.http.middlewares.autocompress.compress: "true"
     traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}

@@ -128,19 +128,21 @@ locals {
   services_render_custom_labels = {
     for service_key, service in local.services : service_key => {
       for label_key, label_value in merge(
-        service.routing.port != null ? {
+        service.routing.backend_port != null ? {
           "traefik.enable"                                                            = "true"
           "traefik.http.routers.${service.identity.name}.entrypoints"                 = service.routing.expose == "cloudflare" || (service.routing.expose != null && startswith(service.routing.expose, "proxy-")) ? "web,websecure,webinternal" : "web,websecure"
-          "traefik.http.routers.${service.identity.name}.tls.certresolver"            = service.routing.ssl && service.routing.expose != "cloudflare" && (service.routing.expose == null || !startswith(service.routing.expose, "proxy-")) ? "cloudflare" : null
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(coalesce(service.routing.backend_port, service.routing.port))
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.scheme == "https" ? "https" : null
+          "traefik.http.routers.${service.identity.name}.tls.certresolver"            = service.routing.https && service.routing.expose != "cloudflare" && (service.routing.expose == null || !startswith(service.routing.expose, "proxy-")) ? "cloudflare" : null
+          "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(service.routing.backend_port)
+          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.backend_scheme == "https" ? "https" : null
 
           "traefik.http.routers.${service.identity.name}.middlewares" = (
-            service.routing.expose == "internal" && service.routing.ssl
+            service.routing.expose == "internal" && service.routing.https
             ? "internal-only@docker,redirect-to-https@docker"
             : service.routing.expose == "internal"
             ? "internal-only@docker"
-            : service.routing.ssl
+            : service.routing.expose == "cloudflare" || (service.routing.expose != null && startswith(service.routing.expose, "proxy-"))
+            ? null
+            : service.routing.https
             ? "redirect-to-https@docker"
             : null
           )
@@ -152,7 +154,7 @@ locals {
             ]) : "Host(`${host}`)"
           ])
         } : {},
-        service.routing.port != null && service.routing.ssl && service.routing.expose != "cloudflare" && (service.routing.expose == null || !startswith(service.routing.expose, "proxy-")) ? {
+        service.routing.backend_port != null && service.routing.https && service.routing.expose != "cloudflare" && (service.routing.expose == null || !startswith(service.routing.expose, "proxy-")) ? {
           for url_index, url in [
             for url in service.routing.urls : url
             if lookup(local.dns_render_managed_zones_by_url, url, null) != null

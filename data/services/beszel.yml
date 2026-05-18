@@ -23,8 +23,8 @@ identity:
   title: Beszel
   username: max@excloo.com
 routing:
-  port: 30333
-  scheme: http
+  backend_port: 30333
+  backend_scheme: http
 targets:
   au-truenas:
     truenas:

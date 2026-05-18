@@ -35,8 +35,8 @@ identity:
   username: max@excloo.com
 routing:
   backend_port: 8080
-  port: 30061
-  scheme: http
+  backend_scheme: http
+  host_port: 30061
 targets:
   au-truenas:
     truenas:

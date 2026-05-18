@@ -33,9 +33,9 @@ identity:
   title: Komodo
   username: max@excloo.com
 routing:
+  backend_port: 9120
+  backend_scheme: http
   container: core
-  port: 9120
-  scheme: http
 targets:
   au-truenas:
     truenas:

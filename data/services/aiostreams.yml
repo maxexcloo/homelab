@@ -20,8 +20,8 @@ identity:
   service: aiostreams
   title: AIOStreams
 routing:
-  port: 30375
-  scheme: http
+  backend_port: 30375
+  backend_scheme: http
 targets:
   au-truenas:
     truenas: {}

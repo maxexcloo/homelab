@@ -26,8 +26,8 @@ identity:
   title: Miniflux
   username: max@excloo.com
 routing:
-  port: 30285
-  scheme: http
+  backend_port: 30285
+  backend_scheme: http
 targets:
   au-truenas:
     truenas:

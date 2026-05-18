@@ -1,0 +1,24 @@
+services:
+  larapaper:
+    environment:
+      APP_KEY: base64:${service.runtime.credentials.app_key}
+      APP_URL: ${service.urls.default.href}
+      DB_DATABASE: database/storage/database.sqlite
+      PHP_OPCACHE_ENABLE: "1"
+      TRMNL_PROXY_REFRESH_MINUTES: "15"
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 45s
+      test:
+        - CMD-SHELL
+        - curl --fail --silent http://localhost:8080/up
+      timeout: 10s
+    image: ghcr.io/usetrmnl/larapaper:latest
+    restart: unless-stopped
+    volumes:
+      - database:/var/www/html/database/storage
+      - storage:/var/www/html/storage/app/public/images/generated
+volumes:
+  database: {}
+  storage: {}

@@ -7,7 +7,7 @@
       "host_network": true,
       "web_port": {
         "bind_mode": "published",
-        "port_number": ${service.routing.port}
+        "port_number": ${service.routing.host_port}
       }
     },
     "storage": {
@@ -15,6 +15,13 @@
         "ix_volume_config": {
           "acl_enable": false,
           "dataset_name": "config"
+        },
+        "type": "ix_volume"
+      },
+      "public": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "public"
         },
         "type": "ix_volume"
       }

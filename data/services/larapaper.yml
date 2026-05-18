@@ -1,15 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
   fields:
-    app_secret:
-      bootstrap_length: 64
-      bootstrap_type: alphanumeric
-    postgres_password:
+    app_key:
       bootstrap_length: 32
-      bootstrap_type: alphanumeric
-    valkey_password:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      bootstrap_type: base64
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -20,18 +14,17 @@ dashboard:
 features:
   password: true
 identity:
-  description: TRMNL Device Manager
+  description: TRMNL Server
   group: Applications
-  name: terminus
-  service: terminus
-  title: Terminus
+  name: larapaper
+  service: larapaper
+  title: LaraPaper
   username: max@excloo.com
 routing:
-  container: web
+  backend_port: 8080
+  backend_scheme: http
   expose: cloudflare
-  port: 30230
-  scheme: http
   urls:
-    - terminus.excloo.com
+    - larapaper.excloo.com
 targets:
   au-truenas: {}

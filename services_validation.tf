@@ -21,7 +21,7 @@ locals {
   services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
     if lookup(service.targets, "fly", null) != null &&
-    service.routing.port == null
+    service.routing.backend_port == null
   ]
 
   services_validation_homepage_missing = length([
@@ -55,7 +55,7 @@ locals {
     for service_key, service in local.services_model : service_key
     if service.routing.expose != null &&
     startswith(service.routing.expose, "proxy-") &&
-    service.routing.port == null
+    service.routing.backend_port == null
   ]
 
   services_validation_proxy_server_missing = [
@@ -86,7 +86,7 @@ locals {
       for url in service.routing.urls : "${service_key} -> ${url}"
       if lookup(local.dns_render_managed_zones_by_url, url, null) == null &&
       service.routing.expose != "cloudflare" &&
-      service.routing.ssl &&
+      service.routing.https &&
       service.target != "fly"
     ]
   ])
@@ -119,7 +119,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local.services_validation_fly_ports_missing) == 0
-      error_message = "Fly services must have routing.port set: ${join(", ", nonsensitive(local.services_validation_fly_ports_missing))}"
+      error_message = "Fly services must have routing.backend_port set: ${join(", ", nonsensitive(local.services_validation_fly_ports_missing))}"
     }
 
     precondition {
@@ -150,7 +150,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local.services_validation_proxy_no_port) == 0
-      error_message = "Proxy-exposed services must have routing.port set: ${join(", ", local.services_validation_proxy_no_port)}"
+      error_message = "Proxy-exposed services must have routing.backend_port set: ${join(", ", local.services_validation_proxy_no_port)}"
     }
 
     precondition {

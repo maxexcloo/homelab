@@ -13,9 +13,9 @@ identity:
   service: netbootxyz
   title: Netboot
 routing:
+  backend_port: 31010
+  backend_scheme: http
   container: netboot
-  port: 31010
-  scheme: http
 targets:
   au-truenas:
     truenas:

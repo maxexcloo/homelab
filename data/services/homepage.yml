@@ -82,9 +82,9 @@ identity:
   service: homepage
   title: Homepage
 routing:
+  backend_port: 30054
+  backend_scheme: http
   expose: internal
-  port: 30054
-  scheme: http
   urls:
     - home.excloo.com
 targets:

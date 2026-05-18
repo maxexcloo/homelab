@@ -15,8 +15,8 @@ identity:
   title: Syncthing
   username: max@excloo.com
 routing:
-  port: 20910
-  scheme: http
+  backend_port: 20910
+  backend_scheme: http
 targets:
   au-truenas:
     truenas:
