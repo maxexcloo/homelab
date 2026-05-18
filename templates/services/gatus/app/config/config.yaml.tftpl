@@ -1,5 +1,5 @@
 alerting:
-  %{~ if service.features.pushover ~}
+  %{~ if service.features.pushover }
   pushover:
     application-token: $${PUSHOVER_APPLICATION_TOKEN}
     user-key: $${PUSHOVER_USER_KEY}
@@ -8,8 +8,8 @@ alerting:
       failure-threshold: 5
       send-on-resolved: true
       success-threshold: 5
-  %{~ endif ~}
-  %{~ if service.features.resend ~}
+  %{~ endif }
+  %{~ if service.features.resend }
   email:
     from: ${service.target}@${defaults.domains.internal}
     host: ${defaults.resend.host}
@@ -22,56 +22,56 @@ alerting:
       failure-threshold: 5
       send-on-resolved: true
       success-threshold: 5
-  %{~ endif ~}
+  %{~ endif }
 endpoints:
-  %{~ for monitored_service in values(services) ~}
-  %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null ~}
-  %{~ for url_key, url in monitored_service.urls ~}
-  %{~ if url_key != "default" && url.href != null ~}
+  %{~ for monitored_service in values(services) }
+  %{~ if monitored_service.features.monitoring && monitored_service.routing.scheme != null }
+  %{~ for url_key, url in monitored_service.urls }
+  %{~ if url_key != "default" && url.href != null }
   - conditions:
-      %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation ~}
+      %{~ if monitored_service.routing.ssl && monitored_service.routing.ssl_validation }
       - "[CERTIFICATE_EXPIRATION] > 48h"
-      %{~ endif ~}
+      %{~ endif }
       - "[RESPONSE_TIME] < 5000"
       - "[STATUS] == any(200, 401)"
-    group: "\u00A0${url.zone}"
+    group: " ${url.zone}"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
     url: "${url.href}"
-    %{~ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
+    %{~ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) }
     alerts:
-      %{~ if service.features.pushover ~}
+      %{~ if service.features.pushover }
       - type: pushover
-      %{~ endif ~}
-      %{~ if service.features.resend ~}
+      %{~ endif }
+      %{~ if service.features.resend }
       - type: email
-      %{~ endif ~}
-    %{~ endif ~}
-    %{~ if monitored_service.routing.ssl_validation == false ~}
+      %{~ endif }
+    %{~ endif }
+    %{~ if monitored_service.routing.ssl_validation == false }
     client:
       insecure: true
-    %{~ endif ~}
-  %{~ endif ~}
-  %{~ endfor ~}
-  %{~ endif ~}
-  %{~ endfor ~}
-  %{~ for server_key, server in servers ~}
-  %{~ if server.features.monitoring ~}
+    %{~ endif }
+  %{~ endif }
+  %{~ endfor }
+  %{~ endif }
+  %{~ endfor }
+  %{~ for server_key, server in servers }
+  %{~ if server.features.monitoring }
   - conditions:
       - "[CONNECTED] == true"
     group: "${defaults.server_types[server.type].label}"
     name: "${server_key}"
     url: "icmp://${server.hosts.default}"
-    %{~ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) ~}
+    %{~ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) }
     alerts:
-      %{~ if service.features.pushover ~}
+      %{~ if service.features.pushover }
       - type: pushover
-      %{~ endif ~}
-      %{~ if service.features.resend ~}
+      %{~ endif }
+      %{~ if service.features.resend }
       - type: email
-      %{~ endif ~}
-    %{~ endif ~}
-  %{~ endif ~}
-  %{~ endfor ~}
+      %{~ endif }
+    %{~ endif }
+  %{~ endif }
+  %{~ endfor }
 ui:
   dashboard-heading: ${service.identity.title}
   dashboard-subheading: ${service.identity.description}

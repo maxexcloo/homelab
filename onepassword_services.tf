@@ -110,10 +110,10 @@ locals {
 
       urls = concat(
         [
-          for url_key in sort([
-            for key in keys(service.urls) : key
+          for url_key in [
+            for key in sort(keys(service.urls)) : key
             if !contains(["default", "external", "internal"], key)
-            ]) : {
+            ] : {
             href    = service.urls[url_key].href
             label   = service.urls[url_key].label
             primary = service.urls[url_key].href == service.urls.default.href

@@ -46,7 +46,7 @@ provider "restapi" {
   # Resend is modeled through the generic REST provider because no native
   # provider resource is used in this stack.
   headers = {
-    "Authorization" = "Bearer ${var.resend_api_key}",
+    "Authorization" = "Bearer ${var.resend_api_key}"
     "Content-Type"  = "application/json"
   }
 }

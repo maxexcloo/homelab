@@ -99,26 +99,24 @@ locals {
   }
 
   # autoApprovers object for generated exit node and subnet route approvals.
-  tailscale_tags_approvers = {
-    exitNode = sort(distinct([
-      for type_key, type in local.defaults.server_types : "tag:${type.tailscale_tag}"
-      if !contains(local.defaults.tailscale.approver_excludes, type_key)
-    ]))
-
-    routes = {
-      for route in ["0.0.0.0/0", "::/0"] : route => sort(distinct([
-        for type_key, type in local.defaults.server_types : "tag:${type.tailscale_tag}"
-        if !contains(local.defaults.tailscale.approver_excludes, type_key)
-      ]))
-    }
-  }
+  tailscale_tags_approvers = sort(distinct([
+    for type_key, type in local.defaults.server_types : "tag:${type.tailscale_tag}"
+    if !contains(local.defaults.tailscale.approver_excludes, type_key)
+  ]))
 }
 
 resource "tailscale_acl" "default" {
   acl = jsonencode({
-    acls          = local.tailscale_acls
-    autoApprovers = local.tailscale_tags_approvers
-    tagOwners     = local.tailscale_tags
+    acls      = local.tailscale_acls
+    tagOwners = local.tailscale_tags
+
+    autoApprovers = {
+      exitNode = local.tailscale_tags_approvers
+
+      routes = {
+        for route in ["0.0.0.0/0", "::/0"] : route => local.tailscale_tags_approvers
+      }
+    }
 
     groups = {
       "group:admin" = local.defaults.tailscale.admin_identities

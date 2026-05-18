@@ -65,11 +65,10 @@ locals {
 
   # Services indexed by feature flag. Model-only — safe for for_each in feature-specific resource files.
   services_by_feature = {
-    for feature, default_value in local.defaults.services.features : feature => {
+    for feature in keys(local.defaults.services.features) : feature => {
       for service_key, service in local.services_model : service_key => service
       if service.features[feature]
     }
-    if can(tobool(default_value))
   }
 }
 

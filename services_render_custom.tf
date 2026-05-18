@@ -108,6 +108,7 @@ locals {
         homepage = local._custom_homepage
       } : {},
       service.identity.name != "traefik" ? {} : {
+        # Port 8000 is the webinternal Traefik entrypoint on the target server.
         proxy_routes = {
           for svc in values(local.services_render_services) :
           svc.identity.name => {

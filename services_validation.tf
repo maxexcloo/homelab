@@ -6,14 +6,12 @@ locals {
     try(record.proxied, false)
   ]
 
-  services_validation_cloudflare_tunnel_missing = flatten([
-    for service_key, service in local.services_input : [
-      for target in keys(service.targets) : "${service_key} -> ${target}"
-      if lookup(local.servers_model, target, null) != null &&
-      !local.servers_model[target].features.cloudflare_zero_trust_tunnel &&
-      service.routing.expose == "cloudflare"
-    ]
-  ])
+  services_validation_cloudflare_tunnel_missing = [
+    for service_key, service in local.services_model : service_key
+    if lookup(local.servers_model, service.target, null) != null &&
+    !local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
+    service.routing.expose == "cloudflare"
+  ]
 
   services_validation_file_key_mismatches = [
     for service_key, service in local.services_input : "${service_key} -> ${service.identity.name}"
@@ -25,6 +23,11 @@ locals {
     if lookup(service.targets, "fly", null) != null &&
     service.routing.port == null
   ]
+
+  services_validation_homepage_missing = length([
+    for service_key, service in local.services_input : service_key
+    if service.identity.name == "homepage"
+  ]) == 0
 
   services_validation_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_imports : [
@@ -47,6 +50,13 @@ locals {
       target != "fly"
     ]
   ])
+
+  services_validation_proxy_no_port = [
+    for service_key, service in local.services_model : service_key
+    if service.routing.expose != null &&
+    startswith(service.routing.expose, "proxy-") &&
+    service.routing.port == null
+  ]
 
   services_validation_proxy_server_missing = [
     for service_key, server_key in local.services_model_proxy_server : "${service_key} -> ${server_key}"
@@ -113,6 +123,11 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
+      condition     = !local.services_validation_homepage_missing
+      error_message = "A service with identity.name = homepage is required for the dashboard to render"
+    }
+
+    precondition {
       condition = length(local.services_validation_import_alias_conflicts) == 0
       error_message = (
         "Service import aliases must not shadow real service keys: ${join(", ", local.services_validation_import_alias_conflicts)}"
@@ -131,6 +146,11 @@ resource "terraform_data" "services_validation" {
       error_message = (
         "Invalid server references found in services configuration: ${join(", ", local.services_validation_invalid_targets)}"
       )
+    }
+
+    precondition {
+      condition     = length(local.services_validation_proxy_no_port) == 0
+      error_message = "Proxy-exposed services must have routing.port set: ${join(", ", local.services_validation_proxy_no_port)}"
     }
 
     precondition {

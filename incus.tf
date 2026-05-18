@@ -11,7 +11,6 @@ locals {
     if server.parent != "" &&
     lookup(local.incus_servers, server.parent, null) != null &&
     server.platform == "incus" &&
-    server.platform_config.incus != null &&
     server.type == "vm"
   }
 }
