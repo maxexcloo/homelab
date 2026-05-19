@@ -18,7 +18,7 @@ dashboard:
     description: ${service.identity.description}
     group: ${service.identity.group}
     href: ${server.urls.default.href}
-    icon: ${service.identity.name}
+    icon: home-assistant
     siteMonitor: ${server.urls.default.href}
     widgets:
       - type: homeassistant

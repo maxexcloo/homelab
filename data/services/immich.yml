@@ -13,10 +13,10 @@ dashboard:
     description: ${service.identity.description}
     group: ${service.identity.group}
     href: ${service.urls.default.href}
-    icon: ${service.identity.name}
+    icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
     widgets:
-      - type: ${service.identity.name}
+      - type: ${service.identity.service}
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
         version: 2

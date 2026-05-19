@@ -8,7 +8,7 @@ dashboard:
     description: ${services.beszel.identity.description}
     group: ${server.dashboard[0].name}
     href: ${services.beszel.urls.default.href}/system/${service.runtime.credentials.system_id}
-    icon: ${services.beszel.identity.name}
+    icon: ${services.beszel.identity.service}
     widgets:
       - type: beszel
         password: ${services.beszel.runtime.credentials.password}

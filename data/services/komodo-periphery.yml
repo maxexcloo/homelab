@@ -4,7 +4,7 @@ dashboard:
     description: ${services.komodo.identity.description}
     group: ${server.dashboard[0].name}
     href: ${services.komodo.urls.default.href}/servers/${server.key}
-    icon: ${services.komodo.identity.name}
+    icon: ${services.komodo.identity.service}
     siteMonitor: ${services.komodo.urls.default.href}
     widgets:
       - type: komodo

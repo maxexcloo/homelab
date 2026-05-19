@@ -4,9 +4,9 @@ dashboard:
     description: ${service.identity.description}
     group: ${server.dashboard[0].name}
     href: https://login.tailscale.com/admin/machines/${server.runtime.addresses.tailscale_ipv4}
-    icon: ${service.identity.name}
+    icon: ${service.identity.service}
     widgets:
-      - type: ${service.identity.name}
+      - type: ${service.identity.service}
         deviceid: ${server.runtime.attributes.tailscale_device_id}
         key: ${services.homepage.runtime.credentials.tailscale_homepage_widget_key}
 identity:
