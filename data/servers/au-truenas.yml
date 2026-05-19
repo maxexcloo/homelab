@@ -13,5 +13,6 @@ identity:
   name: truenas
   region: au
   title: TrueNAS
+  username: root
 networking:
   management_port: 8443

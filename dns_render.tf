@@ -85,7 +85,7 @@ locals {
           zone    = local.defaults.domains.external
         }
       } : {},
-      local.servers[server_key].runtime.addresses.tailscale_ipv4 != null ? {
+      local.servers[server_key].runtime.addresses.tailscale_ipv4 != "" ? {
         "${local.defaults.domains.internal}-${server_key}-a" = {
           content = local.servers[server_key].runtime.addresses.tailscale_ipv4
           name    = server.hosts.internal
@@ -94,7 +94,7 @@ locals {
           zone    = local.defaults.domains.internal
         }
       } : {},
-      local.servers[server_key].runtime.addresses.tailscale_ipv6 != null ? {
+      local.servers[server_key].runtime.addresses.tailscale_ipv6 != "" ? {
         "${local.defaults.domains.internal}-${server_key}-aaaa" = {
           content = local.servers[server_key].runtime.addresses.tailscale_ipv6
           name    = server.hosts.internal

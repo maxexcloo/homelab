@@ -5,9 +5,9 @@ locals {
     for server_key, server in local.servers_model : server_key => merge(
       server.addresses,
       {
-        private_ipv4   = try(local.unifi_clients[server_key].fixed_ip, null)
-        tailscale_ipv4 = try(local.tailscale_device_addresses[server_key].ipv4, null)
-        tailscale_ipv6 = try(local.tailscale_device_addresses[server_key].ipv6, null)
+        private_ipv4   = try(local.unifi_clients[server_key].fixed_ip, "")
+        tailscale_ipv4 = try(local.tailscale_device_addresses[server_key].ipv4, "")
+        tailscale_ipv6 = try(local.tailscale_device_addresses[server_key].ipv6, "")
       },
     )
   }
@@ -17,8 +17,8 @@ locals {
     for server_key, server in local.servers_model : server_key => merge(
       server.hosts,
       {
-        private   = try(local.unifi_clients[server_key].local_dns_record, null)
-        tailscale = try(local.tailscale_device_addresses[server_key].address, null)
+        private   = try(local.unifi_clients[server_key].local_dns_record, "")
+        tailscale = try(local.tailscale_device_addresses[server_key].address, "")
       },
     )
   }
@@ -58,6 +58,7 @@ locals {
           label = "${url_label}_ssh"
         }
         if url_label != "management" &&
+        server.identity.username != null &&
         url_value != null &&
         url_value != ""
       },
@@ -97,7 +98,7 @@ locals {
             {
               age_public_key        = age_secret_key.server[server_key].public_key
               cloudflare_account_id = data.cloudflare_account.default.id
-              tailscale_device_id   = try(local.tailscale_device_addresses[server_key].id, null)
+              tailscale_device_id   = try(local.tailscale_device_addresses[server_key].id, "")
             },
             server.features.b2 ? {
               b2_application_key_id = b2_application_key.server[server_key].application_key_id

@@ -41,7 +41,7 @@ servers:
     name: ""
     region: ""
     title: ""
-    username: root
+    username: null
   networking:
     management_host: ""
     management_port: 443

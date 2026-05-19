@@ -22,5 +22,6 @@ identity:
   name: au
   region: au
   title: AU
+  username: root
 networking:
   public_host: excloo-au.controld.live
