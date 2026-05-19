@@ -1,5 +1,4 @@
 locals {
-
   # Longest matching zone wins for nested domains.
   _dns_render_zones_matching = {
     for url in distinct(flatten([

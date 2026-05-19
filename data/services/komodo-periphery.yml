@@ -5,7 +5,6 @@ dashboard:
     group: ${server.dashboard[0].name}
     href: ${services.komodo.urls.default.href}/servers/${server.key}
     icon: ${services.komodo.identity.service}
-    siteMonitor: ${services.komodo.urls.default.href}
     widgets:
       - type: komodo
         key: ${services.komodo.runtime.credentials.homepage_widget_key}
