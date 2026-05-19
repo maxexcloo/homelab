@@ -2,7 +2,7 @@ app = "${service.fly.app_name}"
 primary_region = "${service.fly.region}"
 
 [build]
-${service.fly.image != null ? "image = \"${service.fly.image}\"" : "dockerfile = \"Dockerfile\""}
+${service.fly.image != "" ? "image = \"${service.fly.image}\"" : "dockerfile = \"Dockerfile\""}
 
 [http_service]
 force_https = ${service.routing.https}

@@ -68,7 +68,7 @@ locals {
     for service_key, service in local.services_model : service_key
     if lookup(local.truenas_input_servers, service.target, null) == null &&
     (
-      service.truenas.catalog_app != null ||
+      service.truenas.catalog_app != "" ||
       length(service.truenas.env) > 0 ||
       service.truenas.port_key != local.defaults.targets.truenas.port_key ||
       service.truenas.train != local.defaults.targets.truenas.train

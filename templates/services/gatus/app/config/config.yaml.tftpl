@@ -25,7 +25,7 @@ alerting:
   %{~ endif }
 endpoints:
   %{~ for monitored_service in values(services) }
-  %{~ if monitored_service.features.monitoring && monitored_service.routing.backend_scheme != null }
+  %{~ if monitored_service.features.monitoring && monitored_service.routing.backend_scheme != "" }
   %{~ for url_key, url in monitored_service.urls }
   %{~ if url_key != "default" && url.href != null }
   - conditions:

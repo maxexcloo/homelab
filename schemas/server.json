@@ -200,7 +200,7 @@
           "type": "string"
         },
         "username": {
-          "description": "Primary admin username for SSH access. Stored in 1Password alongside the generated password. Defaults to 'root'.",
+          "description": "Primary admin username for SSH access. Stored in 1Password alongside the generated password.",
           "type": "string"
         }
       }

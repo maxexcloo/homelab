@@ -97,9 +97,9 @@
       "type": "object",
       "properties": {
         "app_name": {
-          "description": "Fly.io app name override. If null, defaults to {organization.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
-          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
-          "type": ["string", "null"]
+          "description": "Fly.io app name override. If empty, defaults to {organization.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
+          "pattern": "^$|^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "type": "string"
         },
         "cpu_kind": {
           "description": "CPU type. 'shared' is cheaper and suitable for most workloads; 'performance' provides dedicated CPU time.",
@@ -112,8 +112,8 @@
           "type": "integer"
         },
         "image": {
-          "description": "Pre-built Docker image to deploy (e.g. 'ghcr.io/owner/image:tag'). If null, a Dockerfile in the service's template directory is used instead.",
-          "type": ["string", "null"]
+          "description": "Pre-built Docker image to deploy (e.g. 'ghcr.io/owner/image:tag'). If empty, a Dockerfile in the service's template directory is used instead.",
+          "type": "string"
         },
         "machine_count": {
           "description": "Desired number of Fly Machines for this app. Null leaves the existing machine count unchanged.",
@@ -167,9 +167,9 @@
       "type": "object",
       "properties": {
         "catalog_app": {
-          "description": "TrueNAS catalog app name. Defaults to identity.service when null. Required when identity.service is null and this target should deploy a catalog app.",
-          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
-          "type": ["string", "null"]
+          "description": "TrueNAS catalog app name. Defaults to identity.service when empty. Required when identity.service is null and this target should deploy a catalog app.",
+          "pattern": "^$|^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "type": "string"
         },
         "env": {
           "description": "TrueNAS catalog app environment variables rendered into additional_envs. Custom compose apps should put environment directly in docker-compose.yaml.tftpl. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
@@ -291,7 +291,7 @@
         },
         "group": {
           "description": "Dashboard group. Defaults to the target server description for server-targeted services or Applications when no target server exists.",
-          "type": ["string", "null"]
+          "type": "string"
         },
         "name": {
           "description": "Short identifier used to build FQDNs and subdomain labels (e.g. 'vaultwarden'). Combined with the target server FQDN: {name}.{server_fqdn}.{domain}.",
@@ -340,13 +340,17 @@
           "type": ["integer", "null"]
         },
         "backend_scheme": {
-          "description": "Traefik-to-container protocol. Required for URL DNS record generation — null disables URL host computation. Set to https only when the container itself terminates TLS.",
-          "enum": ["http", "https", null]
+          "description": "Traefik-to-container protocol. Required for URL DNS record generation — empty disables URL host computation. Set to https only when the container itself terminates TLS.",
+          "enum": ["", "http", "https"]
+        },
+        "backend_url": {
+          "description": "Full origin URL for Cloudflare Tunnel ingress. Empty routes through the target server's Traefik webinternal entrypoint.",
+          "type": "string"
         },
         "container": {
-          "description": "Container that receives generated Traefik routing labels. Null uses identity.service. Leave both null for dashboard/inventory-only services.",
-          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
-          "type": ["string", "null"]
+          "description": "Container that receives generated Traefik routing labels. Empty uses identity.service. Leave both empty for dashboard/inventory-only services.",
+          "pattern": "^$|^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "type": "string"
         },
         "expose": {
           "description": "Access level for this service. 'internal' (default): accessible on the internal network and via Tailscale (internal-only middleware, covers LAN and Tailscale IP ranges). 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. 'external': publicly accessible via direct DNS. 'proxy-{server-key}': publicly accessible via the named server's Traefik, which proxies to this service's host over Tailscale. Null uses no middleware and creates no DNS records.",

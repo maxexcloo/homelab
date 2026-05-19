@@ -39,7 +39,8 @@ locals {
 
   servers_validation_long_parent_chains = [
     for server_key, server in local.servers_input : server_key
-    if server.parent != "" && try(local.servers_input[local.servers_input[server.parent].parent].parent != "", false)
+    if server.parent != "" &&
+    try(local.servers_input[local.servers_input[server.parent].parent].parent != "", false)
   ]
 
   servers_validation_oci_always_free_a1_cpus = sum([

@@ -53,5 +53,10 @@ identity:
   group: Home Automation
   name: home-assistant
   title: Home Assistant
+routing:
+  backend_url: https://homeassistant
+  expose: cloudflare
+  urls:
+    - home-assistant.excloo.com
 targets:
   au-haos: {}

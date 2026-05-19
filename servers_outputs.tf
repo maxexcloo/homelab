@@ -58,7 +58,7 @@ locals {
           label = "${url_label}_ssh"
         }
         if url_label != "management" &&
-        server.identity.username != null &&
+        server.identity.username != "" &&
         url_value != null &&
         url_value != ""
       },

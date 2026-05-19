@@ -41,7 +41,7 @@ servers:
     name: ""
     region: ""
     title: ""
-    username: null
+    username: ""
   networking:
     management_host: ""
     management_port: 443
@@ -91,7 +91,7 @@ services:
     tailscale: false
   identity:
     description: ""
-    group: null
+    group: ""
     name: ""
     title: ""
     username: ""
@@ -99,8 +99,9 @@ services:
     services: {}
   routing:
     backend_port: null
-    backend_scheme: null
-    container: null
+    backend_scheme: ""
+    backend_url: ""
+    container: ""
     expose: internal
     host_port: null
     https: true
@@ -109,15 +110,15 @@ services:
     urls: []
 targets:
   fly:
-    app_name: null
+    app_name: ""
     cpu_kind: shared
     cpus: 1
-    image: null
+    image: ""
     machine_count: 1
     memory_mb: 256
     region: syd
   truenas:
-    catalog_app: null
+    catalog_app: ""
     env: {}
     port_key: web_port
     train: community

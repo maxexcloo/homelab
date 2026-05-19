@@ -55,7 +55,7 @@ locals {
 
       internal = (
         lookup(local.servers_model, service.target, null) != null &&
-        service.routing.backend_scheme != null
+        service.routing.backend_scheme != ""
         ? "${service.identity.name}.${local.servers_model[service.target].hosts.internal}"
         : null
       )
@@ -162,7 +162,7 @@ locals {
           }
 
           routing = {
-            container = service.routing.container != null ? service.routing.container : try(service.identity.service, null)
+            container = service.routing.container != "" ? service.routing.container : try(service.identity.service, null)
             host_port = try(coalesce(service.routing.host_port, service.routing.backend_port), null)
           }
 
