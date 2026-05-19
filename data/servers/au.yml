@@ -11,6 +11,7 @@ dashboard:
     widgets:
       - type: unifi
         password: ${server.runtime.credentials.password}
+        site: default
         url: ${server.urls.default.href}
         username: ${server.identity.username}
 features:
