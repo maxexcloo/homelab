@@ -23,16 +23,25 @@ locals {
     )
   }
 
-  # Generates https:// and ssh:// URLs for every known host and address source.
+  _servers_outputs_runtime_url_sources = {
+    for server_key, server in local.servers_model : server_key => {
+      for url_label, url_value in merge(
+        local._servers_outputs_runtime_hosts[server_key],
+        local._servers_outputs_runtime_addresses[server_key],
+      ) : url_label => url_value
+      if(
+        url_value != null &&
+        url_value != ""
+      )
+    }
+  }
+
   # Addresses are bracket-wrapped when they are IPv6 literals.
   _servers_outputs_runtime_urls = {
     for server_key, server in local.servers_model : server_key => merge(
       server.urls,
       {
-        for url_label, url_value in merge(
-          local._servers_outputs_runtime_hosts[server_key],
-          local._servers_outputs_runtime_addresses[server_key],
-          ) : url_label => {
+        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : url_label => {
           href = format(
             "https://%s%s",
             can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
@@ -40,15 +49,10 @@ locals {
           )
           label = url_label
         }
-        if lookup(server.urls, url_label, null) == null &&
-        url_value != null &&
-        url_value != ""
+        if try(server.urls[url_label], null) == null
       },
       {
-        for url_label, url_value in merge(
-          local._servers_outputs_runtime_hosts[server_key],
-          local._servers_outputs_runtime_addresses[server_key],
-          ) : "${url_label}_ssh" => {
+        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : "${url_label}_ssh" => {
           href = format(
             "ssh://%s@%s%s",
             server.identity.username,
@@ -57,10 +61,10 @@ locals {
           )
           label = "${url_label}_ssh"
         }
-        if url_label != "management" &&
-        server.identity.username != "" &&
-        url_value != null &&
-        url_value != ""
+        if(
+          url_label != "management" &&
+          server.identity.username != ""
+        )
       },
     )
   }
@@ -76,7 +80,10 @@ locals {
           value = (
             field.bootstrap_type == "hex" ? random_id.server_secret["${server_key}-${field_name}"].hex
             : field.bootstrap_type == "base64" ? random_id.server_secret["${server_key}-${field_name}"].b64_std
-            : field.bootstrap_type != null && contains(["alphanumeric", "string"], field.bootstrap_type) ? random_password.server_secret["${server_key}-${field_name}"].result
+            : (
+              field.bootstrap_type != null &&
+              contains(["alphanumeric", "string"], field.bootstrap_type)
+            ) ? random_password.server_secret["${server_key}-${field_name}"].result
             : null
           )
         }
@@ -120,7 +127,10 @@ locals {
                 try(local.onepassword_server_existing_fields[server_key][field_name], null),
                 local._servers_outputs_credentials_bootstrap["${server_key}-${field_name}"],
               ), ""))
-              if field.bootstrap_type != null || field.mode == "rw"
+              if(
+                field.bootstrap_type != null ||
+                field.mode == "rw"
+              )
             },
             server.features.b2 ? {
               b2_application_key = b2_application_key.server[server_key].application_key
@@ -170,7 +180,11 @@ output "servers" {
   value = {
     for server_key, server in local.servers : server_key => {
       for field_name, field_value in server : field_name => field_value
-      if field_value != null && field_value != "" && field_value != false
+      if(
+        field_value != null &&
+        field_value != "" &&
+        field_value != false
+      )
     }
   }
 }

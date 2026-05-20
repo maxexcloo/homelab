@@ -8,7 +8,10 @@ locals {
           byte_length = field.bootstrap_length
           key         = "${server_key}-${field_name}"
         }
-        if field.bootstrap_type != null && contains(["hex", "base64"], field.bootstrap_type)
+        if(
+          field.bootstrap_type != null &&
+          contains(["hex", "base64"], field.bootstrap_type)
+        )
       ]
     ]) : field.key => field
   }
@@ -20,7 +23,10 @@ locals {
           key    = "${server_key}-${field_name}"
           length = field.bootstrap_length
         }
-        if field.bootstrap_type != null && contains(["string", "alphanumeric"], field.bootstrap_type)
+        if(
+          field.bootstrap_type != null &&
+          contains(["string", "alphanumeric"], field.bootstrap_type)
+        )
       ]
     ]) : field.key => field
   }
@@ -32,7 +38,10 @@ locals {
           byte_length = field.bootstrap_length
           key         = "${service_key}-${field_name}"
         }
-        if field.bootstrap_type != null && contains(["hex", "base64"], field.bootstrap_type)
+        if(
+          field.bootstrap_type != null &&
+          contains(["hex", "base64"], field.bootstrap_type)
+        )
       ]
     ]) : field.key => field
   }
@@ -44,7 +53,10 @@ locals {
           key    = "${service_key}-${field_name}"
           length = field.bootstrap_length
         }
-        if field.bootstrap_type != null && contains(["string", "alphanumeric"], field.bootstrap_type)
+        if(
+          field.bootstrap_type != null &&
+          contains(["string", "alphanumeric"], field.bootstrap_type)
+        )
       ]
     ]) : field.key => field
   }

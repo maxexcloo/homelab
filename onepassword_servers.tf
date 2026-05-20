@@ -20,13 +20,13 @@ data "http" "onepassword_server_search" {
 locals {
   onepassword_server_existing_fields = {
     for server_key, item in data.http.onepassword_server_item : server_key => {
-      for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
-      if try(field.id, "") != "" && try(field.value, "") != ""
+      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
+      if try(coalesce(field.value, ""), "") != ""
     }
   }
 
   onepassword_server_existing_ids = {
-    for server_key, item in data.http.onepassword_server_search : server_key => try(jsondecode(item.response_body)[0].id, null)
+    for server_key, item in data.http.onepassword_server_search : server_key => try(one(jsondecode(item.response_body)).id, null)
   }
 
   onepassword_server_item_fields = {
@@ -47,7 +47,10 @@ locals {
             type  = "STRING"
             value = tostring(field_value)
           }
-          if field_value != null && field_value != ""
+          if(
+            field_value != null &&
+            field_value != ""
+          )
         ],
         [
           for field_name, field_config in server.credentials.fields : {
@@ -65,8 +68,13 @@ locals {
             ) : item_key => item_value
             if item_value != null
           }
-          if try(server.runtime.credentials[field_name], null) != null &&
-          (try(server.runtime.credentials[field_name], "") != "" || field_config.mode == "rw")
+          if(
+            try(server.runtime.credentials[field_name], null) != null &&
+            (
+              try(server.runtime.credentials[field_name], "") != "" ||
+              field_config.mode == "rw"
+            )
+          )
         ],
       ) : field.label => field
     }

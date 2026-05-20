@@ -10,7 +10,10 @@ locals {
           value = (
             field.bootstrap_type == "hex" ? random_id.service_secret["${service_key}-${field_name}"].hex
             : field.bootstrap_type == "base64" ? random_id.service_secret["${service_key}-${field_name}"].b64_std
-            : field.bootstrap_type != null && contains(["alphanumeric", "string"], field.bootstrap_type) ? random_password.service_secret["${service_key}-${field_name}"].result
+            : (
+              field.bootstrap_type != null &&
+              contains(["alphanumeric", "string"], field.bootstrap_type)
+            ) ? random_password.service_secret["${service_key}-${field_name}"].result
             : null
           )
         }
@@ -38,12 +41,24 @@ locals {
                 try(local.onepassword_service_existing_fields[service_key][field_name], null),
                 local._services_outputs_credentials_bootstrap["${service_key}-${field_name}"],
               ), ""))
-              if field.bootstrap_type != null || field.mode == "rw"
+              if(
+                field.bootstrap_type != null ||
+                field.mode == "rw"
+              )
             },
+            (
+              service.credentials.source == "target" &&
+              try(local.servers[service.target], null) != null
+              ) ? {
+              password = local.servers[service.target].runtime.credentials.password
+            } : {},
             service.features.b2 ? {
               b2_application_key = b2_application_key.service[service_key].application_key
             } : {},
-            service.features.password ? {
+            (
+              service.credentials.source == "service" &&
+              service.features.password
+              ) ? {
               password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service[service_key].result))
               password_hash = bcrypt_hash.service[service_key].id
             } : {},
@@ -81,7 +96,11 @@ output "services" {
   value = {
     for service_key, service in local.services : service_key => {
       for field_name, field_value in service : field_name => field_value
-      if field_value != null && field_value != "" && field_value != false
+      if(
+        field_value != null &&
+        field_value != "" &&
+        field_value != false
+      )
     }
   }
 }

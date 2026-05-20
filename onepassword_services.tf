@@ -24,21 +24,23 @@ locals {
         label   = try(dashboard_card.name, null)
         primary = try(dashboard_card.href, null) == service.urls.default.href
       }
-      if try(dashboard_card.name, "") != ""
-      && try(dashboard_card.href, "") != ""
-      && !contains([for url in values(service.urls) : url.href], try(dashboard_card.href, ""))
+      if(
+        try(dashboard_card.name, "") != "" &&
+        try(dashboard_card.href, "") != "" &&
+        !contains([for url in values(service.urls) : url.href], try(dashboard_card.href, ""))
+      )
     })
   }
 
   onepassword_service_existing_fields = {
     for service_key, item in data.http.onepassword_service_item : service_key => {
-      for field in try(jsondecode(item.response_body).fields, []) : field.id => try(field.value, "")
-      if try(field.id, "") != "" && try(field.value, "") != ""
+      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
+      if try(coalesce(field.value, ""), "") != ""
     }
   }
 
   onepassword_service_existing_ids = {
-    for service_key, item in data.http.onepassword_service_search : service_key => try(jsondecode(item.response_body)[0].id, null)
+    for service_key, item in data.http.onepassword_service_search : service_key => try(one(jsondecode(item.response_body)).id, null)
   }
 
   onepassword_service_host_urls = {
@@ -48,7 +50,7 @@ locals {
         label   = service.urls[url_key].label
         primary = service.urls[url_key].href == service.urls.default.href
       }
-      if lookup(service.urls, url_key, null) != null
+      if try(service.urls[url_key], null) != null
     ]
   }
 
@@ -70,7 +72,10 @@ locals {
             type  = "STRING"
             value = tostring(field_value)
           }
-          if field_value != null && field_value != ""
+          if(
+            field_value != null &&
+            field_value != ""
+          )
         ],
         [
           for field_name, field_config in service.credentials.fields : {
@@ -88,12 +93,17 @@ locals {
             ) : item_key => item_value
             if item_value != null
           }
-          if try(service.runtime.credentials[field_name], null) != null &&
-          (try(service.runtime.credentials[field_name], "") != "" || field_config.mode == "rw")
+          if(
+            try(service.runtime.credentials[field_name], null) != null &&
+            (
+              try(service.runtime.credentials[field_name], "") != "" ||
+              field_config.mode == "rw"
+            )
+          )
         ],
       ) : field.label => field
     }
-    if lookup(local.onepassword_service_items, service_key, null) != null
+    if try(local.onepassword_service_items[service_key], null) != null
   }
 
   onepassword_service_item_payloads = {
@@ -127,7 +137,7 @@ locals {
         id = local.defaults.onepassword.vaults.services.id
       }
     }
-    if lookup(local.onepassword_service_items, service_key, null) != null
+    if try(local.onepassword_service_items[service_key], null) != null
   }
 
   # Services that get a 1Password item: any with credential material to store.
@@ -136,7 +146,10 @@ locals {
   # the resources whose values they read.
   onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
-    if service.identity.username != "" || length(service.credentials.fields) > 0
+    if(
+      service.identity.username != "" ||
+      length(service.credentials.fields) > 0
+    )
   }
 }
 

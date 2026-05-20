@@ -1,7 +1,7 @@
 data "oci_core_vnic" "server" {
   for_each = local.oci_vms
 
-  vnic_id = data.oci_core_vnic_attachments.server[each.key].vnic_attachments[0].vnic_id
+  vnic_id = one(data.oci_core_vnic_attachments.server[each.key].vnic_attachments).vnic_id
 }
 
 data "oci_core_vnic_attachments" "server" {
@@ -55,7 +55,10 @@ locals {
   # OCI resources in this root manage VM servers only.
   oci_vms = {
     for server_key, server in local.servers_model : server_key => server
-    if server.platform == "oci" && server.type == "vm" && server.platform_config.oci != null
+    if(
+      server.platform == "oci" &&
+      server.type == "vm"
+    )
   }
 
   # Each configured ingress port expands to TCP/UDP and IPv4/IPv6 rules; ICMP is
@@ -260,7 +263,7 @@ resource "oci_core_subnet" "default" {
   compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domains.external}"
   dns_label      = each.value
-  ipv6cidr_block = replace(oci_core_vcn.default[each.value].ipv6cidr_blocks[0], "/56", "/64")
+  ipv6cidr_block = replace(one(oci_core_vcn.default[each.value].ipv6cidr_blocks), "/56", "/64")
   vcn_id         = oci_core_vcn.default[each.value].id
 }
 
@@ -270,6 +273,6 @@ resource "oci_core_vcn" "default" {
   cidr_blocks    = ["10.0.0.0/16"]
   compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domains.external}"
-  dns_label      = split(".", local.defaults.domains.external)[0]
+  dns_label      = regex("^[^.]+", local.defaults.domains.external)
   is_ipv6enabled = true
 }

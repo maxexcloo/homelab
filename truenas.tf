@@ -8,15 +8,20 @@ locals {
 
   truenas_input_services = {
     for service_key, service in local.services_model : service_key => service
-    if lookup(local.truenas_input_servers, service.target, null) != null &&
-    service.identity.service != null
+    if(
+      service.identity.service != null &&
+      try(local.truenas_input_servers[service.target], null) != null
+    )
   }
 
   truenas_prepare_catalog_templates = {
     for service_key, service in local.truenas_input_services : service_key => {
       path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
     }
-    if service.identity.service != null && fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
+    if(
+      service.identity.service != null &&
+      fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
+    )
   }
 
   # Compose wins over catalog: a service with docker-compose.yaml.tftpl deploys
@@ -75,8 +80,10 @@ locals {
           ),
         )
       }
-      if !fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
-      lookup(local.truenas_prepare_catalog_templates, service_key, null) != null
+      if(
+        !fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
+        try(local.truenas_prepare_catalog_templates[service_key], null) != null
+      )
     },
     {
       # 3) Generic sidecar files (env, configs, etc.)
@@ -88,7 +95,7 @@ locals {
           file           = "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
         },
       )
-      if lookup(local.truenas_input_servers, file_config.target, null) != null
+      if try(local.truenas_input_servers[file_config.target], null) != null
     }
   )
 }

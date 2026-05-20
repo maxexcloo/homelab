@@ -8,14 +8,17 @@ locals {
         length = length(zone)
         name   = zone
       }
-      if url == zone || endswith(url, ".${zone}")
+      if(
+        url == zone ||
+        endswith(url, ".${zone}")
+      )
     ]
   }
 
   dns_render_managed_zones_by_url = {
     for url, matches in local._dns_render_zones_matching : url => try(
-      [for match in matches : match.name if match.length == max(matches[*].length...)][0],
-      null
+      one([for match in matches : match.name if match.length == max(matches[*].length...)]),
+      null,
     )
   }
 
@@ -41,65 +44,78 @@ locals {
 
   dns_render_records_servers = merge([
     for server_key, server in local.servers_model : merge(
-      server.addresses.public_ipv4 != null && server.platform != "oci" ? {
+      (
+        server.platform != "oci" &&
+        server.addresses.public_ipv4 != null
+        ) ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
-          content = server.addresses.public_ipv4
-          name    = server.hosts.external
-          proxied = false
-          type    = "A"
-          zone    = local.defaults.domains.external
+          content  = server.addresses.public_ipv4
+          name     = server.hosts.external
+          proxied  = false
+          type     = "A"
+          wildcard = true
+          zone     = local.defaults.domains.external
         }
       } : {},
-      server.addresses.public_ipv6 != null && server.platform != "oci" ? {
+      (
+        server.platform != "oci" &&
+        server.addresses.public_ipv6 != null
+        ) ? {
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
-          content = server.addresses.public_ipv6
-          name    = server.hosts.external
-          proxied = false
-          type    = "AAAA"
-          zone    = local.defaults.domains.external
+          content  = server.addresses.public_ipv6
+          name     = server.hosts.external
+          proxied  = false
+          type     = "AAAA"
+          wildcard = true
+          zone     = local.defaults.domains.external
         }
       } : {},
       server.platform == "oci" ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
-          content = data.oci_core_vnic.server[server_key].public_ip_address
-          name    = server.hosts.external
-          proxied = false
-          type    = "A"
-          zone    = local.defaults.domains.external
+          content  = data.oci_core_vnic.server[server_key].public_ip_address
+          name     = server.hosts.external
+          proxied  = false
+          type     = "A"
+          wildcard = true
+          zone     = local.defaults.domains.external
         }
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
-          content = data.oci_core_vnic.server[server_key].ipv6addresses[0]
-          name    = server.hosts.external
-          proxied = false
-          type    = "AAAA"
-          zone    = local.defaults.domains.external
+          content  = one(data.oci_core_vnic.server[server_key].ipv6addresses)
+          name     = server.hosts.external
+          proxied  = false
+          type     = "AAAA"
+          wildcard = true
+          zone     = local.defaults.domains.external
         }
       } : {},
       server.hosts.public != null ? {
         "${local.defaults.domains.external}-${server_key}-cname" = {
-          content = server.hosts.public
-          name    = server.hosts.external
-          proxied = false
-          type    = "CNAME"
-          zone    = local.defaults.domains.external
+          content  = server.hosts.public
+          name     = server.hosts.external
+          proxied  = false
+          type     = "CNAME"
+          wildcard = true
+          zone     = local.defaults.domains.external
         }
       } : {},
       local.servers[server_key].runtime.addresses.tailscale_ipv4 != "" ? {
         "${local.defaults.domains.internal}-${server_key}-a" = {
-          content = local.servers[server_key].runtime.addresses.tailscale_ipv4
-          name    = server.hosts.internal
-          proxied = false
-          type    = "A"
-          zone    = local.defaults.domains.internal
+          content  = local.servers[server_key].runtime.addresses.tailscale_ipv4
+          name     = server.hosts.internal
+          proxied  = false
+          type     = "A"
+          wildcard = true
+          zone     = local.defaults.domains.internal
         }
       } : {},
       local.servers[server_key].runtime.addresses.tailscale_ipv6 != "" ? {
         "${local.defaults.domains.internal}-${server_key}-aaaa" = {
-          content = local.servers[server_key].runtime.addresses.tailscale_ipv6
-          name    = server.hosts.internal
-          proxied = false
-          type    = "AAAA"
-          zone    = local.defaults.domains.internal
+          content  = local.servers[server_key].runtime.addresses.tailscale_ipv6
+          name     = server.hosts.internal
+          proxied  = false
+          type     = "AAAA"
+          wildcard = true
+          zone     = local.defaults.domains.internal
         }
       } : {},
     )
@@ -116,18 +132,18 @@ locals {
           zone    = local.dns_render_managed_zones_by_url[url]
 
           content = (
-            local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
-            service.routing.expose == "cloudflare"
+            service.routing.expose == "cloudflare" &&
+            local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
             ? "${local.servers[service.target].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
             : local.services_model_proxy_server[service_key] != null
             ? local.servers_model[local.services_model_proxy_server[service_key]].hosts.external
-            : try(coalesce(try(service.urls.external.host, null), try(service.urls.internal.host, null)), null)
+            : service.routing.dns_target_host
           )
         }
       }
       if local.dns_render_managed_zones_by_url[url] != null
     ]
-    if lookup(local.servers_model, service.target, null) != null
+    if try(local.servers_model[service.target], null) != null
   ])...)
 
   # Fly's fly.dev hostnames are served directly by Fly; only custom URLs need DNS.
@@ -178,7 +194,10 @@ locals {
         proxied = record.proxied
         zone    = record.zone
       }
-      if contains(["A", "AAAA", "CNAME"], record.type) && try(record.wildcard, true)
+      if(
+        contains(["A", "AAAA", "CNAME"], record.type) &&
+        record.wildcard
+      )
       ]) : "${hostname.zone}-${hostname.name}-wildcard" => {
       content = hostname.name
       name    = "*.${hostname.name}"

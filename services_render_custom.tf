@@ -10,10 +10,10 @@ locals {
     for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) : dashboard_card.sort => dashboard_card
   }
 
-  _services_render_custom_homepage_data = [
+  _services_render_custom_homepage_data = one([
     for svc in values(local.services_render_services) : svc.data
     if svc.identity.name == "homepage"
-  ][0]
+  ])
 
   _services_render_custom_homepage_groups = concat(
     local._services_render_custom_homepage_service_groups,
@@ -30,8 +30,10 @@ locals {
 
         card = {
           for field, value in dashboard_card : field => value
-          if value != null &&
-          !contains(["group", "name"], field)
+          if(
+            value != null &&
+            !contains(["group", "name"], field)
+          )
         }
       }
     ]
@@ -65,12 +67,16 @@ locals {
 
         card = {
           for field, value in dashboard_card : field => value
-          if value != null &&
-          !contains(["group", "name"], field)
+          if(
+            value != null &&
+            !contains(["group", "name"], field)
+          )
         }
       }
-      if service.identity.name != "homepage" &&
-      dashboard_card.name != ""
+      if(
+        service.identity.name != "homepage" &&
+        dashboard_card.name != ""
+      )
     ]
   ])
 
@@ -82,27 +88,23 @@ locals {
   _services_render_custom_homepage = {
     layout = [
       for group in local._services_render_custom_homepage_groups : {
-        (group) = (
-          group == "Providers" ? {
+        (group) = merge(
+          {
             columns = 2
             style   = "row"
-            tab     = "Services"
-            } : contains(local._services_render_custom_homepage_service_groups, group) ? {
+            tab     = contains(local._services_render_custom_homepage_server_groups, group) ? "Servers" : "Services"
+          },
+          contains(local._services_render_custom_homepage_service_groups, group) ? {
             columns = local._services_render_custom_homepage_data.groups[group].columns
             style   = local._services_render_custom_homepage_data.groups[group].style
-            tab     = "Services"
-            } : {
-            columns = 2
-            style   = "row"
-            tab     = "Servers"
-          }
+          } : {},
         )
       }
     ]
 
     services = [
       for group in local._services_render_custom_homepage_groups : {
-        (group) = lookup(local._services_render_custom_homepage_cards_by_group, group, [])
+        (group) = try(local._services_render_custom_homepage_cards_by_group[group], [])
       }
       if group != "Providers"
     ]
@@ -121,11 +123,13 @@ locals {
             backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8000"
             host        = svc.urls.default.host
           }
-          if svc.routing.expose != null &&
-          startswith(svc.routing.expose, "proxy-") &&
-          trimprefix(svc.routing.expose, "proxy-") == service.target &&
-          try(local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4, null) != null &&
-          svc.urls.default.host != null
+          if(
+            svc.routing.expose != null &&
+            startswith(svc.routing.expose, "proxy-") &&
+            trimprefix(svc.routing.expose, "proxy-") == service.target &&
+            try(local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4, null) != null &&
+            svc.urls.default.host != null
+          )
         }
       },
     )
@@ -136,17 +140,39 @@ locals {
       for label_key, label_value in merge(
         service.routing.backend_port != null ? {
           "traefik.enable"                                                            = "true"
-          "traefik.http.routers.${service.identity.name}.entrypoints"                 = service.routing.expose == "cloudflare" || (service.routing.expose != null && startswith(service.routing.expose, "proxy-")) ? "web,websecure,webinternal" : "web,websecure"
-          "traefik.http.routers.${service.identity.name}.tls.certresolver"            = service.routing.https && service.routing.expose != "cloudflare" && (service.routing.expose == null || !startswith(service.routing.expose, "proxy-")) ? "cloudflare" : null
           "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(service.routing.backend_port)
           "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.backend_scheme == "https" ? "https" : null
 
+          "traefik.http.routers.${service.identity.name}.entrypoints" = (
+            service.routing.expose == "cloudflare" ||
+            (
+              service.routing.expose != null &&
+              startswith(service.routing.expose, "proxy-")
+            )
+          ) ? "web,websecure,webinternal" : "web,websecure"
+
+          "traefik.http.routers.${service.identity.name}.tls.certresolver" = (
+            service.routing.expose != "cloudflare" &&
+            service.routing.https &&
+            (
+              service.routing.expose == null ||
+              !startswith(service.routing.expose, "proxy-")
+            )
+          ) ? "cloudflare" : null
+
           "traefik.http.routers.${service.identity.name}.middlewares" = (
-            service.routing.expose == "internal" && service.routing.https
+            service.routing.expose == "internal" &&
+            service.routing.https
             ? "internal-only@docker,redirect-to-https@docker"
             : service.routing.expose == "internal"
             ? "internal-only@docker"
-            : service.routing.expose == "cloudflare" || (service.routing.expose != null && startswith(service.routing.expose, "proxy-"))
+            : (
+              service.routing.expose == "cloudflare" ||
+              (
+                service.routing.expose != null &&
+                startswith(service.routing.expose, "proxy-")
+              )
+            )
             ? null
             : service.routing.https
             ? "redirect-to-https@docker"
@@ -156,14 +182,26 @@ locals {
           "traefik.http.routers.${service.identity.name}.rule" = join(" || ", [
             for host in distinct([
               for url_key, url in service.urls : url.host
-              if url_key != "default" && url.host != null && url.host != ""
+              if(
+                url_key != "default" &&
+                url.host != null &&
+                url.host != ""
+              )
             ]) : "Host(`${host}`)"
           ])
         } : {},
-        service.routing.backend_port != null && service.routing.https && service.routing.expose != "cloudflare" && (service.routing.expose == null || !startswith(service.routing.expose, "proxy-")) ? {
+        (
+          service.routing.backend_port != null &&
+          service.routing.expose != "cloudflare" &&
+          service.routing.https &&
+          (
+            service.routing.expose == null ||
+            !startswith(service.routing.expose, "proxy-")
+          )
+          ) ? {
           for url_index, url in [
             for url in service.routing.urls : url
-            if lookup(local.dns_render_managed_zones_by_url, url, null) != null
+            if try(local.dns_render_managed_zones_by_url[url], null) != null
           ] :
           "traefik.http.routers.${service.identity.name}.tls.domains[${url_index}].main" => url
         } : {},

@@ -83,11 +83,11 @@ locals {
   # Device names are matched back to server slugs; only the first IPv4/IPv6
   # address of each family is used for generated internal DNS records.
   tailscale_device_addresses = {
-    for device in data.tailscale_devices.all.devices : split(".", device.name)[0] => {
+    for device in data.tailscale_devices.all.devices : regex("^[^.]+", device.name) => {
       address = device.name
-      id      = try(device.id, null)
-      ipv4    = try([for address in device.addresses : address if can(cidrhost("${address}/32", 0))][0], null)
-      ipv6    = try([for address in device.addresses : address if can(cidrhost("${address}/128", 0))][0], null)
+      id      = try(device.id, "")
+      ipv4    = try(one([for address in device.addresses : address if can(cidrhost("${address}/32", 0))]), "")
+      ipv6    = try(one([for address in device.addresses : address if can(cidrhost("${address}/128", 0))]), "")
     }
   }
 

@@ -232,6 +232,10 @@
           "propertyNames": {
             "pattern": "^[a-z0-9_]+$"
           }
+        },
+        "source": {
+          "description": "Where username/password credentials come from. service uses service.identity.username and service-generated password fields. target inherits the target server username and password.",
+          "enum": ["service", "target"]
         }
       }
     },
@@ -424,6 +428,10 @@
                 "propertyNames": {
                   "pattern": "^[a-z0-9_]+$"
                 }
+              },
+              "source": {
+                "description": "Per-target credential source override.",
+                "enum": ["service", "target"]
               }
             }
           },

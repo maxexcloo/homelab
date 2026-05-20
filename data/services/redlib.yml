@@ -11,10 +11,10 @@ dashboard:
     siteMonitor: ${service.urls.default.href}
 data:
   settings:
-    default_remove_default_feeds: "on"
-    default_show_nsfw: "on"
-    default_use_hls: "on"
-    robots_disable_indexing: "on"
+    default_remove_default_feeds: on
+    default_show_nsfw: on
+    default_use_hls: on
+    robots_disable_indexing: on
   subscriptions:
     - anime_titties
     - apple

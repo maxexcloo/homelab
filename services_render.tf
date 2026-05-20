@@ -30,13 +30,15 @@ locals {
         local.services_render_template_context[service_key],
       ),
     )
-    if service.identity.service != null &&
-    fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
-    (
-      lookup(local.truenas_input_servers, service.target, null) != null ||
+    if(
+      service.identity.service != null &&
+      fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
       (
-        lookup(local.servers_model, service.target, null) != null &&
-        local.servers_model[service.target].features.docker
+        try(local.truenas_input_servers[service.target], null) != null ||
+        (
+          try(local.servers_model[service.target], null) != null &&
+          local.servers_model[service.target].features.docker
+        )
       )
     )
   }
@@ -74,7 +76,7 @@ locals {
         {
           for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services[real_key]
-          if lookup(local.services, real_key, null) != null
+          if try(local.services[real_key], null) != null
         },
       )
     }
@@ -89,9 +91,12 @@ locals {
           services = {
             for compose_service_key, compose_service in compose.services : compose_service_key => merge(
               compose_service,
-              compose_service_key == local.services_render_services[service_key].routing.container && length(local.services_render_services[service_key].routing_labels) > 0 ? {
+              (
+                compose_service_key == local.services_render_services[service_key].routing.container &&
+                length(local.services_render_services[service_key].routing_labels) > 0
+                ) ? {
                 labels = merge(
-                  lookup(compose_service, "labels", {}),
+                  try(compose_service.labels, {}),
                   local.services_render_services[service_key].routing_labels,
                 )
               } : {},
@@ -120,14 +125,13 @@ locals {
         content_type = (
           file_input.raw_encrypt
           ? "binary"
-          : lookup(
+          : try(
             {
               ".env"  = "dotenv"
               ".json" = "json"
               ".yaml" = "yaml"
               ".yml"  = "yaml"
-            },
-            try(regex("\\.[^.]+$", lower(file_input.rel_path)), ""),
+            }[try(regex("\\.[^.]+$", lower(file_input.rel_path)), "")],
             "binary",
           )
         )
@@ -164,7 +168,7 @@ locals {
     for service_key, service in local.services : service_key => merge(
       local.services_render_context_base[service_key],
       {
-        custom  = lookup(local.services_render_custom_context, service_key, {})
+        custom  = try(local.services_render_custom_context[service_key], {})
         service = local.services_render_services[service_key]
 
         services = merge(
@@ -172,7 +176,7 @@ locals {
           {
             for alias, real_key in local.services_model_imports[service_key] :
             alias => local.services_render_services[real_key]
-            if lookup(local.services_render_services, real_key, null) != null
+            if try(local.services_render_services[real_key], null) != null
           },
         )
       },

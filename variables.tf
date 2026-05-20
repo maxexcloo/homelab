@@ -5,8 +5,12 @@ variable "debug_dir" {
   type        = string
 
   validation {
-    condition     = var.debug_dir == "" || !can(regex("[\r\n]", var.debug_dir))
     error_message = "Debug directory must be empty or a single-line path."
+
+    condition = (
+      var.debug_dir == "" ||
+      !can(regex("[\r\n]", var.debug_dir))
+    )
   }
 }
 

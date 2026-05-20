@@ -2,15 +2,19 @@ locals {
   # Cloudflare Universal SSL covers only one subdomain level.
   services_validation_cloudflare_deep_subdomains = [
     for record_key, record in local.dns_render_records_services : "${record_key} (${record.name})"
-    if length(split(".", record.name)) - length(split(".", record.zone)) > 1 &&
-    try(record.proxied, false)
+    if(
+      try(record.proxied, false) &&
+      length(split(".", record.name)) - length(split(".", record.zone)) > 1
+    )
   ]
 
   services_validation_cloudflare_tunnel_missing = [
     for service_key, service in local.services_model : service_key
-    if lookup(local.servers_model, service.target, null) != null &&
-    !local.servers_model[service.target].features.cloudflare_zero_trust_tunnel &&
-    service.routing.expose == "cloudflare"
+    if(
+      service.routing.expose == "cloudflare" &&
+      try(local.servers_model[service.target], null) != null &&
+      !local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
+    )
   ]
 
   services_validation_file_key_mismatches = [
@@ -20,8 +24,10 @@ locals {
 
   services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
-    if lookup(service.targets, "fly", null) != null &&
-    service.routing.backend_port == null
+    if(
+      try(service.targets.fly, null) != null &&
+      service.routing.backend_port == null
+    )
   ]
 
   services_validation_homepage_missing = length([
@@ -32,62 +38,90 @@ locals {
   services_validation_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
-      if lookup(local.services_model, import_alias, null) != null
+      if try(local.services_model[import_alias], null) != null
     ]
   ])
 
   services_validation_invalid_imports = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
-      if lookup(local.services_model, service_ref, null) == null
+      if try(local.services_model[service_ref], null) == null
     ]
   ])
 
   services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
-      if lookup(local.servers_model, target, null) == null &&
-      target != "fly"
+      if(
+        target != "fly" &&
+        try(local.servers_model[target], null) == null
+      )
     ]
   ])
 
   services_validation_proxy_no_port = [
     for service_key, service in local.services_model : service_key
-    if service.routing.expose != null &&
-    startswith(service.routing.expose, "proxy-") &&
-    service.routing.backend_port == null
+    if(
+      service.routing.expose != null &&
+      startswith(service.routing.expose, "proxy-") &&
+      service.routing.backend_port == null
+    )
   ]
 
   services_validation_proxy_server_missing = [
     for service_key, server_key in local.services_model_proxy_server : "${service_key} -> ${server_key}"
-    if server_key != null &&
-    lookup(local.servers_model, server_key, null) == null
+    if(
+      server_key != null &&
+      try(local.servers_model[server_key], null) == null
+    )
+  ]
+
+  services_validation_target_credentials_invalid = [
+    for service_key, service in local.services_model : service_key
+    if(
+      service.credentials.source == "target" &&
+      try(!local.servers_model[service.target].features.password, true)
+    )
+  ]
+
+  services_validation_target_credentials_password_feature = [
+    for service_key, service in local.services_model : service_key
+    if(
+      service.credentials.source == "target" &&
+      service.features.password
+    )
   ]
 
   services_validation_truenas_config_invalid_targets = [
     for service_key, service in local.services_model : service_key
-    if lookup(local.truenas_input_servers, service.target, null) == null &&
-    (
-      service.truenas.catalog_app != "" ||
-      length(service.truenas.env) > 0 ||
-      service.truenas.port_key != local.defaults.targets.truenas.port_key ||
-      service.truenas.train != local.defaults.targets.truenas.train
+    if(
+      try(local.truenas_input_servers[service.target], null) == null &&
+      (
+        service.truenas.catalog_app != "" ||
+        length(service.truenas.env) > 0 ||
+        service.truenas.port_key != local.defaults.targets.truenas.port_key ||
+        service.truenas.train != local.defaults.targets.truenas.train
+      )
     )
   ]
 
   services_validation_truenas_missing_template = [
     for service_key, service in local.truenas_input_services : service_key
-    if lookup(local.services_render_files_compose, service_key, null) == null &&
-    lookup(local.truenas_prepare_catalog_templates, service_key, null) == null
+    if(
+      try(local.services_render_files_compose[service_key], null) == null &&
+      try(local.truenas_prepare_catalog_templates[service_key], null) == null
+    )
   ]
 
   services_validation_unmanaged_urls = flatten([
     for service_key, service in local.services_model : [
       for url in service.routing.urls : "${service_key} -> ${url}"
-      if lookup(local.dns_render_managed_zones_by_url, url, null) == null &&
-      service.routing.expose != "cloudflare" &&
-      service.routing.https &&
-      service.target != "fly"
+      if(
+        service.target != "fly" &&
+        service.routing.expose != "cloudflare" &&
+        service.routing.https &&
+        try(local.dns_render_managed_zones_by_url[url], null) == null
+      )
     ]
   ])
 }
@@ -162,6 +196,20 @@ resource "terraform_data" "services_validation" {
       condition = length(local.services_validation_truenas_config_invalid_targets) == 0
       error_message = (
         "targets.<key>.truenas settings are only valid for services targeting TrueNAS servers: ${join(", ", local.services_validation_truenas_config_invalid_targets)}"
+      )
+    }
+
+    precondition {
+      condition = length(local.services_validation_target_credentials_invalid) == 0
+      error_message = (
+        "Service credentials.source = target requires a server target with password enabled: ${join(", ", local.services_validation_target_credentials_invalid)}"
+      )
+    }
+
+    precondition {
+      condition = length(local.services_validation_target_credentials_password_feature) == 0
+      error_message = (
+        "Service credentials.source = target cannot be combined with service features.password: ${join(", ", local.services_validation_target_credentials_password_feature)}"
       )
     }
 

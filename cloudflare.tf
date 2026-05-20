@@ -20,10 +20,6 @@ data "cloudflare_zone" "all" {
 }
 
 locals {
-  _cloudflare_tunnel_backend_urls = {
-    for service_key, service in local.services_model : service_key => coalesce(service.routing.backend_url, "http://localhost:8000")
-  }
-
   # Custom routing.urls are only routed when backed by a managed DNS record to prevent
   # routing unmanaged hostnames through the tunnel. distinct() guards against the external
   # hostname appearing in routing.urls twice. The http_status:503 catch-all is required
@@ -33,23 +29,22 @@ locals {
     for server_key, server in local.servers_by_feature.cloudflare_zero_trust_tunnel : server_key => concat(
       flatten([
         for service_key, service in local.services_model : [
-          for hostname in distinct(concat(
-            compact([try(service.urls.external.host, null)]),
-            [for url in service.routing.urls : url if lookup(local.dns_render_managed_zones_by_url, url, null) != null]
-            )) : merge(
+          for hostname in service.routing.cloudflare_hostnames : merge(
             {
               hostname = hostname
-              service  = local._cloudflare_tunnel_backend_urls[service_key]
+              service  = service.routing.backend_url
             },
-            startswith(local._cloudflare_tunnel_backend_urls[service_key], "https://") ? {
+            startswith(service.routing.backend_url, "https://") ? {
               origin_request = {
                 no_tls_verify = true
               }
             } : {},
           )
         ]
-        if service.target == server_key &&
-        service.routing.expose == "cloudflare"
+        if(
+          service.routing.expose == "cloudflare" &&
+          service.target == server_key
+        )
       ]),
       [
         {

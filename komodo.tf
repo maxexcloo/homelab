@@ -3,9 +3,11 @@ locals {
   # server targets.
   komodo_input_stacks = {
     for service_key, service in local.services_model : service_key => service
-    if lookup(local.servers_model, service.target, null) != null &&
-    local.servers_model[service.target].features.docker &&
-    lookup(local.services_render_files_compose, service_key, null) != null
+    if(
+      try(local.servers_model[service.target], null) != null &&
+      local.servers_model[service.target].features.docker &&
+      try(local.services_render_files_compose[service_key], null) != null
+    )
   }
 
   # Encrypted GitHub files consumed by Komodo ResourceSync. Service sidecar files
@@ -29,8 +31,10 @@ locals {
           file           = file_key
         },
       )
-      if lookup(local.servers_model, file_config.target, null) != null &&
-      local.servers_model[file_config.target].features.docker
+      if(
+        try(local.servers_model[file_config.target], null) != null &&
+        local.servers_model[file_config.target].features.docker
+      )
     }
   )
 }

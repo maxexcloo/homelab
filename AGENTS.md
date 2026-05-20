@@ -41,18 +41,19 @@ Applies consistently to:
 - HCL `environment {}` blocks
 - HCL `templatefile()` argument objects
 
-Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by name; the single-line/multi-line ordering applies inside each local's object value.
+Inside staged HCL `locals {}` blocks, order top-level locals in data-flow order; sort unrelated locals alphabetically within the same dependency layer. The single-line/multi-line ordering applies inside each local's object value.
 
 ## HCL Standards
 
 - **Formatting**: `tofu fmt -recursive` (run via `mise run fmt`)
 - **`for_each`**: Always prefer over `count`; use a named local for filtered/shaped resource/data `for_each` inputs
 - **Block ordering**: In resource/data/module blocks, put `for_each` and module `source` first (alphabetically), blank line, then remaining arguments alphabetically
-- **Comprehensions**: Use descriptive names (`server_key`, `service`, `record`, `file_path`). Avoid `k`/`v` except in trivial non-nested expressions. Use `for k, v in map` when both key and value are needed; `for v in values(map)` when only the value is needed; `for k in keys(map)` when only the key is needed. Never `for _, v in map` — discard the key with `values(map)` instead. Never `contains(keys(map), x)` — use `lookup(map, x, null) != null`.
+- **Comprehensions**: Use descriptive names (`server_key`, `service`, `record`, `file_path`). Avoid `k`/`v` except in trivial non-nested expressions. Use `for k, v in map` when both key and value are needed; `for v in values(map)` when only the value is needed; `for k in keys(map)` when only the key is needed. Never `for _, v in map` — discard the key with `values(map)` instead. Never `contains(keys(map), x)` — use `try(map[x], null) != null`.
+- **Helper locals**: Prefer formatting an expression clearly over extracting a helper local used only once. Add a helper only when it represents a meaningful domain concept, avoids real duplication, or makes a complex pipeline materially easier to review.
 - **Locals — naming and ordering**:
   - `snake_case` for all resources, locals, and variables
   - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_files_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
-  - **Helpers** (locals used only within their own staged file) are prefixed with `_` so they sort ahead of public locals in the `locals {}` block. Per-provider files (`unifi.tf`, `github.tf`, `b2.tf`, …) don't follow the `{domain}_{layer}_{noun}` shape and don't use the `_` prefix — all locals there sort purely alphabetically.
+  - **Helpers** (locals used only within their own staged file) are prefixed with `_`. Per-provider files (`unifi.tf`, `github.tf`, `b2.tf`, …) don't follow the `{domain}_{layer}_{noun}` shape and don't use the `_` prefix — all locals there sort by dependency first, then alphabetically within a dependency layer.
   - The main output of a stage drops suffixes like `_all`, `_final`, `_merged`, and `_write`: use `dns_render_records`, not `dns_render_records_all`. If that output depends on same-prefix intermediates, keep it at the bottom as a deliberate data-flow exception.
 - **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes.
 - **Runtime shape**: Runtime values live under `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, `runtime.urls`, and `runtime.credentials`. Use model fields unless the value is provider-backed.
@@ -60,9 +61,15 @@ Inside staged HCL `locals {}` blocks, sort top-level locals alphabetically by na
 - **Sensitive data**: `sensitive = true` on all outputs containing credentials; credential values live under `runtime.credentials`
 - **Consumer data source**: Downstream resources and output locals should reference `local.servers_model` / `local.services_model`, not `local.servers_input` / `local.services_input_targets`. The model layer normalises credential fields and adds computed attributes. Use input-layer locals only within their own staged file.
 - **Defaults**: Set values in `data/defaults.yml` wherever possible; use `try()` / `coalesce()` only when no applicable default exists
+- **Fallbacks and sentinels**:
+  - Prefer normalising optional values once in the input/model layer, then direct field access in render/resource code.
+  - Use `coalesce()` only for nullable values with a guaranteed non-null fallback. For string sentinels where `""` means unset, use an explicit `value != "" ? value : fallback` normalization.
+  - Use `try(map[key], null)` for relationship boundaries and validations where a key may be absent. Avoid repeating it in consumers; create a shaped local when the same relationship is reused.
+  - Use `try()` when the expression itself is the cleanest way to handle dynamic absence or errors: provider/API/decoded data, parsing probes, optional generated object keys, empty ordered candidate lists, and other cases defaults cannot prevent. Do not contort code into `lookup()` or length guards just to avoid `try()`.
+  - Use `one()` for true singleton assertions. For ordered “first match, else null” logic, prefer the clearest expression; `try()` around the first-candidate expression is acceptable.
 - **Merge functions**: Use `merge()` for shallow merges of flat objects; use `provider::deepmerge::mergo()` only when nested keys must combine recursively (server/service YAML overrides, config blob composition, JSON catalog overlays)
-- **`try()` vs `lookup()`**: Use `try(map[key], fallback)` for provider-controlled or external maps where key presence or value type isn't guaranteed (e.g. 1Password field lookups). Use `lookup(map, key, default)` for internal maps whose shape is guaranteed by defaults.
-- **Multi-condition `if` clauses**: When a comprehension or resource filter has more than one condition, put each on its own line with `&&` or `||` at the end. Sort conditions alphabetically where dependencies allow. A guard `lookup(...) != null` must immediately precede any condition that indexes the same map. Single-condition `if` stays on one line.
+- **`try()` vs `lookup()`**: Prefer direct access after input/model normalization. Use `try(map[key], fallback)` for provider-controlled/external maps, optional generated object keys, relationship membership checks, and default fallback reads. Avoid `lookup()` unless a provider function or schema specifically makes it clearer.
+- **Multi-condition predicates**: When a comprehension `if`, resource filter, ternary condition, precondition, or other boolean predicate has more than one condition, wrap it in parentheses and put each condition on its own line with `&&` or `||` at the end. `tofu fmt` renders comprehension filters as `if(`; do not fight the formatter for a space. Order broad discriminators first (`platform`, `type`, target/source), then existence guards immediately before dependent dereferences, then specific field/value checks. Sort sibling conditions alphabetically only when that does not weaken readability or guard ordering. Single-condition predicates stay on one line.
 - **Validation**: Use `terraform_data` preconditions for referential integrity checks
 
 ### Template authoring

@@ -81,6 +81,7 @@ services:
   data: {}
   credentials:
     fields: {}
+    source: service
   features:
     b2: false
     monitoring: true
@@ -93,6 +94,7 @@ services:
     description: ""
     group: ""
     name: ""
+    service: null
     title: ""
     username: ""
   imports:

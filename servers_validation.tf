@@ -1,31 +1,40 @@
 locals {
   servers_validation_invalid_incus_vm_parents = [
     for server_key, server in local.servers_input : server_key
-    if server.platform == "incus" && server.type == "vm" && (
-      server.parent == "" ||
-      try(
-        local.servers_input[server.parent].platform != "incus" ||
-        local.servers_input[server.parent].type != "server" ||
-        local.servers_input[server.parent].networking.management_host == "",
-        true
+    if(
+      server.platform == "incus" &&
+      server.type == "vm" &&
+      (
+        server.parent == "" ||
+        try(
+          local.servers_input[server.parent].platform != "incus" ||
+          local.servers_input[server.parent].type != "server" ||
+          local.servers_input[server.parent].networking.management_host == "",
+          true
+        )
       )
     )
   ]
 
   servers_validation_invalid_oci_types = [
     for server_key, server in local.servers_input : server_key
-    if server.platform == "oci" && server.type != "vm"
+    if(
+      server.platform == "oci" &&
+      server.type != "vm"
+    )
   ]
 
   servers_validation_invalid_parents = [
     for server_key, server in local.servers_input : "${server_key} -> ${server.parent}"
-    if server.parent != "" &&
-    lookup(local.servers_input, server.parent, null) == null
+    if(
+      server.parent != "" &&
+      try(local.servers_input[server.parent], null) == null
+    )
   ]
 
   servers_validation_invalid_types = [
     for server_key, server in local.servers_input : server_key
-    if lookup(local.defaults.server_types, server.type, null) == null
+    if try(local.defaults.server_types[server.type], null) == null
   ]
 
   servers_validation_key_mismatches = [
@@ -39,40 +48,64 @@ locals {
 
   servers_validation_long_parent_chains = [
     for server_key, server in local.servers_input : server_key
-    if server.parent != "" &&
-    try(local.servers_input[local.servers_input[server.parent].parent].parent != "", false)
+    if(
+      server.parent != "" &&
+      try(local.servers_input[local.servers_input[server.parent].parent].parent != "", false)
+    )
   ]
 
   servers_validation_oci_always_free_a1_cpus = sum([
     for server in values(local.servers_input) : server.platform_config.oci.cpus
-    if server.platform == "oci" && server.type == "vm" && server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+    if(
+      server.platform == "oci" &&
+      server.type == "vm" &&
+      server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+    )
   ])
 
   servers_validation_oci_always_free_a1_memory = sum([
     for server in values(local.servers_input) : server.platform_config.oci.memory
-    if server.platform == "oci" && server.type == "vm" && server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+    if(
+      server.platform == "oci" &&
+      server.type == "vm" &&
+      server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+    )
   ])
 
   servers_validation_oci_always_free_boot_volume_gbs = sum([
     for server in values(local.servers_input) : server.platform_config.oci.disk_size
-    if server.platform == "oci" && server.type == "vm"
+    if(
+      server.platform == "oci" &&
+      server.type == "vm"
+    )
   ])
 
   servers_validation_oci_always_free_micro_instances = length([
     for server in values(local.servers_input) : server
-    if server.platform == "oci" && server.type == "vm" && server.platform_config.oci.shape == "VM.Standard.E2.1.Micro"
+    if(
+      server.platform == "oci" &&
+      server.type == "vm" &&
+      server.platform_config.oci.shape == "VM.Standard.E2.1.Micro"
+    )
   ])
 
   servers_validation_oci_always_free_shapes_invalid = [
     for server_key, server in local.servers_input : server_key
-    if server.platform == "oci" && server.type == "vm" && !contains(["VM.Standard.A1.Flex", "VM.Standard.E2.1.Micro"], server.platform_config.oci.shape)
+    if(
+      server.platform == "oci" &&
+      server.type == "vm" &&
+      !contains(["VM.Standard.A1.Flex", "VM.Standard.E2.1.Micro"], server.platform_config.oci.shape)
+    )
   ]
 
   servers_validation_parent_cycles = [
     for server_key, server in local.servers_input : server_key
-    if server.parent != "" && (
-      try(local.servers_input[server.parent].parent == server_key, false) ||
-      try(local.servers_input[local.servers_input[server.parent].parent].parent == server_key, false)
+    if(
+      server.parent != "" &&
+      (
+        try(local.servers_input[server.parent].parent == server_key, false) ||
+        try(local.servers_input[local.servers_input[server.parent].parent].parent == server_key, false)
+      )
     )
   ]
 
@@ -125,27 +158,42 @@ resource "terraform_data" "servers_validation" {
 
     # OCI Always Free quota enforcement. Only checked when var.oci_always_free is true.
     precondition {
-      condition     = !var.oci_always_free || length(local.servers_validation_oci_always_free_shapes_invalid) == 0
+      condition = (
+        !var.oci_always_free ||
+        length(local.servers_validation_oci_always_free_shapes_invalid) == 0
+      )
       error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", nonsensitive(local.servers_validation_oci_always_free_shapes_invalid))}"
     }
 
     precondition {
-      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_a1_cpus <= 4
+      condition = (
+        !var.oci_always_free ||
+        local.servers_validation_oci_always_free_a1_cpus <= 4
+      )
       error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${nonsensitive(local.servers_validation_oci_always_free_a1_cpus)})."
     }
 
     precondition {
-      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_a1_memory <= 24
+      condition = (
+        !var.oci_always_free ||
+        local.servers_validation_oci_always_free_a1_memory <= 24
+      )
       error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${nonsensitive(local.servers_validation_oci_always_free_a1_memory)} GB)."
     }
 
     precondition {
-      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_micro_instances <= 2
+      condition = (
+        !var.oci_always_free ||
+        local.servers_validation_oci_always_free_micro_instances <= 2
+      )
       error_message = "Always Free Micro instances must not exceed 2 (got ${nonsensitive(local.servers_validation_oci_always_free_micro_instances)})."
     }
 
     precondition {
-      condition     = !var.oci_always_free || local.servers_validation_oci_always_free_boot_volume_gbs <= 200
+      condition = (
+        !var.oci_always_free ||
+        local.servers_validation_oci_always_free_boot_volume_gbs <= 200
+      )
       error_message = "Always Free total boot volume size must not exceed 200 GB (got ${nonsensitive(local.servers_validation_oci_always_free_boot_volume_gbs)} GB)."
     }
 
