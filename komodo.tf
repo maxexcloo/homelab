@@ -6,7 +6,7 @@ locals {
     if(
       try(local.servers_model[service.target], null) != null &&
       local.servers_model[service.target].features.docker &&
-      try(local.services_render_files_compose[service_key], null) != null
+      try(local.services_render_write_compose[service_key], null) != null
     )
   }
 
@@ -17,13 +17,13 @@ locals {
       for stack_key, stack in local.komodo_input_stacks : "${stack_key}/compose.yaml" => {
         age_public_key = age_secret_key.server[stack.target].public_key
         commit_message = "Update ${stack_key} compose"
-        content_base64 = sensitive(base64encode(local.services_render_files_compose[stack_key]))
+        content_base64 = sensitive(base64encode(local.services_render_write_compose[stack_key]))
         content_type   = "yaml"
         file           = "${stack_key}/compose.yaml"
       }
     },
     {
-      for file_key, file_config in local.services_render_files_sidecars : file_key => merge(
+      for file_key, file_config in local.services_render_write_sidecars : file_key => merge(
         file_config,
         {
           age_public_key = age_secret_key.server[file_config.target].public_key

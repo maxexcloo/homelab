@@ -1,25 +1,8 @@
 locals {
-  _services_render_custom_homepage_cards_by_group = {
-    for card in [
-      for sort_key in sort(keys(local._services_render_custom_homepage_cards_by_sort)) :
-      local._services_render_custom_homepage_cards_by_sort[sort_key]
-    ] : card.group => zipmap([card.name], [card.card])...
-  }
-
-  _services_render_custom_homepage_cards_by_sort = {
-    for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) : dashboard_card.sort => dashboard_card
-  }
-
   _services_render_custom_homepage_data = one([
     for svc in values(local.services_render_services) : svc.data
     if svc.identity.name == "homepage"
   ])
-
-  _services_render_custom_homepage_groups = concat(
-    local._services_render_custom_homepage_service_groups,
-    ["Providers"],
-    local._services_render_custom_homepage_server_groups,
-  )
 
   _services_render_custom_homepage_server_cards = flatten([
     for server_key, server in local.servers_render_runtime : [
@@ -38,25 +21,6 @@ locals {
       }
     ]
   ])
-
-  _services_render_custom_homepage_server_groups = concat(
-    local._services_render_custom_homepage_server_matched_groups,
-    [
-      for group in sort(distinct([
-        for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.group
-      ])) : group
-      if !contains(local._services_render_custom_homepage_server_matched_groups, group)
-    ],
-  )
-
-  _services_render_custom_homepage_server_matched_groups = sort(distinct([
-    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
-    if contains(local._services_render_custom_homepage_server_names, dashboard_card.group)
-  ]))
-
-  _services_render_custom_homepage_server_names = [
-    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.name
-  ]
 
   _services_render_custom_homepage_service_cards = flatten([
     for service_key, service in local.services_render_services : [
@@ -80,21 +44,57 @@ locals {
     ]
   ])
 
-  _services_render_custom_homepage_service_groups = sort(distinct([
+  _services_render_custom_homepage_sort_index = {
+    for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) : dashboard_card.sort => dashboard_card
+  }
+
+  _services_render_custom_homepage_sort_names = [
+    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.name
+  ]
+
+  _services_render_custom_homepage_sorted_by_group = {
+    for card in [
+      for sort_key in sort(keys(local._services_render_custom_homepage_sort_index)) :
+      local._services_render_custom_homepage_sort_index[sort_key]
+    ] : card.group => zipmap([card.name], [card.card])...
+  }
+
+  _services_render_custom_homepage_sorted_server_matched = sort(distinct([
     for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
-    if !contains(local._services_render_custom_homepage_server_names, dashboard_card.group)
+    if contains(local._services_render_custom_homepage_sort_names, dashboard_card.group)
   ]))
 
-  _services_render_custom_homepage = {
+  _services_render_custom_homepage_sorted_service_groups = sort(distinct([
+    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
+    if !contains(local._services_render_custom_homepage_sort_names, dashboard_card.group)
+  ]))
+
+  _services_render_custom_homepage_total_server_groups = concat(
+    local._services_render_custom_homepage_sorted_server_matched,
+    [
+      for group in sort(distinct([
+        for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.group
+      ])) : group
+      if !contains(local._services_render_custom_homepage_sorted_server_matched, group)
+    ],
+  )
+
+  _services_render_custom_homepage_union_groups = concat(
+    local._services_render_custom_homepage_sorted_service_groups,
+    ["Providers"],
+    local._services_render_custom_homepage_total_server_groups,
+  )
+
+  _services_render_custom_homepage_view = {
     layout = [
-      for group in local._services_render_custom_homepage_groups : {
+      for group in local._services_render_custom_homepage_union_groups : {
         (group) = merge(
           {
             columns = 2
             style   = "row"
-            tab     = contains(local._services_render_custom_homepage_server_groups, group) ? "Servers" : "Services"
+            tab     = contains(local._services_render_custom_homepage_total_server_groups, group) ? "Servers" : "Services"
           },
-          contains(local._services_render_custom_homepage_service_groups, group) ? {
+          contains(local._services_render_custom_homepage_sorted_service_groups, group) ? {
             columns = local._services_render_custom_homepage_data.groups[group].columns
             style   = local._services_render_custom_homepage_data.groups[group].style
           } : {},
@@ -103,36 +103,11 @@ locals {
     ]
 
     services = [
-      for group in local._services_render_custom_homepage_groups : {
-        (group) = try(local._services_render_custom_homepage_cards_by_group[group], [])
+      for group in local._services_render_custom_homepage_union_groups : {
+        (group) = try(local._services_render_custom_homepage_sorted_by_group[group], [])
       }
       if group != "Providers"
     ]
-  }
-
-  services_render_custom_context = {
-    for service_key, service in local.services : service_key => merge(
-      service.identity.name == "homepage" ? {
-        homepage = local._services_render_custom_homepage
-      } : {},
-      service.identity.name != "traefik" ? {} : {
-        # Port 8000 is the webinternal Traefik entrypoint on the target server.
-        proxy_routes = {
-          for svc in values(local.services_render_services) :
-          svc.identity.name => {
-            backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8000"
-            host        = svc.urls.default.host
-          }
-          if(
-            svc.routing.expose != null &&
-            startswith(svc.routing.expose, "proxy-") &&
-            trimprefix(svc.routing.expose, "proxy-") == service.target &&
-            try(local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4, null) != null &&
-            svc.urls.default.host != null
-          )
-        }
-      },
-    )
   }
 
   services_render_custom_labels = {
@@ -213,5 +188,30 @@ locals {
       ) : label_key => label_value
       if label_value != null
     }
+  }
+
+  services_render_custom_service_context = {
+    for service_key, service in local.services : service_key => merge(
+      service.identity.name == "homepage" ? {
+        homepage = local._services_render_custom_homepage_view
+      } : {},
+      service.identity.name != "traefik" ? {} : {
+        # Port 8000 is the webinternal Traefik entrypoint on the target server.
+        proxy_routes = {
+          for svc in values(local.services_render_services) :
+          svc.identity.name => {
+            backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8000"
+            host        = svc.urls.default.host
+          }
+          if(
+            svc.routing.expose != null &&
+            startswith(svc.routing.expose, "proxy-") &&
+            trimprefix(svc.routing.expose, "proxy-") == service.target &&
+            try(local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4, "") != "" &&
+            svc.urls.default.host != null
+          )
+        }
+      },
+    )
   }
 }

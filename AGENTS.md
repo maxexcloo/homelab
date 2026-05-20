@@ -41,7 +41,7 @@ Applies consistently to:
 - HCL `environment {}` blocks
 - HCL `templatefile()` argument objects
 
-Inside staged HCL `locals {}` blocks, order top-level locals in data-flow order; sort unrelated locals alphabetically within the same dependency layer. The single-line/multi-line ordering applies inside each local's object value.
+Inside staged HCL `locals {}` blocks, declare all `_`-prefixed helper locals first (sorted alphabetically, which must also equal data-flow order), then non-`_` exported locals (also alphabetically = data-flow order). Name or rename locals so alphabetical sort order matches data-flow dependency order. The single-line/multi-line ordering applies inside each local's object value.
 
 ## HCL Standards
 
@@ -52,7 +52,7 @@ Inside staged HCL `locals {}` blocks, order top-level locals in data-flow order;
 - **Helper locals**: Prefer formatting an expression clearly over extracting a helper local used only once. Add a helper only when it represents a meaningful domain concept, avoids real duplication, or makes a complex pipeline materially easier to review.
 - **Locals — naming and ordering**:
   - `snake_case` for all resources, locals, and variables
-  - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_files_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
+  - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_write_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
   - **Helpers** (locals used only within their own staged file) are prefixed with `_`. Per-provider files (`unifi.tf`, `github.tf`, `b2.tf`, …) don't follow the `{domain}_{layer}_{noun}` shape and don't use the `_` prefix — all locals there sort by dependency first, then alphabetically within a dependency layer.
   - The main output of a stage drops suffixes like `_all`, `_final`, `_merged`, and `_write`: use `dns_render_records`, not `dns_render_records_all`. If that output depends on same-prefix intermediates, keep it at the bottom as a deliberate data-flow exception.
 - **Object literals**: Always multi-line, one key per line, even for a single key. Empty `{}` stays inline. Applies inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes.

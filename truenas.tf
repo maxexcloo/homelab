@@ -42,7 +42,7 @@ locals {
               merge(
                 local.services_render_template_context[service_key],
                 {
-                  compose = local.services_render_files_compose[service_key]
+                  compose = local.services_render_write_compose[service_key]
                 },
               ),
             ),
@@ -87,7 +87,7 @@ locals {
     },
     {
       # 3) Generic sidecar files (env, configs, etc.)
-      for file_key, file_config in local.services_render_files_sidecars : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
+      for file_key, file_config in local.services_render_write_sidecars : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
         file_config,
         {
           age_public_key = age_secret_key.server[file_config.target].public_key

@@ -56,7 +56,7 @@ locals {
     },
     {
       # 4) Generic sidecar files (env, configs, etc.)
-      for file_config in values(local.services_render_files_sidecars) : "${local.fly_input_services[file_config.stack].fly.app_name}/${file_config.rel_path}" => merge(
+      for file_config in values(local.services_render_write_sidecars) : "${local.fly_input_services[file_config.stack].fly.app_name}/${file_config.rel_path}" => merge(
         file_config,
         {
           commit_message = "Update ${file_config.stack} ${file_config.rel_path}"

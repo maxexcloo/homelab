@@ -108,7 +108,7 @@ locals {
   services_validation_truenas_missing_template = [
     for service_key, service in local.truenas_input_services : service_key
     if(
-      try(local.services_render_files_compose[service_key], null) == null &&
+      try(local.services_render_write_compose[service_key], null) == null &&
       try(local.truenas_prepare_catalog_templates[service_key], null) == null
     )
   ]

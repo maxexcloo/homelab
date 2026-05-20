@@ -21,9 +21,26 @@ locals {
     ]
   ])
 
+  # Services with runtime stripped. Used in services_render_context_base so that
+  # cross-service references in templatestring() calls cannot access other services'
+  # credentials.
+  _services_render_services_safe = {
+    for service_key, service in local.services : service_key => {
+      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
+    }
+  }
+
+  # Rendered services with runtime stripped. Used in services_render_template_context
+  # for the same reason — file templates see adjacent services without their credentials.
+  _services_render_services_safe_rendered = {
+    for service_key, service in local.services_render_services : service_key => {
+      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
+    }
+  }
+
   # Parsed compose YAML before routing label injection. Kept separate so
-  # services_render_files_compose can merge labels into the parsed structure.
-  _services_render_files_compose_raw = {
+  # services_render_write_compose can merge labels into the parsed structure.
+  _services_render_write_compose_raw = {
     for service_key, service in local.services : service_key => yamldecode(
       templatefile(
         "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
@@ -41,23 +58,6 @@ locals {
         )
       )
     )
-  }
-
-  # Rendered services with runtime stripped. Used in services_render_template_context
-  # for the same reason — file templates see adjacent services without their credentials.
-  _services_render_rendered_services_safe = {
-    for service_key, service in local.services_render_services : service_key => {
-      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
-    }
-  }
-
-  # Services with runtime stripped. Used in services_render_context_base so that
-  # cross-service references in templatestring() calls cannot access other services'
-  # credentials.
-  _services_render_services_safe = {
-    for service_key, service in local.services : service_key => {
-      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
-    }
   }
 
   # First-pass context for templatestring() calls on service.data and service.dashboard.
@@ -82,9 +82,53 @@ locals {
     }
   }
 
+  # Services with data/dashboard/truenas fields rendered via templatestring() and
+  # routing_labels injected. Used as the service value in services_render_template_context
+  # and as the service inventory in services_render_custom.tf.
+  services_render_services = {
+    for service_key, service in local.services : service_key => merge(
+      service,
+      jsondecode(
+        templatestring(
+          jsonencode({
+            dashboard = service.dashboard
+            data      = service.data
+            truenas   = service.truenas
+          }),
+          local.services_render_context_base[service_key],
+        ),
+      ),
+      {
+        routing_labels = local.services_render_custom_labels[service_key]
+      },
+    )
+  }
+
+  # Full context passed to templatefile() for deploy artifact files. Uses rendered
+  # services (_services_render_services_safe_rendered) so templates see final data
+  # values while still being protected from adjacent services' credentials.
+  services_render_template_context = {
+    for service_key, service in local.services : service_key => merge(
+      local.services_render_context_base[service_key],
+      {
+        custom  = try(local.services_render_custom_service_context[service_key], {})
+        service = local.services_render_services[service_key]
+
+        services = merge(
+          local._services_render_services_safe_rendered,
+          {
+            for alias, real_key in local.services_model_imports[service_key] :
+            alias => local.services_render_services[real_key]
+            if try(local.services_render_services[real_key], null) != null
+          },
+        )
+      },
+    )
+  }
+
   # Compose files with routing labels injected into the primary container's label map.
-  services_render_files_compose = {
-    for service_key, compose in local._services_render_files_compose_raw : service_key => yamlencode(
+  services_render_write_compose = {
+    for service_key, compose in local._services_render_write_compose_raw : service_key => yamlencode(
       merge(
         compose,
         {
@@ -108,7 +152,7 @@ locals {
   }
 
   # Sidecar files (env files, configs, etc.) with rendered content and SOPS content type.
-  services_render_files_sidecars = {
+  services_render_write_sidecars = {
     for file_input in local._services_render_file_inputs : "${file_input.stack}/${file_input.rel_path}" => merge(
       file_input,
       {
@@ -136,50 +180,6 @@ locals {
           )
         )
       }
-    )
-  }
-
-  # Services with data/dashboard/truenas fields rendered via templatestring() and
-  # routing_labels injected. Used as the service value in services_render_template_context
-  # and as the service inventory in services_render_custom.tf.
-  services_render_services = {
-    for service_key, service in local.services : service_key => merge(
-      service,
-      jsondecode(
-        templatestring(
-          jsonencode({
-            dashboard = service.dashboard
-            data      = service.data
-            truenas   = service.truenas
-          }),
-          local.services_render_context_base[service_key],
-        ),
-      ),
-      {
-        routing_labels = local.services_render_custom_labels[service_key]
-      },
-    )
-  }
-
-  # Full context passed to templatefile() for deploy artifact files. Uses rendered
-  # services (_services_render_rendered_services_safe) so templates see final data
-  # values while still being protected from adjacent services' credentials.
-  services_render_template_context = {
-    for service_key, service in local.services : service_key => merge(
-      local.services_render_context_base[service_key],
-      {
-        custom  = try(local.services_render_custom_context[service_key], {})
-        service = local.services_render_services[service_key]
-
-        services = merge(
-          local._services_render_rendered_services_safe,
-          {
-            for alias, real_key in local.services_model_imports[service_key] :
-            alias => local.services_render_services[real_key]
-            if try(local.services_render_services[real_key], null) != null
-          },
-        )
-      },
     )
   }
 }
