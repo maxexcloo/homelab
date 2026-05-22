@@ -39,6 +39,7 @@ data:
     - electicvehicles
     - emulation
     - emulationonandroid
+    - esphome
     - flashlight
     - flipperzero
     - games
@@ -54,6 +55,7 @@ data:
     - living_in_korea
     - localllama
     - localllm
+    - meshcore
     - minilab
     - minimalism
     - minipcs
@@ -64,6 +66,7 @@ data:
     - nixos
     - odinhandheld
     - onebag
+    - onnas
     - organizationporn
     - outoftheloop
     - pikvm
@@ -90,10 +93,10 @@ data:
     - travel
     - travelhacks
     - trimui
-    - onnas
     - ubiquiti
     - usbchardware
     - wallstreetbets
+    - wled
 features:
   monitoring_alerts: false
 identity:
