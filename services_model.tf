@@ -117,7 +117,7 @@ locals {
           service.routing.expose == "cloudflare" &&
           length(local._services_model_managed_routing_urls[service_key]) > 0
         )
-      ) ? {
+        ) ? {
         external = {
           host  = local._services_model_hosts[service_key].external
           href  = "${service.routing.https ? "https" : "http"}://${local._services_model_hosts[service_key].external}"
