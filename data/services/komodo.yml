@@ -24,6 +24,7 @@ dashboard:
         showSummary: true
         url: ${service.urls.default.href}
 features:
+  oidc: true
   password: true
 identity:
   description: Container Orchestration
@@ -32,6 +33,9 @@ identity:
   service: komodo
   title: Komodo
   username: max@excloo.com
+imports:
+  services:
+    pocket_id: auto
 routing:
   backend_port: 9120
   backend_scheme: http
@@ -42,4 +46,8 @@ targets:
       catalog_app: komodo
       env:
         KOMODO_HOST: ${service.urls.default.href}
+        KOMODO_OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        KOMODO_OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        KOMODO_OIDC_ENABLED: true
+        KOMODO_OIDC_PROVIDER: ${services.pocket_id.urls.default.href}
         KOMODO_WEBHOOK_SECRET: ${service.runtime.credentials.webhook_secret}

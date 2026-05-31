@@ -13,6 +13,22 @@ locals {
         service.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
         } : {},
+        service.features.oidc ? {
+          oidc_client_id = merge(
+            local.defaults.credentials.rw,
+            {
+              bootstrap_length = 16
+              bootstrap_type   = "hex"
+            }
+          )
+          oidc_client_secret = merge(
+            local.defaults.credentials.rw,
+            {
+              bootstrap_length = 32
+              bootstrap_type   = "hex"
+            }
+          )
+        } : {},
         service.features.password ? {
           password_hash = local.defaults.credentials.ro
           password = merge(
@@ -44,10 +60,21 @@ locals {
   }
 
   # Maps single-target services to their expanded key ("service-target") for `auto` import resolution.
-  _services_model_import_auto_targets = {
-    for service_key, service in local.services_input : service_key => "${service_key}-${one(keys(service.targets))}"
-    if length(service.targets) == 1
-  }
+  # Also indexes by snake_case identity name so aliases like `pocket_id` resolve when the service
+  # name is `pocket-id` (templatestring() cannot parse hyphens in attribute access).
+  _services_model_import_auto_targets = merge(
+    {
+      for service_key, service in local.services_input : service_key => "${service_key}-${one(keys(service.targets))}"
+      if length(service.targets) == 1
+    },
+    {
+      for service_key, service in local.services_input : join("_", split("-", service.identity.name)) => "${service_key}-${one(keys(service.targets))}"
+      if(
+        length(service.targets) == 1 &&
+        can(regex("-", service.identity.name))
+      )
+    },
+  )
 
   # Managed custom URLs are the canonical Cloudflare entry point.
   _services_model_managed_routing_urls = {

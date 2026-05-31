@@ -25,6 +25,7 @@ dashboard:
       - type: ${service.identity.service}
         url: ${service.urls.default.href}
 features:
+  oidc: true
   password: true
 identity:
   description: Game & ROM Library
@@ -33,6 +34,9 @@ identity:
   service: romm
   title: RoMM
   username: max@excloo.com
+imports:
+  services:
+    pocket_id: auto
 routing:
   backend_port: 8080
   backend_scheme: http
@@ -42,6 +46,12 @@ targets:
     truenas:
       env:
         HASHEOUS_API_ENABLED: true
+        OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        OIDC_ENABLED: true
+        OIDC_REDIRECT_URI: ${service.urls.default.href}/oidc/callback
+        OIDC_SERVER_METADATA_URL: ${services.pocket_id.urls.default.href}/.well-known/openid-configuration
+        OIDC_USERNAME_ATTRIBUTE: preferred_username
         SCAN_TIMEOUT: 86400
         SCREENSCRAPER_PASSWORD: ${service.runtime.credentials.screenscraper_password}
         SCREENSCRAPER_USER: ${defaults.organization.email}

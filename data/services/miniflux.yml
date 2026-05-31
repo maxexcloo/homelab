@@ -17,6 +17,7 @@ dashboard:
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
 features:
+  oidc: true
   password: true
 identity:
   description: RSS Reader
@@ -25,6 +26,9 @@ identity:
   service: miniflux
   title: Miniflux
   username: max@excloo.com
+imports:
+  services:
+    pocket_id: auto
 routing:
   backend_port: 30285
   backend_scheme: http
@@ -33,3 +37,9 @@ targets:
     truenas:
       env:
         BASE_URL: ${service.urls.default.href}
+        OAUTH2_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        OAUTH2_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        OAUTH2_OIDC_DISCOVERY_ENDPOINT: ${services.pocket_id.urls.default.href}
+        OAUTH2_PROVIDER: oidc
+        OAUTH2_REDIRECT_URL: ${service.urls.default.href}/oauth2/oidc/callback
+        OAUTH2_USER_CREATION: 1

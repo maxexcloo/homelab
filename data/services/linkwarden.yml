@@ -23,6 +23,7 @@ dashboard:
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
 features:
+  oidc: true
   password: true
   resend: true
 identity:
@@ -32,6 +33,9 @@ identity:
   service: linkwarden
   title: Linkwarden
   username: max@excloo.com
+imports:
+  services:
+    pocket_id: auto
 routing:
   backend_port: 30243
   backend_scheme: http
@@ -42,4 +46,8 @@ targets:
         BASE_URL: ${service.urls.default.href}
         EMAIL_FROM: ${service.key}@${defaults.domains.internal}
         EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.runtime.credentials.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
+        KEYCLOAK_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        KEYCLOAK_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        KEYCLOAK_ISSUER: ${services.pocket_id.urls.default.href}
         NEXT_PUBLIC_EMAIL_PROVIDER: true
+        NEXT_PUBLIC_KEYCLOAK_ENABLED: true

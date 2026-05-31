@@ -6,7 +6,8 @@ locals {
     if(
       try(local.servers_model[service.target], null) != null &&
       local.servers_model[service.target].features.docker &&
-      try(local.services_render_write_compose[service_key], null) != null
+      service.identity.service != null &&
+      fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
     )
   }
 

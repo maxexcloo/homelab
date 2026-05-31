@@ -73,6 +73,10 @@
           "description": "Per-target override. Attach generated monitoring alerts to this service when monitoring is enabled. Does not provision resources or expose template variables.",
           "type": "boolean"
         },
+        "oidc": {
+          "description": "Per-target override. Auto-generate OIDC client credentials for SSO. Exposes runtime.credentials.oidc_client_id and runtime.credentials.oidc_client_secret as template variables.",
+          "type": "boolean"
+        },
         "password": {
           "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
@@ -263,6 +267,10 @@
         },
         "monitoring_alerts": {
           "description": "Attach generated monitoring alerts to this service when monitoring is enabled. Does not provision resources or expose template variables.",
+          "type": "boolean"
+        },
+        "oidc": {
+          "description": "Auto-generate OIDC client credentials for SSO via Pocket ID. Exposes runtime.credentials.oidc_client_id and runtime.credentials.oidc_client_secret as template variables.",
           "type": "boolean"
         },
         "password": {

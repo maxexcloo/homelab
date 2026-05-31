@@ -21,6 +21,7 @@ dashboard:
         url: ${service.urls.default.href}
         version: 2
 features:
+  oidc: true
   password: true
 identity:
   description: Photo Manager
@@ -29,6 +30,9 @@ identity:
   service: immich
   title: Immich
   username: max@excloo.com
+imports:
+  services:
+    pocket_id: auto
 routing:
   backend_port: 30041
   backend_scheme: http
@@ -37,4 +41,9 @@ routing:
     - photos.excloo.com
 targets:
   au-truenas:
-    truenas: {}
+    truenas:
+      env:
+        OAUTH_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        OAUTH_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        OAUTH_ENABLED: true
+        OAUTH_ISSUER_URL: ${services.pocket_id.urls.default.href}

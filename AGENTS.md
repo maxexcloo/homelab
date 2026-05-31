@@ -46,7 +46,7 @@ Inside staged HCL `locals {}` blocks, declare all `_`-prefixed helper locals fir
 ## HCL Standards
 
 - **Formatting**: `tofu fmt -recursive` (run via `mise run fmt`)
-- **`for_each`**: Always prefer over `count`; use a named local for filtered/shaped resource/data `for_each` inputs
+- **`for_each`**: Always prefer over `count`; use a named local for filtered/shaped resource/data `for_each` inputs. **Filters that determine map membership (keys) must use only model/input data and file existence checks (`fileexists`)**, never render outputs like `services_render_write_compose` or `services_render_write_sidecars`. Render outputs wrap bootstrapped credential values from `random_id` which are unknown at plan time; when used in a `for_each` filter they make the entire map's keys indeterministic.
 - **Block ordering**: In resource/data/module blocks, put `for_each` and module `source` first (alphabetically), blank line, then remaining arguments alphabetically
 - **Comprehensions**: Use descriptive names (`server_key`, `service`, `record`, `file_path`). Avoid `k`/`v` except in trivial non-nested expressions. Use `for k, v in map` when both key and value are needed; `for v in values(map)` when only the value is needed; `for k in keys(map)` when only the key is needed. Never `for _, v in map` — discard the key with `values(map)` instead. Never `contains(keys(map), x)` — use `try(map[x], null) != null`.
 - **Helper locals**: Prefer formatting an expression clearly over extracting a helper local used only once. Add a helper only when it represents a meaningful domain concept, avoids real duplication, or makes a complex pipeline materially easier to review.
@@ -82,7 +82,7 @@ Inside staged HCL `locals {}` blocks, declare all `_`-prefixed helper locals fir
 ## YAML Standards
 
 - **Formatting**: Prettier (run via `mise run fmt`)
-- **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, `@`, DNS TXT content, and strings that look like YAML scalars (numbers, booleans, null) but must stay strings.
+- **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, `@`, DNS TXT content, and strings that look like YAML scalars (numbers, booleans, null) but must stay strings. **`truenas.env` values**: do not quote booleans or numbers — the base template's `tostring()` normalizes them to environment variable strings regardless of YAML type. Only quote values that YAML would structurally misparse (leading `:` in scalars, values starting with `{`, `[`, `#`, `%`, `@`, `` ` ``, `&`, `*`, `!`, `|`, `>`).
 - **Defaults are split across two files**, both merged into `local.defaults`:
   - `data/config.yml` — global parameters (cloudflare, domains, github, networking, onepassword, organization, resend, server_types, system, tailscale)
   - `data/defaults.yml` — field values merged into every server/service/DNS record
@@ -101,7 +101,9 @@ Inside staged HCL `locals {}` blocks, declare all `_`-prefixed helper locals fir
 When creating a service that deploys via a TrueNAS community catalog app:
 
 - **Look up the catalog schema** before authoring anything. Find the app in [truenas/apps](https://github.com/truenas/apps) under `trains/community/<name>/`. Read the latest version's `docker-compose.yaml` template to identify which `values.{app}.*` keys the catalog injects as environment variables, which `values.storage.*` keys it mounts, and which values it hardcodes internally.
-- **Use app-specific config keys** in `app.json.tftpl` (`values.{app}.<key>`), not `truenas.env` in the YAML. The catalog template calls `add_env()` with `values.{app}.<key>` directly — putting them in `truenas.env` would double-inject them via `additional_envs`.
+- **Use app-specific config keys** in `app.json.tftpl` (`values.{app}.<key>`) for app-owned configuration the catalog exposes as named fields. The catalog template calls `add_env()` with `values.{app}.<key>` directly — putting them in `truenas.env` would double-inject them via `additional_envs`.
+- **Use `truenas.env` in the YAML** for cross-cutting env vars (OIDC, mail, base URL) that are not part of the catalog's named app config. These become `additional_envs` automatically via the base template.
+- **Cross-service references** (e.g. referencing Pocket ID's URL from another service) use `imports.services` with a `snake_case` alias pointing to the expanded `{name}-{target}` key (e.g. `pocket_id: pocket-id-au-truenas`). Then reference as `${services.<alias>...}` in `truenas.env` template strings. Never hardcode a service key like `"pocket-id-au-truenas"`. The alias must be a valid HCL identifier (no hyphens) because `templatestring()` cannot parse bracket notation (`services["key-name"]`).
 - **Never duplicate catalog hardcodes**. If the template sets an env var from a `values.consts.*` or hardcoded literal, do not supply it again.
 - **Match the catalog's config key names exactly** (e.g. `pocket_id` not `pocket-id`, `encrypt_password` not `encryption_password`). These must match the `values.*` keys referenced in the catalog template.
 - **Storage type** follows the catalog's `add_storage()` call. Use `host_path` when the user provides a host directory under `/mnt/truenas-nvme/<app>`; use `ix_volume` otherwise. Never add storage keys the catalog template doesn't reference.
