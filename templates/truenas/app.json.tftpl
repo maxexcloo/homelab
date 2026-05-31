@@ -11,7 +11,8 @@
             name  = env_key
             value = tostring(service.truenas.env[env_key])
           }
-          if service.truenas.env[env_key] != null
+          if service.truenas.env[env_key] != null &&
+          can(tostring(service.truenas.env[env_key]))
         ]
       }
     } : {},
