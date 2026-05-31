@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    auth_secret:
+      bootstrap_length: 48
+      bootstrap_type: hex
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: ${service.identity.service}
+    siteMonitor: ${service.urls.default.href}
+features:
+  password: true
+identity:
+  description: Document Management
+  group: Applications
+  name: papra
+  service: papra
+  title: Papra
+  username: max@excloo.com
+routing:
+  backend_port: 1221
+  backend_scheme: http
+targets:
+  au-truenas: {}

@@ -1,0 +1,24 @@
+{
+  "values": {
+    "pocket_id": {
+      "app_url": "${service.urls.default.href}",
+      "encryption_key": "${service.runtime.credentials.encryption_key}",
+      "trust_proxy": true
+    },
+    "network": {
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.host_port}
+      }
+    },
+    "storage": {
+      "data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "data"
+        },
+        "type": "ix_volume"
+      }
+    }
+  }
+}

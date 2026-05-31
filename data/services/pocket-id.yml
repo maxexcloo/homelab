@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    encryption_key:
+      bootstrap_length: 32
+      bootstrap_type: base64
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: ${service.identity.service}
+    siteMonitor: ${service.urls.default.href}
+features:
+  password: true
+identity:
+  description: OIDC Provider
+  group: Infrastructure
+  name: pocket-id
+  service: pocket-id
+  title: Pocket ID
+  username: max@excloo.com
+routing:
+  backend_port: 1411
+  backend_scheme: http
+targets:
+  au-truenas: {}

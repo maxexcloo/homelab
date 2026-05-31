@@ -1,0 +1,23 @@
+{
+  "values": {
+    "papra": {
+      "auth_secret": "${service.runtime.credentials.auth_secret}",
+      "base_url": "${service.urls.default.href}"
+    },
+    "network": {
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.host_port}
+      }
+    },
+    "storage": {
+      "data": {
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/papra"
+        },
+        "type": "host_path"
+      }
+    }
+  }
+}

@@ -6,8 +6,13 @@ services:
     environment:
       ADMIN_KEY: ${service.runtime.credentials.password}
       DATABASE_URI: sqlite://addon/data/db.sqlite
+      FEATURED_TEMPLATE_IDS: tamtaro.complete,Vidhin05.english-template
       HOST_NAME: ${service.urls.default.host}
       REDIS_URL: redis://redis:6379
+      SEL_SYNC_ACCESS: all
+      TEMPLATE_REFRESH_INTERVAL: 3600
+      TEMPLATE_URLS: ["https://raw.githubusercontent.com/Tam-Taro/SEL-Filtering-and-Sorting/refs/heads/main/Tamtaro-All-Templates-for-AIOStreams.json", "https://raw.githubusercontent.com/Vidhin05/Releases-Regex/refs/heads/main/all-templates.json"]
+      WHITELISTED_SYNC_REFRESH_INTERVAL: 3600
     image: ghcr.io/cedya77/aiometadata:latest
     restart: unless-stopped
     volumes:

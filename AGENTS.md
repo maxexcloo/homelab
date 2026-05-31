@@ -96,6 +96,17 @@ Inside staged HCL `locals {}` blocks, declare all `_`-prefixed helper locals fir
   - Set `identity.service` only when templates or deploy artifacts exist.
   - Use `targets.<key>: {}` for a single target with no overrides.
 
+## TrueNAS Services
+
+When creating a service that deploys via a TrueNAS community catalog app:
+
+- **Look up the catalog schema** before authoring anything. Find the app in [truenas/apps](https://github.com/truenas/apps) under `trains/community/<name>/`. Read the latest version's `docker-compose.yaml` template to identify which `values.{app}.*` keys the catalog injects as environment variables, which `values.storage.*` keys it mounts, and which values it hardcodes internally.
+- **Use app-specific config keys** in `app.json.tftpl` (`values.{app}.<key>`), not `truenas.env` in the YAML. The catalog template calls `add_env()` with `values.{app}.<key>` directly — putting them in `truenas.env` would double-inject them via `additional_envs`.
+- **Never duplicate catalog hardcodes**. If the template sets an env var from a `values.consts.*` or hardcoded literal, do not supply it again.
+- **Match the catalog's config key names exactly** (e.g. `pocket_id` not `pocket-id`, `encrypt_password` not `encryption_password`). These must match the `values.*` keys referenced in the catalog template.
+- **Storage type** follows the catalog's `add_storage()` call. Use `host_path` when the user provides a host directory under `/mnt/truenas-nvme/<app>`; use `ix_volume` otherwise. Never add storage keys the catalog template doesn't reference.
+- **Follow existing patterns** in `templates/services/aiostreams/`, `templates/services/grimmory/`, and `templates/services/beszel/` for the overall `app.json.tftpl` structure (network port, storage, app config).
+
 ## JSON Schema Standards
 
 - `"additionalProperties": false` on closed object types. Pass-through data objects such as `data` and dashboard cards may allow arbitrary JSON-compatible keys.

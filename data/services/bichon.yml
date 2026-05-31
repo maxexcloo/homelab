@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    encrypt_password:
+      bootstrap_length: 48
+      bootstrap_type: hex
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: ${service.identity.service}
+    siteMonitor: ${service.urls.default.href}
+features:
+  password: true
+identity:
+  description: Email Archiving
+  group: Applications
+  name: bichon
+  service: bichon
+  title: Bichon
+  username: max@excloo.com
+routing:
+  backend_port: 15630
+  backend_scheme: http
+targets:
+  au-truenas: {}
