@@ -2,6 +2,7 @@
 credentials:
   fields:
     homepage_widget_key: {}
+    openrouter_api_key: {}
     db_password:
       bootstrap_length: 32
       bootstrap_type: alphanumeric
@@ -22,6 +23,8 @@ dashboard:
       - type: ${service.identity.service}
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
+data:
+  openrouter_model: deepseek/deepseek-v4-flash
 features:
   oidc: true
   password: true
@@ -51,3 +54,5 @@ targets:
         KEYCLOAK_ISSUER: ${services.pocket_id.urls.default.href}
         NEXT_PUBLIC_EMAIL_PROVIDER: true
         NEXT_PUBLIC_KEYCLOAK_ENABLED: true
+        OPENROUTER_API_KEY: ${service.runtime.credentials.openrouter_api_key}
+        OPENROUTER_MODEL: ${service.data.openrouter_model}

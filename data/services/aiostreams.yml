@@ -19,6 +19,7 @@ identity:
   name: aiostreams
   service: aiostreams
   title: AIOStreams
+  username: max@excloo.com
 routing:
   backend_port: 30375
   backend_scheme: http
@@ -26,7 +27,7 @@ targets:
   au-truenas:
     truenas:
       env:
-        AIOSTREAMS_AUTH: admin:${service.runtime.credentials.password}
+        AIOSTREAMS_AUTH: ${service.identity.username}:${service.runtime.credentials.password}
         FEATURED_TEMPLATE_IDS: tamtaro.complete,Vidhin05.english-template
         SEL_SYNC_ACCESS: all
         TEMPLATE_REFRESH_INTERVAL: 3600
