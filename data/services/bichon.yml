@@ -9,7 +9,7 @@ dashboard:
     description: ${service.identity.description}
     group: ${service.identity.group}
     href: ${service.urls.default.href}
-    icon: ${service.identity.service}
+    icon: sh-${service.identity.service}
     siteMonitor: ${service.urls.default.href}
 features:
   password: true
