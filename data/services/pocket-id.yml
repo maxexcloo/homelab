@@ -13,6 +13,7 @@ dashboard:
     siteMonitor: ${service.urls.default.href}
 features:
   password: true
+  resend: true
 identity:
   description: OIDC Provider
   group: Infrastructure
@@ -27,4 +28,12 @@ routing:
   urls:
     - id.excloo.com
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        SMTP_ENCRYPTION: TLS
+        SMTP_FROM_ADDRESS: ${service.key}@${defaults.domains.internal}
+        SMTP_HOST: ${defaults.resend.host}
+        SMTP_PASSWORD: ${service.runtime.credentials.resend_api_key}
+        SMTP_PORT: ${defaults.resend.port}
+        SMTP_USERNAME: ${defaults.resend.username}

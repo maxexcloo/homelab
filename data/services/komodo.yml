@@ -26,6 +26,7 @@ dashboard:
 features:
   oidc: true
   password: true
+  resend: true
 identity:
   description: Container Orchestration
   group: Infrastructure
@@ -45,6 +46,11 @@ targets:
     truenas:
       catalog_app: komodo
       env:
+        KOMODO_EMAIL_ENABLED: true
+        KOMODO_EMAIL_HOST: ${defaults.resend.host}
+        KOMODO_EMAIL_PASSWORD: ${service.runtime.credentials.resend_api_key}
+        KOMODO_EMAIL_PORT: ${defaults.resend.port}
+        KOMODO_EMAIL_USERNAME: ${defaults.resend.username}
         KOMODO_HOST: ${service.urls.default.href}
         KOMODO_OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         KOMODO_OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}

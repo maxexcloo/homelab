@@ -27,6 +27,7 @@ dashboard:
 features:
   oidc: true
   password: true
+  resend: true
 identity:
   description: Game & ROM Library
   group: Media
@@ -55,3 +56,8 @@ targets:
         SCAN_TIMEOUT: 86400
         SCREENSCRAPER_PASSWORD: ${service.runtime.credentials.screenscraper_password}
         SCREENSCRAPER_USER: ${defaults.organization.email}
+        SMTP_FROM_ADDRESS: ${service.key}@${defaults.domains.internal}
+        SMTP_HOST: ${defaults.resend.host}
+        SMTP_PASSWORD: ${service.runtime.credentials.resend_api_key}
+        SMTP_PORT: ${defaults.resend.port}
+        SMTP_USERNAME: ${defaults.resend.username}
