@@ -20,6 +20,7 @@ dashboard:
         url: ${service.urls.default.href}
         username: ${service.identity.username}
 features:
+  oidc: true
   password: true
   resend: true
 identity:
@@ -29,6 +30,9 @@ identity:
   service: grimmory
   title: Grimmory
   username: maxexcloo
+imports:
+  services:
+    pocket_id: auto
 routing:
   backend_port: 30396
   backend_scheme: http
@@ -37,4 +41,11 @@ routing:
     - books.excloo.com
 targets:
   au-truenas:
-    truenas: {}
+    truenas:
+      env:
+        SPRING_MAIL_HOST: ${defaults.resend.host}
+        SPRING_MAIL_PASSWORD: ${service.runtime.credentials.resend_api_key}
+        SPRING_MAIL_PORT: ${defaults.resend.port}
+        SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
+        SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: true
+        SPRING_MAIL_USERNAME: ${defaults.resend.username}
