@@ -3,7 +3,6 @@ parent: au
 platform: unmanaged
 type: server
 features:
-  cloudflare_zero_trust_tunnel: true
   monitoring_alerts: false
   password: true
   tailscale: true

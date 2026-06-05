@@ -3,9 +3,7 @@ platform: unmanaged
 type: vm
 features:
   cloud_init: true
-  cloudflare_acme: true
   cloudflare_zero_trust_tunnel: true
-  cockpit: true
   password: true
   resend: true
   tailscale: true
