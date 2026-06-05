@@ -21,4 +21,7 @@ routing:
   backend_port: 30377
   backend_scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        OPEN_TERMINAL_MULTI_USER: true
