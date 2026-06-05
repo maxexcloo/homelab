@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    redis_password:
+      bootstrap_length: 32
+      bootstrap_type: hex
+    webui_secret_key:
+      bootstrap_length: 32
+      bootstrap_type: hex
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: ${service.identity.service}
+    siteMonitor: ${service.urls.default.href}
+identity:
+  description: AI Chat
+  group: Applications
+  name: open-webui
+  service: open-webui
+  title: Open WebUI
+routing:
+  backend_port: 31028
+  backend_scheme: http
+targets:
+  au-truenas: {}

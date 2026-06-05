@@ -3,7 +3,7 @@ parent: au
 platform: incus
 type: server
 features:
-  cloudflare_acme_token: true
+  cloudflare_acme: true
   monitoring_alerts: false
   tailscale: true
 identity:

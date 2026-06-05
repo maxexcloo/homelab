@@ -1,0 +1,31 @@
+{
+  "values": {
+    "network": {
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.host_port}
+      }
+    },
+    "open_webui": {
+      "image_selector": "ollama_image",
+      "redis_password": "${service.runtime.credentials.redis_password}",
+      "webui_secret_key": "${service.runtime.credentials.webui_secret_key}"
+    },
+    "storage": {
+      "data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "data"
+        },
+        "type": "ix_volume"
+      },
+      "ollama": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "ollama"
+        },
+        "type": "ix_volume"
+      }
+    }
+  }
+}

@@ -17,8 +17,11 @@ locals {
         server.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
         } : {},
-        server.features.cloudflare_acme_token ? {
+        server.features.cloudflare_acme ? {
           cloudflare_acme_token = local.defaults.credentials.ro
+        } : {},
+        server.features.cloudflare_acme_legacy ? {
+          cloudflare_acme_legacy_token = local.defaults.credentials.ro
         } : {},
         server.features.cloudflare_zero_trust_tunnel ? {
           cloudflare_tunnel_read_token = local.defaults.credentials.ro

@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    terminal_api_key:
+      bootstrap_length: 32
+      bootstrap_type: hex
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: open-webui
+    siteMonitor: ${service.urls.default.href}
+identity:
+  description: Web Terminal
+  group: Applications
+  name: open-terminal
+  service: open-terminal
+  title: Open Terminal
+routing:
+  backend_port: 30377
+  backend_scheme: http
+targets:
+  au-truenas: {}

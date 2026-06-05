@@ -135,8 +135,11 @@ locals {
             server.features.b2 ? {
               b2_application_key = b2_application_key.server[server_key].application_key
             } : {},
-            server.features.cloudflare_acme_token ? {
+            server.features.cloudflare_acme ? {
               cloudflare_acme_token = cloudflare_account_token.server_acme[server_key].value
+            } : {},
+            server.features.cloudflare_acme_legacy ? {
+              cloudflare_acme_legacy_token = cloudflare_account_token.server_acme_legacy[server_key].value
             } : {},
             server.features.cloudflare_zero_trust_tunnel ? {
               cloudflare_tunnel_read_token = module.cloudflare_tunnel[server_key].tunnel_read_token

@@ -4,7 +4,7 @@ platform: unmanaged
 type: server
 features:
   b2: true
-  cloudflare_acme_token: true
+  cloudflare_acme: true
   cloudflare_zero_trust_tunnel: true
   password: true
   tailscale: true

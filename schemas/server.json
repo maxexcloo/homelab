@@ -133,8 +133,12 @@
           "description": "Generate cloud-init configuration for this server. Provisions cloud_config output for Incus containers and OCI VMs. Exposes no template variables directly but enables the cloud_config output.",
           "type": "boolean"
         },
-        "cloudflare_acme_token": {
+        "cloudflare_acme": {
           "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the ACME domain. Exposes runtime.credentials.cloudflare_acme_token for DNS-01 challenge clients.",
+          "type": "boolean"
+        },
+        "cloudflare_acme_legacy": {
+          "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the internal and external domains. Exposes runtime.credentials.cloudflare_acme_legacy_token for DNS-01 challenge clients that cannot follow ACME CNAME delegation.",
           "type": "boolean"
         },
         "cloudflare_zero_trust_tunnel": {

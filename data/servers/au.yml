@@ -16,7 +16,7 @@ dashboard:
         key: ${server.runtime.credentials.homepage_widget_key}
         url: ${server.urls.default.href}
 features:
-  cloudflare_acme_token: true
+  cloudflare_acme: true
   password: true
   tailscale: true
 identity:

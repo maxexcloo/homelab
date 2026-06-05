@@ -56,7 +56,7 @@ locals {
 }
 
 resource "cloudflare_account_token" "server_acme" {
-  for_each = local.servers_by_feature.cloudflare_acme_token
+  for_each = local.servers_by_feature.cloudflare_acme
 
   account_id = data.cloudflare_account.default.id
   name       = each.key
@@ -71,6 +71,28 @@ resource "cloudflare_account_token" "server_acme" {
       ]
       resources = jsonencode({
         "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domains.acme].zone_id}" = "*"
+      })
+    }
+  ]
+}
+
+resource "cloudflare_account_token" "server_acme_legacy" {
+  for_each = local.servers_by_feature.cloudflare_acme_legacy
+
+  account_id = data.cloudflare_account.default.id
+  name       = "${each.key}-zones"
+
+  policies = [
+    {
+      effect = "allow"
+      permission_groups = [
+        {
+          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
+        }
+      ]
+      resources = jsonencode({
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domains.external].zone_id}" = "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domains.internal].zone_id}" = "*"
       })
     }
   ]

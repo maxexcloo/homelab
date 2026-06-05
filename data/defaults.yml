@@ -26,7 +26,8 @@ servers:
   features:
     b2: false
     cloud_init: false
-    cloudflare_acme_token: false
+    cloudflare_acme: false
+    cloudflare_acme_legacy: false
     cloudflare_zero_trust_tunnel: false
     cockpit: false
     docker: false

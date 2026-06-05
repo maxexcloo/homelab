@@ -1,0 +1,23 @@
+{
+  "values": {
+    "network": {
+      "api_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.host_port}
+      }
+    },
+    "open_terminal": {
+      "allow_escalated_privileges": false,
+      "terminal_api_key": "${service.runtime.credentials.terminal_api_key}"
+    },
+    "storage": {
+      "data": {
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "data"
+        },
+        "type": "ix_volume"
+      }
+    }
+  }
+}
