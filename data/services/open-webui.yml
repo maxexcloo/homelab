@@ -14,12 +14,15 @@ dashboard:
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
+features:
+  password: true
 identity:
   description: AI Chat
   group: Applications
   name: open-webui
   service: open-webui
   title: Open WebUI
+  username: max@excloo.com
 routing:
   backend_port: 31028
   backend_scheme: http
