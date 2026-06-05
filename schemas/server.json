@@ -122,7 +122,7 @@
     },
     "features": {
       "additionalProperties": false,
-      "description": "Feature flags that provision additional resources for this server.",
+      "description": "Feature flags that provision resources, credentials, or generated setup artifacts for this server.",
       "type": "object",
       "properties": {
         "b2": {
@@ -130,7 +130,7 @@
           "type": "boolean"
         },
         "cloud_init": {
-          "description": "Generate cloud-init configuration for this server. Provisions cloud_config output for Incus containers and OCI VMs. Exposes no template variables directly but enables the cloud_config output.",
+          "description": "Generate cloud-init configuration for this server. Exposes the cloud_config output for Incus containers and OCI VMs.",
           "type": "boolean"
         },
         "cloudflare_acme": {
@@ -146,7 +146,7 @@
           "type": "boolean"
         },
         "cockpit": {
-          "description": "Install Cockpit through cloud-init and enable cockpit.socket for browser-based server administration.",
+          "description": "Install Cockpit in generated setup artifacts and enable cockpit.socket for browser-based server administration.",
           "type": "boolean"
         },
         "docker": {
@@ -174,7 +174,11 @@
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key. Exposes runtime.credentials.tailscale_auth_key for use in cloud-init or startup scripts.",
+          "description": "Generate a Tailscale auth key. Exposes runtime.credentials.tailscale_auth_key for use in generated setup artifacts.",
+          "type": "boolean"
+        },
+        "zfs": {
+          "description": "Install Sanoid and ZFS administration packages in generated setup artifacts. Does not provision resources or expose template variables.",
           "type": "boolean"
         }
       }

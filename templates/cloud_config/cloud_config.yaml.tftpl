@@ -18,13 +18,19 @@ packages:
   %{~ if server.features.docker ~}
   - age
   %{~ endif ~}
+  %{~ if server.features.zfs ~}
+  - sanoid
+  - zfsutils-linux
+  %{~ endif ~}
   - curl
   - ethtool
   - nano
   - sudo
-  - zfsutils-linux
 runcmd:
-  - sysctl --system
+  %{~ if server.features.cloudflare_zero_trust_tunnel ~}
+  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
+  - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
+  %{~ endif ~}
   %{~ if server.features.cockpit ~}
   - systemctl enable --now cockpit.socket
   %{~ endif ~}
@@ -34,17 +40,14 @@ runcmd:
   - chmod +x /usr/local/bin/sops
   - docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d
   %{~ endif ~}
-  %{~ if server.features.cloudflare_zero_trust_tunnel ~}
-  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
-  - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
-  %{~ endif ~}
   %{~ if server.features.tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
   - tailscale up --advertise-exit-node --authkey ${server.runtime.credentials.tailscale_auth_key} --hostname ${server.key}
   %{~ endif ~}
+  - sysctl --system
 users:
   - name: ${server.identity.username}
-    %{~ if server.runtime.credentials.password_hash != null ~}
+    %{~ if server.features.password ~}
     hashed_passwd: ${server.runtime.credentials.password_hash}
     %{~ endif ~}
     lock_passwd: false

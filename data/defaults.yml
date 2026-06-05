@@ -37,6 +37,7 @@ servers:
     pushover: false
     resend: false
     tailscale: false
+    zfs: false
   identity:
     description: ""
     name: ""

@@ -1,0 +1,100 @@
+#!/bin/sh
+set -eu
+
+# Host
+sudo hostnamectl set-hostname ${server.identity.name}
+sudo timedatectl set-timezone ${defaults.system.timezone}
+
+# Packages
+sudo apt update
+sudo apt upgrade -y
+%{~ if server.features.cockpit }
+sudo apt install -y cockpit
+%{~ endif }
+%{~ if server.features.docker }
+sudo apt install -y age
+%{~ endif }
+%{~ if server.features.zfs }
+sudo apt install -y sanoid zfsutils-linux
+%{~ endif }
+sudo apt install -y curl ethtool nano sudo
+sudo apt autoremove -y
+sudo apt clean -y
+
+# User
+install -d -m 0700 ~/.ssh
+tee ~/.ssh/authorized_keys <<'EOF'
+%{~ for ssh_key in server.ssh_keys ~}
+${ssh_key}
+%{~ endfor ~}
+EOF
+chmod 0600 ~/.ssh/authorized_keys
+%{~ if server.features.password }
+sudo usermod --password '${server.runtime.credentials.password_hash}' "$(id -n -u)"
+%{~ endif }
+
+# Files
+sudo install -d /etc/networkd-dispatcher/routable.d /etc/sysctl.d
+
+sudo tee /etc/networkd-dispatcher/routable.d/50-network <<'EOF'
+#!/bin/sh
+# Detect the default NIC via a route lookup to Cloudflare DNS, then tune
+# GRO for UDP forwarding performance (rx-gro-list off is required for
+# rx-udp-gro-forwarding on many kernels).
+ethtool -K $(ip -o route get 1.1.1.1 | cut -d " " -f 5) rx-gro-list off rx-udp-gro-forwarding on
+EOF
+sudo chmod 0755 /etc/networkd-dispatcher/routable.d/50-network
+
+sudo tee /etc/sysctl.d/50-network.conf <<'EOF'
+# Increase socket buffers for high-throughput NICs
+net.core.rmem_max=8388608
+net.core.wmem_max=8388608
+# Enable IP forwarding for Tailscale subnet routing / exit nodes
+net.ipv4.conf.all.forwarding=1
+net.ipv6.conf.all.forwarding=1
+EOF
+
+%{~ if server.features.docker ~}
+sudo install -d -m 0700 /etc/komodo
+sudo tee /etc/komodo/periphery.compose.yaml <<'EOF'
+services:
+  periphery:
+    environment:
+      PERIPHERY_PASSKEY: ${server.runtime.credentials.komodo_passkey}
+      SOPS_AGE_KEY: ${server.runtime.credentials.age_secret_key}
+    image: ghcr.io/moghtech/komodo-periphery:latest
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+EOF
+sudo chmod 0600 /etc/komodo/periphery.compose.yaml
+%{~ endif ~}
+
+# Commands
+%{~ if server.features.cloudflare_zero_trust_tunnel }
+curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb
+sudo dpkg -i /tmp/cloudflared.deb
+rm /tmp/cloudflared.deb
+sudo cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
+%{~ endif }
+
+%{~ if server.features.cockpit }
+sudo systemctl enable --now cockpit.socket
+%{~ endif }
+
+%{~ if server.features.docker }
+curl -fsLS https://get.docker.com | sudo sh
+sudo usermod --append --groups docker "$(id -n -u)"
+curl -fsLS -o /tmp/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
+sudo install -m 0755 /tmp/sops /usr/local/bin/sops
+rm /tmp/sops
+sudo docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d
+%{~ endif }
+
+%{~ if server.features.tailscale }
+curl -fsLS https://tailscale.com/install.sh | sudo sh
+sudo tailscale up --advertise-exit-node --authkey ${server.runtime.credentials.tailscale_auth_key} --hostname ${server.key}
+%{~ endif }
+
+sudo sysctl --system
