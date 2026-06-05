@@ -12,12 +12,15 @@ groups:
   %{~ endif ~}
   - sudo
 packages:
-  - age
   %{~ if server.features.cockpit ~}
   - cockpit
   %{~ endif ~}
+  %{~ if server.features.docker ~}
+  - age
+  %{~ endif ~}
   - curl
   - ethtool
+  - nano
   - sudo
   - zfsutils-linux
 runcmd:
