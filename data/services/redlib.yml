@@ -35,8 +35,9 @@ data:
     - chatgptcoding
     - crackwatch
     - datahoarder
+    - docker
     - eink
-    - electicvehicles
+    - electricvehicles
     - emulation
     - emulationonandroid
     - esphome
@@ -48,10 +49,13 @@ data:
     - homeassistant
     - homelab
     - homenetworking
+    - homeserver
+    - immich
     - internetisbeautiful
     - korea
     - linux
     - linux_gaming
+    - linuxhardware
     - living_in_korea
     - localllama
     - localllm
@@ -63,13 +67,18 @@ data:
     - movies
     - nbn
     - netsec
+    - networking
     - nixos
     - odinhandheld
     - onebag
     - onnas
+    - opensource
+    - openwrt
     - organizationporn
     - outoftheloop
     - pikvm
+    - piratedgames
+    - privacy
     - programming
     - proxmox
     - raspberry_pi
@@ -82,6 +91,7 @@ data:
     - sffpc
     - sideloaded
     - singularity
+    - solotravel
     - space
     - steamdeck
     - sydney
@@ -94,10 +104,13 @@ data:
     - travel
     - travelhacks
     - trimui
+    - truenas
     - ubiquiti
     - usbchardware
     - wallstreetbets
     - wled
+    - zfs
+    - zigbee
 features:
   monitoring_alerts: false
 identity:
