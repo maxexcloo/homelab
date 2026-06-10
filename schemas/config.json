@@ -17,6 +17,22 @@
         }
       }
     },
+    "ai": {
+      "additionalProperties": false,
+      "description": "Default AI model settings used across services that consume LLM APIs.",
+      "required": ["default_model", "default_model_provider"],
+      "type": "object",
+      "properties": {
+        "default_model": {
+          "description": "Default AI model name without provider prefix (e.g. 'deepseek-v4-flash').",
+          "type": "string"
+        },
+        "default_model_provider": {
+          "description": "Default AI provider name for constructing full provider/model paths (e.g. 'deepseek').",
+          "type": "string"
+        }
+      }
+    },
     "domains": {
       "additionalProperties": false,
       "description": "Domain names used to construct server and service FQDNs.",
