@@ -6,11 +6,11 @@ TF_CLI_ARGS_plan = "-parallelism=20"
 
 [tools]
 "pipx:check-jsonschema" = "0.37.2"
-opentofu = "1"
-prettier = "3"
-ruff = "0"
-sops = "3"
-uv = "0"
+opentofu = "1.12.1"
+prettier = "3.8.4"
+ruff = "0.15.16"
+sops = "3.13.1"
+uv = "0.11.19"
 
 # Setup
 [tasks.init]
