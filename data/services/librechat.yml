@@ -28,6 +28,7 @@ data:
   allow_registration: true
 features:
   password: true
+  resend: true
 identity:
   description: AI Chat
   group: Applications
@@ -39,4 +40,17 @@ routing:
   backend_port: 30284
   backend_scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        ALLOW_PASSWORD_RESET: true
+        ALLOW_UNVERIFIED_EMAIL_LOGIN: false
+        DOMAIN_CLIENT: ${service.urls.default.href}
+        DOMAIN_SERVER: ${service.urls.default.href}
+        EMAIL_ENCRYPTION: tls
+        EMAIL_FROM: ${service.key}@${defaults.domains.internal}
+        EMAIL_FROM_NAME: ${service.identity.title}
+        EMAIL_HOST: ${defaults.resend.host}
+        EMAIL_PASSWORD: ${service.runtime.credentials.resend_api_key}
+        EMAIL_PORT: ${defaults.resend.port}
+        EMAIL_USERNAME: ${defaults.resend.username}
