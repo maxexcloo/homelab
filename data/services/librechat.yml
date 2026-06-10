@@ -26,6 +26,8 @@ dashboard:
     siteMonitor: ${service.urls.default.href}
 data:
   allow_registration: true
+features:
+  password: true
 identity:
   description: AI Chat
   group: Applications
