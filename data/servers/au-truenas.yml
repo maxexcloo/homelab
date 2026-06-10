@@ -4,6 +4,7 @@ platform: truenas
 type: server
 features:
   b2: true
+  beszel_agent: true
   cloudflare_acme: true
   cloudflare_acme_legacy: true
   cloudflare_zero_trust_tunnel: true

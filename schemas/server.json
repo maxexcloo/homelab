@@ -129,6 +129,10 @@
           "description": "Provision a Backblaze B2 bucket and application key. Exposes runtime.attributes.{b2_application_key_id, b2_bucket_name, b2_endpoint} and runtime.credentials.b2_application_key.",
           "type": "boolean"
         },
+        "beszel_agent": {
+          "description": "Enable Beszel agent management for this server. Generated setup artifacts install the agent, while the matching beszel-agent service target supplies configuration and credentials.",
+          "type": "boolean"
+        },
         "cloud_init": {
           "description": "Generate cloud-init configuration for this server. Exposes the cloud_config output for Incus containers and OCI VMs.",
           "type": "boolean"

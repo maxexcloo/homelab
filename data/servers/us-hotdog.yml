@@ -2,6 +2,7 @@
 platform: unmanaged
 type: vm
 features:
+  beszel_agent: true
   cloud_init: true
   cloudflare_zero_trust_tunnel: true
   password: true
