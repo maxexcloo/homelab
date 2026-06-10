@@ -29,7 +29,7 @@ servers:
     cloud_init: false
     cloudflare_acme: false
     cloudflare_acme_legacy: false
-    cloudflare_zero_trust_tunnel: false
+    cloudflared: false
     cockpit: false
     docker: false
     monitoring: true

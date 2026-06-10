@@ -17,13 +17,17 @@ locals {
         server.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
         } : {},
+        server.features.beszel_agent ? {
+          beszel_agent_token = local.defaults.credentials.rw
+          beszel_system_id   = local.defaults.credentials.rw
+        } : {},
         server.features.cloudflare_acme ? {
           cloudflare_acme_token = local.defaults.credentials.ro
         } : {},
         server.features.cloudflare_acme_legacy ? {
           cloudflare_acme_legacy_token = local.defaults.credentials.ro
         } : {},
-        server.features.cloudflare_zero_trust_tunnel ? {
+        server.features.cloudflared ? {
           cloudflare_tunnel_read_token = local.defaults.credentials.ro
           cloudflare_tunnel_token      = local.defaults.credentials.ro
         } : {},
@@ -51,9 +55,23 @@ locals {
     }
   }
 
+  # "name.region" for child servers; plain name when name equals region (region root).
+  _servers_model_host_prefix = {
+    for server_key, server in local.servers_input : server_key =>
+    server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
+  }
+
+  # Nearest ancestor with networking.public_host set; null when none declare one.
+  _servers_model_public_host = {
+    for server_key, server in local.servers_input : server_key => try([
+      for ancestor_key in local.servers_input_ancestors[server_key] : local.servers_input[ancestor_key].networking.public_host
+      if local.servers_input[ancestor_key].networking.public_host != ""
+    ][0], null)
+  }
+
   # Extracted because description appears in both the top-level model and the default
   # dashboard card; keeping it here avoids duplicating the parent-title ternary.
-  _servers_model_computed = {
+  _servers_model_resolved = {
     for server_key, server in local.servers_input : server_key => {
       addresses = {
         public_ipv4 = try([
@@ -111,24 +129,10 @@ locals {
     }
   }
 
-  # "name.region" for child servers; plain name when name equals region (region root).
-  _servers_model_host_prefix = {
-    for server_key, server in local.servers_input : server_key =>
-    server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
-  }
-
-  # Nearest ancestor with networking.public_host set; null when none declare one.
-  _servers_model_public_host = {
-    for server_key, server in local.servers_input : server_key => try([
-      for ancestor_key in local.servers_input_ancestors[server_key] : local.servers_input[ancestor_key].networking.public_host
-      if local.servers_input[ancestor_key].networking.public_host != ""
-    ][0], null)
-  }
-
   servers_model = {
     for server_key, server in local.servers_input : server_key => merge(
       server,
-      local._servers_model_computed[server_key],
+      local._servers_model_resolved[server_key],
       {
         credentials = local._servers_model_credentials[server_key]
         key         = server_key
@@ -136,12 +140,12 @@ locals {
 
         dashboard = server.dashboard != null ? server.dashboard : [
           {
-            description = local._servers_model_computed[server_key].description
+            description = local._servers_model_resolved[server_key].description
             group       = local.defaults.server_types[server.type].label
-            href        = local._servers_model_computed[server_key].urls.default.href
+            href        = local._servers_model_resolved[server_key].urls.default.href
             icon        = local.defaults.server_types[server.type].icon
             name        = "${server.identity.title} (${upper(server.identity.region)})"
-            siteMonitor = local._servers_model_computed[server_key].urls.default.href
+            siteMonitor = local._servers_model_resolved[server_key].urls.default.href
             widgets     = []
           }
         ]

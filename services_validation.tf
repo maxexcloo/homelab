@@ -8,12 +8,12 @@ locals {
     )
   ]
 
-  services_validation_cloudflare_tunnel_missing = [
+  services_validation_cloudflared_missing = [
     for service_key, service in local.services_model : service_key
     if(
       service.routing.expose == "cloudflare" &&
       try(local.servers_model[service.target], null) != null &&
-      !local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
+      !local.servers_model[service.target].features.cloudflared
     )
   ]
 
@@ -138,9 +138,9 @@ resource "terraform_data" "services_validation" {
 
     # Cloudflare-exposed server services need a tunnel on the target server.
     precondition {
-      condition = length(local.services_validation_cloudflare_tunnel_missing) == 0
+      condition = length(local.services_validation_cloudflared_missing) == 0
       error_message = (
-        "Cloudflare-exposed services deployed to servers require cloudflare_zero_trust_tunnel on the target server: ${join(", ", local.services_validation_cloudflare_tunnel_missing)}"
+        "Cloudflare-exposed services deployed to servers require cloudflared on the target server: ${join(", ", local.services_validation_cloudflared_missing)}"
       )
     }
 

@@ -1,17 +1,4 @@
 locals {
-  servers_validation_beszel_targets_missing = [
-    for server_key, server in local.servers_input : server_key
-    if(
-      server.features.beszel_agent &&
-      try(local.services_input["beszel-agent"].targets[server_key], null) == null
-    )
-  ]
-
-  servers_validation_beszel_targets_unexpected = [
-    for target_key in keys(local.services_input["beszel-agent"].targets) : target_key
-    if try(!local.servers_input[target_key].features.beszel_agent, true)
-  ]
-
   servers_validation_invalid_incus_vm_parents = [
     for server_key, server in local.servers_input : server_key
     if(
@@ -132,16 +119,6 @@ resource "terraform_data" "servers_validation" {
   input = keys(local.servers_input)
 
   lifecycle {
-    precondition {
-      condition     = length(local.servers_validation_beszel_targets_missing) == 0
-      error_message = "Servers with features.beszel_agent enabled require a matching beszel-agent service target: ${join(", ", nonsensitive(local.servers_validation_beszel_targets_missing))}"
-    }
-
-    precondition {
-      condition     = length(local.servers_validation_beszel_targets_unexpected) == 0
-      error_message = "Beszel agent service targets require features.beszel_agent on the target server: ${join(", ", nonsensitive(local.servers_validation_beszel_targets_unexpected))}"
-    }
-
     # Incus remotes are configured from parent server management addresses.
     precondition {
       condition     = length(local.servers_validation_invalid_incus_vm_parents) == 0

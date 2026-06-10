@@ -5,7 +5,7 @@ features:
   beszel_agent: true
   cloud_init: true
   cloudflare_acme: true
-  cloudflare_zero_trust_tunnel: true
+  cloudflared: true
   cockpit: true
   docker: true
   password: true

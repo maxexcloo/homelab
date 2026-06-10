@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=../../schemas/service.json
+targets: {}
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -17,8 +18,3 @@ identity:
 imports:
   services:
     homepage: auto
-targets:
-  au-haos: {}
-  au-hsp: {}
-  au-truenas: {}
-  us-hotdog: {}

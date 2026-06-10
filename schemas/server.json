@@ -130,7 +130,7 @@
           "type": "boolean"
         },
         "beszel_agent": {
-          "description": "Enable Beszel agent management for this server. Generated setup artifacts install the agent, while the matching beszel-agent service target supplies configuration and credentials.",
+          "description": "Enable Beszel agent management for this server. Adds runtime.credentials.{beszel_agent_token, beszel_system_id}, creates a matching beszel-agent service target, and installs the agent in generated setup artifacts.",
           "type": "boolean"
         },
         "cloud_init": {
@@ -145,8 +145,8 @@
           "description": "Create a scoped Cloudflare API token with Zone DNS Edit permissions on the internal and external domains. Exposes runtime.credentials.cloudflare_acme_legacy_token for DNS-01 challenge clients that cannot follow ACME CNAME delegation.",
           "type": "boolean"
         },
-        "cloudflare_zero_trust_tunnel": {
-          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
+        "cloudflared": {
+          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token, create a matching cloudflared service target, and install the daemon in generated setup artifacts. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
           "type": "boolean"
         },
         "cockpit": {

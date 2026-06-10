@@ -26,7 +26,7 @@ locals {
   # by Cloudflare Tunnel — unmatched requests need an explicit fallback or the tunnel
   # silently drops them.
   cloudflare_tunnel_ingress = {
-    for server_key, server in local.servers_by_feature.cloudflare_zero_trust_tunnel : server_key => concat(
+    for server_key, server in local.servers_by_feature.cloudflared : server_key => concat(
       flatten([
         for service_key, service in local.services_model : [
           for hostname in service.routing.cloudflare_hostnames : merge(
@@ -112,7 +112,7 @@ resource "cloudflare_dns_record" "all" {
 }
 
 module "cloudflare_tunnel" {
-  for_each = local.servers_by_feature.cloudflare_zero_trust_tunnel
+  for_each = local.servers_by_feature.cloudflared
   source   = "./modules/cloudflare_tunnel"
 
   account_id = data.cloudflare_account.default.id

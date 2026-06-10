@@ -1,18 +1,15 @@
 # yaml-language-server: $schema=../../schemas/service.json
-credentials:
-  fields:
-    system_id: {}
-    token: {}
+targets: {}
 dashboard:
   - name: ${services.beszel.identity.title}
     description: ${services.beszel.identity.description}
     group: ${server.dashboard[0].name}
-    href: ${services.beszel.urls.default.href}/system/${service.runtime.credentials.system_id}
+    href: ${services.beszel.urls.default.href}/system/${server.runtime.credentials.beszel_system_id}
     icon: ${services.beszel.identity.service}
     widgets:
       - type: beszel
         password: ${services.beszel.runtime.credentials.password}
-        systemId: ${service.runtime.credentials.system_id}
+        systemId: ${server.runtime.credentials.beszel_system_id}
         url: ${services.beszel.urls.default.href}
         username: ${defaults.organization.email}
         version: 2
@@ -23,8 +20,8 @@ dashboard:
           - network
 data:
   hub_url: ${services.beszel.urls.default.href}
-  listen: 45876
-  public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
+  listen: ${services.beszel.data.agent_listen}
+  public_key: ${services.beszel.data.agent_public_key}
 identity:
   description: Resource Monitoring Agent
   name: beszel-agent
@@ -33,8 +30,3 @@ identity:
 imports:
   services:
     beszel: auto
-targets:
-  au-haos: {}
-  au-hsp: {}
-  au-truenas: {}
-  us-hotdog: {}

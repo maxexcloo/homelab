@@ -4,7 +4,7 @@ type: vm
 features:
   beszel_agent: true
   cloud_init: true
-  cloudflare_zero_trust_tunnel: true
+  cloudflared: true
   password: true
   resend: true
   tailscale: true

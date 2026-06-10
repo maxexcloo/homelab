@@ -133,7 +133,7 @@ locals {
 
           content = (
             service.routing.expose == "cloudflare" &&
-            local.servers_model[service.target].features.cloudflare_zero_trust_tunnel
+            local.servers_model[service.target].features.cloudflared
             ? "${local.servers[service.target].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
             : local.services_model_proxy_server[service_key] != null
             ? local.servers_model[local.services_model_proxy_server[service_key]].hosts.external

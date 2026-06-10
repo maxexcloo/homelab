@@ -8,7 +8,7 @@ locals {
       {
         defaults = local.defaults
         server   = server
-        services = local.services_render_services
+        services = local.services_render_services_safe
       },
     )
     if server.features.cloud_init
@@ -20,7 +20,7 @@ locals {
       {
         defaults = local.defaults
         server   = server
-        services = local.services_render_services
+        services = local.services_render_services_safe
       },
     )
     if server.features.cloud_init

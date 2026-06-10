@@ -7,7 +7,7 @@ features:
   beszel_agent: true
   cloudflare_acme: true
   cloudflare_acme_legacy: true
-  cloudflare_zero_trust_tunnel: true
+  cloudflared: true
   password: true
   resend: true
   tailscale: true

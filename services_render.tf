@@ -30,14 +30,6 @@ locals {
     }
   }
 
-  # Rendered services with runtime stripped. Used in services_render_template_context
-  # for the same reason — file templates see adjacent services without their credentials.
-  _services_render_services_safe_rendered = {
-    for service_key, service in local.services_render_services : service_key => {
-      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
-    }
-  }
-
   # Parsed compose YAML before routing label injection. Kept separate so
   # services_render_write_compose can merge labels into the parsed structure.
   _services_render_write_compose_raw = {
@@ -104,8 +96,16 @@ locals {
     )
   }
 
+  # Rendered services with runtime stripped. Used in services_render_template_context
+  # for the same reason — file templates see adjacent services without their credentials.
+  services_render_services_safe = {
+    for service_key, service in local.services_render_services : service_key => {
+      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
+    }
+  }
+
   # Full context passed to templatefile() for deploy artifact files. Uses rendered
-  # services (_services_render_services_safe_rendered) so templates see final data
+  # services (services_render_services_safe) so templates see final data
   # values while still being protected from adjacent services' credentials.
   services_render_template_context = {
     for service_key, service in local.services : service_key => merge(
@@ -115,7 +115,7 @@ locals {
         service = local.services_render_services[service_key]
 
         services = merge(
-          local._services_render_services_safe_rendered,
+          local.services_render_services_safe,
           {
             for alias, real_key in local.services_model_imports[service_key] :
             alias => local.services_render_services[real_key]

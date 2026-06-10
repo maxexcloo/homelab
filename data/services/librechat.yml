@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    openai_api_key: {}
+    jwt_refresh_secret:
+      bootstrap_length: 48
+      bootstrap_type: hex
+    jwt_secret:
+      bootstrap_length: 48
+      bootstrap_type: hex
+    meilisearch_master_key:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    mongo_db_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+    pg_db_password:
+      bootstrap_length: 32
+      bootstrap_type: alphanumeric
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: ${service.identity.service}
+    siteMonitor: ${service.urls.default.href}
+data:
+  allow_registration: true
+identity:
+  description: AI Chat
+  group: Applications
+  name: librechat
+  service: librechat
+  title: LibreChat
+  username: max@excloo.com
+routing:
+  backend_port: 30284
+  backend_scheme: http
+targets:
+  au-truenas: {}

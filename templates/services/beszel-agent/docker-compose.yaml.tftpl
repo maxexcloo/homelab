@@ -2,9 +2,9 @@ services:
   beszel-agent:
     environment:
       HUB_URL: ${services.beszel.urls.default.href}
-      KEY: ${service.data.public_key}
-      LISTEN: ${service.data.listen}
-      TOKEN: ${service.runtime.credentials.token}
+      KEY: ${services.beszel.data.agent_public_key}
+      LISTEN: ${services.beszel.data.agent_listen}
+      TOKEN: ${server.runtime.credentials.beszel_agent_token}
     image: henrygd/beszel-agent:latest
     network_mode: host
     restart: unless-stopped

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
-  "description": "An application or daemon deployed to one or more servers or to Fly.io. Each entry in `targets` produces an independent service instance with its own DNS records, secrets, and config files.",
+  "description": "An application or daemon deployed to one or more servers or to Fly.io. Explicit targets and servers whose matching snake_case feature is enabled each produce an independent service instance.",
   "required": ["identity", "targets"],
   "title": "Service",
   "type": "object",
@@ -414,8 +414,7 @@
       }
     },
     "targets": {
-      "description": "Deployment targets for this service. Map keys are server keys (e.g. 'au-malatang') or 'fly' for Fly.io. Each entry produces a separate service instance keyed as {service}-{target}.",
-      "minProperties": 1,
+      "description": "Explicit deployment targets for this service. Map keys are server keys (e.g. 'au-malatang') or 'fly' for Fly.io. Servers also become implicit targets when a feature matching the service name is enabled (e.g. beszel_agent for beszel-agent).",
       "type": "object",
       "additionalProperties": {
         "additionalProperties": false,

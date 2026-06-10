@@ -112,7 +112,7 @@ locals {
               b2_bucket_name        = b2_bucket.server[server_key].bucket_name
               b2_endpoint           = local.b2_endpoint
             } : {},
-            server.features.cloudflare_zero_trust_tunnel ? {
+            server.features.cloudflared ? {
               cloudflare_tunnel_id = module.cloudflare_tunnel[server_key].tunnel_id
             } : {},
           )
@@ -141,7 +141,7 @@ locals {
             server.features.cloudflare_acme_legacy ? {
               cloudflare_acme_legacy_token = cloudflare_account_token.server_acme_legacy[server_key].value
             } : {},
-            server.features.cloudflare_zero_trust_tunnel ? {
+            server.features.cloudflared ? {
               cloudflare_tunnel_read_token = module.cloudflare_tunnel[server_key].tunnel_read_token
               cloudflare_tunnel_token      = module.cloudflare_tunnel[server_key].tunnel_token
             } : {},
