@@ -4,17 +4,6 @@ credentials:
   fields:
     homepage_widget_key: {}
 dashboard:
-  - name: ESPHome
-    description: ESP Device Builder
-    group: ${service.identity.group}
-    href: ${server.urls.default.href}/5c53de3b_esphome
-    icon: esphome
-    siteMonitor: ${server.urls.default.href}/5c53de3b_esphome
-    widgets:
-      - type: esphome
-        password: ${server.runtime.credentials.password}
-        url: http://${server.runtime.addresses.tailscale_ipv4}:6052
-        username: ${server.identity.username}
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${service.identity.group}
@@ -25,6 +14,12 @@ dashboard:
       - type: homeassistant
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${server.urls.default.href}
+  - name: ESPHome
+    description: ESP Device Builder
+    group: ${service.identity.group}
+    href: ${server.urls.default.href}/5c53de3b_esphome
+    icon: esphome
+    siteMonitor: ${server.urls.default.href}/5c53de3b_esphome
   - name: ESPresense
     description: Room Presence
     group: ${service.identity.group}

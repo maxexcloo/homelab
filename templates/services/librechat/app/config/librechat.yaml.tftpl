@@ -36,7 +36,7 @@ endpoints:
           - ${defaults.ai.default_model_provider}/${defaults.ai.default_model}
 mcpSettings:
   allowedDomains:
-    - "*.${defaults.domains.external}"
-    - "*.${defaults.domains.internal}"
-    - "${defaults.domains.external}"
-    - "${defaults.domains.internal}"
+    %{~ for zone in zones ~}
+    - "${zone}"
+    - "*.${zone}"
+    %{~ endfor ~}

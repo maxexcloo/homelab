@@ -113,6 +113,7 @@ locals {
       {
         custom  = try(local.services_render_custom_service_context[service_key], {})
         service = local.services_render_services[service_key]
+        zones   = keys(local.dns_input)
 
         services = merge(
           local.services_render_services_safe,
