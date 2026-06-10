@@ -1,7 +1,12 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
   fields:
+    anthropic_api_key: {}
+    deepseek_api_key: {}
+    google_key: {}
     openai_api_key: {}
+    opencode_api_key: {}
+    openrouter_api_key: {}
     jwt_refresh_secret:
       bootstrap_length: 48
       bootstrap_type: hex
@@ -27,6 +32,7 @@ dashboard:
 data:
   allow_registration: true
 features:
+  oidc: true
   password: true
   resend: true
 identity:
@@ -36,6 +42,9 @@ identity:
   service: librechat
   title: LibreChat
   username: max@excloo.com
+imports:
+  services:
+    pocket_id: auto
 routing:
   backend_port: 30284
   backend_scheme: http
@@ -45,6 +54,9 @@ targets:
       env:
         ALLOW_PASSWORD_RESET: true
         ALLOW_UNVERIFIED_EMAIL_LOGIN: false
+        ANTHROPIC_API_KEY: ${service.runtime.credentials.anthropic_api_key}
+        CONFIG_PATH: /app/config/librechat.yaml
+        DEEPSEEK_API_KEY: ${service.runtime.credentials.deepseek_api_key}
         DOMAIN_CLIENT: ${service.urls.default.href}
         DOMAIN_SERVER: ${service.urls.default.href}
         EMAIL_ENCRYPTION: tls
@@ -54,3 +66,13 @@ targets:
         EMAIL_PASSWORD: ${service.runtime.credentials.resend_api_key}
         EMAIL_PORT: ${defaults.resend.port}
         EMAIL_USERNAME: ${defaults.resend.username}
+        GOOGLE_KEY: ${service.runtime.credentials.google_key}
+        OPENCODE_API_KEY: ${service.runtime.credentials.opencode_api_key}
+        OPENID_AUTO_REDIRECT: true
+        OPENID_CALLBACK_URL: /oauth/openid/callback
+        OPENID_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        OPENID_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        OPENID_ISSUER: ${services.pocket_id.urls.default.href}
+        OPENID_SCOPE: openid profile email
+        OPENID_SESSION_SECRET: ${service.runtime.credentials.jwt_secret}
+        OPENROUTER_KEY: ${service.runtime.credentials.openrouter_api_key}
