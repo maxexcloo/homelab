@@ -2,7 +2,7 @@
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
-    group: ${server.dashboard[0].name}
+    group: ${server.identity.group}
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}

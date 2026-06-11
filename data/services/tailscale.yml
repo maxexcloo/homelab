@@ -3,7 +3,7 @@ targets: {}
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
-    group: ${server.dashboard[0].name}
+    group: ${server.identity.group}
     href: https://login.tailscale.com/admin/machines/${server.runtime.addresses.tailscale_ipv4}
     icon: ${service.identity.service}
     widgets:

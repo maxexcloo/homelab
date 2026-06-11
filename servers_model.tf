@@ -154,7 +154,7 @@ locals {
         key         = server_key
         ssh_keys    = data.github_user.default.ssh_keys
 
-        dashboard = jsondecode(server.dashboard != null ? jsonencode(server.dashboard) : jsonencode([
+        dashboard = jsondecode(server.dashboard != null ? jsonencode(server.dashboard) : jsonencode(server.networking.management_port != "" ? [
           {
             description = local._servers_model_identity[server_key].description
             group       = local._servers_model_identity[server_key].group
@@ -164,7 +164,7 @@ locals {
             siteMonitor = try(local._servers_model_resolved[server_key].urls.management.href, local._servers_model_resolved[server_key].urls.internal.href)
             widgets     = []
           }
-        ]))
+        ] : []))
 
         routing = merge(
           server.routing,

@@ -8,7 +8,7 @@ credentials:
 dashboard:
   - name: TrueNAS
     description: ${server.identity.description}
-    group: ${server.identity.title} (${upper(server.identity.region)})
+    group: ${server.identity.group}
     href: ${server.urls.management.href}
     icon: truenas
     siteMonitor: ${server.urls.management.href}

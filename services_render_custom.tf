@@ -9,7 +9,7 @@ locals {
       for card_index, dashboard_card in server.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "1:${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${server_key}:${card_index}"
+        sort  = "${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:1:${server_key}:${card_index}"
 
         card = {
           for field, value in dashboard_card : field => value
@@ -27,7 +27,7 @@ locals {
       for card_index, dashboard_card in service.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "0:${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${service_key}:${card_index}"
+        sort  = "${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:0:${service_key}:${card_index}"
 
         card = {
           for field, value in dashboard_card : field => value
@@ -48,10 +48,6 @@ locals {
     for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) : dashboard_card.sort => dashboard_card
   }
 
-  _services_render_custom_homepage_sort_names = [
-    for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.name
-  ]
-
   _services_render_custom_homepage_sorted_by_group = {
     for card in [
       for sort_key in sort(keys(local._services_render_custom_homepage_sort_index)) :
@@ -59,30 +55,25 @@ locals {
     ] : card.group => zipmap([card.name], [card.card])...
   }
 
-  _services_render_custom_homepage_sorted_server_matched = sort(distinct([
-    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
-    if contains(local._services_render_custom_homepage_sort_names, dashboard_card.group)
+  _services_render_custom_homepage_sorted_groups = sort(distinct([
+    for dashboard_card in concat(local._services_render_custom_homepage_service_cards, local._services_render_custom_homepage_server_cards) :
+    dashboard_card.group
   ]))
+
+  _services_render_custom_homepage_sorted_server_groups = [
+    for group in local._services_render_custom_homepage_sorted_groups : group
+    if contains([for server in values(local.servers_model) : server.identity.group], group)
+  ]
 
   _services_render_custom_homepage_sorted_service_groups = sort(distinct([
-    for dashboard_card in local._services_render_custom_homepage_service_cards : dashboard_card.group
-    if !contains(local._services_render_custom_homepage_sort_names, dashboard_card.group)
+    for group in local._services_render_custom_homepage_sorted_groups : group
+    if !contains(local._services_render_custom_homepage_sorted_server_groups, group)
   ]))
-
-  _services_render_custom_homepage_total_server_groups = concat(
-    local._services_render_custom_homepage_sorted_server_matched,
-    [
-      for group in sort(distinct([
-        for dashboard_card in local._services_render_custom_homepage_server_cards : dashboard_card.group
-      ])) : group
-      if !contains(local._services_render_custom_homepage_sorted_server_matched, group)
-    ],
-  )
 
   _services_render_custom_homepage_union_groups = concat(
     local._services_render_custom_homepage_sorted_service_groups,
     ["Providers"],
-    local._services_render_custom_homepage_total_server_groups,
+    local._services_render_custom_homepage_sorted_server_groups,
   )
 
   _services_render_custom_homepage_view = {
@@ -92,7 +83,7 @@ locals {
           {
             columns = 2
             style   = "row"
-            tab     = contains(local._services_render_custom_homepage_total_server_groups, group) ? "Servers" : "Services"
+            tab     = contains(local._services_render_custom_homepage_sorted_server_groups, group) ? "Servers" : "Services"
           },
           contains(local._services_render_custom_homepage_sorted_service_groups, group) ? {
             columns = local._services_render_custom_homepage_data.groups[group].columns

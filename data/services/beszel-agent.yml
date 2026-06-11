@@ -3,7 +3,7 @@ targets: {}
 dashboard:
   - name: ${services.beszel.identity.title}
     description: ${services.beszel.identity.description}
-    group: ${server.dashboard[0].name}
+    group: ${server.identity.group}
     href: ${services.beszel.urls.default.href}/system/${server.runtime.credentials.beszel_system_id}
     icon: ${services.beszel.identity.service}
     widgets:

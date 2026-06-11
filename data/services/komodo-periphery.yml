@@ -2,7 +2,7 @@
 dashboard:
   - name: ${service.identity.title}
     description: ${services.komodo.identity.description}
-    group: ${server.dashboard[0].name}
+    group: ${server.identity.group}
     href: ${services.komodo.urls.default.href}/servers/${server.key}
     icon: ${services.komodo.identity.service}
     widgets:

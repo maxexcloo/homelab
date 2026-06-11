@@ -7,7 +7,7 @@ credentials:
 dashboard:
   - name: UniFi
     description: ${server.identity.description}
-    group: ${server.identity.title} (${upper(server.identity.region)})
+    group: ${server.identity.group}
     href: ${server.urls.management.href}
     icon: unifi
     siteMonitor: ${server.urls.management.href}

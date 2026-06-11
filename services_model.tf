@@ -182,7 +182,7 @@ locals {
           identity = {
             group = (
               service.identity.group != "" ? service.identity.group
-              : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.description
+              : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.group
               : "Applications"
             )
             username = (
