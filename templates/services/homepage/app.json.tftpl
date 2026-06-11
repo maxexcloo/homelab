@@ -11,17 +11,20 @@
       }
     },
     "storage": {
+      "additional_storage": [
+        {
+          "ix_volume_config": {
+            "acl_enable": false,
+            "dataset_name": "public"
+          },
+          "mount_path": "/app/public",
+          "type": "ix_volume"
+        }
+      ],
       "config": {
         "ix_volume_config": {
           "acl_enable": false,
           "dataset_name": "config"
-        },
-        "type": "ix_volume"
-      },
-      "public": {
-        "ix_volume_config": {
-          "acl_enable": false,
-          "dataset_name": "public"
         },
         "type": "ix_volume"
       }
