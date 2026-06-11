@@ -6,7 +6,7 @@ credentials:
     homepage_widget_key: {}
 dashboard:
   - name: UniFi
-    description: ${server.description}
+    description: ${server.identity.description}
     group: ${server.identity.title} (${upper(server.identity.region)})
     href: ${server.urls.management.href}
     icon: unifi

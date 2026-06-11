@@ -230,13 +230,6 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition = length(local._services_validation_truenas_config_invalid_targets) == 0
-      error_message = (
-        "targets.<key>.truenas settings are only valid for services targeting TrueNAS servers: ${join(", ", local._services_validation_truenas_config_invalid_targets)}"
-      )
-    }
-
-    precondition {
       condition = length(local._services_validation_target_credentials_invalid) == 0
       error_message = (
         "Service credentials.source = target requires a server target with password enabled: ${join(", ", local._services_validation_target_credentials_invalid)}"
@@ -247,6 +240,13 @@ resource "terraform_data" "services_validation" {
       condition = length(local._services_validation_target_credentials_password_feature) == 0
       error_message = (
         "Service credentials.source = target cannot be combined with service features.password: ${join(", ", local._services_validation_target_credentials_password_feature)}"
+      )
+    }
+
+    precondition {
+      condition = length(local._services_validation_truenas_config_invalid_targets) == 0
+      error_message = (
+        "targets.<key>.truenas settings are only valid for services targeting TrueNAS servers: ${join(", ", local._services_validation_truenas_config_invalid_targets)}"
       )
     }
 

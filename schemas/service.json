@@ -408,7 +408,7 @@
           }
         },
         "urls": {
-          "description": "URL entries that inherit shared routing fields and may override route-specific backend and TLS settings.",
+          "description": "Additional URL entries that inherit shared routing fields and may override route-specific backend and TLS settings. Services with a backend port or scheme also receive a derived internal URL.",
           "type": "array",
           "uniqueItems": true,
           "items": {

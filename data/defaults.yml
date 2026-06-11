@@ -40,6 +40,8 @@ servers:
     tailscale: false
     zfs: false
   identity:
+    description: ""
+    group: ""
     name: ""
     region: ""
     title: ""
@@ -114,9 +116,7 @@ services:
     https: true
     https_verify: true
     labels: {}
-    urls:
-      - expose: internal
-        url: null
+    urls: []
 targets:
   fly:
     app_name: ""

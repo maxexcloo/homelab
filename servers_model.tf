@@ -61,6 +61,25 @@ locals {
     server.identity.name == server.identity.region ? server.identity.name : "${server.identity.name}.${server.identity.region}"
   }
 
+  _servers_model_identity = {
+    for server_key, server in local.servers_input : server_key => merge(
+      server.identity,
+      {
+        description = (
+          server.identity.description != "" ? server.identity.description
+          : server.parent == "" ? server.identity.title
+          : try(server.identity.region == local.servers_input[server.parent].identity.name, false)
+          ? "${server.identity.title} (${upper(server.identity.region)})"
+          : "${try(local.servers_input[server.parent].identity.title, server.parent)} ${server.identity.title} (${upper(server.identity.region)})"
+        )
+        group = (
+          server.identity.group != "" ? server.identity.group
+          : "${server.identity.title} (${upper(server.identity.region)})"
+        )
+      },
+    )
+  }
+
   # Nearest ancestor with networking.public_host set; null when none declare one.
   _servers_model_public_host = {
     for server_key, server in local.servers_input : server_key => try([
@@ -69,8 +88,6 @@ locals {
     ][0], null)
   }
 
-  # Extracted because description appears in both the top-level model and generated
-  # dashboard card; keeping it here avoids duplicating the parent-title ternary.
   _servers_model_resolved = {
     for server_key, server in local.servers_input : server_key => {
       addresses = {
@@ -84,15 +101,6 @@ locals {
           if can(cidrhost("${local.servers_input[ancestor_key].networking.public_ipv6}/128", 0))
         ][0], null)
       }
-
-      # Children under a same-region parent omit the parent title; the region
-      # already disambiguates them.
-      description = (
-        server.parent == "" ? server.identity.title :
-        try(server.identity.region == local.servers_input[server.parent].identity.name, false)
-        ? "${server.identity.title} (${upper(server.identity.region)})"
-        : "${try(local.servers_input[server.parent].identity.title, server.parent)} ${server.identity.title} (${upper(server.identity.region)})"
-      )
 
       hosts = {
         external   = "${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.external}"
@@ -128,7 +136,8 @@ locals {
     for server_key, server in local.servers_input : server_key => [
       for url in server.routing.urls : merge(
         {
-          backend_url = server.routing.backend_url
+          for field_name, field_value in server.routing : field_name => field_value
+          if field_name != "urls"
         },
         url,
       )
@@ -141,13 +150,14 @@ locals {
       local._servers_model_resolved[server_key],
       {
         credentials = local._servers_model_credentials[server_key]
+        identity    = local._servers_model_identity[server_key]
         key         = server_key
         ssh_keys    = data.github_user.default.ssh_keys
 
         dashboard = jsondecode(server.dashboard != null ? jsonencode(server.dashboard) : jsonencode([
           {
-            description = local._servers_model_resolved[server_key].description
-            group       = "${server.identity.title} (${upper(server.identity.region)})"
+            description = local._servers_model_identity[server_key].description
+            group       = local._servers_model_identity[server_key].group
             href        = try(local._servers_model_resolved[server_key].urls.management.href, local._servers_model_resolved[server_key].urls.internal.href)
             icon        = local.defaults.server_types[server.type].icon
             name        = "${server.identity.title} (${upper(server.identity.region)})"

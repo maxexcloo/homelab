@@ -78,40 +78,41 @@ locals {
 
   _services_model_route_entries = {
     for service_key, service in local.services_input_targets : service_key => [
-      for url in service.routing.urls : merge(
+      for url in concat(
+        (
+          service.routing.backend_port != null ||
+          service.routing.backend_scheme != ""
+          ) ? [
+          {
+            expose = "internal"
+            url    = null
+          }
+        ] : [],
+        service.routing.urls,
+        ) : merge(
         {
           for field_name, field_value in service.routing : field_name => field_value
           if field_name != "urls"
         },
         url,
         {
-          proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
-        },
-      )
-    ]
-  }
-
-  _services_model_route_hosts = {
-    for service_key, service in local.services_input_targets : service_key => [
-      for route in local._services_model_route_entries[service_key] : merge(
-        route,
-        {
           dns_target_host = (
             service.target == "fly" ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
-            : route.proxy_server != null ? try(
-              "${service.identity.name}.${local.servers_model[route.proxy_server].hosts.external}",
+            : startswith(url.expose, "proxy-") ? try(
+              "${service.identity.name}.${local.servers_model[trimprefix(url.expose, "proxy-")].hosts.external}",
               null,
             )
-            : contains(["cloudflare", "external"], route.expose) ? try(
+            : contains(["cloudflare", "external"], url.expose) ? try(
               "${service.identity.name}.${local.servers_model[service.target].hosts.external}",
               null,
             )
-            : route.expose == "internal" && route.backend_scheme != "" ? try(
+            : url.expose == "internal" && try(url.backend_scheme, service.routing.backend_scheme) != "" ? try(
               "${service.identity.name}.${local.servers_model[service.target].hosts.internal}",
               null,
             )
             : null
           )
+          proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
         },
       )
     ]
@@ -119,13 +120,14 @@ locals {
 
   _services_model_routes = {
     for service_key, service in local.services_input_targets : service_key => [
-      for route_index, route in local._services_model_route_hosts[service_key] : merge(
+      for route_index, route in local._services_model_route_entries[service_key] : merge(
         route,
         {
           backend_url = route.backend_url != "" ? route.backend_url : "http://localhost:8000"
           container   = route.container != "" ? route.container : service.identity.service
           host        = route.url != null ? route.url : route.dns_target_host
           host_port   = route.host_port != null ? route.host_port : route.backend_port
+          href        = route.url != null || route.dns_target_host != null ? "${route.https ? "https" : "http"}://${route.url != null ? route.url : route.dns_target_host}" : null
           name        = route_index == 0 ? service.identity.name : "${service.identity.name}-${route_index}"
           zone = route.dns_target_host == null && route.url == null ? null : (
             route.url != null ? local.dns_render_managed_zones_by_url[route.url]
@@ -138,24 +140,13 @@ locals {
     ]
   }
 
-  _services_model_routes_with_hrefs = {
-    for service_key, service in local.services_input_targets : service_key => [
-      for route in local._services_model_routes[service_key] : merge(
-        route,
-        {
-          href = route.host != null ? "${route.https ? "https" : "http"}://${route.host}" : null
-        },
-      )
-    ]
-  }
-
   _services_model_target_servers = {
     for service_key, service in local.services_input_targets : service_key => try(local.servers_model[service.target], null)
   }
 
   _services_model_urls = {
     for service_key, service in local.services_input_targets : service_key => {
-      for route in local._services_model_routes_with_hrefs[service_key] :
+      for route in local._services_model_routes[service_key] :
       route.host => {
         host  = route.host
         href  = route.href
@@ -169,7 +160,7 @@ locals {
   _services_model_urls_default = {
     for service_key, service in local.services_input_targets : service_key => try(
       [
-        for route in local._services_model_routes_with_hrefs[service_key] : route.href
+        for route in local._services_model_routes[service_key] : route.href
         if route.href != null
       ][0],
       null,
@@ -191,7 +182,7 @@ locals {
           identity = {
             group = (
               service.identity.group != "" ? service.identity.group
-              : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].description
+              : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.description
               : "Applications"
             )
             username = (
@@ -209,7 +200,7 @@ locals {
               backend_url = service.routing.backend_url != "" ? service.routing.backend_url : "http://localhost:8000"
               container   = service.routing.container != "" ? service.routing.container : service.identity.service
               host_port   = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
-              urls        = local._services_model_routes_with_hrefs[service_key]
+              urls        = local._services_model_routes[service_key]
             },
           )
 

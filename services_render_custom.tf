@@ -5,7 +5,7 @@ locals {
   ])
 
   _services_render_custom_homepage_server_cards = flatten([
-    for server_key, server in local.servers_render_runtime : [
+    for server_key, server in local.servers_render_servers : [
       for card_index, dashboard_card in server.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
@@ -122,14 +122,8 @@ locals {
                 startswith(route.expose, "proxy-")
               ) ? "web,websecure,webinternal" : "web,websecure"
               "traefik.http.routers.${route.name}.middlewares" = (
-                route.expose == "internal" && route.https
-                ? "internal-only@docker,redirect-to-https@docker"
-                : route.expose == "internal"
+                route.expose == "internal"
                 ? "internal-only@docker"
-                : route.expose == "cloudflare" || startswith(route.expose, "proxy-")
-                ? null
-                : route.https
-                ? "redirect-to-https@docker"
                 : null
               )
               "traefik.http.routers.${route.name}.rule"    = route.host != null ? "Host(`${route.host}`)" : null
@@ -141,6 +135,22 @@ locals {
               ) ? "cloudflare" : null
               "traefik.http.services.${route.name}.loadbalancer.server.port"   = tostring(route.backend_port)
               "traefik.http.services.${route.name}.loadbalancer.server.scheme" = route.backend_scheme == "https" ? "https" : null
+            } : {},
+            (
+              route.backend_port != null &&
+              route.expose != "cloudflare" &&
+              route.https &&
+              !startswith(route.expose, "proxy-")
+              ) ? {
+              "traefik.http.routers.${route.name}.entrypoints"      = "websecure"
+              "traefik.http.routers.${route.name}-http.entrypoints" = "web"
+              "traefik.http.routers.${route.name}-http.middlewares" = (
+                route.expose == "internal"
+                ? "internal-only@docker,redirect-to-https@docker"
+                : "redirect-to-https@docker"
+              )
+              "traefik.http.routers.${route.name}-http.rule"    = route.host != null ? "Host(`${route.host}`)" : null
+              "traefik.http.routers.${route.name}-http.service" = route.name
             } : {},
             (
               route.backend_port != null &&
@@ -177,18 +187,18 @@ locals {
             for svc in values(local.services_render_services) : {
               for route in svc.routing.urls :
               route.name => {
-                backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8000"
+                backend_url = "http://${local.servers_render_servers[svc.target].runtime.addresses.tailscale_ipv4}:8000"
                 host        = route.host
               }
               if(
                 route.proxy_server == service.target &&
-                try(local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4, "") != "" &&
+                try(local.servers_render_servers[svc.target].runtime.addresses.tailscale_ipv4, "") != "" &&
                 route.host != null
               )
             }
           ]...),
           merge([
-            for source_server_key, source_server in local.servers_render_runtime : {
+            for source_server_key, source_server in local.servers_render_servers : {
               for route in source_server.routing.urls :
               "server-${source_server_key}-${substr(sha1(route.url), 0, 12)}" => {
                 backend_url = route.backend_url

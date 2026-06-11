@@ -24,7 +24,7 @@ locals {
 resource "incus_instance" "vm" {
   for_each = local.incus_vms
 
-  description = each.value.description
+  description = each.value.identity.description
   image       = each.value.platform_config.incus.image
   name        = each.value.identity.name
   profiles    = each.value.platform_config.incus.profiles

@@ -192,10 +192,18 @@
     },
     "identity": {
       "additionalProperties": false,
-      "description": "Human-readable identifiers for this server.",
+      "description": "Human-readable identifiers and dashboard metadata for this server.",
       "required": ["name", "region", "title"],
       "type": "object",
       "properties": {
+        "description": {
+          "description": "One-line description of this server. Defaults to a title derived from its parent, region, and display name.",
+          "type": "string"
+        },
+        "group": {
+          "description": "Dashboard group. Defaults to the server title and region.",
+          "type": "string"
+        },
         "name": {
           "description": "Short hostname component used to build the server FQDN. For region-prefixed keys (e.g. au-malatang) this is the part after the hyphen (malatang). Must be lowercase alphanumeric or hyphen.",
           "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",

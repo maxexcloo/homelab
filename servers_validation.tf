@@ -163,26 +163,6 @@ resource "terraform_data" "servers_validation" {
       error_message = "Cloudflare server routes require features.cloudflared: ${join(", ", nonsensitive(local._servers_validation_cloudflare_routes_missing))}"
     }
 
-    precondition {
-      condition     = length(local._servers_validation_routes_invalid_proxies) == 0
-      error_message = "Server routing proxy targets must reference an existing server: ${join(", ", nonsensitive(local._servers_validation_routes_invalid_proxies))}"
-    }
-
-    precondition {
-      condition     = length(local._servers_validation_routes_missing_backend) == 0
-      error_message = "Server routing URLs require a shared or per-URL backend_url: ${join(", ", nonsensitive(local._servers_validation_routes_missing_backend))}"
-    }
-
-    precondition {
-      condition     = length(local._servers_validation_routes_not_unique) == 0
-      error_message = "Server routing URLs must be unique per server: ${join(", ", nonsensitive(local._servers_validation_routes_not_unique))}"
-    }
-
-    precondition {
-      condition     = length(local._servers_validation_routes_unmanaged) == 0
-      error_message = "Server routing URLs must be in a managed DNS zone (data/dns/): ${join(", ", nonsensitive(local._servers_validation_routes_unmanaged))}"
-    }
-
     # Incus remotes are configured from parent server management addresses.
     precondition {
       condition     = length(local._servers_validation_invalid_incus_vm_parents) == 0
@@ -267,6 +247,26 @@ resource "terraform_data" "servers_validation" {
       error_message = (
         "Server parent references contain a cycle within the supported parent depth: ${join(", ", local._servers_validation_parent_cycles)}"
       )
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_invalid_proxies) == 0
+      error_message = "Server routing proxy targets must reference an existing server: ${join(", ", nonsensitive(local._servers_validation_routes_invalid_proxies))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_missing_backend) == 0
+      error_message = "Server routing URLs require a shared or per-URL backend_url: ${join(", ", nonsensitive(local._servers_validation_routes_missing_backend))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_not_unique) == 0
+      error_message = "Server routing URLs must be unique per server: ${join(", ", nonsensitive(local._servers_validation_routes_not_unique))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_unmanaged) == 0
+      error_message = "Server routing URLs must be in a managed DNS zone (data/dns/): ${join(", ", nonsensitive(local._servers_validation_routes_unmanaged))}"
     }
 
     precondition {

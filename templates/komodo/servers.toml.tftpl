@@ -1,6 +1,6 @@
 %{~ for server_key, server in servers ~}
 [[server]]
-description = "${server.description}"
+description = "${server.identity.description}"
 name = "${server_key}"
 
 [server.config]

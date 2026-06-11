@@ -21,15 +21,6 @@ locals {
     ]
   ])
 
-  # Services with runtime stripped. Used in services_render_context_base so that
-  # cross-service references in templatestring() calls cannot access other services'
-  # credentials.
-  _services_render_services_safe = {
-    for service_key, service in local.services : service_key => {
-      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
-    }
-  }
-
   # Parsed compose YAML before routing label injection. Kept separate so
   # services_render_write_compose can merge labels into the parsed structure.
   _services_render_write_compose_raw = {
@@ -53,18 +44,18 @@ locals {
   }
 
   # First-pass context for templatestring() calls on service.data and service.dashboard.
-  # Uses _services_render_services_safe (runtime stripped) to avoid circular
-  # dependencies — services reference each other during rendering, so each service's
-  # context must use the pre-render values of adjacent services.
+  # Adjacent services use model values to avoid circular dependencies and prevent
+  # implicit cross-service access to runtime credentials. Explicit imports receive
+  # the imported service's runtime values.
   services_render_context_base = {
     for service_key, service in local.services : service_key => {
       defaults = local.defaults
-      server   = try(local.servers_render_runtime[service.target], null)
-      servers  = local.servers_render_runtime
+      server   = try(local.servers_render_servers[service.target], null)
+      servers  = local.servers_render_servers
       service  = service
 
       services = merge(
-        local._services_render_services_safe,
+        local.services_model,
         {
           for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services[real_key]
