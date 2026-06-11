@@ -1,1 +1,1 @@
-${join("\n", service.routing.urls)}
+${join("\n", [for route in service.routing.urls : route.url if route.url != null])}

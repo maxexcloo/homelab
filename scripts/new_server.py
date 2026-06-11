@@ -3,11 +3,10 @@
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml>=6"]
 # ///
-"""Create a new server YAML from schema defaults and open it in $EDITOR."""
+"""Create a new server YAML and open it in $EDITOR."""
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
@@ -16,8 +15,19 @@ from pathlib import Path
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SERVER_SCHEMA = PROJECT_ROOT / "schemas" / "server.json"
 SERVERS_DIR = PROJECT_ROOT / "data" / "servers"
+
+
+def sort_mapping(data: dict) -> dict:
+    single_line = sorted(
+        key
+        for key, value in data.items()
+        if not isinstance(value, (dict, list)) or not value
+    )
+    multi_line = sorted(
+        key for key, value in data.items() if isinstance(value, (dict, list)) and value
+    )
+    return {key: data[key] for key in single_line + multi_line}
 
 
 def main() -> None:
@@ -32,8 +42,6 @@ def main() -> None:
     server_type = sys.argv[4] if len(sys.argv) > 4 else "server"
     parent = sys.argv[5] if len(sys.argv) > 5 else None
 
-    schema = json.loads(SERVER_SCHEMA.read_text())
-
     server: dict = {
         "identity": {
             "name": name,
@@ -46,18 +54,16 @@ def main() -> None:
     if parent:
         server["parent"] = parent
 
-    # Build key
     key = name if name == region else f"{region}-{name}"
     if parent:
         key = f"{parent}-{name}"
 
-    # Order keys as they appear in the schema
-    ordered = {}
-    for k in schema["properties"]:
-        if k in server:
-            ordered[k] = server[k]
-
-    body = yaml.dump(ordered, default_flow_style=False, sort_keys=False, width=1000)
+    body = yaml.dump(
+        sort_mapping(server),
+        default_flow_style=False,
+        sort_keys=False,
+        width=1000,
+    )
     content = f"# yaml-language-server: $schema=../../schemas/server.json\n{body}"
 
     out_path = SERVERS_DIR / f"{key}.yml"

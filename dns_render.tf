@@ -1,9 +1,19 @@
 locals {
   # Longest matching zone wins for nested domains.
   _dns_render_zones_matching = {
-    for url in distinct(flatten([
-      for service_key, service in local.services_input_targets : service.routing.urls
-      ])) : url => [
+    for url in distinct(concat(
+      flatten([
+        for service_key, service in local.services_input_targets : [
+          for url in service.routing.urls : url.url
+          if url.url != null
+        ]
+      ]),
+      flatten([
+        for server_key, server in local.servers_input : [
+          for url in server.routing.urls : url.url
+        ]
+      ]),
+      )) : url => [
       for zone in keys(local.dns_input) : {
         length = length(zone)
         name   = zone
@@ -98,9 +108,9 @@ locals {
           zone     = local.defaults.domains.external
         }
       } : {},
-      local.servers[server_key].runtime.addresses.tailscale_ipv4 != "" ? {
+      try(local.tailscale_device_addresses[server_key].ipv4, "") != "" ? {
         "${local.defaults.domains.internal}-${server_key}-a" = {
-          content  = local.servers[server_key].runtime.addresses.tailscale_ipv4
+          content  = local.tailscale_device_addresses[server_key].ipv4
           name     = server.hosts.internal
           proxied  = false
           type     = "A"
@@ -108,9 +118,9 @@ locals {
           zone     = local.defaults.domains.internal
         }
       } : {},
-      local.servers[server_key].runtime.addresses.tailscale_ipv6 != "" ? {
+      try(local.tailscale_device_addresses[server_key].ipv6, "") != "" ? {
         "${local.defaults.domains.internal}-${server_key}-aaaa" = {
-          content  = local.servers[server_key].runtime.addresses.tailscale_ipv6
+          content  = local.tailscale_device_addresses[server_key].ipv6
           name     = server.hosts.internal
           proxied  = false
           type     = "AAAA"
@@ -121,27 +131,54 @@ locals {
     )
   ]...)
 
+  # Server-owned routes resolve according to their exposure method.
+  dns_render_records_servers_routing = merge(flatten([
+    for server_key, server in local.servers_model : [
+      for route_index, route in server.routing.urls : {
+        "${server_key}-route-${route_index}" = {
+          content = (
+            route.expose == "cloudflare"
+            ? "${local.servers[server_key].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
+            : startswith(route.expose, "proxy-")
+            ? try(local.servers_model[trimprefix(route.expose, "proxy-")].hosts.external, null)
+            : route.expose == "external"
+            ? server.hosts.external
+            : server.hosts.internal
+          )
+          name    = route.url
+          proxied = route.expose == "cloudflare"
+          type    = "CNAME"
+          zone    = local.dns_render_managed_zones_by_url[route.url]
+        }
+      }
+      if local.dns_render_managed_zones_by_url[route.url] != null
+    ]
+  ])...)
+
   # Custom service URLs resolve to the tunnel when Cloudflare-exposed.
   dns_render_records_services = merge(flatten([
     for service_key, service in local.services_model : [
-      for url_index, url in service.routing.urls : {
-        "${service_key}-url-${url_index}" = {
-          name    = url
-          proxied = service.routing.expose == "cloudflare"
+      for route_index, route in service.routing.urls : {
+        "${service_key}-url-${route_index}" = {
+          name    = route.url
+          proxied = route.expose == "cloudflare"
           type    = "CNAME"
-          zone    = local.dns_render_managed_zones_by_url[url]
+          zone    = local.dns_render_managed_zones_by_url[route.url]
 
           content = (
-            service.routing.expose == "cloudflare" &&
+            route.expose == "cloudflare" &&
             local.servers_model[service.target].features.cloudflared
             ? "${local.servers[service.target].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
-            : local.services_model_proxy_server[service_key] != null
-            ? local.servers_model[local.services_model_proxy_server[service_key]].hosts.external
-            : service.routing.dns_target_host
+            : route.proxy_server != null
+            ? local.servers_model[route.proxy_server].hosts.external
+            : route.dns_target_host
           )
         }
       }
-      if local.dns_render_managed_zones_by_url[url] != null
+      if(
+        route.url != null &&
+        local.dns_render_managed_zones_by_url[route.url] != null
+      )
     ]
     if try(local.servers_model[service.target], null) != null
   ])...)
@@ -149,16 +186,19 @@ locals {
   # Fly's fly.dev hostnames are served directly by Fly; only custom URLs need DNS.
   dns_render_records_services_fly = merge(flatten([
     for service_key, service in local.services_model : [
-      for url_index, url in service.routing.urls : {
-        "${service_key}-url-${url_index}" = {
+      for route_index, route in service.routing.urls : {
+        "${service_key}-url-${route_index}" = {
           content = "${service.fly.app_name}.fly.dev"
-          name    = url
-          proxied = service.routing.expose == "cloudflare"
+          name    = route.url
+          proxied = route.expose == "cloudflare"
           type    = "CNAME"
-          zone    = local.dns_render_managed_zones_by_url[url]
+          zone    = local.dns_render_managed_zones_by_url[route.url]
         }
       }
-      if local.dns_render_managed_zones_by_url[url] != null
+      if(
+        route.url != null &&
+        local.dns_render_managed_zones_by_url[route.url] != null
+      )
     ]
     if service.target == "fly"
   ])...)
@@ -169,6 +209,7 @@ locals {
       for source_record in concat(
         values(local.dns_render_records_manual),
         values(local.dns_render_records_servers),
+        values(local.dns_render_records_servers_routing),
         values(local.dns_render_records_services)
         ) : {
         name = source_record.name
@@ -212,6 +253,7 @@ locals {
     for key, record in merge(
       local.dns_render_records_manual,
       local.dns_render_records_servers,
+      local.dns_render_records_servers_routing,
       local.dns_render_records_services_fly,
       local.dns_render_records_services,
       local.dns_render_records_tls_delegation,

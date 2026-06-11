@@ -23,7 +23,8 @@
             "if": {
               "properties": {
                 "type": {
-                  "enum": ["MX", "NS", "TXT"]
+                  "enum": ["MX", "NS", "TXT"],
+                  "type": "string"
                 }
               }
             },
@@ -36,6 +37,19 @@
                   "const": false
                 }
               }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "enum": ["MX", "SRV"],
+                  "type": "string"
+                }
+              }
+            },
+            "then": {
+              "required": ["priority"]
             }
           }
         ],
@@ -58,11 +72,11 @@
             "type": "integer"
           },
           "proxied": {
-            "description": "Whether to proxy this record through Cloudflare. Overrides the dns default. Cannot be used with TXT, MX, or NS records.",
+            "description": "Whether to proxy this record through Cloudflare. Overrides the DNS default. Must be false for MX, NS, and TXT records.",
             "type": "boolean"
           },
           "ttl": {
-            "description": "TTL in seconds. Overrides the dns default. Use 1 for Cloudflare's automatic TTL (only valid when proxied is false).",
+            "description": "TTL in seconds. Overrides the DNS default. Use 1 for Cloudflare's automatic TTL.",
             "minimum": 1,
             "type": "integer"
           },

@@ -23,8 +23,8 @@ identity:
 routing:
   backend_port: 8080
   backend_scheme: http
-  expose: cloudflare
   urls:
-    - larapaper.excloo.com
+    - expose: cloudflare
+      url: larapaper.excloo.com
 targets:
   au-truenas: {}

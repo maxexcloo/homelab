@@ -8,6 +8,7 @@
   "definitions": {
     "credential_field": {
       "additionalProperties": false,
+      "description": "Configuration for one credential field stored in 1Password and exposed under runtime.credentials.",
       "type": "object",
       "allOf": [
         {
@@ -42,11 +43,13 @@
         },
         "purpose": {
           "description": "Optional 1Password field purpose.",
-          "enum": ["PASSWORD", null]
+          "enum": ["PASSWORD", null],
+          "type": ["string", "null"]
         },
         "type": {
           "description": "1Password field type when purpose is not set.",
-          "enum": ["CONCEALED", "STRING", null]
+          "enum": ["CONCEALED", "STRING", null],
+          "type": ["string", "null"]
         }
       }
     },
@@ -193,13 +196,9 @@
       "required": ["name", "region", "title"],
       "type": "object",
       "properties": {
-        "description": {
-          "description": "Optional longer description of this server's purpose.",
-          "type": "string"
-        },
         "name": {
           "description": "Short hostname component used to build the server FQDN. For region-prefixed keys (e.g. au-malatang) this is the part after the hyphen (malatang). Must be lowercase alphanumeric or hyphen.",
-          "pattern": "^[a-z0-9-]+$",
+          "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
         "region": {
@@ -219,37 +218,77 @@
     },
     "networking": {
       "additionalProperties": false,
-      "description": "Network addressing for this server. Public IPs are used for external DNS records; Tailscale IPs are resolved automatically from the tailnet.",
+      "description": "Network addressing and access ports. Public host and IP fields create external DNS records and inherit from the server's parent chain up to two levels. Tailscale addresses are resolved from the tailnet.",
       "type": "object",
       "properties": {
         "management_host": {
-          "description": "Hostname or IP for management access (e.g. Incus API endpoint). Used by Komodo as the server address.",
-          "pattern": "^$|^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$|^([0-9]{1,3}\\.){3}[0-9]{1,3}$|^[0-9A-Fa-f:]+$",
-          "type": "string"
+          "description": "Hostname or IP for direct management access (e.g. an Incus API endpoint). Empty disables provider-managed remote connections.",
+          "anyOf": [
+            {
+              "type": "string",
+              "const": ""
+            },
+            {
+              "type": "string",
+              "format": "hostname"
+            },
+            {
+              "type": "string",
+              "format": "ipv4"
+            },
+            {
+              "type": "string",
+              "format": "ipv6"
+            }
+          ]
         },
         "management_port": {
-          "description": "Port for management access. Defaults to 443.",
-          "maximum": 65535,
-          "minimum": 1,
-          "type": "integer"
+          "description": "Port appended to management URLs. Empty omits the port suffix.",
+          "oneOf": [
+            {
+              "type": "integer",
+              "maximum": 65535,
+              "minimum": 1
+            },
+            {
+              "type": "string",
+              "const": ""
+            }
+          ]
         },
         "public_host": {
-          "description": "Public CNAME target (e.g. a dynamic DNS hostname). Creates a CNAME external DNS record instead of A/AAAA. Inherited from the parent chain up to 2 levels.",
+          "description": "Public CNAME target (e.g. a dynamic DNS hostname). Creates a CNAME record on the external domain instead of A/AAAA. Inherited from the parent chain up to two levels.",
           "pattern": "^$|^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
           "type": "string"
         },
         "public_ipv4": {
-          "description": "Public IPv4 address. Creates an A record on the external domain. Inherited from the parent chain up to 2 levels.",
-          "pattern": "^$|^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
-          "type": "string"
+          "description": "Public IPv4 address. Creates an A record on the external domain. Inherited from the parent chain up to two levels.",
+          "anyOf": [
+            {
+              "type": "string",
+              "const": ""
+            },
+            {
+              "type": "string",
+              "format": "ipv4"
+            }
+          ]
         },
         "public_ipv6": {
-          "description": "Public IPv6 address (bare, without prefix length). Creates an AAAA record on the external domain. Inherited from the parent chain up to 2 levels.",
-          "pattern": "^$|^[0-9A-Fa-f:]+$",
-          "type": "string"
+          "description": "Public IPv6 address without a prefix length. Creates an AAAA record on the external domain. Inherited from the parent chain up to two levels.",
+          "anyOf": [
+            {
+              "type": "string",
+              "const": ""
+            },
+            {
+              "type": "string",
+              "format": "ipv6"
+            }
+          ]
         },
         "ssh_port": {
-          "description": "Port for SSH access. Defaults to 22.",
+          "description": "Port for SSH access appended to SSH URLs. Defaults to 22.",
           "maximum": 65535,
           "minimum": 1,
           "type": "integer"
@@ -257,12 +296,12 @@
       }
     },
     "parent": {
-      "description": "Key of the parent server (e.g. 'au'). Public IPs are inherited from the parent chain up to 2 levels deep, allowing VMs and containers to share the host's public address.",
-      "pattern": "^$|^[a-z0-9-]+$",
+      "description": "Key of the parent server (e.g. 'au'). Public host and IP fields inherit through at most two parent levels.",
+      "pattern": "^$|^(?=.{1,191}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
       "type": "string"
     },
     "platform": {
-      "description": "Provisioning platform. Controls which Terraform resources are created. incus = Incus container/VM; oci = Oracle Cloud instance; truenas = TrueNAS app; unifi = UniFi device; unmanaged = externally managed (DNS and credentials only).",
+      "description": "Provisioning platform. Controls which OpenTofu resources are created. incus = Incus container/VM; oci = Oracle Cloud instance; truenas = TrueNAS deployment target; unifi = UniFi device; unmanaged = externally managed server.",
       "enum": ["incus", "oci", "truenas", "unifi", "unmanaged"],
       "type": "string"
     },
@@ -462,6 +501,53 @@
             "shape": {
               "description": "OCI compute shape (e.g. 'VM.Standard.A1.Flex').",
               "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "routing": {
+      "additionalProperties": false,
+      "description": "Shared backend configuration and per-URL exposure overrides for this server.",
+      "type": "object",
+      "properties": {
+        "backend_url": {
+          "description": "Default full origin URL used by Cloudflare Tunnel or Traefik.",
+          "pattern": "^$|^https?://",
+          "type": "string"
+        },
+        "urls": {
+          "description": "URL entries that inherit the shared backend URL.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "additionalProperties": false,
+            "required": ["expose", "url"],
+            "type": "object",
+            "properties": {
+              "backend_url": {
+                "description": "Override the full origin URL.",
+                "pattern": "^https?://",
+                "type": "string"
+              },
+              "expose": {
+                "description": "Access path for this URL.",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["cloudflare", "external", "internal"]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^proxy-[a-z][a-z0-9-]+$"
+                  }
+                ]
+              },
+              "url": {
+                "description": "Hostname routed to this server. Must belong to a managed DNS zone.",
+                "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+                "type": "string"
+              }
             }
           }
         }

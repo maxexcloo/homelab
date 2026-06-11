@@ -5,16 +5,16 @@ credentials:
   fields:
     homepage_widget_key: {}
 dashboard:
-  - name: ${server.identity.title}
+  - name: UniFi
     description: ${server.description}
-    group: ${defaults.server_types[server.type].label}
-    href: ${server.urls.default.href}
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}
     icon: unifi
-    siteMonitor: ${server.urls.default.href}
+    siteMonitor: ${server.urls.management.href}
     widgets:
       - type: unifi
         key: ${server.runtime.credentials.homepage_widget_key}
-        url: ${server.urls.default.href}
+        url: ${server.urls.management.href}
 features:
   beszel_agent: true
   cloudflare_acme: true
@@ -26,4 +26,5 @@ identity:
   title: AU
   username: root
 networking:
+  management_port: 443
   public_host: excloo-au.controld.live

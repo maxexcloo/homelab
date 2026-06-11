@@ -8,6 +8,7 @@
   "definitions": {
     "credential_field": {
       "additionalProperties": false,
+      "description": "Configuration for one credential field stored in 1Password and exposed under runtime.credentials.",
       "type": "object",
       "allOf": [
         {
@@ -42,11 +43,13 @@
         },
         "purpose": {
           "description": "Optional 1Password field purpose.",
-          "enum": ["PASSWORD", null]
+          "enum": ["PASSWORD", null],
+          "type": ["string", "null"]
         },
         "type": {
           "description": "1Password field type when purpose is not set.",
-          "enum": ["CONCEALED", "STRING", null]
+          "enum": ["CONCEALED", "STRING", null],
+          "type": ["string", "null"]
         }
       }
     },
@@ -102,7 +105,7 @@
       "properties": {
         "app_name": {
           "description": "Fly.io app name override. If empty, defaults to {organization.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
-          "pattern": "^$|^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "pattern": "^$|^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
         "cpu_kind": {
@@ -172,7 +175,7 @@
       "properties": {
         "catalog_app": {
           "description": "TrueNAS catalog app name. Defaults to identity.service when empty. Required when identity.service is null and this target should deploy a catalog app.",
-          "pattern": "^$|^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "pattern": "^$|^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
         "env": {
@@ -209,7 +212,7 @@
           }
         },
         "port_key": {
-          "description": "Primary TrueNAS network port key that receives routing.port as port_number.",
+          "description": "Primary TrueNAS network port key that receives routing.host_port as port_number.",
           "pattern": "^[a-z0-9_]+$",
           "type": "string"
         },
@@ -239,7 +242,8 @@
         },
         "source": {
           "description": "Where username/password credentials come from. service uses service.identity.username and service-generated password fields. target inherits the target server username and password.",
-          "enum": ["service", "target"]
+          "enum": ["service", "target"],
+          "type": "string"
         }
       }
     },
@@ -249,8 +253,12 @@
       "items": { "$ref": "#/definitions/dashboard" }
     },
     "data": {
-      "$ref": "#/definitions/json_data",
-      "description": "General-purpose service data exposed to templates as service.data and data. Values may be any JSON shape. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}."
+      "description": "General-purpose service data exposed to templates as service.data and data. Values may be any JSON shape. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/json_data"
+        }
+      ]
     },
     "features": {
       "additionalProperties": false,
@@ -307,12 +315,12 @@
         },
         "name": {
           "description": "Short identifier used to build FQDNs and subdomain labels (e.g. 'vaultwarden'). Combined with the target server FQDN: {name}.{server_fqdn}.{domain}.",
-          "pattern": "^[a-z0-9-]+$",
+          "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
         "service": {
-          "description": "Implementation key used to select templates from services/{service}. Null means inventory/dashboard-only and no service-specific deploy artifacts.",
-          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "description": "Implementation key used to select templates from templates/services/{service}. Null means inventory/dashboard-only and no service-specific deploy artifacts.",
+          "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": ["string", "null"]
         },
         "title": {
@@ -336,57 +344,54 @@
           "additionalProperties": {
             "pattern": "^[a-z0-9][a-z0-9-]*(\\$\\{[^}]+\\}[a-z0-9-]*)*$",
             "type": "string"
+          },
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
           }
         }
       }
     },
     "routing": {
       "additionalProperties": false,
-      "description": "Network exposure and reverse-proxy routing configuration for this service.",
+      "description": "Shared backend configuration and per-URL exposure overrides for this service.",
       "type": "object",
       "properties": {
         "backend_port": {
-          "description": "Container listening port. Used by Traefik for backend routing and as the Fly.io internal_port. Required for any service with routing. Use routing.host_port to override the TrueNAS published port when it differs.",
+          "description": "Default container listening port used by Traefik and Fly.io.",
           "maximum": 65535,
           "minimum": 1,
           "type": ["integer", "null"]
         },
         "backend_scheme": {
-          "description": "Traefik-to-container protocol. Required for URL DNS record generation — empty disables URL host computation. Set to https only when the container itself terminates TLS.",
-          "enum": ["", "http", "https"]
+          "description": "Default protocol used to reach the backend. Empty disables hostname derivation.",
+          "enum": ["", "http", "https"],
+          "type": "string"
         },
         "backend_url": {
-          "description": "Full origin URL for Cloudflare Tunnel ingress. Empty routes through the target server's Traefik webinternal entrypoint.",
+          "description": "Default Cloudflare Tunnel origin URL. Empty routes through the target server's Traefik webinternal entrypoint.",
           "type": "string"
         },
         "container": {
-          "description": "Container that receives generated Traefik routing labels. Empty uses identity.service. Leave both empty for dashboard/inventory-only services.",
-          "pattern": "^$|^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "description": "Default container that receives generated Traefik labels. Empty uses identity.service.",
+          "pattern": "^$|^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
-        "expose": {
-          "description": "Access level for this service. 'internal' (default): accessible on the internal network and via Tailscale (internal-only middleware, covers LAN and Tailscale IP ranges). 'cloudflare': publicly accessible via Cloudflare Zero Trust tunnel. 'external': publicly accessible via direct DNS. 'proxy-{server-key}': publicly accessible via the named server's Traefik, which proxies to this service's host over Tailscale. Null uses no middleware and creates no DNS records.",
-          "anyOf": [
-            { "enum": ["cloudflare", "external", "internal", null] },
-            { "type": "string", "pattern": "^proxy-[a-z][a-z0-9-]+$" }
-          ]
-        },
         "host_port": {
-          "description": "Override for the TrueNAS catalog published port. Null uses routing.backend_port. Only set when the host-published port must differ from the container listening port.",
+          "description": "Default published host port. Null uses backend_port.",
           "maximum": 65535,
           "minimum": 1,
           "type": ["integer", "null"]
         },
         "https": {
-          "description": "Whether the public URL uses https://. Controls URL hrefs in 1Password, health checks, and monitoring. Also gates certresolver and redirect-to-https middleware for internal and external services. Defaults to true.",
+          "description": "Whether route URLs use HTTPS by default.",
           "type": "boolean"
         },
         "https_verify": {
-          "description": "Whether to validate the TLS certificate when health-checking this service. Set to false for self-signed certificates. Defaults to true.",
+          "description": "Whether health checks validate TLS certificates by default.",
           "type": "boolean"
         },
         "labels": {
-          "description": "Extra Traefik labels merged after generated routing labels. Values are stringified during rendering. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+          "description": "Default extra Traefik labels. Values support template interpolation.",
           "type": "object",
           "additionalProperties": {
             "anyOf": [
@@ -403,12 +408,61 @@
           }
         },
         "urls": {
-          "description": "Custom public hostnames for this service (e.g. 'status.example.com'). DNS records (CNAME, wildcard, ACME delegation) are automatically created for any hostname that ends with a managed zone.",
+          "description": "URL entries that inherit shared routing fields and may override route-specific backend and TLS settings.",
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
-            "type": "string"
+            "additionalProperties": false,
+            "required": ["expose", "url"],
+            "type": "object",
+            "properties": {
+              "backend_port": {
+                "description": "Override the container listening port.",
+                "maximum": 65535,
+                "minimum": 1,
+                "type": ["integer", "null"]
+              },
+              "backend_scheme": {
+                "description": "Override the backend protocol.",
+                "enum": ["", "http", "https"],
+                "type": "string"
+              },
+              "backend_url": {
+                "description": "Override the Cloudflare Tunnel origin URL.",
+                "type": "string"
+              },
+              "container": {
+                "description": "Override the container receiving generated Traefik labels.",
+                "pattern": "^$|^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+                "type": "string"
+              },
+              "expose": {
+                "description": "Access path for this URL.",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": ["cloudflare", "external", "internal"]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^proxy-[a-z][a-z0-9-]+$"
+                  }
+                ]
+              },
+              "https": {
+                "description": "Override whether the route URL uses HTTPS.",
+                "type": "boolean"
+              },
+              "https_verify": {
+                "description": "Override whether health checks validate the TLS certificate.",
+                "type": "boolean"
+              },
+              "url": {
+                "description": "Custom hostname, or null to derive one from the service and exposure path.",
+                "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+                "type": ["string", "null"]
+              }
+            }
           }
         }
       }
@@ -438,27 +492,47 @@
               },
               "source": {
                 "description": "Per-target credential source override.",
-                "enum": ["service", "target"]
+                "enum": ["service", "target"],
+                "type": "string"
               }
             }
           },
           "data": {
-            "$ref": "#/definitions/json_data",
-            "description": "Per-target service data overlay. Object values deep-merge with service-level data; arrays, strings, numbers, booleans, and null replace service-level data."
+            "description": "Per-target service data overlay. Object values deep-merge with service-level data; arrays, strings, numbers, booleans, and null replace service-level data.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/json_data"
+              }
+            ]
           },
           "features": {
-            "$ref": "#/definitions/features_overlay"
+            "description": "Per-target feature overrides merged with service-level feature flags.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/features_overlay"
+              }
+            ]
           },
           "fly": {
-            "$ref": "#/definitions/fly_target"
+            "description": "Per-target Fly.io configuration.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/fly_target"
+              }
+            ]
           },
           "truenas": {
-            "$ref": "#/definitions/truenas_target"
+            "description": "Per-target TrueNAS configuration.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/truenas_target"
+              }
+            ]
           }
         }
       },
       "propertyNames": {
-        "pattern": "^(fly|[a-z0-9-]+)$"
+        "pattern": "^(fly|(?=.{1,191}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)$"
       }
     }
   }

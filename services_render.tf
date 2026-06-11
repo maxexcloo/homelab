@@ -136,13 +136,10 @@ locals {
           services = {
             for compose_service_key, compose_service in compose.services : compose_service_key => merge(
               compose_service,
-              (
-                compose_service_key == local.services_render_services[service_key].routing.container &&
-                length(local.services_render_services[service_key].routing_labels) > 0
-                ) ? {
+              try(length(local.services_render_services[service_key].routing_labels[compose_service_key]), 0) > 0 ? {
                 labels = merge(
                   try(compose_service.labels, {}),
-                  local.services_render_services[service_key].routing_labels,
+                  local.services_render_services[service_key].routing_labels[compose_service_key],
                 )
               } : {},
             )

@@ -60,7 +60,7 @@ endpoints:
       - "[CONNECTED] == true"
     group: "${defaults.server_types[server.type].label}"
     name: "${server_key}"
-    url: "icmp://${server.hosts.default}"
+    url: "icmp://${server.hosts.internal}"
     %{~ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) }
     alerts:
       %{~ if service.features.pushover }

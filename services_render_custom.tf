@@ -112,81 +112,56 @@ locals {
 
   services_render_custom_labels = {
     for service_key, service in local.services : service_key => {
-      for label_key, label_value in merge(
-        service.routing.backend_port != null ? {
-          "traefik.enable"                                                            = "true"
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.port"   = tostring(service.routing.backend_port)
-          "traefik.http.services.${service.identity.name}.loadbalancer.server.scheme" = service.routing.backend_scheme == "https" ? "https" : null
-
-          "traefik.http.routers.${service.identity.name}.entrypoints" = (
-            service.routing.expose == "cloudflare" ||
-            (
-              service.routing.expose != null &&
-              startswith(service.routing.expose, "proxy-")
-            )
-          ) ? "web,websecure,webinternal" : "web,websecure"
-
-          "traefik.http.routers.${service.identity.name}.tls.certresolver" = (
-            service.routing.expose != "cloudflare" &&
-            service.routing.https &&
-            (
-              service.routing.expose == null ||
-              !startswith(service.routing.expose, "proxy-")
-            )
-          ) ? "cloudflare" : null
-
-          "traefik.http.routers.${service.identity.name}.middlewares" = (
-            service.routing.expose == "internal" &&
-            service.routing.https
-            ? "internal-only@docker,redirect-to-https@docker"
-            : service.routing.expose == "internal"
-            ? "internal-only@docker"
-            : (
-              service.routing.expose == "cloudflare" ||
-              (
-                service.routing.expose != null &&
-                startswith(service.routing.expose, "proxy-")
+      for container in distinct(compact([for route in service.routing.urls : route.container])) : container => merge([
+        for route in service.routing.urls : {
+          for label_key, label_value in merge(
+            route.backend_port != null ? {
+              "traefik.enable" = "true"
+              "traefik.http.routers.${route.name}.entrypoints" = (
+                route.expose == "cloudflare" ||
+                startswith(route.expose, "proxy-")
+              ) ? "web,websecure,webinternal" : "web,websecure"
+              "traefik.http.routers.${route.name}.middlewares" = (
+                route.expose == "internal" && route.https
+                ? "internal-only@docker,redirect-to-https@docker"
+                : route.expose == "internal"
+                ? "internal-only@docker"
+                : route.expose == "cloudflare" || startswith(route.expose, "proxy-")
+                ? null
+                : route.https
+                ? "redirect-to-https@docker"
+                : null
               )
-            )
-            ? null
-            : service.routing.https
-            ? "redirect-to-https@docker"
-            : null
-          )
-
-          "traefik.http.routers.${service.identity.name}.rule" = join(" || ", [
-            for host in distinct([
-              for url_key, url in service.urls : url.host
-              if(
-                url_key != "default" &&
-                url.host != null &&
-                url.host != ""
-              )
-            ]) : "Host(`${host}`)"
-          ])
-        } : {},
-        (
-          service.routing.backend_port != null &&
-          service.routing.expose != "cloudflare" &&
-          service.routing.https &&
-          (
-            service.routing.expose == null ||
-            !startswith(service.routing.expose, "proxy-")
-          )
-          ) ? {
-          for url_index, url in [
-            for url in service.routing.urls : url
-            if try(local.dns_render_managed_zones_by_url[url], null) != null
-          ] :
-          "traefik.http.routers.${service.identity.name}.tls.domains[${url_index}].main" => url
-        } : {},
-        {
-          for label_key, label_value in service.routing.labels :
-          label_key => try(templatestring(tostring(label_value), local.services_render_context_base[service_key]), null)
+              "traefik.http.routers.${route.name}.rule"    = route.host != null ? "Host(`${route.host}`)" : null
+              "traefik.http.routers.${route.name}.service" = route.name
+              "traefik.http.routers.${route.name}.tls.certresolver" = (
+                route.expose != "cloudflare" &&
+                route.https &&
+                !startswith(route.expose, "proxy-")
+              ) ? "cloudflare" : null
+              "traefik.http.services.${route.name}.loadbalancer.server.port"   = tostring(route.backend_port)
+              "traefik.http.services.${route.name}.loadbalancer.server.scheme" = route.backend_scheme == "https" ? "https" : null
+            } : {},
+            (
+              route.backend_port != null &&
+              route.expose != "cloudflare" &&
+              route.https &&
+              !startswith(route.expose, "proxy-") &&
+              route.url != null &&
+              try(local.dns_render_managed_zones_by_url[route.url], null) != null
+              ) ? {
+              "traefik.http.routers.${route.name}.tls.domains[0].main" = route.url
+            } : {},
+            {
+              for label_key, label_value in route.labels :
+              label_key => try(templatestring(tostring(label_value), local.services_render_context_base[service_key]), null)
+              if label_value != null
+            },
+          ) : label_key => label_value
           if label_value != null
         }
-      ) : label_key => label_value
-      if label_value != null
+        if route.container == container
+      ]...)
     }
   }
 
@@ -197,20 +172,38 @@ locals {
       } : {},
       service.identity.name != "traefik" ? {} : {
         # Port 8000 is the webinternal Traefik entrypoint on the target server.
-        proxy_routes = {
-          for svc in values(local.services_render_services) :
-          svc.identity.name => {
-            backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8000"
-            host        = svc.urls.default.host
-          }
-          if(
-            svc.routing.expose != null &&
-            startswith(svc.routing.expose, "proxy-") &&
-            trimprefix(svc.routing.expose, "proxy-") == service.target &&
-            try(local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4, "") != "" &&
-            svc.urls.default.host != null
-          )
-        }
+        proxy_routes = merge(
+          merge([
+            for svc in values(local.services_render_services) : {
+              for route in svc.routing.urls :
+              route.name => {
+                backend_url = "http://${local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4}:8000"
+                host        = route.host
+              }
+              if(
+                route.proxy_server == service.target &&
+                try(local.servers_render_runtime[svc.target].runtime.addresses.tailscale_ipv4, "") != "" &&
+                route.host != null
+              )
+            }
+          ]...),
+          merge([
+            for source_server_key, source_server in local.servers_render_runtime : {
+              for route in source_server.routing.urls :
+              "server-${source_server_key}-${substr(sha1(route.url), 0, 12)}" => {
+                backend_url = route.backend_url
+                host        = route.url
+              }
+              if(
+                (
+                  contains(["external", "internal"], route.expose) &&
+                  source_server_key == service.target
+                ) ||
+                route.expose == "proxy-${service.target}"
+              )
+            }
+          ]...),
+        )
       },
     )
   }

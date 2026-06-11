@@ -2,6 +2,22 @@
 parent: au
 platform: truenas
 type: server
+credentials:
+  fields:
+    homepage_widget_key: {}
+dashboard:
+  - name: TrueNAS
+    description: ${server.description}
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}
+    icon: truenas
+    siteMonitor: ${server.urls.management.href}
+    widgets:
+      - type: truenas
+        enablePools: "true"
+        key: ${server.runtime.credentials.homepage_widget_key}
+        url: ${server.urls.management.href}
+        version: 2
 features:
   b2: true
   beszel_agent: true

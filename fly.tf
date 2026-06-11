@@ -43,7 +43,10 @@ locals {
           ),
         )
       }
-      if length(service.routing.urls) > 0
+      if length([
+        for route in service.routing.urls : route
+        if route.url != null
+      ]) > 0
     },
     {
       # 3) Machine count for scaling

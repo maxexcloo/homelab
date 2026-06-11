@@ -42,10 +42,13 @@ locals {
       server.urls,
       {
         for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : url_label => {
-          href = format(
-            "https://%s%s",
+          href = server.networking.management_port != "" && server.networking.management_port != 443 ? format(
+            "https://%s:%s",
             can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
-            server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""
+            server.networking.management_port,
+            ) : format(
+            "https://%s",
+            can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
           )
           label = url_label
         }

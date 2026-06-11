@@ -40,14 +40,13 @@ servers:
     tailscale: false
     zfs: false
   identity:
-    description: ""
     name: ""
     region: ""
     title: ""
     username: ""
   networking:
     management_host: ""
-    management_port: 443
+    management_port: ""
     public_host: ""
     public_ipv4: ""
     public_ipv6: ""
@@ -79,6 +78,9 @@ servers:
         - 22
         - 80
         - 443
+  routing:
+    backend_url: ""
+    urls: []
 services:
   dashboard: []
   data: {}
@@ -108,12 +110,13 @@ services:
     backend_scheme: ""
     backend_url: ""
     container: ""
-    expose: internal
     host_port: null
     https: true
     https_verify: true
     labels: {}
-    urls: []
+    urls:
+      - expose: internal
+        url: null
 targets:
   fly:
     app_name: ""

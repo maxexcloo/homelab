@@ -76,108 +76,102 @@ locals {
     },
   )
 
-  # Managed custom URLs are the canonical Cloudflare entry point.
-  _services_model_managed_routing_urls = {
+  _services_model_route_entries = {
     for service_key, service in local.services_input_targets : service_key => [
-      for url in service.routing.urls : url
-      if try(local.dns_render_managed_zones_by_url[url], null) != null
+      for url in service.routing.urls : merge(
+        {
+          for field_name, field_value in service.routing : field_name => field_value
+          if field_name != "urls"
+        },
+        url,
+        {
+          proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
+        },
+      )
     ]
   }
 
-  # Maps each service to the proxy server key used for expose: proxy-{key}.
-  services_model_proxy_server = {
-    for service_key, service in local.services_input_targets : service_key =>
-    (
-      service.routing.expose != null &&
-      startswith(service.routing.expose, "proxy-")
-    ) ? trimprefix(service.routing.expose, "proxy-")
-    : null
+  _services_model_route_hosts = {
+    for service_key, service in local.services_input_targets : service_key => [
+      for route in local._services_model_route_entries[service_key] : merge(
+        route,
+        {
+          dns_target_host = (
+            service.target == "fly" ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
+            : route.proxy_server != null ? try(
+              "${service.identity.name}.${local.servers_model[route.proxy_server].hosts.external}",
+              null,
+            )
+            : contains(["cloudflare", "external"], route.expose) ? try(
+              "${service.identity.name}.${local.servers_model[service.target].hosts.external}",
+              null,
+            )
+            : route.expose == "internal" && route.backend_scheme != "" ? try(
+              "${service.identity.name}.${local.servers_model[service.target].hosts.internal}",
+              null,
+            )
+            : null
+          )
+        },
+      )
+    ]
+  }
+
+  _services_model_routes = {
+    for service_key, service in local.services_input_targets : service_key => [
+      for route_index, route in local._services_model_route_hosts[service_key] : merge(
+        route,
+        {
+          backend_url = route.backend_url != "" ? route.backend_url : "http://localhost:8000"
+          container   = route.container != "" ? route.container : service.identity.service
+          host        = route.url != null ? route.url : route.dns_target_host
+          host_port   = route.host_port != null ? route.host_port : route.backend_port
+          name        = route_index == 0 ? service.identity.name : "${service.identity.name}-${route_index}"
+          zone = route.dns_target_host == null && route.url == null ? null : (
+            route.url != null ? local.dns_render_managed_zones_by_url[route.url]
+            : service.target == "fly" ? "fly.dev"
+            : route.expose == "internal" ? local.defaults.domains.internal
+            : local.defaults.domains.external
+          )
+        },
+      )
+    ]
+  }
+
+  _services_model_routes_with_hrefs = {
+    for service_key, service in local.services_input_targets : service_key => [
+      for route in local._services_model_routes[service_key] : merge(
+        route,
+        {
+          href = route.host != null ? "${route.https ? "https" : "http"}://${route.host}" : null
+        },
+      )
+    ]
   }
 
   _services_model_target_servers = {
     for service_key, service in local.services_input_targets : service_key => try(local.servers_model[service.target], null)
   }
 
-  # Computed internal/external hostnames used to build _services_model_urls.
-  _services_model_hosts = {
+  _services_model_urls = {
     for service_key, service in local.services_input_targets : service_key => {
-      # Only externally exposed services get generated external hostnames.
-      external = (
-        service.target == "fly"
-        ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
-        : (
-          local._services_model_target_servers[service_key] != null &&
-          contains(["cloudflare", "external"], service.routing.expose)
-        )
-        ? "${service.identity.name}.${local._services_model_target_servers[service_key].hosts.external}"
-        : local.services_model_proxy_server[service_key] != null
-        ? try("${service.identity.name}.${local.servers_model[local.services_model_proxy_server[service_key]].hosts.external}", null)
-        : null
-      )
-
-      internal = (
-        (
-          local._services_model_target_servers[service_key] != null &&
-          service.routing.backend_scheme != ""
-        )
-        ? "${service.identity.name}.${local._services_model_target_servers[service_key].hosts.internal}"
-        : null
-      )
+      for route in local._services_model_routes_with_hrefs[service_key] :
+      route.host => {
+        host  = route.host
+        href  = route.href
+        label = route.url != null ? "website" : route.expose
+        zone  = route.zone
+      }
+      if route.host != null
     }
   }
 
-  # Full URL map per service: custom urls + generated external/internal hostnames.
-  # Cloudflare custom URLs suppress the generated external hostname (Universal SSL only covers one subdomain level).
-  _services_model_urls = {
-    for service_key, service in local.services_input_targets : service_key => merge(
-      {
-        for url in service.routing.urls : url => {
-          host  = url
-          href  = "${service.routing.https ? "https" : "http"}://${url}"
-          label = "website"
-          zone  = local.dns_render_managed_zones_by_url[url]
-        }
-      },
-      (
-        local._services_model_hosts[service_key].external != null &&
-        !(
-          service.routing.expose == "cloudflare" &&
-          length(local._services_model_managed_routing_urls[service_key]) > 0
-        )
-        ) ? {
-        external = {
-          host  = local._services_model_hosts[service_key].external
-          href  = "${service.routing.https ? "https" : "http"}://${local._services_model_hosts[service_key].external}"
-          label = "external"
-          zone  = service.target == "fly" ? "fly.dev" : local.defaults.domains.external
-        }
-      } : {},
-      local._services_model_hosts[service_key].internal != null ? {
-        internal = {
-          host  = local._services_model_hosts[service_key].internal
-          href  = "${service.routing.https ? "https" : "http"}://${local._services_model_hosts[service_key].internal}"
-          label = "internal"
-          zone  = local.defaults.domains.internal
-        }
-      } : {},
-    )
-  }
-
-  # First non-null href in priority order: custom url > external > internal.
   _services_model_urls_default = {
     for service_key, service in local.services_input_targets : service_key => try(
-      local._services_model_urls[service_key][service.routing.urls[0]].href,
-      local._services_model_urls[service_key].external.href,
-      local._services_model_urls[service_key].internal.href,
-      null,
-    )
-  }
-
-  # Host used by DNS and Cloudflare when no custom URL is present.
-  _services_model_urls_fallback_host = {
-    for service_key, service in local.services_input_targets : service_key => try(
-      local._services_model_urls[service_key].external.host,
-      local._services_model_urls[service_key].internal.host,
+      [
+        for route in local._services_model_routes_with_hrefs[service_key] : route.href
+        if route.href != null
+      ][0],
       null,
     )
   }
@@ -206,16 +200,18 @@ locals {
             ) ? local._services_model_target_servers[service_key].identity.username : service.identity.username
           }
 
-          routing = {
-            backend_url = service.routing.backend_url != "" ? service.routing.backend_url : "http://localhost:8000"
-            cloudflare_hostnames = distinct(concat(
-              local._services_model_urls_fallback_host[service_key] != null ? [local._services_model_urls_fallback_host[service_key]] : [],
-              local._services_model_managed_routing_urls[service_key],
-            ))
-            container       = service.routing.container != "" ? service.routing.container : service.identity.service
-            dns_target_host = local._services_model_urls_fallback_host[service_key]
-            host_port       = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
-          }
+          routing = merge(
+            {
+              for field_name, field_value in service.routing : field_name => field_value
+              if field_name != "urls"
+            },
+            {
+              backend_url = service.routing.backend_url != "" ? service.routing.backend_url : "http://localhost:8000"
+              container   = service.routing.container != "" ? service.routing.container : service.identity.service
+              host_port   = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
+              urls        = local._services_model_routes_with_hrefs[service_key]
+            },
+          )
 
           urls = merge(
             {

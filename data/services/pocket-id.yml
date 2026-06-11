@@ -24,9 +24,9 @@ identity:
 routing:
   backend_port: 1411
   backend_scheme: http
-  expose: cloudflare
   urls:
-    - id.excloo.com
+    - expose: cloudflare
+      url: id.excloo.com
 targets:
   au-truenas:
     truenas:

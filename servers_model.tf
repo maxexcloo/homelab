@@ -69,7 +69,7 @@ locals {
     ][0], null)
   }
 
-  # Extracted because description appears in both the top-level model and the default
+  # Extracted because description appears in both the top-level model and generated
   # dashboard card; keeping it here avoids duplicating the parent-title ternary.
   _servers_model_resolved = {
     for server_key, server in local.servers_input : server_key => {
@@ -95,30 +95,25 @@ locals {
       )
 
       hosts = {
-        default    = "${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}"
         external   = "${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.external}"
         internal   = "${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}"
         management = server.networking.management_host != "" ? server.networking.management_host : null
-
-        # Public host inherits from the nearest ancestor that declares one.
-        public = local._servers_model_public_host[server_key]
+        public     = local._servers_model_public_host[server_key]
       }
 
       urls = merge(
         {
-          default = {
-            href  = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
-            label = "default"
-          }
           internal = {
             href  = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}"
             label = "internal"
           }
+        },
+        server.networking.management_port != "" ? {
           management = {
             href  = "https://${local._servers_model_host_prefix[server_key]}.${local.defaults.domains.internal}${server.networking.management_port != 443 ? ":${server.networking.management_port}" : ""}"
             label = "management"
           }
-        },
+        } : {},
         local._servers_model_public_host[server_key] != null ? {
           public = {
             href  = "https://${local._servers_model_public_host[server_key]}"
@@ -127,6 +122,17 @@ locals {
         } : {},
       )
     }
+  }
+
+  _servers_model_routes = {
+    for server_key, server in local.servers_input : server_key => [
+      for url in server.routing.urls : merge(
+        {
+          backend_url = server.routing.backend_url
+        },
+        url,
+      )
+    ]
   }
 
   servers_model = {
@@ -138,17 +144,24 @@ locals {
         key         = server_key
         ssh_keys    = data.github_user.default.ssh_keys
 
-        dashboard = server.dashboard != null ? server.dashboard : [
+        dashboard = jsondecode(server.dashboard != null ? jsonencode(server.dashboard) : jsonencode([
           {
             description = local._servers_model_resolved[server_key].description
-            group       = local.defaults.server_types[server.type].label
-            href        = local._servers_model_resolved[server_key].urls.default.href
+            group       = "${server.identity.title} (${upper(server.identity.region)})"
+            href        = try(local._servers_model_resolved[server_key].urls.management.href, local._servers_model_resolved[server_key].urls.internal.href)
             icon        = local.defaults.server_types[server.type].icon
             name        = "${server.identity.title} (${upper(server.identity.region)})"
-            siteMonitor = local._servers_model_resolved[server_key].urls.default.href
+            siteMonitor = try(local._servers_model_resolved[server_key].urls.management.href, local._servers_model_resolved[server_key].urls.internal.href)
             widgets     = []
           }
-        ]
+        ]))
+
+        routing = merge(
+          server.routing,
+          {
+            urls = local._servers_model_routes[server_key]
+          },
+        )
       }
     )
   }

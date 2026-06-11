@@ -22,6 +22,7 @@ routing:
   backend_port: 8080
   backend_scheme: http
   urls:
-    - status.excloo.com
+    - expose: internal
+      url: status.excloo.com
 targets:
   fly: {}

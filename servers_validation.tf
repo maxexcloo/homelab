@@ -1,5 +1,15 @@
 locals {
-  servers_validation_invalid_incus_vm_parents = [
+  _servers_validation_cloudflare_routes_missing = flatten([
+    for server_key, server in local.servers_input : [
+      for url in server.routing.urls : "${server_key} -> ${url.url}"
+      if(
+        url.expose == "cloudflare" &&
+        !server.features.cloudflared
+      )
+    ]
+  ])
+
+  _servers_validation_invalid_incus_vm_parents = [
     for server_key, server in local.servers_input : server_key
     if(
       server.platform == "incus" &&
@@ -16,7 +26,7 @@ locals {
     )
   ]
 
-  servers_validation_invalid_oci_types = [
+  _servers_validation_invalid_oci_types = [
     for server_key, server in local.servers_input : server_key
     if(
       server.platform == "oci" &&
@@ -24,7 +34,7 @@ locals {
     )
   ]
 
-  servers_validation_invalid_parents = [
+  _servers_validation_invalid_parents = [
     for server_key, server in local.servers_input : "${server_key} -> ${server.parent}"
     if(
       server.parent != "" &&
@@ -32,12 +42,12 @@ locals {
     )
   ]
 
-  servers_validation_invalid_types = [
+  _servers_validation_invalid_types = [
     for server_key, server in local.servers_input : server_key
     if try(local.defaults.server_types[server.type], null) == null
   ]
 
-  servers_validation_key_mismatches = [
+  _servers_validation_key_mismatches = [
     for server_key, server in local.servers_input : "${server_key} -> ${server.identity.name}"
     if server_key != (
       server.identity.name == server.identity.region ? server.identity.region :
@@ -46,7 +56,7 @@ locals {
     )
   ]
 
-  servers_validation_long_parent_chains = [
+  _servers_validation_long_parent_chains = [
     for server_key, server in local.servers_input : server_key
     if(
       server.parent != "" &&
@@ -54,7 +64,7 @@ locals {
     )
   ]
 
-  servers_validation_oci_always_free_a1_cpus = sum([
+  _servers_validation_oci_always_free_a1_cpus = sum([
     for server in values(local.servers_input) : server.platform_config.oci.cpus
     if(
       server.platform == "oci" &&
@@ -63,7 +73,7 @@ locals {
     )
   ])
 
-  servers_validation_oci_always_free_a1_memory = sum([
+  _servers_validation_oci_always_free_a1_memory = sum([
     for server in values(local.servers_input) : server.platform_config.oci.memory
     if(
       server.platform == "oci" &&
@@ -72,7 +82,7 @@ locals {
     )
   ])
 
-  servers_validation_oci_always_free_boot_volume_gbs = sum([
+  _servers_validation_oci_always_free_boot_volume_gbs = sum([
     for server in values(local.servers_input) : server.platform_config.oci.disk_size
     if(
       server.platform == "oci" &&
@@ -80,7 +90,7 @@ locals {
     )
   ])
 
-  servers_validation_oci_always_free_micro_instances = length([
+  _servers_validation_oci_always_free_micro_instances = length([
     for server in values(local.servers_input) : server
     if(
       server.platform == "oci" &&
@@ -89,7 +99,7 @@ locals {
     )
   ])
 
-  servers_validation_oci_always_free_shapes_invalid = [
+  _servers_validation_oci_always_free_shapes_invalid = [
     for server_key, server in local.servers_input : server_key
     if(
       server.platform == "oci" &&
@@ -98,7 +108,7 @@ locals {
     )
   ]
 
-  servers_validation_parent_cycles = [
+  _servers_validation_parent_cycles = [
     for server_key, server in local.servers_input : server_key
     if(
       server.parent != "" &&
@@ -109,7 +119,36 @@ locals {
     )
   ]
 
-  servers_validation_self_parents = [
+  _servers_validation_routes_invalid_proxies = flatten([
+    for server_key, server in local.servers_input : [
+      for url in server.routing.urls : "${server_key}.${url.url} -> ${trimprefix(url.expose, "proxy-")}"
+      if(
+        startswith(url.expose, "proxy-") &&
+        try(local.servers_input[trimprefix(url.expose, "proxy-")], null) == null
+      )
+    ]
+  ])
+
+  _servers_validation_routes_missing_backend = flatten([
+    for server_key, server in local.servers_input : [
+      for url in server.routing.urls : "${server_key} -> ${url.url}"
+      if try(url.backend_url, server.routing.backend_url) == ""
+    ]
+  ])
+
+  _servers_validation_routes_not_unique = [
+    for server_key, server in local.servers_input : server_key
+    if length(server.routing.urls) != length(distinct([for url in server.routing.urls : url.url]))
+  ]
+
+  _servers_validation_routes_unmanaged = flatten([
+    for server_key, server in local.servers_input : [
+      for url in server.routing.urls : "${server_key} -> ${url.url}"
+      if try(local.dns_render_managed_zones_by_url[url.url], null) == null
+    ]
+  ])
+
+  _servers_validation_self_parents = [
     for server_key, server in local.servers_input : server_key
     if server.parent == server_key
   ]
@@ -119,95 +158,120 @@ resource "terraform_data" "servers_validation" {
   input = keys(local.servers_input)
 
   lifecycle {
+    precondition {
+      condition     = length(local._servers_validation_cloudflare_routes_missing) == 0
+      error_message = "Cloudflare server routes require features.cloudflared: ${join(", ", nonsensitive(local._servers_validation_cloudflare_routes_missing))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_invalid_proxies) == 0
+      error_message = "Server routing proxy targets must reference an existing server: ${join(", ", nonsensitive(local._servers_validation_routes_invalid_proxies))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_missing_backend) == 0
+      error_message = "Server routing URLs require a shared or per-URL backend_url: ${join(", ", nonsensitive(local._servers_validation_routes_missing_backend))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_not_unique) == 0
+      error_message = "Server routing URLs must be unique per server: ${join(", ", nonsensitive(local._servers_validation_routes_not_unique))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_unmanaged) == 0
+      error_message = "Server routing URLs must be in a managed DNS zone (data/dns/): ${join(", ", nonsensitive(local._servers_validation_routes_unmanaged))}"
+    }
+
     # Incus remotes are configured from parent server management addresses.
     precondition {
-      condition     = length(local.servers_validation_invalid_incus_vm_parents) == 0
-      error_message = "Incus VMs must reference an Incus server parent with networking.management_host set: ${join(", ", nonsensitive(local.servers_validation_invalid_incus_vm_parents))}"
+      condition     = length(local._servers_validation_invalid_incus_vm_parents) == 0
+      error_message = "Incus VMs must reference an Incus server parent with networking.management_host set: ${join(", ", nonsensitive(local._servers_validation_invalid_incus_vm_parents))}"
     }
 
     # OCI resources in this stack only model VM instances, not bare metal or
     # appliance/server abstractions.
     precondition {
-      condition     = length(local.servers_validation_invalid_oci_types) == 0
-      error_message = "OCI servers must be type vm: ${join(", ", nonsensitive(local.servers_validation_invalid_oci_types))}"
+      condition     = length(local._servers_validation_invalid_oci_types) == 0
+      error_message = "OCI servers must be type vm: ${join(", ", nonsensitive(local._servers_validation_invalid_oci_types))}"
     }
 
     precondition {
-      condition     = length(local.servers_validation_invalid_parents) == 0
-      error_message = "Invalid parent references found in servers configuration: ${join(", ", nonsensitive(local.servers_validation_invalid_parents))}"
+      condition     = length(local._servers_validation_invalid_parents) == 0
+      error_message = "Invalid parent references found in servers configuration: ${join(", ", nonsensitive(local._servers_validation_invalid_parents))}"
     }
 
     precondition {
-      condition     = length(local.servers_validation_invalid_types) == 0
-      error_message = "Invalid server types found: ${join(", ", nonsensitive(local.servers_validation_invalid_types))}"
+      condition     = length(local._servers_validation_invalid_types) == 0
+      error_message = "Invalid server types found: ${join(", ", nonsensitive(local._servers_validation_invalid_types))}"
     }
 
     precondition {
-      condition = length(local.servers_validation_key_mismatches) == 0
+      condition = length(local._servers_validation_key_mismatches) == 0
       error_message = (
-        "Server YAML filenames must match the derived key (region for region roots, parent-name when parent is set, otherwise region-name): ${join(", ", local.servers_validation_key_mismatches)}"
+        "Server YAML filenames must match the derived key (region for region roots, parent-name when parent is set, otherwise region-name): ${join(", ", local._servers_validation_key_mismatches)}"
       )
     }
 
     # OpenTofu locals are not generally recursive; keep the supported inheritance
     # depth explicit so addressing behavior remains predictable.
     precondition {
-      condition     = length(local.servers_validation_long_parent_chains) == 0
-      error_message = "Server parent inheritance supports at most two parent levels: ${join(", ", nonsensitive(local.servers_validation_long_parent_chains))}"
+      condition     = length(local._servers_validation_long_parent_chains) == 0
+      error_message = "Server parent inheritance supports at most two parent levels: ${join(", ", nonsensitive(local._servers_validation_long_parent_chains))}"
     }
 
     # OCI Always Free quota enforcement. Only checked when var.oci_always_free is true.
     precondition {
       condition = (
         !var.oci_always_free ||
-        length(local.servers_validation_oci_always_free_shapes_invalid) == 0
+        length(local._servers_validation_oci_always_free_shapes_invalid) == 0
       )
-      error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", nonsensitive(local.servers_validation_oci_always_free_shapes_invalid))}"
+      error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", nonsensitive(local._servers_validation_oci_always_free_shapes_invalid))}"
     }
 
     precondition {
       condition = (
         !var.oci_always_free ||
-        local.servers_validation_oci_always_free_a1_cpus <= 4
+        local._servers_validation_oci_always_free_a1_cpus <= 4
       )
-      error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${nonsensitive(local.servers_validation_oci_always_free_a1_cpus)})."
+      error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${nonsensitive(local._servers_validation_oci_always_free_a1_cpus)})."
     }
 
     precondition {
       condition = (
         !var.oci_always_free ||
-        local.servers_validation_oci_always_free_a1_memory <= 24
+        local._servers_validation_oci_always_free_a1_memory <= 24
       )
-      error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${nonsensitive(local.servers_validation_oci_always_free_a1_memory)} GB)."
+      error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${nonsensitive(local._servers_validation_oci_always_free_a1_memory)} GB)."
     }
 
     precondition {
       condition = (
         !var.oci_always_free ||
-        local.servers_validation_oci_always_free_micro_instances <= 2
+        local._servers_validation_oci_always_free_micro_instances <= 2
       )
-      error_message = "Always Free Micro instances must not exceed 2 (got ${nonsensitive(local.servers_validation_oci_always_free_micro_instances)})."
+      error_message = "Always Free Micro instances must not exceed 2 (got ${nonsensitive(local._servers_validation_oci_always_free_micro_instances)})."
     }
 
     precondition {
       condition = (
         !var.oci_always_free ||
-        local.servers_validation_oci_always_free_boot_volume_gbs <= 200
+        local._servers_validation_oci_always_free_boot_volume_gbs <= 200
       )
-      error_message = "Always Free total boot volume size must not exceed 200 GB (got ${nonsensitive(local.servers_validation_oci_always_free_boot_volume_gbs)} GB)."
+      error_message = "Always Free total boot volume size must not exceed 200 GB (got ${nonsensitive(local._servers_validation_oci_always_free_boot_volume_gbs)} GB)."
     }
 
     # Catch short cycles before inherited address lookup hides the root cause.
     precondition {
-      condition = length(local.servers_validation_parent_cycles) == 0
+      condition = length(local._servers_validation_parent_cycles) == 0
       error_message = (
-        "Server parent references contain a cycle within the supported parent depth: ${join(", ", local.servers_validation_parent_cycles)}"
+        "Server parent references contain a cycle within the supported parent depth: ${join(", ", local._servers_validation_parent_cycles)}"
       )
     }
 
     precondition {
-      condition     = length(local.servers_validation_self_parents) == 0
-      error_message = "Servers cannot set themselves as their own parent: ${join(", ", nonsensitive(local.servers_validation_self_parents))}"
+      condition     = length(local._servers_validation_self_parents) == 0
+      error_message = "Servers cannot set themselves as their own parent: ${join(", ", nonsensitive(local._servers_validation_self_parents))}"
     }
   }
 }

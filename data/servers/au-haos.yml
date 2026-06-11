@@ -2,6 +2,50 @@
 parent: au
 platform: unmanaged
 type: server
+credentials:
+  fields:
+    homepage_widget_key: {}
+dashboard:
+  - name: Home Assistant
+    description: Smart Home & Automations
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}
+    icon: home-assistant
+    siteMonitor: ${server.urls.management.href}
+    widgets:
+      - type: homeassistant
+        key: ${server.runtime.credentials.homepage_widget_key}
+        url: ${server.urls.management.href}
+  - name: ESPHome
+    description: ESP Device Builder
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}/5c53de3b_esphome
+    icon: esphome
+    siteMonitor: ${server.urls.management.href}/5c53de3b_esphome
+  - name: ESPresense
+    description: Room Presence
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}/f32ea98b_espresense-companion
+    icon: espressif
+    siteMonitor: ${server.urls.management.href}/f32ea98b_espresense-companion
+  - name: Home Assistant Matter Hub
+    description: Matter Bridge
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}/3fd9e6b0_hamh
+    icon: sh-home-assistant-matter-hub
+    siteMonitor: ${server.urls.management.href}/3fd9e6b0_hamh
+  - name: Studio Code Server
+    description: Browser IDE
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}/a0d7b954_vscode
+    icon: visual-studio-code
+    siteMonitor: ${server.urls.management.href}/a0d7b954_vscode
+  - name: Zigbee2MQTT
+    description: Zigbee Coordinator
+    group: ${server.identity.title} (${upper(server.identity.region)})
+    href: ${server.urls.management.href}/45df7312_zigbee2mqtt
+    icon: zigbee2mqtt
+    siteMonitor: ${server.urls.management.href}/45df7312_zigbee2mqtt
 features:
   b2: true
   beszel_agent: true
@@ -14,3 +58,10 @@ identity:
   region: au
   title: HAOS
   username: root
+networking:
+  management_port: 443
+routing:
+  backend_url: https://homeassistant
+  urls:
+    - expose: cloudflare
+      url: home-assistant.excloo.com

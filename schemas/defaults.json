@@ -2,17 +2,26 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
   "description": "Default field values deep-merged into every server, service, and DNS record before processing. Loaded into local.defaults alongside data/config.yml.",
+  "required": ["credentials", "dns", "servers", "services", "targets"],
   "title": "Defaults",
   "type": "object",
   "properties": {
     "credentials": {
       "additionalProperties": false,
       "description": "Default shapes for credential field entries. Merged into each field declaration so only overrides need to be specified.",
+      "required": ["ro", "rw"],
       "type": "object",
       "properties": {
         "ro": {
           "additionalProperties": false,
           "description": "Default shape for read-only credential fields bootstrapped by a provider and read back from 1Password.",
+          "required": [
+            "bootstrap_length",
+            "bootstrap_type",
+            "mode",
+            "purpose",
+            "type"
+          ],
           "type": "object",
           "properties": {
             "bootstrap_length": {
@@ -21,25 +30,36 @@
             },
             "bootstrap_type": {
               "description": "Null in the default; overridden per-field to hex, base64, string, or alphanumeric.",
-              "enum": ["alphanumeric", "base64", "hex", "string", null]
+              "enum": ["alphanumeric", "base64", "hex", "string", null],
+              "type": ["string", "null"]
             },
             "mode": {
               "description": "Read-only: value is written from a provider-generated secret.",
-              "enum": ["ro"]
+              "enum": ["ro"],
+              "type": "string"
             },
             "purpose": {
               "description": "Optional 1Password field purpose.",
-              "enum": ["PASSWORD", null]
+              "enum": ["PASSWORD", null],
+              "type": ["string", "null"]
             },
             "type": {
               "description": "1Password field type when purpose is not set.",
-              "enum": ["CONCEALED", "STRING", null]
+              "enum": ["CONCEALED", "STRING", null],
+              "type": ["string", "null"]
             }
           }
         },
         "rw": {
           "additionalProperties": false,
           "description": "Default shape for read-write credential fields written to 1Password for manual entry and read back at apply time.",
+          "required": [
+            "bootstrap_length",
+            "bootstrap_type",
+            "mode",
+            "purpose",
+            "type"
+          ],
           "type": "object",
           "properties": {
             "bootstrap_length": {
@@ -48,19 +68,23 @@
             },
             "bootstrap_type": {
               "description": "Null in the default; overridden per-field to hex, base64, string, or alphanumeric.",
-              "enum": ["alphanumeric", "base64", "hex", "string", null]
+              "enum": ["alphanumeric", "base64", "hex", "string", null],
+              "type": ["string", "null"]
             },
             "mode": {
               "description": "Read-write: value may be supplied or overridden via 1Password.",
-              "enum": ["rw"]
+              "enum": ["rw"],
+              "type": "string"
             },
             "purpose": {
               "description": "Optional 1Password field purpose.",
-              "enum": ["PASSWORD", null]
+              "enum": ["PASSWORD", null],
+              "type": ["string", "null"]
             },
             "type": {
               "description": "1Password field type when purpose is not set.",
-              "enum": ["CONCEALED", "STRING", null]
+              "enum": ["CONCEALED", "STRING", null],
+              "type": ["string", "null"]
             }
           }
         }
@@ -69,10 +93,12 @@
     "dns": {
       "additionalProperties": false,
       "description": "Default values merged into all auto-generated DNS records. Individual records may override these.",
+      "required": ["priority", "proxied", "ttl", "wildcard"],
       "type": "object",
       "properties": {
         "priority": {
           "description": "Default MX/SRV record priority. Null omits the field for non-priority record types.",
+          "minimum": 0,
           "type": ["integer", "null"]
         },
         "proxied": {
@@ -81,6 +107,7 @@
         },
         "ttl": {
           "description": "Default DNS TTL in seconds. Use 1 for Cloudflare's automatic TTL.",
+          "minimum": 1,
           "type": "integer"
         },
         "wildcard": {
@@ -100,6 +127,7 @@
     "targets": {
       "additionalProperties": false,
       "description": "Per-platform defaults merged into each service deployment target during expansion (services_input.tf).",
+      "required": ["fly", "truenas"],
       "type": "object",
       "properties": {
         "fly": {

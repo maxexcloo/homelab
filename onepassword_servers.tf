@@ -96,9 +96,8 @@ locals {
         for label in sort(keys(server.runtime.urls)) : {
           href    = server.runtime.urls[label].href
           label   = server.runtime.urls[label].label
-          primary = server.runtime.urls[label].href == server.urls.default.href
+          primary = server.runtime.urls[label].href == try(server.runtime.urls.management.href, server.runtime.urls.internal.href)
         }
-        if label != "default"
       ]
 
       vault = {

@@ -39,7 +39,8 @@ routing:
   backend_scheme: http
   container: server
   urls:
-    - photos.excloo.com
+    - expose: internal
+      url: photos.excloo.com
 targets:
   au-truenas:
     truenas:

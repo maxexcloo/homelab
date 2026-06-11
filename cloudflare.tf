@@ -20,32 +20,47 @@ data "cloudflare_zone" "all" {
 }
 
 locals {
-  # Custom routing.urls are only routed when backed by a managed DNS record to prevent
-  # routing unmanaged hostnames through the tunnel. distinct() guards against the external
-  # hostname appearing in routing.urls twice. The http_status:503 catch-all is required
-  # by Cloudflare Tunnel — unmatched requests need an explicit fallback or the tunnel
-  # silently drops them.
+  # Routes are only added when backed by a managed DNS record. The
+  # http_status:503 catch-all is required by Cloudflare Tunnel.
   cloudflare_tunnel_ingress = {
     for server_key, server in local.servers_by_feature.cloudflared : server_key => concat(
       flatten([
         for service_key, service in local.services_model : [
-          for hostname in service.routing.cloudflare_hostnames : merge(
+          for route in service.routing.urls : merge(
             {
-              hostname = hostname
-              service  = service.routing.backend_url
+              hostname = route.host
+              service  = route.backend_url
             },
-            startswith(service.routing.backend_url, "https://") ? {
+            startswith(route.backend_url, "https://") ? {
               origin_request = {
                 no_tls_verify = true
               }
             } : {},
           )
+          if(
+            route.expose == "cloudflare" &&
+            route.host != null
+          )
         ]
-        if(
-          service.routing.expose == "cloudflare" &&
-          service.target == server_key
-        )
+        if service.target == server_key
       ]),
+      [
+        for route in server.routing.urls : merge(
+          {
+            hostname = route.url
+            service  = route.backend_url
+          },
+          startswith(route.backend_url, "https://") ? {
+            origin_request = {
+              no_tls_verify = true
+            }
+          } : {},
+        )
+        if(
+          route.expose == "cloudflare" &&
+          try(local.dns_render_managed_zones_by_url[route.url], null) != null
+        )
+      ],
       [
         {
           service = "http_status:503"

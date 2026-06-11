@@ -36,9 +36,9 @@ imports:
 routing:
   backend_port: 30396
   backend_scheme: http
-  expose: cloudflare
   urls:
-    - books.excloo.com
+    - expose: cloudflare
+      url: books.excloo.com
 targets:
   au-truenas:
     truenas:

@@ -123,8 +123,8 @@ routing:
   backend_port: 8080
   backend_scheme: http
   container: ctrld
-  expose: cloudflare
   urls:
-    - reddit.excloo.com
+    - expose: cloudflare
+      url: reddit.excloo.com
 targets:
   au-truenas: {}

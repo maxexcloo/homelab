@@ -86,7 +86,7 @@ locals {
     for device in data.tailscale_devices.all.devices : regex("^[^.]+", device.name) => {
       address = device.name
       id      = try(device.id, "")
-      ipv4    = try(one([for address in device.addresses : address if can(cidrhost("${address}/32", 0))]), "")
+      ipv4    = try(one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]), "")
       ipv6    = try(one([for address in device.addresses : address if can(cidrhost("${address}/128", 0))]), "")
     }
   }

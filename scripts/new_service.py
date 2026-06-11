@@ -3,11 +3,10 @@
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml>=6"]
 # ///
-"""Create a new service YAML from schema defaults and open it in $EDITOR."""
+"""Create a new service YAML and open it in $EDITOR."""
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
@@ -16,8 +15,19 @@ from pathlib import Path
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-SERVICE_SCHEMA = PROJECT_ROOT / "schemas" / "service.json"
 SERVICES_DIR = PROJECT_ROOT / "data" / "services"
+
+
+def sort_mapping(data: dict) -> dict:
+    single_line = sorted(
+        key
+        for key, value in data.items()
+        if not isinstance(value, (dict, list)) or not value
+    )
+    multi_line = sorted(
+        key for key, value in data.items() if isinstance(value, (dict, list)) and value
+    )
+    return {key: data[key] for key in single_line + multi_line}
 
 
 def main() -> None:
@@ -28,8 +38,6 @@ def main() -> None:
     target = sys.argv[2] if len(sys.argv) > 2 else "au-truenas"
     title = sys.argv[3] if len(sys.argv) > 3 else name.replace("-", " ").title()
 
-    schema = json.loads(SERVICE_SCHEMA.read_text())
-
     service = {
         "identity": {
             "name": name,
@@ -39,13 +47,12 @@ def main() -> None:
         "targets": {target: {}},
     }
 
-    # Order keys as they appear in the schema
-    ordered = {}
-    for k in schema["properties"]:
-        if k in service:
-            ordered[k] = service[k]
-
-    body = yaml.dump(ordered, default_flow_style=False, sort_keys=False, width=1000)
+    body = yaml.dump(
+        sort_mapping(service),
+        default_flow_style=False,
+        sort_keys=False,
+        width=1000,
+    )
     content = f"# yaml-language-server: $schema=../../schemas/service.json\n{body}"
 
     out_path = SERVICES_DIR / f"{name}.yml"
