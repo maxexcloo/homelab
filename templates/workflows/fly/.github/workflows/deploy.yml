@@ -37,20 +37,17 @@ jobs:
 
   deploy:
     if: needs.deployments.outputs.matrix != '[]'
-    name: Deploy ${{ matrix.service }}
+    name: ${{ matrix.deployment.action }} ${{ matrix.deployment.service }}
     needs: [deployments]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ matrix.service }}
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        service: ${{ fromJSON(needs.deployments.outputs.matrix) }}
+        deployment: ${{ fromJSON(needs.deployments.outputs.matrix) }}
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-      SERVICE: ${{ matrix.service }}
+      SERVICE: ${{ matrix.deployment.service }}
       SOPS_AGE_KEY: ${{ secrets.AGE_KEY }}
     steps:
       - name: Checkout
@@ -58,8 +55,16 @@ jobs:
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@1.5
       - name: Setup sops
+        if: matrix.deployment.action == 'deploy'
         uses: nhedger/setup-sops@v2
       - name: Decrypt Files
-        run: python3 ../.github/scripts/decrypt.py
+        if: matrix.deployment.action == 'deploy'
+        env:
+          DECRYPT_ROOT: ${{ matrix.deployment.service }}
+        run: python3 .github/scripts/decrypt.py
       - name: Deploy
-        run: python3 ../.github/scripts/deploy.py
+        if: matrix.deployment.action == 'deploy'
+        run: python3 .github/scripts/deploy.py
+      - name: Delete
+        if: matrix.deployment.action == 'delete'
+        run: python3 .github/scripts/delete.py

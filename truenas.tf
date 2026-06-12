@@ -14,14 +14,10 @@ locals {
     )
   }
 
-  truenas_prepare_catalog_templates = {
-    for service_key, service in local.truenas_input_services : service_key => {
-      path = "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
-    }
-    if(
-      service.identity.service != null &&
-      fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
-    )
+  truenas_input_catalog_templates = {
+    for service_key, service in local.truenas_input_services :
+    service_key => "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
+    if fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
   }
 
   # Compose wins over catalog: a service with docker-compose.yaml.tftpl deploys
@@ -71,7 +67,7 @@ locals {
                 ),
                 jsondecode(
                   templatefile(
-                    local.truenas_prepare_catalog_templates[service_key].path,
+                    local.truenas_input_catalog_templates[service_key],
                     local.services_render_template_context[service_key],
                   ),
                 ),
@@ -82,7 +78,7 @@ locals {
       }
       if(
         !fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
-        try(local.truenas_prepare_catalog_templates[service_key], null) != null
+        try(local.truenas_input_catalog_templates[service_key], null) != null
       )
     },
     {
@@ -118,23 +114,30 @@ resource "github_repository_file" "truenas_deploy_request" {
 
   content = jsonencode({
     deployments = {
-      for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => sha256(jsonencode({
-        workflow_files = local.github_workflow_file_hashes.truenas
+      for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => {
+        files = sort([
+          for file_key in nonsensitive(keys(local.truenas_render_files)) : file_key
+          if startswith(file_key, "${service.target}/${service.identity.name}/")
+        ])
 
-        files = {
-          for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
-          if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
-        }
+        hash = sha256(jsonencode({
+          workflow_files = local.github_workflow_files_hashes.truenas
 
-        sops = sha256(yamlencode({
-          creation_rules = [
-            for server_key, server in local.truenas_input_servers : {
-              age        = age_secret_key.server[server_key].public_key
-              path_regex = "^${server_key}/"
-            }
-          ]
+          files = {
+            for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
+            if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
+          }
+
+          sops = sha256(yamlencode({
+            creation_rules = [
+              for server_key, server in local.truenas_input_servers : {
+                age        = age_secret_key.server[server_key].public_key
+                path_regex = "^${server_key}/"
+              }
+            ]
+          }))
         }))
-      }))
+      }
     }
   })
 

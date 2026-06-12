@@ -58,7 +58,7 @@ locals {
         )
         if(
           route.expose == "cloudflare" &&
-          try(local.dns_render_managed_zones_by_url[route.url], null) != null
+          try(local.dns_model_managed_zones_by_url[route.url], null) != null
         )
       ],
       [

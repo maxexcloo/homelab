@@ -1,8 +1,5 @@
 data "http" "onepassword_service_item" {
-  for_each = {
-    for service_key, item_id in local.onepassword_service_existing_ids : service_key => item_id
-    if item_id != null
-  }
+  for_each = local.onepassword_service_existing_items
 
   request_headers = local.onepassword_connect_request_headers
   url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/${each.value}"
@@ -16,6 +13,43 @@ data "http" "onepassword_service_search" {
 }
 
 locals {
+  # Services that get a 1Password item: any with credential material to store.
+  # Dashboard cards and routable URLs alone are not credentials. Iterates
+  # services_model (no runtime) so the search/fetch HTTP calls don't depend on
+  # the resources whose values they read.
+  onepassword_service_items = {
+    for service_key, service in local.services_model : service_key => service
+    if(
+      service.identity.username != "" ||
+      length(service.credentials.fields) > 0
+    )
+  }
+
+  onepassword_service_search_results = {
+    for service_key, item in data.http.onepassword_service_search : service_key => jsondecode(item.response_body)
+  }
+
+  onepassword_service_duplicate_items = [
+    for service_key, items in local.onepassword_service_search_results : service_key
+    if length(items) > 1
+  ]
+
+  onepassword_service_existing_ids = {
+    for service_key, items in local.onepassword_service_search_results : service_key => length(items) == 1 ? one(items).id : null
+  }
+
+  onepassword_service_existing_items = {
+    for service_key, item_id in local.onepassword_service_existing_ids : service_key => item_id
+    if item_id != null
+  }
+
+  onepassword_service_existing_fields = {
+    for service_key, item in data.http.onepassword_service_item : service_key => {
+      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
+      if try(coalesce(field.value, ""), "") != ""
+    }
+  }
+
   onepassword_service_dashboard_urls = {
     for service_key, service in local.services : service_key => values({
       for card_index, dashboard_card in local.services_render_template_context[service_key].service.dashboard :
@@ -30,17 +64,6 @@ locals {
         !contains([for url in values(service.urls) : url.href], try(dashboard_card.href, ""))
       )
     })
-  }
-
-  onepassword_service_existing_fields = {
-    for service_key, item in data.http.onepassword_service_item : service_key => {
-      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
-      if try(coalesce(field.value, ""), "") != ""
-    }
-  }
-
-  onepassword_service_existing_ids = {
-    for service_key, item in data.http.onepassword_service_search : service_key => try(one(jsondecode(item.response_body)).id, null)
   }
 
   onepassword_service_host_urls = {
@@ -139,18 +162,6 @@ locals {
     }
     if try(local.onepassword_service_items[service_key], null) != null
   }
-
-  # Services that get a 1Password item: any with credential material to store.
-  # Dashboard cards and routable URLs alone are not credentials. Iterates
-  # services_model (no runtime) so the search/fetch HTTP calls don't depend on
-  # the resources whose values they read.
-  onepassword_service_items = {
-    for service_key, service in local.services_model : service_key => service
-    if(
-      service.identity.username != "" ||
-      length(service.credentials.fields) > 0
-    )
-  }
 }
 
 resource "restapi_object" "onepassword_service" {
@@ -163,4 +174,11 @@ resource "restapi_object" "onepassword_service" {
   provider                = restapi.onepassword
   read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/{id}"
   update_data             = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
+
+  lifecycle {
+    precondition {
+      condition     = length(local.onepassword_service_duplicate_items) == 0
+      error_message = "Multiple 1Password service items have the same title: ${join(", ", nonsensitive(local.onepassword_service_duplicate_items))}"
+    }
+  }
 }

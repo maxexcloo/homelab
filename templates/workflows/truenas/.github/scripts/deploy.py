@@ -1,7 +1,9 @@
+import copy
 import json
 import os
 import subprocess
-from pathlib import Path
+import tempfile
+from pathlib import Path, PurePosixPath
 
 
 def run(command, **kwargs):
@@ -34,12 +36,74 @@ def deep_merge(base, overlay):
     return merged
 
 
-def deploy_catalog_service(service, app_file):
+def load_previous_json(path):
+    before = os.environ.get("BEFORE", "")
+    if not before or set(before) == {"0"}:
+        return None
+
+    try:
+        encrypted = subprocess.check_output(
+            ["git", "show", f"{before}:{path}"],
+            stderr=subprocess.DEVNULL,
+        )
+    except subprocess.CalledProcessError:
+        return None
+
+    with tempfile.NamedTemporaryFile(suffix=".json") as encrypted_file:
+        encrypted_file.write(encrypted)
+        encrypted_file.flush()
+        decrypted = subprocess.check_output(
+            [
+                "sops",
+                "--decrypt",
+                "--input-type",
+                "json",
+                "--output-type",
+                "json",
+                encrypted_file.name,
+            ],
+            text=True,
+        )
+
+    return json.loads(decrypted)
+
+
+def remove_stale_owned(current, previous, desired):
+    for key, previous_value in previous.items():
+        if key not in desired:
+            current_value = current.get(key)
+            if isinstance(previous_value, dict) and isinstance(current_value, dict):
+                remove_stale_owned(current_value, previous_value, {})
+                if not current_value:
+                    current.pop(key)
+            else:
+                current.pop(key, None)
+        elif isinstance(previous_value, dict) and isinstance(desired[key], dict):
+            current_value = current.get(key)
+            if isinstance(current_value, dict):
+                remove_stale_owned(current_value, previous_value, desired[key])
+
+
+def reconcile_values(current, previous, desired):
+    reconciled = copy.deepcopy(current)
+    if previous is not None:
+        remove_stale_owned(reconciled, previous, desired)
+    return deep_merge(reconciled, desired)
+
+
+def deploy_catalog_service(service, app_file, previous_app):
     print(f"Deploying catalog service {service}")
     if app_exists(service):
         current = json.loads(output(["midclt", "call", "app.config", service]))
         desired = json.loads(app_file.read_text())
-        payload = {"values": deep_merge(current, desired.get("values", {}))}
+        previous_values = previous_app.get("values", {}) if previous_app else None
+        payload = {
+            "values": reconcile_values(
+                current,
+                previous_values,
+                desired.get("values", {}),
+            )
+        }
         run(
             ["midclt", "call", "-j", "app.update", service, json.dumps(payload)],
             stdout=subprocess.DEVNULL,
@@ -91,6 +155,25 @@ def find_container(containers, service, container_service):
     return None
 
 
+def managed_relative_paths(target, files):
+    prefix = f"{target.as_posix()}/"
+    return {
+        file_path.removeprefix(prefix)
+        for file_path in files
+        if file_path.startswith(prefix)
+    }
+
+
+def sidecar_paths(paths):
+    return {path for path in paths if path not in {"app.json", "compose.json"}}
+
+
+def validate_sidecar_path(path):
+    parsed = PurePosixPath(path)
+    if parsed.is_absolute() or ".." in parsed.parts:
+        raise ValueError(f"Invalid managed sidecar path: {path}")
+
+
 def restart_service_containers(service):
     matching = [
         container
@@ -107,28 +190,65 @@ def restart_service_containers(service):
 
 
 def deploy_services():
+    managed_files = json.loads(os.environ["MANAGED_FILES"])
+    previous_managed_files = json.loads(os.environ["PREVIOUS_MANAGED_FILES"])
+
     for target_path in json.loads(os.environ["TARGET_PATHS"]):
         target = Path(target_path)
         service = target.name
         service_changed = False
         print(f"Deploying {service}")
 
+        current_managed = managed_relative_paths(
+            target,
+            managed_files.get(target_path, []),
+        )
+        previous_managed = managed_relative_paths(
+            target,
+            previous_managed_files.get(target_path, []),
+        )
+
         app_file = target / "app.json"
-        if app_file.exists():
-            deploy_catalog_service(service, app_file)
+        if "app.json" in current_managed:
+            if not app_file.is_file():
+                raise FileNotFoundError(
+                    f"Managed app configuration not found: {app_file}"
+                )
+            previous_app = load_previous_json(f"{target_path}/app.json")
+            deploy_catalog_service(service, app_file, previous_app)
             service_changed = True
 
         compose_file = target / "compose.json"
-        if compose_file.exists():
+        if "compose.json" in current_managed:
+            if not compose_file.is_file():
+                raise FileNotFoundError(
+                    f"Managed compose configuration not found: {compose_file}"
+                )
             deploy_custom_service(service, compose_file)
             service_changed = True
 
-        containers = docker_containers()
-        for path in target.rglob("*"):
-            if not path.is_file() or path.name in {"app.json", "compose.json"}:
-                continue
+        current_sidecars = sidecar_paths(current_managed)
+        previous_sidecars = sidecar_paths(previous_managed)
 
-            rel_path = path.relative_to(target).as_posix()
+        containers = docker_containers()
+        for rel_path in sorted(previous_sidecars - current_sidecars):
+            validate_sidecar_path(rel_path)
+            container_service = rel_path.split("/", 1)[0]
+            container = find_container(containers, service, container_service)
+
+            if container:
+                run(["docker", "exec", container, "rm", "-f", f"/{rel_path}"])
+                service_changed = True
+                print(f"✓ {container}:/{rel_path} removed")
+            else:
+                print(f"⚠ no container found to remove /{rel_path} from {service}")
+
+        for rel_path in sorted(current_sidecars):
+            validate_sidecar_path(rel_path)
+            path = target / rel_path
+            if not path.is_file():
+                raise FileNotFoundError(f"Managed sidecar not found: {path}")
+
             container_service = rel_path.split("/", 1)[0]
             container = find_container(containers, service, container_service)
 

@@ -46,12 +46,17 @@ jobs:
       matrix:
         target: ${{ fromJSON(needs.deployments.outputs.matrix) }}
     env:
+      BEFORE: ${{ github.event.before }}
+      MANAGED_FILES: ${{ toJSON(matrix.target.files) }}
+      PREVIOUS_MANAGED_FILES: ${{ toJSON(matrix.target.previous_files) }}
       REMOVALS: ${{ toJSON(matrix.target.removals) }}
       SOPS_AGE_KEY: ${{ secrets[matrix.target.secret_name] }}
       TARGET_PATHS: ${{ toJSON(matrix.target.paths) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: Setup sops
         uses: nhedger/setup-sops@v2
       - name: Setup uv

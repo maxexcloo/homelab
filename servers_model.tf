@@ -134,12 +134,15 @@ locals {
 
   _servers_model_routes = {
     for server_key, server in local.servers_input : server_key => [
-      for url in server.routing.urls : merge(
+      for route_index, url in server.routing.urls : merge(
         {
           for field_name, field_value in server.routing : field_name => field_value
           if field_name != "urls"
         },
         url,
+        {
+          id = try(url.id, tostring(route_index))
+        },
       )
     ]
   }

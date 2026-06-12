@@ -13,6 +13,11 @@ variable "content_base64" {
 variable "content_type" {
   description = "SOPS input/output type (binary, json, yaml, dotenv)"
   type        = string
+
+  validation {
+    condition     = contains(["binary", "dotenv", "json", "yaml"], var.content_type)
+    error_message = "Content type must be binary, dotenv, json, or yaml."
+  }
 }
 
 variable "debug_path" {

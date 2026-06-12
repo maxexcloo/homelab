@@ -46,8 +46,11 @@ def main():
 
     debug_path = os.environ.get("DEBUG_PATH", "")
     if debug_path:
-        Path(debug_path).parent.mkdir(parents=True, exist_ok=True)
-        Path(debug_path).write_bytes(plaintext)
+        debug_file = Path(debug_path)
+        debug_file.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        debug_file.parent.chmod(0o700)
+        debug_file.write_bytes(plaintext)
+        debug_file.chmod(0o600)
 
     if previous_data and previous_hash == plaintext_hash:
         sys.stdout.write(previous_data)

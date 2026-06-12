@@ -108,6 +108,40 @@ locals {
     )
   ]
 
+  _servers_validation_oci_ingress_rule_names_not_unique = [
+    for server_key, server in local.servers_input : server_key
+    if(
+      server.platform == "oci" &&
+      length(server.platform_config.oci.ingress_rules) != length(distinct([
+        for rule in server.platform_config.oci.ingress_rules : rule.name
+      ]))
+    )
+  ]
+
+  _servers_validation_oci_ingress_rules_invalid = flatten([
+    for server_key, server in local.servers_input : [
+      for rule in server.platform_config.oci.ingress_rules : "${server_key} -> ${rule.protocol} ${rule.source}"
+      if(
+        server.platform == "oci" &&
+        (
+          !can(cidrhost(rule.source, 0)) ||
+          (
+            rule.protocol == "icmp" &&
+            strcontains(rule.source, ":")
+          ) ||
+          (
+            rule.protocol == "icmpv6" &&
+            !strcontains(rule.source, ":")
+          ) ||
+          (
+            rule.port_min != null &&
+            rule.port_max < rule.port_min
+          )
+        )
+      )
+    ]
+  ])
+
   _servers_validation_parent_cycles = [
     for server_key, server in local.servers_input : server_key
     if(
@@ -117,6 +151,11 @@ locals {
         try(local.servers_input[local.servers_input[server.parent].parent].parent == server_key, false)
       )
     )
+  ]
+
+  _servers_validation_routes_ids_not_unique = [
+    for server_key, server in local.servers_model : server_key
+    if length(server.routing.urls) != length(distinct([for route in server.routing.urls : route.id]))
   ]
 
   _servers_validation_routes_invalid_proxies = flatten([
@@ -144,7 +183,7 @@ locals {
   _servers_validation_routes_unmanaged = flatten([
     for server_key, server in local.servers_input : [
       for url in server.routing.urls : "${server_key} -> ${url.url}"
-      if try(local.dns_render_managed_zones_by_url[url.url], null) == null
+      if try(local.dns_model_managed_zones_by_url[url.url], null) == null
     ]
   ])
 
@@ -241,12 +280,27 @@ resource "terraform_data" "servers_validation" {
       error_message = "Always Free total boot volume size must not exceed 200 GB (got ${nonsensitive(local._servers_validation_oci_always_free_boot_volume_gbs)} GB)."
     }
 
+    precondition {
+      condition     = length(local._servers_validation_oci_ingress_rule_names_not_unique) == 0
+      error_message = "OCI ingress rule names must be unique per server: ${join(", ", nonsensitive(local._servers_validation_oci_ingress_rule_names_not_unique))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_oci_ingress_rules_invalid) == 0
+      error_message = "OCI ingress rules must use valid CIDRs, matching ICMP address families, and ordered port ranges: ${join(", ", nonsensitive(local._servers_validation_oci_ingress_rules_invalid))}"
+    }
+
     # Catch short cycles before inherited address lookup hides the root cause.
     precondition {
       condition = length(local._servers_validation_parent_cycles) == 0
       error_message = (
         "Server parent references contain a cycle within the supported parent depth: ${join(", ", local._servers_validation_parent_cycles)}"
       )
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_ids_not_unique) == 0
+      error_message = "Server routing IDs must be unique per server: ${join(", ", nonsensitive(local._servers_validation_routes_ids_not_unique))}"
     }
 
     precondition {

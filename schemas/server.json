@@ -489,16 +489,79 @@
             "image_id": {
               "description": "OCI image OCID to use as the boot volume source.",
               "pattern": "^$|^ocid1\\.image\\.",
-              "type": "string"
+              "type": ["string", "null"]
             },
-            "ingress_ports": {
-              "description": "TCP and UDP ports open in the network security group ingress rules. Defaults to [22, 80, 443].",
+            "ingress_rules": {
+              "description": "Explicit network security group ingress rules. TCP and UDP rules require a port range; ICMP and ICMPv6 rules require both ports to be null.",
               "type": "array",
               "uniqueItems": true,
               "items": {
-                "maximum": 65535,
-                "minimum": 1,
-                "type": "integer"
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "port_max",
+                  "port_min",
+                  "protocol",
+                  "source"
+                ],
+                "type": "object",
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "protocol": {
+                          "enum": ["tcp", "udp"]
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "port_max": {
+                          "type": "integer"
+                        },
+                        "port_min": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "else": {
+                      "properties": {
+                        "port_max": {
+                          "type": "null"
+                        },
+                        "port_min": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  }
+                ],
+                "properties": {
+                  "name": {
+                    "description": "Stable rule identity. Changing it changes the OpenTofu resource address.",
+                    "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+                    "type": "string"
+                  },
+                  "port_max": {
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "type": ["integer", "null"]
+                  },
+                  "port_min": {
+                    "maximum": 65535,
+                    "minimum": 1,
+                    "type": ["integer", "null"]
+                  },
+                  "protocol": {
+                    "enum": ["icmp", "icmpv6", "tcp", "udp"],
+                    "type": "string"
+                  },
+                  "source": {
+                    "description": "IPv4 or IPv6 source CIDR allowed by this rule.",
+                    "pattern": "^[0-9A-Fa-f:.]+/[0-9]{1,3}$",
+                    "type": "string"
+                  }
+                }
               }
             },
             "memory": {
@@ -550,6 +613,11 @@
                     "pattern": "^proxy-[a-z][a-z0-9-]+$"
                   }
                 ]
+              },
+              "id": {
+                "description": "Stable route identity. Defaults to the route list index for backward compatibility.",
+                "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+                "type": "string"
               },
               "url": {
                 "description": "Hostname routed to this server. Must belong to a managed DNS zone.",

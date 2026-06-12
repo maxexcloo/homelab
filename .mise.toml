@@ -5,7 +5,6 @@ TF_CLI_ARGS_apply = "-parallelism=20"
 TF_CLI_ARGS_plan = "-parallelism=20"
 
 [tools]
-"pipx:check-jsonschema" = "0.37.2"
 opentofu = "1.12.1"
 prettier = "3.8.4"
 ruff = "0.15.16"
@@ -32,10 +31,10 @@ fi
 # Development
 [tasks.check]
 description = "Format check, lint, and validate"
-depends = ["lint", "validate"]
+depends = ["lint", "test", "validate"]
 run = """
 prettier --check "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
-ruff format --check scripts modules templates/workflows
+ruff format --check scripts modules templates/workflows tests
 tofu fmt -check -recursive
 """
 
@@ -43,22 +42,22 @@ tofu fmt -check -recursive
 description = "Format all files"
 run = """
 prettier --log-level warn --write "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
-ruff check --fix --select I scripts modules templates/workflows
-ruff format scripts modules templates/workflows
+ruff check --fix --select I scripts modules templates/workflows tests
+ruff format scripts modules templates/workflows tests
 tofu fmt -recursive
 """
 
 [tasks.lint]
-description = "Validate YAML data files against JSON schemas"
+description = "Validate source and default-merged YAML against JSON schemas"
 depends = ["sort-check"]
 run = """
-check-jsonschema --schemafile schemas/dns.json data/dns/*.yml
-check-jsonschema --schemafile schemas/server.json data/servers/*.yml
-check-jsonschema --schemafile schemas/service.json data/services/*.yml
-check-jsonschema --schemafile schemas/config.json data/config.yml
-check-jsonschema --schemafile schemas/defaults.json data/defaults.yml
-ruff check --extend-select I scripts modules templates/workflows
+uv run scripts/validate_data.py
+ruff check --extend-select I scripts modules templates/workflows tests
 """
+
+[tasks.test]
+description = "Run unit tests"
+run = "uv run python -m unittest discover -s tests"
 
 [tasks.validate]
 description = "Validate configurations"
@@ -73,19 +72,7 @@ run = 'tofu apply'
 description = "Plan all changes"
 run = "tofu plan"
 
-[tasks.refresh]
-description = "Check for configuration drift"
-run = "tofu refresh"
-
 # Scripts
-[tasks.new-server]
-description = "Create a new server YAML from defaults and open in $EDITOR"
-run = "uv run scripts/new_server.py \"$@\""
-
-[tasks.new-service]
-description = "Create a new service YAML from defaults and open in $EDITOR"
-run = "uv run scripts/new_service.py \"$@\""
-
 [tasks.render]
 description = "Render plaintext deployment artifacts via debug_dir"
 run = "tofu plan -refresh=false -var debug_dir=$RENDER_DIR"

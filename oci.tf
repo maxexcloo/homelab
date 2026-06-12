@@ -12,45 +12,19 @@ data "oci_core_vnic_attachments" "server" {
 }
 
 data "oci_identity_availability_domain" "default" {
-  for_each = local.oci_regions
+  for_each = local.oci_vms_regions
 
   ad_number      = 1
   compartment_id = var.oci_tenancy_ocid
 }
 
 locals {
-  # Protocol/family combinations used when expanding ingress ports.
-  oci_ingress_protocols = [
-    {
-      family   = "ipv4"
-      name     = "tcp"
-      protocol = "6"
-      source   = "0.0.0.0/0"
-    },
-    {
-      family   = "ipv4"
-      name     = "udp"
-      protocol = "17"
-      source   = "0.0.0.0/0"
-    },
-    {
-      family   = "ipv6"
-      name     = "tcp"
-      protocol = "6"
-      source   = "::/0"
-    },
-    {
-      family   = "ipv6"
-      name     = "udp"
-      protocol = "17"
-      source   = "::/0"
-    },
-  ]
-
-  # OCI network primitives are created once per region used by managed OCI VMs.
-  oci_regions = toset(distinct([
-    for vm_key, vm in local.oci_vms : vm.identity.region
-  ]))
+  oci_ingress_protocol_numbers = {
+    icmp   = "1"
+    icmpv6 = "58"
+    tcp    = "6"
+    udp    = "17"
+  }
 
   # OCI resources in this root manage VM servers only.
   oci_vms = {
@@ -61,44 +35,28 @@ locals {
     )
   }
 
-  # Each configured ingress port expands to TCP/UDP and IPv4/IPv6 rules; ICMP is
-  # always allowed for basic reachability diagnostics.
+  # Explicit names keep rule identity stable when mutable fields or list order change.
   oci_vms_ingress_rules = merge([
-    for vm_key, vm in local.oci_vms : merge(
-      {
-        for rule in [
-          {
-            family   = "ipv4"
-            port     = null
-            protocol = "1"
-            source   = "0.0.0.0/0"
-            vm_key   = vm_key
-          },
-          {
-            family   = "ipv6"
-            port     = null
-            protocol = "1"
-            source   = "::/0"
-            vm_key   = vm_key
-          },
-        ] : "${rule.vm_key}-icmp-${rule.family}" => rule
-      },
-      {
-        for rule in flatten([
-          for port in vm.platform_config.oci.ingress_ports : [
-            for combo in local.oci_ingress_protocols : merge(combo, {
-              port   = port
-              vm_key = vm_key
-            })
-          ]
-        ]) : "${rule.vm_key}-${rule.name}-${rule.family}-${rule.port}" => rule
-      }
-    )
+    for vm_key, vm in local.oci_vms : {
+      for rule in vm.platform_config.oci.ingress_rules :
+      "${vm_key}-${rule.name}" => merge(
+        rule,
+        {
+          protocol_number = local.oci_ingress_protocol_numbers[rule.protocol]
+          vm_key          = vm_key
+        },
+      )
+    }
   ]...)
+
+  # OCI network primitives are created once per region used by managed OCI VMs.
+  oci_vms_regions = toset(distinct([
+    for vm_key, vm in local.oci_vms : vm.identity.region
+  ]))
 }
 
 resource "oci_core_default_dhcp_options" "default" {
-  for_each = local.oci_regions
+  for_each = local.oci_vms_regions
 
   compartment_id             = var.oci_tenancy_ocid
   display_name               = "${each.value}.${local.defaults.domains.external}"
@@ -116,7 +74,7 @@ resource "oci_core_default_dhcp_options" "default" {
 }
 
 resource "oci_core_default_route_table" "default" {
-  for_each = local.oci_regions
+  for_each = local.oci_vms_regions
 
   display_name               = "${each.value}.${local.defaults.domains.external}"
   manage_default_resource_id = oci_core_vcn.default[each.value].default_route_table_id
@@ -135,7 +93,7 @@ resource "oci_core_default_route_table" "default" {
 }
 
 resource "oci_core_default_security_list" "default" {
-  for_each = local.oci_regions
+  for_each = local.oci_vms_regions
 
   compartment_id             = var.oci_tenancy_ocid
   display_name               = "${each.value}.${local.defaults.domains.external}"
@@ -153,17 +111,6 @@ resource "oci_core_default_security_list" "default" {
     stateless   = false
   }
 
-  ingress_security_rules {
-    protocol  = 1
-    source    = "0.0.0.0/0"
-    stateless = false
-  }
-
-  ingress_security_rules {
-    protocol  = 1
-    source    = "::/0"
-    stateless = false
-  }
 }
 
 resource "oci_core_instance" "server" {
@@ -207,7 +154,7 @@ resource "oci_core_instance" "server" {
 }
 
 resource "oci_core_internet_gateway" "default" {
-  for_each = local.oci_regions
+  for_each = local.oci_vms_regions
 
   compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domains.external}"
@@ -227,37 +174,35 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_port" {
 
   direction                 = "INGRESS"
   network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
-  protocol                  = each.value.protocol
+  protocol                  = each.value.protocol_number
   source                    = each.value.source
   source_type               = "CIDR_BLOCK"
 
-  # OCI models TCP and UDP port options as different nested blocks, so the rule
-  # map carries protocol numbers and the resource selects the matching block.
   dynamic "tcp_options" {
-    for_each = each.value.protocol == "6" ? [1] : []
+    for_each = each.value.protocol == "tcp" ? [1] : []
 
     content {
       destination_port_range {
-        max = each.value.port
-        min = each.value.port
+        max = each.value.port_max
+        min = each.value.port_min
       }
     }
   }
 
   dynamic "udp_options" {
-    for_each = each.value.protocol == "17" ? [1] : []
+    for_each = each.value.protocol == "udp" ? [1] : []
 
     content {
       destination_port_range {
-        max = each.value.port
-        min = each.value.port
+        max = each.value.port_max
+        min = each.value.port_min
       }
     }
   }
 }
 
 resource "oci_core_subnet" "default" {
-  for_each = local.oci_regions
+  for_each = local.oci_vms_regions
 
   cidr_block     = "10.0.0.0/24"
   compartment_id = var.oci_tenancy_ocid
@@ -268,7 +213,7 @@ resource "oci_core_subnet" "default" {
 }
 
 resource "oci_core_vcn" "default" {
-  for_each = local.oci_regions
+  for_each = local.oci_vms_regions
 
   cidr_blocks    = ["10.0.0.0/16"]
   compartment_id = var.oci_tenancy_ocid

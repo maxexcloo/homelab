@@ -36,23 +36,36 @@ def main():
     event_name = os.environ["EVENT_NAME"]
     input_service = os.environ.get("INPUT_SERVICE", "")
     service_pattern = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+    removals = []
 
     if event_name == "workflow_dispatch" and input_service:
         if not service_pattern.match(input_service):
             raise SystemExit(f"Invalid service: {input_service}")
+        if not Path(input_service).is_dir():
+            raise SystemExit(f"No deployment found for service: {input_service}")
         targets = [input_service]
     elif event_name == "workflow_dispatch":
         targets = service_dirs()
     else:
         current = load_current_deployments()
         previous = load_previous_deployments()
+        removals = sorted(service for service in previous if service not in current)
         targets = sorted(
             service
             for service, deployment_hash in current.items()
             if previous.get(service) != deployment_hash
         )
 
-    deployments = [service for service in targets if service_pattern.match(service)]
+    deployments = [
+        {"action": "deploy", "service": service}
+        for service in targets
+        if service_pattern.match(service)
+    ]
+    deployments.extend(
+        {"action": "delete", "service": service}
+        for service in removals
+        if service_pattern.match(service)
+    )
 
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:
         output.write(f"deployments={json.dumps(deployments, separators=(',', ':'))}\n")

@@ -1,15 +1,15 @@
 locals {
-  _services_render_custom_homepage_data = one([
-    for svc in values(local.services_render_services) : svc.data
-    if svc.identity.name == "homepage"
-  ])
+  _services_render_custom_homepage_data = try([
+    for service in values(local.services_render_services) : service.data
+    if service.identity.name == "homepage"
+  ][0], {})
 
   _services_render_custom_homepage_server_cards = flatten([
     for server_key, server in local.servers_render_servers : [
       for card_index, dashboard_card in server.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:1:${server_key}:${card_index}"
+        sort  = "${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${lower(dashboard_card.name)}:${server_key}:${card_index}"
 
         card = {
           for field, value in dashboard_card : field => value
@@ -27,7 +27,7 @@ locals {
       for card_index, dashboard_card in service.dashboard : {
         group = dashboard_card.group
         name  = dashboard_card.name
-        sort  = "${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:0:${service_key}:${card_index}"
+        sort  = "${length(try(dashboard_card.widgets, [])) > 0 ? "0" : "1"}:${lower(dashboard_card.name)}:${service_key}:${card_index}"
 
         card = {
           for field, value in dashboard_card : field => value
@@ -86,8 +86,8 @@ locals {
             tab     = contains(local._services_render_custom_homepage_sorted_server_groups, group) ? "Servers" : "Services"
           },
           contains(local._services_render_custom_homepage_sorted_service_groups, group) ? {
-            columns = local._services_render_custom_homepage_data.groups[group].columns
-            style   = local._services_render_custom_homepage_data.groups[group].style
+            columns = try(local._services_render_custom_homepage_data.groups[group].columns, 2)
+            style   = try(local._services_render_custom_homepage_data.groups[group].style, "row")
           } : {},
         )
       }
@@ -149,7 +149,7 @@ locals {
               route.https &&
               !startswith(route.expose, "proxy-") &&
               route.url != null &&
-              try(local.dns_render_managed_zones_by_url[route.url], null) != null
+              try(local.dns_model_managed_zones_by_url[route.url], null) != null
               ) ? {
               "traefik.http.routers.${route.name}.tls.domains[0].main" = route.url
             } : {},

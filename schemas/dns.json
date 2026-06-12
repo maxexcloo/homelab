@@ -49,7 +49,12 @@
               }
             },
             "then": {
-              "required": ["priority"]
+              "required": ["priority"],
+              "properties": {
+                "priority": {
+                  "type": "integer"
+                }
+              }
             }
           }
         ],
@@ -69,7 +74,7 @@
           "priority": {
             "description": "Record priority. Required for MX and SRV records; ignored for other types.",
             "minimum": 0,
-            "type": "integer"
+            "type": ["integer", "null"]
           },
           "proxied": {
             "description": "Whether to proxy this record through Cloudflare. Overrides the DNS default. Must be false for MX, NS, and TXT records.",

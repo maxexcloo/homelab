@@ -32,10 +32,10 @@ locals {
     )
   ]
 
-  _services_validation_homepage_missing = length([
-    for service_key, service in local.services_input : service_key
+  _services_validation_homepage_count_invalid = length([
+    for service_key, service in local.services_model : service_key
     if service.identity.name == "homepage"
-  ]) == 0
+  ]) != 1
 
   _services_validation_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_imports : [
@@ -80,6 +80,11 @@ locals {
       )
     ]
   ])
+
+  _services_validation_route_ids_not_unique = [
+    for service_key, service in local.services_model : service_key
+    if length(service.routing.urls) != length(distinct([for route in service.routing.urls : route.id]))
+  ]
 
   _services_validation_routes_not_unique = [
     for service_key, service in local.services_model : service_key
@@ -135,7 +140,7 @@ locals {
     for service_key, service in local.truenas_input_services : service_key
     if(
       try(local.services_render_write_compose[service_key], null) == null &&
-      try(local.truenas_prepare_catalog_templates[service_key], null) == null
+      try(local.truenas_input_catalog_templates[service_key], null) == null
     )
   ]
 
@@ -147,7 +152,7 @@ locals {
         service.target != "fly" &&
         route.expose != "cloudflare" &&
         route.https &&
-        try(local.dns_render_managed_zones_by_url[route.url], null) == null
+        try(local.dns_model_managed_zones_by_url[route.url], null) == null
       )
     ]
   ])
@@ -184,8 +189,8 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition     = !local._services_validation_homepage_missing
-      error_message = "A service with identity.name = homepage is required for the dashboard to render"
+      condition     = !local._services_validation_homepage_count_invalid
+      error_message = "Exactly one expanded service with identity.name = homepage is required for the dashboard to render"
     }
 
     precondition {
@@ -217,6 +222,11 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local._services_validation_proxy_server_missing) == 0
       error_message = "Proxy-exposed services reference a non-existent server: ${join(", ", local._services_validation_proxy_server_missing)}"
+    }
+
+    precondition {
+      condition     = length(local._services_validation_route_ids_not_unique) == 0
+      error_message = "Service routing IDs must be unique per target: ${join(", ", local._services_validation_route_ids_not_unique)}"
     }
 
     precondition {

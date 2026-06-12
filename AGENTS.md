@@ -32,6 +32,7 @@ A "multi-line" assignment is one whose value spans multiple lines:
 - `identity = v.identity` is single-line and sorts with the other single-line keys
 - `CONTENT = base64encode(<spans multiple lines>)` is multi-line and sorts after the single-line block
 - Single-line `CONTENT = "value"` sorts alphabetically with the other single-line keys
+- In JSON, scalar-only arrays such as `required` and `enum` sort as single-line values even when Prettier wraps them; arrays containing objects or arrays sort as multi-line values
 
 Applies consistently to:
 

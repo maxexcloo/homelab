@@ -32,11 +32,21 @@ def load_previous_deployments():
     return json.loads(previous).get("deployments", {})
 
 
+def deployment_files(deployment):
+    return deployment.get("files", []) if isinstance(deployment, dict) else []
+
+
+def deployment_hash(deployment):
+    return deployment.get("hash") if isinstance(deployment, dict) else deployment
+
+
 def main():
     event_name = os.environ["EVENT_NAME"]
     input_target = os.environ.get("INPUT_TARGET", "")
     target_pattern = re.compile(r"^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)?$")
     deployment_pattern = re.compile(r"^[^./][^/]*/[^/]+$")
+    current = load_current_deployments()
+    previous = load_previous_deployments() if event_name != "workflow_dispatch" else {}
 
     if (
         event_name == "workflow_dispatch"
@@ -68,13 +78,11 @@ def main():
                 if path.split("/", 1)[1] == input_target
             ]
     else:
-        current = load_current_deployments()
-        previous = load_previous_deployments()
         removals = sorted(path for path in previous if path not in current)
         targets = sorted(
             path
-            for path, deployment_hash in current.items()
-            if previous.get(path) != deployment_hash
+            for path, deployment in current.items()
+            if deployment_hash(previous.get(path)) != deployment_hash(deployment)
         )
 
     grouped = {}
@@ -82,19 +90,29 @@ def main():
         if not deployment_pattern.match(path):
             continue
         server, _service = path.split("/", 1)
-        grouped.setdefault(server, {"paths": [], "removals": []})
+        grouped.setdefault(
+            server,
+            {"files": {}, "paths": [], "previous_files": {}, "removals": []},
+        )
+        grouped[server]["files"][path] = deployment_files(current.get(path))
         grouped[server]["paths"].append(path)
+        grouped[server]["previous_files"][path] = deployment_files(previous.get(path))
 
     for path in removals:
         if not deployment_pattern.match(path):
             continue
         server, service = path.split("/", 1)
-        grouped.setdefault(server, {"paths": [], "removals": []})
+        grouped.setdefault(
+            server,
+            {"files": {}, "paths": [], "previous_files": {}, "removals": []},
+        )
         grouped[server]["removals"].append(service)
 
     deployments = [
         {
+            "files": values["files"],
             "paths": sorted(values["paths"]),
+            "previous_files": values["previous_files"],
             "removals": sorted(values["removals"]),
             "secret_name": f"AGE_KEY_{server.upper().replace('-', '_')}",
             "server": server,

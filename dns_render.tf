@@ -1,53 +1,28 @@
 locals {
-  # Longest matching zone wins for nested domains.
-  _dns_render_zones_matching = {
-    for url in distinct(concat(
-      flatten([
-        for service_key, service in local.services_input_targets : [
-          for url in service.routing.urls : url.url
-          if url.url != null
-        ]
-      ]),
-      flatten([
-        for server_key, server in local.servers_input : [
-          for url in server.routing.urls : url.url
-        ]
-      ]),
-      )) : url => [
-      for zone in keys(local.dns_input) : {
-        length = length(zone)
-        name   = zone
+  _dns_render_records_manual_entries = flatten([
+    for zone, records in local.dns_input : [
+      for record in records : {
+        key    = try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))
+        record = record
+        zone   = zone
       }
-      if(
-        url == zone ||
-        endswith(url, ".${zone}")
-      )
     ]
-  }
+  ])
 
-  dns_render_managed_zones_by_url = {
-    for url, matches in local._dns_render_zones_matching : url => try(
-      one([for match in matches : match.name if match.length == max(matches[*].length...)]),
-      null,
-    )
+  _dns_render_records_manual_entries_by_key = {
+    for entry in local._dns_render_records_manual_entries :
+    "${entry.zone}-manual-${entry.key}" => entry...
   }
 
   # Manual records are keyed independently from YAML list order.
   dns_render_records_manual = {
-    for entry in flatten([
-      for zone, records in local.dns_input : [
-        for record in records : {
-          key    = try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))
-          record = record
-          zone   = zone
-        }
-      ]
-      ]) : "${entry.zone}-manual-${entry.key}" => merge(
+    for record_key, entries in local._dns_render_records_manual_entries_by_key :
+    record_key => merge(
       local.defaults.dns,
-      entry.record,
+      entries[0].record,
       {
-        name = entry.record.name == "@" ? entry.zone : "${entry.record.name}.${entry.zone}"
-        zone = entry.zone
+        name = entries[0].record.name == "@" ? entries[0].zone : "${entries[0].record.name}.${entries[0].zone}"
+        zone = entries[0].zone
       },
     )
   }
@@ -134,8 +109,8 @@ locals {
   # Server-owned routes resolve according to their exposure method.
   dns_render_records_servers_routing = merge(flatten([
     for server_key, server in local.servers_model : [
-      for route_index, route in server.routing.urls : {
-        "${server_key}-route-${route_index}" = {
+      for route in server.routing.urls : {
+        "${server_key}-route-${route.id}" = {
           content = (
             route.expose == "cloudflare"
             ? "${local.servers[server_key].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
@@ -148,22 +123,22 @@ locals {
           name    = route.url
           proxied = route.expose == "cloudflare"
           type    = "CNAME"
-          zone    = local.dns_render_managed_zones_by_url[route.url]
+          zone    = local.dns_model_managed_zones_by_url[route.url]
         }
       }
-      if local.dns_render_managed_zones_by_url[route.url] != null
+      if local.dns_model_managed_zones_by_url[route.url] != null
     ]
   ])...)
 
   # Custom service URLs resolve to the tunnel when Cloudflare-exposed.
   dns_render_records_services = merge(flatten([
     for service_key, service in local.services_model : [
-      for route_index, route in service.routing.urls : {
-        "${service_key}-url-${route_index}" = {
+      for route in service.routing.urls : {
+        "${service_key}-url-${route.id}" = {
           name    = route.url
           proxied = route.expose == "cloudflare"
           type    = "CNAME"
-          zone    = local.dns_render_managed_zones_by_url[route.url]
+          zone    = local.dns_model_managed_zones_by_url[route.url]
 
           content = (
             route.expose == "cloudflare" &&
@@ -177,7 +152,7 @@ locals {
       }
       if(
         route.url != null &&
-        local.dns_render_managed_zones_by_url[route.url] != null
+        local.dns_model_managed_zones_by_url[route.url] != null
       )
     ]
     if try(local.servers_model[service.target], null) != null
@@ -186,18 +161,18 @@ locals {
   # Fly's fly.dev hostnames are served directly by Fly; only custom URLs need DNS.
   dns_render_records_services_fly = merge(flatten([
     for service_key, service in local.services_model : [
-      for route_index, route in service.routing.urls : {
-        "${service_key}-url-${route_index}" = {
+      for route in service.routing.urls : {
+        "${service_key}-url-${route.id}" = {
           content = "${service.fly.app_name}.fly.dev"
           name    = route.url
           proxied = route.expose == "cloudflare"
           type    = "CNAME"
-          zone    = local.dns_render_managed_zones_by_url[route.url]
+          zone    = local.dns_model_managed_zones_by_url[route.url]
         }
       }
       if(
         route.url != null &&
-        local.dns_render_managed_zones_by_url[route.url] != null
+        local.dns_model_managed_zones_by_url[route.url] != null
       )
     ]
     if service.target == "fly"

@@ -76,9 +76,25 @@ locals {
     },
   )
 
+  # Flatten import declarations before resolving aliases to expanded service keys.
+  _services_model_import_refs = flatten([
+    for service_key, service in local.services_input_targets : [
+      for import_alias, import_ref in service.imports.services : {
+        alias       = import_alias
+        service_key = service_key
+        target = templatestring(
+          import_ref,
+          {
+            service = service
+          },
+        )
+      }
+    ]
+  ])
+
   _services_model_route_entries = {
     for service_key, service in local.services_input_targets : service_key => [
-      for url in concat(
+      for route_index, url in concat(
         (
           service.routing.backend_port != null ||
           service.routing.backend_scheme != ""
@@ -112,6 +128,7 @@ locals {
             )
             : null
           )
+          id           = try(url.id, tostring(route_index))
           proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
         },
       )
@@ -120,17 +137,17 @@ locals {
 
   _services_model_routes = {
     for service_key, service in local.services_input_targets : service_key => [
-      for route_index, route in local._services_model_route_entries[service_key] : merge(
+      for route in local._services_model_route_entries[service_key] : merge(
         route,
         {
-          backend_url = route.backend_url != "" ? route.backend_url : "http://localhost:8000"
+          backend_url = route.backend_url
           container   = route.container != "" ? route.container : service.identity.service
           host        = route.url != null ? route.url : route.dns_target_host
           host_port   = route.host_port != null ? route.host_port : route.backend_port
           href        = route.url != null || route.dns_target_host != null ? "${route.https ? "https" : "http"}://${route.url != null ? route.url : route.dns_target_host}" : null
-          name        = route_index == 0 ? service.identity.name : "${service.identity.name}-${route_index}"
+          name        = route.id == "0" ? service.identity.name : "${service.identity.name}-${route.id}"
           zone = route.dns_target_host == null && route.url == null ? null : (
-            route.url != null ? local.dns_render_managed_zones_by_url[route.url]
+            route.url != null ? local.dns_model_managed_zones_by_url[route.url]
             : service.target == "fly" ? "fly.dev"
             : route.expose == "internal" ? local.defaults.domains.internal
             : local.defaults.domains.external
@@ -146,14 +163,16 @@ locals {
 
   _services_model_urls = {
     for service_key, service in local.services_input_targets : service_key => {
-      for route in local._services_model_routes[service_key] :
-      route.host => {
-        host  = route.host
-        href  = route.href
-        label = route.url != null ? "website" : route.expose
-        zone  = route.zone
-      }
-      if route.host != null
+      for host, urls in {
+        for route in local._services_model_routes[service_key] :
+        route.host => {
+          host  = route.host
+          href  = route.href
+          label = route.url != null ? "website" : route.expose
+          zone  = route.zone
+        }...
+        if route.host != null
+      } : host => urls[0]
     }
   }
 
@@ -197,7 +216,7 @@ locals {
               if field_name != "urls"
             },
             {
-              backend_url = service.routing.backend_url != "" ? service.routing.backend_url : "http://localhost:8000"
+              backend_url = service.routing.backend_url
               container   = service.routing.container != "" ? service.routing.container : service.identity.service
               host_port   = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
               urls        = local._services_model_routes[service_key]
@@ -220,26 +239,8 @@ locals {
     )
   }
 
-  # Flattened list of import alias declarations across all services. Self-references
-  # services_model, which is valid because OpenTofu resolves local dependencies lazily —
-  # the reference only reads keys and import declarations, not values produced by this local.
-  _services_model_import_refs = flatten([
-    for service_key, service in local.services_model : [
-      for import_alias, import_ref in service.imports.services : {
-        alias       = import_alias
-        service_key = service_key
-        target = templatestring(
-          import_ref,
-          {
-            service = service
-          },
-        )
-      }
-    ]
-  ])
-
   services_model_imports = {
-    for service_key, service in local.services_model : service_key => {
+    for service_key in keys(local.services_input_targets) : service_key => {
       for import_ref in local._services_model_import_refs :
       # `auto` resolves only when the imported service has one expanded target.
       import_ref.alias => (

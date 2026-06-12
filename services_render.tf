@@ -5,7 +5,7 @@ locals {
   # respective platform deployers and excluded here.
   _services_render_file_inputs = flatten([
     for service_key, service in {
-      for service_key, service in local.services : service_key => service
+      for service_key, service in local.services_model : service_key => service
       if service.identity.service != null
       } : [
       for file_path in fileset(path.module, "templates/services/${service.identity.service}/**") : {
@@ -24,7 +24,7 @@ locals {
   # Parsed compose YAML before routing label injection. Kept separate so
   # services_render_write_compose can merge labels into the parsed structure.
   _services_render_write_compose_raw = {
-    for service_key, service in local.services : service_key => yamldecode(
+    for service_key, service in local.services_model : service_key => yamldecode(
       templatefile(
         "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
         local.services_render_template_context[service_key],

@@ -76,10 +76,27 @@ servers:
       image_id: null
       memory: 4
       shape: VM.Standard.A1.Flex
-      ingress_ports:
-        - 22
-        - 80
-        - 443
+      ingress_rules:
+        - name: icmp-ipv4
+          port_max: null
+          port_min: null
+          protocol: icmp
+          source: 0.0.0.0/0
+        - name: icmp-ipv6
+          port_max: null
+          port_min: null
+          protocol: icmpv6
+          source: ::/0
+        - name: tcp-ipv4-22
+          port_max: 22
+          port_min: 22
+          protocol: tcp
+          source: 0.0.0.0/0
+        - name: tcp-ipv6-22
+          port_max: 22
+          port_min: 22
+          protocol: tcp
+          source: ::/0
   routing:
     backend_url: ""
     urls: []
@@ -110,7 +127,7 @@ services:
   routing:
     backend_port: null
     backend_scheme: ""
-    backend_url: ""
+    backend_url: http://localhost:8000
     container: ""
     host_port: null
     https: true

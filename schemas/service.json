@@ -368,7 +368,8 @@
           "type": "string"
         },
         "backend_url": {
-          "description": "Default Cloudflare Tunnel origin URL. Empty routes through the target server's Traefik webinternal entrypoint.",
+          "description": "Default Cloudflare Tunnel origin URL. Defaults to the target server's local Traefik webinternal entrypoint.",
+          "pattern": "^https?://",
           "type": "string"
         },
         "container": {
@@ -429,6 +430,7 @@
               },
               "backend_url": {
                 "description": "Override the Cloudflare Tunnel origin URL.",
+                "pattern": "^https?://",
                 "type": "string"
               },
               "container": {
@@ -456,6 +458,11 @@
               "https_verify": {
                 "description": "Override whether health checks validate the TLS certificate.",
                 "type": "boolean"
+              },
+              "id": {
+                "description": "Stable route identity used for generated DNS and Traefik names. Defaults to the expanded route list index for backward compatibility.",
+                "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+                "type": "string"
               },
               "url": {
                 "description": "Custom hostname, or null to derive one from the service and exposure path.",

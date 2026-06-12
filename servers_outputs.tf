@@ -1,5 +1,27 @@
 # Stage: runtime — merges provider-backed values into servers_model. Never used as for_each key.
 locals {
+  # Flat "server_key-field_name" → bootstrap_value table. Nested resource for_each
+  # is not supported in HCL, so bootstrap secrets are materialized in random.tf
+  # under the same compound key and looked up here by string concatenation.
+  _servers_outputs_credentials_bootstrap = {
+    for entry in flatten([
+      for server_key, server in local.servers_model : [
+        for field_name, field in server.credentials.fields : {
+          key = "${server_key}-${field_name}"
+          value = (
+            field.bootstrap_type == "hex" ? random_id.server_secret["${server_key}-${field_name}"].hex
+            : field.bootstrap_type == "base64" ? random_id.server_secret["${server_key}-${field_name}"].b64_std
+            : (
+              field.bootstrap_type != null &&
+              contains(["alphanumeric", "string"], field.bootstrap_type)
+            ) ? random_password.server_secret["${server_key}-${field_name}"].result
+            : null
+          )
+        }
+      ]
+    ]) : entry.key => entry.value
+  }
+
   # Static model addresses plus runtime-discovered private and Tailscale IPs.
   _servers_outputs_runtime_addresses = {
     for server_key, server in local.servers_model : server_key => merge(
@@ -70,28 +92,6 @@ locals {
         )
       },
     )
-  }
-
-  # Flat "server_key-field_name" → bootstrap_value table. Nested resource for_each
-  # is not supported in HCL, so bootstrap secrets are materialized in random.tf
-  # under the same compound key and looked up here by string concatenation.
-  _servers_outputs_credentials_bootstrap = {
-    for entry in flatten([
-      for server_key, server in local.servers_model : [
-        for field_name, field in server.credentials.fields : {
-          key = "${server_key}-${field_name}"
-          value = (
-            field.bootstrap_type == "hex" ? random_id.server_secret["${server_key}-${field_name}"].hex
-            : field.bootstrap_type == "base64" ? random_id.server_secret["${server_key}-${field_name}"].b64_std
-            : (
-              field.bootstrap_type != null &&
-              contains(["alphanumeric", "string"], field.bootstrap_type)
-            ) ? random_password.server_secret["${server_key}-${field_name}"].result
-            : null
-          )
-        }
-      ]
-    ]) : entry.key => entry.value
   }
 
   # Full runtime server object. Never used as a for_each key — use servers_model instead.
