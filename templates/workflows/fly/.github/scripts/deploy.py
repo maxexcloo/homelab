@@ -4,32 +4,6 @@ import subprocess
 from pathlib import Path
 
 
-def run(command, **kwargs):
-    return subprocess.run(command, check=True, text=True, **kwargs)
-
-
-def output(command):
-    return subprocess.check_output(command, text=True).strip()
-
-
-def json_rows(command):
-    data = json.loads(output(command) or "[]")
-    if isinstance(data, dict):
-        for key in ("data", "items", "results"):
-            if isinstance(data.get(key), list):
-                return data[key]
-        return []
-    return data
-
-
-def row_value(row, *keys):
-    for key in keys:
-        value = row.get(key)
-        if value:
-            return value
-    return None
-
-
 def create_service():
     service = os.environ["SERVICE"]
     exists = (
@@ -42,6 +16,51 @@ def create_service():
     )
     if not exists:
         run(["flyctl", "apps", "create", service])
+
+
+def deploy():
+    service = os.environ["SERVICE"]
+    run(
+        ["flyctl", "deploy", "--app", service, "--config", "fly.toml"],
+        stdout=subprocess.DEVNULL,
+    )
+
+
+def json_rows(command):
+    data = json.loads(output(command) or "[]")
+    if isinstance(data, dict):
+        for key in ("data", "items", "results"):
+            if isinstance(data.get(key), list):
+                return data[key]
+        return []
+    return data
+
+
+def output(command):
+    return subprocess.check_output(command, text=True).strip()
+
+
+def row_value(row, *keys):
+    for key in keys:
+        value = row.get(key)
+        if value:
+            return value
+    return None
+
+
+def run(command, **kwargs):
+    return subprocess.run(command, check=True, text=True, **kwargs)
+
+
+def scale_machines():
+    count_file = Path(".machine-count")
+    if not count_file.exists():
+        return
+
+    service = os.environ["SERVICE"]
+    count = count_file.read_text().strip()
+    if count:
+        run(["flyctl", "scale", "count", count, "--app", service])
 
 
 def sync_certificates():
@@ -98,25 +117,6 @@ def sync_secrets():
             input=f"{secrets}\n",
             text=True,
         )
-
-
-def deploy():
-    service = os.environ["SERVICE"]
-    run(
-        ["flyctl", "deploy", "--app", service, "--config", "fly.toml"],
-        stdout=subprocess.DEVNULL,
-    )
-
-
-def scale_machines():
-    count_file = Path(".machine-count")
-    if not count_file.exists():
-        return
-
-    service = os.environ["SERVICE"]
-    count = count_file.read_text().strip()
-    if count:
-        run(["flyctl", "scale", "count", count, "--app", service])
 
 
 def main():

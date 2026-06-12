@@ -5,20 +5,30 @@ import subprocess
 from pathlib import Path
 
 
-def service_dirs():
-    return sorted(
-        path.name
-        for path in Path(".").iterdir()
-        if path.is_dir() and not path.name.startswith(".")
+def deployment_changes(current_request, previous_request):
+    current = current_request.get("deployments", {})
+    previous = previous_request.get("deployments", {})
+    removals = sorted(service for service in previous if service not in current)
+
+    if current_request.get("workflow_revision") != previous_request.get(
+        "workflow_revision"
+    ):
+        return sorted(current), removals
+
+    targets = sorted(
+        service
+        for service, deployment_hash in current.items()
+        if previous.get(service) != deployment_hash
     )
+    return targets, removals
 
 
-def load_current_deployments():
+def load_current_request():
     with open(".github/deploy-request.json") as file:
-        return json.load(file).get("deployments", {})
+        return json.load(file)
 
 
-def load_previous_deployments():
+def load_previous_request():
     before = os.environ["BEFORE"]
     try:
         previous = subprocess.check_output(
@@ -29,7 +39,15 @@ def load_previous_deployments():
     except subprocess.CalledProcessError:
         return {}
 
-    return json.loads(previous).get("deployments", {})
+    return json.loads(previous)
+
+
+def service_dirs():
+    return sorted(
+        path.name
+        for path in Path(".").iterdir()
+        if path.is_dir() and not path.name.startswith(".")
+    )
 
 
 def main():
@@ -47,13 +65,9 @@ def main():
     elif event_name == "workflow_dispatch":
         targets = service_dirs()
     else:
-        current = load_current_deployments()
-        previous = load_previous_deployments()
-        removals = sorted(service for service in previous if service not in current)
-        targets = sorted(
-            service
-            for service, deployment_hash in current.items()
-            if previous.get(service) != deployment_hash
+        targets, removals = deployment_changes(
+            load_current_request(),
+            load_previous_request(),
         )
 
     deployments = [

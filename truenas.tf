@@ -113,6 +113,8 @@ resource "github_repository_file" "truenas_deploy_request" {
   repository          = local.defaults.github.repositories.truenas
 
   content = jsonencode({
+    workflow_revision = local.github_workflow_revisions.truenas
+
     deployments = {
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}" => {
         files = sort([
@@ -121,21 +123,12 @@ resource "github_repository_file" "truenas_deploy_request" {
         ])
 
         hash = sha256(jsonencode({
-          workflow_files = local.github_workflow_files_hashes.truenas
-
           files = {
             for file_key, file_config in local.truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
             if startswith(local.truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
           }
 
-          sops = sha256(yamlencode({
-            creation_rules = [
-              for server_key, server in local.truenas_input_servers : {
-                age        = age_secret_key.server[server_key].public_key
-                path_regex = "^${server_key}/"
-              }
-            ]
-          }))
+          sops = sha256(age_secret_key.server[service.target].public_key)
         }))
       }
     }

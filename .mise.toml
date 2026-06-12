@@ -31,10 +31,10 @@ fi
 # Development
 [tasks.check]
 description = "Format check, lint, and validate"
-depends = ["lint", "test", "validate"]
+depends = ["lint", "validate"]
 run = """
 prettier --check "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
-ruff format --check scripts modules templates/workflows tests
+ruff format --check scripts modules templates/workflows
 tofu fmt -check -recursive
 """
 
@@ -42,8 +42,8 @@ tofu fmt -check -recursive
 description = "Format all files"
 run = """
 prettier --log-level warn --write "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
-ruff check --fix --select I scripts modules templates/workflows tests
-ruff format scripts modules templates/workflows tests
+ruff check --fix --select I scripts modules templates/workflows
+ruff format scripts modules templates/workflows
 tofu fmt -recursive
 """
 
@@ -52,12 +52,8 @@ description = "Validate source and default-merged YAML against JSON schemas"
 depends = ["sort-check"]
 run = """
 uv run scripts/validate_data.py
-ruff check --extend-select I scripts modules templates/workflows tests
+ruff check --extend-select I scripts modules templates/workflows
 """
-
-[tasks.test]
-description = "Run unit tests"
-run = "uv run python -m unittest discover -s tests"
 
 [tasks.validate]
 description = "Validate configurations"

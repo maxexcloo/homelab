@@ -86,22 +86,16 @@ resource "github_repository_file" "fly_deploy_request" {
   repository          = local.defaults.github.repositories.fly
 
   content = jsonencode({
+    workflow_revision = local.github_workflow_revisions.fly
+
     deployments = {
       for service_key, service in local.fly_input_services : service.fly.app_name => sha256(jsonencode({
-        workflow_files = local.github_workflow_files_hashes.fly
-
         files = {
           for file_key, file_config in local.fly_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
           if startswith(local.fly_render_files[file_key].file, "${service.fly.app_name}/")
         }
 
-        sops = sha256(yamlencode({
-          creation_rules = [
-            {
-              age = age_secret_key.fly.public_key
-            }
-          ]
-        }))
+        sops = sha256(age_secret_key.fly.public_key)
       }))
     }
   })

@@ -26,16 +26,16 @@ def deep_merge(base, overlay):
     return merged
 
 
+def error_path(error):
+    return ".".join(str(part) for part in error.absolute_path) or "(root)"
+
+
 def load_json(path):
     return json.loads(path.read_text())
 
 
 def load_yaml(path):
     return yaml.safe_load(path.read_text())
-
-
-def error_path(error):
-    return ".".join(str(part) for part in error.absolute_path) or "(root)"
 
 
 def validate(instance, schema, label, errors):

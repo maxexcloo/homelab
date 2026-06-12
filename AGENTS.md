@@ -75,7 +75,7 @@ Inside staged HCL `locals {}` blocks, declare all `_`-prefixed helper locals fir
 
 ### Template authoring
 
-- Always use `~` on control-flow directives (`%{~ if …}`, `%{~ for …}`, `%{~ endif ~}`) to suppress blank lines
+- Always use a leading `~` on control-flow directives (`%{~ if …}`, `%{~ for …}`, `%{~ endif }`) to suppress whitespace before the directive. Add a trailing `~` only when removing the following newline is intentional; careless right trimming can join structured YAML lines.
 - Keep root HCL service-agnostic. Service-specific logic belongs in YAML `data`, per-service templates, or `services_render_custom.tf` for cross-service aggregation.
 - Use `.tftpl` for files needing template rendering (suffix stripped on deploy); `.raw.tftpl` for binary-encrypted files where SOPS structured encryption is unsuitable (e.g. top-level arrays)
 - Guard `templatefile()` with `fileexists()` when the template may not be present
@@ -121,5 +121,6 @@ When creating a service that deploys via a TrueNAS community catalog app:
 
 - **Comments**: Only for non-obvious business logic, kept specific to the code at the call site. General explainers (architecture, data flow, usage) belong in `README.md`; conventions belong here in `AGENTS.md`
 - **Prefer readable over clever**: Don't introduce abstractions, helpers, or cleverness beyond what the task requires
+- **Python ordering**: Sort imports with Ruff. Sort top-level constants, classes, and helper functions alphabetically within their groups; keep `main()` and the execution guard last.
 - **Listing order**: When listing both folders and files (docs file trees, multi-line lint commands, etc.) put folders above files; sort alphabetically within each group
 - **Trailing newlines**: Required in all files

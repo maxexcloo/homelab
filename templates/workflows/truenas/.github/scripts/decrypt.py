@@ -4,19 +4,6 @@ import subprocess
 from pathlib import Path
 
 
-def is_binary_sops_json(content):
-    try:
-        payload = json.loads(content)
-    except json.JSONDecodeError:
-        return False
-
-    if set(payload) != {"data", "sops"}:
-        return False
-
-    data = payload["data"]
-    return isinstance(data, str) and data.startswith("ENC[AES256_GCM")
-
-
 def decrypt_files(root):
     for path in Path(root).rglob("*"):
         if not path.is_file():
@@ -44,6 +31,19 @@ def decrypt_files(root):
             path.write_bytes(decrypted)
         else:
             subprocess.run(["sops", "--decrypt", "--in-place", path], check=True)
+
+
+def is_binary_sops_json(content):
+    try:
+        payload = json.loads(content)
+    except json.JSONDecodeError:
+        return False
+
+    if set(payload) != {"data", "sops"}:
+        return False
+
+    data = payload["data"]
+    return isinstance(data, str) and data.startswith("ENC[AES256_GCM")
 
 
 if __name__ == "__main__":

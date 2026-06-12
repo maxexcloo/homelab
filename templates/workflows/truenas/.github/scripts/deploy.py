@@ -6,14 +6,6 @@ import tempfile
 from pathlib import Path, PurePosixPath
 
 
-def run(command, **kwargs):
-    return subprocess.run(command, check=True, text=True, **kwargs)
-
-
-def output(command):
-    return subprocess.check_output(command, text=True).strip()
-
-
 def app_exists(service):
     return (
         subprocess.run(
@@ -34,61 +26,6 @@ def deep_merge(base, overlay):
             merged[key] = value
 
     return merged
-
-
-def load_previous_json(path):
-    before = os.environ.get("BEFORE", "")
-    if not before or set(before) == {"0"}:
-        return None
-
-    try:
-        encrypted = subprocess.check_output(
-            ["git", "show", f"{before}:{path}"],
-            stderr=subprocess.DEVNULL,
-        )
-    except subprocess.CalledProcessError:
-        return None
-
-    with tempfile.NamedTemporaryFile(suffix=".json") as encrypted_file:
-        encrypted_file.write(encrypted)
-        encrypted_file.flush()
-        decrypted = subprocess.check_output(
-            [
-                "sops",
-                "--decrypt",
-                "--input-type",
-                "json",
-                "--output-type",
-                "json",
-                encrypted_file.name,
-            ],
-            text=True,
-        )
-
-    return json.loads(decrypted)
-
-
-def remove_stale_owned(current, previous, desired):
-    for key, previous_value in previous.items():
-        if key not in desired:
-            current_value = current.get(key)
-            if isinstance(previous_value, dict) and isinstance(current_value, dict):
-                remove_stale_owned(current_value, previous_value, {})
-                if not current_value:
-                    current.pop(key)
-            else:
-                current.pop(key, None)
-        elif isinstance(previous_value, dict) and isinstance(desired[key], dict):
-            current_value = current.get(key)
-            if isinstance(current_value, dict):
-                remove_stale_owned(current_value, previous_value, desired[key])
-
-
-def reconcile_values(current, previous, desired):
-    reconciled = copy.deepcopy(current)
-    if previous is not None:
-        remove_stale_owned(reconciled, previous, desired)
-    return deep_merge(reconciled, desired)
 
 
 def deploy_catalog_service(service, app_file, previous_app):
@@ -135,58 +72,6 @@ def deploy_custom_service(service, compose_file):
             stdout=subprocess.DEVNULL,
         )
         print(f"✓ {service} created")
-
-
-def docker_containers():
-    names = output(["docker", "ps", "--format", "{{.Names}}"])
-    return [name for name in names.splitlines() if name]
-
-
-def find_container(containers, service, container_service):
-    candidates = [f"ix-{service}-{container_service}-"]
-    if container_service != service:
-        candidates.append(f"ix-{service}-{service}-")
-
-    for candidate in candidates:
-        for container in containers:
-            if container.startswith(candidate):
-                return container
-
-    return None
-
-
-def managed_relative_paths(target, files):
-    prefix = f"{target.as_posix()}/"
-    return {
-        file_path.removeprefix(prefix)
-        for file_path in files
-        if file_path.startswith(prefix)
-    }
-
-
-def sidecar_paths(paths):
-    return {path for path in paths if path not in {"app.json", "compose.json"}}
-
-
-def validate_sidecar_path(path):
-    parsed = PurePosixPath(path)
-    if parsed.is_absolute() or ".." in parsed.parts:
-        raise ValueError(f"Invalid managed sidecar path: {path}")
-
-
-def restart_service_containers(service):
-    matching = [
-        container
-        for container in docker_containers()
-        if container.startswith(f"ix-{service}-")
-    ]
-    if not matching:
-        print(f"⚠ no running containers found matching ix-{service}-*")
-        return
-
-    for container in matching:
-        run(["docker", "restart", container], stdout=subprocess.DEVNULL)
-        print(f"✓ {container} restarted")
 
 
 def deploy_services():
@@ -273,6 +158,119 @@ def deploy_services():
 
         if service_changed:
             restart_service_containers(service)
+
+
+def docker_containers():
+    names = output(["docker", "ps", "--format", "{{.Names}}"])
+    return [name for name in names.splitlines() if name]
+
+
+def find_container(containers, service, container_service):
+    candidates = [f"ix-{service}-{container_service}-"]
+    if container_service != service:
+        candidates.append(f"ix-{service}-{service}-")
+
+    for candidate in candidates:
+        for container in containers:
+            if container.startswith(candidate):
+                return container
+
+    return None
+
+
+def load_previous_json(path):
+    before = os.environ.get("BEFORE", "")
+    if not before or set(before) == {"0"}:
+        return None
+
+    try:
+        encrypted = subprocess.check_output(
+            ["git", "show", f"{before}:{path}"],
+            stderr=subprocess.DEVNULL,
+        )
+    except subprocess.CalledProcessError:
+        return None
+
+    with tempfile.NamedTemporaryFile(suffix=".json") as encrypted_file:
+        encrypted_file.write(encrypted)
+        encrypted_file.flush()
+        decrypted = subprocess.check_output(
+            [
+                "sops",
+                "--decrypt",
+                "--input-type",
+                "json",
+                "--output-type",
+                "json",
+                encrypted_file.name,
+            ],
+            text=True,
+        )
+
+    return json.loads(decrypted)
+
+
+def managed_relative_paths(target, files):
+    prefix = f"{target.as_posix()}/"
+    return {
+        file_path[len(prefix) :] for file_path in files if file_path.startswith(prefix)
+    }
+
+
+def output(command):
+    return subprocess.check_output(command, text=True).strip()
+
+
+def reconcile_values(current, previous, desired):
+    reconciled = copy.deepcopy(current)
+    if previous is not None:
+        remove_stale_owned(reconciled, previous, desired)
+    return deep_merge(reconciled, desired)
+
+
+def remove_stale_owned(current, previous, desired):
+    for key, previous_value in previous.items():
+        if key not in desired:
+            current_value = current.get(key)
+            if isinstance(previous_value, dict) and isinstance(current_value, dict):
+                remove_stale_owned(current_value, previous_value, {})
+                if not current_value:
+                    current.pop(key)
+            else:
+                current.pop(key, None)
+        elif isinstance(previous_value, dict) and isinstance(desired[key], dict):
+            current_value = current.get(key)
+            if isinstance(current_value, dict):
+                remove_stale_owned(current_value, previous_value, desired[key])
+
+
+def restart_service_containers(service):
+    matching = [
+        container
+        for container in docker_containers()
+        if container.startswith(f"ix-{service}-")
+    ]
+    if not matching:
+        print(f"⚠ no running containers found matching ix-{service}-*")
+        return
+
+    for container in matching:
+        run(["docker", "restart", container], stdout=subprocess.DEVNULL)
+        print(f"✓ {container} restarted")
+
+
+def run(command, **kwargs):
+    return subprocess.run(command, check=True, text=True, **kwargs)
+
+
+def sidecar_paths(paths):
+    return {path for path in paths if path not in {"app.json", "compose.json"}}
+
+
+def validate_sidecar_path(path):
+    parsed = PurePosixPath(path)
+    if parsed.is_absolute() or ".." in parsed.parts:
+        raise ValueError(f"Invalid managed sidecar path: {path}")
 
 
 if __name__ == "__main__":

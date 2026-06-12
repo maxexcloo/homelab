@@ -24,17 +24,33 @@ from pathlib import Path
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-YAML_GLOBS = ["data/**/*.yml"]
+IDENTIFIER_KEYS = ["type", "name", "id"]
 JSON_GLOBS = ["schemas/*.json"]
-
 # JSON Schema's `if`/`then`/`else` triplet has a canonical reading order that
 # matches programming-language conditionals; alphabetising would put `else`
 # before the condition. Skip ordering for objects whose keys are a subset of
 # this triplet.
 JSON_SCHEMA_CONDITIONAL = {"if", "then", "else"}
-IDENTIFIER_KEYS = ["type", "name", "id"]
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+YAML_GLOBS = ["data/**/*.yml"]
+
+
+def collect(globs):
+    paths = []
+    for pattern in globs:
+        paths.extend(PROJECT_ROOT.glob(pattern))
+    return sorted(set(paths))
+
+
+def expected_order(data, kind, identifier_first=False):
+    keys = list(data.keys())
+    identifiers = (
+        [key for key in IDENTIFIER_KEYS if key in keys] if identifier_first else []
+    )
+    sortable_keys = [key for key in keys if key not in identifiers]
+    singles = sorted(k for k in sortable_keys if not is_multi(data[k], kind))
+    multis = sorted(k for k in sortable_keys if is_multi(data[k], kind))
+    return identifiers + singles + multis
 
 
 def is_json_schema_conditional(keys):
@@ -51,17 +67,6 @@ def is_multi(value, kind):
             return True
         return any(isinstance(item, (dict, list)) for item in value)
     return False
-
-
-def expected_order(data, kind, identifier_first=False):
-    keys = list(data.keys())
-    identifiers = (
-        [key for key in IDENTIFIER_KEYS if key in keys] if identifier_first else []
-    )
-    sortable_keys = [key for key in keys if key not in identifiers]
-    singles = sorted(k for k in sortable_keys if not is_multi(data[k], kind))
-    multis = sorted(k for k in sortable_keys if is_multi(data[k], kind))
-    return identifiers + singles + multis
 
 
 def walk(path, data, location, errors, kind, identifier_first=False):
@@ -88,13 +93,6 @@ def walk(path, data, location, errors, kind, identifier_first=False):
                 kind,
                 isinstance(item, dict),
             )
-
-
-def collect(globs):
-    paths = []
-    for pattern in globs:
-        paths.extend(PROJECT_ROOT.glob(pattern))
-    return sorted(set(paths))
 
 
 def main():
