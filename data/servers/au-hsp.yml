@@ -6,7 +6,6 @@ features:
   cloud_init: true
   cloudflare_acme: true
   cloudflared: true
-  cockpit: true
   docker: true
   password: true
   tailscale: true
