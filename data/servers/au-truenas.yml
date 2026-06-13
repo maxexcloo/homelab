@@ -20,10 +20,11 @@ dashboard:
         version: 2
 features:
   b2: true
-  beszel_agent: true
+  beszel: true
   cloudflare_acme: true
   cloudflare_acme_legacy: true
   cloudflared: true
+  komodo: true
   password: true
   resend: true
   tailscale: true

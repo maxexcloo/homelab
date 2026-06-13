@@ -132,8 +132,8 @@
           "description": "Provision a Backblaze B2 bucket and application key. Exposes runtime.attributes.{b2_application_key_id, b2_bucket_name, b2_endpoint} and runtime.credentials.b2_application_key.",
           "type": "boolean"
         },
-        "beszel_agent": {
-          "description": "Enable Beszel agent management for this server. Adds runtime.credentials.{beszel_agent_token, beszel_system_id}, creates a matching beszel-agent service target, and installs the agent in generated setup artifacts.",
+        "beszel": {
+          "description": "Enable Beszel agent resources, credentials, automatic service targeting, and bootstrap installation when cloud_init is enabled.",
           "type": "boolean"
         },
         "cloud_init": {
@@ -149,7 +149,7 @@
           "type": "boolean"
         },
         "cloudflared": {
-          "description": "Create a Cloudflare Zero Trust tunnel and a read-only tunnel API token, create a matching cloudflared service target, and install the daemon in generated setup artifacts. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}. Services with routing.expose set to 'cloudflare' route through this tunnel.",
+          "description": "Create a Cloudflare tunnel, credentials, and automatic service target; bootstrap cloudflared when cloud_init is enabled.",
           "type": "boolean"
         },
         "cockpit": {
@@ -157,7 +157,11 @@
           "type": "boolean"
         },
         "docker": {
-          "description": "This server runs Docker and can host Komodo-managed stacks. Adds the server to the Komodo server list.",
+          "description": "Install Docker in generated setup artifacts.",
+          "type": "boolean"
+        },
+        "komodo": {
+          "description": "Add this server to Komodo, create a Periphery service target, and bootstrap Periphery when cloud_init is enabled.",
           "type": "boolean"
         },
         "monitoring": {
@@ -181,7 +185,7 @@
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key. Exposes runtime.credentials.tailscale_auth_key for use in generated setup artifacts.",
+          "description": "Generate a Tailscale auth key, create an automatic service target, and bootstrap Tailscale when cloud_init is enabled.",
           "type": "boolean"
         },
         "zfs": {

@@ -16,7 +16,7 @@ dashboard:
         key: ${server.runtime.credentials.homepage_widget_key}
         url: ${server.urls.management.href}
 features:
-  beszel_agent: true
+  beszel: true
   cloudflare_acme: true
   password: true
   tailscale: true

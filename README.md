@@ -56,26 +56,27 @@ Templates receive:
 - `service` — the current expanded service, including rendered `data`, `dashboard`, and `routing_labels`
 - `services` — all expanded services plus declared `imports.services` aliases overlaid by alias
 
-Feature flags create provider resources or control rendered config. Some flags (`password`, monitoring) are local-only and don't call external providers. Others (`b2`, `resend`, `tailscale`) call provider APIs. Pushover credentials are read from per-server/service 1Password fields.
+Feature flags create provider resources or control rendered config. Feature-targeted services use cloud-init on bootstrap servers and available app or Docker templates on managed service platforms. Pushover credentials are read from per-server/service 1Password fields.
 
 ## Workflow
 
 ### Adding Servers
 
 1. Create `data/servers/<key>.yml` following `schemas/server.json`
-2. Fill in `platform`, `type`, `features`, `identity`, `networking`
+2. Fill in `platform`, `type`, `features`, `identity`, and `networking`
 3. Run `mise run plan` to review, `mise run apply` to provision
 
 ### Adding Services
 
 1. Create `data/services/<key>.yml` following `schemas/service.json`
-2. Fill in `features`, `identity`, `routing`, and at least one entry under `targets:` (server key or `fly`)
+2. Fill in `features`, `identity`, and `routing`; add `targets:` entries or use `target_feature` for automatic server targets
 3. Set `identity.service` only when the service has templates or deploy artifacts; omit it for dashboard/inventory-only services
-4. Each target may carry `features`, `fly`, and `truenas` overlays; target values win over service-level values
-5. Put provider-neutral app config under `data`; use `targets.<key>.data` for per-target overrides
-6. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<identity.name>`
-7. Optionally add deploy artifacts under `templates/services/<identity.service>/`; use `.tftpl` for files that need OpenTofu template rendering and `.raw.tftpl` for rendered files that must be encrypted as binary
-8. Run `mise run plan` to review, `mise run apply` to provision
+4. Each target may carry `credentials`, `data`, `features`, `fly`, and `truenas` overlays; target values win over service-level values
+5. Set `target_feature` when servers with a matching feature flag should become automatic targets
+6. Put provider-neutral app config under `data`; use `targets.<key>.data` for per-target overrides
+7. For Fly.io deployments, optionally set `targets.fly.fly.app_name`; otherwise it defaults to `<org>-<identity.name>`
+8. Optionally add deploy artifacts under `templates/services/<identity.service>/`; TrueNAS prefers `app.json.tftpl` and falls back to `docker-compose.yaml.tftpl`, while Docker/Komodo targets use `docker-compose.yaml.tftpl`. A service may provide both
+9. Run `mise run plan` to review, `mise run apply` to provision
 
 ## Commands
 

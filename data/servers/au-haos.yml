@@ -48,7 +48,7 @@ dashboard:
     siteMonitor: ${server.urls.management.href}/45df7312_zigbee2mqtt
 features:
   b2: true
-  beszel_agent: true
+  beszel: true
   cloudflare_acme: true
   cloudflared: true
   password: true

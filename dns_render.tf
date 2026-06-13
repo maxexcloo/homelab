@@ -57,7 +57,7 @@ locals {
       } : {},
       server.platform == "oci" ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
-          content  = data.oci_core_vnic.server[server_key].public_ip_address
+          content  = oci_core_instance.server[server_key].public_ip
           name     = server.hosts.external
           proxied  = false
           type     = "A"
@@ -65,7 +65,7 @@ locals {
           zone     = local.defaults.domains.external
         }
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
-          content  = one(data.oci_core_vnic.server[server_key].ipv6addresses)
+          content  = one(one(oci_core_instance.server[server_key].create_vnic_details).ipv6address_ipv6subnet_cidr_pair_details).ipv6address
           name     = server.hosts.external
           proxied  = false
           type     = "AAAA"

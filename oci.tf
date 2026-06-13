@@ -1,16 +1,3 @@
-data "oci_core_vnic" "server" {
-  for_each = local.oci_vms
-
-  vnic_id = one(data.oci_core_vnic_attachments.server[each.key].vnic_attachments).vnic_id
-}
-
-data "oci_core_vnic_attachments" "server" {
-  for_each = local.oci_vms
-
-  compartment_id = var.oci_tenancy_ocid
-  instance_id    = oci_core_instance.server[each.key].id
-}
-
 data "oci_identity_availability_domain" "default" {
   for_each = local.oci_vms_regions
 

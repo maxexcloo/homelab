@@ -2,7 +2,7 @@
 platform: unmanaged
 type: vm
 features:
-  beszel_agent: true
+  beszel: true
   cloud_init: true
   cloudflared: true
   password: true

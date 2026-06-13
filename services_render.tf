@@ -37,7 +37,8 @@ locals {
         try(local.truenas_input_servers[service.target], null) != null ||
         (
           try(local.servers_model[service.target], null) != null &&
-          local.servers_model[service.target].features.docker
+          local.servers_model[service.target].features.docker &&
+          !(service.target_feature != "" && local.servers_model[service.target].features.cloud_init)
         )
       )
     )

@@ -17,7 +17,7 @@ locals {
         server.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
         } : {},
-        server.features.beszel_agent ? {
+        server.features.beszel ? {
           beszel_agent_token = local.defaults.credentials.rw
           beszel_system_id   = local.defaults.credentials.rw
         } : {},

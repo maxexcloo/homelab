@@ -123,6 +123,14 @@ locals {
     )
   ]
 
+  _services_validation_target_features_invalid = [
+    for service_key, service in local.services_input : "${service_key} -> ${service.target_feature}"
+    if(
+      service.target_feature != "" &&
+      !contains(keys(local.defaults.servers.features), service.target_feature)
+    )
+  ]
+
   _services_validation_truenas_config_invalid_targets = [
     for service_key, service in local.services_model : service_key
     if(
@@ -254,16 +262,21 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
+      condition     = length(local._services_validation_target_features_invalid) == 0
+      error_message = "Service target_feature must name a server feature: ${join(", ", nonsensitive(local._services_validation_target_features_invalid))}"
+    }
+
+    precondition {
       condition = length(local._services_validation_truenas_config_invalid_targets) == 0
       error_message = (
         "targets.<key>.truenas settings are only valid for services targeting TrueNAS servers: ${join(", ", local._services_validation_truenas_config_invalid_targets)}"
       )
     }
 
-    # TrueNAS services need either a custom compose template or catalog template.
+    # TrueNAS services need either a catalog app or custom Compose template.
     precondition {
       condition     = length(local._services_validation_truenas_missing_template) == 0
-      error_message = "TrueNAS catalog services require templates/services/{identity.service}/app.json.tftpl: ${join(", ", nonsensitive(local._services_validation_truenas_missing_template))}"
+      error_message = "TrueNAS services require app.json.tftpl or docker-compose.yaml.tftpl: ${join(", ", nonsensitive(local._services_validation_truenas_missing_template))}"
     }
 
     # HTTPS service URLs need managed DNS so ACME delegation can resolve.

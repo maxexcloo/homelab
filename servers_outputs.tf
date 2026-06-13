@@ -168,7 +168,6 @@ locals {
     )
   }
 
-  # Servers indexed by feature flag. Model-only — safe for for_each in feature-specific resource files.
   servers_by_feature = {
     for feature in keys(local.defaults.servers.features) : feature => {
       for server_key, server in local.servers_model : server_key => server

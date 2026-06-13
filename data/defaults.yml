@@ -25,13 +25,14 @@ servers:
     fields: {}
   features:
     b2: false
-    beszel_agent: false
+    beszel: false
     cloud_init: false
     cloudflare_acme: false
     cloudflare_acme_legacy: false
     cloudflared: false
     cockpit: false
     docker: false
+    komodo: false
     monitoring: true
     monitoring_alerts: true
     password: false
@@ -103,6 +104,7 @@ servers:
 services:
   dashboard: []
   data: {}
+  target_feature: ""
   credentials:
     fields: {}
     source: service

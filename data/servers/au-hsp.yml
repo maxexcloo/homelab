@@ -2,11 +2,12 @@
 platform: oci
 type: vm
 features:
-  beszel_agent: true
+  beszel: true
   cloud_init: true
   cloudflare_acme: true
   cloudflared: true
   docker: true
+  komodo: true
   password: true
   tailscale: true
 identity:

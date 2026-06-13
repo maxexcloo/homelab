@@ -20,8 +20,8 @@ locals {
     if fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
   }
 
-  # Compose wins over catalog: a service with docker-compose.yaml.tftpl deploys
-  # as a custom stack; otherwise app.json.tftpl is used. Sidecars are always included.
+  # TrueNAS prefers a catalog app when app.json.tftpl exists and falls back to
+  # a custom Compose app. Docker targets use docker-compose.yaml.tftpl directly.
   truenas_render_files = merge(
     {
       # 1) Custom Docker Compose apps
@@ -45,10 +45,13 @@ locals {
           ),
         )
       }
-      if fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+      if(
+        try(local.truenas_input_catalog_templates[service_key], null) == null &&
+        fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+      )
     },
     {
-      # 2) TrueNAS catalog apps — only when no custom compose file exists
+      # 2) TrueNAS catalog apps
       for service_key, service in local.truenas_input_services : "${service.target}/${service.identity.name}/app.json" => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} catalog app"
@@ -76,10 +79,7 @@ locals {
           ),
         )
       }
-      if(
-        !fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
-        try(local.truenas_input_catalog_templates[service_key], null) != null
-      )
+      if try(local.truenas_input_catalog_templates[service_key], null) != null
     },
     {
       # 3) Generic sidecar files (env, configs, etc.)

@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=../../schemas/service.json
+target_feature: komodo
 dashboard:
   - name: ${service.identity.title}
     description: ${services.komodo.identity.description}
@@ -18,6 +19,3 @@ identity:
 imports:
   services:
     komodo: auto
-targets:
-  au-hsp: {}
-  au-truenas: {}

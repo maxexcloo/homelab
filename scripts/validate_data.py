@@ -16,6 +16,32 @@ from jsonschema import Draft7Validator
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
+class UniqueKeyLoader(yaml.SafeLoader):
+    pass
+
+
+def construct_unique_mapping(loader, node, deep=False):
+    keys = set()
+    for key_node, _value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in keys:
+            raise yaml.constructor.ConstructorError(
+                "while constructing a mapping",
+                node.start_mark,
+                f"found duplicate key {key!r}",
+                key_node.start_mark,
+            )
+        keys.add(key)
+
+    return yaml.SafeLoader.construct_mapping(loader, node, deep=deep)
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    construct_unique_mapping,
+)
+
+
 def deep_merge(base, overlay):
     merged = deepcopy(base)
     for key, value in overlay.items():
@@ -31,11 +57,19 @@ def error_path(error):
 
 
 def load_json(path):
-    return json.loads(path.read_text())
+    def unique_object(pairs):
+        data = {}
+        for key, value in pairs:
+            if key in data:
+                raise ValueError(f"{path}: found duplicate key {key!r}")
+            data[key] = value
+        return data
+
+    return json.loads(path.read_text(), object_pairs_hook=unique_object)
 
 
 def load_yaml(path):
-    return yaml.safe_load(path.read_text())
+    return yaml.load(path.read_text(), Loader=UniqueKeyLoader)
 
 
 def validate(instance, schema, label, errors):
@@ -94,4 +128,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, yaml.YAMLError) as error:
+        print(f"data validation: {error}", file=sys.stderr)
+        raise SystemExit(1) from None

@@ -1,4 +1,9 @@
 locals {
+  # Komodo-enabled servers receive a Periphery target through services_input.tf.
+  komodo_input_servers = {
+    for server_key in keys(local.servers_by_feature.komodo) : server_key => local.servers[server_key]
+  }
+
   # Komodo only receives services with a rendered compose file on Docker-capable
   # server targets.
   komodo_input_stacks = {
@@ -7,7 +12,8 @@ locals {
       try(local.servers_model[service.target], null) != null &&
       local.servers_model[service.target].features.docker &&
       service.identity.service != null &&
-      fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+      fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
+      !(service.target_feature != "" && local.servers_model[service.target].features.cloud_init)
     )
   }
 
@@ -34,7 +40,11 @@ locals {
       )
       if(
         try(local.servers_model[file_config.target], null) != null &&
-        local.servers_model[file_config.target].features.docker
+        local.servers_model[file_config.target].features.docker &&
+        !(
+          local.services_model[file_config.stack].target_feature != "" &&
+          local.servers_model[file_config.target].features.cloud_init
+        )
       )
     }
   )
@@ -65,7 +75,7 @@ resource "github_repository_file" "komodo_servers" {
     templatefile(
       "${path.module}/templates/komodo/servers.toml.tftpl",
       {
-        servers = local.servers
+        servers = local.komodo_input_servers
       },
     ),
   )

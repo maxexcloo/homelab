@@ -15,9 +15,12 @@ locals {
         targets = merge(
           {
             for server_key, server in local.servers_input : server_key => {}
-            if try(server.features[join("_", split("-", service.identity.name))], false)
+            if(
+              service.target_feature != "" &&
+              try(server.features[service.target_feature], false)
+            )
           },
-          service.targets,
+          try(service.targets, {}),
         )
       },
     )

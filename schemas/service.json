@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
-  "description": "An application or daemon deployed to one or more servers or to Fly.io. Explicit targets and servers whose matching snake_case feature is enabled each produce an independent service instance.",
-  "required": ["identity", "targets"],
+  "description": "An application or daemon deployed to one or more servers or to Fly.io. Explicit targets and servers selected by target_feature each produce an independent service instance.",
+  "required": ["identity"],
   "title": "Service",
   "type": "object",
   "definitions": {
@@ -474,8 +474,13 @@
         }
       }
     },
+    "target_feature": {
+      "description": "Server feature used to create automatic targets. Empty disables automatic targeting.",
+      "pattern": "^$|^[a-z][a-z0-9_]*$",
+      "type": "string"
+    },
     "targets": {
-      "description": "Explicit deployment targets for this service. Map keys are server keys (e.g. 'au-malatang') or 'fly' for Fly.io. Servers also become implicit targets when a feature matching the service name is enabled (e.g. beszel_agent for beszel-agent).",
+      "description": "Explicit deployment targets for this service. May be omitted when target_feature supplies every target. Map keys are server keys (e.g. 'au-malatang') or 'fly' for Fly.io.",
       "type": "object",
       "additionalProperties": {
         "additionalProperties": false,

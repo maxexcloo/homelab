@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=../../schemas/service.json
-targets: {}
+target_feature: tailscale
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
