@@ -9,14 +9,14 @@ locals {
     ]
   ])
 
-  _dns_render_records_manual_entries_by_key = {
+  dns_render_manual_entries_by_key = {
     for entry in local._dns_render_records_manual_entries :
     "${entry.zone}-manual-${entry.key}" => entry...
   }
 
   # Manual records are keyed independently from YAML list order.
   dns_render_records_manual = {
-    for record_key, entries in local._dns_render_records_manual_entries_by_key :
+    for record_key, entries in local.dns_render_manual_entries_by_key :
     record_key => merge(
       local.defaults.dns,
       entries[0].record,

@@ -21,32 +21,6 @@ locals {
     ]
   ])
 
-  # Parsed compose YAML before routing label injection. Kept separate so
-  # services_render_write_compose can merge labels into the parsed structure.
-  _services_render_write_compose_raw = {
-    for service_key, service in local.services_model : service_key => yamldecode(
-      templatefile(
-        "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
-        local.services_render_template_context[service_key],
-      ),
-    )
-    if(
-      service.identity.service != null &&
-      fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
-      (
-        try(local.truenas_input_servers[service.target], null) != null ||
-        (
-          try(local.servers_model[service.target], null) != null &&
-          local.servers_model[service.target].features.docker &&
-          !(
-            service.target_feature != "" &&
-            local.servers_model[service.target].features.cloud_init
-          )
-        )
-      )
-    )
-  }
-
   # First-pass context for templatestring() calls on service.data and service.dashboard.
   # Adjacent services use model values to avoid circular dependencies and prevent
   # implicit cross-service access to runtime credentials. Explicit imports receive
@@ -124,7 +98,29 @@ locals {
 
   # Compose files with routing labels injected into the primary container's label map.
   services_render_write_compose = {
-    for service_key, compose in local._services_render_write_compose_raw : service_key => yamlencode(
+    for service_key, compose in {
+      for service_key, service in local.services_model : service_key => yamldecode(
+        templatefile(
+          "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
+          local.services_render_template_context[service_key],
+        ),
+      )
+      if(
+        service.identity.service != null &&
+        fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
+        (
+          try(local.truenas_input_servers[service.target], null) != null ||
+          (
+            try(local.servers_model[service.target], null) != null &&
+            local.servers_model[service.target].features.docker &&
+            !(
+              service.target_feature != "" &&
+              local.servers_model[service.target].features.cloud_init
+            )
+          )
+        )
+      )
+      } : service_key => yamlencode(
       merge(
         compose,
         {

@@ -1,16 +1,16 @@
 locals {
   _dns_validation_duplicate_record_keys = [
-    for record_key, entries in local._dns_render_records_manual_entries_by_key : record_key
+    for record_key, entries in local.dns_render_manual_entries_by_key : record_key
     if length(entries) > 1
   ]
 
   _dns_validation_duplicate_zones = [
-    for zone_name, zone_files in local._dns_input_files_by_zone : zone_name
+    for zone_name, zone_files in local.dns_input_source_files_by_zone : zone_name
     if length(zone_files) > 1
   ]
 
   _dns_validation_file_key_mismatches = [
-    for dns_file in local._dns_input_files : "${dns_file.file_key} -> ${dns_file.zone.name}"
+    for dns_file in local.dns_input_source_files : "${dns_file.file_key} -> ${dns_file.zone.name}"
     if dns_file.file_key != dns_file.zone.name
   ]
 }
