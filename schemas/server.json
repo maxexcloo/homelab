@@ -133,7 +133,7 @@
           "type": "boolean"
         },
         "beszel": {
-          "description": "Enable Beszel agent resources, credentials, automatic service targeting, and bootstrap installation when cloud_init is enabled.",
+          "description": "Create a Beszel agent service target and install the agent in generated setup artifacts when cloud_init is enabled. Exposes runtime.credentials.{beszel_agent_token, beszel_system_id}.",
           "type": "boolean"
         },
         "cloud_init": {
@@ -149,7 +149,7 @@
           "type": "boolean"
         },
         "cloudflared": {
-          "description": "Create a Cloudflare tunnel, credentials, and automatic service target; bootstrap cloudflared when cloud_init is enabled.",
+          "description": "Create a Cloudflare tunnel and cloudflared service target, and install cloudflared in generated setup artifacts when cloud_init is enabled. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}.",
           "type": "boolean"
         },
         "cockpit": {
@@ -161,7 +161,7 @@
           "type": "boolean"
         },
         "komodo": {
-          "description": "Add this server to Komodo, create a Periphery service target, and bootstrap Periphery when cloud_init is enabled.",
+          "description": "Add this server to Komodo, create a Periphery service target, and install Periphery in generated setup artifacts when cloud_init is enabled. Exposes runtime.credentials.komodo_passkey.",
           "type": "boolean"
         },
         "monitoring": {
@@ -185,7 +185,7 @@
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key, create an automatic service target, and bootstrap Tailscale when cloud_init is enabled.",
+          "description": "Generate a Tailscale auth key, create a Tailscale service target, and install Tailscale in generated setup artifacts when cloud_init is enabled. Exposes runtime.credentials.tailscale_auth_key.",
           "type": "boolean"
         },
         "zfs": {

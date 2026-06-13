@@ -91,10 +91,11 @@ Inside staged HCL `locals {}` blocks, declare all `_`-prefixed helper locals fir
 - **Descriptions**: Short, title case
 - **Identifier fields first**: In list-item objects, identifier keys lead in fixed order: `type` (if present) → `name` (if present) → `id` (if present) → remaining fields sorted normally. Applies to DNS records, dashboard cards, widget lists, and all other list-item objects.
 - **Service shape**:
-  - Root keys apply to every target: `dashboard`, `data`, `features`, `identity`, `imports`, `routing`.
+  - Root keys apply to every target: `dashboard`, `data`, `features`, `identity`, `imports`, `routing`, `target_feature`.
   - `targets.<key>` may override `credentials`, `data`, `features`, `fly`, and `truenas`.
   - Put app-owned config in `data` instead of root HCL when possible.
   - Set `identity.service` only when templates or deploy artifacts exist.
+  - Omit `targets` when `target_feature` supplies every target.
   - Use `targets.<key>: {}` for a single target with no overrides.
 
 ## TrueNAS Services
