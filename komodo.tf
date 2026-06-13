@@ -13,7 +13,10 @@ locals {
       local.servers_model[service.target].features.docker &&
       service.identity.service != null &&
       fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
-      !(service.target_feature != "" && local.servers_model[service.target].features.cloud_init)
+      !(
+        service.target_feature != "" &&
+        local.servers_model[service.target].features.cloud_init
+      )
     )
   }
 

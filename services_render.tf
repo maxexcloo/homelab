@@ -38,7 +38,10 @@ locals {
         (
           try(local.servers_model[service.target], null) != null &&
           local.servers_model[service.target].features.docker &&
-          !(service.target_feature != "" && local.servers_model[service.target].features.cloud_init)
+          !(
+            service.target_feature != "" &&
+            local.servers_model[service.target].features.cloud_init
+          )
         )
       )
     )
