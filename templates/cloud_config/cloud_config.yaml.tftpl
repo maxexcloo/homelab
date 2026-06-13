@@ -36,7 +36,7 @@ runcmd:
   - curl -fsLS https://tailscale.com/install.sh | sh
   - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
   %{~ endif ~}
-  %{~ if server.features.beszel_agent ~}
+  %{~ if server.features.beszel ~}
   - curl -fsLS https://get.beszel.dev -o /tmp/install-agent.sh && chmod 0700 /tmp/install-agent.sh && /tmp/install-agent.sh -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true && rm /tmp/install-agent.sh
   %{~ endif ~}
   %{~ if server.features.cockpit ~}
