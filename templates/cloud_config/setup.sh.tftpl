@@ -98,7 +98,8 @@ sudo usermod --append --groups docker "$(id -n -u)"
 %{~ endif }
 
 %{~ if server.features.komodo }
-curl -fsLS -o /tmp/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
+SOPS_VERSION=$(basename "$(curl -fsLS -o /dev/null -w '%%{url_effective}' https://github.com/getsops/sops/releases/latest)")
+curl -fsLS -o /tmp/sops "https://github.com/getsops/sops/releases/download/$${SOPS_VERSION}/sops-$${SOPS_VERSION}.linux.$(dpkg --print-architecture)"
 sudo install -m 0755 /tmp/sops /usr/local/bin/sops
 rm /tmp/sops
 sudo docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d

@@ -1,5 +1,27 @@
 # Stage: render — templates, routing labels, and deploy file content.
 locals {
+  # Compose template inventory selected only from model data and file existence.
+  _services_render_compose_inputs = {
+    for service_key, service in local.services_model : service_key => {
+      path = "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl"
+    }
+    if(
+      service.identity.service != null &&
+      fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
+      (
+        try(local.truenas_input_servers[service.target], null) != null ||
+        (
+          try(local.servers_model[service.target], null) != null &&
+          local.servers_model[service.target].features.docker &&
+          !(
+            service.target_feature != "" &&
+            local.servers_model[service.target].features.cloud_init
+          )
+        )
+      )
+    )
+  }
+
   # Sidecar file inventory discovered from templates/services/**/. Platform-specific
   # entry points (app.json.tftpl, docker-compose.yaml.tftpl) are handled by their
   # respective platform deployers and excluded here.
@@ -99,26 +121,11 @@ locals {
   # Compose files with routing labels injected into the primary container's label map.
   services_render_write_compose = {
     for service_key, compose in {
-      for service_key, service in local.services_model : service_key => yamldecode(
+      for service_key, compose_input in local._services_render_compose_inputs : service_key => yamldecode(
         templatefile(
-          "${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl",
+          compose_input.path,
           local.services_render_template_context[service_key],
         ),
-      )
-      if(
-        service.identity.service != null &&
-        fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
-        (
-          try(local.truenas_input_servers[service.target], null) != null ||
-          (
-            try(local.servers_model[service.target], null) != null &&
-            local.servers_model[service.target].features.docker &&
-            !(
-              service.target_feature != "" &&
-              local.servers_model[service.target].features.cloud_init
-            )
-          )
-        )
       )
       } : service_key => yamlencode(
       merge(

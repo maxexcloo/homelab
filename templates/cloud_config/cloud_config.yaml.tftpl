@@ -27,13 +27,14 @@ packages:
   - nano
   - sudo
 runcmd:
+  - set -e
   - sysctl --system
   %{~ if server.features.cloudflared ~}
   - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
   - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
   %{~ endif ~}
   %{~ if server.features.tailscale ~}
-  - curl -fsLS https://tailscale.com/install.sh | sh
+  - while fuser /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 2; done; curl -fsLS https://tailscale.com/install.sh | sh
   - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
   %{~ endif ~}
   %{~ if server.features.beszel ~}
@@ -46,8 +47,9 @@ runcmd:
   - curl -fsLS https://get.docker.com | sh
   %{~ endif ~}
   %{~ if server.features.komodo ~}
-  - curl -fsLS -o /usr/local/bin/sops https://github.com/getsops/sops/releases/latest/download/sops-linux-$(dpkg --print-architecture)
-  - chmod +x /usr/local/bin/sops
+  - SOPS_VERSION=$(basename "$(curl -fsLS -o /dev/null -w '%%{url_effective}' https://github.com/getsops/sops/releases/latest)")
+  - curl -fsLS -o /usr/local/bin/sops "https://github.com/getsops/sops/releases/download/$${SOPS_VERSION}/sops-$${SOPS_VERSION}.linux.$(dpkg --print-architecture)"
+  - chmod 0755 /usr/local/bin/sops
   - docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d
   %{~ endif ~}
 users:
