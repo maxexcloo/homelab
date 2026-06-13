@@ -6,17 +6,42 @@ package_update: true
 package_upgrade: true
 ssh_pwauth: false
 timezone: ${defaults.system.timezone}
+apt:
+  sources:
+    %{~ if server.features.cloudflared ~}
+    cloudflared:
+      source: deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $RELEASE main
+    %{~ endif ~}
+    %{~ if server.features.docker ~}
+    docker:
+      source: deb [signed-by=/usr/share/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $RELEASE stable
+    %{~ endif ~}
+    %{~ if server.features.tailscale ~}
+    tailscale:
+      source: deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu $RELEASE main
+    %{~ endif ~}
 groups:
   %{~ if server.features.docker ~}
   - docker
   %{~ endif ~}
   - sudo
 packages:
+  %{~ if server.features.cloudflared ~}
+  - cloudflared
+  %{~ endif ~}
   %{~ if server.features.cockpit ~}
   - cockpit
   %{~ endif ~}
   %{~ if server.features.docker ~}
   - age
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-ce
+  - docker-ce-cli
+  - docker-compose-plugin
+  %{~ endif ~}
+  %{~ if server.features.tailscale ~}
+  - tailscale
   %{~ endif ~}
   %{~ if server.features.zfs ~}
   - sanoid
@@ -28,29 +53,25 @@ packages:
   - sudo
 runcmd:
   - set -e
-  - sysctl --system
-  %{~ if server.features.cloudflared ~}
-  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb && dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
-  - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
-  %{~ endif ~}
-  %{~ if server.features.tailscale ~}
-  - while fuser /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 2; done; curl -fsLS https://tailscale.com/install.sh | sh
-  - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
-  %{~ endif ~}
   %{~ if server.features.beszel ~}
   - curl -fsLS https://get.beszel.dev -o /tmp/install-agent.sh && chmod 0700 /tmp/install-agent.sh && /tmp/install-agent.sh -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true && rm /tmp/install-agent.sh
   %{~ endif ~}
+  %{~ if server.features.cloudflared ~}
+  - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
+  %{~ endif ~}
   %{~ if server.features.cockpit ~}
   - systemctl enable --now cockpit.socket
-  %{~ endif ~}
-  %{~ if server.features.docker ~}
-  - curl -fsLS https://get.docker.com | sh
   %{~ endif ~}
   %{~ if server.features.komodo ~}
   - SOPS_VERSION=$(basename "$(curl -fsLS -o /dev/null -w '%%{url_effective}' https://github.com/getsops/sops/releases/latest)")
   - curl -fsLS -o /usr/local/bin/sops "https://github.com/getsops/sops/releases/download/$${SOPS_VERSION}/sops-$${SOPS_VERSION}.linux.$(dpkg --print-architecture)"
   - chmod 0755 /usr/local/bin/sops
   - docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d
+  %{~ endif ~}
+  %{~ if server.features.tailscale ~}
+  - sysctl --system
+  - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
+  - systemctl enable --now tailscale-udp-gro.service
   %{~ endif ~}
 users:
   - name: ${server.identity.username}
@@ -66,22 +87,18 @@ users:
       %{~ endif ~}
       - sudo
 write_files:
-  - path: /etc/networkd-dispatcher/routable.d/50-network
-    permissions: "0755"
-    content: |
-      #!/bin/sh
-      # Detect the default NIC via a route lookup to Cloudflare DNS, then tune
-      # GRO for UDP forwarding performance (rx-gro-list off is required for
-      # rx-udp-gro-forwarding on many kernels).
-      ethtool -K $(ip -o route get 1.1.1.1 | cut -d " " -f 5) rx-gro-list off rx-udp-gro-forwarding on
-  - path: /etc/sysctl.d/50-network.conf
-    content: |
-      # Increase socket buffers for high-throughput NICs
-      net.core.rmem_max=8388608
-      net.core.wmem_max=8388608
-      # Enable IP forwarding for Tailscale subnet routing / exit nodes
-      net.ipv4.conf.all.forwarding=1
-      net.ipv6.conf.all.forwarding=1
+  %{~ if server.features.cloudflared ~}
+  - path: /usr/share/keyrings/cloudflare-main.gpg
+    permissions: "0644"
+    source:
+      uri: https://pkg.cloudflare.com/cloudflare-main.gpg
+  %{~ endif ~}
+  %{~ if server.features.docker ~}
+  - path: /usr/share/keyrings/docker.asc
+    permissions: "0644"
+    source:
+      uri: https://download.docker.com/linux/ubuntu/gpg
+  %{~ endif ~}
   %{~ if server.features.komodo ~}
   - path: /etc/komodo/periphery.compose.yaml
     permissions: "0600"
@@ -91,9 +108,35 @@ write_files:
           environment:
             PERIPHERY_PASSKEY: ${server.runtime.credentials.komodo_passkey}
             SOPS_AGE_KEY: ${server.runtime.credentials.age_secret_key}
-          image: ghcr.io/moghtech/komodo-periphery:2.2.0
+          image: ghcr.io/moghtech/komodo-periphery:latest
           network_mode: host
           restart: unless-stopped
           volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+  %{~ endif ~}
+  %{~ if server.features.tailscale ~}
+  - path: /etc/sysctl.d/50-network.conf
+    content: |
+      # Increase socket buffers for high-throughput NICs
+      net.core.rmem_max=8388608
+      net.core.wmem_max=8388608
+      # Enable IP forwarding for Tailscale subnet routing / exit nodes
+      net.ipv4.conf.all.forwarding=1
+      net.ipv6.conf.all.forwarding=1
+  - path: /etc/systemd/system/tailscale-udp-gro.service
+    content: |
+      [Unit]
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/sh -c 'ethtool -K "$(ip -o route get 1.1.1.1 | cut -d " " -f 5)" rx-gro-list off rx-udp-gro-forwarding on'
+
+      [Install]
+      WantedBy=multi-user.target
+  - path: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    permissions: "0644"
+    source:
+      uri: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
   %{~ endif ~}
