@@ -6,7 +6,6 @@ name = "${server_key}"
 [server.config]
 address = "http://${server.hosts.internal}:8120"
 enabled = true
-passkey = "${server.runtime.credentials.komodo_passkey}"
 region = "${server.identity.region}"
 
 %{~ endfor ~}

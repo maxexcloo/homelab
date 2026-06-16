@@ -27,8 +27,7 @@ locals {
 
   # Encrypted GitHub files consumed by Komodo ResourceSync. Service sidecar files
   # reuse the same relative paths as the service artifact model.
-  # Root-level TOML files are encrypted with the Komodo Core server's age key so
-  # the Komodo Core instance can decrypt them.
+  # Root-level TOML files are encrypted with the Komodo Core server's age key.
   komodo_render_files = merge(
     {
       for stack_key, stack in local.komodo_input_stacks : "${stack_key}/compose.yaml" => {
@@ -58,39 +57,18 @@ locals {
       )
     },
     {
-      "resource_sync.toml" = {
-        age_public_key = age_secret_key.server[local.komodo_input_core.target].public_key
-        commit_message = "Update Komodo resource sync configuration"
-        content_type   = "binary"
-        file           = "resource_sync.toml"
-
-        content_base64 = sensitive(
-          base64encode(
-            templatefile(
-              "${path.module}/templates/komodo/resource_sync.toml.tftpl",
-              {
-                github_token = local.services[local.komodo_input_core.key].runtime.credentials.github_token
-                owner        = local.defaults.github.owner
-                repository   = local.defaults.github.repositories.komodo
-              },
-            ),
-          ),
-        )
-      }
       "servers.toml" = {
         age_public_key = age_secret_key.server[local.komodo_input_core.target].public_key
         commit_message = "Update Komodo server configurations"
         content_type   = "binary"
         file           = "servers.toml"
 
-        content_base64 = sensitive(
-          base64encode(
-            templatefile(
-              "${path.module}/templates/komodo/servers.toml.tftpl",
-              {
-                servers = local.komodo_input_servers
-              },
-            ),
+        content_base64 = base64encode(
+          templatefile(
+            "${path.module}/templates/komodo/servers.toml.tftpl",
+            {
+              servers = local.komodo_input_servers
+            },
           ),
         )
       }
@@ -116,8 +94,8 @@ locals {
 }
 
 # Per-stack SOPS rules let each target server decrypt only the stacks assigned
-# to it. A root-level rule covers servers.toml, resource_sync.toml, and
-# stacks.toml with the Komodo Core server's age key.
+# to it. A root-level rule covers servers.toml and stacks.toml with the Komodo
+# Core server's age key.
 resource "github_repository_file" "komodo_sops_config" {
   commit_message      = "Update SOPS configuration"
   file                = ".sops.yaml"
