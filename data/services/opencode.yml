@@ -3,9 +3,9 @@ dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${service.identity.group}
-    href: ${service.urls.default.href}
+    href: ${service.urls.external.href}
     icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+    siteMonitor: ${service.urls.internal.href}
 identity:
   description: AI Coding Agent
   group: Applications

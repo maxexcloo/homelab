@@ -14,15 +14,15 @@ dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${service.identity.group}
-    href: ${service.urls.default.href}
+    href: ${service.urls.external.href}
     icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+    siteMonitor: ${service.urls.internal.href}
     widgets:
       - type: ${service.identity.service}
         key: ${service.runtime.credentials.homepage_widget_key}
         secret: ${service.runtime.credentials.homepage_widget_secret}
         showSummary: true
-        url: ${service.urls.default.href}
+        url: ${service.urls.internal.href}
 features:
   oidc: true
   password: true

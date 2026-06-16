@@ -176,14 +176,30 @@ locals {
     }
   }
 
-  _services_model_urls_default = {
-    for service_key, service in local.services_input_targets : service_key => try(
-      [
-        for route in local._services_model_routes[service_key] : route.href
-        if route.href != null
-      ][0],
-      null,
-    )
+  _services_model_url_aliases = {
+    for service_key, service in local.services_input_targets : service_key => {
+      default = try(
+        [
+          for route in local._services_model_routes[service_key] : route.href
+          if route.href != null
+        ][0],
+        null,
+      )
+      external = try(
+        [
+          for route in local._services_model_routes[service_key] : route.href
+          if route.href != null && (route.url != null || route.expose == "external")
+        ][0],
+        null,
+      )
+      internal = try(
+        [
+          for route in local._services_model_routes[service_key] : route.href
+          if route.href != null && route.url == null && route.expose == "internal"
+        ][0],
+        null,
+      )
+    }
   }
 
   services_model = {
@@ -196,6 +212,11 @@ locals {
 
           fly = {
             app_name = service.target == "fly" ? local._services_model_fly_app_names[service_key] : service.fly.app_name
+          }
+
+          hosts = {
+            external = local._services_model_target_servers[service_key] != null ? "${service.identity.name}.${local._services_model_target_servers[service_key].hosts.external}" : null
+            internal = local._services_model_target_servers[service_key] != null ? "${service.identity.name}.${local._services_model_target_servers[service_key].hosts.internal}" : null
           }
 
           identity = {
@@ -226,12 +247,28 @@ locals {
           urls = merge(
             {
               default = {
-                host  = local._services_model_urls_default[service_key] != null ? one(regex("^https?://([^/:]+)", local._services_model_urls_default[service_key])) : null
-                href  = local._services_model_urls_default[service_key]
+                host  = local._services_model_url_aliases[service_key].default != null ? one(regex("^https?://([^/:]+)", local._services_model_url_aliases[service_key].default)) : null
+                href  = local._services_model_url_aliases[service_key].default
                 label = "default"
                 zone  = null
               }
             },
+            local._services_model_url_aliases[service_key].external != null ? {
+              external = {
+                host  = one(regex("^https?://([^/:]+)", local._services_model_url_aliases[service_key].external))
+                href  = local._services_model_url_aliases[service_key].external
+                label = "external"
+                zone  = null
+              }
+            } : {},
+            local._services_model_url_aliases[service_key].internal != null ? {
+              internal = {
+                host  = one(regex("^https?://([^/:]+)", local._services_model_url_aliases[service_key].internal))
+                href  = local._services_model_url_aliases[service_key].internal
+                label = "internal"
+                zone  = null
+              }
+            } : {},
             local._services_model_urls[service_key],
           )
         },
