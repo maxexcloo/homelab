@@ -27,6 +27,8 @@ locals {
 
   # Encrypted GitHub files consumed by Komodo ResourceSync. Service sidecar files
   # reuse the same relative paths as the service artifact model.
+  # Root-level TOML files are encrypted with the Komodo Core server's age key so
+  # the Komodo Core instance can decrypt them.
   komodo_render_files = merge(
     {
       for stack_key, stack in local.komodo_input_stacks : "${stack_key}/compose.yaml" => {
@@ -54,48 +56,68 @@ locals {
           local.servers_model[file_config.target].features.cloud_init
         )
       )
+    },
+    {
+      "resource_sync.toml" = {
+        age_public_key = age_secret_key.server[local.komodo_input_core.target].public_key
+        commit_message = "Update Komodo resource sync configuration"
+        content_type   = "binary"
+        file           = "resource_sync.toml"
+
+        content_base64 = sensitive(
+          base64encode(
+            templatefile(
+              "${path.module}/templates/komodo/resource_sync.toml.tftpl",
+              {
+                github_token = local.services[local.komodo_input_core.key].runtime.credentials.github_token
+                owner        = local.defaults.github.owner
+                repository   = local.defaults.github.repositories.komodo
+              },
+            ),
+          ),
+        )
+      }
+      "servers.toml" = {
+        age_public_key = age_secret_key.server[local.komodo_input_core.target].public_key
+        commit_message = "Update Komodo server configurations"
+        content_type   = "binary"
+        file           = "servers.toml"
+
+        content_base64 = sensitive(
+          base64encode(
+            templatefile(
+              "${path.module}/templates/komodo/servers.toml.tftpl",
+              {
+                servers = local.komodo_input_servers
+              },
+            ),
+          ),
+        )
+      }
+      "stacks.toml" = {
+        age_public_key = age_secret_key.server[local.komodo_input_core.target].public_key
+        commit_message = "Update Komodo stack configurations"
+        content_type   = "binary"
+        file           = "stacks.toml"
+
+        content_base64 = base64encode(
+          templatefile(
+            "${path.module}/templates/komodo/stacks.toml.tftpl",
+            {
+              owner      = local.defaults.github.owner
+              repository = local.defaults.github.repositories.komodo
+              stacks     = local.komodo_input_stacks
+            },
+          ),
+        )
+      }
     }
   )
 }
 
-resource "github_repository_file" "komodo_resource_sync" {
-  commit_message      = "Update Komodo resource sync configuration"
-  file                = "resource_sync.toml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-
-  content = sensitive(
-    templatefile(
-      "${path.module}/templates/komodo/resource_sync.toml.tftpl",
-      {
-        github_token = local.services[local.komodo_input_core.key].runtime.credentials.github_token
-        owner        = local.defaults.github.owner
-        repository   = local.defaults.github.repositories.komodo
-      },
-    ),
-  )
-
-  depends_on = [github_repository_webhook.komodo_resource_sync]
-}
-
-resource "github_repository_file" "komodo_servers" {
-  commit_message      = "Update Komodo server configurations"
-  file                = "servers.toml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-
-  content = sensitive(
-    templatefile(
-      "${path.module}/templates/komodo/servers.toml.tftpl",
-      {
-        servers = local.komodo_input_servers
-      },
-    ),
-  )
-}
-
 # Per-stack SOPS rules let each target server decrypt only the stacks assigned
-# to it.
+# to it. A root-level rule covers servers.toml, resource_sync.toml, and
+# stacks.toml with the Komodo Core server's age key.
 resource "github_repository_file" "komodo_sops_config" {
   commit_message      = "Update SOPS configuration"
   file                = ".sops.yaml"
@@ -103,29 +125,21 @@ resource "github_repository_file" "komodo_sops_config" {
   repository          = local.defaults.github.repositories.komodo
 
   content = yamlencode({
-    creation_rules = [
-      for stack_key, stack in local.komodo_input_stacks : {
-        age        = age_secret_key.server[stack.target].public_key
-        path_regex = "^${stack_key}/"
-      }
-    ]
+    creation_rules = concat(
+      [
+        {
+          age        = age_secret_key.server[local.komodo_input_core.target].public_key
+          path_regex = "^[^/]+\\.toml$"
+        },
+      ],
+      [
+        for stack_key, stack in local.komodo_input_stacks : {
+          age        = age_secret_key.server[stack.target].public_key
+          path_regex = "^${stack_key}/"
+        }
+      ]
+    )
   })
-}
-
-resource "github_repository_file" "komodo_stacks" {
-  commit_message      = "Update Komodo stack configurations"
-  file                = "stacks.toml"
-  overwrite_on_create = true
-  repository          = local.defaults.github.repositories.komodo
-
-  content = templatefile(
-    "${path.module}/templates/komodo/stacks.toml.tftpl",
-    {
-      owner      = local.defaults.github.owner
-      repository = local.defaults.github.repositories.komodo
-      stacks     = local.komodo_input_stacks
-    },
-  )
 }
 
 resource "github_repository_webhook" "komodo_resource_sync" {
