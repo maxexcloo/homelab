@@ -95,6 +95,7 @@ locals {
   _services_model_route_entries = {
     for service_key, service in local.services_input_targets : service_key => [
       for route_index, url in concat(
+        service.routing.urls,
         (
           service.routing.backend_port != null ||
           service.routing.backend_scheme != ""
@@ -104,7 +105,6 @@ locals {
             url    = null
           }
         ] : [],
-        service.routing.urls,
         ) : merge(
         {
           for field_name, field_value in service.routing : field_name => field_value

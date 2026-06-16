@@ -3,8 +3,8 @@ dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
     group: ${service.identity.group}
-    icon: si-apple
     href: ${service.urls.default.href}
+    icon: si-apple-#ffffff
     siteMonitor: ${service.urls.default.href}
 identity:
   description: Anisette Server
