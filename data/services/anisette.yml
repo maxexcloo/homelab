@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    icon: si-apple
+    href: ${service.urls.default.href}
+    siteMonitor: ${service.urls.default.href}
+identity:
+  description: Anisette Server
+  group: Infrastructure
+  name: anisette
+  service: anisette
+  title: Anisette
+routing:
+  backend_port: 6969
+  backend_scheme: http
+  urls:
+    - expose: cloudflare
+      url: anisette.excloo.com
+targets:
+  au-truenas: {}

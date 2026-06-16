@@ -4,6 +4,9 @@ ai:
   default_model_provider: deepseek
 cloudflare:
   account_name: excloo
+  access:
+    identity_providers:
+      excloo_id: Excloo ID
 domains:
   acme: 043847.xyz
   external: excloo.net

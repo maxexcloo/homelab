@@ -7,11 +7,11 @@ services:
   redlib:
     environment:
       REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS: "${service.data.settings.default_remove_default_feeds}"
-      REDLIB_DEFAULT_SHOW_NSFW: "${service.data.settings.default_show_nsfw}"
       REDLIB_DEFAULT_SUBSCRIPTIONS: ${join("+", service.data.subscriptions)}
       REDLIB_DEFAULT_USE_HLS: "${service.data.settings.default_use_hls}"
       REDLIB_FULL_URL: ${service.urls.default.href}
       REDLIB_ROBOTS_DISABLE_INDEXING: "${service.data.settings.robots_disable_indexing}"
+      REDLIB_SFW_ONLY: "on"
     healthcheck:
       disable: true
     image: ghcr.io/silvenga/redlib:latest

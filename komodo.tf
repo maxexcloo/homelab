@@ -1,5 +1,10 @@
 locals {
-  # Komodo-enabled servers receive a Periphery target through services_input.tf.
+  komodo_input_core = one([
+    for service in values(local.services_model) : service
+    if service.identity.service == "komodo"
+  ])
+
+  # Komodo-enabled servers receive a dedicated Periphery target.
   komodo_input_servers = {
     for server_key in keys(local.servers_by_feature.komodo) : server_key => local.servers[server_key]
   }
@@ -66,6 +71,8 @@ resource "github_repository_file" "komodo_resource_sync" {
       repository = local.defaults.github.repositories.komodo
     },
   )
+
+  depends_on = [github_repository_webhook.komodo_resource_sync]
 }
 
 resource "github_repository_file" "komodo_servers" {
@@ -116,6 +123,19 @@ resource "github_repository_file" "komodo_stacks" {
       stacks     = local.komodo_input_stacks
     },
   )
+}
+
+resource "github_repository_webhook" "komodo_resource_sync" {
+  active     = true
+  events     = ["push"]
+  repository = local.defaults.github.repositories.komodo
+
+  configuration {
+    content_type = "json"
+    insecure_ssl = false
+    secret       = local.services[local.komodo_input_core.key].runtime.credentials.webhook_secret
+    url          = "https://${local.komodo_input_core.identity.name}.${local.defaults.domains.external}/listener/github/sync/komodo/sync"
+  }
 }
 
 module "encrypted_github_file_komodo" {

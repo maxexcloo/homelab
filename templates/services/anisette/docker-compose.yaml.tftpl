@@ -1,0 +1,8 @@
+services:
+  anisette:
+    image: dadoum/anisette-v3-server
+    restart: unless-stopped
+    volumes:
+      - data:/home/Alcoholic/.config/anisette-v3/lib
+volumes:
+  data:

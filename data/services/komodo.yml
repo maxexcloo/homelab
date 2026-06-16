@@ -41,11 +41,31 @@ routing:
   backend_port: 9120
   backend_scheme: http
   container: core
+  urls:
+    - expose: cloudflare
+      url: komodo.excloo.net
+      cloudflare_access:
+        - auto_redirect_to_identity: true
+          name: Komodo
+          session_duration: 24h
+          allowed_idps:
+            - excloo_id
+          policies:
+            - decision: allow
+              include:
+                - everyone: {}
+        - name: Komodo Webhook
+          path: /listener/github/sync/komodo/sync
+          policies:
+            - decision: bypass
+              include:
+                - everyone: {}
 targets:
   au-truenas:
     truenas:
       catalog_app: komodo
       env:
+        KOMODO_CONFIG_PATH: /core/config/config.toml
         KOMODO_EMAIL_ENABLED: true
         KOMODO_EMAIL_HOST: ${defaults.resend.host}
         KOMODO_EMAIL_PASSWORD: ${service.runtime.credentials.resend_api_key}

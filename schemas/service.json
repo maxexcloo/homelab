@@ -6,6 +6,64 @@
   "title": "Service",
   "type": "object",
   "definitions": {
+    "cloudflare_access_policy_group": {
+      "additionalProperties": false,
+      "description": "A group rule matching users for an access policy. Exactly one group type key must be present. Keys are Cloudflare Access group types (e.g. 'everyone', 'email', 'email_domain', 'group', 'ip').",
+      "maxProperties": 1,
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "additionalProperties": false,
+          "description": "Group type configuration. Known properties: auth_method, cn, domain, email, group_id, ip, service_token_id, sso_url.",
+          "properties": {
+            "auth_method": {
+              "type": "string"
+            },
+            "cn": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "domain": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "email": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "group_id": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "ip": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "service_token_id": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "sso_url": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "credential_field": {
       "additionalProperties": false,
       "description": "Configuration for one credential field stored in 1Password and exposed under runtime.credentials.",
@@ -417,6 +475,189 @@
             "required": ["expose", "url"],
             "type": "object",
             "properties": {
+              "cloudflare_access": {
+                "description": "Cloudflare Zero Trust Access applications protecting this route. Each entry creates a cloudflare_zero_trust_access_application resource for this route's hostname and path.",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "Cloudflare Zero Trust Access application configuration.",
+                  "required": ["name", "policies"],
+                  "type": "object",
+                  "properties": {
+                    "allowed_idps": {
+                      "description": "List of IDP aliases from config.cloudflare.access.identity_providers to restrict authentication to. Omit to allow all configured IDPs.",
+                      "items": {
+                        "pattern": "^[a-z][a-z0-9_]*$",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "auto_redirect_to_identity": {
+                      "description": "Whether to automatically redirect unauthenticated users to the identity provider login page.",
+                      "type": "boolean"
+                    },
+                    "name": {
+                      "description": "Display name for the access application. Also used to derive a stable Terraform resource key (lowercased, special chars replaced with hyphens). Defaults to the service title for the first entry.",
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "URI path pattern for the access application destination appended to the route hostname. Defaults to '/*' which protects all paths.",
+                      "type": "string"
+                    },
+                    "policies": {
+                      "description": "Access policies applied to this application. Each policy defines a decision and the groups it applies to.",
+                      "items": {
+                        "additionalProperties": false,
+                        "description": "A Cloudflare Access policy that defines who can or cannot reach the application.",
+                        "required": ["decision", "include"],
+                        "type": "object",
+                        "properties": {
+                          "decision": {
+                            "description": "Policy decision type. 'allow' permits access, 'bypass' skips authentication, 'deny' blocks access.",
+                            "enum": ["allow", "bypass", "deny"],
+                            "type": "string"
+                          },
+                          "exclude": {
+                            "description": "Groups excluded from this policy.",
+                            "items": {
+                              "$ref": "#/definitions/cloudflare_access_policy_group"
+                            },
+                            "type": "array"
+                          },
+                          "include": {
+                            "description": "Groups included in this policy.",
+                            "items": {
+                              "$ref": "#/definitions/cloudflare_access_policy_group"
+                            },
+                            "type": "array"
+                          },
+                          "name": {
+                            "description": "Policy display name. Defaults to a name derived from the decision type.",
+                            "type": "string"
+                          },
+                          "precedence": {
+                            "description": "Policy evaluation order. Lower values are evaluated first. Defaults to the policy index + 1.",
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "require": {
+                            "description": "Groups that must additionally satisfy this policy.",
+                            "items": {
+                              "$ref": "#/definitions/cloudflare_access_policy_group"
+                            },
+                            "type": "array"
+                          }
+                        }
+                      },
+                      "minItems": 1,
+                      "type": "array"
+                    },
+                    "session_duration": {
+                      "description": "Duration of the access session (e.g. '24h', '12h', '30m'). Omit to use the Cloudflare default.",
+                      "pattern": "^\\d+(h|m|s)$",
+                      "type": "string"
+                    }
+                  }
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "cloudflare_rate_limiting_rules": {
+                "description": "Cloudflare rate limiting rules applied to this route's zone. Rules are grouped by zone and applied via a cloudflare_ruleset for the http_ratelimit phase.",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "A Cloudflare rate limiting rule applied at the zone level.",
+                  "required": ["action", "expression", "ratelimit"],
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "description": "Action taken when the rate limit threshold is exceeded.",
+                      "enum": [
+                        "block",
+                        "challenge",
+                        "js_challenge",
+                        "managed_challenge"
+                      ],
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "Human-readable description of the rate limiting rule.",
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "description": "Whether the rule is active.",
+                      "type": "boolean"
+                    },
+                    "expression": {
+                      "description": "Cloudflare filter expression scoping the rate limit. Use true to match all traffic.",
+                      "type": "string"
+                    },
+                    "ratelimit": {
+                      "additionalProperties": false,
+                      "description": "Rate limit parameters.",
+                      "required": [
+                        "characteristics",
+                        "period",
+                        "requests_per_period"
+                      ],
+                      "type": "object",
+                      "properties": {
+                        "characteristics": {
+                          "description": "Keys used to group requests for counting. Use cf.unique_visitor_id for per-device limits.",
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "period": {
+                          "description": "Time window in seconds in which matching requests are counted.",
+                          "minimum": 10,
+                          "type": "integer"
+                        },
+                        "requests_per_period": {
+                          "description": "Maximum number of requests allowed in the period before the action is taken.",
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              "cloudflare_waf_rules": {
+                "description": "Cloudflare WAF custom rules applied to this route's zone. Rules are grouped by zone and applied via cloudflare_ruleset.",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "A Cloudflare WAF custom rule applied at the zone level.",
+                  "required": ["action", "expression"],
+                  "type": "object",
+                  "properties": {
+                    "action": {
+                      "description": "Action taken when the expression matches.",
+                      "enum": [
+                        "block",
+                        "challenge",
+                        "js_challenge",
+                        "managed_challenge"
+                      ],
+                      "type": "string"
+                    },
+                    "description": {
+                      "description": "Human-readable description.",
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "description": "Whether the rule is active.",
+                      "type": "boolean"
+                    },
+                    "expression": {
+                      "description": "Cloudflare WAF expression in the Rules language.",
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "array"
+              },
               "backend_port": {
                 "description": "Override the container listening port.",
                 "maximum": 65535,

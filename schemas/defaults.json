@@ -6,6 +6,30 @@
   "title": "Defaults",
   "type": "object",
   "properties": {
+    "cloudflare": {
+      "additionalProperties": false,
+      "description": "Default Cloudflare values deep-merged into the config. identity_providers defaults to an empty map so HCL can safely iterate when no IDPs are configured.",
+      "type": "object",
+      "properties": {
+        "access": {
+          "additionalProperties": false,
+          "description": "Default Zero Trust Access values deep-merged into the cloudflare config.",
+          "type": "object",
+          "properties": {
+            "identity_providers": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Default empty map; config.yml overrides with actual IDP aliases.",
+              "propertyNames": {
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
     "credentials": {
       "additionalProperties": false,
       "description": "Default shapes for credential field entries. Merged into each field declaration so only overrides need to be specified.",
