@@ -1,7 +1,12 @@
+[[github_account]]
+token = "${github_token}"
+username = "${owner}"
+
 [[resource_sync]]
 name = "komodo"
 
 [resource_sync.config]
+branch = "main"
 delete = true
 git_account = "${owner}"
 repo = "${owner}/${repository}"

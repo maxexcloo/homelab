@@ -1,0 +1,12 @@
+services:
+  opencode:
+    command: web --hostname 0.0.0.0 --port 4096
+    environment:
+      OPENCODE_SERVER_PASSWORD: ${service.runtime.credentials.password}
+      OPENCODE_SERVER_USERNAME: ${service.identity.username}
+    image: ghcr.io/anomalyco/opencode:latest
+    restart: unless-stopped
+    volumes:
+      - data:/root
+volumes:
+  data:

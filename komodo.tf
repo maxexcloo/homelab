@@ -64,12 +64,15 @@ resource "github_repository_file" "komodo_resource_sync" {
   overwrite_on_create = true
   repository          = local.defaults.github.repositories.komodo
 
-  content = templatefile(
-    "${path.module}/templates/komodo/resource_sync.toml.tftpl",
-    {
-      owner      = local.defaults.github.owner
-      repository = local.defaults.github.repositories.komodo
-    },
+  content = sensitive(
+    templatefile(
+      "${path.module}/templates/komodo/resource_sync.toml.tftpl",
+      {
+        github_token = local.services[local.komodo_input_core.key].runtime.credentials.github_token
+        owner        = local.defaults.github.owner
+        repository   = local.defaults.github.repositories.komodo
+      },
+    ),
   )
 
   depends_on = [github_repository_webhook.komodo_resource_sync]

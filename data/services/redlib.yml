@@ -114,7 +114,7 @@ features:
   monitoring_alerts: false
 identity:
   description: Reddit Frontend
-  group: Applications
+  group: Media
   name: redlib
   service: redlib
   title: Redlib

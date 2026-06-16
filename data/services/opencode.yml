@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: ${service.identity.service}
+    siteMonitor: ${service.urls.default.href}
+features:
+  password: true
+identity:
+  description: AI Coding Agent
+  group: Applications
+  name: opencode
+  service: opencode
+  title: OpenCode
+  username: opencode
+routing:
+  backend_port: 4096
+  backend_scheme: http
+targets:
+  au-truenas: {}
