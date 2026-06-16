@@ -43,7 +43,7 @@ routing:
   container: core
   urls:
     - expose: cloudflare
-      url: komodo.excloo.net
+      url: komodo.excloo.com
       cloudflare_access:
         - auto_redirect_to_identity: true
           name: Komodo

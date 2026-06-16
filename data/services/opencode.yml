@@ -6,17 +6,26 @@ dashboard:
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
-features:
-  password: true
 identity:
   description: AI Coding Agent
   group: Applications
   name: opencode
   service: opencode
   title: OpenCode
-  username: opencode
 routing:
   backend_port: 4096
   backend_scheme: http
+  urls:
+    - expose: cloudflare
+      url: opencode.excloo.com
+      cloudflare_access:
+        - allowed_idps:
+            - excloo_id
+          auto_redirect_to_identity: true
+          name: OpenCode
+          policies:
+            - decision: allow
+              include:
+                - everyone: {}
 targets:
   au-truenas: {}
