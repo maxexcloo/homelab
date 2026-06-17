@@ -126,7 +126,7 @@ routing:
     - expose: cloudflare
       url: reddit.excloo.com
       cloudflare_waf_rules:
-        - action: managed_challenge
-          expression: '(http.request.full_uri wildcard r"https://reddit.excloo.com/*" and not http.cookie contains "cf_clearance" and not ends_with(http.request.uri.path, ".css") and not ends_with(http.request.uri.path, ".js") and not ends_with(http.request.uri.path, "touch-icon-iphone.png") and not ends_with(http.request.uri.path, "favicon.ico") and not ends_with(http.request.uri.path, ".woff2") and not ends_with(http.request.uri.path, "manifest.json"))'
+        - action: js_challenge
+          expression: '(http.request.full_uri wildcard r"https://reddit.excloo.com/*" and not http.cookie contains "cf_clearance" and not ends_with(http.request.uri.path, ".css") and not ends_with(http.request.uri.path, ".js") and not ends_with(http.request.uri.path, ".woff2") and not ends_with(http.request.uri.path, "favicon.ico") and not ends_with(http.request.uri.path, "manifest.json") and not ends_with(http.request.uri.path, "touch-icon-iphone.png"))'
 targets:
   au-truenas: {}
