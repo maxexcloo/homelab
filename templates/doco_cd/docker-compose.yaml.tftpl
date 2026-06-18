@@ -7,7 +7,7 @@ services:
         - interval: 180s
           reference: refs/heads/main
           target: ${server.key}
-          url: https://github.com/${defaults.github.owner}/${defaults.github.repositories.docker}.git
+          url: https://github.com/${defaults.github.owner}/${defaults.github.deployment_repositories.docker.name}.git
       SOPS_AGE_KEY_FILE: /run/secrets/sops_age_key
       TZ: ${defaults.system.timezone}
       WEBHOOK_SECRET: ${server.runtime.credentials.doco_cd_webhook_secret}

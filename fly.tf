@@ -115,7 +115,7 @@ module "encrypted_github_file_fly" {
   commit_message = each.value.commit_message
   content_base64 = each.value.content_base64
   content_type   = "binary"
-  debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.key}" : ""
+  debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.deployment_repositories.fly.name}/${each.key}" : ""
   file           = each.value.file
   repository     = github_repository.deployment["fly"].name
 }

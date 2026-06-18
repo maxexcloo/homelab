@@ -47,11 +47,19 @@
           "type": "object",
           "properties": {
             "identity_providers": {
-              "description": "Map of IDP alias to Cloudflare display name. Aliases are referenced in service access.allowed_idps; display names are matched against the account's configured identity providers.",
+              "description": "Map of IDP alias to Cloudflare identity provider metadata. Aliases are referenced in service access.allowed_idps.",
               "type": "object",
               "additionalProperties": {
-                "description": "Cloudflare display name for this IDP alias.",
-                "type": "string"
+                "additionalProperties": false,
+                "description": "Cloudflare Access identity provider metadata.",
+                "required": ["display_name"],
+                "type": "object",
+                "properties": {
+                  "display_name": {
+                    "description": "Cloudflare display name matched against the account's configured identity providers.",
+                    "type": "string"
+                  }
+                }
               },
               "propertyNames": {
                 "pattern": "^[a-z][a-z0-9_]*$"
@@ -92,36 +100,84 @@
     "github": {
       "additionalProperties": false,
       "description": "GitHub organisation and repository names used to push encrypted configuration files.",
-      "required": ["owner", "repositories"],
+      "required": ["owner", "deployment_repositories"],
       "type": "object",
       "properties": {
-        "owner": {
-          "description": "GitHub organisation or user that owns the deployment repositories.",
-          "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
-          "type": "string"
-        },
-        "repositories": {
+        "deployment_repositories": {
           "additionalProperties": false,
-          "description": "Names of the repositories that store deployment configurations for each platform.",
+          "description": "GitHub repositories that store generated deployment configuration for each platform.",
           "required": ["docker", "fly", "truenas"],
           "type": "object",
           "properties": {
             "docker": {
-              "description": "Repository for Docker Compose service configs consumed by doco-cd.",
-              "pattern": "^[A-Za-z0-9._-]+$",
-              "type": "string"
+              "additionalProperties": false,
+              "description": "Docker Compose deployment repository consumed by doco-cd.",
+              "required": ["description", "display_name", "name"],
+              "type": "object",
+              "properties": {
+                "description": {
+                  "description": "Generated GitHub repository description and README body.",
+                  "type": "string"
+                },
+                "display_name": {
+                  "description": "Human-readable repository name used in generated descriptions and README files.",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "GitHub repository name.",
+                  "pattern": "^[A-Za-z0-9._-]+$",
+                  "type": "string"
+                }
+              }
             },
             "fly": {
-              "description": "Repository for Fly.io service configs (fly.toml, .env, service templates). A GitHub Actions workflow deploys from here.",
-              "pattern": "^[A-Za-z0-9._-]+$",
-              "type": "string"
+              "additionalProperties": false,
+              "description": "Fly.io deployment repository.",
+              "required": ["description", "display_name", "name"],
+              "type": "object",
+              "properties": {
+                "description": {
+                  "description": "Generated GitHub repository description and README body.",
+                  "type": "string"
+                },
+                "display_name": {
+                  "description": "Human-readable repository name used in generated descriptions and README files.",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "GitHub repository name.",
+                  "pattern": "^[A-Za-z0-9._-]+$",
+                  "type": "string"
+                }
+              }
             },
             "truenas": {
-              "description": "Repository for TrueNAS service configs (compose.json, app.json, service config files). A GitHub Actions workflow applies these.",
-              "pattern": "^[A-Za-z0-9._-]+$",
-              "type": "string"
+              "additionalProperties": false,
+              "description": "TrueNAS deployment repository.",
+              "required": ["description", "display_name", "name"],
+              "type": "object",
+              "properties": {
+                "description": {
+                  "description": "Generated GitHub repository description and README body.",
+                  "type": "string"
+                },
+                "display_name": {
+                  "description": "Human-readable repository name used in generated descriptions and README files.",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "GitHub repository name.",
+                  "pattern": "^[A-Za-z0-9._-]+$",
+                  "type": "string"
+                }
+              }
             }
           }
+        },
+        "owner": {
+          "description": "GitHub organisation or user that owns the deployment repositories.",
+          "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+          "type": "string"
         }
       }
     },
@@ -166,9 +222,13 @@
             "servers": {
               "additionalProperties": false,
               "description": "Vault for server credentials.",
-              "required": ["id", "tags"],
+              "required": ["display_name", "id", "tags"],
               "type": "object",
               "properties": {
+                "display_name": {
+                  "description": "Human-readable vault name.",
+                  "type": "string"
+                },
                 "id": {
                   "description": "Vault UUID for server credentials.",
                   "pattern": "^[a-z0-9]{26}$",
@@ -187,9 +247,13 @@
             "services": {
               "additionalProperties": false,
               "description": "Vault for service credentials.",
-              "required": ["id", "tags"],
+              "required": ["display_name", "id", "tags"],
               "type": "object",
               "properties": {
+                "display_name": {
+                  "description": "Human-readable vault name.",
+                  "type": "string"
+                },
                 "id": {
                   "description": "Vault UUID for service credentials.",
                   "pattern": "^[a-z0-9]{26}$",
@@ -262,16 +326,16 @@
       "additionalProperties": {
         "additionalProperties": false,
         "description": "Metadata for a single server type.",
-        "required": ["icon", "label", "tailscale_tag"],
+        "required": ["display_name", "icon", "tailscale_tag"],
         "type": "object",
         "properties": {
-          "icon": {
-            "description": "Homepage icon identifier for this server type.",
+          "display_name": {
+            "description": "Human-readable group label for this server type.",
             "minLength": 1,
             "type": "string"
           },
-          "label": {
-            "description": "Human-readable group label for this server type.",
+          "icon": {
+            "description": "Homepage icon identifier for this server type.",
             "minLength": 1,
             "type": "string"
           },

@@ -6,17 +6,27 @@ cloudflare:
   account_name: excloo
   access:
     identity_providers:
-      excloo_id: Excloo ID
+      excloo_id:
+        display_name: Excloo ID
 domains:
   acme: 043847.xyz
   external: excloo.net
   internal: excloo.dev
 github:
   owner: excloo
-  repositories:
-    docker: docker
-    fly: fly
-    truenas: truenas
+  deployment_repositories:
+    docker:
+      description: Docker configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      display_name: Docker
+      name: docker
+    fly:
+      description: Fly.io configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      display_name: Fly.io
+      name: fly
+    truenas:
+      description: TrueNAS configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      display_name: TrueNAS
+      name: truenas
 networking:
   allowlists:
     internal:
@@ -29,10 +39,12 @@ networking:
 onepassword:
   vaults:
     servers:
+      display_name: Servers
       id: jfp5upb7y2wmr4hbz7enfpdh5e
       tags:
         - Homelab
     services:
+      display_name: Services
       id: vjxx2dvl7ukvsqcic3bboeazbi
       tags:
         - Homelab
@@ -46,28 +58,28 @@ resend:
   username: resend
 server_types:
   appliance:
+    display_name: Appliances
     icon: mdi-devices-#ffffff
-    label: Appliances
     tailscale_tag: appliance
   cicd:
+    display_name: CI/CD
     icon: mdi-git-#ffffff
-    label: CI/CD
     tailscale_tag: cicd
   ephemeral:
+    display_name: Ephemeral
     icon: mdi-timelapse-#ffffff
-    label: Ephemeral
     tailscale_tag: ephemeral
   router:
+    display_name: Routers
     icon: mdi-router-wireless-#ffffff
-    label: Routers
     tailscale_tag: router
   server:
+    display_name: Servers
     icon: mdi-server-#ffffff
-    label: Servers
     tailscale_tag: server
   vm:
+    display_name: VMs
     icon: mdi-cloud-#ffffff
-    label: VMs
     tailscale_tag: vm
 system:
   locale: en_AU

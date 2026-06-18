@@ -20,7 +20,16 @@
               "description": "Default empty map; config.yml overrides with actual IDP aliases.",
               "type": "object",
               "additionalProperties": {
-                "type": "string"
+                "additionalProperties": false,
+                "description": "Cloudflare Access identity provider metadata.",
+                "required": ["display_name"],
+                "type": "object",
+                "properties": {
+                  "display_name": {
+                    "description": "Cloudflare display name matched against the account's configured identity providers.",
+                    "type": "string"
+                  }
+                }
               },
               "propertyNames": {
                 "pattern": "^[a-z][a-z0-9_]*$"

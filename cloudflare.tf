@@ -45,10 +45,10 @@ locals {
   }
 
   cloudflare_access_idp_ids = {
-    for alias, display_name in local.defaults.cloudflare.access.identity_providers :
+    for alias, identity_provider in local.defaults.cloudflare.access.identity_providers :
     alias => one([
       for provider in data.cloudflare_zero_trust_access_identity_providers.all.result : provider.id
-      if provider.name == display_name
+      if provider.name == identity_provider.display_name
     ])
   }
 

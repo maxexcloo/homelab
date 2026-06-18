@@ -149,7 +149,7 @@ module "encrypted_github_file_truenas" {
   commit_message = each.value.commit_message
   content_base64 = each.value.content_base64
   content_type   = each.value.content_type
-  debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.key}" : ""
+  debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.deployment_repositories.truenas.name}/${each.key}" : ""
   file           = each.value.file
   repository     = github_repository.deployment["truenas"].name
 }
