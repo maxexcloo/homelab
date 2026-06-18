@@ -6,7 +6,8 @@ and encrypted before they are written to deployment repositories.
 ## File Discovery
 
 - `app.json.tftpl` is handled by the TrueNAS catalog renderer.
-- `docker-compose.yaml.tftpl` is handled by Compose renderers.
+- `docker-compose.yaml.tftpl` is handled by Docker and custom TrueNAS Compose
+  renderers.
 - Other files under the service template directory become sidecars.
 - `.tftpl` files are rendered and have the suffix stripped.
 - `.raw.tftpl` files are rendered, have `.raw.tftpl` stripped, and are encrypted
@@ -18,6 +19,31 @@ Content type is inferred from the rendered file extension:
 - `.json` becomes `json`
 - `.yaml` and `.yml` become `yaml`
 - everything else becomes `binary`
+
+## Docker
+
+Docker targets render into the `docker` deployment repository for doco-cd.
+Servers opt in with `features.docker`.
+
+Each Docker server gets a target-specific deployment config:
+
+- `.doco-cd.<server>.yml`
+- `<server>/<service>/compose.yaml`
+- sidecars under `<server>/<service>/...`
+
+The target config uses doco-cd auto-discovery with `working_dir: <server>` and
+`depth: 1`, so each service directory becomes one Compose project. Deleted
+service directories are removed by doco-cd, but volumes are preserved.
+
+All rendered files are SOPS-encrypted to the target server's age key. The
+cloud-init and setup-script bootstrap writes `/opt/doco-cd/sops_age_key.txt`,
+sets `SOPS_AGE_KEY_FILE`, configures polling against the `docker` repo with
+`target: <server>`, and also sets `WEBHOOK_SECRET` for later webhook use.
+
+The doco-cd container binds webhook HTTP to `127.0.0.1:8089` and metrics to
+`127.0.0.1:9120`. Traefik labels publish the webhook UI/API internally at
+`doco-cd.<server internal host>` with the existing `internal-only@docker`
+middleware.
 
 ## Fly
 

@@ -49,6 +49,7 @@ models are built. Per-resource YAML should usually contain only overrides.
 Services expand into one modeled service per target. Each expanded service may
 render artifacts for one or more deployment paths:
 
+- Docker services render Compose projects on Docker hosts.
 - Fly services render `fly.toml`, optional cert and scale files, plus sidecars.
 - TrueNAS services prefer catalog `app.json.tftpl` and fall back to custom
   Compose when only `docker-compose.yaml.tftpl` exists.
@@ -75,5 +76,5 @@ low-risk service deploy should not share a plan with core infrastructure.
 
 Within this repo, prefer small modules only when they remove real duplication.
 The encryption/write path is already shared by `modules/github_file_encrypted`;
-Fly and TrueNAS keep separate root files because their deployment request
-formats and SOPS rules are platform-specific.
+Docker, Fly, and TrueNAS keep separate root files because their deployment
+request formats and SOPS rules are platform-specific.

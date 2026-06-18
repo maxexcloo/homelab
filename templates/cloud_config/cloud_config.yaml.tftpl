@@ -62,6 +62,9 @@ runcmd:
   %{~ if server.features.cockpit ~}
   - systemctl enable --now cockpit.socket
   %{~ endif ~}
+  %{~ if server.features.docker ~}
+  - docker compose -f /opt/doco-cd/docker-compose.yaml -p doco-cd up -d
+  %{~ endif ~}
   %{~ if server.features.tailscale ~}
   - sysctl --system
   - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
@@ -88,6 +91,14 @@ write_files:
       uri: https://pkg.cloudflare.com/cloudflare-main.gpg
   %{~ endif ~}
   %{~ if server.features.docker ~}
+  - path: /opt/doco-cd/docker-compose.yaml
+    permissions: "0600"
+    content: |
+      ${indent(6, doco_cd)}
+  - path: /opt/doco-cd/sops_age_key.txt
+    permissions: "0600"
+    content: |
+      ${server.runtime.credentials.age_secret_key}
   - path: /usr/share/keyrings/docker.asc
     permissions: "0644"
     source:

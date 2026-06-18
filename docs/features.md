@@ -30,7 +30,8 @@ Target-level `features` deep-merge over service-level features.
 - `cloudflare_acme_legacy` provisions an ACME DNS token for external and
   internal zones.
 - `cloudflared` provisions a Cloudflare tunnel and tunnel credentials.
-- `docker` installs Docker on the server.
+- `docker` installs Docker, renders Docker Compose deployments to the Docker
+  repo, and installs doco-cd in generated setup artifacts.
 - `monitoring` includes the server in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.

@@ -43,6 +43,8 @@ lets generated values seed a field once while preserving later manual changes.
 Feature flags add credential fields automatically:
 
 - `b2` adds `b2_application_key` as read-only.
+- `docker` adds read-write `doco_cd_git_access_token` and bootstrapped
+  read-write `doco_cd_webhook_secret`.
 - `oidc` adds bootstrapped `oidc_client_id` and `oidc_client_secret` as
   read-write.
 - `password` adds a read-write password and read-only `password_hash`.

@@ -157,7 +157,7 @@
           "type": "boolean"
         },
         "docker": {
-          "description": "Install Docker in generated setup artifacts.",
+          "description": "Install Docker in generated setup artifacts, render Docker Compose deployments to the Docker repo, and install doco-cd for GitOps deployment. Exposes runtime.credentials.{doco_cd_git_access_token,doco_cd_webhook_secret}.",
           "type": "boolean"
         },
         "monitoring": {

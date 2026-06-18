@@ -101,7 +101,7 @@ locals {
 resource "github_actions_secret" "truenas_age_key" {
   for_each = local.truenas_input_servers
 
-  repository  = local.defaults.github.repositories.truenas
+  repository  = github_repository.deployment["truenas"].name
   secret_name = "AGE_KEY_${upper(replace(each.key, "-", "_"))}"
   value       = age_secret_key.server[each.key].secret_key
 }
@@ -110,7 +110,7 @@ resource "github_repository_file" "truenas_deploy_request" {
   commit_message      = "Request changed deployments"
   file                = ".github/deploy-request.json"
   overwrite_on_create = true
-  repository          = local.defaults.github.repositories.truenas
+  repository          = github_repository.deployment["truenas"].name
 
   content = jsonencode({
     workflow_revision = local.github_workflow_revisions.truenas
@@ -151,14 +151,14 @@ module "encrypted_github_file_truenas" {
   content_type   = each.value.content_type
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.truenas}/${each.key}" : ""
   file           = each.value.file
-  repository     = local.defaults.github.repositories.truenas
+  repository     = github_repository.deployment["truenas"].name
 }
 
 resource "github_repository_file" "truenas_sops_config" {
   commit_message      = "Update SOPS configuration"
   file                = ".sops.yaml"
   overwrite_on_create = true
-  repository          = local.defaults.github.repositories.truenas
+  repository          = github_repository.deployment["truenas"].name
 
   content = yamlencode({
     creation_rules = [

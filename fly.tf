@@ -74,7 +74,7 @@ locals {
 # Shared age key for the Fly deployment repository; per-service files are
 # separated by directory rather than by recipient key.
 resource "github_actions_secret" "fly_age_key" {
-  repository  = local.defaults.github.repositories.fly
+  repository  = github_repository.deployment["fly"].name
   secret_name = "AGE_KEY"
   value       = age_secret_key.fly.secret_key
 }
@@ -83,7 +83,7 @@ resource "github_repository_file" "fly_deploy_request" {
   commit_message      = "Request changed deployments"
   file                = ".github/deploy-request.json"
   overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
+  repository          = github_repository.deployment["fly"].name
 
   content = jsonencode({
     workflow_revision = local.github_workflow_revisions.fly
@@ -117,14 +117,14 @@ module "encrypted_github_file_fly" {
   content_type   = "binary"
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.repositories.fly}/${each.key}" : ""
   file           = each.value.file
-  repository     = local.defaults.github.repositories.fly
+  repository     = github_repository.deployment["fly"].name
 }
 
 resource "github_repository_file" "fly_sops_config" {
   commit_message      = "Update SOPS configuration"
   file                = ".sops.yaml"
   overwrite_on_create = true
-  repository          = local.defaults.github.repositories.fly
+  repository          = github_repository.deployment["fly"].name
 
   content = yamlencode({
     creation_rules = [

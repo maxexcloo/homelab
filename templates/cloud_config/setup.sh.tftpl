@@ -52,23 +52,29 @@ net.ipv4.conf.all.forwarding=1
 net.ipv6.conf.all.forwarding=1
 EOF
 
+%{~ if server.features.docker }
+sudo install -d -m 0700 /opt/doco-cd
+sudo tee /opt/doco-cd/docker-compose.yaml <<'EOF'
+${doco_cd}
+EOF
+sudo tee /opt/doco-cd/sops_age_key.txt <<'EOF'
+${server.runtime.credentials.age_secret_key}
+EOF
+sudo chmod 0600 /opt/doco-cd/docker-compose.yaml /opt/doco-cd/sops_age_key.txt
+%{~ endif }
+
 # Commands
 sudo sysctl --system
+
+%{~ if server.features.beszel }
+curl -fsLS https://get.beszel.dev -o /tmp/install-agent.sh && chmod 0700 /tmp/install-agent.sh && sudo /tmp/install-agent.sh -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true && rm /tmp/install-agent.sh
+%{~ endif }
 
 %{~ if server.features.cloudflared }
 curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb
 sudo dpkg -i /tmp/cloudflared.deb
 rm /tmp/cloudflared.deb
 sudo cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
-%{~ endif }
-
-%{~ if server.features.tailscale }
-curl -fsLS https://tailscale.com/install.sh | sudo sh
-sudo tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
-%{~ endif }
-
-%{~ if server.features.beszel }
-curl -fsLS https://get.beszel.dev -o /tmp/install-agent.sh && chmod 0700 /tmp/install-agent.sh && sudo /tmp/install-agent.sh -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true && rm /tmp/install-agent.sh
 %{~ endif }
 
 %{~ if server.features.cockpit }
@@ -78,4 +84,10 @@ sudo systemctl enable --now cockpit.socket
 %{~ if server.features.docker }
 curl -fsLS https://get.docker.com | sudo sh
 sudo usermod --append --groups docker "$(id -n -u)"
+sudo docker compose -f /opt/doco-cd/docker-compose.yaml -p doco-cd up -d
+%{~ endif }
+
+%{~ if server.features.tailscale }
+curl -fsLS https://tailscale.com/install.sh | sudo sh
+sudo tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
 %{~ endif }

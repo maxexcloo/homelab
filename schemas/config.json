@@ -103,9 +103,14 @@
         "repositories": {
           "additionalProperties": false,
           "description": "Names of the repositories that store deployment configurations for each platform.",
-          "required": ["fly", "truenas"],
+          "required": ["docker", "fly", "truenas"],
           "type": "object",
           "properties": {
+            "docker": {
+              "description": "Repository for Docker Compose service configs consumed by doco-cd.",
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "type": "string"
+            },
             "fly": {
               "description": "Repository for Fly.io service configs (fly.toml, .env, service templates). A GitHub Actions workflow deploys from here.",
               "pattern": "^[A-Za-z0-9._-]+$",

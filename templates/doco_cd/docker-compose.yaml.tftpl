@@ -1,0 +1,43 @@
+services:
+  doco-cd:
+    container_name: doco-cd
+    environment:
+      GIT_ACCESS_TOKEN: ${server.runtime.credentials.doco_cd_git_access_token}
+      POLL_CONFIG: |
+        - interval: 180s
+          reference: refs/heads/main
+          target: ${server.key}
+          url: https://github.com/${defaults.github.owner}/${defaults.github.repositories.docker}.git
+      SOPS_AGE_KEY_FILE: /run/secrets/sops_age_key
+      TZ: ${defaults.system.timezone}
+      WEBHOOK_SECRET: ${server.runtime.credentials.doco_cd_webhook_secret}
+    healthcheck:
+      interval: 30s
+      retries: 3
+      start_period: 15s
+      test:
+        - CMD
+        - /doco-cd
+        - healthcheck
+      timeout: 5s
+    image: ghcr.io/kimdre/doco-cd:latest
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.doco-cd.entrypoints: websecure
+      traefik.http.routers.doco-cd.middlewares: internal-only@docker
+      traefik.http.routers.doco-cd.rule: "Host(`doco-cd.${server.hosts.internal}`)"
+      traefik.http.services.doco-cd.loadbalancer.server.port: "80"
+    ports:
+      - 127.0.0.1:8089:80
+      - 127.0.0.1:9120:9120
+    restart: unless-stopped
+    secrets:
+      - sops_age_key
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - data:/data
+secrets:
+  sops_age_key:
+    file: ./sops_age_key.txt
+volumes:
+  data:

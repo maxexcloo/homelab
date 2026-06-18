@@ -30,6 +30,16 @@ locals {
           cloudflare_tunnel_read_token = local.defaults.credentials.ro
           cloudflare_tunnel_token      = local.defaults.credentials.ro
         } : {},
+        server.features.docker ? {
+          doco_cd_git_access_token = local.defaults.credentials.rw
+          doco_cd_webhook_secret = merge(
+            local.defaults.credentials.rw,
+            {
+              bootstrap_length = 48
+              bootstrap_type   = "alphanumeric"
+            }
+          )
+        } : {},
         server.features.password ? {
           password_hash = local.defaults.credentials.ro
           password = merge(

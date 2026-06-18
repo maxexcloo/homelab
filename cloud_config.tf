@@ -4,6 +4,7 @@ locals {
       "${path.module}/templates/cloud_config/cloud_config.yaml.tftpl",
       {
         defaults = local.defaults
+        doco_cd  = try(local.doco_cd_compose[server_key], null)
         server   = server
         services = local.services_render_services_safe
       },
@@ -16,6 +17,7 @@ locals {
       "${path.module}/templates/cloud_config/setup.sh.tftpl",
       {
         defaults = local.defaults
+        doco_cd  = try(local.doco_cd_compose[server_key], null)
         server   = server
         services = local.services_render_services_safe
       },
