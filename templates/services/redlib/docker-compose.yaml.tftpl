@@ -11,7 +11,6 @@ services:
       REDLIB_DEFAULT_USE_HLS: "${service.data.settings.default_use_hls}"
       REDLIB_FULL_URL: ${service.urls.default.href}
       REDLIB_ROBOTS_DISABLE_INDEXING: "${service.data.settings.robots_disable_indexing}"
-      REDLIB_SFW_ONLY: "on"
     healthcheck:
       disable: true
     image: ghcr.io/nachtalb/redlib:latest
