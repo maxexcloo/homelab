@@ -103,16 +103,11 @@
         "repositories": {
           "additionalProperties": false,
           "description": "Names of the repositories that store deployment configurations for each platform.",
-          "required": ["fly", "komodo", "truenas"],
+          "required": ["fly", "truenas"],
           "type": "object",
           "properties": {
             "fly": {
               "description": "Repository for Fly.io service configs (fly.toml, .env, service templates). A GitHub Actions workflow deploys from here.",
-              "pattern": "^[A-Za-z0-9._-]+$",
-              "type": "string"
-            },
-            "komodo": {
-              "description": "Repository for Komodo ResourceSync configs (stacks.toml, servers.toml, compose files). Komodo polls this repo.",
               "pattern": "^[A-Za-z0-9._-]+$",
               "type": "string"
             },

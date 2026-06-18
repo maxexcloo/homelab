@@ -51,7 +51,7 @@ Feature flags add credential fields automatically:
 - `resend` adds read-only `resend_api_key`.
 - `tailscale` adds read-only `tailscale_auth_key`.
 
-Servers also always get read-only `age_secret_key` and `komodo_passkey`.
+Servers also always get read-only `age_secret_key`.
 
 ## Imports
 

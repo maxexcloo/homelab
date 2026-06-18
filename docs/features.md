@@ -30,8 +30,7 @@ Target-level `features` deep-merge over service-level features.
 - `cloudflare_acme_legacy` provisions an ACME DNS token for external and
   internal zones.
 - `cloudflared` provisions a Cloudflare tunnel and tunnel credentials.
-- `docker` makes the server eligible for Docker/Komodo service deployments.
-- `komodo` includes the server in Komodo server config.
+- `docker` installs Docker on the server.
 - `monitoring` includes the server in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
@@ -41,8 +40,7 @@ Target-level `features` deep-merge over service-level features.
 - `tailscale` provisions a Tailscale auth key.
 - `zfs` marks the server for ZFS-related config.
 
-All servers also get read-only `age_secret_key` and `komodo_passkey`
-credentials.
+All servers also get read-only `age_secret_key` credentials.
 
 ## Target Selection
 

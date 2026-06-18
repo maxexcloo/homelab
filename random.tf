@@ -81,13 +81,6 @@ resource "random_password" "server" {
   special = false
 }
 
-resource "random_password" "server_komodo_passkey" {
-  for_each = local.servers_model
-
-  length  = 32
-  special = false
-}
-
 resource "random_password" "server_secret" {
   for_each = local.random_server_credential_passwords
 

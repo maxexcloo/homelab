@@ -62,12 +62,6 @@ runcmd:
   %{~ if server.features.cockpit ~}
   - systemctl enable --now cockpit.socket
   %{~ endif ~}
-  %{~ if server.features.komodo ~}
-  - SOPS_VERSION=$(basename "$(curl -fsLS -o /dev/null -w '%%{url_effective}' https://github.com/getsops/sops/releases/latest)")
-  - curl -fsLS -o /usr/local/bin/sops "https://github.com/getsops/sops/releases/download/$${SOPS_VERSION}/sops-$${SOPS_VERSION}.linux.$(dpkg --print-architecture)"
-  - chmod 0755 /usr/local/bin/sops
-  - docker compose -f /etc/komodo/periphery.compose.yaml -p komodo-periphery-${server.key} up -d
-  %{~ endif ~}
   %{~ if server.features.tailscale ~}
   - sysctl --system
   - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
@@ -98,21 +92,6 @@ write_files:
     permissions: "0644"
     source:
       uri: https://download.docker.com/linux/ubuntu/gpg
-  %{~ endif ~}
-  %{~ if server.features.komodo ~}
-  - path: /etc/komodo/periphery.compose.yaml
-    permissions: "0600"
-    content: |
-      services:
-        periphery:
-          environment:
-            PERIPHERY_PASSKEY: ${server.runtime.credentials.komodo_passkey}
-            SOPS_AGE_KEY: ${server.runtime.credentials.age_secret_key}
-          image: ghcr.io/moghtech/komodo-periphery:latest
-          network_mode: host
-          restart: unless-stopped
-          volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
   %{~ endif ~}
   %{~ if server.features.tailscale ~}
   - path: /etc/sysctl.d/50-network.conf

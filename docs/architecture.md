@@ -52,7 +52,6 @@ render artifacts for one or more deployment paths:
 - Fly services render `fly.toml`, optional cert and scale files, plus sidecars.
 - TrueNAS services prefer catalog `app.json.tftpl` and fall back to custom
   Compose when only `docker-compose.yaml.tftpl` exists.
-- Komodo receives Docker Compose stacks for Docker-capable server targets.
 
 Rendered artifacts are SOPS-encrypted through `modules/github_file_encrypted`
 and pushed to the platform-specific GitHub repositories configured in
@@ -76,5 +75,5 @@ low-risk service deploy should not share a plan with core infrastructure.
 
 Within this repo, prefer small modules only when they remove real duplication.
 The encryption/write path is already shared by `modules/github_file_encrypted`;
-Fly, TrueNAS, and Komodo keep separate root files because their deployment
-request formats and SOPS rules are platform-specific.
+Fly and TrueNAS keep separate root files because their deployment request
+formats and SOPS rules are platform-specific.

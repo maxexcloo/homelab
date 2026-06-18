@@ -160,10 +160,6 @@
           "description": "Install Docker in generated setup artifacts.",
           "type": "boolean"
         },
-        "komodo": {
-          "description": "Add this server to Komodo, create a Periphery service target, and install Periphery in generated setup artifacts when cloud_init is enabled. Exposes runtime.credentials.komodo_passkey.",
-          "type": "boolean"
-        },
         "monitoring": {
           "description": "Include this server in generated monitoring configuration. Does not provision resources or expose template variables.",
           "type": "boolean"
@@ -219,7 +215,7 @@
           "type": "string"
         },
         "title": {
-          "description": "Display name shown in dashboards, Komodo and 1Password (e.g. 'Malatang').",
+          "description": "Display name shown in dashboards and 1Password (e.g. 'Malatang').",
           "type": "string"
         },
         "username": {

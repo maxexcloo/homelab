@@ -436,7 +436,7 @@
           "type": ["string", "null"]
         },
         "title": {
-          "description": "Display name shown in Homepage, Komodo, 1Password, and monitoring (e.g. 'Vaultwarden').",
+          "description": "Display name shown in Homepage, 1Password, and monitoring (e.g. 'Vaultwarden').",
           "type": "string"
         },
         "username": {

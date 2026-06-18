@@ -123,7 +123,6 @@ locals {
           credentials = merge(
             {
               age_secret_key = age_secret_key.server[server_key].secret_key
-              komodo_passkey = random_password.server_komodo_passkey[server_key].result
             },
             {
               for field_name, field in server.credentials.fields : field_name => sensitive(try(coalesce(

@@ -53,23 +53,6 @@ uppercased.
 The deploy request stores a sorted file list and a hash. The workflow uses the
 file lists to update, add, or remove managed sidecars.
 
-## Komodo
-
-Komodo receives Docker Compose stacks for services on Docker-capable server
-targets. Services selected by `target_feature` are skipped for cloud-init
-targets so bootstrap-time services are not duplicated into Komodo.
-
-Rendered files:
-
-- `<stack>/compose.yaml`
-- service sidecars
-- root `servers.toml`
-- root `stacks.toml`
-
-Per-stack files are encrypted to the target server's age key. Root TOML files
-are encrypted to the Komodo core server's age key. A GitHub webhook notifies
-Komodo ResourceSync after repository pushes.
-
 ## Debug Rendering
 
 `mise run render` runs a refresh-free plan with `debug_dir` set. The encryption

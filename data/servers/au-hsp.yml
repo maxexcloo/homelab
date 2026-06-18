@@ -7,7 +7,6 @@ features:
   cloudflare_acme: true
   cloudflared: true
   docker: true
-  komodo: true
   password: true
   tailscale: true
 identity:

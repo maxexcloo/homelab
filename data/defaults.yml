@@ -34,7 +34,6 @@ servers:
     cloudflared: false
     cockpit: false
     docker: false
-    komodo: false
     monitoring: true
     monitoring_alerts: true
     password: false

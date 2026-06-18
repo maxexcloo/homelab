@@ -15,7 +15,6 @@ github:
   owner: excloo
   repositories:
     fly: fly
-    komodo: komodo
     truenas: truenas
 networking:
   allowlists:

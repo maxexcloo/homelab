@@ -12,7 +12,6 @@ locals {
         },
         {
           age_secret_key = local.defaults.credentials.ro
-          komodo_passkey = local.defaults.credentials.ro
         },
         server.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
