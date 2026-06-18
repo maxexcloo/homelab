@@ -5,7 +5,7 @@ data "github_user" "default" {
 
 locals {
   github_workflow_files = merge([
-    for repository_key, repository in local.defaults.github.deployment_repositories : {
+    for repository_key in keys(local.defaults.github.deployment_repositories) : {
       for file_path in fileset(path.module, "templates/workflows/${repository_key}/**") : "${repository_key}/${trimprefix(file_path, "templates/workflows/${repository_key}/")}" => {
         file           = trimprefix(file_path, "templates/workflows/${repository_key}/")
         repository_key = repository_key

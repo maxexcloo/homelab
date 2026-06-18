@@ -127,7 +127,7 @@ locals {
     for service_key, service in local.services_input : "${service_key} -> ${service.target_feature}"
     if(
       service.target_feature != "" &&
-      !contains(keys(local.defaults.servers.features), service.target_feature)
+      try(local.defaults.servers.features[service.target_feature], null) == null
     )
   ]
 
