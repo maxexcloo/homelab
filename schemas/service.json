@@ -8,61 +8,111 @@
   "definitions": {
     "cloudflare_access_policy_group": {
       "additionalProperties": false,
-      "description": "A group rule matching users for an access policy. Exactly one group type key must be present. Keys are Cloudflare Access group types (e.g. 'everyone', 'email', 'email_domain', 'group', 'ip').",
+      "description": "A Cloudflare Access selector. Exactly one selector key must be present.",
       "maxProperties": 1,
       "minProperties": 1,
-      "patternProperties": {
-        "^[a-z_]+$": {
+      "type": "object",
+      "properties": {
+        "any_valid_service_token": {
           "additionalProperties": false,
-          "description": "Group type configuration. Known properties: auth_method, cn, domain, email, group_id, ip, service_token_id, sso_url.",
+          "description": "Matches any valid Access service token.",
+          "type": "object"
+        },
+        "auth_method": {
+          "additionalProperties": false,
+          "description": "Matches an authentication method.",
+          "required": ["auth_method"],
+          "type": "object",
           "properties": {
             "auth_method": {
               "type": "string"
-            },
-            "cn": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "domain": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "email": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "group_id": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "ip": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "service_token_id": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "sso_url": {
+            }
+          }
+        },
+        "common_name": {
+          "additionalProperties": false,
+          "description": "Matches a certificate common name.",
+          "required": ["common_name"],
+          "type": "object",
+          "properties": {
+            "common_name": {
               "type": "string"
             }
-          },
+          }
+        },
+        "email": {
+          "additionalProperties": false,
+          "description": "Matches a user email address.",
+          "required": ["email"],
+          "type": "object",
+          "properties": {
+            "email": {
+              "format": "email",
+              "type": "string"
+            }
+          }
+        },
+        "email_domain": {
+          "additionalProperties": false,
+          "description": "Matches a user email domain.",
+          "required": ["domain"],
+          "type": "object",
+          "properties": {
+            "domain": {
+              "type": "string"
+            }
+          }
+        },
+        "everyone": {
+          "additionalProperties": false,
+          "description": "Matches all users.",
           "type": "object"
+        },
+        "group": {
+          "additionalProperties": false,
+          "description": "Matches a Cloudflare Access group.",
+          "required": ["id"],
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        },
+        "ip": {
+          "additionalProperties": false,
+          "description": "Matches an IP CIDR.",
+          "required": ["ip"],
+          "type": "object",
+          "properties": {
+            "ip": {
+              "type": "string"
+            }
+          }
+        },
+        "login_method": {
+          "additionalProperties": false,
+          "description": "Matches an identity provider login method.",
+          "required": ["id"],
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        },
+        "service_token": {
+          "additionalProperties": false,
+          "description": "Matches an Access service token.",
+          "required": ["token_id"],
+          "type": "object",
+          "properties": {
+            "token_id": {
+              "type": "string"
+            }
+          }
         }
-      },
-      "type": "object"
+      }
     },
     "credential_field": {
       "additionalProperties": false,
@@ -115,7 +165,9 @@
       "description": "Homepage service card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
       "properties": {},
       "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/json_data" }
+      "additionalProperties": {
+        "$ref": "#/definitions/json_data"
+      }
     },
     "features_overlay": {
       "additionalProperties": false,
@@ -308,7 +360,9 @@
     "dashboard": {
       "description": "Homepage dashboard cards for this service. Omit or set [] to render no cards. Card objects are passed through to Homepage after template interpolation.",
       "type": "array",
-      "items": { "$ref": "#/definitions/dashboard" }
+      "items": {
+        "$ref": "#/definitions/dashboard"
+      }
     },
     "data": {
       "description": "General-purpose service data exposed to templates as service.data and data. Values may be any JSON shape. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
@@ -475,8 +529,26 @@
             "required": ["expose", "url"],
             "type": "object",
             "properties": {
+              "backend_port": {
+                "description": "Override the container listening port.",
+                "maximum": 65535,
+                "minimum": 1,
+                "type": ["integer", "null"]
+              },
+              "backend_scheme": {
+                "description": "Override the backend protocol.",
+                "enum": ["", "http", "https"],
+                "type": "string"
+              },
+              "backend_url": {
+                "description": "Override the Cloudflare Tunnel origin URL.",
+                "pattern": "^https?://",
+                "type": "string"
+              },
               "cloudflare_access": {
                 "description": "Cloudflare Zero Trust Access applications protecting this route. Each entry creates a cloudflare_zero_trust_access_application resource for this route's hostname and path.",
+                "minItems": 1,
+                "type": "array",
                 "items": {
                   "additionalProperties": false,
                   "description": "Cloudflare Zero Trust Access application configuration.",
@@ -485,11 +557,11 @@
                   "properties": {
                     "allowed_idps": {
                       "description": "List of IDP aliases from config.cloudflare.access.identity_providers to restrict authentication to. Omit to allow all configured IDPs.",
+                      "type": "array",
                       "items": {
                         "pattern": "^[a-z][a-z0-9_]*$",
                         "type": "string"
-                      },
-                      "type": "array"
+                      }
                     },
                     "auto_redirect_to_identity": {
                       "description": "Whether to automatically redirect unauthenticated users to the identity provider login page.",
@@ -505,6 +577,8 @@
                     },
                     "policies": {
                       "description": "Access policies applied to this application. Each policy defines a decision and the groups it applies to.",
+                      "minItems": 1,
+                      "type": "array",
                       "items": {
                         "additionalProperties": false,
                         "description": "A Cloudflare Access policy that defines who can or cannot reach the application.",
@@ -518,17 +592,17 @@
                           },
                           "exclude": {
                             "description": "Groups excluded from this policy.",
+                            "type": "array",
                             "items": {
                               "$ref": "#/definitions/cloudflare_access_policy_group"
-                            },
-                            "type": "array"
+                            }
                           },
                           "include": {
                             "description": "Groups included in this policy.",
+                            "type": "array",
                             "items": {
                               "$ref": "#/definitions/cloudflare_access_policy_group"
-                            },
-                            "type": "array"
+                            }
                           },
                           "name": {
                             "description": "Policy display name. Defaults to a name derived from the decision type.",
@@ -541,15 +615,13 @@
                           },
                           "require": {
                             "description": "Groups that must additionally satisfy this policy.",
+                            "type": "array",
                             "items": {
                               "$ref": "#/definitions/cloudflare_access_policy_group"
-                            },
-                            "type": "array"
+                            }
                           }
                         }
-                      },
-                      "minItems": 1,
-                      "type": "array"
+                      }
                     },
                     "session_duration": {
                       "description": "Duration of the access session (e.g. '24h', '12h', '30m'). Omit to use the Cloudflare default.",
@@ -557,12 +629,11 @@
                       "type": "string"
                     }
                   }
-                },
-                "minItems": 1,
-                "type": "array"
+                }
               },
               "cloudflare_rate_limiting_rules": {
                 "description": "Cloudflare rate limiting rules applied to this route's zone. Rules are grouped by zone and applied via a cloudflare_ruleset for the http_ratelimit phase.",
+                "type": "array",
                 "items": {
                   "additionalProperties": false,
                   "description": "A Cloudflare rate limiting rule applied at the zone level.",
@@ -603,10 +674,10 @@
                       "properties": {
                         "characteristics": {
                           "description": "Keys used to group requests for counting. Use cf.unique_visitor_id for per-device limits.",
+                          "type": "array",
                           "items": {
                             "type": "string"
-                          },
-                          "type": "array"
+                          }
                         },
                         "period": {
                           "description": "Time window in seconds in which matching requests are counted.",
@@ -621,11 +692,11 @@
                       }
                     }
                   }
-                },
-                "type": "array"
+                }
               },
               "cloudflare_waf_rules": {
                 "description": "Cloudflare WAF custom rules applied to this route's zone. Rules are grouped by zone and applied via cloudflare_ruleset.",
+                "type": "array",
                 "items": {
                   "additionalProperties": false,
                   "description": "A Cloudflare WAF custom rule applied at the zone level.",
@@ -655,24 +726,7 @@
                       "type": "string"
                     }
                   }
-                },
-                "type": "array"
-              },
-              "backend_port": {
-                "description": "Override the container listening port.",
-                "maximum": 65535,
-                "minimum": 1,
-                "type": ["integer", "null"]
-              },
-              "backend_scheme": {
-                "description": "Override the backend protocol.",
-                "enum": ["", "http", "https"],
-                "type": "string"
-              },
-              "backend_url": {
-                "description": "Override the Cloudflare Tunnel origin URL.",
-                "pattern": "^https?://",
-                "type": "string"
+                }
               },
               "container": {
                 "description": "Override the container receiving generated Traefik labels.",

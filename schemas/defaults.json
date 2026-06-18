@@ -17,14 +17,14 @@
           "type": "object",
           "properties": {
             "identity_providers": {
+              "description": "Default empty map; config.yml overrides with actual IDP aliases.",
+              "type": "object",
               "additionalProperties": {
                 "type": "string"
               },
-              "description": "Default empty map; config.yml overrides with actual IDP aliases.",
               "propertyNames": {
                 "pattern": "^[a-z][a-z0-9_]*$"
-              },
-              "type": "object"
+              }
             }
           }
         }
@@ -135,7 +135,7 @@
           "type": "integer"
         },
         "wildcard": {
-          "description": "Whether to create a wildcard CNAME (*.hostname → hostname) alongside each auto-generated A/AAAA/CNAME record by default.",
+          "description": "Whether to create a wildcard CNAME (*.hostname \u2192 hostname) alongside each auto-generated A/AAAA/CNAME record by default.",
           "type": "boolean"
         }
       }

@@ -40,11 +40,6 @@
       "required": ["account_name"],
       "type": "object",
       "properties": {
-        "account_name": {
-          "description": "Cloudflare account name to look up for account-scoped resources.",
-          "minLength": 1,
-          "type": "string"
-        },
         "access": {
           "additionalProperties": false,
           "description": "Cloudflare Zero Trust Access settings for generating access applications from service routing URLs.",
@@ -52,283 +47,292 @@
           "type": "object",
           "properties": {
             "identity_providers": {
+              "description": "Map of IDP alias to Cloudflare display name. Aliases are referenced in service access.allowed_idps; display names are matched against the account's configured identity providers.",
+              "type": "object",
               "additionalProperties": {
                 "description": "Cloudflare display name for this IDP alias.",
                 "type": "string"
               },
-              "description": "Map of IDP alias to Cloudflare display name. Aliases are referenced in service access.allowed_idps; display names are matched against the account's configured identity providers.",
               "propertyNames": {
                 "pattern": "^[a-z][a-z0-9_]*$"
-              },
-              "type": "object"
+              }
             }
           }
+        },
+        "account_name": {
+          "description": "Cloudflare account name to look up for account-scoped resources.",
+          "minLength": 1,
+          "type": "string"
         }
       }
-    }
-  },
-  "domains": {
-    "additionalProperties": false,
-    "description": "Domain names used to construct server and service FQDNs.",
-    "required": ["acme", "external", "internal"],
-    "type": "object",
-    "properties": {
-      "acme": {
-        "description": "Domain used for DNS-01 ACME challenge delegation. _acme-challenge CNAMEs on the external and internal domains point here, allowing a single token to issue certificates for all hostnames.",
-        "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
-        "type": "string"
-      },
-      "external": {
-        "description": "Public-facing domain. Server FQDNs are {name}.{region}.{external}; service FQDNs are {service}.{server_fqdn}.",
-        "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
-        "type": "string"
-      },
-      "internal": {
-        "description": "Internal Tailscale domain. Used for private service access via Tailscale IPs.",
-        "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
-        "type": "string"
-      }
-    }
-  },
-  "github": {
-    "additionalProperties": false,
-    "description": "GitHub organisation and repository names used to push encrypted configuration files.",
-    "required": ["owner", "repositories"],
-    "type": "object",
-    "properties": {
-      "owner": {
-        "description": "GitHub organisation or user that owns the deployment repositories.",
-        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
-        "type": "string"
-      },
-      "repositories": {
-        "additionalProperties": false,
-        "description": "Names of the repositories that store deployment configurations for each platform.",
-        "required": ["fly", "komodo", "truenas"],
-        "type": "object",
-        "properties": {
-          "fly": {
-            "description": "Repository for Fly.io service configs (fly.toml, .env, service templates). A GitHub Actions workflow deploys from here.",
-            "pattern": "^[A-Za-z0-9._-]+$",
-            "type": "string"
-          },
-          "komodo": {
-            "description": "Repository for Komodo ResourceSync configs (stacks.toml, servers.toml, compose files). Komodo polls this repo.",
-            "pattern": "^[A-Za-z0-9._-]+$",
-            "type": "string"
-          },
-          "truenas": {
-            "description": "Repository for TrueNAS service configs (compose.json, app.json, service config files). A GitHub Actions workflow applies these.",
-            "pattern": "^[A-Za-z0-9._-]+$",
-            "type": "string"
-          }
+    },
+    "domains": {
+      "additionalProperties": false,
+      "description": "Domain names used to construct server and service FQDNs.",
+      "required": ["acme", "external", "internal"],
+      "type": "object",
+      "properties": {
+        "acme": {
+          "description": "Domain used for DNS-01 ACME challenge delegation. _acme-challenge CNAMEs on the external and internal domains point here, allowing a single token to issue certificates for all hostnames.",
+          "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+          "type": "string"
+        },
+        "external": {
+          "description": "Public-facing domain. Server FQDNs are {name}.{region}.{external}; service FQDNs are {service}.{server_fqdn}.",
+          "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+          "type": "string"
+        },
+        "internal": {
+          "description": "Internal Tailscale domain. Used for private service access via Tailscale IPs.",
+          "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+          "type": "string"
         }
       }
-    }
-  },
-  "networking": {
-    "additionalProperties": false,
-    "description": "Network allowlists referenced by services for IP allowlist middleware.",
-    "required": ["allowlists"],
-    "type": "object",
-    "properties": {
-      "allowlists": {
-        "additionalProperties": false,
-        "description": "Named CIDR allowlists used in Traefik IP allowlist middleware labels.",
-        "required": ["internal"],
-        "type": "object",
-        "properties": {
-          "internal": {
-            "description": "CIDR ranges allowed through internal-only middleware.",
-            "minItems": 1,
-            "type": "array",
-            "uniqueItems": true,
-            "items": {
-              "pattern": "^[0-9A-Fa-f:.]+/[0-9]{1,3}$",
+    },
+    "github": {
+      "additionalProperties": false,
+      "description": "GitHub organisation and repository names used to push encrypted configuration files.",
+      "required": ["owner", "repositories"],
+      "type": "object",
+      "properties": {
+        "owner": {
+          "description": "GitHub organisation or user that owns the deployment repositories.",
+          "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+          "type": "string"
+        },
+        "repositories": {
+          "additionalProperties": false,
+          "description": "Names of the repositories that store deployment configurations for each platform.",
+          "required": ["fly", "komodo", "truenas"],
+          "type": "object",
+          "properties": {
+            "fly": {
+              "description": "Repository for Fly.io service configs (fly.toml, .env, service templates). A GitHub Actions workflow deploys from here.",
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "type": "string"
+            },
+            "komodo": {
+              "description": "Repository for Komodo ResourceSync configs (stacks.toml, servers.toml, compose files). Komodo polls this repo.",
+              "pattern": "^[A-Za-z0-9._-]+$",
+              "type": "string"
+            },
+            "truenas": {
+              "description": "Repository for TrueNAS service configs (compose.json, app.json, service config files). A GitHub Actions workflow applies these.",
+              "pattern": "^[A-Za-z0-9._-]+$",
               "type": "string"
             }
           }
         }
       }
-    }
-  },
-  "onepassword": {
-    "additionalProperties": false,
-    "description": "1Password Connect integration settings for storing generated credentials.",
-    "required": ["vaults"],
-    "type": "object",
-    "properties": {
-      "vaults": {
-        "additionalProperties": false,
-        "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",
-        "required": ["servers", "services"],
-        "type": "object",
-        "properties": {
-          "servers": {
-            "additionalProperties": false,
-            "description": "Vault for server credentials.",
-            "required": ["id", "tags"],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Vault UUID for server credentials.",
-                "pattern": "^[a-z0-9]{26}$",
+    },
+    "networking": {
+      "additionalProperties": false,
+      "description": "Network allowlists referenced by services for IP allowlist middleware.",
+      "required": ["allowlists"],
+      "type": "object",
+      "properties": {
+        "allowlists": {
+          "additionalProperties": false,
+          "description": "Named CIDR allowlists used in Traefik IP allowlist middleware labels.",
+          "required": ["internal"],
+          "type": "object",
+          "properties": {
+            "internal": {
+              "description": "CIDR ranges allowed through internal-only middleware.",
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "pattern": "^[0-9A-Fa-f:.]+/[0-9]{1,3}$",
                 "type": "string"
-              },
-              "tags": {
-                "description": "Tags applied to server items.",
-                "type": "array",
-                "uniqueItems": true,
-                "items": {
-                  "type": "string"
-                }
               }
             }
-          },
-          "services": {
-            "additionalProperties": false,
-            "description": "Vault for service credentials.",
-            "required": ["id", "tags"],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Vault UUID for service credentials.",
-                "pattern": "^[a-z0-9]{26}$",
-                "type": "string"
-              },
-              "tags": {
-                "description": "Tags applied to service items.",
-                "type": "array",
-                "uniqueItems": true,
-                "items": {
+          }
+        }
+      }
+    },
+    "onepassword": {
+      "additionalProperties": false,
+      "description": "1Password Connect integration settings for storing generated credentials.",
+      "required": ["vaults"],
+      "type": "object",
+      "properties": {
+        "vaults": {
+          "additionalProperties": false,
+          "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",
+          "required": ["servers", "services"],
+          "type": "object",
+          "properties": {
+            "servers": {
+              "additionalProperties": false,
+              "description": "Vault for server credentials.",
+              "required": ["id", "tags"],
+              "type": "object",
+              "properties": {
+                "id": {
+                  "description": "Vault UUID for server credentials.",
+                  "pattern": "^[a-z0-9]{26}$",
                   "type": "string"
+                },
+                "tags": {
+                  "description": "Tags applied to server items.",
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "services": {
+              "additionalProperties": false,
+              "description": "Vault for service credentials.",
+              "required": ["id", "tags"],
+              "type": "object",
+              "properties": {
+                "id": {
+                  "description": "Vault UUID for service credentials.",
+                  "pattern": "^[a-z0-9]{26}$",
+                  "type": "string"
+                },
+                "tags": {
+                  "description": "Tags applied to service items.",
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }
           }
         }
       }
-    }
-  },
-  "organization": {
-    "additionalProperties": false,
-    "description": "Organisation-level metadata used across resources.",
-    "required": ["email", "managed_comment", "name"],
-    "type": "object",
-    "properties": {
-      "email": {
-        "description": "Primary contact email address. Used as the sender and recipient for alert emails (e.g. Gatus notifications via Resend).",
-        "format": "email",
-        "type": "string"
-      },
-      "managed_comment": {
-        "description": "Comment string attached to all Cloudflare DNS records to indicate they are managed by OpenTofu.",
-        "minLength": 1,
-        "type": "string"
-      },
-      "name": {
-        "description": "Organisation short name used in resource display names and identifiers.",
-        "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
-        "type": "string"
-      }
-    }
-  },
-  "resend": {
-    "additionalProperties": false,
-    "description": "SMTP settings for the Resend email relay used by services that send alerts or notifications.",
-    "required": ["host", "port", "username"],
-    "type": "object",
-    "properties": {
-      "host": {
-        "description": "SMTP server hostname (e.g. 'smtp.resend.com').",
-        "format": "hostname",
-        "type": "string"
-      },
-      "port": {
-        "description": "SMTP port (e.g. 465 for implicit TLS, 587 for STARTTLS).",
-        "maximum": 65535,
-        "minimum": 1,
-        "type": "integer"
-      },
-      "username": {
-        "description": "SMTP username. Resend uses 'resend' as the fixed username; the API key is the password.",
-        "minLength": 1,
-        "type": "string"
-      }
-    }
-  },
-  "server_types": {
-    "description": "Metadata for each valid server type, including display labels, icons, and Tailscale tag mappings.",
-    "type": "object",
-    "additionalProperties": {
+    },
+    "organization": {
       "additionalProperties": false,
-      "description": "Metadata for a single server type.",
-      "required": ["icon", "label", "tailscale_tag"],
+      "description": "Organisation-level metadata used across resources.",
+      "required": ["email", "managed_comment", "name"],
       "type": "object",
       "properties": {
-        "icon": {
-          "description": "Homepage icon identifier for this server type.",
+        "email": {
+          "description": "Primary contact email address. Used as the sender and recipient for alert emails (e.g. Gatus notifications via Resend).",
+          "format": "email",
+          "type": "string"
+        },
+        "managed_comment": {
+          "description": "Comment string attached to all Cloudflare DNS records to indicate they are managed by OpenTofu.",
           "minLength": 1,
           "type": "string"
         },
-        "label": {
-          "description": "Human-readable group label for this server type.",
-          "minLength": 1,
-          "type": "string"
-        },
-        "tailscale_tag": {
-          "description": "Tailscale ACL tag name without the tag: prefix.",
-          "pattern": "^[a-z][a-z0-9-]*$",
+        "name": {
+          "description": "Organisation short name used in resource display names and identifiers.",
+          "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         }
       }
     },
-    "propertyNames": {
-      "enum": ["appliance", "cicd", "ephemeral", "router", "server", "vm"],
-      "type": "string"
-    }
-  },
-  "system": {
-    "additionalProperties": false,
-    "description": "Default OS-level settings injected into cloud-init for provisioned servers.",
-    "required": ["locale", "shell", "timezone"],
-    "type": "object",
-    "properties": {
-      "locale": {
-        "description": "System locale (e.g. 'en_AU').",
-        "pattern": "^[a-z]{2}_[A-Z]{2}(?:\\.[A-Za-z0-9-]+)?$",
-        "type": "string"
+    "resend": {
+      "additionalProperties": false,
+      "description": "SMTP settings for the Resend email relay used by services that send alerts or notifications.",
+      "required": ["host", "port", "username"],
+      "type": "object",
+      "properties": {
+        "host": {
+          "description": "SMTP server hostname (e.g. 'smtp.resend.com').",
+          "format": "hostname",
+          "type": "string"
+        },
+        "port": {
+          "description": "SMTP port (e.g. 465 for implicit TLS, 587 for STARTTLS).",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "username": {
+          "description": "SMTP username. Resend uses 'resend' as the fixed username; the API key is the password.",
+          "minLength": 1,
+          "type": "string"
+        }
+      }
+    },
+    "server_types": {
+      "description": "Metadata for each valid server type, including display labels, icons, and Tailscale tag mappings.",
+      "type": "object",
+      "additionalProperties": {
+        "additionalProperties": false,
+        "description": "Metadata for a single server type.",
+        "required": ["icon", "label", "tailscale_tag"],
+        "type": "object",
+        "properties": {
+          "icon": {
+            "description": "Homepage icon identifier for this server type.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "label": {
+            "description": "Human-readable group label for this server type.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "tailscale_tag": {
+            "description": "Tailscale ACL tag name without the tag: prefix.",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "type": "string"
+          }
+        }
       },
-      "shell": {
-        "description": "Default login shell path (e.g. '/bin/bash').",
-        "pattern": "^/",
-        "type": "string"
-      },
-      "timezone": {
-        "description": "System timezone in tz database format (e.g. 'Australia/Sydney').",
-        "pattern": "^[A-Za-z_+-]+(?:/[A-Za-z0-9_+-]+)+$",
+      "propertyNames": {
+        "enum": ["appliance", "cicd", "ephemeral", "router", "server", "vm"],
         "type": "string"
       }
-    }
-  },
-  "tailscale": {
-    "additionalProperties": false,
-    "description": "Tailscale network configuration applied when provisioning Tailscale keys.",
-    "required": ["admin_identities", "approver_excludes"],
-    "type": "object",
-    "properties": {
-      "admin_identities": {
-        "description": "Tailscale identity emails or passkey names granted admin access to the tailnet.",
-        "minItems": 1,
-        "type": "array",
-        "uniqueItems": true,
-        "items": { "type": "string" }
-      },
-      "approver_excludes": {
-        "description": "Type keys excluded from auto-approving exit nodes and subnet routes.",
-        "type": "array",
-        "uniqueItems": true,
-        "items": { "type": "string" }
+    },
+    "system": {
+      "additionalProperties": false,
+      "description": "Default OS-level settings injected into cloud-init for provisioned servers.",
+      "required": ["locale", "shell", "timezone"],
+      "type": "object",
+      "properties": {
+        "locale": {
+          "description": "System locale (e.g. 'en_AU').",
+          "pattern": "^[a-z]{2}_[A-Z]{2}(?:\\.[A-Za-z0-9-]+)?$",
+          "type": "string"
+        },
+        "shell": {
+          "description": "Default login shell path (e.g. '/bin/bash').",
+          "pattern": "^/",
+          "type": "string"
+        },
+        "timezone": {
+          "description": "System timezone in tz database format (e.g. 'Australia/Sydney').",
+          "pattern": "^[A-Za-z_+-]+(?:/[A-Za-z0-9_+-]+)+$",
+          "type": "string"
+        }
+      }
+    },
+    "tailscale": {
+      "additionalProperties": false,
+      "description": "Tailscale network configuration applied when provisioning Tailscale keys.",
+      "required": ["admin_identities", "approver_excludes"],
+      "type": "object",
+      "properties": {
+        "admin_identities": {
+          "description": "Tailscale identity emails or passkey names granted admin access to the tailnet.",
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "approver_excludes": {
+          "description": "Type keys excluded from auto-approving exit nodes and subnet routes.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
       }
     }
   }

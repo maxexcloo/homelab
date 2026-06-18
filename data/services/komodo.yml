@@ -45,8 +45,8 @@ routing:
     - expose: cloudflare
       url: komodo.excloo.com
       cloudflare_access:
-        - auto_redirect_to_identity: true
-          name: Komodo
+        - name: Komodo
+          auto_redirect_to_identity: true
           session_duration: 24h
           allowed_idps:
             - excloo_id

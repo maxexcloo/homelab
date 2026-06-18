@@ -19,10 +19,10 @@ routing:
     - expose: cloudflare
       url: opencode.excloo.com
       cloudflare_access:
-        - allowed_idps:
-            - excloo_id
+        - name: OpenCode
           auto_redirect_to_identity: true
-          name: OpenCode
+          allowed_idps:
+            - excloo_id
           policies:
             - decision: allow
               include:
