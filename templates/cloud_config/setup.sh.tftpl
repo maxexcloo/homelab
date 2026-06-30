@@ -11,9 +11,6 @@ sudo apt upgrade -y
 %{~ if server.features.cockpit }
 sudo apt install -y cockpit
 %{~ endif }
-%{~ if server.features.docker }
-sudo apt install -y age
-%{~ endif }
 %{~ if server.features.zfs }
 sudo apt install -y sanoid zfsutils-linux
 %{~ endif }
