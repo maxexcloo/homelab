@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../../schemas/server.json
+parent: au-truenas
+platform: unmanaged
+type: vm
+features:
+  beszel: true
+  cloud_init: true
+  cloudflare_acme: true
+  cloudflared: true
+  password: true
+  tailscale: true
+identity:
+  name: openchamber
+  region: au
+  title: OpenChamber
+  username: max.schaefer
