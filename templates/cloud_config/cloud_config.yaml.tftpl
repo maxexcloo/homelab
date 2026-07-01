@@ -10,7 +10,7 @@ apt:
   sources:
     %{~ if server.features.cloudflared ~}
     cloudflared:
-      source: deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $RELEASE main
+      source: deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main
     %{~ endif ~}
     %{~ if server.features.docker ~}
     docker:
