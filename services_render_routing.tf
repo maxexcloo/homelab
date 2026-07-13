@@ -52,6 +52,41 @@ locals {
               ) ? {
               "traefik.http.routers.${route.name}.tls.domains[0].main" = route.url
             } : {},
+            merge([
+              for redirect in route.redirects : merge(
+                {
+                  "traefik.enable"                                                      = "true"
+                  "traefik.http.middlewares.${redirect.name}.redirectregex.permanent"   = "true"
+                  "traefik.http.middlewares.${redirect.name}.redirectregex.regex"       = "^https?://${replace(redirect.host, ".", "\\.")}"
+                  "traefik.http.middlewares.${redirect.name}.redirectregex.replacement" = route.href
+                  "traefik.http.routers.${redirect.name}.entrypoints" = (
+                    redirect.proxy_server != null
+                  ) ? "web,websecure,webinternal" : "web,websecure"
+                  "traefik.http.routers.${redirect.name}.middlewares" = (
+                    redirect.expose == "internal"
+                    ? "internal-only@docker,${redirect.name}@docker"
+                    : "${redirect.name}@docker"
+                  )
+                  "traefik.http.routers.${redirect.name}.rule"             = "Host(`${redirect.host}`)"
+                  "traefik.http.routers.${redirect.name}.service"          = "noop@internal"
+                  "traefik.http.routers.${redirect.name}.tls.certresolver" = redirect.acme ? "cloudflare" : null
+                },
+                redirect.acme ? {
+                  "traefik.http.routers.${redirect.name}.entrypoints"      = "websecure"
+                  "traefik.http.routers.${redirect.name}-http.entrypoints" = "web"
+                  "traefik.http.routers.${redirect.name}-http.middlewares" = (
+                    redirect.expose == "internal"
+                    ? "internal-only@docker,${redirect.name}@docker"
+                    : "${redirect.name}@docker"
+                  )
+                  "traefik.http.routers.${redirect.name}-http.rule"    = "Host(`${redirect.host}`)"
+                  "traefik.http.routers.${redirect.name}-http.service" = "noop@internal"
+                } : {},
+                redirect.acme && redirect.zone != null ? {
+                  "traefik.http.routers.${redirect.name}.tls.domains[0].main" = redirect.host
+                } : {},
+              )
+            ]...),
             {
               for label_key, label_value in route.labels :
               label_key => try(templatestring(tostring(label_value), local.services_render_context_base[service_key]), null)
@@ -79,6 +114,7 @@ locals {
               route.name => {
                 backend_url = "http://${local.servers_render_servers[svc.target].runtime.addresses.tailscale_ipv4}:8000"
                 host        = route.host
+                redirect_to = null
               }
               if(
                 route.proxy_server == service.target &&
@@ -88,11 +124,28 @@ locals {
             }
           ]...),
           merge([
+            for svc in values(local.services_render_services) : merge([
+              for route in svc.routing.urls : {
+                for redirect in route.redirects :
+                redirect.name => {
+                  backend_url = null
+                  host        = redirect.host
+                  redirect_to = route.href
+                }
+                if(
+                  redirect.proxy_server == service.target &&
+                  redirect.host != null
+                )
+              }
+            ]...)
+          ]...),
+          merge([
             for source_server_key, source_server in local.servers_render_servers : {
               for route in source_server.routing.urls :
               "server-${source_server_key}-${substr(sha1(route.url), 0, 12)}" => {
                 backend_url = route.backend_url
                 host        = route.url
+                redirect_to = null
               }
               if(
                 (

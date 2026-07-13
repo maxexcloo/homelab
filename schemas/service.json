@@ -759,6 +759,16 @@
                 "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
                 "type": "string"
               },
+              "redirects": {
+                "description": "Additional hostnames that permanently redirect to this route while preserving the path and query string. Exposure follows the canonical route, except Cloudflare routes use direct external Traefik exposure so ACME can cover deep aliases.",
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+                  "type": "string"
+                }
+              },
               "url": {
                 "description": "Custom hostname, or null to derive one from the service and exposure path.",
                 "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",

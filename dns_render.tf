@@ -178,6 +178,29 @@ locals {
     if service.target == "fly"
   ])...)
 
+  # Redirect aliases resolve through the same exposure path as their canonical route.
+  dns_render_records_services_redirects = merge(flatten([
+    for service_key, service in local.services_model : [
+      for route in service.routing.urls : {
+        for redirect in route.redirects : "${service_key}-redirect-${substr(sha1(redirect.host), 0, 12)}" => {
+          content = (
+            redirect.proxy_server != null
+            ? local.servers_model[redirect.proxy_server].hosts.external
+            : redirect.expose == "external"
+            ? local.servers_model[service.target].hosts.external
+            : local.servers_model[service.target].hosts.internal
+          )
+          name    = redirect.host
+          proxied = false
+          type    = "CNAME"
+          zone    = redirect.zone
+        }
+        if redirect.zone != null
+      }
+    ]
+    if try(local.servers_model[service.target], null) != null
+  ])...)
+
   # Delegate DNS-01 challenges to the ACME zone. Fly handles its own certs.
   dns_render_records_tls_delegation = {
     for record in distinct([
@@ -185,7 +208,8 @@ locals {
         values(local.dns_render_records_manual),
         values(local.dns_render_records_servers),
         values(local.dns_render_records_servers_routing),
-        values(local.dns_render_records_services)
+        values(local.dns_render_records_services),
+        values(local.dns_render_records_services_redirects),
         ) : {
         name = source_record.name
         zone = source_record.zone
@@ -230,6 +254,7 @@ locals {
       local.dns_render_records_servers,
       local.dns_render_records_servers_routing,
       local.dns_render_records_services_fly,
+      local.dns_render_records_services_redirects,
       local.dns_render_records_services,
       local.dns_render_records_tls_delegation,
       local.dns_render_records_wildcards,

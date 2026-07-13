@@ -130,6 +130,17 @@ locals {
           )
           id           = try(url.id, tostring(route_index))
           proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
+
+          redirects = [
+            for redirect in try(url.redirects, []) : {
+              acme         = try(url.https, service.routing.https) && !startswith(url.expose, "proxy-")
+              expose       = url.expose == "cloudflare" ? "external" : url.expose
+              host         = redirect
+              name         = "${service.identity.name}-redirect-${substr(sha1(redirect), 0, 12)}"
+              proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
+              zone         = try(local.dns_model_managed_zones_by_url[redirect], null)
+            }
+          ]
         },
       )
     ]

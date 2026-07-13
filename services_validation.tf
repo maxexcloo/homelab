@@ -81,6 +81,46 @@ locals {
     ]
   ])
 
+  _services_validation_redirects_invalid = flatten([
+    for service_key, service in local.services_model : [
+      for route in service.routing.urls : [
+        for redirect in route.redirects : "${service_key} -> ${redirect.host}"
+        if(
+          redirect.host == route.host ||
+          redirect.zone == null ||
+          route.href == null ||
+          service.target == "fly"
+        )
+      ]
+    ]
+  ])
+
+  _services_validation_route_host_entries = flatten([
+    for service_key, service in local.services_model : [
+      for route in service.routing.urls : concat(
+        route.host != null ? [
+          {
+            host   = route.host
+            source = service_key
+          }
+        ] : [],
+        [
+          for redirect in route.redirects : {
+            host   = redirect.host
+            source = service_key
+          }
+        ],
+      )
+    ]
+  ])
+
+  _services_validation_route_hosts_conflicting = [
+    for host, sources in {
+      for entry in local._services_validation_route_host_entries : entry.host => entry.source...
+    } : "${host} (${join(", ", sources)})"
+    if length(sources) > 1
+  ]
+
   _services_validation_route_ids_not_unique = [
     for service_key, service in local.services_model : service_key
     if length(service.routing.urls) != length(distinct([for route in service.routing.urls : route.id]))
@@ -230,6 +270,18 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local._services_validation_proxy_server_missing) == 0
       error_message = "Proxy-exposed services reference a non-existent server: ${join(", ", local._services_validation_proxy_server_missing)}"
+    }
+
+    precondition {
+      condition = length(local._services_validation_redirects_invalid) == 0
+      error_message = (
+        "Service routing redirects require a distinct managed hostname, canonical destination, and non-Fly target: ${join(", ", local._services_validation_redirects_invalid)}"
+      )
+    }
+
+    precondition {
+      condition     = length(local._services_validation_route_hosts_conflicting) == 0
+      error_message = "Service routing hostnames and redirects must be globally unique: ${join(", ", local._services_validation_route_hosts_conflicting)}"
     }
 
     precondition {

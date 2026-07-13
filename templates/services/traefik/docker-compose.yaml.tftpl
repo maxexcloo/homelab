@@ -27,8 +27,16 @@ services:
 %{~ for name, route in custom.proxy_routes }
       traefik.http.routers.${name}.entryPoints: websecure
       traefik.http.routers.${name}.rule: "Host(`${route.host}`)"
+%{~ if route.redirect_to != null }
+      traefik.http.middlewares.${name}.redirectRegex.permanent: "true"
+      traefik.http.middlewares.${name}.redirectRegex.regex: "^https?://${replace(route.host, ".", "\\.")}"
+      traefik.http.middlewares.${name}.redirectRegex.replacement: "${route.redirect_to}"
+      traefik.http.routers.${name}.middlewares: ${name}
+      traefik.http.routers.${name}.service: noop@internal
+%{~ else }
       traefik.http.routers.${name}.service: ${name}
       traefik.http.services.${name}.loadbalancer.server.url: "${route.backend_url}"
+%{~ endif }
 %{~ endfor ~}
 %{~ endif }
     network_mode: host

@@ -7,6 +7,13 @@ locals {
       ]
     ]),
     flatten([
+      for service in values(local.services_input_targets) : [
+        for url in service.routing.urls : [
+          for redirect in try(url.redirects, []) : redirect
+        ]
+      ]
+    ]),
+    flatten([
       for server in values(local.servers_input) : [
         for url in server.routing.urls : url.url
       ]
