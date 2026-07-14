@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    group: ${service.identity.group}
+    href: ${service.urls.default.href}
+    icon: ${service.identity.service}
+    siteMonitor: ${service.urls.default.href}
+identity:
+  description: Book Search and Downloads
+  group: Media
+  name: shelfmark
+  service: shelfmark
+  title: Shelfmark
+routing:
+  backend_port: 30260
+  backend_scheme: http
+targets:
+  au-truenas: {}

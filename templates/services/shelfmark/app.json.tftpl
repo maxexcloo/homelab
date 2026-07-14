@@ -1,0 +1,27 @@
+{
+  "values": {
+    "TZ": "${defaults.system.timezone}",
+    "network": {
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.host_port}
+      }
+    },
+    "storage": {
+      "books": {
+        "type": "host_path",
+        "host_path_config": {
+          "acl_enable": false,
+          "path": "/mnt/truenas-nvme/grimmory/bookdrop"
+        }
+      },
+      "config": {
+        "type": "ix_volume",
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "config"
+        }
+      }
+    }
+  }
+}
