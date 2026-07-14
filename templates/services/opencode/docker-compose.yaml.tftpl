@@ -1,9 +1,0 @@
-services:
-  opencode:
-    command: web --hostname 0.0.0.0 --port 4096
-    image: ghcr.io/anomalyco/opencode:latest
-    restart: unless-stopped
-    volumes:
-      - data:/root
-volumes:
-  data:
