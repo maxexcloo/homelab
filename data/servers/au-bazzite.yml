@@ -3,7 +3,7 @@ parent: au
 platform: unmanaged
 type: server
 features:
-  monitoring_alerts: false
+  monitoring: false
   password: true
   tailscale: true
 identity:
