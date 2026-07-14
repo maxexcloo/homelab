@@ -7,7 +7,7 @@ dashboard:
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
 identity:
-  description: Book Search and Downloads
+  description: Book Search & Downloads
   group: Media
   name: shelfmark
   service: shelfmark
