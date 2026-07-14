@@ -36,9 +36,29 @@ DNS zone. Cloudflare-exposed records point at the target server's tunnel.
 Proxy routes point at the proxy server. Other server-backed routes point at the
 route target host.
 
+`dns_model_routes` normalizes server routes, service routes, and redirects into
+one provider-neutral hostname map. Public Cloudflare records, Cloudflare Tunnel
+ingress, and private Control D overrides consume that map.
+
 Generated A, AAAA, and CNAME records also get ACME delegation records. Wildcard
 CNAMEs are created from eligible generated server/manual records unless
 `wildcard: false`.
+
+### Tailscale DNS
+
+The tailnet already uses the dedicated Control D profile configured by
+`controld.profile_id` in `data/config.yml`. OpenTofu creates a Control D spoof
+rule for every modeled server, service, and redirect hostname served by a
+Tailscale-enabled server. Each rule returns that server's Tailscale IPv4 and
+IPv6 addresses.
+
+Set `TF_VAR_controld_api_token` in `.mise.local.toml`. The token is sensitive;
+the profile ID is not. Existing unrelated custom rules in the profile are left
+untouched.
+
+This is split-horizon DNS without a Tailscale provider resource: clients using
+the tailnet's Control D resolver receive Tailscale addresses, while all other
+clients continue to receive the public Cloudflare records.
 
 ## Traefik Labels
 
@@ -57,10 +77,13 @@ Generated labels include:
 
 Entrypoints:
 
-- `cloudflare` and `proxy-*` routes use `web,websecure,webinternal`.
-- other routes use `web,websecure`
-- HTTPS non-Cloudflare, non-proxy routes replace the main router entrypoint with
-  `websecure` and add a separate `-http` redirect router on `web`.
+- `proxy-*` routes use `webinternal` on the source server.
+- HTTPS non-proxy routes use `websecure` and add a separate `-http` redirect
+  router on `web`.
+- HTTP non-proxy routes use `web`.
+- Cloudflare Tunnel connects to service routes through
+  `https://localhost:443`, so public and Tailscale requests use the same HTTPS
+  router.
 
 Middlewares:
 
@@ -71,11 +94,29 @@ Middlewares:
 
 TLS:
 
-- HTTPS non-Cloudflare, non-proxy routes use the `cloudflare` cert resolver.
+- HTTPS non-proxy routes use the `cloudflare` cert resolver.
 - Managed custom hostnames also set `tls.domains[0].main`.
 
 Route `labels` are rendered with `templatestring()` and merged last, so custom
 labels can override generated labels. Null labels are dropped.
+
+## Redirects
+
+Add redirect aliases to a route as hostname strings:
+
+```yaml
+routing:
+  urls:
+    - expose: cloudflare
+      url: reddit.excloo.com
+      redirects:
+        - www.reddit.excloo.com
+```
+
+Aliases inherit the canonical route's target and exposure path. They receive a
+public DNS record, ACME delegation, Traefik HTTPS redirect router, HTTP redirect
+router, and Control D override. The redirect is permanent and preserves the
+request suffix while replacing the hostname with the canonical route URL.
 
 ## Containers
 

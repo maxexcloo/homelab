@@ -8,6 +8,8 @@ cloudflare:
     identity_providers:
       excloo_id:
         display_name: Excloo ID
+controld:
+  profile_id: 653224sydwhf
 domains:
   acme: 043847.xyz
   external: excloo.net

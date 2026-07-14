@@ -1,50 +1,36 @@
 locals {
-  _servers_validation_cloudflare_routes_missing = flatten([
-    for server_key, server in local.servers_input : [
-      for url in server.routing.urls : "${server_key} -> ${url.url}"
-      if(
-        url.expose == "cloudflare" &&
-        !server.features.cloudflared
-      )
-    ]
-  ])
+  _servers_validation_cloudflare_routes_missing = [
+    for route_key, route in local.cloudflare_routes : "${route_key} -> ${route.hostname}"
+    if(
+      route.source == "server" &&
+      route.tunnel == null
+    )
+  ]
 
   _servers_validation_invalid_incus_vm_parents = [
-    for server_key, server in local.servers_input : server_key
+    for server_key, server in local.incus_vm_requests : server_key
     if(
-      server.platform == "incus" &&
-      server.type == "vm" &&
-      (
-        server.parent == "" ||
-        try(
-          local.servers_input[server.parent].platform != "incus" ||
-          local.servers_input[server.parent].type != "server" ||
-          local.servers_input[server.parent].networking.management_host == "",
-          true
-        )
-      )
+      server.parent == "" ||
+      !can(local.incus_servers[server.parent])
     )
   ]
 
   _servers_validation_invalid_oci_types = [
-    for server_key, server in local.servers_input : server_key
-    if(
-      server.platform == "oci" &&
-      server.type != "vm"
-    )
+    for server_key, server in local.oci_servers : server_key
+    if server.type != "vm"
   ]
 
   _servers_validation_invalid_parents = [
     for server_key, server in local.servers_input : "${server_key} -> ${server.parent}"
     if(
       server.parent != "" &&
-      try(local.servers_input[server.parent], null) == null
+      !can(local.servers_input[server.parent])
     )
   ]
 
   _servers_validation_invalid_types = [
     for server_key, server in local.servers_input : server_key
-    if try(local.defaults.server_types[server.type], null) == null
+    if !can(local.defaults.server_types[server.type])
   ]
 
   _servers_validation_key_mismatches = [
@@ -65,78 +51,56 @@ locals {
   ]
 
   _servers_validation_oci_always_free_a1_cpus = sum([
-    for server in values(local.servers_input) : server.platform_config.oci.cpus
+    for vm in values(local.oci_vms) : vm.platform_config.oci.cpus
     if(
-      server.platform == "oci" &&
-      server.type == "vm" &&
-      server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+      vm.platform_config.oci.shape == "VM.Standard.A1.Flex"
     )
   ])
 
   _servers_validation_oci_always_free_a1_memory = sum([
-    for server in values(local.servers_input) : server.platform_config.oci.memory
+    for vm in values(local.oci_vms) : vm.platform_config.oci.memory
     if(
-      server.platform == "oci" &&
-      server.type == "vm" &&
-      server.platform_config.oci.shape == "VM.Standard.A1.Flex"
+      vm.platform_config.oci.shape == "VM.Standard.A1.Flex"
     )
   ])
 
   _servers_validation_oci_always_free_boot_volume_gbs = sum([
-    for server in values(local.servers_input) : server.platform_config.oci.disk_size
-    if(
-      server.platform == "oci" &&
-      server.type == "vm"
-    )
+    for vm in values(local.oci_vms) : vm.platform_config.oci.disk_size
   ])
 
   _servers_validation_oci_always_free_micro_instances = length([
-    for server in values(local.servers_input) : server
-    if(
-      server.platform == "oci" &&
-      server.type == "vm" &&
-      server.platform_config.oci.shape == "VM.Standard.E2.1.Micro"
-    )
+    for vm in values(local.oci_vms) : vm
+    if vm.platform_config.oci.shape == "VM.Standard.E2.1.Micro"
   ])
 
   _servers_validation_oci_always_free_shapes_invalid = [
-    for server_key, server in local.servers_input : server_key
-    if(
-      server.platform == "oci" &&
-      server.type == "vm" &&
-      !contains(["VM.Standard.A1.Flex", "VM.Standard.E2.1.Micro"], server.platform_config.oci.shape)
-    )
+    for vm_key, vm in local.oci_vms : vm_key
+    if !contains(["VM.Standard.A1.Flex", "VM.Standard.E2.1.Micro"], vm.platform_config.oci.shape)
   ]
 
   _servers_validation_oci_ingress_rule_names_not_unique = [
-    for server_key, server in local.servers_input : server_key
-    if(
-      server.platform == "oci" &&
-      length(server.platform_config.oci.ingress_rules) != length(distinct([
-        for rule in server.platform_config.oci.ingress_rules : rule.name
-      ]))
-    )
+    for vm_key, vm in local.oci_vms : vm_key
+    if length(vm.platform_config.oci.ingress_rules) != length(distinct([
+      for rule in vm.platform_config.oci.ingress_rules : rule.name
+    ]))
   ]
 
   _servers_validation_oci_ingress_rules_invalid = flatten([
-    for server_key, server in local.servers_input : [
-      for rule in server.platform_config.oci.ingress_rules : "${server_key} -> ${rule.protocol} ${rule.source}"
+    for vm_key, vm in local.oci_vms : [
+      for rule in vm.platform_config.oci.ingress_rules : "${vm_key} -> ${rule.protocol} ${rule.source}"
       if(
-        server.platform == "oci" &&
+        !can(cidrhost(rule.source, 0)) ||
         (
-          !can(cidrhost(rule.source, 0)) ||
-          (
-            rule.protocol == "icmp" &&
-            strcontains(rule.source, ":")
-          ) ||
-          (
-            rule.protocol == "icmpv6" &&
-            !strcontains(rule.source, ":")
-          ) ||
-          (
-            rule.port_min != null &&
-            rule.port_max < rule.port_min
-          )
+          rule.protocol == "icmp" &&
+          strcontains(rule.source, ":")
+        ) ||
+        (
+          rule.protocol == "icmpv6" &&
+          !strcontains(rule.source, ":")
+        ) ||
+        (
+          rule.port_min != null &&
+          rule.port_max < rule.port_min
         )
       )
     ]
@@ -163,7 +127,7 @@ locals {
       for url in server.routing.urls : "${server_key}.${url.url} -> ${trimprefix(url.expose, "proxy-")}"
       if(
         startswith(url.expose, "proxy-") &&
-        try(local.servers_input[trimprefix(url.expose, "proxy-")], null) == null
+        !can(local.servers_input[trimprefix(url.expose, "proxy-")])
       )
     ]
   ])
@@ -183,7 +147,7 @@ locals {
   _servers_validation_routes_unmanaged = flatten([
     for server_key, server in local.servers_input : [
       for url in server.routing.urls : "${server_key} -> ${url.url}"
-      if try(local.dns_model_managed_zones_by_url[url.url], null) == null
+      if !can(local.dns_model_managed_zones_by_url[url.url])
     ]
   ])
 

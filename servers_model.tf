@@ -50,10 +50,6 @@ locals {
             }
           )
         } : {},
-        server.features.pushover ? {
-          pushover_application_token = local.defaults.credentials.rw
-          pushover_user_key          = local.defaults.credentials.ro
-        } : {},
         server.features.resend ? {
           resend_api_key = local.defaults.credentials.ro
         } : {},
@@ -186,5 +182,12 @@ locals {
         )
       }
     )
+  }
+
+  servers_model_by_feature = {
+    for feature in keys(local.defaults.servers.features) : feature => {
+      for server_key, server in local.servers_model : server_key => server
+      if server.features[feature]
+    }
   }
 }

@@ -1,6 +1,6 @@
 locals {
   _dns_validation_duplicate_record_keys = [
-    for record_key, entries in local.dns_render_manual_entries_by_key : record_key
+    for record_key, entries in local.dns_model_manual_entries_by_key : record_key
     if length(entries) > 1
   ]
 

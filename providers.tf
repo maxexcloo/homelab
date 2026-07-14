@@ -31,6 +31,12 @@ provider "oci" {
 }
 
 provider "restapi" {
+  alias        = "controld"
+  bearer_token = var.controld_api_token
+  uri          = "https://api.controld.com"
+}
+
+provider "restapi" {
   alias                 = "onepassword"
   create_returns_object = true
   headers               = local.onepassword_connect_request_headers
@@ -39,14 +45,8 @@ provider "restapi" {
 
 provider "restapi" {
   alias                 = "resend"
+  bearer_token          = var.resend_api_key
   create_returns_object = true
   rate_limit            = 1
   uri                   = "https://api.resend.com"
-
-  # Resend is modeled through the generic REST provider because no native
-  # provider resource is used in this stack.
-  headers = {
-    "Authorization" = "Bearer ${var.resend_api_key}"
-    "Content-Type"  = "application/json"
-  }
 }

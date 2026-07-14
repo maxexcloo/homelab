@@ -9,20 +9,28 @@ locals {
     )
   }
 
-  # Incus instances are child VMs/containers whose parent remote is configured above.
-  incus_vms = {
+  # Requested Incus VMs are kept separate so validation can report invalid
+  # parents without making those requests part of resource membership.
+  incus_vm_requests = {
     for server_key, server in local.servers_model : server_key => server
     if(
       server.platform == "incus" &&
-      server.type == "vm" &&
+      server.type == "vm"
+    )
+  }
+
+  # Incus instances are child VMs/containers whose parent remote is configured above.
+  _incus_vms = {
+    for server_key, server in local.incus_vm_requests : server_key => server
+    if(
       server.parent != "" &&
-      try(local.incus_servers[server.parent], null) != null
+      can(local.incus_servers[server.parent])
     )
   }
 }
 
 resource "incus_instance" "vm" {
-  for_each = local.incus_vms
+  for_each = local._incus_vms
 
   description = each.value.identity.description
   image       = each.value.platform_config.incus.image

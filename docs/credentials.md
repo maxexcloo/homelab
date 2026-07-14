@@ -48,8 +48,6 @@ Feature flags add credential fields automatically:
 - `oidc` adds bootstrapped `oidc_client_id` and `oidc_client_secret` as
   read-write.
 - `password` adds a read-write password and read-only `password_hash`.
-- `pushover` adds read-write `pushover_application_token` and read-only
-  `pushover_user_key`.
 - `resend` adds read-only `resend_api_key`.
 - `tailscale` adds read-only `tailscale_auth_key`.
 

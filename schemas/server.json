@@ -172,10 +172,6 @@
           "description": "Generate a random admin password. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt). Stored in 1Password.",
           "type": "boolean"
         },
-        "pushover": {
-          "description": "Create 1Password read/write fields for this server's Pushover application token and user/group key. Exposes runtime.credentials.pushover_application_token and runtime.credentials.pushover_user_key.",
-          "type": "boolean"
-        },
         "resend": {
           "description": "Provision a Resend API key for outbound email. Exposes runtime.credentials.resend_api_key.",
           "type": "boolean"

@@ -11,6 +11,9 @@ B2_APPLICATION_KEY_ID = "REPLACE_ME"
 CLOUDFLARE_API_TOKEN = "REPLACE_ME"
 CLOUDFLARE_EMAIL = "REPLACE_ME"
 
+# Control D
+TF_VAR_controld_api_token = "REPLACE_ME"
+
 # GitHub
 GITHUB_TOKEN = "REPLACE_ME"
 
@@ -20,9 +23,6 @@ OCI_REGION = "REPLACE_ME"
 OCI_USER_OCID = "REPLACE_ME"
 TF_VAR_oci_private_key_base64 = "REPLACE_ME"
 TF_VAR_oci_tenancy_ocid = "REPLACE_ME"
-
-# Pushover
-TF_VAR_pushover_user_key = "REPLACE_ME"
 
 # Resend
 TF_VAR_resend_api_key = "REPLACE_ME"

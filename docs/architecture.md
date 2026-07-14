@@ -20,6 +20,11 @@ The model layer is the boundary between input data and provider resources.
 Resource keys and collection membership should come from input/model data, not
 runtime values.
 
+`dns_model_routes` is the shared routing boundary for DNS providers. It gives
+each server route, service route, and redirect a stable key plus its hostname,
+managed zone, public target, serving server, and tunnel origin. Cloudflare and
+Control D derive their provider-specific resources from this shape.
+
 ## Model And Runtime Boundaries
 
 Each server and service has two shapes:

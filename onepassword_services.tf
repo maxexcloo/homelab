@@ -1,12 +1,12 @@
 data "http" "onepassword_service_item" {
-  for_each = local.onepassword_service_existing_items
+  for_each = local._onepassword_service_existing_items
 
   request_headers = local.onepassword_connect_request_headers
   url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/${each.value}"
 }
 
 data "http" "onepassword_service_search" {
-  for_each = local.onepassword_service_items
+  for_each = local._onepassword_service_items
 
   request_headers = local.onepassword_connect_request_headers
   url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${each.value.identity.title} (${each.value.target})\"")}"
@@ -17,7 +17,7 @@ locals {
   # Dashboard cards and routable URLs alone are not credentials. Iterates
   # services_model (no runtime) so the search/fetch HTTP calls don't depend on
   # the resources whose values they read.
-  onepassword_service_items = {
+  _onepassword_service_items = {
     for service_key, service in local.services_model : service_key => service
     if(
       service.identity.username != "" ||
@@ -25,21 +25,21 @@ locals {
     )
   }
 
-  onepassword_service_search_results = {
+  _onepassword_service_search_results = {
     for service_key, item in data.http.onepassword_service_search : service_key => jsondecode(item.response_body)
   }
 
-  onepassword_service_duplicate_items = [
-    for service_key, items in local.onepassword_service_search_results : service_key
+  _onepassword_service_duplicate_items = [
+    for service_key, items in local._onepassword_service_search_results : service_key
     if length(items) > 1
   ]
 
-  onepassword_service_existing_ids = {
-    for service_key, items in local.onepassword_service_search_results : service_key => length(items) == 1 ? one(items).id : null
+  _onepassword_service_existing_ids = {
+    for service_key, items in local._onepassword_service_search_results : service_key => length(items) == 1 ? one(items).id : null
   }
 
-  onepassword_service_existing_items = {
-    for service_key, item_id in local.onepassword_service_existing_ids : service_key => item_id
+  _onepassword_service_existing_items = {
+    for service_key, item_id in local._onepassword_service_existing_ids : service_key => item_id
     if item_id != null
   }
 
@@ -50,7 +50,7 @@ locals {
     }
   }
 
-  onepassword_service_dashboard_urls = {
+  _onepassword_service_dashboard_urls = {
     for service_key, service in local.services : service_key => values({
       for card_index, dashboard_card in local.services_render_template_context[service_key].service.dashboard :
       "${lower(try(dashboard_card.name, ""))}:${format("%05d", card_index)}" => {
@@ -66,18 +66,18 @@ locals {
     })
   }
 
-  onepassword_service_host_urls = {
+  _onepassword_service_host_urls = {
     for service_key, service in local.services : service_key => [
       for url_key in ["external", "internal"] : {
         href    = service.urls[url_key].href
         label   = service.urls[url_key].label
         primary = service.urls[url_key].href == service.urls.default.href
       }
-      if try(service.urls[url_key], null) != null
+      if can(service.urls[url_key])
     ]
   }
 
-  onepassword_service_item_fields = {
+  _onepassword_service_item_fields = {
     for service_key, service in local.services : service_key => {
       for field in concat(
         service.identity.username != "" ? [
@@ -126,19 +126,19 @@ locals {
         ],
       ) : field.label => field
     }
-    if try(local.onepassword_service_items[service_key], null) != null
+    if can(local._onepassword_service_items[service_key])
   }
 
-  onepassword_service_item_payloads = {
+  _onepassword_service_item_payloads = {
     for service_key, service in local.services : service_key => {
       category = "LOGIN"
-      id       = local.onepassword_service_existing_ids[service_key]
+      id       = local._onepassword_service_existing_ids[service_key]
       tags     = local.defaults.onepassword.vaults.services.tags
       title    = "${service.identity.title} (${service.target})"
 
       fields = [
-        for label in sort(keys(local.onepassword_service_item_fields[service_key])) :
-        local.onepassword_service_item_fields[service_key][label]
+        for label in sort(keys(local._onepassword_service_item_fields[service_key])) :
+        local._onepassword_service_item_fields[service_key][label]
       ]
 
       urls = concat(
@@ -152,33 +152,33 @@ locals {
             primary = service.urls[url_key].href == service.urls.default.href
           }
         ],
-        local.onepassword_service_dashboard_urls[service_key],
-        local.onepassword_service_host_urls[service_key],
+        local._onepassword_service_dashboard_urls[service_key],
+        local._onepassword_service_host_urls[service_key],
       )
 
       vault = {
         id = local.defaults.onepassword.vaults.services.id
       }
     }
-    if try(local.onepassword_service_items[service_key], null) != null
+    if can(local._onepassword_service_items[service_key])
   }
 }
 
 resource "restapi_object" "onepassword_service" {
-  for_each = local.onepassword_service_items
+  for_each = local._onepassword_service_items
 
-  data                    = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
+  data                    = sensitive(jsonencode(local._onepassword_service_item_payloads[each.key]))
   id_attribute            = "id"
   ignore_server_additions = true
   path                    = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items"
   provider                = restapi.onepassword
   read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items/{id}"
-  update_data             = sensitive(jsonencode(local.onepassword_service_item_payloads[each.key]))
+  update_data             = sensitive(jsonencode(local._onepassword_service_item_payloads[each.key]))
 
   lifecycle {
     precondition {
-      condition     = length(local.onepassword_service_duplicate_items) == 0
-      error_message = "Multiple 1Password service items have the same title: ${join(", ", nonsensitive(local.onepassword_service_duplicate_items))}"
+      condition     = length(local._onepassword_service_duplicate_items) == 0
+      error_message = "Multiple 1Password service items have the same title: ${join(", ", nonsensitive(local._onepassword_service_duplicate_items))}"
     }
   }
 }

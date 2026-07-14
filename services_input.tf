@@ -37,15 +37,14 @@ locals {
           if key != "targets"
         },
         {
-          target = target_key
+          fly     = local.defaults.targets.fly
+          target  = target_key
+          truenas = local.defaults.targets.truenas
 
           credentials = {
             fields = {}
             source = service.credentials.source
           }
-
-          fly     = local.defaults.targets.fly
-          truenas = local.defaults.targets.truenas
         },
         target_config,
       )

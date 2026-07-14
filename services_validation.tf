@@ -1,23 +1,23 @@
 locals {
   # Cloudflare Universal SSL covers only one subdomain level.
   _services_validation_cloudflare_deep_subdomains = [
-    for record_key, record in local.dns_render_records_services : "${record_key} (${record.name})"
+    for route_key, route in local.dns_model_routes : "${route_key} (${route.hostname})"
     if(
-      try(record.proxied, false) &&
-      length(split(".", record.name)) - length(split(".", record.zone)) > 1
+      route.dns != null &&
+      route.dns.proxied &&
+      route.source == "service" &&
+      length(split(".", route.hostname)) - length(split(".", route.dns.zone)) > 1
     )
   ]
 
-  _services_validation_cloudflared_missing = flatten([
-    for service_key, service in local.services_model : [
-      for route in service.routing.urls : "${service_key} -> ${route.host}"
-      if(
-        route.expose == "cloudflare" &&
-        try(local.servers_model[service.target], null) != null &&
-        !local.servers_model[service.target].features.cloudflared
-      )
-    ]
-  ])
+  _services_validation_cloudflared_missing = [
+    for route_key, route in local.cloudflare_routes : "${route_key} -> ${route.hostname}"
+    if(
+      route.source == "service" &&
+      route.server_key != null &&
+      route.tunnel == null
+    )
+  ]
 
   _services_validation_file_key_mismatches = [
     for service_key, service in local.services_input : "${service_key} -> ${service.identity.name}"
@@ -40,14 +40,14 @@ locals {
   _services_validation_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
-      if try(local.services_model[import_alias], null) != null
+      if can(local.services_model[import_alias])
     ]
   ])
 
   _services_validation_invalid_imports = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
-      if try(local.services_model[service_ref], null) == null
+      if !can(local.services_model[service_ref])
     ]
   ])
 
@@ -56,7 +56,7 @@ locals {
       for target in keys(service.targets) : "${service_key} -> ${target}"
       if(
         target != "fly" &&
-        try(local.servers_model[target], null) == null
+        !can(local.servers_model[target])
       )
     ]
   ])
@@ -65,7 +65,7 @@ locals {
     for service_key, service in local.services_model : [
       for route in service.routing.urls : "${service_key} -> ${route.host}"
       if(
-        startswith(route.expose, "proxy-") &&
+        route.proxy_server != null &&
         route.backend_port == null
       )
     ]
@@ -76,7 +76,7 @@ locals {
       for route in service.routing.urls : "${service_key} -> ${route.proxy_server}"
       if(
         route.proxy_server != null &&
-        try(local.servers_model[route.proxy_server], null) == null
+        !can(local.servers_model[route.proxy_server])
       )
     ]
   ])
@@ -136,13 +136,12 @@ locals {
       for route in server.routing.urls : "${server_key}.${route.url} -> ${startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key}"
       if(
         route.expose != "cloudflare" &&
-        length([
-          for service in values(local.services_model) : service
-          if(
-            service.identity.name == "traefik" &&
-            service.target == (startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key)
-          )
-        ]) == 0
+        !contains(
+          [
+            for traefik_service in values(local.services_render_routing_traefik_services) : traefik_service.target
+          ],
+          startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key,
+        )
       )
     ]
   ])
@@ -167,14 +166,14 @@ locals {
     for service_key, service in local.services_input : "${service_key} -> ${service.target_feature}"
     if(
       service.target_feature != "" &&
-      try(local.defaults.servers.features[service.target_feature], null) == null
+      !can(local.defaults.servers.features[service.target_feature])
     )
   ]
 
   _services_validation_truenas_config_invalid_targets = [
     for service_key, service in local.services_model : service_key
     if(
-      try(local.truenas_input_servers[service.target], null) == null &&
+      !can(local.truenas_servers[service.target]) &&
       (
         service.truenas.catalog_app != "" ||
         length(service.truenas.env) > 0 ||
@@ -185,10 +184,10 @@ locals {
   ]
 
   _services_validation_truenas_missing_template = [
-    for service_key, service in local.truenas_input_services : service_key
+    for service_key, service in local.truenas_services : service_key
     if(
-      try(local.services_render_write_compose[service_key], null) == null &&
-      try(local.truenas_input_catalog_templates[service_key], null) == null
+      !can(local.services_render_compose_inputs[service_key]) &&
+      !can(local.truenas_catalog_templates[service_key])
     )
   ]
 
@@ -200,7 +199,7 @@ locals {
         service.target != "fly" &&
         route.expose != "cloudflare" &&
         route.https &&
-        try(local.dns_model_managed_zones_by_url[route.url], null) == null
+        route.zone == null
       )
     ]
   ])

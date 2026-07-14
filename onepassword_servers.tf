@@ -1,7 +1,7 @@
 # 1Password Connect search only returns item summaries, so item fetches are a
 # second step gated by IDs found in the search calls.
 data "http" "onepassword_server_item" {
-  for_each = local.onepassword_server_existing_items
+  for_each = local._onepassword_server_existing_items
 
   request_headers = local.onepassword_connect_request_headers
   url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/${each.value}"
@@ -15,21 +15,21 @@ data "http" "onepassword_server_search" {
 }
 
 locals {
-  onepassword_server_search_results = {
+  _onepassword_server_search_results = {
     for server_key, item in data.http.onepassword_server_search : server_key => jsondecode(item.response_body)
   }
 
-  onepassword_server_duplicate_items = [
-    for server_key, items in local.onepassword_server_search_results : server_key
+  _onepassword_server_duplicate_items = [
+    for server_key, items in local._onepassword_server_search_results : server_key
     if length(items) > 1
   ]
 
-  onepassword_server_existing_ids = {
-    for server_key, items in local.onepassword_server_search_results : server_key => length(items) == 1 ? one(items).id : null
+  _onepassword_server_existing_ids = {
+    for server_key, items in local._onepassword_server_search_results : server_key => length(items) == 1 ? one(items).id : null
   }
 
-  onepassword_server_existing_items = {
-    for server_key, item_id in local.onepassword_server_existing_ids : server_key => item_id
+  _onepassword_server_existing_items = {
+    for server_key, item_id in local._onepassword_server_existing_ids : server_key => item_id
     if item_id != null
   }
 
@@ -40,7 +40,7 @@ locals {
     }
   }
 
-  onepassword_server_item_fields = {
+  _onepassword_server_item_fields = {
     for server_key, server in local.servers : server_key => {
       for field in concat(
         server.identity.username != "" ? [
@@ -91,16 +91,16 @@ locals {
     }
   }
 
-  onepassword_server_item_payloads = {
+  _onepassword_server_item_payloads = {
     for server_key, server in local.servers : server_key => {
       category = "LOGIN"
-      id       = local.onepassword_server_existing_ids[server_key]
+      id       = local._onepassword_server_existing_ids[server_key]
       tags     = local.defaults.onepassword.vaults.servers.tags
       title    = server_key
 
       fields = [
-        for label in sort(keys(local.onepassword_server_item_fields[server_key])) :
-        local.onepassword_server_item_fields[server_key][label]
+        for label in sort(keys(local._onepassword_server_item_fields[server_key])) :
+        local._onepassword_server_item_fields[server_key][label]
       ]
 
       urls = [
@@ -121,18 +121,18 @@ locals {
 resource "restapi_object" "onepassword_server" {
   for_each = local.servers_model
 
-  data                    = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
+  data                    = sensitive(jsonencode(local._onepassword_server_item_payloads[each.key]))
   id_attribute            = "id"
   ignore_server_additions = true
   path                    = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items"
   provider                = restapi.onepassword
   read_path               = "/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items/{id}"
-  update_data             = sensitive(jsonencode(local.onepassword_server_item_payloads[each.key]))
+  update_data             = sensitive(jsonencode(local._onepassword_server_item_payloads[each.key]))
 
   lifecycle {
     precondition {
-      condition     = length(local.onepassword_server_duplicate_items) == 0
-      error_message = "Multiple 1Password server items have the same title: ${join(", ", nonsensitive(local.onepassword_server_duplicate_items))}"
+      condition     = length(local._onepassword_server_duplicate_items) == 0
+      error_message = "Multiple 1Password server items have the same title: ${join(", ", nonsensitive(local._onepassword_server_duplicate_items))}"
     }
   }
 }

@@ -13,7 +13,7 @@ locals {
   servers_input_ancestors = {
     for server_key, server in local.servers_input : server_key => compact([
       server_key,
-      try(local.servers_input[server.parent], null) != null ? server.parent : "",
+      can(local.servers_input[server.parent]) ? server.parent : "",
       try(local.servers_input[server.parent].parent, ""),
     ])
   }

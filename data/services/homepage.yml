@@ -18,6 +18,10 @@ data:
             - description: DNS & Zero Trust
               href: https://dash.cloudflare.com
               icon: si-cloudflare-#ffffff
+        - Control D:
+            - description: DNS
+              href: https://controld.com
+              icon: si-controld-#ffffff
         - Fly.io:
             - description: App Platform
               href: https://fly.io/dashboard
@@ -30,10 +34,6 @@ data:
             - description: Cloud VMs
               href: https://cloud.oracle.com
               icon: si-oracle-#ffffff
-        - Pushover:
-            - description: Notifications API
-              href: https://pushover.net
-              icon: si-apple-#ffffff
         - Resend:
             - description: Email API
               href: https://resend.com/overview

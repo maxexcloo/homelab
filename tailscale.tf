@@ -2,7 +2,7 @@ data "tailscale_devices" "all" {}
 
 locals {
   # Rules are ordered by least to most permissive source.
-  tailscale_acls = [
+  _tailscale_acls = [
     # Ephemeral: health checks, ping, and dashboard traffic only
     {
       action = "accept"
@@ -80,6 +80,19 @@ locals {
     },
   ]
 
+  # tagOwners object for every generated server type tag.
+  _tailscale_tags = {
+    for tag in sort(distinct([
+      for server_type in values(local.defaults.server_types) : "tag:${server_type.tailscale_tag}"
+    ])) : tag => ["group:admin"]
+  }
+
+  # autoApprovers object for generated exit node and subnet route approvals.
+  _tailscale_tags_approvers = sort(distinct([
+    for type_key, type in local.defaults.server_types : "tag:${type.tailscale_tag}"
+    if !contains(local.defaults.tailscale.approver_excludes, type_key)
+  ]))
+
   # Device names are matched back to server slugs; only the first IPv4/IPv6
   # address of each family is used for generated internal DNS records.
   tailscale_device_addresses = {
@@ -90,31 +103,18 @@ locals {
       ipv6    = try(one([for address in device.addresses : address if can(cidrhost("${address}/128", 0))]), "")
     }
   }
-
-  # tagOwners object for every generated server type tag.
-  tailscale_tags = {
-    for tag in sort(distinct([
-      for server_type in values(local.defaults.server_types) : "tag:${server_type.tailscale_tag}"
-    ])) : tag => ["group:admin"]
-  }
-
-  # autoApprovers object for generated exit node and subnet route approvals.
-  tailscale_tags_approvers = sort(distinct([
-    for type_key, type in local.defaults.server_types : "tag:${type.tailscale_tag}"
-    if !contains(local.defaults.tailscale.approver_excludes, type_key)
-  ]))
 }
 
 resource "tailscale_acl" "default" {
   acl = jsonencode({
-    acls      = local.tailscale_acls
-    tagOwners = local.tailscale_tags
+    acls      = local._tailscale_acls
+    tagOwners = local._tailscale_tags
 
     autoApprovers = {
-      exitNode = local.tailscale_tags_approvers
+      exitNode = local._tailscale_tags_approvers
 
       routes = {
-        for route in ["0.0.0.0/0", "::/0"] : route => local.tailscale_tags_approvers
+        for route in ["0.0.0.0/0", "::/0"] : route => local._tailscale_tags_approvers
       }
     }
 
@@ -125,7 +125,7 @@ resource "tailscale_acl" "default" {
 }
 
 resource "tailscale_tailnet_key" "server" {
-  for_each = local.servers_by_feature.tailscale
+  for_each = local.servers_model_by_feature.tailscale
 
   description   = each.key
   preauthorized = true
@@ -138,7 +138,7 @@ resource "tailscale_tailnet_key" "server" {
 }
 
 resource "tailscale_tailnet_key" "service" {
-  for_each = local.services_by_feature.tailscale
+  for_each = local.services_model_by_feature.tailscale
 
   description   = each.key
   ephemeral     = true

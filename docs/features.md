@@ -15,7 +15,6 @@ only set overrides.
   enabled.
 - `oidc` adds bootstrapped read-write OIDC client credentials.
 - `password` adds a service password and password hash.
-- `pushover` adds a read-write application token and read-only user key.
 - `resend` provisions a Resend API key.
 - `tailscale` provisions a Tailscale auth key.
 
@@ -36,7 +35,6 @@ Target-level `features` deep-merge over service-level features.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
 - `password` adds a server password and password hash.
-- `pushover` adds a read-write application token and read-only user key.
 - `resend` provisions a Resend API key.
 - `tailscale` provisions a Tailscale auth key.
 - `zfs` marks the server for ZFS-related config.

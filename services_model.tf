@@ -39,10 +39,6 @@ locals {
             }
           )
         } : {},
-        service.features.pushover ? {
-          pushover_application_token = local.defaults.credentials.rw
-          pushover_user_key          = local.defaults.credentials.ro
-        } : {},
         service.features.resend ? {
           resend_api_key = local.defaults.credentials.ro
         } : {},
@@ -112,6 +108,9 @@ locals {
         },
         url,
         {
+          id           = try(url.id, tostring(route_index))
+          proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
+
           dns_target_host = (
             service.target == "fly" ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
             : startswith(url.expose, "proxy-") ? try(
@@ -122,23 +121,28 @@ locals {
               "${service.identity.name}.${local.servers_model[service.target].hosts.external}",
               null,
             )
-            : url.expose == "internal" && try(url.backend_scheme, service.routing.backend_scheme) != "" ? try(
+            : (
+              url.expose == "internal" &&
+              try(url.backend_scheme, service.routing.backend_scheme) != ""
+              ) ? try(
               "${service.identity.name}.${local.servers_model[service.target].hosts.internal}",
               null,
             )
             : null
           )
-          id           = try(url.id, tostring(route_index))
-          proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
 
           redirects = [
             for redirect in try(url.redirects, []) : {
-              acme         = try(url.https, service.routing.https) && !startswith(url.expose, "proxy-")
               expose       = url.expose == "cloudflare" ? "external" : url.expose
               host         = redirect
               name         = "${service.identity.name}-redirect-${substr(sha1(redirect), 0, 12)}"
               proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
               zone         = try(local.dns_model_managed_zones_by_url[redirect], null)
+
+              acme = (
+                try(url.https, service.routing.https) &&
+                !startswith(url.expose, "proxy-")
+              )
             }
           ]
         },
@@ -155,9 +159,20 @@ locals {
           container   = route.container != "" ? route.container : service.identity.service
           host        = route.url != null ? route.url : route.dns_target_host
           host_port   = route.host_port != null ? route.host_port : route.backend_port
-          href        = route.url != null || route.dns_target_host != null ? "${route.https ? "https" : "http"}://${route.url != null ? route.url : route.dns_target_host}" : null
           name        = route.id == "0" ? service.identity.name : "${service.identity.name}-${route.id}"
-          zone = route.dns_target_host == null && route.url == null ? null : (
+
+          acme = (
+            route.https &&
+            route.proxy_server == null
+          )
+          href = (
+            route.url != null ||
+            route.dns_target_host != null
+          ) ? "${route.https ? "https" : "http"}://${route.url != null ? route.url : route.dns_target_host}" : null
+          zone = (
+            route.dns_target_host == null &&
+            route.url == null
+            ) ? null : (
             route.url != null ? local.dns_model_managed_zones_by_url[route.url]
             : service.target == "fly" ? "fly.dev"
             : route.expose == "internal" ? local.defaults.domains.internal
@@ -172,21 +187,6 @@ locals {
     for service_key, service in local.services_input_targets : service_key => try(local.servers_model[service.target], null)
   }
 
-  _services_model_urls = {
-    for service_key, service in local.services_input_targets : service_key => {
-      for host, urls in {
-        for route in local._services_model_routes[service_key] :
-        route.host => {
-          host  = route.host
-          href  = route.href
-          label = route.url != null ? "website" : route.expose
-          zone  = route.zone
-        }...
-        if route.host != null
-      } : host => urls[0]
-    }
-  }
-
   _services_model_url_aliases = {
     for service_key, service in local.services_input_targets : service_key => {
       default = try(
@@ -199,17 +199,42 @@ locals {
       external = try(
         [
           for route in local._services_model_routes[service_key] : route.href
-          if route.href != null && (route.url != null || route.expose == "external")
+          if(
+            route.href != null &&
+            (
+              route.url != null ||
+              route.expose == "external"
+            )
+          )
         ][0],
         null,
       )
       internal = try(
         [
           for route in local._services_model_routes[service_key] : route.href
-          if route.href != null && route.url == null && route.expose == "internal"
+          if(
+            route.href != null &&
+            route.url == null &&
+            route.expose == "internal"
+          )
         ][0],
         null,
       )
+    }
+  }
+
+  _services_model_urls = {
+    for service_key, service in local.services_input_targets : service_key => {
+      for host, urls in {
+        for route in local._services_model_routes[service_key] :
+        route.host => {
+          host  = route.host
+          href  = route.href
+          label = route.url != null ? "website" : route.expose
+          zone  = route.zone
+        }...
+        if route.host != null
+      } : host => urls[0]
     }
   }
 
@@ -287,8 +312,15 @@ locals {
     )
   }
 
+  services_model_by_feature = {
+    for feature in keys(local.defaults.services.features) : feature => {
+      for service_key, service in local.services_model : service_key => service
+      if service.features[feature]
+    }
+  }
+
   services_model_imports = {
-    for service_key in keys(local.services_input_targets) : service_key => {
+    for service_key in keys(local.services_model) : service_key => {
       for import_ref in local._services_model_import_refs :
       # `auto` resolves only when the imported service has one expanded target.
       import_ref.alias => (

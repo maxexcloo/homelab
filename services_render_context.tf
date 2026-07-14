@@ -16,7 +16,7 @@ locals {
         {
           for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services[real_key]
-          if try(local.services[real_key], null) != null
+          if can(local.services[real_key])
         },
       )
     }
@@ -67,7 +67,7 @@ locals {
           {
             for alias, real_key in local.services_model_imports[service_key] :
             alias => local.services_render_services[real_key]
-            if try(local.services_render_services[real_key], null) != null
+            if can(local.services_render_services[real_key])
           },
         )
       },

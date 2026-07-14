@@ -3,7 +3,7 @@ data "b2_account_info" "default" {}
 locals {
   # Bucket-scoped keys get broad object permissions because services own their
   # buckets and need to manage backup/object lifecycles themselves.
-  b2_application_key_capabilities = [
+  _b2_application_key_capabilities = [
     "deleteFiles",
     "listBuckets",
     "listFiles",
@@ -18,23 +18,23 @@ locals {
 }
 
 resource "b2_application_key" "server" {
-  for_each = local.servers_by_feature.b2
+  for_each = local.servers_model_by_feature.b2
 
   bucket_id    = b2_bucket.server[each.key].id
-  capabilities = local.b2_application_key_capabilities
+  capabilities = local._b2_application_key_capabilities
   key_name     = each.key
 }
 
 resource "b2_application_key" "service" {
-  for_each = local.services_by_feature.b2
+  for_each = local.services_model_by_feature.b2
 
   bucket_id    = b2_bucket.service[each.key].id
-  capabilities = local.b2_application_key_capabilities
+  capabilities = local._b2_application_key_capabilities
   key_name     = each.key
 }
 
 resource "b2_bucket" "server" {
-  for_each = local.servers_by_feature.b2
+  for_each = local.servers_model_by_feature.b2
 
   # B2 bucket names are global, so a stable random suffix is part of identity.
   bucket_name = "${each.key}-${random_string.b2_server[each.key].result}"
@@ -52,7 +52,7 @@ resource "b2_bucket" "server" {
 }
 
 resource "b2_bucket" "service" {
-  for_each = local.services_by_feature.b2
+  for_each = local.services_model_by_feature.b2
 
   # Service buckets use the expanded service-target key plus a stable suffix.
   bucket_name = "${each.key}-${random_string.b2_service[each.key].result}"

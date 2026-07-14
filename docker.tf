@@ -1,4 +1,11 @@
 locals {
+  # Docker hosts managed by doco-cd. Each host polls the same deployment repo
+  # with its server key as the doco-cd target.
+  _docker_servers = {
+    for server_key, server in local.servers_model : server_key => server
+    if server.features.docker
+  }
+
   doco_cd_compose = {
     for server_key, server in local.servers_render_servers : server_key => templatefile(
       "${path.module}/templates/doco_cd/docker-compose.yaml.tftpl",
@@ -10,24 +17,17 @@ locals {
     if server.features.docker
   }
 
-  # Docker hosts managed by doco-cd. Each host polls the same deployment repo
-  # with its server key as the doco-cd target.
-  docker_input_servers = {
-    for server_key, server in local.servers_model : server_key => server
-    if server.features.docker
-  }
-
-  docker_input_services = {
+  _docker_services = {
     for service_key, service in local.services_model : service_key => service
     if(
-      try(local.docker_input_servers[service.target], null) != null &&
-      try(local.services_render_compose_inputs[service_key], null) != null
+      can(local._docker_servers[service.target]) &&
+      can(local.services_render_compose_inputs[service_key])
     )
   }
 
-  docker_render_files = merge(
+  _docker_render_files = merge(
     {
-      for server_key, server in local.docker_input_servers : ".doco-cd.${server_key}.yml" => {
+      for server_key, server in local._docker_servers : ".doco-cd.${server_key}.yml" => {
         age_public_key = age_secret_key.server[server_key].public_key
         commit_message = "Update ${server_key} doco-cd config"
         content_type   = "yaml"
@@ -47,7 +47,7 @@ locals {
       }
     },
     {
-      for service_key, service in local.docker_input_services : "${service.target}/${service.identity.name}/compose.yaml" => {
+      for service_key, service in local._docker_services : "${service.target}/${service.identity.name}/compose.yaml" => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} compose"
         content_base64 = sensitive(base64encode(local.services_render_write_compose[service_key]))
@@ -64,13 +64,13 @@ locals {
           file           = "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
         },
       )
-      if try(local.docker_input_services[file_config.stack], null) != null
+      if can(local._docker_services[file_config.stack])
     }
   )
 }
 
 module "encrypted_github_file_docker" {
-  for_each = nonsensitive(local.docker_render_files)
+  for_each = nonsensitive(local._docker_render_files)
   source   = "./modules/github_file_encrypted"
 
   age_public_key = each.value.age_public_key
@@ -90,7 +90,7 @@ resource "github_repository_file" "docker_sops_config" {
 
   content = yamlencode({
     creation_rules = flatten([
-      for server_key, server in local.docker_input_servers : [
+      for server_key, server in local._docker_servers : [
         {
           age        = age_secret_key.server[server_key].public_key
           path_regex = "^${server_key}/"

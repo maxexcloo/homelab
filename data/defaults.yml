@@ -37,7 +37,6 @@ servers:
     monitoring: true
     monitoring_alerts: true
     password: false
-    pushover: false
     resend: false
     tailscale: false
     zfs: false
@@ -115,7 +114,6 @@ services:
     monitoring_alerts: true
     oidc: false
     password: false
-    pushover: false
     resend: false
     tailscale: false
   identity:

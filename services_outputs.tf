@@ -3,22 +3,15 @@ locals {
   # Flat "service_key-field_name" → bootstrap_value table. Same pattern as
   # _servers_outputs_credentials_bootstrap — see that local for rationale.
   _services_outputs_credentials_bootstrap = {
-    for entry in flatten([
-      for service_key, service in local.services_model : [
-        for field_name, field in service.credentials.fields : {
-          key = "${service_key}-${field_name}"
-          value = (
-            field.bootstrap_type == "hex" ? random_id.service_secret["${service_key}-${field_name}"].hex
-            : field.bootstrap_type == "base64" ? random_id.service_secret["${service_key}-${field_name}"].b64_std
-            : (
-              field.bootstrap_type != null &&
-              contains(["alphanumeric", "string"], field.bootstrap_type)
-            ) ? random_password.service_secret["${service_key}-${field_name}"].result
-            : null
-          )
-        }
-      ]
-    ]) : entry.key => entry.value
+    for field_key, field in local.random_service_credential_fields : field_key => (
+      field.bootstrap_type == "hex" ? random_id.service_secret[field_key].hex
+      : field.bootstrap_type == "base64" ? random_id.service_secret[field_key].b64_std
+      : (
+        field.bootstrap_type != null &&
+        contains(["alphanumeric", "string"], field.bootstrap_type)
+      ) ? random_password.service_secret[field_key].result
+      : null
+    )
   }
 
   # Full runtime service object. Never used as a for_each key — use services_model instead.
@@ -48,7 +41,7 @@ locals {
             },
             (
               service.credentials.source == "target" &&
-              try(local.servers[service.target], null) != null
+              can(local.servers[service.target])
               ) ? {
               password = local.servers[service.target].runtime.credentials.password
             } : {},
@@ -62,10 +55,6 @@ locals {
               password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service[service_key].result))
               password_hash = bcrypt_hash.service[service_key].id
             } : {},
-            service.features.pushover ? {
-              pushover_application_token = sensitive(try(local.onepassword_service_existing_fields[service_key].pushover_application_token, ""))
-              pushover_user_key          = sensitive(var.pushover_user_key)
-            } : {},
             service.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token
             } : {},
@@ -76,14 +65,6 @@ locals {
         }
       },
     )
-  }
-
-  # Services indexed by feature flag. Model-only — safe for for_each in feature-specific resource files.
-  services_by_feature = {
-    for feature in keys(local.defaults.services.features) : feature => {
-      for service_key, service in local.services_model : service_key => service
-      if service.features[feature]
-    }
   }
 }
 

@@ -5,6 +5,7 @@
   "required": [
     "ai",
     "cloudflare",
+    "controld",
     "domains",
     "github",
     "networking",
@@ -70,6 +71,19 @@
         "account_name": {
           "description": "Cloudflare account name to look up for account-scoped resources.",
           "minLength": 1,
+          "type": "string"
+        }
+      }
+    },
+    "controld": {
+      "additionalProperties": false,
+      "description": "Control D profile used as the private DNS view for Tailscale clients.",
+      "required": ["profile_id"],
+      "type": "object",
+      "properties": {
+        "profile_id": {
+          "description": "Control D profile primary key receiving Tailscale DNS overrides.",
+          "pattern": "^[a-z0-9]+$",
           "type": "string"
         }
       }

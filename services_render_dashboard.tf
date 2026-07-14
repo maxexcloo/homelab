@@ -57,7 +57,7 @@ locals {
   }
 
   _services_render_dashboard_sorted_groups = sort(distinct([
-    for dashboard_card in concat(local._services_render_dashboard_service_cards, local._services_render_dashboard_server_cards) :
+    for dashboard_card in values(local._services_render_dashboard_sort_index) :
     dashboard_card.group
   ]))
 
@@ -66,10 +66,10 @@ locals {
     if contains([for server in values(local.servers_model) : server.identity.group], group)
   ]
 
-  _services_render_dashboard_sorted_service_groups = sort(distinct([
+  _services_render_dashboard_sorted_service_groups = [
     for group in local._services_render_dashboard_sorted_groups : group
     if !contains(local._services_render_dashboard_sorted_server_groups, group)
-  ]))
+  ]
 
   _services_render_dashboard_union_groups = concat(
     local._services_render_dashboard_sorted_service_groups,

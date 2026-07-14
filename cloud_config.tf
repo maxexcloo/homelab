@@ -1,7 +1,7 @@
 locals {
-  cloud_config = {
+  _cloud_config_setup_commands = {
     for server_key, server in local.servers_render_servers : server_key => templatefile(
-      "${path.module}/templates/cloud_config/cloud_config.yaml.tftpl",
+      "${path.module}/templates/cloud_config/setup.sh.tftpl",
       {
         defaults = local.defaults
         doco_cd  = try(local.doco_cd_compose[server_key], null)
@@ -12,9 +12,9 @@ locals {
     if server.features.cloud_init
   }
 
-  setup_commands = {
+  cloud_config = {
     for server_key, server in local.servers_render_servers : server_key => templatefile(
-      "${path.module}/templates/cloud_config/setup.sh.tftpl",
+      "${path.module}/templates/cloud_config/cloud_config.yaml.tftpl",
       {
         defaults = local.defaults
         doco_cd  = try(local.doco_cd_compose[server_key], null)
@@ -35,5 +35,5 @@ output "cloud_config" {
 output "setup_commands" {
   description = "Generated shell setup scripts for manual server provisioning"
   sensitive   = true
-  value       = local.setup_commands
+  value       = local._cloud_config_setup_commands
 }

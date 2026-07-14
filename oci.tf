@@ -1,35 +1,39 @@
 data "oci_identity_availability_domain" "default" {
-  for_each = local.oci_vms_regions
+  for_each = local._oci_vms_regions
 
   ad_number      = 1
   compartment_id = var.oci_tenancy_ocid
 }
 
 locals {
-  oci_ingress_protocol_numbers = {
+  _oci_ingress_protocol_numbers = {
     icmp   = "1"
     icmpv6 = "58"
     tcp    = "6"
     udp    = "17"
   }
 
+  # Keep all requested OCI servers visible so validation can report unsupported
+  # types before the provisionable VM subset is selected.
+  oci_servers = {
+    for server_key, server in local.servers_model : server_key => server
+    if server.platform == "oci"
+  }
+
   # OCI resources in this root manage VM servers only.
   oci_vms = {
-    for server_key, server in local.servers_model : server_key => server
-    if(
-      server.platform == "oci" &&
-      server.type == "vm"
-    )
+    for server_key, server in local.oci_servers : server_key => server
+    if server.type == "vm"
   }
 
   # Explicit names keep rule identity stable when mutable fields or list order change.
-  oci_vms_ingress_rules = merge([
+  _oci_vms_ingress_rules = merge([
     for vm_key, vm in local.oci_vms : {
       for rule in vm.platform_config.oci.ingress_rules :
       "${vm_key}-${rule.name}" => merge(
         rule,
         {
-          protocol_number = local.oci_ingress_protocol_numbers[rule.protocol]
+          protocol_number = local._oci_ingress_protocol_numbers[rule.protocol]
           vm_key          = vm_key
         },
       )
@@ -37,13 +41,13 @@ locals {
   ]...)
 
   # OCI network primitives are created once per region used by managed OCI VMs.
-  oci_vms_regions = toset(distinct([
+  _oci_vms_regions = toset(distinct([
     for vm_key, vm in local.oci_vms : vm.identity.region
   ]))
 }
 
 resource "oci_core_default_dhcp_options" "default" {
-  for_each = local.oci_vms_regions
+  for_each = local._oci_vms_regions
 
   compartment_id             = var.oci_tenancy_ocid
   display_name               = "${each.value}.${local.defaults.domains.external}"
@@ -61,7 +65,7 @@ resource "oci_core_default_dhcp_options" "default" {
 }
 
 resource "oci_core_default_route_table" "default" {
-  for_each = local.oci_vms_regions
+  for_each = local._oci_vms_regions
 
   display_name               = "${each.value}.${local.defaults.domains.external}"
   manage_default_resource_id = oci_core_vcn.default[each.value].default_route_table_id
@@ -80,7 +84,7 @@ resource "oci_core_default_route_table" "default" {
 }
 
 resource "oci_core_default_security_list" "default" {
-  for_each = local.oci_vms_regions
+  for_each = local._oci_vms_regions
 
   compartment_id             = var.oci_tenancy_ocid
   display_name               = "${each.value}.${local.defaults.domains.external}"
@@ -141,7 +145,7 @@ resource "oci_core_instance" "server" {
 }
 
 resource "oci_core_internet_gateway" "default" {
-  for_each = local.oci_vms_regions
+  for_each = local._oci_vms_regions
 
   compartment_id = var.oci_tenancy_ocid
   display_name   = "${each.value}.${local.defaults.domains.external}"
@@ -157,7 +161,7 @@ resource "oci_core_network_security_group" "server" {
 }
 
 resource "oci_core_network_security_group_security_rule" "server_ingress_port" {
-  for_each = local.oci_vms_ingress_rules
+  for_each = local._oci_vms_ingress_rules
 
   direction                 = "INGRESS"
   network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
@@ -189,7 +193,7 @@ resource "oci_core_network_security_group_security_rule" "server_ingress_port" {
 }
 
 resource "oci_core_subnet" "default" {
-  for_each = local.oci_vms_regions
+  for_each = local._oci_vms_regions
 
   cidr_block     = "10.0.0.0/24"
   compartment_id = var.oci_tenancy_ocid
@@ -200,7 +204,7 @@ resource "oci_core_subnet" "default" {
 }
 
 resource "oci_core_vcn" "default" {
-  for_each = local.oci_vms_regions
+  for_each = local._oci_vms_regions
 
   cidr_blocks    = ["10.0.0.0/16"]
   compartment_id = var.oci_tenancy_ocid

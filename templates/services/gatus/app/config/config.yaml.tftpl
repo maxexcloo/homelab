@@ -1,14 +1,4 @@
 alerting:
-  %{~ if service.features.pushover }
-  pushover:
-    application-token: $${PUSHOVER_APPLICATION_TOKEN}
-    user-key: $${PUSHOVER_USER_KEY}
-    default-alert:
-      description: ${service.identity.title} Check Failed
-      failure-threshold: 5
-      send-on-resolved: true
-      success-threshold: 5
-  %{~ endif }
   %{~ if service.features.resend }
   email:
     from: ${service.target}@${defaults.domains.internal}
@@ -37,14 +27,9 @@ endpoints:
     group: " ${url.zone}"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
     url: "${url.href}"
-    %{~ if monitored_service.features.monitoring_alerts && (service.features.resend || service.features.pushover) }
+    %{~ if monitored_service.features.monitoring_alerts && service.features.resend }
     alerts:
-      %{~ if service.features.pushover }
-      - type: pushover
-      %{~ endif }
-      %{~ if service.features.resend }
       - type: email
-      %{~ endif }
     %{~ endif }
     %{~ if monitored_service.routing.https_verify == false }
     client:
@@ -61,14 +46,9 @@ endpoints:
     group: "${defaults.server_types[server.type].display_name}"
     name: "${server_key}"
     url: "icmp://${server.hosts.internal}"
-    %{~ if server.features.monitoring_alerts && (service.features.resend || service.features.pushover) }
+    %{~ if server.features.monitoring_alerts && service.features.resend }
     alerts:
-      %{~ if service.features.pushover }
-      - type: pushover
-      %{~ endif }
-      %{~ if service.features.resend }
       - type: email
-      %{~ endif }
     %{~ endif }
   %{~ endif }
   %{~ endfor }

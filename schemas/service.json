@@ -194,10 +194,6 @@
           "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
-        "pushover": {
-          "description": "Per-target override. Create 1Password read/write fields for this service's Pushover application token and user/group key. Exposes runtime.credentials.pushover_application_token and runtime.credentials.pushover_user_key.",
-          "type": "boolean"
-        },
         "resend": {
           "description": "Per-target override. Provision a Resend API key for outbound email from this service. Exposes runtime.credentials.resend_api_key as a template variable.",
           "type": "boolean"
@@ -395,10 +391,6 @@
         },
         "password": {
           "description": "Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
-          "type": "boolean"
-        },
-        "pushover": {
-          "description": "Create 1Password read/write fields for this service's Pushover application token and user/group key. Exposes runtime.credentials.pushover_application_token and runtime.credentials.pushover_user_key.",
           "type": "boolean"
         },
         "resend": {

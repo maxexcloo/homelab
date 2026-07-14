@@ -1,22 +1,7 @@
 locals {
-  _dns_render_records_manual_entries = flatten([
-    for zone, records in local.dns_input : [
-      for record in records : {
-        key    = try(record.id, join("-", compact([record.type, replace(record.name, "@", "apex"), tostring(try(record.priority, ""))])))
-        record = record
-        zone   = zone
-      }
-    ]
-  ])
-
-  dns_render_manual_entries_by_key = {
-    for entry in local._dns_render_records_manual_entries :
-    "${entry.zone}-manual-${entry.key}" => entry...
-  }
-
   # Manual records are keyed independently from YAML list order.
-  dns_render_records_manual = {
-    for record_key, entries in local.dns_render_manual_entries_by_key :
+  _dns_render_records_manual = {
+    for record_key, entries in local.dns_model_manual_entries_by_key :
     record_key => merge(
       local.defaults.dns,
       entries[0].record,
@@ -27,7 +12,20 @@ locals {
     )
   }
 
-  dns_render_records_servers = merge([
+  # Provider-neutral routing entries become public CNAMEs only when they have
+  # an explicit hostname in a managed zone.
+  _dns_render_records_routing = {
+    for route_key, route in local.dns_model_routes : route_key => {
+      content = route.tunnel != null ? "${local.servers[route.tunnel.server_key].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com" : route.dns.content
+      name    = route.hostname
+      proxied = route.dns.proxied
+      type    = "CNAME"
+      zone    = route.dns.zone
+    }
+    if route.dns != null
+  }
+
+  _dns_render_records_servers = merge([
     for server_key, server in local.servers_model : merge(
       (
         server.platform != "oci" &&
@@ -106,110 +104,16 @@ locals {
     )
   ]...)
 
-  # Server-owned routes resolve according to their exposure method.
-  dns_render_records_servers_routing = merge(flatten([
-    for server_key, server in local.servers_model : [
-      for route in server.routing.urls : {
-        "${server_key}-route-${route.id}" = {
-          content = (
-            route.expose == "cloudflare"
-            ? "${local.servers[server_key].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
-            : startswith(route.expose, "proxy-")
-            ? try(local.servers_model[trimprefix(route.expose, "proxy-")].hosts.external, null)
-            : route.expose == "external"
-            ? server.hosts.external
-            : server.hosts.internal
-          )
-          name    = route.url
-          proxied = route.expose == "cloudflare"
-          type    = "CNAME"
-          zone    = local.dns_model_managed_zones_by_url[route.url]
-        }
-      }
-      if local.dns_model_managed_zones_by_url[route.url] != null
-    ]
-  ])...)
-
-  # Custom service URLs resolve to the tunnel when Cloudflare-exposed.
-  dns_render_records_services = merge(flatten([
-    for service_key, service in local.services_model : [
-      for route in service.routing.urls : {
-        "${service_key}-url-${route.id}" = {
-          name    = route.url
-          proxied = route.expose == "cloudflare"
-          type    = "CNAME"
-          zone    = local.dns_model_managed_zones_by_url[route.url]
-
-          content = (
-            route.expose == "cloudflare" &&
-            local.servers_model[service.target].features.cloudflared
-            ? "${local.servers[service.target].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com"
-            : route.proxy_server != null
-            ? local.servers_model[route.proxy_server].hosts.external
-            : route.dns_target_host
-          )
-        }
-      }
-      if(
-        route.url != null &&
-        local.dns_model_managed_zones_by_url[route.url] != null
-      )
-    ]
-    if try(local.servers_model[service.target], null) != null
-  ])...)
-
-  # Fly's fly.dev hostnames are served directly by Fly; only custom URLs need DNS.
-  dns_render_records_services_fly = merge(flatten([
-    for service_key, service in local.services_model : [
-      for route in service.routing.urls : {
-        "${service_key}-url-${route.id}" = {
-          content = "${service.fly.app_name}.fly.dev"
-          name    = route.url
-          proxied = route.expose == "cloudflare"
-          type    = "CNAME"
-          zone    = local.dns_model_managed_zones_by_url[route.url]
-        }
-      }
-      if(
-        route.url != null &&
-        local.dns_model_managed_zones_by_url[route.url] != null
-      )
-    ]
-    if service.target == "fly"
-  ])...)
-
-  # Redirect aliases resolve through the same exposure path as their canonical route.
-  dns_render_records_services_redirects = merge(flatten([
-    for service_key, service in local.services_model : [
-      for route in service.routing.urls : {
-        for redirect in route.redirects : "${service_key}-redirect-${substr(sha1(redirect.host), 0, 12)}" => {
-          content = (
-            redirect.proxy_server != null
-            ? local.servers_model[redirect.proxy_server].hosts.external
-            : redirect.expose == "external"
-            ? local.servers_model[service.target].hosts.external
-            : local.servers_model[service.target].hosts.internal
-          )
-          name    = redirect.host
-          proxied = false
-          type    = "CNAME"
-          zone    = redirect.zone
-        }
-        if redirect.zone != null
-      }
-    ]
-    if try(local.servers_model[service.target], null) != null
-  ])...)
-
   # Delegate DNS-01 challenges to the ACME zone. Fly handles its own certs.
-  dns_render_records_tls_delegation = {
+  _dns_render_records_tls_delegation = {
     for record in distinct([
       for source_record in concat(
-        values(local.dns_render_records_manual),
-        values(local.dns_render_records_servers),
-        values(local.dns_render_records_servers_routing),
-        values(local.dns_render_records_services),
-        values(local.dns_render_records_services_redirects),
+        values(local._dns_render_records_manual),
+        [
+          for route_key, record in local._dns_render_records_routing : record
+          if local.dns_model_routes[route_key].server_key != null
+        ],
+        values(local._dns_render_records_servers),
         ) : {
         name = source_record.name
         zone = source_record.zone
@@ -224,11 +128,11 @@ locals {
   }
 
   # Wildcards follow eligible generated records unless wildcard = false.
-  dns_render_records_wildcards = {
+  _dns_render_records_wildcards = {
     for hostname in distinct([
       for record in concat(
-        values(local.dns_render_records_manual),
-        values(local.dns_render_records_servers),
+        values(local._dns_render_records_manual),
+        values(local._dns_render_records_servers),
         ) : {
         name    = record.name
         proxied = record.proxied
@@ -250,14 +154,11 @@ locals {
   # Stage output; kept last so dependencies read top to bottom.
   dns_render_records = {
     for key, record in merge(
-      local.dns_render_records_manual,
-      local.dns_render_records_servers,
-      local.dns_render_records_servers_routing,
-      local.dns_render_records_services_fly,
-      local.dns_render_records_services_redirects,
-      local.dns_render_records_services,
-      local.dns_render_records_tls_delegation,
-      local.dns_render_records_wildcards,
+      local._dns_render_records_manual,
+      local._dns_render_records_routing,
+      local._dns_render_records_servers,
+      local._dns_render_records_tls_delegation,
+      local._dns_render_records_wildcards,
     ) : key => merge(local.defaults.dns, record)
   }
 }

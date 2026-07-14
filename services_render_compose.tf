@@ -9,9 +9,9 @@ locals {
       service.identity.service != null &&
       fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl") &&
       (
-        try(local.truenas_input_servers[service.target], null) != null ||
+        can(local.truenas_servers[service.target]) ||
         (
-          try(local.servers_model[service.target], null) != null &&
+          can(local.servers_model[service.target]) &&
           local.servers_model[service.target].features.docker &&
           !(
             service.target_feature != "" &&

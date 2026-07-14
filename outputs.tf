@@ -13,7 +13,7 @@ output "summary" {
     }
 
     services_by_feature = {
-      for feature, matches in local.services_by_feature : feature => keys(matches)
+      for feature, matches in local.services_model_by_feature : feature => keys(matches)
       if length(matches) > 0
     }
   }

@@ -4,22 +4,15 @@ locals {
   # is not supported in HCL, so bootstrap secrets are materialized in random.tf
   # under the same compound key and looked up here by string concatenation.
   _servers_outputs_credentials_bootstrap = {
-    for entry in flatten([
-      for server_key, server in local.servers_model : [
-        for field_name, field in server.credentials.fields : {
-          key = "${server_key}-${field_name}"
-          value = (
-            field.bootstrap_type == "hex" ? random_id.server_secret["${server_key}-${field_name}"].hex
-            : field.bootstrap_type == "base64" ? random_id.server_secret["${server_key}-${field_name}"].b64_std
-            : (
-              field.bootstrap_type != null &&
-              contains(["alphanumeric", "string"], field.bootstrap_type)
-            ) ? random_password.server_secret["${server_key}-${field_name}"].result
-            : null
-          )
-        }
-      ]
-    ]) : entry.key => entry.value
+    for field_key, field in local.random_server_credential_fields : field_key => (
+      field.bootstrap_type == "hex" ? random_id.server_secret[field_key].hex
+      : field.bootstrap_type == "base64" ? random_id.server_secret[field_key].b64_std
+      : (
+        field.bootstrap_type != null &&
+        contains(["alphanumeric", "string"], field.bootstrap_type)
+      ) ? random_password.server_secret[field_key].result
+      : null
+    )
   }
 
   # Static model addresses plus runtime-discovered private and Tailscale IPs.
@@ -64,7 +57,12 @@ locals {
       server.urls,
       {
         for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : url_label => {
-          href = server.networking.management_port != "" && server.networking.management_port != 443 ? format(
+          label = url_label
+
+          href = (
+            server.networking.management_port != "" &&
+            server.networking.management_port != 443
+            ) ? format(
             "https://%s:%s",
             can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
             server.networking.management_port,
@@ -72,19 +70,19 @@ locals {
             "https://%s",
             can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
           )
-          label = url_label
         }
-        if try(server.urls[url_label], null) == null
+        if !can(server.urls[url_label])
       },
       {
         for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : "${url_label}_ssh" => {
+          label = "${url_label}_ssh"
+
           href = format(
             "ssh://%s@%s%s",
             server.identity.username,
             can(cidrhost("${url_value}/128", 0)) ? "[${url_value}]" : url_value,
             server.networking.ssh_port != 22 ? ":${server.networking.ssh_port}" : ""
           )
-          label = "${url_label}_ssh"
         }
         if(
           url_label != "management" &&
@@ -151,10 +149,6 @@ locals {
               password      = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key].password, null), random_password.server[server_key].result))
               password_hash = bcrypt_hash.server[server_key].id
             } : {},
-            server.features.pushover ? {
-              pushover_application_token = sensitive(try(local.onepassword_server_existing_fields[server_key].pushover_application_token, ""))
-              pushover_user_key          = sensitive(var.pushover_user_key)
-            } : {},
             server.features.resend ? {
               resend_api_key = jsondecode(restapi_object.resend_api_key_server[server_key].create_response).token
             } : {},
@@ -165,13 +159,6 @@ locals {
         }
       },
     )
-  }
-
-  servers_by_feature = {
-    for feature in keys(local.defaults.servers.features) : feature => {
-      for server_key, server in local.servers_model : server_key => server
-      if server.features[feature]
-    }
   }
 }
 

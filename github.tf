@@ -4,7 +4,7 @@ data "github_user" "default" {
 }
 
 locals {
-  github_workflow_files = merge([
+  _github_workflow_files = merge([
     for repository_key in keys(local.defaults.github.deployment_repositories) : {
       for file_path in fileset(path.module, "templates/workflows/${repository_key}/**") : "${repository_key}/${trimprefix(file_path, "templates/workflows/${repository_key}/")}" => {
         file           = trimprefix(file_path, "templates/workflows/${repository_key}/")
@@ -17,7 +17,7 @@ locals {
 
   github_workflow_revisions = {
     for repository_key in keys(local.defaults.github.deployment_repositories) : repository_key => sha256(jsonencode({
-      for file_config in values(local.github_workflow_files) : file_config.file => filesha256(file_config.source)
+      for file_config in values(local._github_workflow_files) : file_config.file => filesha256(file_config.source)
       if file_config.repository_key == repository_key
     }))
   }
@@ -66,7 +66,7 @@ resource "github_repository_file" "readme" {
 }
 
 resource "github_repository_file" "workflow_file" {
-  for_each = local.github_workflow_files
+  for_each = local._github_workflow_files
 
   commit_message      = "Update ${each.value.file}"
   content             = file(each.value.source)

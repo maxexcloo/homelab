@@ -1,3 +1,14 @@
+variable "controld_api_token" {
+  description = "Control D API token used to manage the Tailscale profile's private DNS rules."
+  sensitive   = true
+  type        = string
+
+  validation {
+    condition     = length(nonsensitive(var.controld_api_token)) > 0
+    error_message = "Control D API token must not be empty."
+  }
+}
+
 variable "debug_dir" {
   default     = ""
   description = "Optional local directory to write plaintext rendered content for debugging. Leave empty unless actively troubleshooting encryption output."
@@ -70,17 +81,6 @@ variable "onepassword_connect_url" {
       can(regex("^https?://[^/]+", var.onepassword_connect_url)) &&
       !endswith(var.onepassword_connect_url, "/")
     )
-  }
-}
-
-variable "pushover_user_key" {
-  description = "Pushover user key for notifications"
-  sensitive   = true
-  type        = string
-
-  validation {
-    condition     = length(nonsensitive(var.pushover_user_key)) > 0
-    error_message = "Pushover user key must not be empty."
   }
 }
 
