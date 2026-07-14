@@ -21,7 +21,7 @@ data:
         - Control D:
             - description: DNS
               href: https://controld.com
-              icon: si-controld-#ffffff
+              icon: control-d
         - Fly.io:
             - description: App Platform
               href: https://fly.io/dashboard

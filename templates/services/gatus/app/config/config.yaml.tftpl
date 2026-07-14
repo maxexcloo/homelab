@@ -27,6 +27,10 @@ endpoints:
     group: " ${url.zone}"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
     url: "${url.href}"
+    %{~ if contains(values(monitored_service.imports.services), service.key) }
+    headers:
+      X-Gatus-Token: $${GATUS_MONITORING_TOKEN}
+    %{~ endif }
     %{~ if monitored_service.features.monitoring_alerts && service.features.resend }
     alerts:
       - type: email

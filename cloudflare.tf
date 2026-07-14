@@ -90,7 +90,7 @@ locals {
 
   # Flatten service WAF rules by zone. Each zone gets one cloudflare_ruleset
   # resource managing the http_request_firewall_custom phase.
-  _cloudflare_waf_rules_by_zone = {
+  _cloudflare_waf_rules_model_by_zone = {
     for rule in flatten([
       for route_config in values(local._cloudflare_service_routes) : [
         for rule in try(route_config.route.cloudflare_waf_rules, []) : {
@@ -98,11 +98,26 @@ locals {
           description = try(rule.description, null)
           enabled     = try(rule.enabled, true)
           expression  = rule.expression
+          service_key = route_config.service_key
           zone        = route_config.route.zone
         }
       ]
       if route_config.route.zone != null
     ]) : rule.zone => rule...
+  }
+
+  _cloudflare_waf_rules_runtime_by_zone = {
+    for zone, rules in local._cloudflare_waf_rules_model_by_zone : zone => [
+      for rule in rules : merge(
+        rule,
+        {
+          expression = sensitive(templatestring(
+            rule.expression,
+            local.services_render_context_base[rule.service_key],
+          ))
+        },
+      )
+    ]
   }
 
   # Routes are only added when backed by a managed DNS record. The
@@ -209,7 +224,7 @@ resource "cloudflare_ruleset" "rate_limiting" {
 }
 
 resource "cloudflare_ruleset" "waf" {
-  for_each = local._cloudflare_waf_rules_by_zone
+  for_each = local._cloudflare_waf_rules_model_by_zone
 
   description = local.defaults.organization.managed_comment
   kind        = "zone"
@@ -218,7 +233,7 @@ resource "cloudflare_ruleset" "waf" {
   zone_id     = data.cloudflare_zone.all[each.key].zone_id
 
   rules = [
-    for rule in each.value : {
+    for rule in local._cloudflare_waf_rules_runtime_by_zone[each.key] : {
       action      = rule.action
       description = rule.description
       enabled     = rule.enabled

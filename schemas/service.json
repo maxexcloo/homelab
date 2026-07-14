@@ -714,7 +714,7 @@
                       "type": "boolean"
                     },
                     "expression": {
-                      "description": "Cloudflare WAF expression in the Rules language.",
+                      "description": "Cloudflare WAF expression in the Rules language. Supports template interpolation with defaults, server, servers, service, and explicitly imported services.",
                       "type": "string"
                     }
                   }
