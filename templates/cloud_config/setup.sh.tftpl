@@ -21,7 +21,7 @@ sudo apt clean -y
 # User
 install -d -m 0700 ~/.ssh
 tee ~/.ssh/authorized_keys <<'EOF'
-${join("\n", server.ssh_keys)}
+${join("\n", server.runtime.attributes.ssh_keys)}
 EOF
 chmod 0600 ~/.ssh/authorized_keys
 %{~ if server.features.password }

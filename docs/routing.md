@@ -143,4 +143,6 @@ routing server.
 Route-level `cloudflare_access`, `cloudflare_rate_limiting_rules`, and
 `cloudflare_waf_rules` are grouped by DNS zone in `cloudflare.tf`.
 Cloudflare Access IDP aliases come from
-`defaults.cloudflare.access.identity_providers`.
+`defaults.cloudflare.access.identity_providers`. Access resource identity uses
+the expanded service key, routed hostname, and protected path, so list
+reordering or a display `name` change does not replace the resource.

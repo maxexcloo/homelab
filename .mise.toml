@@ -1,8 +1,6 @@
 [env]
 API_DATA_IS_SENSITIVE = "true"
 RENDER_DIR = ".render"
-TF_CLI_ARGS_apply = "-parallelism=20"
-TF_CLI_ARGS_plan = "-parallelism=20"
 
 [tools]
 opentofu = "1.12.1"
@@ -33,17 +31,17 @@ fi
 description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
+ruff format --check modules scripts templates/workflows
 prettier --check "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
-ruff format --check scripts modules templates/workflows
 tofu fmt -check -recursive
 """
 
 [tasks.fmt]
 description = "Format all files"
 run = """
+ruff check --fix --select I modules scripts templates/workflows
+ruff format modules scripts templates/workflows
 prettier --log-level warn --write "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
-ruff check --fix --select I scripts modules templates/workflows
-ruff format scripts modules templates/workflows
 tofu fmt -recursive
 """
 
@@ -51,8 +49,8 @@ tofu fmt -recursive
 description = "Validate source and default-merged YAML against JSON schemas"
 depends = ["sort-check"]
 run = """
+ruff check --extend-select I modules scripts templates/workflows
 uv run scripts/validate_data.py
-ruff check --extend-select I scripts modules templates/workflows
 """
 
 [tasks.validate]

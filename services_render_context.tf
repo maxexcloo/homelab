@@ -30,11 +30,15 @@ locals {
       service,
       jsondecode(
         templatestring(
-          jsonencode({
-            dashboard = service.dashboard
-            data      = service.data
-            truenas   = service.truenas
-          }),
+          replace(
+            jsonencode({
+              dashboard = service.dashboard
+              data      = service.data
+              truenas   = service.truenas
+            }),
+            local.render_json_template_expression_pattern,
+            local.render_json_template_expression_replacement,
+          ),
           local.services_render_context_base[service_key],
         ),
       ),

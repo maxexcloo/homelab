@@ -160,7 +160,6 @@ locals {
         credentials = local._servers_model_credentials[server_key]
         identity    = local._servers_model_identity[server_key]
         key         = server_key
-        ssh_keys    = data.github_user.default.ssh_keys
 
         dashboard = jsondecode(server.dashboard != null ? jsonencode(server.dashboard) : jsonencode(server.networking.management_port != "" ? [
           {

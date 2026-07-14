@@ -55,39 +55,6 @@ locals {
     service.fly.app_name != "" ? service.fly.app_name : "${local.defaults.organization.name}-${service.identity.name}"
   }
 
-  # Maps single-target services to their expanded key ("service-target") for `auto` import resolution.
-  # Also indexes by snake_case identity name so aliases like `pocket_id` resolve when the service
-  # name is `pocket-id` (templatestring() cannot parse hyphens in attribute access).
-  _services_model_import_auto_targets = merge(
-    {
-      for service_key, service in local.services_input : service_key => "${service_key}-${one(keys(service.targets))}"
-      if length(service.targets) == 1
-    },
-    {
-      for service_key, service in local.services_input : join("_", split("-", service.identity.name)) => "${service_key}-${one(keys(service.targets))}"
-      if(
-        length(service.targets) == 1 &&
-        can(regex("-", service.identity.name))
-      )
-    },
-  )
-
-  # Flatten import declarations before resolving aliases to expanded service keys.
-  _services_model_import_refs = flatten([
-    for service_key, service in local.services_input_targets : [
-      for import_alias, import_ref in service.imports.services : {
-        alias       = import_alias
-        service_key = service_key
-        target = templatestring(
-          import_ref,
-          {
-            service = service
-          },
-        )
-      }
-    ]
-  ])
-
   _services_model_route_entries = {
     for service_key, service in local.services_input_targets : service_key => [
       for route_index, url in concat(
@@ -320,15 +287,6 @@ locals {
   }
 
   services_model_imports = {
-    for service_key in keys(local.services_model) : service_key => {
-      for import_ref in local._services_model_import_refs :
-      # `auto` resolves only when the imported service has one expanded target.
-      import_ref.alias => (
-        import_ref.target == "auto"
-        ? try(local._services_model_import_auto_targets[import_ref.alias], import_ref.alias)
-        : import_ref.target
-      )
-      if import_ref.service_key == service_key
-    }
+    for service_key, service in local.services_model : service_key => service.imports.services
   }
 }

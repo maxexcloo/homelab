@@ -108,15 +108,15 @@ resource "github_repository_file" "fly_deploy_request" {
 }
 
 module "encrypted_github_file_fly" {
-  for_each = nonsensitive(local._fly_render_files)
+  for_each = toset(nonsensitive(keys(local._fly_render_files)))
   source   = "./modules/github_file_encrypted"
 
   age_public_key = age_secret_key.fly.public_key
-  commit_message = each.value.commit_message
-  content_base64 = each.value.content_base64
+  commit_message = local._fly_render_files[each.key].commit_message
+  content_base64 = local._fly_render_files[each.key].content_base64
   content_type   = "binary"
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.deployment_repositories.fly.name}/${each.key}" : ""
-  file           = each.value.file
+  file           = local._fly_render_files[each.key].file
   repository     = github_repository.deployment["fly"].name
 }
 

@@ -40,6 +40,10 @@ resource "b2_bucket" "server" {
   bucket_name = "${each.key}-${random_string.b2_server[each.key].result}"
   bucket_type = "allPrivate"
 
+  lifecycle {
+    prevent_destroy = true
+  }
+
   default_server_side_encryption {
     algorithm = "AES256"
     mode      = "SSE-B2"
@@ -57,6 +61,10 @@ resource "b2_bucket" "service" {
   # Service buckets use the expanded service-target key plus a stable suffix.
   bucket_name = "${each.key}-${random_string.b2_service[each.key].result}"
   bucket_type = "allPrivate"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 
   default_server_side_encryption {
     algorithm = "AES256"

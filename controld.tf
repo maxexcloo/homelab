@@ -42,20 +42,65 @@ locals {
 resource "restapi_object" "controld_dns" {
   for_each = local._controld_dns_records_model
 
-  data                      = local._controld_dns_records_runtime[each.key].data
-  destroy_path              = "/profiles/${local.defaults.controld.profile_id}/rules/{id}"
-  ignore_all_server_changes = true
-  object_id                 = each.key
-  path                      = "/profiles/${local.defaults.controld.profile_id}/rules"
-  provider                  = restapi.controld
-  read_path                 = "/profiles/${local.defaults.controld.profile_id}/rules"
-  update_data               = local._controld_dns_records_runtime[each.key].data
-  update_path               = "/profiles/${local.defaults.controld.profile_id}/rules"
+  data                    = local._controld_dns_records_runtime[each.key].data
+  destroy_path            = "/profiles/${local.defaults.controld.profile_id}/rules/{id}"
+  ignore_server_additions = true
+  object_id               = each.key
+  path                    = "/profiles/${local.defaults.controld.profile_id}/rules"
+  provider                = restapi.controld
+  read_path               = "/profiles/${local.defaults.controld.profile_id}/rules"
+  update_data             = local._controld_dns_records_runtime[each.key].data
+  update_path             = "/profiles/${local.defaults.controld.profile_id}/rules"
 
   read_search = {
     results_key  = "body/rules"
     search_key   = "PK"
     search_value = each.key
+    search_patch = jsonencode([
+      {
+        op   = "add"
+        path = "/hostnames"
+        value = [
+          each.key,
+        ]
+      },
+      {
+        from = "/action/do"
+        op   = "move"
+        path = "/do"
+      },
+      {
+        from = "/action/status"
+        op   = "move"
+        path = "/status"
+      },
+      {
+        from = "/action/via"
+        op   = "move"
+        path = "/via"
+      },
+      {
+        from = "/action/via_v6"
+        op   = "move"
+        path = "/via_v6"
+      },
+      {
+        op   = "remove"
+        path = "/PK"
+      },
+      {
+        op   = "remove"
+        path = "/action"
+      },
+      {
+        op   = "remove"
+        path = "/group"
+      },
+      {
+        op   = "remove"
+        path = "/order"
+      },
+    ])
   }
 
   lifecycle {

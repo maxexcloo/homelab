@@ -29,4 +29,4 @@ identity:
   title: Beszel Agent
 imports:
   services:
-    beszel: auto
+    beszel: beszel-au-truenas

@@ -36,7 +36,7 @@ identity:
   username: max@excloo.com
 imports:
   services:
-    pocket_id: auto
+    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 30243
   backend_scheme: http

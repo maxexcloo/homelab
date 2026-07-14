@@ -48,6 +48,9 @@ valid configured address.
 Runtime addresses and hosts add provider-discovered values such as private IP,
 Tailscale IPs, Tailscale host, and UniFi DNS.
 
+Provider-backed GitHub public SSH keys are available at
+`runtime.attributes.ssh_keys`.
+
 ## Routes
 
 Server-owned routes use the same exposure vocabulary as service routes:

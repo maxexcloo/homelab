@@ -24,8 +24,9 @@ values winning; scalars, arrays, and null replace the service-level value.
 Templates receive:
 
 - `defaults` - merged global config and defaults
-- `server` - the target server, or null for non-server targets
-- `servers` - all modeled servers
+- `server` - the rendered target server with runtime values, or null for
+  non-server targets
+- `servers` - all rendered servers with runtime values
 - `service` - the current expanded service
 - `services` - all expanded services plus declared import aliases
 

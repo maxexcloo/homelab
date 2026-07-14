@@ -39,8 +39,7 @@
       "matchManagers": ["github-actions"]
     },
     {
-      "description": "Group OpenTofu provider updates",
-      "groupName": "OpenTofu providers",
+      "description": "Resolve OpenTofu provider updates from the OpenTofu registry",
       "matchDatasources": ["terraform-module", "terraform-provider"],
       "registryUrls": ["https://registry.opentofu.org"]
     },

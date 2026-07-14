@@ -9,7 +9,7 @@ data "http" "onepassword_service_search" {
   for_each = local._onepassword_service_items
 
   request_headers = local.onepassword_connect_request_headers
-  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${each.value.identity.title} (${each.value.target})\"")}"
+  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${each.key}\"")}"
 }
 
 locals {
@@ -80,6 +80,14 @@ locals {
   _onepassword_service_item_fields = {
     for service_key, service in local.services : service_key => {
       for field in concat(
+        [
+          {
+            id    = "display_name"
+            label = "display_name_ro"
+            type  = "STRING"
+            value = service.identity.title
+          }
+        ],
         service.identity.username != "" ? [
           {
             id      = "username"
@@ -134,7 +142,7 @@ locals {
       category = "LOGIN"
       id       = local._onepassword_service_existing_ids[service_key]
       tags     = local.defaults.onepassword.vaults.services.tags
-      title    = "${service.identity.title} (${service.target})"
+      title    = service_key
 
       fields = [
         for label in sort(keys(local._onepassword_service_item_fields[service_key])) :
@@ -178,7 +186,7 @@ resource "restapi_object" "onepassword_service" {
   lifecycle {
     precondition {
       condition     = length(local._onepassword_service_duplicate_items) == 0
-      error_message = "Multiple 1Password service items have the same title: ${join(", ", nonsensitive(local._onepassword_service_duplicate_items))}"
+      error_message = "Multiple 1Password service items match a stable title: ${join(", ", nonsensitive(local._onepassword_service_duplicate_items))}"
     }
   }
 }

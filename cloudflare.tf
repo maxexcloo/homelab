@@ -35,11 +35,12 @@ locals {
   # Stable model-only service route inventory shared by Cloudflare features.
   _cloudflare_service_routes = merge([
     for service_key, service in local.services_model : {
-      for route in service.routing.urls : jsonencode([service_key, route.name]) => {
+      for route in service.routing.urls : jsonencode([service_key, route.host]) => {
         route       = route
         service     = service
         service_key = service_key
       }
+      if route.host != null
     }
   ]...)
 
@@ -48,22 +49,20 @@ locals {
     if route.expose == "cloudflare"
   }
 
-  # Flatten route access configs into a map keyed
-  # by "{service_key}-{route_name}-{access_id}" for stable resource addressing.
-  # access_id is derived from name (lowercased, special chars → hyphens).
+  # Natural identity separates the mutable display name from the routed
+  # hostname and protected path that uniquely identify an Access application.
   _cloudflare_access_applications = {
     for item in flatten([
       for route_config in values(local._cloudflare_service_routes) : [
-        for access_index, access in try(route_config.route.cloudflare_access, []) : merge(
+        for access in try(route_config.route.cloudflare_access, []) : merge(
           route_config,
           {
-            access       = access
-            access_id    = replace(lower(access.name), "/[^a-z0-9]+/", "-")
-            access_index = access_index
+            access      = access
+            access_path = try(access.path, "/*")
           },
         )
       ]
-    ]) : "${item.service_key}-${item.route.name}-${item.access_id}" => item
+    ]) : jsonencode([item.service_key, item.route.host, item.access_path]) => item
   }
 
   # Flatten service rate limiting rules by zone. Each zone gets one
@@ -228,12 +227,17 @@ resource "cloudflare_ruleset" "waf" {
   ]
 }
 
+moved {
+  from = cloudflare_zero_trust_access_application.all["opencode-au-truenas-opencode-opencode"]
+  to   = cloudflare_zero_trust_access_application.all["[\"opencode-au-truenas\",\"opencode.excloo.com\",\"/*\"]"]
+}
+
 resource "cloudflare_zero_trust_access_application" "all" {
   for_each = local._cloudflare_access_applications
 
   account_id                = data.cloudflare_account.default.id
   auto_redirect_to_identity = try(each.value.access.auto_redirect_to_identity, false)
-  name                      = try(each.value.access.name, each.value.access_index == 0 ? each.value.service.identity.title : "${each.value.service.identity.title} - ${title(each.value.access_id)}")
+  name                      = each.value.access.name
   session_duration          = try(each.value.access.session_duration, null)
   type                      = "self_hosted"
 
@@ -245,7 +249,7 @@ resource "cloudflare_zero_trust_access_application" "all" {
   destinations = [
     {
       type = "public"
-      uri  = "${each.value.route.host}${try(each.value.access.path, "/*")}"
+      uri  = "${each.value.route.host}${each.value.access_path}"
     }
   ]
 

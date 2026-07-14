@@ -142,15 +142,15 @@ resource "github_repository_file" "truenas_deploy_request" {
 }
 
 module "encrypted_github_file_truenas" {
-  for_each = nonsensitive(local._truenas_render_files)
+  for_each = toset(nonsensitive(keys(local._truenas_render_files)))
   source   = "./modules/github_file_encrypted"
 
-  age_public_key = each.value.age_public_key
-  commit_message = each.value.commit_message
-  content_base64 = each.value.content_base64
-  content_type   = each.value.content_type
+  age_public_key = local._truenas_render_files[each.key].age_public_key
+  commit_message = local._truenas_render_files[each.key].commit_message
+  content_base64 = local._truenas_render_files[each.key].content_base64
+  content_type   = local._truenas_render_files[each.key].content_type
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.deployment_repositories.truenas.name}/${each.key}" : ""
-  file           = each.value.file
+  file           = local._truenas_render_files[each.key].file
   repository     = github_repository.deployment["truenas"].name
 }
 

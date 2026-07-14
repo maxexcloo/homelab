@@ -17,4 +17,4 @@ identity:
   title: Tailscale
 imports:
   services:
-    homepage: auto
+    homepage: homepage-au-truenas

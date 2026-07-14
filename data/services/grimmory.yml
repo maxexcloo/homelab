@@ -32,7 +32,7 @@ identity:
   username: maxexcloo
 imports:
   services:
-    pocket_id: auto
+    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 30396
   backend_scheme: http

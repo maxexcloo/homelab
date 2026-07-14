@@ -123,6 +123,8 @@ resource "oci_core_instance" "server" {
   }
 
   lifecycle {
+    prevent_destroy = true
+
     ignore_changes = [
       metadata
     ]

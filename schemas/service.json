@@ -443,10 +443,10 @@
       "type": "object",
       "properties": {
         "services": {
-          "description": "Map of local alias to imported service reference. Use \"auto\" to resolve the alias to a same-named service with exactly one target, e.g. {\"beszel\": \"auto\"} resolves to beszel-au-truenas when Beszel has only that target. Use an explicit target-expanded key or template when the target is ambiguous, e.g. {\"beszel\": \"beszel-${service.target}\"}. Imported services are exposed to templates as services.{alias}.",
+          "description": "Map of local alias to an explicit target-expanded service key. Imported services are exposed to templates as services.{alias}.",
           "type": "object",
           "additionalProperties": {
-            "pattern": "^[a-z0-9][a-z0-9-]*(\\$\\{[^}]+\\}[a-z0-9-]*)*$",
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
             "type": "string"
           },
           "propertyNames": {
@@ -560,7 +560,7 @@
                       "type": "boolean"
                     },
                     "name": {
-                      "description": "Display name for the access application. Also used to derive a stable Terraform resource key (lowercased, special chars replaced with hyphens). Defaults to the service title for the first entry.",
+                      "description": "Display name for the access application.",
                       "type": "string"
                     },
                     "path": {

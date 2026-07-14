@@ -58,10 +58,7 @@ locals {
             type  = "STRING"
             value = tostring(field_value)
           }
-          if(
-            field_value != null &&
-            field_value != ""
-          )
+          if try(tostring(field_value), "") != ""
         ],
         [
           for field_name, field_config in server.credentials.fields : {

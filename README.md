@@ -40,6 +40,7 @@ mise run fmt         # Format HCL, Python, YAML, schemas, and templates
 mise run init        # Initialize OpenTofu providers and backend
 mise run lint        # Validate source and default-merged YAML against JSON schemas
 mise run plan        # Review infrastructure changes
+mise run render      # Render plaintext deployment artifacts via debug_dir
 mise run setup       # Initial project setup
 mise run sort-check  # Check YAML and JSON Schema key ordering
 mise run validate    # Validate OpenTofu configuration
@@ -56,6 +57,7 @@ mise run validate    # Validate OpenTofu configuration
 - [docs/routing.md](docs/routing.md) - URLs, DNS, Traefik labels, and containers
 - [docs/servers.md](docs/servers.md) - Server inheritance, hostnames, and runtime values
 - [docs/services.md](docs/services.md) - Service data, targets, routing, and templates
+- [docs/truenas-services.md](docs/truenas-services.md) - TrueNAS catalog service authoring
 - [AGENTS.md](AGENTS.md) - Development guide and standards
 
 ## License

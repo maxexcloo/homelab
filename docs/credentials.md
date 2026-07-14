@@ -8,6 +8,12 @@ Generated credentials are stored in 1Password through 1Password Connect.
 Provider access comes from `TF_VAR_onepassword_connect_url` and
 `TF_VAR_onepassword_connect_token`.
 
+Service item titles use the stable expanded service key, such as
+`pocket-id-au-truenas`. The human-readable service title is stored in the
+`display_name_ro` field. During migration, OpenTofu also searches for the old
+`Title (target)` form and renames the matching item in place, so no 1Password
+item IDs need to be stored in the repository.
+
 ## Fields
 
 Credential fields are declared under `credentials.fields`. OpenTofu creates
@@ -59,6 +65,7 @@ Services can reference another service by declaring an `imports.services` alias.
 Imported services are exposed to templates through the `services` map under the
 declared alias.
 
-`imports.services.<alias>: auto` resolves only when the imported service has one
-expanded target. Hyphenated service names also get a snake_case auto key, so an
-alias like `pocket_id` can resolve the `pocket-id` service.
+Each import value is an explicit expanded service key, for example
+`pocket_id: pocket-id-au-truenas`. Keeping aliases separate from target keys
+lets templates use readable references such as `${services.pocket_id...}`
+without making dependency identity depend on target counts.

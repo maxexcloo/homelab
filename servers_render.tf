@@ -8,10 +8,14 @@ locals {
       server,
       jsondecode(
         templatestring(
-          jsonencode({
-            dashboard = server.dashboard
-            data      = server.data
-          }),
+          replace(
+            jsonencode({
+              dashboard = server.dashboard
+              data      = server.data
+            }),
+            local.render_json_template_expression_pattern,
+            local.render_json_template_expression_replacement,
+          ),
           {
             defaults = local.defaults
             server   = server

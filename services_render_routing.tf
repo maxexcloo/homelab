@@ -74,7 +74,7 @@ locals {
             ]...),
             {
               for label_key, label_value in route.labels :
-              label_key => try(templatestring(tostring(label_value), local.services_render_context_base[service_key]), null)
+              label_key => templatestring(tostring(label_value), local.services_render_context_base[service_key])
               if label_value != null
             },
           ) : label_key => label_value
