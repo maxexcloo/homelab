@@ -4,11 +4,11 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = "~> 6.0"
+      version = "~> 6.13"
     }
     shell = {
       source  = "linyinfeng/shell"
-      version = "~> 1.0"
+      version = "~> 1.7"
     }
   }
 }
