@@ -1,4 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    hardcover_api_key: {}
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -6,14 +9,41 @@ dashboard:
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
+data:
+  aa_mirror_urls: https://annas-archive.pk,https://annas-archive.gd,https://annas-archive.gl
+  libgen_mirror_urls: https://libgen.vg,https://libgen.la,https://libgen.bz,https://libgen.gl,https://libgen.li
+  zlib_mirror_urls: https://z-lib.sk
+features:
+  oidc: true
+  password: true
 identity:
   description: Book Search & Downloads
   group: Media
   name: shelfmark
   service: shelfmark
   title: Shelfmark
+  username: max@excloo.com
+imports:
+  services:
+    grimmory: grimmory-au-truenas
+    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 30260
   backend_scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        AA_MIRROR_URLS: ${service.data.aa_mirror_urls}
+        AUTH_METHOD: oidc
+        CALIBRE_WEB_URL: ${services.grimmory.urls.default.href}
+        HARDCOVER_API_KEY: ${service.runtime.credentials.hardcover_api_key}
+        HARDCOVER_ENABLED: true
+        LIBGEN_MIRROR_URLS: ${service.data.libgen_mirror_urls}
+        METADATA_PROVIDER: hardcover
+        OIDC_BUTTON_LABEL: Pocket ID
+        OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        OIDC_DISCOVERY_URL: ${services.pocket_id.urls.default.href}/.well-known/openid-configuration
+        SESSION_COOKIE_SECURE: true
+        ZLIB_MIRROR_URLS: ${service.data.zlib_mirror_urls}
