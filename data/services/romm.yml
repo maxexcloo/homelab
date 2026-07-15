@@ -27,7 +27,6 @@ dashboard:
 features:
   oidc: true
   password: true
-  resend: true
 identity:
   description: Game & ROM Library
   group: Media
@@ -46,18 +45,11 @@ targets:
   au-truenas:
     truenas:
       env:
-        HASHEOUS_API_ENABLED: true
         OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
         OIDC_ENABLED: true
-        OIDC_REDIRECT_URI: ${service.urls.default.href}/oidc/callback
-        OIDC_SERVER_METADATA_URL: ${services.pocket_id.urls.default.href}/.well-known/openid-configuration
-        OIDC_USERNAME_ATTRIBUTE: preferred_username
+        OIDC_PROVIDER: pocket-id
+        OIDC_REDIRECT_URI: ${service.urls.default.href}/api/oauth/openid
+        OIDC_SERVER_APPLICATION_URL: ${services.pocket_id.urls.default.href}
+        ROMM_BASE_URL: ${service.urls.default.href}
         SCAN_TIMEOUT: 86400
-        SCREENSCRAPER_PASSWORD: ${service.runtime.credentials.screenscraper_password}
-        SCREENSCRAPER_USER: ${defaults.organization.email}
-        SMTP_FROM_ADDRESS: ${service.key}@${defaults.domains.internal}
-        SMTP_HOST: ${defaults.resend.host}
-        SMTP_PASSWORD: ${service.runtime.credentials.resend_api_key}
-        SMTP_PORT: ${defaults.resend.port}
-        SMTP_USERNAME: ${defaults.resend.username}

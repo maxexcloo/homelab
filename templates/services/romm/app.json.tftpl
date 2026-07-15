@@ -9,11 +9,14 @@
     "romm": {
       "auth_secret_key": "${service.runtime.credentials.auth_secret_key}",
       "db_password": "${service.runtime.credentials.db_password}",
+      "hasheous_api_enabled": true,
       "igdb_client_id": "${service.runtime.credentials.igdb_client_id}",
       "igdb_client_secret": "${service.runtime.credentials.igdb_client_secret}",
       "mobygames_api_key": "",
       "postgres_image_selector": "postgres_18_image",
       "redis_password": "${service.runtime.credentials.redis_password}",
+      "screenscraper_password": "${service.runtime.credentials.screenscraper_password}",
+      "screenscraper_user": "${defaults.organization.email}",
       "steamgriddb_api_key": "${service.runtime.credentials.steamgriddb_api_key}"
     },
     "storage": {

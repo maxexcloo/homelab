@@ -242,11 +242,6 @@ resource "cloudflare_ruleset" "waf" {
   ]
 }
 
-moved {
-  from = cloudflare_zero_trust_access_application.all["opencode-au-truenas-opencode-opencode"]
-  to   = cloudflare_zero_trust_access_application.all["[\"opencode-au-truenas\",\"opencode.excloo.com\",\"/*\"]"]
-}
-
 resource "cloudflare_zero_trust_access_application" "all" {
   for_each = local._cloudflare_access_applications
 

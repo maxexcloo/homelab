@@ -23,21 +23,6 @@ locals {
   }
 }
 
-import {
-  id = "docker"
-  to = github_repository.deployment["docker"]
-}
-
-import {
-  id = "fly"
-  to = github_repository.deployment["fly"]
-}
-
-import {
-  id = "truenas"
-  to = github_repository.deployment["truenas"]
-}
-
 resource "github_repository" "deployment" {
   for_each = local.defaults.github.deployment_repositories
 

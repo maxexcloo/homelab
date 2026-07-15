@@ -15,20 +15,20 @@ domains:
   external: excloo.net
   internal: excloo.dev
 github:
-  owner: excloo
+  owner: maxexcloo
   deployment_repositories:
     docker:
-      description: Docker configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
-      display_name: Docker
-      name: docker
+      description: Homelab Docker configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      display_name: Homelab Docker
+      name: homelab-docker
     fly:
-      description: Fly.io configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
-      display_name: Fly.io
-      name: fly
+      description: Homelab Fly.io configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      display_name: Homelab Fly.io
+      name: homelab-fly
     truenas:
-      description: TrueNAS configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
-      display_name: TrueNAS
-      name: truenas
+      description: Homelab TrueNAS configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      display_name: Homelab TrueNAS
+      name: homelab-truenas
 networking:
   allowlists:
     internal:
