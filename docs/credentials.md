@@ -8,11 +8,10 @@ Generated credentials are stored in 1Password through 1Password Connect.
 Provider access comes from `TF_VAR_onepassword_connect_url` and
 `TF_VAR_onepassword_connect_token`.
 
-Service item titles use the stable expanded service key, such as
-`pocket-id-au-truenas`. The human-readable service title is stored in the
-`display_name_ro` field. During migration, OpenTofu also searches for the old
-`Title (target)` form and renames the matching item in place, so no 1Password
-item IDs need to be stored in the repository.
+Server and service item titles use stable keys, such as `au-hsp` and
+`pocket-id-au-truenas`. OpenTofu searches by that title and uses the matching
+1Password item ID for updates, so item IDs do not need to be stored in the
+repository.
 
 ## Fields
 

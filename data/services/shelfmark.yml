@@ -36,7 +36,13 @@ targets:
       env:
         AA_MIRROR_URLS: ${service.data.aa_mirror_urls}
         AUTH_METHOD: oidc
+        BOOKLORE_DESTINATION: bookdrop
+        BOOKLORE_HOST: ${services.grimmory.urls.default.href}
+        BOOKLORE_PASSWORD: ${services.grimmory.runtime.credentials.password}
+        BOOKLORE_USERNAME: ${services.grimmory.identity.username}
+        BOOKS_OUTPUT_MODE: booklore
         CALIBRE_WEB_URL: ${services.grimmory.urls.default.href}
+        DIRECT_DOWNLOAD_ENABLED: true
         HARDCOVER_API_KEY: ${service.runtime.credentials.hardcover_api_key}
         HARDCOVER_ENABLED: true
         LIBGEN_MIRROR_URLS: ${service.data.libgen_mirror_urls}
@@ -46,4 +52,5 @@ targets:
         OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
         OIDC_DISCOVERY_URL: ${services.pocket_id.urls.default.href}/.well-known/openid-configuration
         SESSION_COOKIE_SECURE: true
+        SUPPORTED_FORMATS: azw3,cbr,cbz,djvu,epub,fb2,mobi,pdf
         ZLIB_MIRROR_URLS: ${service.data.zlib_mirror_urls}

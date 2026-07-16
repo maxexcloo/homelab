@@ -80,14 +80,6 @@ locals {
   _onepassword_service_item_fields = {
     for service_key, service in local.services : service_key => {
       for field in concat(
-        [
-          {
-            id    = "display_name"
-            label = "display_name_ro"
-            type  = "STRING"
-            value = service.identity.title
-          }
-        ],
         service.identity.username != "" ? [
           {
             id      = "username"

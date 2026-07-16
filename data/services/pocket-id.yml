@@ -4,6 +4,9 @@ credentials:
     encryption_key:
       bootstrap_length: 32
       bootstrap_type: base64
+    static_api_key:
+      bootstrap_length: 64
+      bootstrap_type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -37,3 +40,4 @@ targets:
         SMTP_PASSWORD: ${service.runtime.credentials.resend_api_key}
         SMTP_PORT: ${defaults.resend.port}
         SMTP_USERNAME: ${defaults.resend.username}
+        STATIC_API_KEY: ${service.runtime.credentials.static_api_key}
