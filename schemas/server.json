@@ -10,32 +10,7 @@
       "additionalProperties": false,
       "description": "Configuration for one credential field stored in 1Password and exposed under runtime.credentials.",
       "type": "object",
-      "allOf": [
-        {
-          "if": {
-            "required": ["bootstrap_type"]
-          },
-          "then": {
-            "required": ["bootstrap_length"]
-          },
-          "else": {
-            "not": {
-              "required": ["bootstrap_length"]
-            }
-          }
-        }
-      ],
       "properties": {
-        "bootstrap_length": {
-          "description": "Byte count for hex/base64 types; character count for string/alphanumeric types. Omit for manually supplied 1Password fields.",
-          "minimum": 1,
-          "type": "integer"
-        },
-        "bootstrap_type": {
-          "description": "Initial generated secret format. Omit to create an empty concealed 1Password field; hex/base64/string/alphanumeric bootstrap generated values and then read back from 1Password.",
-          "enum": ["alphanumeric", "base64", "hex", "string"],
-          "type": "string"
-        },
         "mode": {
           "description": "Whether 1Password may be the source of truth for this field. rw fields create placeholders; ro fields are written from provider-generated values.",
           "enum": ["ro", "rw", null],
@@ -52,6 +27,48 @@
           "type": ["string", "null"]
         }
       }
+    },
+    "credential_generator": {
+      "description": "Typed credential generator. Scalar generators seed a read-write 1Password field; x509 generates a read-only certificate and private-key pair.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["length", "type"],
+          "properties": {
+            "length": {
+              "description": "Byte count for base64/hex; character count for alphanumeric/string.",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "type": {
+              "enum": ["alphanumeric", "base64", "hex", "string"],
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "common_name": {
+              "description": "Certificate subject common name. Defaults to the server identity name and credential name.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": {
+              "enum": ["x509"],
+              "type": "string"
+            },
+            "validity_period_hours": {
+              "description": "Certificate validity in hours. Defaults to the global X.509 credential value.",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      ]
     },
     "dashboard": {
       "description": "Homepage server card data. Values are rendered directly into Homepage YAML after template interpolation; `group` and `name` are used to place the card.",
@@ -94,7 +111,7 @@
   "properties": {
     "credentials": {
       "additionalProperties": false,
-      "description": "Credential fields exposed as runtime.credentials.{name}. Omit bootstrap_type for manually supplied 1Password fields.",
+      "description": "Manual fields and typed generated credentials exposed under runtime.credentials.",
       "type": "object",
       "properties": {
         "fields": {
@@ -105,6 +122,16 @@
           },
           "propertyNames": {
             "pattern": "^[a-z0-9_]+$"
+          }
+        },
+        "generated": {
+          "description": "Typed credential generators keyed by credential name.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/credential_generator"
+          },
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
           }
         }
       }

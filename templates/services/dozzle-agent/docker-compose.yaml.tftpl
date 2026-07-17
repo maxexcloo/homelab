@@ -1,0 +1,19 @@
+secrets:
+  dozzle_cert:
+    file: ./dozzle_cert.pem
+  dozzle_key:
+    file: ./dozzle_key.pem
+services:
+  dozzle-agent:
+    command: agent
+    image: amir20/dozzle:v10.6.9
+    ports:
+      - 7007:7007
+    restart: unless-stopped
+    secrets:
+      - source: dozzle_cert
+        target: /dozzle_cert.pem
+      - source: dozzle_key
+        target: /dozzle_key.pem
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

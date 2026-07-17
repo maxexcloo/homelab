@@ -1,16 +1,12 @@
 # Stage: runtime — merges provider-backed values into servers_model. Never used as for_each key.
 locals {
-  # Flat "server_key-field_name" → bootstrap_value table. Nested resource for_each
-  # is not supported in HCL, so bootstrap secrets are materialized in random.tf
-  # under the same compound key and looked up here by string concatenation.
-  _servers_outputs_credentials_bootstrap = {
-    for field_key, field in local.random_server_credential_fields : field_key => (
-      field.bootstrap_type == "hex" ? random_id.server_secret[field_key].hex
-      : field.bootstrap_type == "base64" ? random_id.server_secret[field_key].b64_std
-      : (
-        field.bootstrap_type != null &&
-        contains(["alphanumeric", "string"], field.bootstrap_type)
-      ) ? random_password.server_secret[field_key].result
+  # Flat "server_key-credential_name" → generated scalar value table. Nested
+  # resource for_each is not supported, so random.tf uses the same compound key.
+  _servers_outputs_credentials_generated = {
+    for credential_key, generator in local.random_server_credentials : credential_key => (
+      generator.type == "hex" ? random_id.server_secret[credential_key].hex
+      : generator.type == "base64" ? random_id.server_secret[credential_key].b64_std
+      : contains(["alphanumeric", "string"], generator.type) ? random_password.server_secret[credential_key].result
       : null
     )
   }
@@ -126,12 +122,9 @@ locals {
             {
               for field_name, field in server.credentials.fields : field_name => sensitive(try(coalesce(
                 try(local.onepassword_server_existing_fields[server_key][field_name], null),
-                local._servers_outputs_credentials_bootstrap["${server_key}-${field_name}"],
+                try(local._servers_outputs_credentials_generated["${server_key}-${field_name}"], null),
               ), ""))
-              if(
-                field.bootstrap_type != null ||
-                field.mode == "rw"
-              )
+              if field.mode == "rw"
             },
             server.features.b2 ? {
               b2_application_key = b2_application_key.server[server_key].application_key
@@ -147,7 +140,7 @@ locals {
               cloudflare_tunnel_token      = module.cloudflare_tunnel[server_key].tunnel_token
             } : {},
             server.features.password ? {
-              password      = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key].password, null), random_password.server[server_key].result))
+              password      = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key].password, null), random_password.server_secret["${server_key}-password"].result))
               password_hash = bcrypt_hash.server[server_key].id
             } : {},
             server.features.resend ? {
@@ -156,6 +149,12 @@ locals {
             server.features.tailscale ? {
               tailscale_auth_key = tailscale_tailnet_key.server[server_key].key
             } : {},
+            merge({}, [
+              for credential_name, generator in server.credentials.generated : generator.type == "x509" ? {
+                "${credential_name}_certificate" = tls_self_signed_cert.server["${server_key}-${credential_name}"].cert_pem
+                "${credential_name}_private_key" = tls_private_key.server["${server_key}-${credential_name}"].private_key_pem
+              } : {}
+            ]...),
           )
         }
       },

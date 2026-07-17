@@ -1,4 +1,29 @@
 locals {
+  _servers_validation_credential_names = {
+    for server_key, server in local.servers_input : server_key => concat(
+      keys(server.credentials.fields),
+      flatten([
+        for credential_name, generator in server.credentials.generated :
+        generator.type == "x509" ? ["${credential_name}_certificate", "${credential_name}_private_key"] : [credential_name]
+      ]),
+      ["age_secret_key"],
+      server.features.b2 ? ["b2_application_key"] : [],
+      server.features.beszel ? ["beszel_agent_token", "beszel_system_id"] : [],
+      server.features.cloudflare_acme ? ["cloudflare_acme_token"] : [],
+      server.features.cloudflare_acme_legacy ? ["cloudflare_acme_legacy_token"] : [],
+      server.features.cloudflared ? ["cloudflare_tunnel_read_token", "cloudflare_tunnel_token"] : [],
+      server.features.docker ? ["doco_cd_git_access_token", "doco_cd_webhook_secret"] : [],
+      server.features.password ? ["password", "password_hash"] : [],
+      server.features.resend ? ["resend_api_key"] : [],
+      server.features.tailscale ? ["tailscale_auth_key"] : [],
+    )
+  }
+
+  _servers_validation_credential_names_conflicting = [
+    for server_key, credential_names in local._servers_validation_credential_names : server_key
+    if length(credential_names) != length(distinct(credential_names))
+  ]
+
   _servers_validation_cloudflare_routes_missing = [
     for route_key, route in local.cloudflare_routes : "${route_key} -> ${route.hostname}"
     if(
@@ -161,6 +186,11 @@ resource "terraform_data" "servers_validation" {
   input = keys(local.servers_input)
 
   lifecycle {
+    precondition {
+      condition     = length(local._servers_validation_credential_names_conflicting) == 0
+      error_message = "Server credential names must not overlap manual fields, generated outputs, or feature-created fields: ${join(", ", local._servers_validation_credential_names_conflicting)}"
+    }
+
     precondition {
       condition     = length(local._servers_validation_cloudflare_routes_missing) == 0
       error_message = "Cloudflare server routes require features.cloudflared: ${join(", ", nonsensitive(local._servers_validation_cloudflare_routes_missing))}"

@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
-  fields:
+  generated:
     monitoring_token:
-      bootstrap_length: 32
-      bootstrap_type: hex
+      length: 32
+      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}

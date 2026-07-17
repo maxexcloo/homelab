@@ -3,17 +3,16 @@ cloudflare:
     identity_providers: {}
 credentials:
   ro:
-    bootstrap_length: null
-    bootstrap_type: null
     mode: ro
     purpose: null
     type: CONCEALED
   rw:
-    bootstrap_length: null
-    bootstrap_type: null
     mode: rw
     purpose: null
     type: CONCEALED
+  x509:
+    common_name: ""
+    validity_period_hours: 87600
 dns:
   priority: null
   proxied: false
@@ -25,6 +24,7 @@ servers:
   parent: ""
   credentials:
     fields: {}
+    generated: {}
   features:
     b2: false
     beszel: false
@@ -107,6 +107,7 @@ services:
   target_feature: ""
   credentials:
     fields: {}
+    generated: {}
     source: service
   features:
     b2: false

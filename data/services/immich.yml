@@ -2,12 +2,13 @@
 credentials:
   fields:
     homepage_widget_key: {}
+  generated:
     db_password:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      length: 32
+      type: alphanumeric
     redis_password:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      length: 32
+      type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}

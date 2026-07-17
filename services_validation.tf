@@ -1,4 +1,25 @@
 locals {
+  _services_validation_credential_names = {
+    for service_key, service in local.services_input_targets : service_key => concat(
+      keys(service.credentials.fields),
+      flatten([
+        for credential_name, generator in service.credentials.generated :
+        generator.type == "x509" ? ["${credential_name}_certificate", "${credential_name}_private_key"] : [credential_name]
+      ]),
+      service.credentials.source == "target" ? ["password"] : [],
+      service.features.b2 ? ["b2_application_key"] : [],
+      service.features.oidc ? ["oidc_client_id", "oidc_client_secret"] : [],
+      service.features.password ? ["password", "password_hash"] : [],
+      service.features.resend ? ["resend_api_key"] : [],
+      service.features.tailscale ? ["tailscale_auth_key"] : [],
+    )
+  }
+
+  _services_validation_credential_names_conflicting = [
+    for service_key, credential_names in local._services_validation_credential_names : service_key
+    if length(credential_names) != length(distinct(credential_names))
+  ]
+
   # Cloudflare Universal SSL covers only one subdomain level.
   _services_validation_cloudflare_deep_subdomains = [
     for route_key, route in local.dns_model_routes : "${route_key} (${route.hostname})"
@@ -209,6 +230,11 @@ resource "terraform_data" "services_validation" {
   input = keys(local.services_input)
 
   lifecycle {
+    precondition {
+      condition     = length(local._services_validation_credential_names_conflicting) == 0
+      error_message = "Service credential names must not overlap manual fields, generated outputs, or feature-created fields: ${join(", ", local._services_validation_credential_names_conflicting)}"
+    }
+
     # Deep generated service hostnames need custom short URLs or dedicated certs.
     precondition {
       condition     = length(local._services_validation_cloudflare_deep_subdomains) == 0

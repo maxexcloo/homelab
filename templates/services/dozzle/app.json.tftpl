@@ -1,0 +1,23 @@
+{
+  "values": {
+    "network": {
+      "host_network": false,
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.host_port}
+      }
+    },
+    "storage": {
+      "additional_storage": [
+        {
+          "ix_volume_config": {
+            "acl_enable": false,
+            "dataset_name": "data"
+          },
+          "mount_path": "/data",
+          "type": "ix_volume"
+        }
+      ]
+    }
+  }
+}

@@ -54,6 +54,10 @@ terraform {
       source  = "tailscale/tailscale"
       version = "~> 0.28"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
     unifi = {
       source  = "ubiquiti-community/unifi"
       version = "~> 0.41"

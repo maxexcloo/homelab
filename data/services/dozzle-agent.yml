@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=../../schemas/service.json
+target_feature: docker
+identity:
+  description: Container Log Agent
+  name: dozzle-agent
+  service: dozzle-agent
+  title: Dozzle Agent
+imports:
+  services:
+    dozzle: dozzle-au-truenas

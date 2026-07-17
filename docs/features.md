@@ -13,7 +13,7 @@ only set overrides.
 - `monitoring` includes the service in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
-- `oidc` adds bootstrapped read-write OIDC client credentials.
+- `oidc` adds generated read-write OIDC client credentials.
 - `password` adds a service password and password hash.
 - `resend` provisions a Resend API key.
 - `tailscale` provisions a Tailscale auth key.
@@ -50,5 +50,9 @@ per-target data, features, credentials, Fly settings, or TrueNAS settings.
 ## Credentials
 
 Feature-created provider values are usually read-only and appear in 1Password
-with `_ro` labels. User-entered or bootstrap-seeded values are read-write and
+with `_ro` labels. User-entered or generator-seeded values are read-write and
 appear with `_rw` labels. Password-purpose fields use the bare field label.
+
+Named `credentials.generated` entries provision typed credentials. Scalar
+types seed read-write 1Password fields. The `x509` type provisions an Ed25519
+private key and self-signed certificate as paired read-only runtime credentials.

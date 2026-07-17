@@ -1,5 +1,27 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
+  _services_model_generated_credentials = {
+    for service_key, service in local.services_input_targets : service_key => merge(
+      service.credentials.generated,
+      service.features.oidc ? {
+        oidc_client_id = {
+          length = 16
+          type   = "hex"
+        }
+        oidc_client_secret = {
+          length = 32
+          type   = "hex"
+        }
+      } : {},
+      service.features.password ? {
+        password = {
+          length = 32
+          type   = "alphanumeric"
+        }
+      } : {},
+    )
+  }
+
   # Credential field shape for each service. Runtime values are added in services_outputs.tf.
   _services_model_credentials = {
     for service_key, service in local.services_input_targets : service_key => {
@@ -10,24 +32,17 @@ locals {
             field,
           )
         },
+        merge({}, [
+          for credential_name, generator in local._services_model_generated_credentials[service_key] :
+          contains(["alphanumeric", "base64", "hex", "string"], generator.type) ? {
+            (credential_name) = local.defaults.credentials.rw
+            } : generator.type == "x509" ? {
+            "${credential_name}_certificate" = local.defaults.credentials.ro
+            "${credential_name}_private_key" = local.defaults.credentials.ro
+          } : {}
+        ]...),
         service.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
-        } : {},
-        service.features.oidc ? {
-          oidc_client_id = merge(
-            local.defaults.credentials.rw,
-            {
-              bootstrap_length = 16
-              bootstrap_type   = "hex"
-            }
-          )
-          oidc_client_secret = merge(
-            local.defaults.credentials.rw,
-            {
-              bootstrap_length = 32
-              bootstrap_type   = "hex"
-            }
-          )
         } : {},
         service.features.password ? {
           password_hash = local.defaults.credentials.ro
@@ -46,6 +61,7 @@ locals {
           tailscale_auth_key = local.defaults.credentials.ro
         } : {},
       )
+      generated = local._services_model_generated_credentials[service_key]
     }
   }
 
@@ -289,4 +305,20 @@ locals {
   services_model_imports = {
     for service_key, service in local.services_model : service_key => service.imports.services
   }
+
+  services_model_x509_credentials = merge({}, [
+    for service_key, service in local.services_model : {
+      for credential_name, generator in service.credentials.generated :
+      "${service_key}-${credential_name}" => merge(
+        local.defaults.credentials.x509,
+        generator,
+        {
+          common_name = try(generator.common_name, "") != "" ? generator.common_name : "${service.identity.name}-${credential_name}"
+          name        = credential_name
+          service_key = service_key
+        },
+      )
+      if generator.type == "x509"
+    }
+  ]...)
 }

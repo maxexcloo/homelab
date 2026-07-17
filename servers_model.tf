@@ -1,5 +1,23 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
+  _servers_model_generated_credentials = {
+    for server_key, server in local.servers_input : server_key => merge(
+      server.credentials.generated,
+      server.features.docker ? {
+        doco_cd_webhook_secret = {
+          length = 48
+          type   = "alphanumeric"
+        }
+      } : {},
+      server.features.password ? {
+        password = {
+          length = 32
+          type   = "alphanumeric"
+        }
+      } : {},
+    )
+  }
+
   # Credential field shape for each server. Runtime values are added in servers_outputs.tf.
   _servers_model_credentials = {
     for server_key, server in local.servers_input : server_key => {
@@ -10,6 +28,15 @@ locals {
             field,
           )
         },
+        merge({}, [
+          for credential_name, generator in local._servers_model_generated_credentials[server_key] :
+          contains(["alphanumeric", "base64", "hex", "string"], generator.type) ? {
+            (credential_name) = local.defaults.credentials.rw
+            } : generator.type == "x509" ? {
+            "${credential_name}_certificate" = local.defaults.credentials.ro
+            "${credential_name}_private_key" = local.defaults.credentials.ro
+          } : {}
+        ]...),
         {
           age_secret_key = local.defaults.credentials.ro
         },
@@ -32,13 +59,6 @@ locals {
         } : {},
         server.features.docker ? {
           doco_cd_git_access_token = local.defaults.credentials.rw
-          doco_cd_webhook_secret = merge(
-            local.defaults.credentials.rw,
-            {
-              bootstrap_length = 48
-              bootstrap_type   = "alphanumeric"
-            }
-          )
         } : {},
         server.features.password ? {
           password_hash = local.defaults.credentials.ro
@@ -57,6 +77,7 @@ locals {
           tailscale_auth_key = local.defaults.credentials.ro
         } : {},
       )
+      generated = local._servers_model_generated_credentials[server_key]
     }
   }
 
@@ -189,4 +210,20 @@ locals {
       if server.features[feature]
     }
   }
+
+  servers_model_x509_credentials = merge({}, [
+    for server_key, server in local.servers_model : {
+      for credential_name, generator in server.credentials.generated :
+      "${server_key}-${credential_name}" => merge(
+        local.defaults.credentials.x509,
+        generator,
+        {
+          common_name = try(generator.common_name, "") != "" ? generator.common_name : "${server.identity.name}-${credential_name}"
+          name        = credential_name
+          server_key  = server_key
+        },
+      )
+      if generator.type == "x509"
+    }
+  ]...)
 }

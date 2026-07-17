@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
-  fields:
+  generated:
     db_password:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      length: 32
+      type: alphanumeric
     mysql_root_password:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      length: 32
+      type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}

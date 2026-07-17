@@ -5,15 +5,16 @@ credentials:
     igdb_client_secret: {}
     screenscraper_password: {}
     steamgriddb_api_key: {}
+  generated:
     auth_secret_key:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      length: 32
+      type: alphanumeric
     db_password:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      length: 32
+      type: alphanumeric
     redis_password:
-      bootstrap_length: 32
-      bootstrap_type: alphanumeric
+      length: 32
+      type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}

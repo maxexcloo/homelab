@@ -15,9 +15,9 @@ repository.
 
 ## Fields
 
-Credential fields are declared under `credentials.fields`. OpenTofu creates
-missing fields on the matching 1Password item, reads values back, and exposes
-them as `runtime.credentials.<name>`.
+Manually supplied credential fields are declared under `credentials.fields`.
+OpenTofu creates missing fields on the matching 1Password item, reads values
+back, and exposes them as `runtime.credentials.<name>`.
 
 Declared fields default to `credentials.rw` from `data/defaults.yml`.
 Read-write fields are created in 1Password even when empty, so values can be
@@ -33,24 +33,49 @@ runtime values.
 The stable field ID remains `field` in every case. Templates use
 `runtime.credentials.field`, not the 1Password label.
 
-Fields without `bootstrap_type` are created empty for manual entry. Fields with
-`bootstrap_type` and `bootstrap_length` receive an initial generated value:
+## Typed Generators
+
+Typed credential generators are declared under `credentials.generated`:
+
+```yaml
+credentials:
+  generated:
+    api_secret:
+      length: 32
+      type: hex
+```
+
+Scalar generators create an initial value for a read-write 1Password field:
 
 - `hex` and `base64` lengths are byte counts.
 - `string` and `alphanumeric` lengths are character counts.
 - Generated password-style values use `special = false`.
 
-Existing non-empty 1Password values win over generated bootstrap values. This
+Existing non-empty 1Password values win over generated seed values. This
 lets generated values seed a field once while preserving later manual changes.
+
+The `x509` generator creates an Ed25519 private key and self-signed certificate:
+
+```yaml
+credentials:
+  generated:
+    agent:
+      type: x509
+```
+
+An X.509 generator named `agent` exposes read-only `agent_certificate` and
+`agent_private_key` fields. Both values are stored in 1Password and sensitive
+OpenTofu state. `common_name` and `validity_period_hours` may override their
+global defaults.
 
 ## Generated Fields
 
 Feature flags add credential fields automatically:
 
 - `b2` adds `b2_application_key` as read-only.
-- `docker` adds read-write `doco_cd_git_access_token` and bootstrapped
+- `docker` adds read-write `doco_cd_git_access_token` and generated
   read-write `doco_cd_webhook_secret`.
-- `oidc` adds bootstrapped `oidc_client_id` and `oidc_client_secret` as
+- `oidc` adds generated `oidc_client_id` and `oidc_client_secret` as
   read-write.
 - `password` adds a read-write password and read-only `password_hash`.
 - `resend` adds read-only `resend_api_key`.

@@ -42,8 +42,9 @@ locals {
           truenas = local.defaults.targets.truenas
 
           credentials = {
-            fields = {}
-            source = service.credentials.source
+            fields    = {}
+            generated = {}
+            source    = service.credentials.source
           }
         },
         target_config,

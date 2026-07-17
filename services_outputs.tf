@@ -1,15 +1,12 @@
 # Stage: runtime — merges provider-backed credential values into services_model. Never used as for_each key.
 locals {
-  # Flat "service_key-field_name" → bootstrap_value table. Same pattern as
-  # _servers_outputs_credentials_bootstrap — see that local for rationale.
-  _services_outputs_credentials_bootstrap = {
-    for field_key, field in local.random_service_credential_fields : field_key => (
-      field.bootstrap_type == "hex" ? random_id.service_secret[field_key].hex
-      : field.bootstrap_type == "base64" ? random_id.service_secret[field_key].b64_std
-      : (
-        field.bootstrap_type != null &&
-        contains(["alphanumeric", "string"], field.bootstrap_type)
-      ) ? random_password.service_secret[field_key].result
+  # Flat "service_key-credential_name" → generated scalar value table. Same
+  # pattern as _servers_outputs_credentials_generated.
+  _services_outputs_credentials_generated = {
+    for credential_key, generator in local.random_service_credentials : credential_key => (
+      generator.type == "hex" ? random_id.service_secret[credential_key].hex
+      : generator.type == "base64" ? random_id.service_secret[credential_key].b64_std
+      : contains(["alphanumeric", "string"], generator.type) ? random_password.service_secret[credential_key].result
       : null
     )
   }
@@ -32,12 +29,9 @@ locals {
             {
               for field_name, field in service.credentials.fields : field_name => sensitive(try(coalesce(
                 try(local.onepassword_service_existing_fields[service_key][field_name], null),
-                local._services_outputs_credentials_bootstrap["${service_key}-${field_name}"],
+                try(local._services_outputs_credentials_generated["${service_key}-${field_name}"], null),
               ), ""))
-              if(
-                field.bootstrap_type != null ||
-                field.mode == "rw"
-              )
+              if field.mode == "rw"
             },
             (
               service.credentials.source == "target" &&
@@ -52,7 +46,7 @@ locals {
               service.credentials.source == "service" &&
               service.features.password
               ) ? {
-              password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service[service_key].result))
+              password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service_secret["${service_key}-password"].result))
               password_hash = bcrypt_hash.service[service_key].id
             } : {},
             service.features.resend ? {
@@ -61,6 +55,12 @@ locals {
             service.features.tailscale ? {
               tailscale_auth_key = tailscale_tailnet_key.service[service_key].key
             } : {},
+            merge({}, [
+              for credential_name, generator in service.credentials.generated : generator.type == "x509" ? {
+                "${credential_name}_certificate" = tls_self_signed_cert.service["${service_key}-${credential_name}"].cert_pem
+                "${credential_name}_private_key" = tls_private_key.service["${service_key}-${credential_name}"].private_key_pem
+              } : {}
+            ]...),
           )
         }
       },
