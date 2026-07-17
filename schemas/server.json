@@ -37,12 +37,12 @@
           "required": ["length", "type"],
           "properties": {
             "length": {
-              "description": "Byte count for base64/hex; character count for alphanumeric/string.",
+              "description": "Byte count for base64/hex; character count for alphanumeric.",
               "minimum": 1,
               "type": "integer"
             },
             "type": {
-              "enum": ["alphanumeric", "base64", "hex", "string"],
+              "enum": ["alphanumeric", "base64", "hex"],
               "type": "string"
             }
           }

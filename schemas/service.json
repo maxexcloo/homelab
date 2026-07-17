@@ -145,12 +145,12 @@
           "required": ["length", "type"],
           "properties": {
             "length": {
-              "description": "Byte count for base64/hex; character count for alphanumeric/string.",
+              "description": "Byte count for base64/hex; character count for alphanumeric.",
               "minimum": 1,
               "type": "integer"
             },
             "type": {
-              "enum": ["alphanumeric", "base64", "hex", "string"],
+              "enum": ["alphanumeric", "base64", "hex"],
               "type": "string"
             }
           }
@@ -201,10 +201,6 @@
         },
         "monitoring_alerts": {
           "description": "Per-target override. Attach generated monitoring alerts to this service when monitoring is enabled. Does not provision resources or expose template variables.",
-          "type": "boolean"
-        },
-        "oidc": {
-          "description": "Per-target override. Auto-generate OIDC client credentials for SSO. Exposes runtime.credentials.oidc_client_id and runtime.credentials.oidc_client_secret as template variables.",
           "type": "boolean"
         },
         "password": {
@@ -410,10 +406,6 @@
         },
         "monitoring_alerts": {
           "description": "Attach generated monitoring alerts to this service when monitoring is enabled. Does not provision resources or expose template variables.",
-          "type": "boolean"
-        },
-        "oidc": {
-          "description": "Auto-generate OIDC client credentials for SSO via Pocket ID. Exposes runtime.credentials.oidc_client_id and runtime.credentials.oidc_client_secret as template variables.",
           "type": "boolean"
         },
         "password": {

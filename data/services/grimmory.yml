@@ -7,6 +7,12 @@ credentials:
     mysql_root_password:
       length: 32
       type: alphanumeric
+    oidc_client_id:
+      length: 16
+      type: hex
+    oidc_client_secret:
+      length: 32
+      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -20,7 +26,6 @@ dashboard:
         url: ${service.urls.default.href}
         username: ${service.identity.username}
 features:
-  oidc: true
   password: true
   resend: true
 identity:

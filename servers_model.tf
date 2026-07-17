@@ -30,12 +30,12 @@ locals {
         },
         merge({}, [
           for credential_name, generator in local._servers_model_generated_credentials[server_key] :
-          contains(["alphanumeric", "base64", "hex", "string"], generator.type) ? {
-            (credential_name) = local.defaults.credentials.rw
-            } : generator.type == "x509" ? {
+          generator.type == "x509" ? {
             "${credential_name}_certificate" = local.defaults.credentials.ro
             "${credential_name}_private_key" = local.defaults.credentials.ro
-          } : {}
+            } : {
+            (credential_name) = local.defaults.credentials.rw
+          }
         ]...),
         {
           age_secret_key = local.defaults.credentials.ro
@@ -218,7 +218,7 @@ locals {
         local.defaults.credentials.x509,
         generator,
         {
-          common_name = try(generator.common_name, "") != "" ? generator.common_name : "${server.identity.name}-${credential_name}"
+          common_name = try(generator.common_name, "${server.identity.name}-${credential_name}")
           name        = credential_name
           server_key  = server_key
         },

@@ -48,7 +48,7 @@ credentials:
 Scalar generators create an initial value for a read-write 1Password field:
 
 - `hex` and `base64` lengths are byte counts.
-- `string` and `alphanumeric` lengths are character counts.
+- `alphanumeric` lengths are character counts.
 - Generated password-style values use `special = false`.
 
 Existing non-empty 1Password values win over generated seed values. This
@@ -75,8 +75,6 @@ Feature flags add credential fields automatically:
 - `b2` adds `b2_application_key` as read-only.
 - `docker` adds read-write `doco_cd_git_access_token` and generated
   read-write `doco_cd_webhook_secret`.
-- `oidc` adds generated `oidc_client_id` and `oidc_client_secret` as
-  read-write.
 - `password` adds a read-write password and read-only `password_hash`.
 - `resend` adds read-only `resend_api_key`.
 - `tailscale` adds read-only `tailscale_auth_key`.

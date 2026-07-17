@@ -1,4 +1,12 @@
 # yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  generated:
+    oidc_client_id:
+      length: 16
+      type: hex
+    oidc_client_secret:
+      length: 32
+      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -16,7 +24,6 @@ data:
   agent_listen: 45876
   agent_public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
 features:
-  oidc: true
   password: true
   resend: true
 identity:

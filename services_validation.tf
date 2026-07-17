@@ -8,7 +8,6 @@ locals {
       ]),
       service.credentials.source == "target" ? ["password"] : [],
       service.features.b2 ? ["b2_application_key"] : [],
-      service.features.oidc ? ["oidc_client_id", "oidc_client_secret"] : [],
       service.features.password ? ["password", "password_hash"] : [],
       service.features.resend ? ["resend_api_key"] : [],
       service.features.tailscale ? ["tailscale_auth_key"] : [],

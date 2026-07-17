@@ -6,6 +6,12 @@ credentials:
     db_password:
       length: 32
       type: alphanumeric
+    oidc_client_id:
+      length: 16
+      type: hex
+    oidc_client_secret:
+      length: 32
+      type: hex
     redis_password:
       length: 32
       type: alphanumeric
@@ -22,7 +28,6 @@ dashboard:
         url: ${service.urls.default.href}
         version: 2
 features:
-  oidc: true
   password: true
   resend: true
 identity:

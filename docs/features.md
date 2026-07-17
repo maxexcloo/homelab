@@ -13,7 +13,6 @@ only set overrides.
 - `monitoring` includes the service in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
-- `oidc` adds generated read-write OIDC client credentials.
 - `password` adds a service password and password hash.
 - `resend` provisions a Resend API key.
 - `tailscale` provisions a Tailscale auth key.

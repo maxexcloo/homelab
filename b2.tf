@@ -20,6 +20,7 @@ locals {
 resource "b2_application_key" "server" {
   for_each = local.servers_model_by_feature.b2
 
+  # bucket_ids is provider-preferred but incompatible with these scoped keys.
   bucket_id    = b2_bucket.server[each.key].id
   capabilities = local._b2_application_key_capabilities
   key_name     = each.key
@@ -28,6 +29,7 @@ resource "b2_application_key" "server" {
 resource "b2_application_key" "service" {
   for_each = local.services_model_by_feature.b2
 
+  # bucket_ids is provider-preferred but incompatible with these scoped keys.
   bucket_id    = b2_bucket.service[each.key].id
   capabilities = local._b2_application_key_capabilities
   key_name     = each.key

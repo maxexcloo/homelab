@@ -6,8 +6,7 @@ locals {
     for credential_key, generator in local.random_server_credentials : credential_key => (
       generator.type == "hex" ? random_id.server_secret[credential_key].hex
       : generator.type == "base64" ? random_id.server_secret[credential_key].b64_std
-      : contains(["alphanumeric", "string"], generator.type) ? random_password.server_secret[credential_key].result
-      : null
+      : random_password.server_secret[credential_key].result
     )
   }
 
@@ -150,10 +149,11 @@ locals {
               tailscale_auth_key = tailscale_tailnet_key.server[server_key].key
             } : {},
             merge({}, [
-              for credential_name, generator in server.credentials.generated : generator.type == "x509" ? {
+              for credential_name, generator in server.credentials.generated : {
                 "${credential_name}_certificate" = tls_self_signed_cert.server["${server_key}-${credential_name}"].cert_pem
                 "${credential_name}_private_key" = tls_private_key.server["${server_key}-${credential_name}"].private_key_pem
-              } : {}
+              }
+              if generator.type == "x509"
             ]...),
           )
         }

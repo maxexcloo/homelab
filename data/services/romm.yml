@@ -12,6 +12,12 @@ credentials:
     db_password:
       length: 32
       type: alphanumeric
+    oidc_client_id:
+      length: 16
+      type: hex
+    oidc_client_secret:
+      length: 32
+      type: hex
     redis_password:
       length: 32
       type: alphanumeric
@@ -26,7 +32,6 @@ dashboard:
       - type: ${service.identity.service}
         url: ${service.urls.default.href}
 features:
-  oidc: true
   password: true
 identity:
   description: Game & ROM Library

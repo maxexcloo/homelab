@@ -94,13 +94,9 @@
         "x509": {
           "additionalProperties": false,
           "description": "Default values for provider-generated X.509 credential pairs.",
-          "required": ["common_name", "validity_period_hours"],
+          "required": ["validity_period_hours"],
           "type": "object",
           "properties": {
-            "common_name": {
-              "description": "Empty by default; generated credentials fall back to the service and credential names.",
-              "type": "string"
-            },
             "validity_period_hours": {
               "description": "Certificate validity in hours.",
               "minimum": 1,

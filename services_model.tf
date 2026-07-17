@@ -3,16 +3,6 @@ locals {
   _services_model_generated_credentials = {
     for service_key, service in local.services_input_targets : service_key => merge(
       service.credentials.generated,
-      service.features.oidc ? {
-        oidc_client_id = {
-          length = 16
-          type   = "hex"
-        }
-        oidc_client_secret = {
-          length = 32
-          type   = "hex"
-        }
-      } : {},
       service.features.password ? {
         password = {
           length = 32
@@ -34,12 +24,12 @@ locals {
         },
         merge({}, [
           for credential_name, generator in local._services_model_generated_credentials[service_key] :
-          contains(["alphanumeric", "base64", "hex", "string"], generator.type) ? {
-            (credential_name) = local.defaults.credentials.rw
-            } : generator.type == "x509" ? {
+          generator.type == "x509" ? {
             "${credential_name}_certificate" = local.defaults.credentials.ro
             "${credential_name}_private_key" = local.defaults.credentials.ro
-          } : {}
+            } : {
+            (credential_name) = local.defaults.credentials.rw
+          }
         ]...),
         service.features.b2 ? {
           b2_application_key = local.defaults.credentials.ro
@@ -313,7 +303,7 @@ locals {
         local.defaults.credentials.x509,
         generator,
         {
-          common_name = try(generator.common_name, "") != "" ? generator.common_name : "${service.identity.name}-${credential_name}"
+          common_name = try(generator.common_name, "${service.identity.name}-${credential_name}")
           name        = credential_name
           service_key = service_key
         },

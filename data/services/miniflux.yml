@@ -6,6 +6,12 @@ credentials:
     db_password:
       length: 32
       type: alphanumeric
+    oidc_client_id:
+      length: 16
+      type: hex
+    oidc_client_secret:
+      length: 32
+      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -18,7 +24,6 @@ dashboard:
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
 features:
-  oidc: true
   password: true
 identity:
   description: RSS Reader

@@ -2,6 +2,13 @@
 credentials:
   fields:
     hardcover_api_key: {}
+  generated:
+    oidc_client_id:
+      length: 16
+      type: hex
+    oidc_client_secret:
+      length: 32
+      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -14,7 +21,6 @@ data:
   libgen_mirror_urls: https://libgen.vg,https://libgen.la,https://libgen.bz,https://libgen.gl,https://libgen.li
   zlib_mirror_urls: https://z-lib.sk
 features:
-  oidc: true
   password: true
 identity:
   description: Book Search & Downloads
