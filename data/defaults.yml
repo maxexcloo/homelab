@@ -104,6 +104,7 @@ services:
   dashboard: []
   data: {}
   target_feature: ""
+  targets: {}
   credentials:
     fields: {}
     generated: {}

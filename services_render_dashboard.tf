@@ -1,9 +1,9 @@
 # Stage: render — dashboard aggregate view.
 locals {
-  _services_render_dashboard_data = try([
+  _services_render_dashboard_data = try(one([
     for service in values(local.services_render_services) : service.data
     if service.identity.name == "homepage"
-  ][0], {})
+  ]), {})
 
   _services_render_dashboard_server_cards = flatten([
     for server_key, server in local.servers_render_servers : [

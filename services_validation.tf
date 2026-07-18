@@ -47,7 +47,7 @@ locals {
   _services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
     if(
-      try(service.targets.fly, null) != null &&
+      can(service.targets.fly) &&
       service.routing.backend_port == null
     )
   ]
@@ -170,7 +170,10 @@ locals {
     for service_key, service in local.services_model : service_key
     if(
       service.credentials.source == "target" &&
-      try(!local.servers_model[service.target].features.password, true)
+      (
+        !can(local.servers_model[service.target]) ||
+        !local.servers_model[service.target].features.password
+      )
     )
   ]
 

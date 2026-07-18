@@ -46,7 +46,7 @@ locals {
   onepassword_service_existing_fields = {
     for service_key, item in data.http.onepassword_service_item : service_key => {
       for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
-      if try(coalesce(field.value, ""), "") != ""
+      if try(field.value != null && field.value != "", false)
     }
   }
 

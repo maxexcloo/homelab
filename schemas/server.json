@@ -356,11 +356,11 @@
               "type": "array",
               "items": {
                 "additionalProperties": false,
-                "required": ["path", "pool"],
+                "required": ["name", "path", "pool", "size"],
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "Device name. Defaults to disk-{n} if omitted.",
+                    "description": "Stable Incus device name.",
                     "type": "string"
                   },
                   "path": {
@@ -397,7 +397,7 @@
               "type": "array",
               "items": {
                 "additionalProperties": false,
-                "required": ["network"],
+                "required": ["name", "network"],
                 "type": "object",
                 "properties": {
                   "mac_address": {
@@ -406,7 +406,7 @@
                     "type": "string"
                   },
                   "name": {
-                    "description": "Device name. Defaults to eth-{n} if omitted.",
+                    "description": "Stable Incus device name.",
                     "type": "string"
                   },
                   "network": {
@@ -421,7 +421,7 @@
               "type": "array",
               "items": {
                 "additionalProperties": false,
-                "required": ["address"],
+                "required": ["address", "name"],
                 "type": "object",
                 "properties": {
                   "address": {
@@ -429,7 +429,7 @@
                     "type": "string"
                   },
                   "name": {
-                    "description": "Device name. Defaults to pci-{n} if omitted.",
+                    "description": "Stable Incus device name.",
                     "type": "string"
                   }
                 }
@@ -464,7 +464,7 @@
               "type": "array",
               "items": {
                 "additionalProperties": false,
-                "required": ["productid", "vendorid"],
+                "required": ["name", "productid", "vendorid"],
                 "type": "object",
                 "properties": {
                   "mode": {
@@ -472,7 +472,7 @@
                     "type": "string"
                   },
                   "name": {
-                    "description": "Device name. Defaults to usb-{n} if omitted.",
+                    "description": "Stable Incus device name.",
                     "type": "string"
                   },
                   "productid": {

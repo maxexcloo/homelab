@@ -50,7 +50,7 @@ locals {
     },
     {
       # 3) Machine count for scaling
-      for service_key, service in local._fly_services : "${service.fly.app_name}/.machine-count" => {
+      for service in values(local._fly_services) : "${service.fly.app_name}/.machine-count" => {
         commit_message = "Update ${service.fly.app_name} machine count"
         content_base64 = base64encode("${service.fly.machine_count}\n")
         file           = "${service.fly.app_name}/.machine-count"
@@ -89,10 +89,10 @@ resource "github_repository_file" "fly_deploy_request" {
     workflow_revision = local.github_workflow_revisions.fly
 
     deployments = {
-      for service_key, service in local._fly_services : service.fly.app_name => sha256(jsonencode({
+      for service in values(local._fly_services) : service.fly.app_name => sha256(jsonencode({
         files = {
-          for file_key, file_config in local._fly_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
-          if startswith(local._fly_render_files[file_key].file, "${service.fly.app_name}/")
+          for file_config in values(local._fly_render_files) : file_config.file => nonsensitive(sha256(file_config.content_base64))
+          if startswith(file_config.file, "${service.fly.app_name}/")
         }
 
         sops = sha256(age_secret_key.fly.public_key)

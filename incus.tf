@@ -60,7 +60,7 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.disks
 
     content {
-      name = device.value.name != "" ? device.value.name : "disk-${device.key + 1}"
+      name = device.value.name
       type = "disk"
 
       properties = {
@@ -75,14 +75,14 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.networks
 
     content {
-      name = device.value.name != "" ? device.value.name : "eth-${device.key + 1}"
+      name = device.value.name
       type = "nic"
 
       properties = merge(
         {
           network = device.value.network
         },
-        device.value.mac_address != "" ? {
+        try(device.value.mac_address, "") != "" ? {
           hwaddr = device.value.mac_address
         } : {}
       )
@@ -93,7 +93,7 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.pci_devices
 
     content {
-      name = device.value.name != "" ? device.value.name : "pci-${device.key + 1}"
+      name = device.value.name
       type = "pci"
 
       properties = {
@@ -106,7 +106,7 @@ resource "incus_instance" "vm" {
     for_each = each.value.platform_config.incus.usb_devices
 
     content {
-      name = device.value.name != "" ? device.value.name : "usb-${device.key + 1}"
+      name = device.value.name
       type = "usb"
 
       properties = merge(
@@ -114,7 +114,7 @@ resource "incus_instance" "vm" {
           productid = device.value.productid
           vendorid  = device.value.vendorid
         },
-        device.value.mode != "" ? {
+        try(device.value.mode, "") != "" ? {
           mode = device.value.mode
         } : {}
       )

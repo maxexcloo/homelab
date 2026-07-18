@@ -17,10 +17,11 @@ locals {
             for server_key, server in local.servers_input : server_key => {}
             if(
               service.target_feature != "" &&
-              try(server.features[service.target_feature], false)
+              can(server.features[service.target_feature]) &&
+              server.features[service.target_feature]
             )
           },
-          try(service.targets, {}),
+          service.targets,
         )
       },
     )

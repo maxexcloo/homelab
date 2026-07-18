@@ -83,7 +83,7 @@ locals {
     },
     {
       # 3) Generic sidecar files (env, configs, etc.)
-      for file_key, file_config in local.services_render_write_sidecars : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
+      for file_config in values(local.services_render_write_sidecars) : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
         file_config,
         {
           age_public_key = age_secret_key.server[file_config.target].public_key
@@ -116,7 +116,7 @@ resource "github_repository_file" "truenas_deploy_request" {
     workflow_revision = local.github_workflow_revisions.truenas
 
     deployments = {
-      for service_key, service in local.truenas_services : "${service.target}/${service.identity.name}" => {
+      for service in values(local.truenas_services) : "${service.target}/${service.identity.name}" => {
         files = sort([
           for file_key in nonsensitive(keys(local._truenas_render_files)) : file_key
           if startswith(file_key, "${service.target}/${service.identity.name}/")
@@ -124,8 +124,8 @@ resource "github_repository_file" "truenas_deploy_request" {
 
         hash = sha256(jsonencode({
           files = {
-            for file_key, file_config in local._truenas_render_files : file_config.file => nonsensitive(sha256(file_config.content_base64))
-            if startswith(local._truenas_render_files[file_key].file, "${service.target}/${service.identity.name}/")
+            for file_config in values(local._truenas_render_files) : file_config.file => nonsensitive(sha256(file_config.content_base64))
+            if startswith(file_config.file, "${service.target}/${service.identity.name}/")
           }
 
           sops = sha256(age_secret_key.server[service.target].public_key)
@@ -162,7 +162,7 @@ resource "github_repository_file" "truenas_sops_config" {
 
   content = yamlencode({
     creation_rules = [
-      for server_key, server in local.truenas_servers : {
+      for server_key in keys(local.truenas_servers) : {
         age        = age_secret_key.server[server_key].public_key
         path_regex = "^${server_key}/"
       }

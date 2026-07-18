@@ -123,7 +123,7 @@ locals {
   # Routes are only added when backed by a managed DNS record. The
   # http_status:503 catch-all is required by Cloudflare Tunnel.
   _cloudflare_tunnel_ingress = {
-    for server_key, server in local.servers_model_by_feature.cloudflared : server_key => concat(
+    for server_key in keys(local.servers_model_by_feature.cloudflared) : server_key => concat(
       [
         for route in values(local._cloudflare_routes_tunnel) : merge(
           {

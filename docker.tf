@@ -56,7 +56,7 @@ locals {
       }
     },
     {
-      for file_key, file_config in local.services_render_write_sidecars : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
+      for file_config in values(local.services_render_write_sidecars) : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
         file_config,
         {
           age_public_key = age_secret_key.server[file_config.target].public_key

@@ -164,14 +164,14 @@ locals {
     for service_key, service in local.services_input_targets : service_key => {
       default = try(
         [
-          for route in local._services_model_routes[service_key] : route.href
+          for route in local._services_model_routes[service_key] : route
           if route.href != null
         ][0],
         null,
       )
       external = try(
         [
-          for route in local._services_model_routes[service_key] : route.href
+          for route in local._services_model_routes[service_key] : route
           if(
             route.href != null &&
             (
@@ -184,7 +184,7 @@ locals {
       )
       internal = try(
         [
-          for route in local._services_model_routes[service_key] : route.href
+          for route in local._services_model_routes[service_key] : route
           if(
             route.href != null &&
             route.url == null &&
@@ -207,81 +207,74 @@ locals {
           zone  = route.zone
         }...
         if route.host != null
-      } : host => urls[0]
+      } : host => one(urls)
     }
   }
 
   services_model = {
     for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
       service,
-      merge(
-        {
-          credentials = local._services_model_credentials[service_key]
-          key         = service_key
+      {
+        credentials = local._services_model_credentials[service_key]
+        key         = service_key
 
-          fly = {
-            app_name = service.target == "fly" ? local._services_model_fly_app_names[service_key] : service.fly.app_name
-          }
+        fly = {
+          app_name = service.target == "fly" ? local._services_model_fly_app_names[service_key] : service.fly.app_name
+        }
 
-          hosts = {
-            external = local._services_model_target_servers[service_key] != null ? "${service.identity.name}.${local._services_model_target_servers[service_key].hosts.external}" : null
-            internal = local._services_model_target_servers[service_key] != null ? "${service.identity.name}.${local._services_model_target_servers[service_key].hosts.internal}" : null
-          }
-
-          identity = {
-            group = (
-              service.identity.group != "" ? service.identity.group
-              : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.group
-              : "Applications"
-            )
-            username = (
-              service.credentials.source == "target" &&
-              local._services_model_target_servers[service_key] != null
-            ) ? local._services_model_target_servers[service_key].identity.username : service.identity.username
-          }
-
-          routing = merge(
-            {
-              for field_name, field_value in service.routing : field_name => field_value
-              if field_name != "urls"
-            },
-            {
-              backend_url = service.routing.backend_url
-              container   = service.routing.container != "" ? service.routing.container : service.identity.service
-              host_port   = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
-              urls        = local._services_model_routes[service_key]
-            },
+        identity = {
+          group = (
+            service.identity.group != "" ? service.identity.group
+            : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.group
+            : "Applications"
           )
+          username = (
+            service.credentials.source == "target" &&
+            local._services_model_target_servers[service_key] != null
+          ) ? local._services_model_target_servers[service_key].identity.username : service.identity.username
+        }
 
-          urls = merge(
-            {
-              default = {
-                host  = local._services_model_url_aliases[service_key].default != null ? one(regex("^https?://([^/:]+)", local._services_model_url_aliases[service_key].default)) : null
-                href  = local._services_model_url_aliases[service_key].default
-                label = "default"
-                zone  = null
-              }
-            },
-            local._services_model_url_aliases[service_key].external != null ? {
-              external = {
-                host  = one(regex("^https?://([^/:]+)", local._services_model_url_aliases[service_key].external))
-                href  = local._services_model_url_aliases[service_key].external
-                label = "external"
-                zone  = null
-              }
-            } : {},
-            local._services_model_url_aliases[service_key].internal != null ? {
-              internal = {
-                host  = one(regex("^https?://([^/:]+)", local._services_model_url_aliases[service_key].internal))
-                href  = local._services_model_url_aliases[service_key].internal
-                label = "internal"
-                zone  = null
-              }
-            } : {},
-            local._services_model_urls[service_key],
-          )
-        },
-      )
+        routing = merge(
+          {
+            for field_name, field_value in service.routing : field_name => field_value
+            if field_name != "urls"
+          },
+          {
+            backend_url = service.routing.backend_url
+            container   = service.routing.container != "" ? service.routing.container : service.identity.service
+            host_port   = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
+            urls        = local._services_model_routes[service_key]
+          },
+        )
+
+        urls = merge(
+          {
+            default = {
+              host  = local._services_model_url_aliases[service_key].default != null ? local._services_model_url_aliases[service_key].default.host : null
+              href  = local._services_model_url_aliases[service_key].default != null ? local._services_model_url_aliases[service_key].default.href : null
+              label = "default"
+              zone  = null
+            }
+          },
+          local._services_model_url_aliases[service_key].external != null ? {
+            external = {
+              host  = local._services_model_url_aliases[service_key].external.host
+              href  = local._services_model_url_aliases[service_key].external.href
+              label = "external"
+              zone  = null
+            }
+          } : {},
+          local._services_model_url_aliases[service_key].internal != null ? {
+            internal = {
+              host  = local._services_model_url_aliases[service_key].internal.host
+              href  = local._services_model_url_aliases[service_key].internal.href
+              label = "internal"
+              zone  = null
+            }
+          } : {},
+          local._services_model_urls[service_key],
+        )
+      },
     )
   }
 
