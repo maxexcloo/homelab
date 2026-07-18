@@ -118,7 +118,7 @@ def deploy_services():
         containers = docker_containers()
         for rel_path in sorted(previous_sidecars - current_sidecars):
             validate_sidecar_path(rel_path)
-            container_service = rel_path.split("/", 1)[0]
+            container_service = sidecar_container_service(rel_path, service)
             container = find_container(containers, service, container_service)
 
             if container:
@@ -134,20 +134,22 @@ def deploy_services():
             if not path.is_file():
                 raise FileNotFoundError(f"Managed sidecar not found: {path}")
 
-            container_service = rel_path.split("/", 1)[0]
+            container_service = sidecar_container_service(rel_path, service)
             container = find_container(containers, service, container_service)
 
             if container:
-                run(
-                    [
-                        "docker",
-                        "exec",
-                        container,
-                        "mkdir",
-                        "-p",
-                        f"/{Path(rel_path).parent.as_posix()}",
-                    ]
-                )
+                parent = PurePosixPath(rel_path).parent.as_posix()
+                if parent != ".":
+                    run(
+                        [
+                            "docker",
+                            "exec",
+                            container,
+                            "mkdir",
+                            "-p",
+                            f"/{parent}",
+                        ]
+                    )
                 run(["docker", "cp", path.as_posix(), f"{container}:/{rel_path}"])
                 service_changed = True
                 print(f"✓ {container}:/{rel_path}")
@@ -261,6 +263,11 @@ def restart_service_containers(service):
 
 def run(command, **kwargs):
     return subprocess.run(command, check=True, text=True, **kwargs)
+
+
+def sidecar_container_service(path, service):
+    parts = PurePosixPath(path).parts
+    return parts[0] if len(parts) > 1 else service
 
 
 def sidecar_paths(paths):
