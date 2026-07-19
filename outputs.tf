@@ -12,24 +12,13 @@ output "summary" {
       services    = length(local.services_model)
     }
 
-    services_by_feature = merge(
-      {
-        for feature, matches in local.services_model_by_feature : feature => keys(matches)
-        if(
-          !contains(["monitoring", "monitoring_alerts"], feature) &&
-          length(matches) > 0
-        )
-      },
-      {
-        monitoring_alerts_disabled = [
-          for service_key in keys(local.services_model) : service_key
-          if !local.services_model[service_key].features.monitoring_alerts
-        ]
-        monitoring_disabled = [
-          for service_key in keys(local.services_model) : service_key
-          if !local.services_model[service_key].features.monitoring
-        ]
-      },
-    )
+    services_by_feature = {
+      for feature, enabled_by_default in local.defaults.services.features :
+      (enabled_by_default ? "${feature}_disabled" : feature) => [
+        for service_key, service in local.services_model : service_key
+        if service.features[feature] != enabled_by_default
+      ]
+      if enabled_by_default || length(local.services_model_by_feature[feature]) > 0
+    }
   }
 }
