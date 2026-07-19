@@ -297,6 +297,11 @@
           "pattern": "^$|^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
+        "container": {
+          "description": "TrueNAS catalog container name used for generated routing labels. Defaults to the route container when empty.",
+          "pattern": "^$|^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+          "type": "string"
+        },
         "env": {
           "description": "TrueNAS catalog app environment variables rendered into additional_envs. Custom compose apps should put environment directly in docker-compose.yaml.tftpl. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
           "type": "object",

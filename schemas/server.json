@@ -179,12 +179,12 @@
           "description": "Create a Cloudflare tunnel and cloudflared service target, and install cloudflared in generated setup artifacts when cloud_init is enabled. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}.",
           "type": "boolean"
         },
-        "cockpit": {
-          "description": "Install Cockpit in generated setup artifacts and enable cockpit.socket for browser-based server administration.",
-          "type": "boolean"
-        },
         "docker": {
           "description": "Install Docker in generated setup artifacts, render Docker Compose deployments to the Docker repo, and install doco-cd for GitOps deployment. Exposes runtime.credentials.{doco_cd_git_access_token,doco_cd_webhook_secret}.",
+          "type": "boolean"
+        },
+        "dozzle": {
+          "description": "Create a Dozzle Agent service target and include this server in the central Dozzle remote-agent list. Non-Docker platforms must provide the agent separately.",
           "type": "boolean"
         },
         "monitoring": {

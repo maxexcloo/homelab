@@ -7,6 +7,7 @@ features:
   cloudflare_acme: true
   cloudflared: true
   docker: true
+  dozzle: true
   password: true
   tailscale: true
 identity:
@@ -20,3 +21,8 @@ platform_config:
     disk_size: 160
     image_id: ocid1.image.oc1.ap-sydney-1.aaaaaaaasprcrunw26ssckiqd4oyn7mx6ydtejbmc3ke2arovq6sk3uarsza
     memory: 12
+routing:
+  urls:
+    - backend_url: https://localhost:443
+      expose: cloudflare
+      url: doco-cd.hsp.au.excloo.net

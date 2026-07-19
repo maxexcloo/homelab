@@ -10,14 +10,14 @@ identity:
   description: Network Speed Test
   name: openspeedtest
   service: openspeedtest
-  title: Open Speed Test
+  title: OpenSpeedTest
 routing:
   backend_port: 30116
   backend_scheme: http
-  container: open-speed-test
 targets:
   au-hsp: {}
   au-truenas:
     truenas:
       catalog_app: open-speed-test
+      container: open-speed-test
       port_key: http_port

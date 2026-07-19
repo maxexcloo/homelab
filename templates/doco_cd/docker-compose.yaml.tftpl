@@ -23,6 +23,9 @@ services:
     image: ghcr.io/kimdre/doco-cd:latest
     labels:
       traefik.enable: "true"
+      traefik.http.routers.doco-cd-webhook.entrypoints: websecure
+      traefik.http.routers.doco-cd-webhook.rule: "Host(`doco-cd.${server.hosts.external}`) && Path(`/v1/webhook/${server.key}`)"
+      traefik.http.routers.doco-cd-webhook.service: doco-cd
       traefik.http.routers.doco-cd.entrypoints: websecure
       traefik.http.routers.doco-cd.middlewares: internal-only@docker
       traefik.http.routers.doco-cd.rule: "Host(`doco-cd.${server.hosts.internal}`)"

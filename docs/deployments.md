@@ -42,10 +42,11 @@ cloud-init and setup-script bootstrap writes `/opt/doco-cd/sops_age_key.txt`,
 sets `SOPS_AGE_KEY_FILE`, configures polling against the `docker` repo with
 `target: <server>`, and also sets `WEBHOOK_SECRET` for later webhook use.
 
-The doco-cd container binds webhook HTTP to `127.0.0.1:8089` and metrics to
-`127.0.0.1:9120`. Traefik labels publish the webhook UI/API internally at
+The doco-cd container binds HTTP to `127.0.0.1:8089` and metrics to
+`127.0.0.1:9120`. Traefik publishes its HTTP endpoints internally at
 `doco-cd.<server internal host>` with the existing `internal-only@docker`
-middleware.
+middleware. Cloudflare Tunnel can expose only the target-specific webhook path
+at `doco-cd.<server external host>/v1/webhook/<server key>`.
 
 ## Fly
 

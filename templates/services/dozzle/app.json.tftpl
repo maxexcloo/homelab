@@ -1,5 +1,13 @@
 {
   "values": {
+    "dozzle": {
+      "additional_envs": [
+        {
+          "name": "DOZZLE_REMOTE_AGENT",
+          "value": "${join(",", [for server in values(servers) : format("%s:7007|%s", server.hosts.internal, server.identity.title) if server.features.dozzle])}"
+        }
+      ]
+    },
     "network": {
       "host_network": false,
       "web_port": {

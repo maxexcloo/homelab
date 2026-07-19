@@ -51,6 +51,7 @@ features:
   beszel: true
   cloudflare_acme: true
   cloudflared: true
+  dozzle: true
   password: true
   tailscale: true
 identity:

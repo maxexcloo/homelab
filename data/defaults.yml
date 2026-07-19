@@ -31,8 +31,8 @@ servers:
     cloudflare_acme: false
     cloudflare_acme_legacy: false
     cloudflared: false
-    cockpit: false
     docker: false
+    dozzle: false
     monitoring: true
     monitoring_alerts: true
     password: false
@@ -146,6 +146,7 @@ targets:
     region: syd
   truenas:
     catalog_app: ""
+    container: ""
     env: {}
     port_key: web_port
     train: community

@@ -12,9 +12,6 @@ groups:
   %{~ endif ~}
   - sudo
 packages:
-  %{~ if server.features.cockpit ~}
-  - cockpit
-  %{~ endif ~}
   - curl
   - ethtool
   - nano
@@ -29,9 +26,6 @@ runcmd:
   - dpkg -i /tmp/cloudflared.deb
   - rm /tmp/cloudflared.deb
   - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
-  %{~ endif ~}
-  %{~ if server.features.cockpit ~}
-  - systemctl enable --now cockpit.socket
   %{~ endif ~}
   %{~ if server.features.docker ~}
   - curl -fsLS https://get.docker.com | sh

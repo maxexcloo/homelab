@@ -10,10 +10,6 @@ dashboard:
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
-data:
-  remote_agent_delimiter: ","
-  remote_agent_format: "%s:7007|%s"
-  remote_agent_servers: [au-haos]
 identity:
   description: Container Log Viewer
   group: Infrastructure
@@ -21,11 +17,7 @@ identity:
   service: dozzle
   title: Dozzle
 routing:
-  backend_port: 8080
+  backend_port: 30064
   backend_scheme: http
-  host_port: 30064
 targets:
-  au-truenas:
-    truenas:
-      env:
-        DOZZLE_REMOTE_AGENT: "${join(service.data.remote_agent_delimiter, [for server in values(servers) : format(service.data.remote_agent_format, server.hosts.internal, server.identity.title) if server.features.docker || contains(service.data.remote_agent_servers, server.key)])}"
+  au-truenas: {}

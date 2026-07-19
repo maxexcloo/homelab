@@ -8,9 +8,6 @@ sudo timedatectl set-timezone ${defaults.system.timezone}
 # Packages
 sudo apt update
 sudo apt upgrade -y
-%{~ if server.features.cockpit }
-sudo apt install -y cockpit
-%{~ endif }
 sudo apt install -y curl ethtool nano sudo
 sudo apt autoremove -y
 sudo apt clean -y
@@ -74,10 +71,6 @@ curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/rel
 sudo dpkg -i /tmp/cloudflared.deb
 rm /tmp/cloudflared.deb
 sudo cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
-%{~ endif }
-
-%{~ if server.features.cockpit }
-sudo systemctl enable --now cockpit.socket
 %{~ endif }
 
 %{~ if server.features.docker }

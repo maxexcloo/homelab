@@ -1,0 +1,7 @@
+services:
+  openspeedtest:
+    image: openspeedtest/latest:v2.0.6
+    restart: unless-stopped
+    environment:
+      CHANGE_CONTAINER_PORTS: "True"
+      HTTP_PORT: ${service.routing.backend_port}

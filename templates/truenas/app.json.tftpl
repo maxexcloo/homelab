@@ -22,7 +22,7 @@
       labels = flatten([
         for container, labels in service.routing_labels : [
           for label_key in sort(keys(labels)) : {
-            containers = [container]
+            containers = [service.truenas.container != "" ? service.truenas.container : container]
             key        = label_key
             value      = labels[label_key]
           }
