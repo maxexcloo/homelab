@@ -113,14 +113,9 @@ resource "tailscale_acl" "default" {
     autoApprovers = {
       exitNode = local._tailscale_tags_approvers
 
-      routes = merge(
-        {
-          "10.0.0.0/23" = ["tag:router"]
-        },
-        {
-          for route in ["0.0.0.0/0", "::/0"] : route => local._tailscale_tags_approvers
-        },
-      )
+      routes = {
+        for route in ["0.0.0.0/0", "::/0"] : route => local._tailscale_tags_approvers
+      }
     }
 
     groups = {
