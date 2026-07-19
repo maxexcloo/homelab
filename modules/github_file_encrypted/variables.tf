@@ -32,6 +32,12 @@ variable "debug_path" {
   type        = string
 }
 
+variable "encrypt" {
+  default     = true
+  description = "Whether to SOPS-encrypt content before writing it"
+  type        = bool
+}
+
 variable "file" {
   description = "Repository file path"
   type        = string

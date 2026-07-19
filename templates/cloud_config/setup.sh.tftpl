@@ -11,9 +11,6 @@ sudo apt upgrade -y
 %{~ if server.features.cockpit }
 sudo apt install -y cockpit
 %{~ endif }
-%{~ if server.features.zfs }
-sudo apt install -y sanoid zfsutils-linux
-%{~ endif }
 sudo apt install -y curl ethtool nano sudo
 sudo apt autoremove -y
 sudo apt clean -y
@@ -48,6 +45,8 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 ExecStart=/bin/sh -c 'ethtool -K "$(ip -o route get 1.1.1.1 | cut -d " " -f 5)" rx-gro-list off rx-udp-gro-forwarding on'
+Restart=on-failure
+RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
@@ -67,7 +66,7 @@ sudo chmod 0600 /opt/doco-cd/docker-compose.yaml /opt/doco-cd/sops_age_key.txt
 
 # Commands
 %{~ if server.features.beszel }
-curl -fsLS https://get.beszel.dev -o /tmp/install-agent.sh && chmod 0700 /tmp/install-agent.sh && sudo /tmp/install-agent.sh -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true && rm /tmp/install-agent.sh
+curl -fsLS https://get.beszel.dev | sudo sh -s -- -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true
 %{~ endif }
 
 %{~ if server.features.cloudflared }
@@ -93,4 +92,14 @@ sudo sysctl --system
 sudo tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
 sudo systemctl daemon-reload
 sudo systemctl enable --now tailscale-udp-gro.service
+%{~ endif }
+
+%{~ if server.features.zfs }
+. /etc/os-release
+if [ "$ID" = "debian" ]; then
+  printf 'deb https://deb.debian.org/debian %s contrib\ndeb https://deb.debian.org/debian %s-updates contrib\ndeb https://security.debian.org/debian-security %s-security contrib\n' "$VERSION_CODENAME" "$VERSION_CODENAME" "$VERSION_CODENAME" | sudo tee /etc/apt/sources.list.d/zfs.list >/dev/null
+  sudo apt update
+  sudo apt install -y "linux-headers-$(dpkg --print-architecture)"
+fi
+sudo apt install -y sanoid zfsutils-linux
 %{~ endif }

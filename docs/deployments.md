@@ -31,11 +31,13 @@ Each Docker server gets a target-specific deployment config:
 - `<server>/<service>/compose.yaml`
 - sidecars under `<server>/<service>/...`
 
-The target config uses doco-cd auto-discovery with `working_dir: <server>` and
-`depth: 1`, so each service directory becomes one Compose project. Deleted
-service directories are removed by doco-cd, but volumes are preserved.
+The target config is plaintext because doco-cd must parse it before deployment
+decryption. It contains no credentials and uses auto-discovery with
+`working_dir: <server>` and `depth: 1`, so each service directory becomes one
+Compose project. Deleted service directories are removed by doco-cd, but
+volumes are preserved.
 
-All rendered files are SOPS-encrypted to the target server's age key. The
+All deployment files are SOPS-encrypted to the target server's age key. The
 cloud-init and setup-script bootstrap writes `/opt/doco-cd/sops_age_key.txt`,
 sets `SOPS_AGE_KEY_FILE`, configures polling against the `docker` repo with
 `target: <server>`, and also sets `WEBHOOK_SECRET` for later webhook use.

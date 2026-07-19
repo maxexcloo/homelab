@@ -31,6 +31,7 @@ locals {
         age_public_key = age_secret_key.server[server_key].public_key
         commit_message = "Update ${server_key} doco-cd config"
         content_type   = "yaml"
+        encrypt        = false
         file           = ".doco-cd.${server_key}.yml"
 
         content_base64 = sensitive(base64encode(yamlencode({
@@ -52,6 +53,7 @@ locals {
         commit_message = "Update ${service_key} compose"
         content_base64 = sensitive(base64encode(local.services_render_write_compose[service_key]))
         content_type   = "yaml"
+        encrypt        = true
         file           = "${service.target}/${service.identity.name}/compose.yaml"
       }
     },
@@ -61,6 +63,7 @@ locals {
         {
           age_public_key = age_secret_key.server[file_config.target].public_key
           commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
+          encrypt        = true
           file           = "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
         },
       )
@@ -78,6 +81,7 @@ module "encrypted_github_file_docker" {
   content_base64 = local._docker_render_files[each.key].content_base64
   content_type   = local._docker_render_files[each.key].content_type
   debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.deployment_repositories.docker.name}/${each.key}" : ""
+  encrypt        = local._docker_render_files[each.key].encrypt
   file           = local._docker_render_files[each.key].file
   repository     = github_repository.deployment["docker"].name
 }
@@ -90,15 +94,11 @@ resource "github_repository_file" "docker_sops_config" {
 
   content = yamlencode({
     creation_rules = flatten([
-      for server_key, server in local._docker_servers : [
+      for server_key in keys(local._docker_servers) : [
         {
           age        = age_secret_key.server[server_key].public_key
           path_regex = "^${server_key}/"
-        },
-        {
-          age        = age_secret_key.server[server_key].public_key
-          path_regex = "^\\.doco-cd\\.${server_key}\\.ya?ml$"
-        },
+        }
       ]
     ])
   })

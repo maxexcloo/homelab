@@ -6,45 +6,14 @@ package_update: true
 package_upgrade: true
 ssh_pwauth: false
 timezone: ${defaults.system.timezone}
-apt:
-  sources:
-    %{~ if server.features.cloudflared ~}
-    cloudflared:
-      source: deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main
-    %{~ endif ~}
-    %{~ if server.features.docker ~}
-    docker:
-      source: deb [signed-by=/usr/share/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $RELEASE stable
-    %{~ endif ~}
-    %{~ if server.features.tailscale ~}
-    tailscale:
-      source: deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu $RELEASE main
-    %{~ endif ~}
 groups:
   %{~ if server.features.docker ~}
   - docker
   %{~ endif ~}
   - sudo
 packages:
-  %{~ if server.features.cloudflared ~}
-  - cloudflared
-  %{~ endif ~}
   %{~ if server.features.cockpit ~}
   - cockpit
-  %{~ endif ~}
-  %{~ if server.features.docker ~}
-  - containerd.io
-  - docker-buildx-plugin
-  - docker-ce
-  - docker-ce-cli
-  - docker-compose-plugin
-  %{~ endif ~}
-  %{~ if server.features.tailscale ~}
-  - tailscale
-  %{~ endif ~}
-  %{~ if server.features.zfs ~}
-  - sanoid
-  - zfsutils-linux
   %{~ endif ~}
   - curl
   - ethtool
@@ -53,22 +22,31 @@ packages:
 runcmd:
   - set -e
   %{~ if server.features.beszel ~}
-  - curl -fsLS https://get.beszel.dev -o /tmp/install-agent.sh && chmod 0700 /tmp/install-agent.sh && /tmp/install-agent.sh -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true && rm /tmp/install-agent.sh
+  - curl -fsLS https://get.beszel.dev | sh -s -- -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true
   %{~ endif ~}
   %{~ if server.features.cloudflared ~}
+  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb
+  - dpkg -i /tmp/cloudflared.deb
+  - rm /tmp/cloudflared.deb
   - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
   %{~ endif ~}
   %{~ if server.features.cockpit ~}
   - systemctl enable --now cockpit.socket
   %{~ endif ~}
   %{~ if server.features.docker ~}
+  - curl -fsLS https://get.docker.com | sh
   - docker compose -f /opt/doco-cd/docker-compose.yaml -p doco-cd up -d
   %{~ endif ~}
   %{~ if server.features.tailscale ~}
+  - curl -fsLS https://tailscale.com/install.sh | sh
   - sysctl --system
   - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
   - systemctl daemon-reload
   - systemctl enable --now tailscale-udp-gro.service
+  %{~ endif ~}
+  %{~ if server.features.zfs ~}
+  - . /etc/os-release; if [ "$ID" = "debian" ]; then printf 'deb https://deb.debian.org/debian %s contrib\ndeb https://deb.debian.org/debian %s-updates contrib\ndeb https://security.debian.org/debian-security %s-security contrib\n' "$VERSION_CODENAME" "$VERSION_CODENAME" "$VERSION_CODENAME" > /etc/apt/sources.list.d/zfs.list; apt update; apt install -y "linux-headers-$(dpkg --print-architecture)"; fi
+  - apt install -y sanoid zfsutils-linux
   %{~ endif ~}
 users:
   - name: ${server.identity.username}
@@ -84,12 +62,6 @@ users:
       %{~ endif ~}
       - sudo
 write_files:
-  %{~ if server.features.cloudflared ~}
-  - path: /usr/share/keyrings/cloudflare-main.gpg
-    permissions: "0644"
-    source:
-      uri: https://pkg.cloudflare.com/cloudflare-main.gpg
-  %{~ endif ~}
   %{~ if server.features.docker ~}
   - path: /opt/doco-cd/docker-compose.yaml
     permissions: "0600"
@@ -99,10 +71,6 @@ write_files:
     permissions: "0600"
     content: |
       ${server.runtime.credentials.age_secret_key}
-  - path: /usr/share/keyrings/docker.asc
-    permissions: "0644"
-    source:
-      uri: https://download.docker.com/linux/ubuntu/gpg
   %{~ endif ~}
   %{~ if server.features.tailscale ~}
   - path: /etc/sysctl.d/50-network.conf
@@ -122,11 +90,9 @@ write_files:
       [Service]
       Type=oneshot
       ExecStart=/bin/sh -c 'ethtool -K "$(ip -o route get 1.1.1.1 | cut -d " " -f 5)" rx-gro-list off rx-udp-gro-forwarding on'
+      Restart=on-failure
+      RestartSec=5s
 
       [Install]
       WantedBy=multi-user.target
-  - path: /usr/share/keyrings/tailscale-archive-keyring.gpg
-    permissions: "0644"
-    source:
-      uri: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
   %{~ endif ~}

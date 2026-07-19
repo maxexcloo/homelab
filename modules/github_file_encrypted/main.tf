@@ -12,7 +12,7 @@ module "sops_encrypt" {
 
 resource "github_repository_file" "file" {
   commit_message      = var.commit_message
-  content             = module.sops_encrypt.encrypted_content
+  content             = var.encrypt ? module.sops_encrypt.encrypted_content : sensitive(base64decode(var.content_base64))
   file                = var.file
   overwrite_on_create = true
   repository          = var.repository
