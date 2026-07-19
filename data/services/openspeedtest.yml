@@ -14,6 +14,9 @@ identity:
 routing:
   backend_port: 30116
   backend_scheme: http
+  labels:
+    traefik.http.middlewares.openspeedtest-buffering.buffering.maxrequestbodybytes: 36700160
+    traefik.http.routers.openspeedtest.middlewares: internal-only@docker,openspeedtest-buffering@docker
 targets:
   au-hsp: {}
   au-truenas:
