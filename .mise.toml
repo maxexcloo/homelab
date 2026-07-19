@@ -3,11 +3,11 @@ API_DATA_IS_SENSITIVE = "true"
 RENDER_DIR = ".render"
 
 [tools]
-opentofu = "1.12.1"
-prettier = "3.8.4"
-ruff = "0.15.16"
-sops = "3.13.1"
-uv = "0.11.19"
+opentofu = "1.12.4"
+prettier = "3.9.5"
+ruff = "0.15.22"
+sops = "3.13.2"
+uv = "0.11.29"
 
 # Setup
 [tasks.init]
