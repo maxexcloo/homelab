@@ -24,7 +24,7 @@ jobs:
       matrix: ${{ steps.deployments.outputs.deployments }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Select Deployments
@@ -51,12 +51,12 @@ jobs:
       SOPS_AGE_KEY: ${{ secrets.AGE_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@1.6
       - name: Setup sops
         if: matrix.deployment.action == 'deploy'
-        uses: nhedger/setup-sops@v2
+        uses: nhedger/setup-sops@v3
       - name: Decrypt Files
         if: matrix.deployment.action == 'deploy'
         env:
