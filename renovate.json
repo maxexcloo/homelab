@@ -54,5 +54,6 @@
       "pinDigests": true
     }
   ],
+  "prConcurrentLimit": 20,
   "rangeStrategy": "bump"
 }
