@@ -32,7 +32,7 @@ terraform {
     }
     incus = {
       source  = "lxc/incus"
-      version = "~> 1.0"
+      version = "~> 1.1"
     }
     oci = {
       source  = "oracle/oci"
