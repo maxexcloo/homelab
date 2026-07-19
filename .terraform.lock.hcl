@@ -394,7 +394,7 @@ provider "registry.opentofu.org/tailscale/tailscale" {
 
 provider "registry.opentofu.org/ubiquiti-community/unifi" {
   version     = "0.55.0"
-  constraints = "~> 0.41"
+  constraints = "~> 0.55"
   hashes = [
     "h1:2qxQ6rTBMGwTVMm3SRgo+Y0bNnZWhw7/XvOlp8ujMJs=",
     "h1:5vUYHhNMNoREtxqOy2FSu6nNBoIpOY6XnDA1U1idGLs=",
