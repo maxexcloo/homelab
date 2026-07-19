@@ -208,9 +208,22 @@ provider "registry.opentofu.org/isometry/deepmerge" {
 
 provider "registry.opentofu.org/linyinfeng/shell" {
   version     = "1.7.13"
-  constraints = "~> 1.0"
+  constraints = "~> 1.7"
   hashes = [
+    "h1:+utPGRRgZ9hc+BBw6shkfUOkWGv2d5UdWcCHq+iY3Oo=",
+    "h1:0+fQ0qkMgomZNZH+OO4meVRdBwOoGIJiRYgOadL+edw=",
+    "h1:2pKcCWD/4XDbMCtA5Q8yNYwD+ROAmvoVgG7++ZopKHk=",
     "h1:3i0e195wBgj0XtYAofcX95R6TbpOu2QsOGV2TCqgkX0=",
+    "h1:4pnQ7KPv2LyTVG9SgKxUyf2klKBI0HGMUfUuzD3hPAs=",
+    "h1:BZOom65iKRKl78lGLM1AjfP/M3ZDF+1DZwpS/9ua9OQ=",
+    "h1:BoJ2iXsZrFKgsodqyJWTZSHorxFIORU7eKjXkXeUsyE=",
+    "h1:EDkQ0ogEReoOmHywwxfsvgeg7C5FtHKFX/F2W+Tgfs0=",
+    "h1:QL1OGOrpDzApnljtsnNgS5qbqxAxW6PRhIkN8rUN51o=",
+    "h1:V6yrMSremVfeqSdx4xw+dhYam5Fupc43y5blaf2cAi4=",
+    "h1:WbjK0/XcUi2lbWYN2dwfCZm+Fh9bgRLAm+RXmCsUhGA=",
+    "h1:Y2N/wsmT3PG1mYwS/PuI/uEOZM2dsD4h5JD/P69vxTU=",
+    "h1:lrOm8J66fHL2+dp9Xafot6xSfgaxC3u3bTTpL7jRGVc=",
+    "h1:ykbq4Iac7/255rFik7lUSC/PvppB80B24hiPgyWb6yk=",
     "zh:1f2ce167c7adbfce733b8c96be68799ae59e3a6daf982f1340f65af2c80fde3c",
     "zh:2f0d693501592f15617950fa9b8702a14a1aa1629facfd0709c712cba2194f23",
     "zh:30863eabed4502895b68093935f7f9dc77f65700a365abe6a7f1a6731db13366",
