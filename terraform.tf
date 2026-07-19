@@ -36,7 +36,7 @@ terraform {
     }
     oci = {
       source  = "oracle/oci"
-      version = "~> 8.0"
+      version = "~> 8.23"
     }
     random = {
       source  = "hashicorp/random"
