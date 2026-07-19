@@ -29,17 +29,8 @@ sudo usermod --password '${server.runtime.credentials.password_hash}' "$(id -n -
 %{~ endif }
 
 # Files
-sudo install -d /etc/networkd-dispatcher/routable.d /etc/sysctl.d
-
-sudo tee /etc/networkd-dispatcher/routable.d/50-network <<'EOF'
-#!/bin/sh
-# Detect the default NIC via a route lookup to Cloudflare DNS, then tune
-# GRO for UDP forwarding performance (rx-gro-list off is required for
-# rx-udp-gro-forwarding on many kernels).
-ethtool -K $(ip -o route get 1.1.1.1 | cut -d " " -f 5) rx-gro-list off rx-udp-gro-forwarding on
-EOF
-sudo chmod 0755 /etc/networkd-dispatcher/routable.d/50-network
-
+%{~ if server.features.tailscale }
+sudo install -d /etc/systemd/system /etc/sysctl.d
 sudo tee /etc/sysctl.d/50-network.conf <<'EOF'
 # Increase socket buffers for high-throughput NICs
 net.core.rmem_max=8388608
@@ -49,20 +40,32 @@ net.ipv4.conf.all.forwarding=1
 net.ipv6.conf.all.forwarding=1
 EOF
 
+sudo tee /etc/systemd/system/tailscale-udp-gro.service <<'EOF'
+[Unit]
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'ethtool -K "$(ip -o route get 1.1.1.1 | cut -d " " -f 5)" rx-gro-list off rx-udp-gro-forwarding on'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+%{~ endif }
+
 %{~ if server.features.docker }
 sudo install -d -m 0700 /opt/doco-cd
-sudo tee /opt/doco-cd/docker-compose.yaml <<'EOF'
+sudo tee /opt/doco-cd/docker-compose.yaml >/dev/null <<'EOF'
 ${doco_cd}
 EOF
-sudo tee /opt/doco-cd/sops_age_key.txt <<'EOF'
+sudo tee /opt/doco-cd/sops_age_key.txt >/dev/null <<'EOF'
 ${server.runtime.credentials.age_secret_key}
 EOF
 sudo chmod 0600 /opt/doco-cd/docker-compose.yaml /opt/doco-cd/sops_age_key.txt
 %{~ endif }
 
 # Commands
-sudo sysctl --system
-
 %{~ if server.features.beszel }
 curl -fsLS https://get.beszel.dev -o /tmp/install-agent.sh && chmod 0700 /tmp/install-agent.sh && sudo /tmp/install-agent.sh -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true && rm /tmp/install-agent.sh
 %{~ endif }
@@ -86,5 +89,8 @@ sudo docker compose -f /opt/doco-cd/docker-compose.yaml -p doco-cd up -d
 
 %{~ if server.features.tailscale }
 curl -fsLS https://tailscale.com/install.sh | sudo sh
+sudo sysctl --system
 sudo tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
+sudo systemctl daemon-reload
+sudo systemctl enable --now tailscale-udp-gro.service
 %{~ endif }

@@ -67,6 +67,7 @@ runcmd:
   %{~ if server.features.tailscale ~}
   - sysctl --system
   - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
+  - systemctl daemon-reload
   - systemctl enable --now tailscale-udp-gro.service
   %{~ endif ~}
 users:
