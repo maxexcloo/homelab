@@ -1,6 +1,6 @@
 locals {
   # Deploy artifacts are grouped by target server: each server has its own
-  # self-hosted runner and age key.
+  # truenas-cd runner and age key.
   truenas_servers = {
     for server_key, server in local.servers_model : server_key => server
     if server.platform == "truenas"
@@ -94,16 +94,6 @@ locals {
       if can(local.truenas_servers[file_config.target])
     }
   )
-}
-
-# GitHub secret names cannot contain hyphens, so the workflow matrix computes
-# the same uppercase-underscore form from the server key.
-resource "github_actions_secret" "truenas_age_key" {
-  for_each = local.truenas_servers
-
-  repository  = github_repository.deployment["truenas"].name
-  secret_name = "AGE_KEY_${upper(replace(each.key, "-", "_"))}"
-  value       = age_secret_key.server[each.key].secret_key
 }
 
 resource "github_repository_file" "truenas_deploy_request" {

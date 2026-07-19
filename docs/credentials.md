@@ -73,6 +73,7 @@ global defaults.
 Feature flags add credential fields automatically:
 
 - `b2` adds `b2_application_key` as read-only.
+- `bootstrap` adds read-write `truenas_cd_access_token` on TrueNAS servers.
 - `docker` adds read-write `doco_cd_git_access_token` and generated
   read-write `doco_cd_webhook_secret`.
 - `password` adds a read-write password and read-only `password_hash`.

@@ -21,6 +21,7 @@ dashboard:
 features:
   b2: true
   beszel: true
+  bootstrap: true
   cloudflare_acme: true
   cloudflare_acme_legacy: true
   cloudflared: true

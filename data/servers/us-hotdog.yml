@@ -3,7 +3,7 @@ platform: unmanaged
 type: vm
 features:
   beszel: true
-  cloud_init: true
+  bootstrap: true
   cloudflared: true
   password: true
   resend: true

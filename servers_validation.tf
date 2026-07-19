@@ -9,6 +9,7 @@ locals {
       ["age_secret_key"],
       server.features.b2 ? ["b2_application_key"] : [],
       server.features.beszel ? ["beszel_agent_token", "beszel_system_id"] : [],
+      server.features.bootstrap && server.platform == "truenas" ? ["truenas_cd_access_token"] : [],
       server.features.cloudflare_acme ? ["cloudflare_acme_token"] : [],
       server.features.cloudflare_acme_legacy ? ["cloudflare_acme_legacy_token"] : [],
       server.features.cloudflared ? ["cloudflare_tunnel_read_token", "cloudflare_tunnel_token"] : [],

@@ -4,7 +4,7 @@ platform: unmanaged
 type: vm
 features:
   beszel: true
-  cloud_init: true
+  bootstrap: true
   cloudflare_acme: true
   cloudflared: true
   password: true

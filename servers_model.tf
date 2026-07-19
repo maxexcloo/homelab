@@ -47,6 +47,12 @@ locals {
           beszel_agent_token = local.defaults.credentials.rw
           beszel_system_id   = local.defaults.credentials.rw
         } : {},
+        (
+          server.features.bootstrap &&
+          server.platform == "truenas"
+          ) ? {
+          truenas_cd_access_token = local.defaults.credentials.rw
+        } : {},
         server.features.cloudflare_acme ? {
           cloudflare_acme_token = local.defaults.credentials.ro
         } : {},

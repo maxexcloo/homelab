@@ -39,7 +39,7 @@ jobs:
     if: needs.deployments.outputs.matrix != '[]'
     name: Deploy ${{ matrix.target.server }}
     needs: [deployments]
-    runs-on: [self-hosted, "${{ matrix.target.server }}-privileged"]
+    runs-on: [self-hosted, truenas-cd, "${{ matrix.target.server }}"]
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -50,7 +50,6 @@ jobs:
       MANAGED_FILES: ${{ toJSON(matrix.target.files) }}
       PREVIOUS_MANAGED_FILES: ${{ toJSON(matrix.target.previous_files) }}
       REMOVALS: ${{ toJSON(matrix.target.removals) }}
-      SOPS_AGE_KEY: ${{ secrets[matrix.target.secret_name] }}
       TARGET_PATHS: ${{ toJSON(matrix.target.paths) }}
     steps:
       - name: Checkout

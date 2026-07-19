@@ -23,7 +23,7 @@ Target-level `features` deep-merge over service-level features.
 
 - `b2` provisions a Backblaze bucket and application key.
 - `beszel` adds Beszel agent credential fields.
-- `cloud_init` enables cloud-init rendering for bootstrap services.
+- `bootstrap` renders platform-specific bootstrap artifacts.
 - `cloudflare_acme` provisions an ACME DNS token for the ACME zone.
 - `cloudflare_acme_legacy` provisions an ACME DNS token for external and
   internal zones.

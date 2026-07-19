@@ -1,7 +1,7 @@
 # Stage: render — Compose template inventory and rendered Compose files.
 locals {
   # Compose template inventory selected only from model data and file existence.
-  # Docker-fleet stacks stay under doco-cd on cloud-init hosts; other
+  # Docker-fleet stacks stay under doco-cd on bootstrapped hosts; other
   # auto-expanded services are bootstrap-managed there.
   services_render_compose_inputs = {
     for service_key, service in local.services_model : service_key => {
@@ -16,7 +16,7 @@ locals {
           can(local.servers_model[service.target]) &&
           local.servers_model[service.target].features.docker &&
           !(
-            local.servers_model[service.target].features.cloud_init &&
+            local.servers_model[service.target].features.bootstrap &&
             service.target_feature != "" &&
             service.target_feature != "docker"
           )

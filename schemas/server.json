@@ -160,11 +160,11 @@
           "type": "boolean"
         },
         "beszel": {
-          "description": "Create a Beszel agent service target and install the agent in generated setup artifacts when cloud_init is enabled. Exposes runtime.credentials.{beszel_agent_token, beszel_system_id}.",
+          "description": "Create a Beszel agent service target and install the agent in generated setup artifacts when bootstrap is enabled. Exposes runtime.credentials.{beszel_agent_token, beszel_system_id}.",
           "type": "boolean"
         },
-        "cloud_init": {
-          "description": "Generate cloud-init configuration for this server. Exposes the cloud_config output for Incus containers and OCI VMs.",
+        "bootstrap": {
+          "description": "Generate platform-specific bootstrap artifacts for this server. Exposes cloud-init and setup-script outputs for general servers. TrueNAS servers receive a read-write truenas_cd_access_token credential and a custom app output.",
           "type": "boolean"
         },
         "cloudflare_acme": {
@@ -176,7 +176,7 @@
           "type": "boolean"
         },
         "cloudflared": {
-          "description": "Create a Cloudflare tunnel and cloudflared service target, and install cloudflared in generated setup artifacts when cloud_init is enabled. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}.",
+          "description": "Create a Cloudflare tunnel and cloudflared service target, and install cloudflared in generated setup artifacts when bootstrap is enabled. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}.",
           "type": "boolean"
         },
         "docker": {
@@ -204,7 +204,7 @@
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key, create a Tailscale service target, and install Tailscale in generated setup artifacts when cloud_init is enabled. Exposes runtime.credentials.tailscale_auth_key.",
+          "description": "Generate a Tailscale auth key, create a Tailscale service target, and install Tailscale in generated setup artifacts when bootstrap is enabled. Exposes runtime.credentials.tailscale_auth_key.",
           "type": "boolean"
         },
         "zfs": {

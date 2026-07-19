@@ -81,12 +81,18 @@ TrueNAS prefers catalog apps:
 - Otherwise, if `docker-compose.yaml.tftpl` exists, render `compose.json`.
 - Sidecars are always included.
 
-Each TrueNAS server has its own age key and GitHub Actions secret. The secret
-name is `AGE_KEY_<SERVER_KEY>` with hyphens converted to underscores and letters
-uppercased.
+Each TrueNAS server has its own age key. The key is included in its sensitive
+`bootstrap_truenas_custom_apps` output and stays local to the target's
+`truenas-cd` runner.
 
 The deploy request stores a sorted file list and a hash. The workflow uses the
 file lists to update, add, or remove managed sidecars.
+
+Retrieve the copy/paste custom app definition for a server with:
+
+```bash
+tofu output -json bootstrap_truenas_custom_apps | jq -r '.["au-truenas"]'
+```
 
 ## Debug Rendering
 

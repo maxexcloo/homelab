@@ -131,7 +131,7 @@ resource "oci_core_instance" "server" {
   }
 
   metadata = {
-    user_data = base64encode(local.cloud_config[each.key])
+    user_data = base64encode(local.bootstrap_cloud_config[each.key])
   }
 
   shape_config {

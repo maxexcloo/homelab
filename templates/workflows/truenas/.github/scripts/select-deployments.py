@@ -134,7 +134,6 @@ def main():
             "paths": sorted(values["paths"]),
             "previous_files": values["previous_files"],
             "removals": sorted(values["removals"]),
-            "secret_name": f"AGE_KEY_{server.upper().replace('-', '_')}",
             "server": server,
         }
         for server, values in sorted(grouped.items())

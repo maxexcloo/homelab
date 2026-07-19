@@ -49,7 +49,7 @@ resource "incus_instance" "vm" {
     each.value.platform_config.incus.type == "container" ? {
       "security.nesting"    = each.value.platform_config.incus.nested
       "security.privileged" = each.value.platform_config.incus.privileged
-      "user.user-data"      = base64encode(local.cloud_config[each.key])
+      "user.user-data"      = base64encode(local.bootstrap_cloud_config[each.key])
     } : {},
     each.value.platform_config.incus.type == "virtual-machine" ? {
       "security.secureboot" = each.value.platform_config.incus.secureboot
