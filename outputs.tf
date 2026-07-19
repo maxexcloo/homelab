@@ -12,6 +12,15 @@ output "summary" {
       services    = length(local.services_model)
     }
 
+    servers_by_feature = {
+      for feature, enabled_by_default in local.defaults.servers.features :
+      (enabled_by_default ? "${feature}_disabled" : feature) => [
+        for server_key, server in local.servers_model : server_key
+        if server.features[feature] != enabled_by_default
+      ]
+      if enabled_by_default || length(local.servers_model_by_feature[feature]) > 0
+    }
+
     services_by_feature = {
       for feature, enabled_by_default in local.defaults.services.features :
       (enabled_by_default ? "${feature}_disabled" : feature) => [

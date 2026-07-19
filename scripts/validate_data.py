@@ -80,6 +80,35 @@ def validate(instance, schema, label, errors):
         errors.append(f"{label}: {error_path(error)}: {error.message}")
 
 
+def validate_feature_keys(defaults, schemas, errors):
+    feature_keys = {
+        "servers": {
+            "schemas/server.json: properties.features": set(
+                schemas["server"]["properties"]["features"]["properties"]
+            ),
+        },
+        "services": {
+            "schemas/service.json: definitions.features_overlay": set(
+                schemas["service"]["definitions"]["features_overlay"]["properties"]
+            ),
+            "schemas/service.json: properties.features": set(
+                schemas["service"]["properties"]["features"]["properties"]
+            ),
+        },
+    }
+
+    for domain, schema_feature_keys in feature_keys.items():
+        expected = set(defaults[domain]["features"])
+        for label, keys in schema_feature_keys.items():
+            missing = sorted(expected - keys)
+            unexpected = sorted(keys - expected)
+            if missing or unexpected:
+                errors.append(
+                    f"{label}: feature keys differ from data/defaults.yml"
+                    f" (missing: {missing}, unexpected: {unexpected})"
+                )
+
+
 def main():
     errors = []
     defaults = load_yaml(PROJECT_ROOT / "data/defaults.yml")
@@ -96,6 +125,7 @@ def main():
         errors,
     )
     validate(defaults, schemas["defaults"], "data/defaults.yml", errors)
+    validate_feature_keys(defaults, schemas, errors)
 
     for path in sorted((PROJECT_ROOT / "data/servers").glob("*.yml")):
         server = deep_merge(defaults["servers"], load_yaml(path))
