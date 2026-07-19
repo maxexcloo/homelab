@@ -10,14 +10,29 @@ dashboard:
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
+features:
+  password: true
 identity:
   description: Container Log Viewer
   group: Infrastructure
   name: dozzle
   service: dozzle
   title: Dozzle
+  username: max@excloo.com
 routing:
   backend_port: 30064
   backend_scheme: http
+  labels:
+    traefik.http.middlewares.dozzle-auth.basicauth.headerfield: Remote-User
+    traefik.http.middlewares.dozzle-auth.basicauth.users: ${service.identity.username}:${replace(service.runtime.credentials.password_hash, "$", "$$")}
+    traefik.http.routers.dozzle.middlewares: internal-only@docker,dozzle-auth@docker
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        DOZZLE_AUTH_PROVIDER: forward-proxy
+        DOZZLE_ENABLE_ACTIONS: true
+        DOZZLE_ENABLE_MCP: true
+        DOZZLE_ENABLE_SHELL: true
+        DOZZLE_HOSTNAME: ${server.key}
+        DOZZLE_NO_ANALYTICS: true

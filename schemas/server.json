@@ -184,7 +184,7 @@
           "type": "boolean"
         },
         "dozzle": {
-          "description": "Create a Dozzle Agent service target and include this server in the central Dozzle remote-agent list. Non-Docker platforms must provide the agent separately.",
+          "description": "Include this server in the central Dozzle remote-agent list. Docker-managed servers receive the agent through the Docker feature; other platforms must provide it separately.",
           "type": "boolean"
         },
         "monitoring": {

@@ -6,23 +6,19 @@ locals {
     if server.features.docker
   }
 
-  doco_cd_compose = {
-    for server_key, server in local.servers_render_servers : server_key => templatefile(
-      "${path.module}/templates/doco_cd/docker-compose.yaml.tftpl",
-      {
-        defaults = local.defaults
-        server   = server
-      },
-    )
-    if server.features.docker
-  }
-
   _docker_services = {
     for service_key, service in local.services_model : service_key => service
     if(
       can(local._docker_servers[service.target]) &&
       can(local.services_render_compose_inputs[service_key])
     )
+  }
+
+  _docker_webhook_servers = {
+    for server_key, server in local._docker_servers : server_key => server
+    if anytrue([
+      for route in server.routing.urls : route.expose == "cloudflare" && route.url == "doco-cd.${server.hosts.external}"
+    ])
   }
 
   _docker_render_files = merge(
@@ -70,6 +66,17 @@ locals {
       if can(local._docker_services[file_config.stack])
     }
   )
+
+  doco_cd_compose = {
+    for server_key, server in local.servers_render_servers : server_key => templatefile(
+      "${path.module}/templates/doco_cd/docker-compose.yaml.tftpl",
+      {
+        defaults = local.defaults
+        server   = server
+      },
+    )
+    if server.features.docker
+  }
 }
 
 module "encrypted_github_file_docker" {

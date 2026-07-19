@@ -34,7 +34,7 @@ runcmd:
   %{~ if server.features.tailscale ~}
   - curl -fsLS https://tailscale.com/install.sh | sh
   - sysctl --system
-  - tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
+  - tailscale up --accept-dns=false --accept-routes=false --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
   - systemctl daemon-reload
   - systemctl enable --now tailscale-udp-gro.service
   %{~ endif ~}

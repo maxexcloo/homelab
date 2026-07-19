@@ -6,7 +6,9 @@ secrets:
 services:
   dozzle-agent:
     command: agent
-    image: amir20/dozzle:v10.6.9
+    environment:
+      DOZZLE_HOSTNAME: ${server.key}
+    image: amir20/dozzle:v10.6.10
     ports:
       - 7007:7007
     restart: unless-stopped

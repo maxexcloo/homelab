@@ -82,7 +82,7 @@ sudo docker compose -f /opt/doco-cd/docker-compose.yaml -p doco-cd up -d
 %{~ if server.features.tailscale }
 curl -fsLS https://tailscale.com/install.sh | sudo sh
 sudo sysctl --system
-sudo tailscale up --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
+sudo tailscale up --accept-dns=false --accept-routes=false --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
 sudo systemctl daemon-reload
 sudo systemctl enable --now tailscale-udp-gro.service
 %{~ endif }
