@@ -28,7 +28,7 @@ terraform {
     }
     http = {
       source  = "hashicorp/http"
-      version = "~> 3.0"
+      version = "~> 3.6"
     }
     incus = {
       source  = "lxc/incus"
