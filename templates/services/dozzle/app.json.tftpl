@@ -1,23 +1,20 @@
 {
   "values": {
     "dozzle": {
-      "additional_envs": ${jsonencode(concat(
-        [
-          for env_key in sort(keys(service.truenas.env)) : {
-            name  = env_key
-            value = tostring(service.truenas.env[env_key])
-          }
-        ],
-        [
+      "additional_envs": ${jsonencode([
+        for env_key, env_value in merge(
+          service.truenas.env,
           {
-            name = "DOZZLE_REMOTE_AGENT"
-            value = join(",", [
+            DOZZLE_REMOTE_AGENT = join(",", [
               for remote_server in values(servers) : "${remote_server.hosts.internal}:7007|${remote_server.key}"
               if remote_server.features.dozzle
             ])
-          }
-        ],
-      ))}
+          },
+        ) : {
+          name  = env_key
+          value = tostring(env_value)
+        }
+      ])}
     },
     "network": {
       "host_network": false,
