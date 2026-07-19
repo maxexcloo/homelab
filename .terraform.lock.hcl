@@ -113,7 +113,7 @@ provider "registry.opentofu.org/hashicorp/random" {
 
 provider "registry.opentofu.org/hashicorp/tls" {
   version     = "4.3.0"
-  constraints = "~> 4.0"
+  constraints = "~> 4.3"
   hashes = [
     "h1:+15bx0zcnqLz534Cbb8IC+FHMqfG55ELn+PxrQDA4gc=",
     "h1:CzxZKtqwgNLbLx29KpIG8H3jOQFRkXCerkDRafS6PCg=",
