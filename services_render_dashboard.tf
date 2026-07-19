@@ -1,10 +1,5 @@
 # Stage: render — dashboard aggregate view.
 locals {
-  _services_render_dashboard_data = try(one([
-    for service in values(local.services_render_services) : service.data
-    if service.identity.name == "homepage"
-  ]), {})
-
   _services_render_dashboard_server_cards = flatten([
     for server_key, server in local.servers_render_servers : [
       for card_index, dashboard_card in server.dashboard : {
@@ -87,8 +82,8 @@ locals {
             tab     = contains(local._services_render_dashboard_sorted_server_groups, group) ? "Servers" : "Services"
           },
           contains(local._services_render_dashboard_sorted_service_groups, group) ? {
-            columns = try(local._services_render_dashboard_data.groups[group].columns, 2)
-            style   = try(local._services_render_dashboard_data.groups[group].style, "row")
+            columns = try(local.services_render_custom_homepage_data.groups[group].columns, 2)
+            style   = try(local.services_render_custom_homepage_data.groups[group].style, "row")
           } : {},
         )
       }

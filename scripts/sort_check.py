@@ -8,6 +8,9 @@
 Within each mapping: single-line keys come first (alphabetical), then
 multi-line keys (alphabetical).
 
+List-item mappings place identifier keys before sorted fields. Data and schema
+items use type/name/id; Prek hooks use id/name.
+
 What counts as "multi-line" depends on the file format:
 
   YAML  - non-empty mappings and sequences are always block style here, so
@@ -31,8 +34,9 @@ JSON_GLOBS = ["schemas/*.json"]
 # before the condition. Skip ordering for objects whose keys are a subset of
 # this triplet.
 JSON_SCHEMA_CONDITIONAL = {"if", "then", "else"}
+PREK_IDENTIFIER_KEYS = ["id", "name"]
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-YAML_GLOBS = ["data/**/*.yml"]
+YAML_GLOBS = ["data/**/*.yml", ".pre-commit-config.yaml"]
 
 
 def collect(globs):
@@ -42,11 +46,9 @@ def collect(globs):
     return sorted(set(paths))
 
 
-def expected_order(data, kind, identifier_first=False):
+def expected_order(data, kind, identifier_keys=()):
     keys = list(data.keys())
-    identifiers = (
-        [key for key in IDENTIFIER_KEYS if key in keys] if identifier_first else []
-    )
+    identifiers = [key for key in identifier_keys if key in keys]
     sortable_keys = [key for key in keys if key not in identifiers]
     singles = sorted(k for k in sortable_keys if not is_multi(data[k], kind))
     multis = sorted(k for k in sortable_keys if is_multi(data[k], kind))
@@ -69,11 +71,17 @@ def is_multi(value, kind):
     return False
 
 
-def walk(path, data, location, errors, kind, identifier_first=False):
+def list_identifier_keys(path, location):
+    if path.name == ".pre-commit-config.yaml" and location[-1:] == ["hooks"]:
+        return PREK_IDENTIFIER_KEYS
+    return IDENTIFIER_KEYS
+
+
+def walk(path, data, location, errors, kind, identifier_keys=()):
     if isinstance(data, dict):
         keys = list(data.keys())
         if len(keys) >= 2 and not (kind == "json" and is_json_schema_conditional(keys)):
-            expected = expected_order(data, kind, identifier_first)
+            expected = expected_order(data, kind, identifier_keys)
             if keys != expected:
                 loc = "/" + "/".join(location) if location else "(root)"
                 errors.append(
@@ -91,7 +99,7 @@ def walk(path, data, location, errors, kind, identifier_first=False):
                 location + [f"[{index}]"],
                 errors,
                 kind,
-                isinstance(item, dict),
+                list_identifier_keys(path, location) if isinstance(item, dict) else (),
             )
 
 

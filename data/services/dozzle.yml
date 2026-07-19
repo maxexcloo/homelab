@@ -24,7 +24,7 @@ routing:
   backend_scheme: http
   labels:
     traefik.http.middlewares.dozzle-auth.basicauth.headerfield: Remote-User
-    traefik.http.middlewares.dozzle-auth.basicauth.users: ${service.identity.username}:${replace(service.runtime.credentials.password_hash, "$", "$$")}
+    traefik.http.middlewares.dozzle-auth.basicauth.users: ${service.identity.username}:${service.runtime.credentials.password_hash}
     traefik.http.routers.dozzle.middlewares: internal-only@docker,dozzle-auth@docker
 targets:
   au-truenas:

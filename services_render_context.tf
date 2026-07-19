@@ -24,7 +24,7 @@ locals {
 
   # Services with data/dashboard/truenas fields rendered via templatestring() and
   # routing_labels injected. Used as the service value in template contexts and
-  # as service inventory for Homepage and Traefik render helpers.
+  # as service inventory for custom cross-service render helpers.
   services_render_services = {
     for service_key, service in local.services : service_key => merge(
       service,
@@ -62,7 +62,7 @@ locals {
     for service_key, service in local.services : service_key => merge(
       local.services_render_context_base[service_key],
       {
-        custom  = try(local.services_render_service_context[service_key], {})
+        custom  = try(local.services_render_custom_context[service_key], {})
         service = local.services_render_services[service_key]
         zones   = keys(local.dns_input)
 

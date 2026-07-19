@@ -37,13 +37,15 @@ The provider lock file (`.terraform.lock.hcl`) should be committed when provider
 mise run apply       # Apply infrastructure changes
 mise run check       # Format check, lint, and validate
 mise run fmt         # Format HCL, Python, YAML, schemas, and templates
+mise run hooks       # Install Git hooks with prek
 mise run init        # Initialize OpenTofu providers and backend
 mise run lint        # Validate source and default-merged YAML against JSON schemas
 mise run plan        # Review infrastructure changes
+mise run prek        # Run all repository hooks
 mise run render      # Render plaintext deployment artifacts via debug_dir
-mise run setup       # Initial project setup
+mise run setup       # Initial project setup and Git hook installation
 mise run sort-check  # Check YAML and JSON Schema key ordering
-mise run validate    # Validate OpenTofu configuration
+mise run validate    # Check and validate OpenTofu configuration
 ```
 
 ## Documentation

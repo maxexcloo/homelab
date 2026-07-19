@@ -3,7 +3,10 @@ API_DATA_IS_SENSITIVE = "true"
 RENDER_DIR = ".render"
 
 [tools]
+actionlint = "1.7.12"
+hadolint = "2.14.0"
 opentofu = "1.12.4"
+prek = "0.4.10"
 prettier = "3.9.5"
 ruff = "0.15.22"
 sops = "3.13.2"
@@ -16,6 +19,7 @@ run = "tofu init"
 
 [tasks.setup]
 description = "Initial project setup"
+depends = ["hooks"]
 run = """
 # Setting up project...
 if [[ ! -f .mise.local.toml ]]; then
@@ -32,8 +36,7 @@ description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
 ruff format --check modules scripts templates/workflows
-prettier --check "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
-tofu fmt -check -recursive
+prettier --check ".github/**/*.{yaml,yml}" "data/**/*.yml" "schemas/*.json" "templates/**/*.yml" ".pre-commit-config.yaml" "renovate.json"
 """
 
 [tasks.fmt]
@@ -41,9 +44,13 @@ description = "Format all files"
 run = """
 ruff check --fix --select I modules scripts templates/workflows
 ruff format modules scripts templates/workflows
-prettier --log-level warn --write "data/**/*.yml" "schemas/*.json" "templates/**/*.yml"
+prettier --log-level warn --write ".github/**/*.{yaml,yml}" "data/**/*.yml" "schemas/*.json" "templates/**/*.yml" ".pre-commit-config.yaml" "renovate.json"
 tofu fmt -recursive
 """
+
+[tasks.hooks]
+description = "Install Git hooks with prek"
+run = "prek install"
 
 [tasks.lint]
 description = "Validate source and default-merged YAML against JSON schemas"
@@ -53,9 +60,16 @@ ruff check --extend-select I modules scripts templates/workflows
 uv run scripts/validate_data.py
 """
 
+[tasks.prek]
+description = "Run all repository hooks"
+run = "prek run --all-files"
+
 [tasks.validate]
-description = "Validate configurations"
-run = "tofu validate"
+description = "Check and validate OpenTofu configuration"
+run = """
+tofu fmt -check -recursive
+tofu validate
+"""
 
 # Deployment
 [tasks.apply]

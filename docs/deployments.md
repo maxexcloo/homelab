@@ -3,6 +3,12 @@
 Service artifacts are rendered from `templates/services/<identity.service>/`
 and encrypted before they are written to deployment repositories.
 
+Deployment repositories are generated outputs. Do not edit their files or
+merge dependency updates there; make changes in this repository and publish
+them through a reviewed OpenTofu apply. OpenTofu writes `renovate.json` with
+`enabled: false` to each deployment repository so dependency updates originate
+from the authoritative templates here.
+
 ## File Discovery
 
 - `app.json.tftpl` is handled by the TrueNAS catalog renderer.

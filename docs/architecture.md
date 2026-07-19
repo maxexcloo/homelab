@@ -16,6 +16,9 @@ The root HCL files are organized as staged pipelines:
 5. `*_validation.tf` enforces cross-file and relationship rules with
    `terraform_data` preconditions.
 
+Service-specific cross-service aggregation is isolated in
+`services_render_custom.tf`; the other render stages remain service-agnostic.
+
 The model layer is the boundary between input data and provider resources.
 Resource keys and collection membership should come from input/model data, not
 runtime values.
@@ -62,6 +65,10 @@ render artifacts for one or more deployment paths:
 Rendered artifacts are SOPS-encrypted through `modules/github_file_encrypted`
 and pushed to the platform-specific GitHub repositories configured in
 `data/config.yml`.
+
+Those deployment repositories are generated outputs, not independent sources
+of truth. Repository-owned files, workflows, and Renovate disablement are also
+managed here and published by OpenTofu.
 
 Template inventory is discovered by file name:
 

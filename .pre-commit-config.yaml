@@ -1,0 +1,49 @@
+repos:
+  - repo: builtin
+    hooks:
+      - id: check-added-large-files
+        args:
+          - --maxkb=1024
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.37.4
+    hooks:
+      # OpenTofu-rendered *.yaml.tftpl files are not concrete Compose documents.
+      - id: check-compose-spec
+      - id: check-github-workflows
+      - id: check-metaschema
+        files: ^schemas/.*\.json$
+      - id: check-renovate
+  - repo: local
+    hooks:
+      - id: actionlint
+        name: Lint GitHub Actions workflows
+        entry: mise exec -- actionlint
+        files: ^\.github/workflows/.*\.ya?ml$
+        language: system
+      - id: hadolint
+        name: Lint Dockerfiles
+        entry: mise exec -- hadolint
+        language: system
+        # Rolling image tags and unpinned Alpine packages remain warnings.
+        args:
+          - --failure-threshold
+          - error
+        types:
+          - dockerfile
+      - id: project-check
+        name: Check project source
+        always_run: true
+        entry: mise run check
+        language: system
+        pass_filenames: false

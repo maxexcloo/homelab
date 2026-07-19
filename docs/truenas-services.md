@@ -25,6 +25,9 @@ template to identify:
   and `encrypt_password` rather than `encryption_password`.
 - Do not duplicate environment variables or other values supplied from
   `values.consts.*` or hardcoded literals in the catalog template.
+- Pass dollar signs in custom label values unchanged. The TrueNAS catalog
+  renderer escapes them once for Docker Compose; pre-escaping values such as
+  bcrypt hashes leaves doubled dollar signs in the final container label.
 
 ## Cross-service references
 

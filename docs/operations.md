@@ -3,13 +3,18 @@
 ## Commands
 
 ```bash
-mise run setup       # Create .mise.local.toml from the template
-mise run init        # Initialize OpenTofu providers and backend
-mise run plan        # Review infrastructure changes
 mise run apply       # Apply infrastructure changes
 mise run check       # Format check, lint, and validate
 mise run fmt         # Format HCL, Python, YAML, schemas, and templates
+mise run hooks       # Install Git hooks with prek
+mise run init        # Initialize OpenTofu providers and backend
+mise run lint        # Validate source and default-merged YAML against JSON schemas
+mise run plan        # Review infrastructure changes
+mise run prek        # Run all repository hooks
 mise run render      # Render plaintext deploy artifacts via debug_dir
+mise run setup       # Initial project setup and Git hook installation
+mise run sort-check  # Check YAML and JSON Schema key ordering
+mise run validate    # Check and validate OpenTofu configuration
 ```
 
 ## Adding Servers
@@ -25,6 +30,28 @@ mise run render      # Render plaintext deploy artifacts via debug_dir
 3. Set `identity.service` only when templates or deploy artifacts exist.
 4. Add templates under `templates/services/<identity.service>/` when needed.
 5. Run `mise run plan` and review the diff before `mise run apply`.
+
+## Automated Checks
+
+`mise run setup` installs the local prek-managed Git hook. Use `mise run hooks`
+to reinstall it, and `mise run prek` to run the complete suite on demand.
+
+The hook suite checks file hygiene, GitHub Actions, Dockerfiles, concrete Docker
+Compose files, JSON Schemas, Renovate configuration, OpenTofu formatting and
+validation, Python, and source/default-merged YAML. Compose templates ending in
+`.yaml.tftpl` are checked as OpenTofu templates; they are not passed to the
+Compose schema until rendered because they still contain template expressions.
+
+GitHub Actions runs prek for pull requests and pushes to `main`. Actions and
+hook repositories use explicit release versions, while mise pins the executable
+toolchain. The workflow initializes OpenTofu with the backend disabled, so
+validation requires no Terraform Cloud token or provider credentials and is
+safe for public pull requests.
+
+Plan and apply remain operator-controlled. A future standalone delivery
+workflow should create one saved plan with protected provider credentials,
+retain it as the reviewed artifact, and apply that exact artifact only through
+a protected environment with approval.
 
 ## Protected Resources
 

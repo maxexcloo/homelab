@@ -52,11 +52,6 @@ locals {
     )
   ]
 
-  _services_validation_homepage_count_invalid = length([
-    for service_key, service in local.services_model : service_key
-    if service.identity.name == "homepage"
-  ]) != 1
-
   _services_validation_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
@@ -158,7 +153,7 @@ locals {
         route.expose != "cloudflare" &&
         !contains(
           [
-            for traefik_service in values(local.services_render_routing_traefik_services) : traefik_service.target
+            for traefik_service in values(local.services_render_custom_traefik_services) : traefik_service.target
           ],
           startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key,
         )
@@ -264,7 +259,7 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition     = !local._services_validation_homepage_count_invalid
+      condition     = !local.services_render_custom_homepage_count_invalid
       error_message = "Exactly one expanded service with identity.name = homepage is required for the dashboard to render"
     }
 
