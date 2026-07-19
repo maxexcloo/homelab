@@ -65,6 +65,19 @@ resource "github_repository_file" "readme" {
   repository          = github_repository.deployment[each.key].name
 }
 
+resource "github_repository_file" "renovate" {
+  for_each = local.defaults.github.deployment_repositories
+
+  commit_message      = "Disable Renovate"
+  file                = "renovate.json"
+  overwrite_on_create = true
+  repository          = github_repository.deployment[each.key].name
+
+  content = jsonencode({
+    enabled = false
+  })
+}
+
 resource "github_repository_file" "workflow_file" {
   for_each = local._github_workflow_files
 
