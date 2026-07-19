@@ -8,7 +8,7 @@ terraform {
     }
     shell = {
       source  = "linyinfeng/shell"
-      version = "~> 1.0"
+      version = "~> 1.7"
     }
   }
 }
