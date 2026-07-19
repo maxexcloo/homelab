@@ -60,7 +60,7 @@ jobs:
       - name: Setup sops
         uses: nhedger/setup-sops@v2
       - name: Setup uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.3.2
       - name: Setup midclt
         run: uv tool install --python 3.12 git+https://github.com/truenas/api_client.git@b96ff63967962aa78d422d57a364722a1cda328f
       - name: Decrypt Files

@@ -53,7 +53,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
       - name: Setup flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@1.5
+        uses: superfly/flyctl-actions/setup-flyctl@1.6
       - name: Setup sops
         if: matrix.deployment.action == 'deploy'
         uses: nhedger/setup-sops@v2
