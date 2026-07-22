@@ -12,12 +12,6 @@ credentials:
     db_password:
       length: 32
       type: alphanumeric
-    oidc_client_id:
-      length: 16
-      type: hex
-    oidc_client_secret:
-      length: 32
-      type: hex
     redis_password:
       length: 32
       type: alphanumeric
@@ -31,7 +25,11 @@ dashboard:
     widgets:
       - type: ${service.identity.service}
         url: ${service.urls.default.href}
+data:
+  oidc_callback_urls:
+    - /api/oauth/openid
 features:
+  oidc: true
   password: true
 identity:
   description: Game & ROM Library
@@ -40,9 +38,6 @@ identity:
   service: romm
   title: RoMM
   username: max@excloo.com
-imports:
-  services:
-    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 8080
   backend_scheme: http
@@ -54,8 +49,8 @@ targets:
         OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
         OIDC_ENABLED: true
-        OIDC_PROVIDER: pocket-id
+        OIDC_PROVIDER: Excloo ID
         OIDC_REDIRECT_URI: ${service.urls.default.href}/api/oauth/openid
-        OIDC_SERVER_APPLICATION_URL: ${services.pocket_id.urls.default.href}
+        OIDC_SERVER_APPLICATION_URL: ${service.runtime.attributes.oidc_issuer_url}
         ROMM_BASE_URL: ${service.urls.default.href}
         SCAN_TIMEOUT: 86400

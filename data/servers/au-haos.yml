@@ -47,11 +47,11 @@ dashboard:
     icon: zigbee2mqtt
     siteMonitor: ${server.urls.management.href}/45df7312_zigbee2mqtt
 features:
-  b2: true
   beszel: true
   cloudflare_acme: true
   cloudflared: true
   dozzle: true
+  object_storage: true
   password: true
   tailscale: true
 identity:
@@ -60,6 +60,7 @@ identity:
   title: HAOS
   username: root
 networking:
+  mac_address: 84:47:09:67:c8:33
   management_port: 443
 routing:
   backend_url: https://homeassistant

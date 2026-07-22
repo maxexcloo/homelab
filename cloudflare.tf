@@ -11,7 +11,7 @@ data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
-data "cloudflare_zero_trust_access_identity_providers" "all" {
+data "cloudflare_zero_trust_organization" "default" {
   account_id = data.cloudflare_account.default.id
 }
 
@@ -24,12 +24,11 @@ data "cloudflare_zone" "all" {
 }
 
 locals {
+  _cloudflare_access_pocketid_discovery = jsondecode(data.http.pocketid_discovery.response_body)
+
   _cloudflare_access_idp_ids = {
-    for alias, identity_provider in local.defaults.cloudflare.access.identity_providers :
-    alias => one([
-      for provider in data.cloudflare_zero_trust_access_identity_providers.all.result : provider.id
-      if provider.name == identity_provider.display_name
-    ])
+    for alias in keys(local._pocketid_cloudflare_access_identity_providers) :
+    alias => cloudflare_zero_trust_access_identity_provider.pocket_id[alias].id
   }
 
   # Stable model-only service route inventory shared by Cloudflare features.
@@ -145,6 +144,31 @@ locals {
       ]
     )
   }
+}
+
+resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
+  for_each = local._pocketid_cloudflare_access_identity_providers
+
+  account_id = data.cloudflare_account.default.id
+  name       = each.value.display_name
+  type       = "oidc"
+
+  config = {
+    auth_url         = local._cloudflare_access_pocketid_discovery.authorization_endpoint
+    certs_url        = local._cloudflare_access_pocketid_discovery.jwks_uri
+    client_id        = pocketid_client.cloudflare_access[each.key].id
+    client_secret    = pocketid_client.cloudflare_access[each.key].client_secret
+    email_claim_name = "email"
+    pkce_enabled     = true
+    token_url        = local._cloudflare_access_pocketid_discovery.token_endpoint
+
+    scopes = ["openid", "profile", "email"]
+  }
+}
+
+import {
+  id = "accounts/${data.cloudflare_account.default.id}/1b295422-1c33-4b28-a94f-8be3a4dffae4"
+  to = cloudflare_zero_trust_access_identity_provider.pocket_id["excloo_id"]
 }
 
 resource "cloudflare_account_token" "server_acme" {

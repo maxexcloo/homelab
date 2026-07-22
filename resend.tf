@@ -1,7 +1,7 @@
 # The generic REST provider has no first-class Resend resource. read_search
 # keeps API key creation idempotent by matching existing keys by name.
 resource "restapi_object" "resend_api_key_server" {
-  for_each = local.servers_model_by_feature.resend
+  for_each = local.servers_model_by_feature.mail
 
   id_attribute              = "id"
   ignore_all_server_changes = true
@@ -24,7 +24,7 @@ resource "restapi_object" "resend_api_key_server" {
 # Service keys use the expanded service-target key, so each deployment target
 # gets its own Resend credential.
 resource "restapi_object" "resend_api_key_service" {
-  for_each = local.services_model_by_feature.resend
+  for_each = local.services_model_by_feature.mail
 
   id_attribute              = "id"
   ignore_all_server_changes = true

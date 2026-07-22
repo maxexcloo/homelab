@@ -40,9 +40,6 @@ locals {
         {
           age_secret_key = local.defaults.credentials.ro
         },
-        server.features.b2 ? {
-          b2_application_key = local.defaults.credentials.ro
-        } : {},
         server.features.beszel ? {
           beszel_agent_token = local.defaults.credentials.rw
           beszel_system_id   = local.defaults.credentials.rw
@@ -66,6 +63,12 @@ locals {
         server.features.docker ? {
           doco_cd_git_access_token = local.defaults.credentials.rw
         } : {},
+        server.features.mail ? {
+          mail_password = local.defaults.credentials.ro
+        } : {},
+        server.features.object_storage ? {
+          object_storage_secret_access_key = local.defaults.credentials.ro
+        } : {},
         server.features.password ? {
           password_hash = local.defaults.credentials.ro
           password = merge(
@@ -75,9 +78,6 @@ locals {
               type    = null
             }
           )
-        } : {},
-        server.features.resend ? {
-          resend_api_key = local.defaults.credentials.ro
         } : {},
         server.features.tailscale ? {
           tailscale_auth_key = local.defaults.credentials.ro

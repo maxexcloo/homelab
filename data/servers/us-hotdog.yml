@@ -5,8 +5,8 @@ features:
   beszel: true
   bootstrap: true
   cloudflared: true
+  mail: true
   password: true
-  resend: true
   tailscale: true
   zfs: true
 identity:

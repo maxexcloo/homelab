@@ -31,9 +31,20 @@ locals {
             (credential_name) = local.defaults.credentials.rw
           }
         ]...),
-        service.features.b2 ? {
-          b2_application_key = local.defaults.credentials.ro
+        service.features.mail ? {
+          mail_password = local.defaults.credentials.ro
         } : {},
+        service.features.object_storage ? {
+          object_storage_secret_access_key = local.defaults.credentials.ro
+        } : {},
+        service.features.oidc ? merge(
+          {
+            oidc_client_id = local.defaults.credentials.ro
+          },
+          try(service.data.oidc_is_public, false) ? {} : {
+            oidc_client_secret = local.defaults.credentials.ro
+          },
+        ) : {},
         service.features.password ? {
           password_hash = local.defaults.credentials.ro
           password = merge(
@@ -43,9 +54,6 @@ locals {
               type    = null
             }
           )
-        } : {},
-        service.features.resend ? {
-          resend_api_key = local.defaults.credentials.ro
         } : {},
         service.features.tailscale ? {
           tailscale_auth_key = local.defaults.credentials.ro

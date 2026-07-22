@@ -17,10 +17,18 @@ locals {
       {
         runtime = {
           attributes = merge(
-            service.features.b2 ? {
-              b2_application_key_id = b2_application_key.service[service_key].application_key_id
-              b2_bucket_name        = b2_bucket.service[service_key].bucket_name
-              b2_endpoint           = local.b2_endpoint
+            service.features.mail ? {
+              mail_host     = local.defaults.resend.host
+              mail_port     = local.defaults.resend.port
+              mail_username = local.defaults.resend.username
+            } : {},
+            service.features.object_storage ? {
+              object_storage_access_key_id = b2_application_key.service[service_key].application_key_id
+              object_storage_bucket        = b2_bucket.service[service_key].bucket_name
+              object_storage_endpoint      = local.b2_endpoint
+            } : {},
+            service.features.oidc ? {
+              oidc_issuer_url = var.pocketid_url
             } : {},
           )
 
@@ -38,18 +46,26 @@ locals {
               ) ? {
               password = local.servers[service.target].runtime.credentials.password
             } : {},
-            service.features.b2 ? {
-              b2_application_key = b2_application_key.service[service_key].application_key
+            service.features.mail ? {
+              mail_password = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token
             } : {},
+            service.features.object_storage ? {
+              object_storage_secret_access_key = b2_application_key.service[service_key].application_key
+            } : {},
+            service.features.oidc ? merge(
+              {
+                oidc_client_id = pocketid_client.service[service_key].id
+              },
+              try(service.data.oidc_is_public, false) ? {} : {
+                oidc_client_secret = pocketid_client.service[service_key].client_secret
+              },
+            ) : {},
             (
               service.credentials.source == "service" &&
               service.features.password
               ) ? {
               password      = sensitive(coalesce(try(local.onepassword_service_existing_fields[service_key].password, null), random_password.service_secret["${service_key}-password"].result))
-              password_hash = bcrypt_hash.service[service_key].id
-            } : {},
-            service.features.resend ? {
-              resend_api_key = jsondecode(restapi_object.resend_api_key_service[service_key].create_response).token
+              password_hash = htpasswd_password.service[service_key].bcrypt
             } : {},
             service.features.tailscale ? {
               tailscale_auth_key = tailscale_tailnet_key.service[service_key].key

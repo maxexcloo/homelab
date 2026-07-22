@@ -14,3 +14,5 @@ identity:
   region: au
   title: OpenChamber
   username: max.schaefer
+networking:
+  mac_address: 00:a0:98:69:af:a5

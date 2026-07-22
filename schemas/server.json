@@ -155,10 +155,6 @@
       "description": "Feature flags that provision resources, credentials, or generated setup artifacts for this server.",
       "type": "object",
       "properties": {
-        "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key. Exposes runtime.attributes.{b2_application_key_id, b2_bucket_name, b2_endpoint} and runtime.credentials.b2_application_key.",
-          "type": "boolean"
-        },
         "beszel": {
           "description": "Create a Beszel agent service target and install the agent in generated setup artifacts when bootstrap is enabled. Exposes runtime.credentials.{beszel_agent_token, beszel_system_id}.",
           "type": "boolean"
@@ -187,6 +183,10 @@
           "description": "Include this server in the central Dozzle remote-agent list. Docker-managed servers receive the agent through the Docker feature; other platforms must provide it separately.",
           "type": "boolean"
         },
+        "mail": {
+          "description": "Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.{mail_host, mail_port, mail_username} and runtime.credentials.mail_password.",
+          "type": "boolean"
+        },
         "monitoring": {
           "description": "Include this server in generated monitoring configuration. Does not provision resources or expose template variables.",
           "type": "boolean"
@@ -195,12 +195,12 @@
           "description": "Attach generated monitoring alerts to this server when monitoring is enabled. Does not provision resources or expose template variables.",
           "type": "boolean"
         },
-        "password": {
-          "description": "Generate a random admin password. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt). Stored in 1Password.",
+        "object_storage": {
+          "description": "Provision S3-compatible object storage using the default provider, currently Backblaze B2. Exposes runtime.attributes.{object_storage_access_key_id, object_storage_bucket, object_storage_endpoint} and runtime.credentials.object_storage_secret_access_key.",
           "type": "boolean"
         },
-        "resend": {
-          "description": "Provision a Resend API key for outbound email. Exposes runtime.credentials.resend_api_key.",
+        "password": {
+          "description": "Generate a random admin password. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt). Stored in 1Password.",
           "type": "boolean"
         },
         "tailscale": {
@@ -252,6 +252,11 @@
       "description": "Network addressing and access ports. Public host and IP fields create external DNS records and inherit from the server's parent chain up to two levels. Tailscale addresses are resolved from the tailnet.",
       "type": "object",
       "properties": {
+        "mac_address": {
+          "description": "MAC address used to discover the client's fixed IP and local DNS record from UniFi. Empty disables discovery.",
+          "pattern": "^$|^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+          "type": "string"
+        },
         "management_host": {
           "description": "Hostname or IP for direct management access (e.g. an Incus API endpoint). Empty disables provider-managed remote connections.",
           "anyOf": [

@@ -25,7 +25,6 @@ servers:
     fields: {}
     generated: {}
   features:
-    b2: false
     beszel: false
     bootstrap: false
     cloudflare_acme: false
@@ -33,10 +32,11 @@ servers:
     cloudflared: false
     docker: false
     dozzle: false
+    mail: false
     monitoring: true
     monitoring_alerts: true
+    object_storage: false
     password: false
-    resend: false
     tailscale: false
     zfs: false
   identity:
@@ -47,6 +47,7 @@ servers:
     title: ""
     username: ""
   networking:
+    mac_address: ""
     management_host: ""
     management_port: ""
     public_host: ""
@@ -110,11 +111,12 @@ services:
     generated: {}
     source: service
   features:
-    b2: false
+    mail: false
     monitoring: true
     monitoring_alerts: true
+    object_storage: false
+    oidc: false
     password: false
-    resend: false
     tailscale: false
   identity:
     description: ""

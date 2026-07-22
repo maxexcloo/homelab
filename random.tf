@@ -73,7 +73,7 @@ resource "random_password" "service_secret" {
 }
 
 resource "random_string" "b2_server" {
-  for_each = local.servers_model_by_feature.b2
+  for_each = local.servers_model_by_feature.object_storage
 
   length  = 6
   special = false
@@ -81,7 +81,7 @@ resource "random_string" "b2_server" {
 }
 
 resource "random_string" "b2_service" {
-  for_each = local.services_model_by_feature.b2
+  for_each = local.services_model_by_feature.object_storage
 
   length  = 6
   special = false

@@ -11,3 +11,5 @@ identity:
   region: au
   title: Bazzite
   username: max.schaefer
+networking:
+  mac_address: c8:ff:bf:0f:9f:d0

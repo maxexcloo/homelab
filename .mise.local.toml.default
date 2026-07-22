@@ -24,6 +24,10 @@ OCI_USER_OCID = "REPLACE_ME"
 TF_VAR_oci_private_key_base64 = "REPLACE_ME"
 TF_VAR_oci_tenancy_ocid = "REPLACE_ME"
 
+# Pocket ID
+TF_VAR_pocketid_api_token = "REPLACE_ME"
+TF_VAR_pocketid_url = "REPLACE_ME"
+
 # Resend
 TF_VAR_resend_api_key = "REPLACE_ME"
 

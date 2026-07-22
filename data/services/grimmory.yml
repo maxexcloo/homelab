@@ -7,12 +7,6 @@ credentials:
     mysql_root_password:
       length: 32
       type: alphanumeric
-    oidc_client_id:
-      length: 16
-      type: hex
-    oidc_client_secret:
-      length: 32
-      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -25,9 +19,15 @@ dashboard:
         password: ${service.runtime.credentials.password}
         url: ${service.urls.default.href}
         username: ${service.identity.username}
+data:
+  oidc_is_public: true
+  oidc_pkce_enabled: true
+  oidc_callback_urls:
+    - /oauth2-callback
 features:
+  mail: true
+  oidc: true
   password: true
-  resend: true
 identity:
   description: Digital Library
   group: Media
@@ -35,9 +35,6 @@ identity:
   service: grimmory
   title: Grimmory
   username: maxexcloo
-imports:
-  services:
-    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 30396
   backend_scheme: http
@@ -48,9 +45,9 @@ targets:
   au-truenas:
     truenas:
       env:
-        SPRING_MAIL_HOST: ${defaults.resend.host}
-        SPRING_MAIL_PASSWORD: ${service.runtime.credentials.resend_api_key}
-        SPRING_MAIL_PORT: ${defaults.resend.port}
+        SPRING_MAIL_HOST: ${service.runtime.attributes.mail_host}
+        SPRING_MAIL_PASSWORD: ${service.runtime.credentials.mail_password}
+        SPRING_MAIL_PORT: ${service.runtime.attributes.mail_port}
         SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
         SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: true
-        SPRING_MAIL_USERNAME: ${defaults.resend.username}
+        SPRING_MAIL_USERNAME: ${service.runtime.attributes.mail_username}

@@ -10,10 +10,6 @@ terraform {
       source  = "backblaze/b2"
       version = "~> 0.13"
     }
-    bcrypt = {
-      source  = "viktorradnai/bcrypt"
-      version = "~> 0.1"
-    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 5.22"
@@ -26,6 +22,10 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.13"
     }
+    htpasswd = {
+      source  = "loafoe/htpasswd"
+      version = "2.1.0"
+    }
     http = {
       source  = "hashicorp/http"
       version = "~> 3.6"
@@ -37,6 +37,10 @@ terraform {
     oci = {
       source  = "oracle/oci"
       version = "~> 8.23"
+    }
+    pocketid = {
+      source  = "trozz/pocketid"
+      version = "2.3.0"
     }
     random = {
       source  = "hashicorp/random"

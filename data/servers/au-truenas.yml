@@ -19,14 +19,14 @@ dashboard:
         url: ${server.urls.management.href}
         version: 2
 features:
-  b2: true
   beszel: true
   bootstrap: true
   cloudflare_acme: true
   cloudflare_acme_legacy: true
   cloudflared: true
+  mail: true
+  object_storage: true
   password: true
-  resend: true
   tailscale: true
 identity:
   name: truenas
@@ -34,4 +34,5 @@ identity:
   title: TrueNAS
   username: root
 networking:
+  mac_address: c8:ff:bf:01:52:e0
   management_port: 8443

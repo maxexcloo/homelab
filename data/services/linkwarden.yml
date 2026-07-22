@@ -13,12 +13,6 @@ credentials:
     nextauth_secret:
       length: 32
       type: alphanumeric
-    oidc_client_id:
-      length: 16
-      type: hex
-    oidc_client_secret:
-      length: 32
-      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -30,9 +24,13 @@ dashboard:
       - type: ${service.identity.service}
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
+data:
+  oidc_callback_urls:
+    - /api/v1/auth/callback/keycloak
 features:
+  mail: true
+  oidc: true
   password: true
-  resend: true
 identity:
   description: Bookmark Manager
   group: Applications
@@ -40,9 +38,6 @@ identity:
   service: linkwarden
   title: Linkwarden
   username: max@excloo.com
-imports:
-  services:
-    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 30243
   backend_scheme: http
@@ -52,10 +47,12 @@ targets:
       env:
         BASE_URL: ${service.urls.default.href}
         EMAIL_FROM: ${service.key}@${defaults.domains.internal}
-        EMAIL_SERVER: smtps://${defaults.resend.username}:${urlencode(service.runtime.credentials.resend_api_key)}@${defaults.resend.host}:${defaults.resend.port}
+        EMAIL_SERVER: smtps://${service.runtime.attributes.mail_username}:${urlencode(service.runtime.credentials.mail_password)}@${service.runtime.attributes.mail_host}:${service.runtime.attributes.mail_port}
         KEYCLOAK_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         KEYCLOAK_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
-        KEYCLOAK_ISSUER: ${services.pocket_id.urls.default.href}
+        KEYCLOAK_CUSTOM_NAME: Excloo ID
+        KEYCLOAK_ISSUER: ${service.runtime.attributes.oidc_issuer_url}
+        NEXTAUTH_URL: ${service.urls.default.href}/api/v1/auth
         NEXT_PUBLIC_EMAIL_PROVIDER: true
         NEXT_PUBLIC_KEYCLOAK_ENABLED: true
         OPENROUTER_API_KEY: ${service.runtime.credentials.openrouter_api_key}

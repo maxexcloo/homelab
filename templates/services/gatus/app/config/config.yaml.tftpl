@@ -1,12 +1,12 @@
 alerting:
-  %{~ if service.features.resend }
+  %{~ if service.features.mail }
   email:
     from: ${service.target}@${defaults.domains.internal}
-    host: ${defaults.resend.host}
-    password: $${RESEND_API_KEY}
-    port: ${defaults.resend.port}
+    host: ${service.runtime.attributes.mail_host}
+    password: $${MAIL_PASSWORD}
+    port: ${service.runtime.attributes.mail_port}
     to: ${defaults.organization.email}
-    username: ${defaults.resend.username}
+    username: ${service.runtime.attributes.mail_username}
     default-alert:
       description: ${service.identity.title} Check Failed
       failure-threshold: 5
@@ -31,7 +31,7 @@ endpoints:
     headers:
       X-Gatus-Token: $${GATUS_MONITORING_TOKEN}
     %{~ endif }
-    %{~ if monitored_service.features.monitoring_alerts && service.features.resend }
+    %{~ if monitored_service.features.monitoring_alerts && service.features.mail }
     alerts:
       - type: email
     %{~ endif }
@@ -50,7 +50,7 @@ endpoints:
     group: "${defaults.server_types[server.type].display_name}"
     name: "${server_key}"
     url: "icmp://${server.hosts.internal}"
-    %{~ if server.features.monitoring_alerts && service.features.resend }
+    %{~ if server.features.monitoring_alerts && service.features.mail }
     alerts:
       - type: email
     %{~ endif }

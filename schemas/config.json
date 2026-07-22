@@ -53,11 +53,20 @@
               "additionalProperties": {
                 "additionalProperties": false,
                 "description": "Cloudflare Access identity provider metadata.",
-                "required": ["display_name"],
+                "required": ["client_name", "display_name", "provider"],
                 "type": "object",
                 "properties": {
+                  "client_name": {
+                    "description": "Display name for the OIDC client in the identity provider.",
+                    "type": "string"
+                  },
                   "display_name": {
-                    "description": "Cloudflare display name matched against the account's configured identity providers.",
+                    "description": "Display name for the managed Cloudflare Access identity provider.",
+                    "type": "string"
+                  },
+                  "provider": {
+                    "description": "Identity provider integration used to provision the Cloudflare Access OIDC client.",
+                    "enum": ["pocket_id"],
                     "type": "string"
                   }
                 }

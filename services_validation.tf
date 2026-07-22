@@ -7,9 +7,13 @@ locals {
         generator.type == "x509" ? ["${credential_name}_certificate", "${credential_name}_private_key"] : [credential_name]
       ]),
       service.credentials.source == "target" ? ["password"] : [],
-      service.features.b2 ? ["b2_application_key"] : [],
+      service.features.mail ? ["mail_password"] : [],
+      service.features.object_storage ? ["object_storage_secret_access_key"] : [],
+      service.features.oidc ? concat(
+        ["oidc_client_id"],
+        try(service.data.oidc_is_public, false) ? [] : ["oidc_client_secret"],
+      ) : [],
       service.features.password ? ["password", "password_hash"] : [],
-      service.features.resend ? ["resend_api_key"] : [],
       service.features.tailscale ? ["tailscale_auth_key"] : [],
     )
   }
@@ -75,6 +79,14 @@ locals {
       )
     ]
   ])
+
+  _services_validation_oidc_callbacks_missing = [
+    for service_key, service in local.services_model : service_key
+    if(
+      service.features.oidc &&
+      try(length(service.data.oidc_callback_urls), 0) == 0
+    )
+  ]
 
   _services_validation_proxy_no_port = flatten([
     for service_key, service in local.services_model : [
@@ -282,6 +294,11 @@ resource "terraform_data" "services_validation" {
       error_message = (
         "Invalid server references found in services configuration: ${join(", ", local._services_validation_invalid_targets)}"
       )
+    }
+
+    precondition {
+      condition     = length(local._services_validation_oidc_callbacks_missing) == 0
+      error_message = "Services with features.oidc enabled require at least one data.oidc_callback_urls entry: ${join(", ", local._services_validation_oidc_callbacks_missing)}"
     }
 
     precondition {

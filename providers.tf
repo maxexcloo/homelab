@@ -30,6 +30,11 @@ provider "oci" {
   tenancy_ocid = var.oci_tenancy_ocid
 }
 
+provider "pocketid" {
+  api_token = var.pocketid_api_token
+  base_url  = var.pocketid_url
+}
+
 provider "restapi" {
   alias        = "controld"
   bearer_token = var.controld_api_token

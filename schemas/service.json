@@ -191,8 +191,8 @@
       "description": "Per-target feature overrides. Only specify the flags that differ from the service-level defaults.",
       "type": "object",
       "properties": {
-        "b2": {
-          "description": "Per-target override. Provision a Backblaze B2 bucket and application key for this service. Exposes runtime.attributes.b2_application_key_id, runtime.attributes.b2_bucket_name, runtime.attributes.b2_endpoint, and runtime.credentials.b2_application_key as template variables.",
+        "mail": {
+          "description": "Per-target override. Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.mail_host, runtime.attributes.mail_port, runtime.attributes.mail_username, and runtime.credentials.mail_password as template variables.",
           "type": "boolean"
         },
         "monitoring": {
@@ -203,12 +203,16 @@
           "description": "Per-target override. Attach generated monitoring alerts to this service when monitoring is enabled. Does not provision resources or expose template variables.",
           "type": "boolean"
         },
-        "password": {
-          "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
+        "object_storage": {
+          "description": "Per-target override. Provision S3-compatible object storage using the default provider, currently Backblaze B2. Exposes runtime.attributes.object_storage_access_key_id, runtime.attributes.object_storage_bucket, runtime.attributes.object_storage_endpoint, and runtime.credentials.object_storage_secret_access_key as template variables.",
           "type": "boolean"
         },
-        "resend": {
-          "description": "Per-target override. Provision a Resend API key for outbound email from this service. Exposes runtime.credentials.resend_api_key as a template variable.",
+        "oidc": {
+          "description": "Per-target override. Provision an OIDC client using the configured provider. Exposes runtime.attributes.oidc_issuer_url and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Stored in 1Password.",
+          "type": "boolean"
+        },
+        "password": {
+          "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "tailscale": {
@@ -401,8 +405,8 @@
       "description": "Service-level feature flags applied to every target unless a target overrides them.",
       "type": "object",
       "properties": {
-        "b2": {
-          "description": "Provision a Backblaze B2 bucket and application key for this service. Exposes runtime.attributes.b2_application_key_id, runtime.attributes.b2_bucket_name, runtime.attributes.b2_endpoint, and runtime.credentials.b2_application_key as template variables.",
+        "mail": {
+          "description": "Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.mail_host, runtime.attributes.mail_port, runtime.attributes.mail_username, and runtime.credentials.mail_password as template variables.",
           "type": "boolean"
         },
         "monitoring": {
@@ -413,12 +417,16 @@
           "description": "Attach generated monitoring alerts to this service when monitoring is enabled. Does not provision resources or expose template variables.",
           "type": "boolean"
         },
-        "password": {
-          "description": "Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
+        "object_storage": {
+          "description": "Provision S3-compatible object storage using the default provider, currently Backblaze B2. Exposes runtime.attributes.object_storage_access_key_id, runtime.attributes.object_storage_bucket, runtime.attributes.object_storage_endpoint, and runtime.credentials.object_storage_secret_access_key as template variables.",
           "type": "boolean"
         },
-        "resend": {
-          "description": "Provision a Resend API key for outbound email from this service. Exposes runtime.credentials.resend_api_key as a template variable.",
+        "oidc": {
+          "description": "Provision an OIDC client using the configured provider. Exposes runtime.attributes.oidc_issuer_url and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Configure callback URL paths or absolute URLs in data.oidc_callback_urls, and optional public-client and PKCE behavior in data.oidc_is_public and data.oidc_pkce_enabled. Stored in 1Password.",
+          "type": "boolean"
+        },
+        "password": {
+          "description": "Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "tailscale": {

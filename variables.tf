@@ -84,6 +84,32 @@ variable "onepassword_connect_url" {
   }
 }
 
+variable "pocketid_api_token" {
+  description = "Pocket ID API token used to manage OIDC clients."
+  sensitive   = true
+  type        = string
+
+  validation {
+    condition     = length(nonsensitive(var.pocketid_api_token)) > 0
+    error_message = "Pocket ID API token must not be empty."
+  }
+}
+
+variable "pocketid_url" {
+  description = "Pocket ID base URL used to bootstrap the provider and OIDC discovery."
+  sensitive   = false
+  type        = string
+
+  validation {
+    error_message = "Pocket ID URL must start with http:// or https:// and must not end with a slash."
+
+    condition = (
+      can(regex("^https?://[^/]+", var.pocketid_url)) &&
+      !endswith(var.pocketid_url, "/")
+    )
+  }
+}
+
 variable "resend_api_key" {
   description = "Resend API key"
   sensitive   = true

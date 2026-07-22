@@ -7,15 +7,15 @@ locals {
         generator.type == "x509" ? ["${credential_name}_certificate", "${credential_name}_private_key"] : [credential_name]
       ]),
       ["age_secret_key"],
-      server.features.b2 ? ["b2_application_key"] : [],
       server.features.beszel ? ["beszel_agent_token", "beszel_system_id"] : [],
       server.features.bootstrap && server.platform == "truenas" ? ["truenas_cd_access_token"] : [],
       server.features.cloudflare_acme ? ["cloudflare_acme_token"] : [],
       server.features.cloudflare_acme_legacy ? ["cloudflare_acme_legacy_token"] : [],
       server.features.cloudflared ? ["cloudflare_tunnel_read_token", "cloudflare_tunnel_token"] : [],
       server.features.docker ? ["doco_cd_git_access_token", "doco_cd_webhook_secret"] : [],
+      server.features.mail ? ["mail_password"] : [],
+      server.features.object_storage ? ["object_storage_secret_access_key"] : [],
       server.features.password ? ["password", "password_hash"] : [],
-      server.features.resend ? ["resend_api_key"] : [],
       server.features.tailscale ? ["tailscale_auth_key"] : [],
     )
   }

@@ -15,7 +15,7 @@ dashboard:
       - type: gatus
         url: ${service.urls.default.href}
 features:
-  resend: true
+  mail: true
   tailscale: true
 identity:
   description: Health Monitoring & Status Page

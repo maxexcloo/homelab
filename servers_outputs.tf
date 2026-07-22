@@ -104,13 +104,18 @@ locals {
               ssh_keys              = data.github_user.default.ssh_keys
               tailscale_device_id   = try(local.tailscale_device_addresses[server_key].id, "")
             },
-            server.features.b2 ? {
-              b2_application_key_id = b2_application_key.server[server_key].application_key_id
-              b2_bucket_name        = b2_bucket.server[server_key].bucket_name
-              b2_endpoint           = local.b2_endpoint
-            } : {},
             server.features.cloudflared ? {
               cloudflare_tunnel_id = module.cloudflare_tunnel[server_key].tunnel_id
+            } : {},
+            server.features.mail ? {
+              mail_host     = local.defaults.resend.host
+              mail_port     = local.defaults.resend.port
+              mail_username = local.defaults.resend.username
+            } : {},
+            server.features.object_storage ? {
+              object_storage_access_key_id = b2_application_key.server[server_key].application_key_id
+              object_storage_bucket        = b2_bucket.server[server_key].bucket_name
+              object_storage_endpoint      = local.b2_endpoint
             } : {},
           )
 
@@ -125,9 +130,6 @@ locals {
               ), ""))
               if field.mode == "rw"
             },
-            server.features.b2 ? {
-              b2_application_key = b2_application_key.server[server_key].application_key
-            } : {},
             server.features.cloudflare_acme ? {
               cloudflare_acme_token = cloudflare_account_token.server_acme[server_key].value
             } : {},
@@ -138,12 +140,15 @@ locals {
               cloudflare_tunnel_read_token = module.cloudflare_tunnel[server_key].tunnel_read_token
               cloudflare_tunnel_token      = module.cloudflare_tunnel[server_key].tunnel_token
             } : {},
+            server.features.mail ? {
+              mail_password = jsondecode(restapi_object.resend_api_key_server[server_key].create_response).token
+            } : {},
+            server.features.object_storage ? {
+              object_storage_secret_access_key = b2_application_key.server[server_key].application_key
+            } : {},
             server.features.password ? {
               password      = sensitive(coalesce(try(local.onepassword_server_existing_fields[server_key].password, null), random_password.server_secret["${server_key}-password"].result))
-              password_hash = bcrypt_hash.server[server_key].id
-            } : {},
-            server.features.resend ? {
-              resend_api_key = jsondecode(restapi_object.resend_api_key_server[server_key].create_response).token
+              password_hash = htpasswd_password.server[server_key].bcrypt
             } : {},
             server.features.tailscale ? {
               tailscale_auth_key = tailscale_tailnet_key.server[server_key].key

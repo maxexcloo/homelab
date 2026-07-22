@@ -6,12 +6,6 @@ credentials:
     db_password:
       length: 32
       type: alphanumeric
-    oidc_client_id:
-      length: 16
-      type: hex
-    oidc_client_secret:
-      length: 32
-      type: hex
     redis_password:
       length: 32
       type: alphanumeric
@@ -27,9 +21,15 @@ dashboard:
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
         version: 2
+data:
+  oidc_callback_urls:
+    - /auth/login
+    - /user-settings
+    - app.immich:///oauth-callback
 features:
+  mail: true
+  oidc: true
   password: true
-  resend: true
 identity:
   description: Photo Manager
   group: Media
@@ -37,9 +37,6 @@ identity:
   service: immich
   title: Immich
   username: max@excloo.com
-imports:
-  services:
-    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 30041
   backend_scheme: http
@@ -48,16 +45,4 @@ routing:
     - expose: internal
       url: photos.excloo.com
 targets:
-  au-truenas:
-    truenas:
-      env:
-        OAUTH_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
-        OAUTH_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
-        OAUTH_ENABLED: true
-        OAUTH_ISSUER_URL: ${services.pocket_id.urls.default.href}
-        SMTP_ENABLED: true
-        SMTP_FROM: ${service.key}@${defaults.domains.internal}
-        SMTP_HOST: ${defaults.resend.host}
-        SMTP_PASSWORD: ${service.runtime.credentials.resend_api_key}
-        SMTP_PORT: ${defaults.resend.port}
-        SMTP_USERNAME: ${defaults.resend.username}
+  au-truenas: {}

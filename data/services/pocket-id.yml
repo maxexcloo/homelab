@@ -4,9 +4,6 @@ credentials:
     encryption_key:
       length: 32
       type: base64
-    static_api_key:
-      length: 64
-      type: alphanumeric
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -15,14 +12,14 @@ dashboard:
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
 features:
+  mail: true
   password: true
-  resend: true
 identity:
   description: OIDC Provider
   group: Infrastructure
   name: pocket-id
   service: pocket-id
-  title: Pocket ID
+  title: Excloo ID
   username: max@excloo.com
 routing:
   backend_port: 1411
@@ -36,8 +33,7 @@ targets:
       env:
         SMTP_ENCRYPTION: TLS
         SMTP_FROM_ADDRESS: ${service.key}@${defaults.domains.internal}
-        SMTP_HOST: ${defaults.resend.host}
-        SMTP_PASSWORD: ${service.runtime.credentials.resend_api_key}
-        SMTP_PORT: ${defaults.resend.port}
-        SMTP_USERNAME: ${defaults.resend.username}
-        STATIC_API_KEY: ${service.runtime.credentials.static_api_key}
+        SMTP_HOST: ${service.runtime.attributes.mail_host}
+        SMTP_PASSWORD: ${service.runtime.credentials.mail_password}
+        SMTP_PORT: ${service.runtime.attributes.mail_port}
+        SMTP_USERNAME: ${service.runtime.attributes.mail_username}

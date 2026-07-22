@@ -2,13 +2,6 @@
 credentials:
   fields:
     hardcover_api_key: {}
-  generated:
-    oidc_client_id:
-      length: 16
-      type: hex
-    oidc_client_secret:
-      length: 32
-      type: hex
 dashboard:
   - name: ${service.identity.title}
     description: ${service.identity.description}
@@ -20,7 +13,10 @@ data:
   aa_mirror_urls: https://annas-archive.pk,https://annas-archive.gd,https://annas-archive.gl
   libgen_mirror_urls: https://libgen.vg,https://libgen.la,https://libgen.bz,https://libgen.gl,https://libgen.li
   zlib_mirror_urls: https://z-lib.sk
+  oidc_callback_urls:
+    - /api/auth/oidc/callback
 features:
+  oidc: true
   password: true
 identity:
   description: Book Search & Downloads
@@ -32,7 +28,6 @@ identity:
 imports:
   services:
     grimmory: grimmory-au-truenas
-    pocket_id: pocket-id-au-truenas
 routing:
   backend_port: 30260
   backend_scheme: http
@@ -53,10 +48,10 @@ targets:
         HARDCOVER_ENABLED: true
         LIBGEN_MIRROR_URLS: ${service.data.libgen_mirror_urls}
         METADATA_PROVIDER: hardcover
-        OIDC_BUTTON_LABEL: Pocket ID
+        OIDC_BUTTON_LABEL: Excloo ID
         OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
-        OIDC_DISCOVERY_URL: ${services.pocket_id.urls.default.href}/.well-known/openid-configuration
+        OIDC_DISCOVERY_URL: ${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration
         SESSION_COOKIE_SECURE: true
         SUPPORTED_FORMATS: azw3,cbr,cbz,djvu,epub,fb2,mobi,pdf
         ZLIB_MIRROR_URLS: ${service.data.zlib_mirror_urls}
