@@ -16,13 +16,7 @@ credentials:
       length: 32
       type: alphanumeric
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
-    widgets:
+  - widgets:
       - type: ${service.identity.service}
         url: ${service.urls.default.href}
 data:
@@ -34,13 +28,11 @@ features:
 identity:
   description: Game & ROM Library
   group: Media
-  name: romm
   service: romm
   title: RoMM
   username: max@excloo.com
 routing:
   backend_port: 8080
-  backend_scheme: http
   host_port: 30061
 targets:
   au-truenas:

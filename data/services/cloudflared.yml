@@ -13,6 +13,5 @@ dashboard:
         tunnelid: ${server.runtime.attributes.cloudflare_tunnel_id}
 identity:
   description: VPN
-  name: cloudflared
   service: cloudflared
   title: Cloudflare Tunnel

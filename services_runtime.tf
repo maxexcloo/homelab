@@ -1,8 +1,8 @@
 # Stage: runtime — merges provider-backed credential values into services_model. Never used as for_each key.
 locals {
   # Flat "service_key-credential_name" → generated scalar value table. Same
-  # pattern as _servers_outputs_credentials_generated.
-  _services_outputs_credentials_generated = {
+  # pattern as _servers_runtime_credentials_generated.
+  _services_runtime_credentials_generated = {
     for credential_key, generator in local.random_service_credentials : credential_key => (
       generator.type == "hex" ? random_id.service_secret[credential_key].hex
       : generator.type == "base64" ? random_id.service_secret[credential_key].b64_std
@@ -36,7 +36,7 @@ locals {
             {
               for field_name, field in service.credentials.fields : field_name => sensitive(try(coalesce(
                 try(local.onepassword_service_existing_fields[service_key][field_name], null),
-                try(local._services_outputs_credentials_generated["${service_key}-${field_name}"], null),
+                try(local._services_runtime_credentials_generated["${service_key}-${field_name}"], null),
               ), ""))
               if field.mode == "rw"
             },
@@ -81,23 +81,5 @@ locals {
         }
       },
     )
-  }
-}
-
-output "services" {
-  description = "Service configurations"
-  sensitive   = true
-
-  # Top-level false/null/empty defaults are filtered out to reduce output noise.
-  # Nested objects keep their full schema shape.
-  value = {
-    for service_key, service in local.services : service_key => {
-      for field_name, field_value in service : field_name => field_value
-      if(
-        field_value != null &&
-        field_value != "" &&
-        field_value != false
-      )
-    }
   }
 }

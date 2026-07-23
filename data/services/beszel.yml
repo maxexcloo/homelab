@@ -1,12 +1,6 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
-    widgets:
+  - widgets:
       - type: ${service.identity.service}
         password: ${service.runtime.credentials.password}
         url: ${service.urls.default.href}
@@ -26,13 +20,11 @@ features:
 identity:
   description: System Monitoring
   group: Infrastructure
-  name: beszel
   service: beszel
   title: Beszel
   username: max@excloo.com
 routing:
   backend_port: 30333
-  backend_scheme: http
 targets:
   au-truenas:
     truenas:

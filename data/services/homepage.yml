@@ -78,14 +78,12 @@ data:
 identity:
   description: Application Dashboard
   group: Applications
-  name: homepage
   service: homepage
   title: Homepage
 routing:
   backend_port: 30054
-  backend_scheme: http
-  urls:
+  routes:
     - expose: internal
-      url: home.excloo.com
+      host: home.excloo.com
 targets:
   au-truenas: {}

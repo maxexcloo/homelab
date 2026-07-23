@@ -40,7 +40,7 @@ locals {
   }
 
   # Sidecar files (env files, configs, etc.) with rendered content and SOPS content type.
-  services_render_write_sidecars = {
+  services_render_sidecars = {
     for file_key, file_input in local.services_render_sidecar_inputs : file_key => merge(
       file_input,
       {

@@ -5,24 +5,10 @@ locals {
     trimsuffix(basename(file_path), ".yml") => provider::deepmerge::mergo(
       local.defaults.services,
       yamldecode(file("${path.module}/${file_path}")),
-    )
-  }
-
-  services_input = {
-    for service_key, service in local._services_input_raw : service_key => merge(
-      service,
       {
-        targets = merge(
-          {
-            for server_key, server in local.servers_input : server_key => {}
-            if(
-              service.target_feature != "" &&
-              can(server.features[service.target_feature]) &&
-              server.features[service.target_feature]
-            )
-          },
-          service.targets,
-        )
+        identity = {
+          name = trimsuffix(basename(file_path), ".yml")
+        }
       },
     )
   }
@@ -30,7 +16,7 @@ locals {
   # Expands service × target into individual stacks keyed as "service-target"
   # (e.g. "immich-truenas-01"). Data, features, fly, truenas, and credentials
   # deep-merge with target values winning over service-level values.
-  services_input_targets = merge([
+  _services_input_targets_raw = merge([
     for service_key, service in local.services_input : {
       for target_key, target_config in service.targets : "${service_key}-${target_key}" => provider::deepmerge::mergo(
         {
@@ -52,4 +38,41 @@ locals {
       )
     }
   ]...)
+
+  services_input = {
+    for service_key, service in local._services_input_raw : service_key => merge(
+      service,
+      {
+        targets = merge(
+          {
+            for server_key, server in local.servers_input : server_key => {}
+            if(
+              service.target_feature != "" &&
+              can(server.features[service.target_feature]) &&
+              server.features[service.target_feature]
+            )
+          },
+          service.targets,
+        )
+      },
+    )
+  }
+
+  services_input_targets = {
+    for service_key, service in local._services_input_targets_raw : service_key => merge(
+      service,
+      {
+        routing = merge(
+          service.routing,
+          {
+            backend_scheme = (
+              service.routing.backend_scheme != "" ? service.routing.backend_scheme
+              : service.routing.backend_port != null ? "http"
+              : ""
+            )
+          },
+        )
+      },
+    )
+  }
 }

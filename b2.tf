@@ -1,5 +1,3 @@
-data "b2_account_info" "default" {}
-
 locals {
   # Bucket-scoped keys get broad object permissions because services own their
   # buckets and need to manage backup/object lifecycles themselves.
@@ -13,8 +11,7 @@ locals {
     "writeFiles"
   ]
 
-  # B2 S3 endpoint with the https:// prefix stripped for service templates.
-  b2_endpoint = replace(data.b2_account_info.default.s3_api_url, "https://", "")
+  b2_endpoint = "s3.us-east-005.backblazeb2.com"
 }
 
 resource "b2_application_key" "server" {

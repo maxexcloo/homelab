@@ -8,12 +8,7 @@ credentials:
       length: 32
       type: alphanumeric
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: sh-grimmory
-    siteMonitor: ${service.urls.default.href}
+  - icon: sh-grimmory
     widgets:
       - type: booklore
         password: ${service.runtime.credentials.password}
@@ -31,16 +26,14 @@ features:
 identity:
   description: Digital Library
   group: Media
-  name: grimmory
   service: grimmory
   title: Grimmory
   username: maxexcloo
 routing:
   backend_port: 30396
-  backend_scheme: http
-  urls:
+  routes:
     - expose: cloudflare
-      url: books.excloo.com
+      host: books.excloo.com
 targets:
   au-truenas:
     truenas:

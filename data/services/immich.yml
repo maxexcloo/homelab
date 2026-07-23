@@ -10,13 +10,7 @@ credentials:
       length: 32
       type: alphanumeric
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
-    widgets:
+  - widgets:
       - type: ${service.identity.service}
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
@@ -33,17 +27,15 @@ features:
 identity:
   description: Photo Manager
   group: Media
-  name: immich
   service: immich
   title: Immich
   username: max@excloo.com
 routing:
   backend_port: 30041
-  backend_scheme: http
   container: server
-  urls:
+  routes:
     - expose: internal
-      url: photos.excloo.com
+      host: photos.excloo.com
 targets:
   au-truenas:
     truenas:

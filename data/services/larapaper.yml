@@ -5,26 +5,19 @@ credentials:
       length: 32
       type: base64
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: sh-trmnl
-    siteMonitor: ${service.urls.default.href}
+  - icon: sh-trmnl
 features:
   password: true
 identity:
   description: TRMNL Server
   group: Applications
-  name: larapaper
   service: larapaper
   title: LaraPaper
   username: max@excloo.com
 routing:
   backend_port: 8080
-  backend_scheme: http
-  urls:
+  routes:
     - expose: cloudflare
-      url: larapaper.excloo.com
+      host: larapaper.excloo.com
 targets:
   au-truenas: {}

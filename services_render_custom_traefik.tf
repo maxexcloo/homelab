@@ -1,9 +1,94 @@
-# Stage: render — routing labels and proxy route context.
+# Stage: render — Traefik-specific proxy aggregation and labels.
 locals {
-  services_render_routing_labels = {
+  # Final Compose files with Traefik labels injected into container label maps.
+  services_render_compose = {
+    for service_key, compose in local.services_render_compose_base : service_key => yamlencode(
+      merge(
+        compose,
+        {
+          services = {
+            for compose_service_key, compose_service in compose.services : compose_service_key => merge(
+              compose_service,
+              try(length(local.services_render_custom_traefik_labels[service_key][compose_service_key]), 0) > 0 ? {
+                labels = merge(
+                  try(compose_service.labels, {}),
+                  local.services_render_custom_traefik_labels[service_key][compose_service_key],
+                )
+              } : {},
+            )
+          }
+        },
+      )
+    )
+  }
+
+  services_render_custom_traefik_context = {
+    for service_key, service in local.services_model : service_key => merge(
+      {
+        routing_labels = local.services_render_custom_traefik_labels[service_key]
+      },
+      service.identity.name == "traefik" ? {
+        custom = {
+          # Port 8000 is the webinternal Traefik entrypoint on the target server.
+          proxy_routes = merge(
+            merge([
+              for source_service in values(local.services_model) : {
+                for route in source_service.routing.routes :
+                route.name => {
+                  backend_url = "http://${local.servers_render_servers[source_service.target].runtime.addresses.tailscale_ipv4}:8000"
+                  host        = route.host
+                  redirect_to = null
+                }
+                if(
+                  route.proxy_server == service.target &&
+                  try(local.servers_render_servers[source_service.target].runtime.addresses.tailscale_ipv4, "") != "" &&
+                  route.host != null
+                )
+              }
+            ]...),
+            merge([
+              for source_service in values(local.services_model) : merge([
+                for route in source_service.routing.routes : {
+                  for redirect in route.redirects :
+                  redirect.name => {
+                    backend_url = null
+                    host        = redirect.host
+                    redirect_to = route.href
+                  }
+                  if(
+                    redirect.proxy_server == service.target &&
+                    redirect.host != null
+                  )
+                }
+              ]...)
+            ]...),
+            merge([
+              for source_server_key, source_server in local.servers_render_servers : {
+                for route in source_server.routing.routes :
+                "server-${source_server_key}-${substr(sha1(route.host), 0, 12)}" => {
+                  backend_url = route.backend_url
+                  host        = route.host
+                  redirect_to = null
+                }
+                if(
+                  (
+                    contains(["external", "internal"], route.expose) &&
+                    source_server_key == service.target
+                  ) ||
+                  route.expose == "proxy-${service.target}"
+                )
+              }
+            ]...),
+          )
+        }
+      } : {},
+    )
+  }
+
+  services_render_custom_traefik_labels = {
     for service_key, service in local.services : service_key => {
-      for container in distinct(compact([for route in service.routing.urls : route.container])) : container => merge([
-        for route in service.routing.urls : {
+      for container in distinct(compact([for route in service.routing.routes : route.container])) : container => merge([
+        for route in service.routing.routes : {
           for label_key, label_value in merge(
             route.backend_port != null ? merge(
               {
@@ -36,10 +121,10 @@ locals {
               } : {},
               (
                 route.acme &&
-                route.url != null &&
+                route.host_configured &&
                 route.zone != null
                 ) ? {
-                "traefik.http.routers.${route.name}.tls.domains[0].main" = route.url
+                "traefik.http.routers.${route.name}.tls.domains[0].main" = route.host
               } : {},
             ) : {},
             merge([
@@ -91,4 +176,5 @@ locals {
       ]...)
     }
   }
+
 }

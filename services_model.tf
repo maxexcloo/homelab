@@ -1,6 +1,6 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
-  # Credential field shape for each service. Runtime values are added in services_outputs.tf.
+  # Credential field shape for each service. Runtime values are added in services_runtime.tf.
   _services_model_credentials = {
     for service_key, service in local.services_input_targets : service_key => {
       fields = merge(
@@ -51,6 +51,24 @@ locals {
     }
   }
 
+  _services_model_dashboards = {
+    for service_key, service in local.services_input_targets : service_key => [
+      for card in service.dashboard : merge(
+        {
+          description = local._services_model_identities[service_key].description
+          group       = local._services_model_identities[service_key].group
+          icon        = service.identity.service
+          name        = local._services_model_identities[service_key].title
+        },
+        local._services_model_url_aliases[service_key].default != null ? {
+          href        = local._services_model_url_aliases[service_key].default.href
+          siteMonitor = local._services_model_url_aliases[service_key].default.href
+        } : {},
+        card,
+      )
+    ]
+  }
+
   # Fly requires stable app names before generated hostnames are computed.
   _services_model_fly_app_names = {
     for service_key, service in local.services_input_targets : service_key =>
@@ -69,42 +87,60 @@ locals {
     )
   }
 
-  _services_model_route_entries = {
+  _services_model_identities = {
+    for service_key, service in local.services_input_targets : service_key => merge(
+      service.identity,
+      {
+        group = (
+          service.identity.group != "" ? service.identity.group
+          : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.group
+          : "Applications"
+        )
+        username = (
+          service.credentials.source == "target" &&
+          local._services_model_target_servers[service_key] != null
+        ) ? local._services_model_target_servers[service_key].identity.username : service.identity.username
+      },
+    )
+  }
+
+  _services_model_route_inputs = {
     for service_key, service in local.services_input_targets : service_key => [
-      for route_index, url in concat(
-        service.routing.urls,
+      for route_index, route in concat(
+        service.routing.routes,
         (
           service.routing.backend_port != null ||
           service.routing.backend_scheme != ""
           ) ? [
           {
             expose = "internal"
-            url    = null
+            host   = null
           }
         ] : [],
         ) : merge(
         {
           for field_name, field_value in service.routing : field_name => field_value
-          if field_name != "urls"
+          if field_name != "routes"
         },
-        url,
+        route,
         {
-          id           = try(url.id, tostring(route_index))
-          proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
+          id              = try(route.id, tostring(route_index))
+          host_configured = route.host != null
+          proxy_server    = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : null
 
           dns_target_host = (
             service.target == "fly" ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
-            : startswith(url.expose, "proxy-") ? try(
-              "${service.identity.name}.${local.servers_model[trimprefix(url.expose, "proxy-")].hosts.external}",
+            : startswith(route.expose, "proxy-") ? try(
+              "${service.identity.name}.${local.servers_model[trimprefix(route.expose, "proxy-")].hosts.external}",
               null,
             )
-            : contains(["cloudflare", "external"], url.expose) ? try(
+            : contains(["cloudflare", "external"], route.expose) ? try(
               "${service.identity.name}.${local.servers_model[service.target].hosts.external}",
               null,
             )
             : (
-              url.expose == "internal" &&
-              try(url.backend_scheme, service.routing.backend_scheme) != ""
+              route.expose == "internal" &&
+              try(route.backend_scheme, service.routing.backend_scheme) != ""
               ) ? try(
               "${service.identity.name}.${local.servers_model[service.target].hosts.internal}",
               null,
@@ -113,16 +149,16 @@ locals {
           )
 
           redirects = [
-            for redirect in try(url.redirects, []) : {
-              expose       = url.expose == "cloudflare" ? "external" : url.expose
+            for redirect in try(route.redirects, []) : {
+              expose       = route.expose == "cloudflare" ? "external" : route.expose
               host         = redirect
               name         = "${service.identity.name}-redirect-${substr(sha1(redirect), 0, 12)}"
-              proxy_server = startswith(url.expose, "proxy-") ? trimprefix(url.expose, "proxy-") : null
-              zone         = try(local.dns_model_managed_zones_by_url[redirect], null)
+              proxy_server = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : null
+              zone         = try(local.dns_model_managed_zones_by_host[redirect], null)
 
               acme = (
-                try(url.https, service.routing.https) &&
-                !startswith(url.expose, "proxy-")
+                try(route.https, service.routing.https) &&
+                !startswith(route.expose, "proxy-")
               )
             }
           ]
@@ -133,12 +169,12 @@ locals {
 
   _services_model_routes = {
     for service_key, service in local.services_input_targets : service_key => [
-      for route in local._services_model_route_entries[service_key] : merge(
+      for route in local._services_model_route_inputs[service_key] : merge(
         route,
         {
           backend_url = route.backend_url
           container   = route.container != "" ? route.container : service.identity.service
-          host        = route.url != null ? route.url : route.dns_target_host
+          host        = route.host_configured ? route.host : route.dns_target_host
           host_port   = route.host_port != null ? route.host_port : route.backend_port
           name        = route.id == "0" ? service.identity.name : "${service.identity.name}-${route.id}"
 
@@ -147,14 +183,14 @@ locals {
             route.proxy_server == null
           )
           href = (
-            route.url != null ||
+            route.host_configured ||
             route.dns_target_host != null
-          ) ? "${route.https ? "https" : "http"}://${route.url != null ? route.url : route.dns_target_host}" : null
+          ) ? "${route.https ? "https" : "http"}://${route.host_configured ? route.host : route.dns_target_host}" : null
           zone = (
             route.dns_target_host == null &&
-            route.url == null
+            !route.host_configured
             ) ? null : (
-            route.url != null ? local.dns_model_managed_zones_by_url[route.url]
+            route.host_configured ? local.dns_model_managed_zones_by_host[route.host]
             : service.target == "fly" ? "fly.dev"
             : route.expose == "internal" ? local.defaults.domains.internal
             : local.defaults.domains.external
@@ -183,7 +219,7 @@ locals {
           if(
             route.href != null &&
             (
-              route.url != null ||
+              route.host_configured ||
               route.expose == "external"
             )
           )
@@ -195,7 +231,7 @@ locals {
           for route in local._services_model_routes[service_key] : route
           if(
             route.href != null &&
-            route.url == null &&
+            !route.host_configured &&
             route.expose == "internal"
           )
         ][0],
@@ -211,11 +247,11 @@ locals {
         route.host => {
           host  = route.host
           href  = route.href
-          label = route.url != null ? "website" : route.expose
+          label = route.host_configured ? "website" : route.expose
           zone  = route.zone
         }...
         if route.host != null
-      } : host => one(urls)
+      } : host => urls[0]
     }
   }
 
@@ -224,34 +260,25 @@ locals {
       service,
       {
         credentials = local._services_model_credentials[service_key]
+        dashboard   = local._services_model_dashboards[service_key]
         key         = service_key
 
         fly = {
           app_name = service.target == "fly" ? local._services_model_fly_app_names[service_key] : service.fly.app_name
         }
 
-        identity = {
-          group = (
-            service.identity.group != "" ? service.identity.group
-            : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.group
-            : "Applications"
-          )
-          username = (
-            service.credentials.source == "target" &&
-            local._services_model_target_servers[service_key] != null
-          ) ? local._services_model_target_servers[service_key].identity.username : service.identity.username
-        }
+        identity = local._services_model_identities[service_key]
 
         routing = merge(
           {
             for field_name, field_value in service.routing : field_name => field_value
-            if field_name != "urls"
+            if field_name != "routes"
           },
           {
             backend_url = service.routing.backend_url
             container   = service.routing.container != "" ? service.routing.container : service.identity.service
             host_port   = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
-            urls        = local._services_model_routes[service_key]
+            routes      = local._services_model_routes[service_key]
           },
         )
 

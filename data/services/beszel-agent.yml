@@ -24,7 +24,6 @@ data:
   public_key: ${services.beszel.data.agent_public_key}
 identity:
   description: Resource Monitoring Agent
-  name: beszel-agent
   service: beszel-agent
   title: Beszel Agent
 imports:

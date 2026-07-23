@@ -1,8 +1,9 @@
 # Routing
 
-Routes are declared under `routing.urls` and inherit shared fields from
-`routing`. Services with `routing.backend_port` or `routing.backend_scheme` also
-receive an implicit internal route with no custom hostname.
+Routes are declared under `routing.routes` and inherit shared fields from
+`routing`. Setting `routing.backend_port` defaults `routing.backend_scheme` to
+`http`. Services with either value receive an implicit internal route with no
+custom hostname.
 
 Use `service.urls.*.{host,href}` for service endpoints and `server.hosts.*` for
 server hostnames.
@@ -17,7 +18,7 @@ Computed route behaviour:
 - `host_port` defaults to `backend_port`.
 - `href` uses `https` unless the route overrides it.
 - `proxy_server` is set when `expose` is `proxy-<server>`.
-- `zone` is the managed DNS zone for custom URLs, `fly.dev` for Fly hostnames,
+- `zone` is the managed DNS zone for custom hosts, `fly.dev` for Fly hostnames,
   the internal domain for internal routes, and the external domain otherwise.
 
 ## URL Aliases
@@ -31,7 +32,7 @@ Aliases are derived from route order:
 
 ## DNS
 
-Custom service URLs create DNS records only when the hostname is in a managed
+Custom service hosts create DNS records only when the hostname is in a managed
 DNS zone. Cloudflare-exposed records point at the target server's tunnel.
 Proxy routes point at the proxy server. Other server-backed routes point at the
 route target host.
@@ -106,9 +107,9 @@ Add redirect aliases to a route as hostname strings:
 
 ```yaml
 routing:
-  urls:
+  routes:
     - expose: cloudflare
-      url: reddit.excloo.com
+      host: reddit.excloo.com
       redirects:
         - www.reddit.excloo.com
 ```

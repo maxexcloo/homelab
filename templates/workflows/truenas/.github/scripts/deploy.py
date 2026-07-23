@@ -197,7 +197,7 @@ def remove_sidecars(service, sidecars):
     for rel_path in sorted(sidecars):
         validate_sidecar_path(rel_path)
         try:
-            container = volume_container(containers, rel_path, service)
+            container, _ = volume_container(containers, rel_path, service)
         except RuntimeError:
             print(f"⚠ {service}:/{rel_path} was not stored in managed storage")
             continue
@@ -250,14 +250,19 @@ def volume_container(containers, path, service):
                 and managed_storage_mount(mount, service)
                 and destination in target.parents
             ):
-                candidates.append((len(destination.parts), container["id"]))
+                candidates.append(
+                    (len(destination.parts), container["id"], destination)
+                )
 
     if not candidates:
         raise RuntimeError(
             f"Managed sidecar /{path} is not backed by writable managed storage"
         )
 
-    return max(candidates)[1]
+    _, container, mount_destination = max(
+        candidates, key=lambda candidate: candidate[0]
+    )
+    return container, mount_destination
 
 
 def write_sidecars(service, target, sidecars):
@@ -268,9 +273,10 @@ def write_sidecars(service, target, sidecars):
         if not source.is_file():
             raise FileNotFoundError(f"Managed sidecar not found: {source}")
 
-        container = volume_container(containers, rel_path, service)
+        container, mount_destination = volume_container(containers, rel_path, service)
         destination = PurePosixPath("/") / rel_path
-        run(["docker", "exec", container, "mkdir", "-p", str(destination.parent)])
+        if destination.parent != mount_destination:
+            run(["docker", "exec", container, "mkdir", "-p", str(destination.parent)])
         run(["docker", "cp", source.as_posix(), f"{container}:{destination}"])
         print(f"✓ {service}:{destination}")
 

@@ -7,13 +7,7 @@ credentials:
       length: 32
       type: hex
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
-    widgets:
+  - widgets:
       - type: gatus
         url: ${service.urls.default.href}
 features:
@@ -22,7 +16,6 @@ features:
 identity:
   description: Health Monitoring & Status Page
   group: Infrastructure
-  name: gatus
   service: gatus
   title: Gatus
 imports:
@@ -30,9 +23,8 @@ imports:
     homeassistant: au-haos
 routing:
   backend_port: 8080
-  backend_scheme: http
-  urls:
+  routes:
     - expose: internal
-      url: status.excloo.com
+      host: status.excloo.com
 targets:
   fly: {}

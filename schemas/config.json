@@ -43,7 +43,7 @@
       "properties": {
         "access": {
           "additionalProperties": false,
-          "description": "Cloudflare Zero Trust Access settings for generating access applications from service routing URLs.",
+          "description": "Cloudflare Zero Trust Access settings for generating access applications from service routes.",
           "required": ["identity_providers"],
           "type": "object",
           "properties": {

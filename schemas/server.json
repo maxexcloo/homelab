@@ -607,7 +607,7 @@
     },
     "routing": {
       "additionalProperties": false,
-      "description": "Shared backend configuration and per-URL exposure overrides for this server.",
+      "description": "Shared backend configuration and routes exposed through this server.",
       "type": "object",
       "properties": {
         "backend_url": {
@@ -615,13 +615,13 @@
           "pattern": "^$|^https?://",
           "type": "string"
         },
-        "urls": {
-          "description": "URL entries that inherit the shared backend URL.",
+        "routes": {
+          "description": "Routes that inherit the shared backend URL.",
           "type": "array",
           "uniqueItems": true,
           "items": {
             "additionalProperties": false,
-            "required": ["expose", "url"],
+            "required": ["expose", "host"],
             "type": "object",
             "properties": {
               "backend_url": {
@@ -630,7 +630,7 @@
                 "type": "string"
               },
               "expose": {
-                "description": "Access path for this URL.",
+                "description": "Access path for this route.",
                 "anyOf": [
                   {
                     "type": "string",
@@ -642,14 +642,14 @@
                   }
                 ]
               },
+              "host": {
+                "description": "Hostname routed to this server. Must belong to a managed DNS zone.",
+                "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+                "type": "string"
+              },
               "id": {
                 "description": "Stable route identity. Defaults to the route list index for backward compatibility.",
                 "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
-                "type": "string"
-              },
-              "url": {
-                "description": "Hostname routed to this server. Must belong to a managed DNS zone.",
-                "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
                 "type": "string"
               }
             }

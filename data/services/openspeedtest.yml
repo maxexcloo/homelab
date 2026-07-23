@@ -1,19 +1,12 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${server.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 identity:
   description: Network Speed Test
-  name: openspeedtest
   service: openspeedtest
   title: OpenSpeedTest
 routing:
   backend_port: 30116
-  backend_scheme: http
   labels:
     traefik.http.middlewares.openspeedtest-buffering.buffering.maxrequestbodybytes: 36700160
     traefik.http.routers.openspeedtest.middlewares: internal-only@docker,openspeedtest-buffering@docker

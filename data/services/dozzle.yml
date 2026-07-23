@@ -4,24 +4,17 @@ credentials:
     agent:
       type: x509
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 features:
   oidc_forward_auth: true
 identity:
   description: Container Log Viewer
   group: Infrastructure
-  name: dozzle
   service: dozzle
   title: Dozzle
   username: max@excloo.com
 routing:
   backend_port: 30064
-  backend_scheme: http
 targets:
   au-truenas:
     truenas:

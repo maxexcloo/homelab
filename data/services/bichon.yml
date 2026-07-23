@@ -5,24 +5,17 @@ credentials:
       length: 48
       type: hex
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: sh-${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - icon: sh-${service.identity.service}
 features:
   password: true
 identity:
   description: Email Archiving
   group: Applications
-  name: bichon
   service: bichon
   title: Bichon
   username: max@excloo.com
 routing:
   backend_port: 15630
-  backend_scheme: http
 targets:
   au-truenas:
     truenas:

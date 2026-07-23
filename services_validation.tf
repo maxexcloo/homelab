@@ -43,11 +43,6 @@ locals {
     if length(credential_names) != length(distinct(credential_names))
   ]
 
-  _services_validation_file_key_mismatches = [
-    for service_key, service in local.services_input : "${service_key} -> ${service.identity.name}"
-    if service_key != service.identity.name
-  ]
-
   _services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
     if(
@@ -97,7 +92,7 @@ locals {
 
   _services_validation_proxy_no_port = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.urls : "${service_key} -> ${route.host}"
+      for route in service.routing.routes : "${service_key} -> ${route.host}"
       if(
         route.proxy_server != null &&
         route.backend_port == null
@@ -107,7 +102,7 @@ locals {
 
   _services_validation_proxy_server_missing = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.urls : "${service_key} -> ${route.proxy_server}"
+      for route in service.routing.routes : "${service_key} -> ${route.proxy_server}"
       if(
         route.proxy_server != null &&
         !can(local.servers_model[route.proxy_server])
@@ -117,7 +112,7 @@ locals {
 
   _services_validation_redirects_invalid = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.urls : [
+      for route in service.routing.routes : [
         for redirect in route.redirects : "${service_key} -> ${redirect.host}"
         if(
           redirect.host == route.host ||
@@ -131,7 +126,7 @@ locals {
 
   _services_validation_route_host_entries = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.urls : concat(
+      for route in service.routing.routes : concat(
         route.host != null ? [
           {
             host   = route.host
@@ -157,12 +152,7 @@ locals {
 
   _services_validation_route_ids_not_unique = [
     for service_key, service in local.services_model : service_key
-    if length(service.routing.urls) != length(distinct([for route in service.routing.urls : route.id]))
-  ]
-
-  _services_validation_routes_not_unique = [
-    for service_key, service in local.services_model : service_key
-    if length(compact([for route in service.routing.urls : route.host])) != length(distinct(compact([for route in service.routing.urls : route.host])))
+    if length(service.routing.routes) != length(distinct([for route in service.routing.routes : route.id]))
   ]
 
   _services_validation_server_import_alias_conflicts = flatten([
@@ -174,12 +164,13 @@ locals {
 
   _services_validation_server_routes_missing_traefik = flatten([
     for server_key, server in local.servers_model : [
-      for route in server.routing.urls : "${server_key}.${route.url} -> ${startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key}"
+      for route in server.routing.routes : "${server_key}.${route.host} -> ${startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key}"
       if(
         route.expose != "cloudflare" &&
         !contains(
           [
-            for traefik_service in values(local.services_render_custom_traefik_services) : traefik_service.target
+            for service in values(local.services_model) : service.target
+            if service.identity.name == "traefik"
           ],
           startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key,
         )
@@ -235,11 +226,11 @@ locals {
     )
   ]
 
-  _services_validation_unmanaged_urls = flatten([
+  _services_validation_unmanaged_hosts = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.urls : "${service_key} -> ${route.url}"
+      for route in service.routing.routes : "${service_key} -> ${route.host}"
       if(
-        route.url != null &&
+        route.host_configured &&
         service.target != "fly" &&
         route.expose != "cloudflare" &&
         route.https &&
@@ -273,19 +264,15 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition = length(local._services_validation_file_key_mismatches) == 0
-      error_message = (
-        "Service YAML filenames must match identity.name: ${join(", ", local._services_validation_file_key_mismatches)}"
-      )
-    }
-
-    precondition {
       condition     = length(local._services_validation_fly_ports_missing) == 0
       error_message = "Fly services must have routing.backend_port set: ${join(", ", nonsensitive(local._services_validation_fly_ports_missing))}"
     }
 
     precondition {
-      condition     = !local.services_render_custom_homepage_count_invalid
+      condition = length([
+        for service_key, service in local.services_model : service_key
+        if service.identity.name == "homepage"
+      ]) == 1
       error_message = "Exactly one expanded service with identity.name = homepage is required for the dashboard to render"
     }
 
@@ -350,11 +337,6 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition     = length(local._services_validation_routes_not_unique) == 0
-      error_message = "Service routing hostnames must be unique per target: ${join(", ", local._services_validation_routes_not_unique)}"
-    }
-
-    precondition {
       condition = length(local._services_validation_server_import_alias_conflicts) == 0
       error_message = (
         "Server import aliases must not shadow real server keys: ${join(", ", local._services_validation_server_import_alias_conflicts)}"
@@ -400,9 +382,9 @@ resource "terraform_data" "services_validation" {
 
     # HTTPS service URLs need managed DNS so ACME delegation can resolve.
     precondition {
-      condition = length(local._services_validation_unmanaged_urls) == 0
+      condition = length(local._services_validation_unmanaged_hosts) == 0
       error_message = (
-        "Service routing URLs must be in a managed DNS zone (data/dns/) for ACME delegation: ${join(", ", local._services_validation_unmanaged_urls)}"
+        "Service route hosts must be in a managed DNS zone (data/dns/) for ACME delegation: ${join(", ", local._services_validation_unmanaged_hosts)}"
       )
     }
   }

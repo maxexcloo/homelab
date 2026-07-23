@@ -7,12 +7,7 @@ credentials:
       length: 48
       type: hex
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 data:
   oidc_pkce_enabled: true
   oidc_callback_urls:
@@ -23,13 +18,11 @@ features:
 identity:
   description: Document Management
   group: Applications
-  name: papra
   service: papra
   title: Papra
   username: max@excloo.com
 routing:
   backend_port: 1221
-  backend_scheme: http
 targets:
   au-truenas:
     truenas:

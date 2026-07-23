@@ -34,7 +34,7 @@ locals {
               merge(
                 local.services_render_template_context[service_key],
                 {
-                  compose = local.services_render_write_compose[service_key]
+                  compose = local.services_render_compose[service_key]
                 },
               ),
             ),
@@ -78,7 +78,7 @@ locals {
     },
     {
       for sidecar_key, file_input in local.services_render_sidecar_inputs : "${file_input.target}/${local.services_model[file_input.stack].identity.name}/${file_input.rel_path}" => merge(
-        local.services_render_write_sidecars[sidecar_key],
+        local.services_render_sidecars[sidecar_key],
         {
           age_public_key = age_secret_key.server[file_input.target].public_key
           commit_message = "Update ${file_input.stack} ${file_input.rel_path}"

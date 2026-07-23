@@ -1,7 +1,7 @@
 # Stage: render — expands template strings in server dashboard and data fields.
 locals {
   # Server view with dashboard and data fields rendered via templatestring(). Kept
-  # separate from services_outputs.tf so service templates receive a consistent,
+  # separate from services_runtime.tf so service templates receive a consistent,
   # fully-rendered server object rather than the mid-pipeline runtime value.
   servers_render_servers = {
     for server_key, server in local.servers : server_key => merge(

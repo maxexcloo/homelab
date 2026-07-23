@@ -1,21 +1,14 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: sh-aiostreams
-    siteMonitor: ${service.urls.default.href}
+  - icon: sh-aiostreams
 features:
   password: true
 identity:
   description: Stremio Metadata
   group: Media
-  name: aiometadata
   service: aiometadata
   title: AIOMetadata
 routing:
   backend_port: 3232
-  backend_scheme: http
 targets:
   au-truenas: {}

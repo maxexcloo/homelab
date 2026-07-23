@@ -11,6 +11,13 @@ data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
+data "cloudflare_account_api_token_permission_groups_list" "tunnel_read" {
+  account_id = data.cloudflare_account.default.id
+  max_items  = 1
+  name       = "Cloudflare%20Tunnel%20Read"
+  scope      = "com.cloudflare.api.account"
+}
+
 data "cloudflare_zero_trust_organization" "default" {
   account_id = data.cloudflare_account.default.id
 }
@@ -36,11 +43,6 @@ locals {
         )
       ]
     ]) : jsonencode([item.service_key, item.route.host, item.access_path]) => item
-  }
-
-  _cloudflare_access_idp_ids = {
-    for alias in keys(local.pocketid_cloudflare_access_identity_providers) :
-    alias => cloudflare_zero_trust_access_identity_provider.pocketid[alias].id
   }
 
   # Flatten service rate limiting rules by zone. Each zone gets one
@@ -69,7 +71,7 @@ locals {
   # Stable model-only service route inventory shared by Cloudflare features.
   _cloudflare_service_routes = merge([
     for service_key, service in local.services_model : {
-      for route in service.routing.urls : jsonencode([service_key, route.host]) => {
+      for route in service.routing.routes : jsonencode([service_key, route.host]) => {
         route       = route
         service     = service
         service_key = service_key
@@ -277,7 +279,7 @@ resource "cloudflare_zero_trust_access_application" "all" {
 
   allowed_idps = try(length(each.value.access.allowed_idps) > 0 ? [
     for alias in each.value.access.allowed_idps :
-    local._cloudflare_access_idp_ids[alias]
+    cloudflare_zero_trust_access_identity_provider.pocketid[alias].id
   ] : null, null)
 
   destinations = [
@@ -306,4 +308,7 @@ module "cloudflare_tunnel" {
   account_id = data.cloudflare_account.default.id
   ingress    = local._cloudflare_tunnel_ingress[each.key]
   name       = each.key
+  tunnel_read_permission_group_id = one(
+    data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result,
+  ).id
 }

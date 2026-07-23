@@ -100,7 +100,7 @@ servers:
           source: ::/0
   routing:
     backend_url: ""
-    urls: []
+    routes: []
 services:
   dashboard: []
   data: {}
@@ -122,7 +122,6 @@ services:
   identity:
     description: ""
     group: ""
-    name: ""
     service: null
     title: ""
     username: ""
@@ -138,7 +137,7 @@ services:
     https: true
     https_verify: true
     labels: {}
-    urls: []
+    routes: []
 targets:
   fly:
     app_name: ""

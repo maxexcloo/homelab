@@ -1,4 +1,25 @@
 locals {
+  _dns_model_hosts = distinct(flatten([
+    [
+      for service in values(local.services_input_targets) : [
+        for route in service.routing.routes : route.host
+        if route.host != null
+      ]
+    ],
+    [
+      for service in values(local.services_input_targets) : [
+        for route in service.routing.routes : [
+          for redirect in try(route.redirects, []) : redirect
+        ]
+      ]
+    ],
+    [
+      for server in values(local.servers_input) : [
+        for route in server.routing.routes : route.host
+      ]
+    ],
+  ]))
+
   _dns_model_manual_entries = flatten([
     for zone, records in local.dns_input : [
       for record in records : {
@@ -9,43 +30,22 @@ locals {
     ]
   ])
 
-  _dns_model_urls = distinct(flatten([
-    [
-      for service in values(local.services_input_targets) : [
-        for url in service.routing.urls : url.url
-        if url.url != null
-      ]
-    ],
-    [
-      for service in values(local.services_input_targets) : [
-        for url in service.routing.urls : [
-          for redirect in try(url.redirects, []) : redirect
-        ]
-      ]
-    ],
-    [
-      for server in values(local.servers_input) : [
-        for url in server.routing.urls : url.url
-      ]
-    ],
-  ]))
-
   # Longest matching zone wins for nested domains.
-  _dns_model_zones_matching = {
-    for url in local._dns_model_urls : url => [
+  _dns_model_zones_by_host = {
+    for host in local._dns_model_hosts : host => [
       for zone in keys(local.dns_input) : {
         length = length(zone)
         name   = zone
       }
       if(
-        url == zone ||
-        endswith(url, ".${zone}")
+        host == zone ||
+        endswith(host, ".${zone}")
       )
     ]
   }
 
-  dns_model_managed_zones_by_url = {
-    for url, matches in local._dns_model_zones_matching : url => try(
+  dns_model_managed_zones_by_host = {
+    for host, matches in local._dns_model_zones_by_host : host => try(
       one([for match in matches : match.name if match.length == max(matches[*].length...)]),
       null,
     )
@@ -59,15 +59,15 @@ locals {
   dns_model_routes = merge(
     merge([
       for server_key, server in local.servers_model : {
-        for route in server.routing.urls : "${server_key}-route-${route.id}" => {
+        for route in server.routing.routes : "${server_key}-route-${route.id}" => {
           expose     = route.expose
-          hostname   = route.url
+          hostname   = route.host
           server_key = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key
           source     = "server"
 
-          dns = local.dns_model_managed_zones_by_url[route.url] != null ? {
+          dns = local.dns_model_managed_zones_by_host[route.host] != null ? {
             proxied = route.expose == "cloudflare"
-            zone    = local.dns_model_managed_zones_by_url[route.url]
+            zone    = local.dns_model_managed_zones_by_host[route.host]
 
             content = (
               startswith(route.expose, "proxy-")
@@ -80,7 +80,7 @@ locals {
           tunnel = (
             route.expose == "cloudflare" &&
             server.features.cloudflared &&
-            local.dns_model_managed_zones_by_url[route.url] != null
+            local.dns_model_managed_zones_by_host[route.host] != null
             ) ? {
             server_key = server_key
             url        = route.backend_url
@@ -90,13 +90,13 @@ locals {
     ]...),
     merge([
       for service_key, service in local.services_model : {
-        for route in service.routing.urls : "${service_key}-url-${route.id}" => {
+        for route in service.routing.routes : "${service_key}-url-${route.id}" => {
           expose   = route.expose
           hostname = route.host
           source   = "service"
 
           dns = (
-            route.url != null &&
+            route.host_configured &&
             route.zone != null
             ) ? {
             proxied = route.expose == "cloudflare"
@@ -127,7 +127,7 @@ locals {
     ]...),
     merge(flatten([
       for service_key, service in local.services_model : [
-        for route in service.routing.urls : {
+        for route in service.routing.routes : {
           for redirect in route.redirects : "${service_key}-redirect-${substr(sha1(redirect.host), 0, 12)}" => {
             expose     = redirect.expose
             hostname   = redirect.host

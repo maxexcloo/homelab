@@ -390,7 +390,7 @@
       }
     },
     "dashboard": {
-      "description": "Homepage dashboard cards for this service. Omit or set [] to render no cards. Card objects are passed through to Homepage after template interpolation.",
+      "description": "Homepage dashboard cards for this service. Standard name, description, group, icon, href, and siteMonitor fields default from the service model; card values override them. The icon defaults to identity.service. Omit or set [] to render no cards.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/dashboard"
@@ -445,8 +445,8 @@
     },
     "identity": {
       "additionalProperties": false,
-      "description": "Human-readable identifiers and dashboard metadata for this service.",
-      "required": ["name", "title"],
+      "description": "Human-readable dashboard metadata for this service. The service name is derived from the YAML filename.",
+      "required": ["title"],
       "type": "object",
       "properties": {
         "description": {
@@ -455,11 +455,6 @@
         },
         "group": {
           "description": "Dashboard group. Defaults to the target server description for server-targeted services or Applications when no target server exists.",
-          "type": "string"
-        },
-        "name": {
-          "description": "Short identifier used to build FQDNs and subdomain labels (e.g. 'vaultwarden'). Combined with the target server FQDN: {name}.{server_fqdn}.{domain}.",
-          "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
         "service": {
@@ -508,7 +503,7 @@
     },
     "routing": {
       "additionalProperties": false,
-      "description": "Shared backend configuration and per-URL exposure overrides for this service.",
+      "description": "Shared backend configuration and routes exposed by this service.",
       "type": "object",
       "properties": {
         "backend_port": {
@@ -563,13 +558,13 @@
             ]
           }
         },
-        "urls": {
-          "description": "Additional URL entries that inherit shared routing fields and may override route-specific backend and TLS settings. Services with a backend port or scheme also receive a derived internal URL.",
+        "routes": {
+          "description": "Additional routes that inherit shared routing fields and may override route-specific backend and TLS settings. Services with a backend port or scheme also receive a derived internal route.",
           "type": "array",
           "uniqueItems": true,
           "items": {
             "additionalProperties": false,
-            "required": ["expose", "url"],
+            "required": ["expose", "host"],
             "type": "object",
             "properties": {
               "backend_port": {
@@ -777,7 +772,7 @@
                 "type": "string"
               },
               "expose": {
-                "description": "Access path for this URL.",
+                "description": "Access path for this route.",
                 "anyOf": [
                   {
                     "type": "string",
@@ -788,6 +783,11 @@
                     "pattern": "^proxy-[a-z][a-z0-9-]+$"
                   }
                 ]
+              },
+              "host": {
+                "description": "Custom hostname, or null to derive one from the service and exposure path.",
+                "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+                "type": ["string", "null"]
               },
               "https": {
                 "description": "Override whether the route URL uses HTTPS.",
@@ -811,11 +811,6 @@
                   "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
                   "type": "string"
                 }
-              },
-              "url": {
-                "description": "Custom hostname, or null to derive one from the service and exposure path.",
-                "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
-                "type": ["string", "null"]
               }
             }
           }

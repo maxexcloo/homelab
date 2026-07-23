@@ -19,3 +19,8 @@ variable "name" {
   description = "Server key used for resource naming"
   type        = string
 }
+
+variable "tunnel_read_permission_group_id" {
+  description = "Cloudflare Tunnel Read permission group ID"
+  type        = string
+}

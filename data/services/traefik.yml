@@ -1,22 +1,14 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${server.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
-    widgets:
+  - widgets:
       - type: traefik
         url: ${service.urls.default.href}
 identity:
   description: Reverse Proxy
-  name: traefik
   service: traefik
   title: Traefik
 routing:
   backend_port: 8082
-  backend_scheme: http
   labels:
     traefik.http.middlewares.autocompress.compress: "true"
     traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}

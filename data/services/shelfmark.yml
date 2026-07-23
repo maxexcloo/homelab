@@ -3,12 +3,7 @@ credentials:
   fields:
     hardcover_api_key: {}
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 data:
   aa_mirror_urls: https://annas-archive.pk,https://annas-archive.gd,https://annas-archive.gl
   libgen_mirror_urls: https://libgen.vg,https://libgen.la,https://libgen.bz,https://libgen.gl,https://libgen.li
@@ -21,7 +16,6 @@ features:
 identity:
   description: Book Search & Downloads
   group: Media
-  name: shelfmark
   service: shelfmark
   title: Shelfmark
   username: max@excloo.com
@@ -30,7 +24,6 @@ imports:
     grimmory: grimmory-au-truenas
 routing:
   backend_port: 30260
-  backend_scheme: http
 targets:
   au-truenas:
     truenas:

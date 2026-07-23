@@ -15,7 +15,7 @@ data "http" "onepassword_service_search" {
 locals {
   _onepassword_service_dashboard_urls = {
     for service_key, service in local.services : service_key => values({
-      for card_index, dashboard_card in local.services_render_template_context[service_key].service.dashboard :
+      for card_index, dashboard_card in local.services_render_services[service_key].dashboard :
       "${lower(try(dashboard_card.name, ""))}:${format("%05d", card_index)}" => {
         href    = try(dashboard_card.href, null)
         label   = try(dashboard_card.name, null)

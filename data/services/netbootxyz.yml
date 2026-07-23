@@ -1,20 +1,13 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 identity:
   description: Network Boot Server
   group: Infrastructure
-  name: netbootxyz
   service: netbootxyz
   title: Netboot
 routing:
   backend_port: 31010
-  backend_scheme: http
   container: netboot
 targets:
   au-truenas:

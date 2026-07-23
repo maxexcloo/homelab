@@ -1,7 +1,7 @@
 locals {
   dns_input = {
     for zone_name, zone_files in local.dns_input_source_files_by_zone :
-    zone_name => try(one(zone_files).zone.records, [])
+    zone_name => try(zone_files[0].zone.records, [])
   }
 
   dns_input_source_files = [

@@ -1,10 +1,3 @@
-data "cloudflare_account_api_token_permission_groups_list" "tunnel_read" {
-  account_id = var.account_id
-  max_items  = 1
-  name       = "Cloudflare%20Tunnel%20Read"
-  scope      = "com.cloudflare.api.account"
-}
-
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "tunnel" {
   account_id = var.account_id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.tunnel.id
@@ -21,7 +14,7 @@ resource "cloudflare_account_token" "tunnel_read" {
       effect = "allow"
       permission_groups = [
         {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result).id
+          id = var.tunnel_read_permission_group_id
         }
       ]
       resources = jsonencode({

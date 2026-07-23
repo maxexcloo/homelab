@@ -14,13 +14,7 @@ credentials:
       length: 32
       type: alphanumeric
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
-    widgets:
+  - widgets:
       - type: ${service.identity.service}
         key: ${service.runtime.credentials.homepage_widget_key}
         url: ${service.urls.default.href}
@@ -34,13 +28,11 @@ features:
 identity:
   description: Bookmark Manager
   group: Applications
-  name: linkwarden
   service: linkwarden
   title: Linkwarden
   username: max@excloo.com
 routing:
   backend_port: 30243
-  backend_scheme: http
 targets:
   au-truenas:
     truenas:

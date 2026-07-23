@@ -1,8 +1,20 @@
 # Stage: runtime — merges provider-backed values into servers_model. Never used as for_each key.
 locals {
+  # Static model addresses plus runtime-discovered private and Tailscale IPs.
+  _servers_runtime_addresses = {
+    for server_key, server in local.servers_model : server_key => merge(
+      server.addresses,
+      {
+        private_ipv4   = try(data.unifi_client.server[server_key].fixed_ip, "")
+        tailscale_ipv4 = try(local.tailscale_device_addresses[server_key].ipv4, "")
+        tailscale_ipv6 = try(local.tailscale_device_addresses[server_key].ipv6, "")
+      },
+    )
+  }
+
   # Flat "server_key-credential_name" → generated scalar value table. Nested
   # resource for_each is not supported, so random.tf uses the same compound key.
-  _servers_outputs_credentials_generated = {
+  _servers_runtime_credentials_generated = {
     for credential_key, generator in local.random_server_credentials : credential_key => (
       generator.type == "hex" ? random_id.server_secret[credential_key].hex
       : generator.type == "base64" ? random_id.server_secret[credential_key].b64_std
@@ -10,34 +22,22 @@ locals {
     )
   }
 
-  # Static model addresses plus runtime-discovered private and Tailscale IPs.
-  _servers_outputs_runtime_addresses = {
-    for server_key, server in local.servers_model : server_key => merge(
-      server.addresses,
-      {
-        private_ipv4   = try(local.unifi_clients[server_key].fixed_ip, "")
-        tailscale_ipv4 = try(local.tailscale_device_addresses[server_key].ipv4, "")
-        tailscale_ipv6 = try(local.tailscale_device_addresses[server_key].ipv6, "")
-      },
-    )
-  }
-
   # Static model hostnames plus runtime-discovered private and Tailscale hostnames.
-  _servers_outputs_runtime_hosts = {
+  _servers_runtime_hosts = {
     for server_key, server in local.servers_model : server_key => merge(
       server.hosts,
       {
-        private   = try(local.unifi_clients[server_key].local_dns_record, "")
+        private   = try(data.unifi_client.server[server_key].local_dns_record, "")
         tailscale = try(local.tailscale_device_addresses[server_key].address, "")
       },
     )
   }
 
-  _servers_outputs_runtime_url_sources = {
+  _servers_runtime_url_sources = {
     for server_key, server in local.servers_model : server_key => {
       for url_label, url_value in merge(
-        local._servers_outputs_runtime_hosts[server_key],
-        local._servers_outputs_runtime_addresses[server_key],
+        local._servers_runtime_hosts[server_key],
+        local._servers_runtime_addresses[server_key],
       ) : url_label => url_value
       if(
         url_value != null &&
@@ -47,11 +47,11 @@ locals {
   }
 
   # Addresses are bracket-wrapped when they are IPv6 literals.
-  _servers_outputs_runtime_urls = {
+  _servers_runtime_urls = {
     for server_key, server in local.servers_model : server_key => merge(
       server.urls,
       {
-        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : url_label => {
+        for url_label, url_value in local._servers_runtime_url_sources[server_key] : url_label => {
           label = url_label
 
           href = (
@@ -69,7 +69,7 @@ locals {
         if !can(server.urls[url_label])
       },
       {
-        for url_label, url_value in local._servers_outputs_runtime_url_sources[server_key] : "${url_label}_ssh" => {
+        for url_label, url_value in local._servers_runtime_url_sources[server_key] : "${url_label}_ssh" => {
           label = "${url_label}_ssh"
 
           href = format(
@@ -93,9 +93,9 @@ locals {
       server,
       {
         runtime = {
-          addresses = local._servers_outputs_runtime_addresses[server_key]
-          hosts     = local._servers_outputs_runtime_hosts[server_key]
-          urls      = local._servers_outputs_runtime_urls[server_key]
+          addresses = local._servers_runtime_addresses[server_key]
+          hosts     = local._servers_runtime_hosts[server_key]
+          urls      = local._servers_runtime_urls[server_key]
 
           attributes = merge(
             {
@@ -126,7 +126,7 @@ locals {
             {
               for field_name, field in server.credentials.fields : field_name => sensitive(try(coalesce(
                 try(local.onepassword_server_existing_fields[server_key][field_name], null),
-                try(local._servers_outputs_credentials_generated["${server_key}-${field_name}"], null),
+                try(local._servers_runtime_credentials_generated["${server_key}-${field_name}"], null),
               ), ""))
               if field.mode == "rw"
             },
@@ -164,23 +164,5 @@ locals {
         }
       },
     )
-  }
-}
-
-output "servers" {
-  description = "Server configurations"
-  sensitive   = true
-
-  # Top-level false/null/empty defaults are filtered out to reduce output noise.
-  # Nested objects keep their full schema shape.
-  value = {
-    for server_key, server in local.servers : server_key => {
-      for field_name, field_value in server : field_name => field_value
-      if(
-        field_value != null &&
-        field_value != "" &&
-        field_value != false
-      )
-    }
   }
 }

@@ -5,7 +5,7 @@ locals {
     ]),
     toset([
       for service in values(local._fly_services) : "${service.fly.app_name}/.certs"
-      if length([for route in service.routing.urls : route if route.url != null]) > 0
+      if length([for route in service.routing.routes : route if route.host_configured]) > 0
     ]),
     toset([
       for service in values(local._fly_services) : "${service.fly.app_name}/.machine-count"
@@ -47,8 +47,8 @@ locals {
         )
       }
       if length([
-        for route in service.routing.urls : route
-        if route.url != null
+        for route in service.routing.routes : route
+        if route.host_configured
       ]) > 0
     },
     {
@@ -61,7 +61,7 @@ locals {
     },
     {
       for sidecar_key, file_input in local.services_render_sidecar_inputs : "${local._fly_services[file_input.stack].fly.app_name}/${file_input.rel_path}" => merge(
-        local.services_render_write_sidecars[sidecar_key],
+        local.services_render_sidecars[sidecar_key],
         {
           commit_message = "Update ${file_input.stack} ${file_input.rel_path}"
           file           = "${local._fly_services[file_input.stack].fly.app_name}/${file_input.rel_path}"

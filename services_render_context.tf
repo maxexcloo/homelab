@@ -11,7 +11,10 @@ locals {
       service  = service
 
       servers = merge(
-        local.servers_render_servers,
+        local.servers_model,
+        service.target != "fly" && can(local.servers_render_servers[service.target]) ? {
+          (service.target) = local.servers_render_servers[service.target]
+        } : {},
         {
           for alias, real_key in local.services_model_server_imports[service_key] :
           alias => local.servers_render_servers[real_key]
@@ -30,9 +33,9 @@ locals {
     }
   }
 
-  # Services with data/dashboard/truenas fields rendered via templatestring() and
-  # routing_labels injected. Used as the service value in template contexts and
-  # as service inventory for custom cross-service render helpers.
+  # Services with data/dashboard/truenas fields rendered via templatestring().
+  # Used as the service value in template contexts and as service inventory for
+  # custom cross-service render helpers.
   services_render_services = {
     for service_key, service in local.services : service_key => merge(
       service,
@@ -50,17 +53,15 @@ locals {
           local.services_render_context_base[service_key],
         ),
       ),
-      {
-        routing_labels = local.services_render_routing_labels[service_key]
-      },
     )
   }
 
   # Rendered services with runtime stripped. File templates see adjacent services
   # without credentials unless they are explicitly imported.
-  services_render_services_safe = {
+  services_render_services_inventory = {
     for service_key, service in local.services_render_services : service_key => {
-      for field_name, field_value in service : field_name => field_value if field_name != "runtime"
+      for field_name, field_value in service : field_name => field_value
+      if field_name != "runtime"
     }
   }
 
@@ -70,12 +71,12 @@ locals {
     for service_key, service in local.services : service_key => merge(
       local.services_render_context_base[service_key],
       {
-        custom  = try(local.services_render_custom_context[service_key], {})
+        custom  = {}
         service = local.services_render_services[service_key]
         zones   = keys(local.dns_input)
 
         services = merge(
-          local.services_render_services_safe,
+          local.services_model,
           {
             for alias, real_key in local.services_model_imports[service_key] :
             alias => local.services_render_services[real_key]
@@ -83,6 +84,9 @@ locals {
           },
         )
       },
+      local.services_render_custom_traefik_context[service_key],
+      try(local.services_render_custom_homepage_context[service_key], {}),
+      try(local.services_render_custom_gatus_context[service_key], {}),
     )
   }
 }

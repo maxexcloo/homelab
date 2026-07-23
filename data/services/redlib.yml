@@ -3,12 +3,7 @@ credentials:
   fields:
     ctrld_endpoint: {}
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 data:
   settings:
     default_remove_default_feeds: "on"
@@ -116,7 +111,6 @@ features:
 identity:
   description: Reddit Frontend
   group: Applications
-  name: redlib
   service: redlib
   title: Redlib
 imports:
@@ -124,11 +118,10 @@ imports:
     gatus: gatus-fly
 routing:
   backend_port: 8080
-  backend_scheme: http
   container: ctrld
-  urls:
+  routes:
     - expose: cloudflare
-      url: reddit.excloo.com
+      host: reddit.excloo.com
       cloudflare_waf_rules:
         - action: js_challenge
           expression: '(http.request.full_uri wildcard r"https://reddit.excloo.com/*" and not any(http.request.headers["x-gatus-token"][*] eq "${services.gatus.runtime.credentials.monitoring_token}") and not http.cookie contains "cf_clearance" and not ends_with(http.request.uri.path, ".css") and not ends_with(http.request.uri.path, ".js") and not ends_with(http.request.uri.path, ".woff2") and not ends_with(http.request.uri.path, "favicon.ico") and not ends_with(http.request.uri.path, "manifest.json") and not ends_with(http.request.uri.path, "touch-icon-iphone.png"))'

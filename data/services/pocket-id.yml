@@ -5,28 +5,21 @@ credentials:
       length: 32
       type: base64
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${service.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 features:
   mail: true
   password: true
 identity:
   description: OIDC Provider
   group: Infrastructure
-  name: pocket-id
   service: pocket-id
   title: Excloo ID
   username: max@excloo.com
 routing:
   backend_port: 1411
-  backend_scheme: http
-  urls:
+  routes:
     - expose: cloudflare
-      url: id.excloo.com
+      host: id.excloo.com
 targets:
   au-truenas:
     truenas:

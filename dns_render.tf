@@ -4,10 +4,10 @@ locals {
     for record_key, entries in local.dns_model_manual_entries_by_key :
     record_key => merge(
       local.defaults.dns,
-      one(entries).record,
+      entries[0].record,
       {
-        name = one(entries).record.name == "@" ? one(entries).zone : "${one(entries).record.name}.${one(entries).zone}"
-        zone = one(entries).zone
+        name = entries[0].record.name == "@" ? entries[0].zone : "${entries[0].record.name}.${entries[0].zone}"
+        zone = entries[0].zone
       },
     )
   }

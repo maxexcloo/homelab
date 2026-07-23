@@ -1,5 +1,14 @@
-# Stage: render — Compose template inventory and rendered Compose files.
+# Stage: render — generic Compose template inventory and decoded files.
 locals {
+  services_render_compose_base = {
+    for service_key, compose_input in local.services_render_compose_inputs : service_key => yamldecode(
+      templatefile(
+        compose_input.path,
+        local.services_render_template_context[service_key],
+      )
+    )
+  }
+
   # Compose template inventory selected only from model data and file existence.
   # Docker-fleet stacks stay under doco-cd on bootstrapped hosts; other
   # auto-expanded services are bootstrap-managed there.
@@ -21,35 +30,6 @@ locals {
             service.target_feature != "docker"
           )
         )
-      )
-    )
-  }
-
-  # Compose files with routing labels injected into the primary container's label map.
-  services_render_write_compose = {
-    for service_key, compose in {
-      for service_key, compose_input in local.services_render_compose_inputs : service_key => yamldecode(
-        templatefile(
-          compose_input.path,
-          local.services_render_template_context[service_key],
-        ),
-      )
-      } : service_key => yamlencode(
-      merge(
-        compose,
-        {
-          services = {
-            for compose_service_key, compose_service in compose.services : compose_service_key => merge(
-              compose_service,
-              try(length(local.services_render_services[service_key].routing_labels[compose_service_key]), 0) > 0 ? {
-                labels = merge(
-                  try(compose_service.labels, {}),
-                  local.services_render_services[service_key].routing_labels[compose_service_key],
-                )
-              } : {},
-            )
-          }
-        },
       )
     )
   }

@@ -5,7 +5,7 @@ primary_region = "${service.fly.region}"
 ${service.fly.image != "" ? "image = \"${service.fly.image}\"" : "dockerfile = \"Dockerfile\""}
 
 [http_service]
-force_https = ${alltrue([for route in service.routing.urls : route.https])}
+force_https = ${alltrue([for route in service.routing.routes : route.https])}
 internal_port = ${service.routing.backend_port}
 
 [[vm]]

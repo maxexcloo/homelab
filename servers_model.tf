@@ -1,6 +1,6 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
-  # Credential field shape for each server. Runtime values are added in servers_outputs.tf.
+  # Credential field shape for each server. Runtime values are added in servers_runtime.tf.
   _servers_model_credentials = {
     for server_key, server in local.servers_input : server_key => {
       fields = merge(
@@ -166,14 +166,14 @@ locals {
 
   _servers_model_routes = {
     for server_key, server in local.servers_input : server_key => [
-      for route_index, url in server.routing.urls : merge(
+      for route_index, route in server.routing.routes : merge(
         {
           for field_name, field_value in server.routing : field_name => field_value
-          if field_name != "urls"
+          if field_name != "routes"
         },
-        url,
+        route,
         {
-          id = try(url.id, tostring(route_index))
+          id = try(route.id, tostring(route_index))
         },
       )
     ]
@@ -203,7 +203,7 @@ locals {
         routing = merge(
           server.routing,
           {
-            urls = local._servers_model_routes[server_key]
+            routes = local._servers_model_routes[server_key]
           },
         )
       }

@@ -145,35 +145,35 @@ locals {
 
   _servers_validation_routes_ids_not_unique = [
     for server_key, server in local.servers_model : server_key
-    if length(server.routing.urls) != length(distinct([for route in server.routing.urls : route.id]))
+    if length(server.routing.routes) != length(distinct([for route in server.routing.routes : route.id]))
   ]
 
   _servers_validation_routes_invalid_proxies = flatten([
     for server_key, server in local.servers_input : [
-      for url in server.routing.urls : "${server_key}.${url.url} -> ${trimprefix(url.expose, "proxy-")}"
+      for route in server.routing.routes : "${server_key}.${route.host} -> ${trimprefix(route.expose, "proxy-")}"
       if(
-        startswith(url.expose, "proxy-") &&
-        !can(local.servers_input[trimprefix(url.expose, "proxy-")])
+        startswith(route.expose, "proxy-") &&
+        !can(local.servers_input[trimprefix(route.expose, "proxy-")])
       )
     ]
   ])
 
   _servers_validation_routes_missing_backend = flatten([
     for server_key, server in local.servers_input : [
-      for url in server.routing.urls : "${server_key} -> ${url.url}"
-      if try(url.backend_url, server.routing.backend_url) == ""
+      for route in server.routing.routes : "${server_key} -> ${route.host}"
+      if try(route.backend_url, server.routing.backend_url) == ""
     ]
   ])
 
   _servers_validation_routes_not_unique = [
     for server_key, server in local.servers_input : server_key
-    if length(server.routing.urls) != length(distinct([for url in server.routing.urls : url.url]))
+    if length(server.routing.routes) != length(distinct([for route in server.routing.routes : route.host]))
   ]
 
   _servers_validation_routes_unmanaged = flatten([
     for server_key, server in local.servers_input : [
-      for url in server.routing.urls : "${server_key} -> ${url.url}"
-      if !can(local.dns_model_managed_zones_by_url[url.url])
+      for route in server.routing.routes : "${server_key} -> ${route.host}"
+      if !can(local.dns_model_managed_zones_by_host[route.host])
     ]
   ])
 
@@ -305,17 +305,17 @@ resource "terraform_data" "servers_validation" {
 
     precondition {
       condition     = length(local._servers_validation_routes_missing_backend) == 0
-      error_message = "Server routing URLs require a shared or per-URL backend_url: ${join(", ", nonsensitive(local._servers_validation_routes_missing_backend))}"
+      error_message = "Server routes require a shared or per-route backend_url: ${join(", ", nonsensitive(local._servers_validation_routes_missing_backend))}"
     }
 
     precondition {
       condition     = length(local._servers_validation_routes_not_unique) == 0
-      error_message = "Server routing URLs must be unique per server: ${join(", ", nonsensitive(local._servers_validation_routes_not_unique))}"
+      error_message = "Server route hosts must be unique per server: ${join(", ", nonsensitive(local._servers_validation_routes_not_unique))}"
     }
 
     precondition {
       condition     = length(local._servers_validation_routes_unmanaged) == 0
-      error_message = "Server routing URLs must be in a managed DNS zone (data/dns/): ${join(", ", nonsensitive(local._servers_validation_routes_unmanaged))}"
+      error_message = "Server route hosts must be in a managed DNS zone (data/dns/): ${join(", ", nonsensitive(local._servers_validation_routes_unmanaged))}"
     }
 
     precondition {

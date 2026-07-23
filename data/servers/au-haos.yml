@@ -64,6 +64,6 @@ networking:
   management_port: 443
 routing:
   backend_url: https://homeassistant
-  urls:
+  routes:
     - expose: cloudflare
-      url: home-assistant.excloo.com
+      host: home-assistant.excloo.com

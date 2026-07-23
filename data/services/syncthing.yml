@@ -1,22 +1,15 @@
 # yaml-language-server: $schema=../../schemas/service.json
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${server.identity.group}
-    href: ${service.urls.default.href}
-    icon: ${service.identity.service}
-    siteMonitor: ${service.urls.default.href}
+  - {}
 features:
   password: true
 identity:
   description: File Synchronization
-  name: syncthing
   service: syncthing
   title: Syncthing
   username: max@excloo.com
 routing:
   backend_port: 20910
-  backend_scheme: http
 targets:
   au-truenas:
     truenas:

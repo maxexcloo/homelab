@@ -38,7 +38,7 @@ locals {
       for service_key, service in local._docker_services : "${service.target}/${service.identity.name}/compose.yaml" => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} compose"
-        content_base64 = sensitive(base64encode(local.services_render_write_compose[service_key]))
+        content_base64 = sensitive(base64encode(local.services_render_compose[service_key]))
         content_type   = "yaml"
         encrypt        = true
         file           = "${service.target}/${service.identity.name}/compose.yaml"
@@ -46,7 +46,7 @@ locals {
     },
     {
       for sidecar_key, file_input in local.services_render_sidecar_inputs : "${file_input.target}/${local.services_model[file_input.stack].identity.name}/${file_input.rel_path}" => merge(
-        local.services_render_write_sidecars[sidecar_key],
+        local.services_render_sidecars[sidecar_key],
         {
           age_public_key = age_secret_key.server[file_input.target].public_key
           commit_message = "Update ${file_input.stack} ${file_input.rel_path}"
@@ -74,7 +74,7 @@ locals {
   docker_webhook_servers = {
     for server_key, server in local._docker_servers : server_key => server
     if anytrue([
-      for route in server.routing.urls : route.expose == "cloudflare" && route.url == "doco-cd.${server.hosts.external}"
+      for route in server.routing.routes : route.expose == "cloudflare" && route.host == "doco-cd.${server.hosts.external}"
     ])
   }
 

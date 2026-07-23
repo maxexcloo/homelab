@@ -2,7 +2,6 @@
 target_feature: docker
 identity:
   description: Container Log Agent
-  name: dozzle-agent
   service: dozzle-agent
   title: Dozzle Agent
 imports:

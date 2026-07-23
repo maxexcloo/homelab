@@ -9,6 +9,4 @@ locals {
     for server_key, server in local.servers_model : server_key => server
     if server.networking.mac_address != ""
   }
-
-  unifi_clients = data.unifi_client.server
 }
