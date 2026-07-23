@@ -240,7 +240,7 @@ def volume_container(containers, path, service):
     candidates = []
 
     for container in containers:
-        if container["state"] != "running":
+        if container["state"] not in {"running", "starting"}:
             continue
         for mount in container["volume_mounts"]:
             destination = PurePosixPath(mount["destination"])
