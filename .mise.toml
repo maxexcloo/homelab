@@ -76,9 +76,25 @@ tofu validate
 description = "Apply all changes"
 run = 'tofu apply'
 
+[tasks.apply-servers]
+description = "Apply server module changes"
+run = "tofu apply -target=module.servers"
+
+[tasks.apply-services]
+description = "Apply service module changes"
+run = "tofu apply -target=module.services"
+
 [tasks.plan]
 description = "Plan all changes"
 run = "tofu plan"
+
+[tasks.plan-servers]
+description = "Plan server module changes"
+run = "tofu plan -target=module.servers"
+
+[tasks.plan-services]
+description = "Plan service module changes"
+run = "tofu plan -target=module.services"
 
 # Scripts
 [tasks.render]

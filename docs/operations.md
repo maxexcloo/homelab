@@ -3,19 +3,26 @@
 ## Commands
 
 ```bash
-mise run apply       # Apply infrastructure changes
-mise run check       # Format check, lint, and validate
-mise run fmt         # Format HCL, Python, YAML, schemas, and templates
-mise run hooks       # Install Git hooks with prek
-mise run init        # Initialize OpenTofu providers and backend
-mise run lint        # Validate source and default-merged YAML against JSON schemas
-mise run plan        # Review infrastructure changes
-mise run prek        # Run all repository hooks
-mise run render      # Render plaintext deploy artifacts via debug_dir
-mise run setup       # Initial project setup and Git hook installation
-mise run sort-check  # Check HCL local, JSON Schema, and YAML key ordering
-mise run validate    # Check and validate OpenTofu configuration
+mise run apply           # Apply infrastructure changes
+mise run apply-servers   # Apply server module changes
+mise run apply-services  # Apply service module changes
+mise run check           # Format check, lint, and validate
+mise run fmt             # Format HCL, Python, YAML, schemas, and templates
+mise run hooks           # Install Git hooks with prek
+mise run init            # Initialize OpenTofu providers and backend
+mise run lint            # Validate source and default-merged YAML against JSON schemas
+mise run plan            # Review infrastructure changes
+mise run plan-servers    # Review server module changes
+mise run plan-services   # Review service module changes
+mise run prek            # Run all repository hooks
+mise run render          # Render plaintext deploy artifacts via debug_dir
+mise run setup           # Initial project setup and Git hook installation
+mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
+mise run validate        # Check and validate OpenTofu configuration
 ```
+
+Targeted commands include dependencies required by the selected module. Use the
+full plan when checking for changes outside that module boundary.
 
 ## Adding Servers
 
