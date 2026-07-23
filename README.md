@@ -4,9 +4,8 @@
 [![OpenTofu](https://img.shields.io/badge/OpenTofu-1.x-blue)](https://opentofu.org/)
 [![Status](https://img.shields.io/badge/status-active-success)](https://github.com/maxexcloo/homelab)
 
-Infrastructure as code for homelab management using OpenTofu. YAML files in
-`data/` describe the desired state; OpenTofu provisions resources and renders
-encrypted deployment artifacts.
+OpenTofu manages this homelab from YAML in `data/`. It provisions resources and
+renders encrypted deployment artifacts from the same source data.
 
 ## Quick Start
 
@@ -16,20 +15,26 @@ cd homelab
 
 mise run setup
 mise run init
-
+mise run check
 mise run plan
 mise run apply
 ```
 
+Review the plan before applying it.
+
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev/) for task management and tool installation
-- 1Password Connect server with access to the server and service credential vaults listed in `data/config.yml`
+- 1Password Connect server with access to the server and service credential
+  vaults in `data/config.yml`
 - Terraform Cloud account for state backend
 
-Run `mise run setup` to create `.mise.local.toml` from the template, then fill in credentials for the providers used by the current data files. See `.mise.local.toml.default` for the full list.
+Run `mise run setup` to create `.mise.local.toml` from the template, then add
+credentials for the providers used by the current data. See
+`.mise.local.toml.default` for the full list.
 
-The provider lock file (`.terraform.lock.hcl`) should be committed when provider selections change. The `.terraform/` plugin directory and any plan/state files stay local.
+Commit `.terraform.lock.hcl` when provider selections change. Keep the
+`.terraform/` directory and plan or state files local.
 
 ## Commands
 
@@ -44,12 +49,13 @@ mise run plan        # Review infrastructure changes
 mise run prek        # Run all repository hooks
 mise run render      # Render plaintext deployment artifacts via debug_dir
 mise run setup       # Initial project setup and Git hook installation
-mise run sort-check  # Check YAML and JSON Schema key ordering
+mise run sort-check  # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate    # Check and validate OpenTofu configuration
 ```
 
 ## Documentation
 
+- [AGENTS.md](AGENTS.md) - Repository conventions for coding agents
 - [docs/architecture.md](docs/architecture.md) - Data flow and deployment boundaries
 - [docs/credentials.md](docs/credentials.md) - Credential storage and template access
 - [docs/dashboard.md](docs/dashboard.md) - Homepage card and layout generation
@@ -60,7 +66,6 @@ mise run validate    # Check and validate OpenTofu configuration
 - [docs/servers.md](docs/servers.md) - Server inheritance, hostnames, and runtime values
 - [docs/services.md](docs/services.md) - Service data, targets, routing, and templates
 - [docs/truenas-services.md](docs/truenas-services.md) - TrueNAS catalog service authoring
-- [AGENTS.md](AGENTS.md) - Development guide and standards
 
 ## License
 

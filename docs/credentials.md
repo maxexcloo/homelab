@@ -19,6 +19,10 @@ Manually supplied credential fields are declared under `credentials.fields`.
 OpenTofu creates missing fields on the matching 1Password item, reads values
 back, and exposes them as `runtime.credentials.<name>`.
 
+The 1Password item is built from the complete modeled credential map. Declared
+fields, typed generators, and feature-created provider values are all surfaced;
+there is no service-specific allowlist.
+
 Declared fields default to `credentials.rw` from `data/defaults.yml`.
 Read-write fields are created in 1Password even when empty, so values can be
 entered manually later. Read-only fields are written from provider-generated

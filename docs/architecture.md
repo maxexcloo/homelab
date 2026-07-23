@@ -16,8 +16,8 @@ The root HCL files are organized as staged pipelines:
 5. `*_validation.tf` enforces cross-file and relationship rules with
    `terraform_data` preconditions.
 
-Service-specific cross-service aggregation is isolated in
-`services_render_custom.tf`; the other render stages remain service-agnostic.
+Service-specific cross-service aggregation belongs in
+`services_render_custom.tf`. Other render stages stay service-agnostic.
 
 The model layer is the boundary between input data and provider resources.
 Resource keys and collection membership should come from input/model data, not
@@ -28,7 +28,7 @@ each server route, service route, and redirect a stable key plus its hostname,
 managed zone, public target, serving server, and tunnel origin. Cloudflare and
 Control D derive their provider-specific resources from this shape.
 
-## Model And Runtime Boundaries
+## Model & Runtime Boundaries
 
 Each server and service has two shapes:
 
@@ -54,8 +54,8 @@ models are built. Per-resource YAML should usually contain only overrides.
 
 ## Service Deployment
 
-Services expand into one modeled service per target. Each expanded service may
-render artifacts for one or more deployment paths:
+Services expand into one modeled service per target. Each expanded service
+renders through its target platform:
 
 - Docker services render Compose projects on Docker hosts.
 - Fly services render `fly.toml`, optional cert and scale files, plus sidecars.
@@ -63,8 +63,7 @@ render artifacts for one or more deployment paths:
   Compose when only `docker-compose.yaml.tftpl` exists.
 
 Rendered artifacts are SOPS-encrypted through `modules/github_file_encrypted`
-and pushed to the platform-specific GitHub repositories configured in
-`data/config.yml`.
+and written to the platform repositories configured in `data/config.yml`.
 
 Those deployment repositories are generated outputs, not independent sources
 of truth. Repository-owned files, workflows, and Renovate disablement are also
@@ -86,7 +85,6 @@ credential, service, and server context. Consider splitting only if applies
 become operationally painful, provider credentials need hard isolation, or a
 low-risk service deploy should not share a plan with core infrastructure.
 
-Within this repo, prefer small modules only when they remove real duplication.
-The encryption/write path is already shared by `modules/github_file_encrypted`;
-Docker, Fly, and TrueNAS keep separate root files because their deployment
-request formats and SOPS rules are platform-specific.
+Use a module only when it removes real duplication or defines a stable
+boundary. The encryption/write path is shared, while Docker, Fly, and TrueNAS
+remain separate because their deployment requests and SOPS rules differ.

@@ -18,7 +18,7 @@ service template context. Cards with an empty `name` are ignored.
 
 The Homepage service itself is excluded from generated service cards.
 
-## Sorting And Layout
+## Sorting & Layout
 
 Cards with widgets sort before cards without widgets. Cards then sort by lower
 case name, source key, and card index.

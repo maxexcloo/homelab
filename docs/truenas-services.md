@@ -3,16 +3,16 @@
 Follow this guide when creating or changing a service that deploys through a
 TrueNAS community catalog app.
 
-## Catalog schema
+## Catalog Schema
 
 Look up the app in
 [truenas/apps](https://github.com/truenas/apps/tree/master/trains/community)
 before authoring anything. Read the latest version's `docker-compose.yaml`
 template to identify:
 
-- environment variables injected from `values.{app}.*`;
-- storage keys mounted from `values.storage.*`;
-- values hardcoded by the catalog template.
+- environment variables injected from `values.{app}.*`
+- storage keys mounted from `values.storage.*`
+- values hardcoded by the catalog template
 
 ## Configuration
 
@@ -29,7 +29,7 @@ template to identify:
   renderer escapes them once for Docker Compose; pre-escaping values such as
   bcrypt hashes leaves doubled dollar signs in the final container label.
 
-## Cross-service references
+## Cross-Service References
 
 Declare cross-service references through `imports.services` with a
 `snake_case` alias that points to the expanded `{name}-{target}` key. For
@@ -50,8 +50,7 @@ bracket notation such as `services["key-name"]`.
 
 Follow the catalog template's `add_storage()` calls exactly:
 
-- Use `host_path` when the user supplies a host directory under
-  `/mnt/truenas-nvme/<app>`.
+- Use `host_path` when the user supplies a specific dataset or directory.
 - Use `ix_volume` otherwise.
 - Do not add storage keys the catalog template does not reference.
 - Mount every generated sidecar destination through writable `ix_volume`

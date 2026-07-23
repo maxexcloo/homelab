@@ -91,6 +91,10 @@ must be backed by a writable Docker volume exposed by the catalog or custom app;
 deployment fails rather than writing to a container layer. Changed sidecars are
 followed by an app redeploy so the app reads the new volume content.
 
+The workflow reads the app's reported volume mounts and copies through the
+mounted container path. It does not depend on TrueNAS dataset paths or Docker
+volume names.
+
 Retrieve the copy/paste custom app definition for a server with:
 
 ```bash

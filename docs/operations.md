@@ -33,8 +33,9 @@ mise run validate    # Check and validate OpenTofu configuration
 
 ## Automated Checks
 
-`mise run setup` installs the local prek-managed Git hook. Use `mise run hooks`
-to reinstall it, and `mise run prek` to run the complete suite on demand.
+`mise run setup` installs the local prek-managed Git hook. Use `mise run check`
+for normal source validation and `mise run prek` for the complete hook suite.
+Run `mise run hooks` only when the hook needs reinstalling.
 
 The hook suite checks file hygiene, GitHub Actions, Dockerfiles, concrete Docker
 Compose files, JSON Schemas, Renovate configuration, OpenTofu formatting and
@@ -50,7 +51,7 @@ safe for public pull requests.
 
 Plan and apply remain operator-controlled.
 
-## Intentional Provider Exceptions
+## Intentional Exceptions
 
 - The legacy Cloudflare ACME token remains available for clients, currently
   TrueNAS, that cannot follow delegated ACME CNAME records.

@@ -2,127 +2,161 @@
 
 ## Project Overview
 
-Homelab infrastructure managed with OpenTofu. YAML files in `data/` are the source of truth; OpenTofu reads them, computes derived values, and provisions resources across multiple providers.
+This repository manages homelab infrastructure with OpenTofu. YAML in `data/`
+is the source of truth. OpenTofu validates it, builds deterministic models,
+provisions resources, and renders encrypted deployment artifacts.
 
-Each `server` and `service` has two layers:
+Servers and services have two layers:
 
-- **model**: YAML input plus deterministic computed fields. Safe for `for_each`.
-- **runtime**: provider-backed addresses, attributes, hosts, URLs, and credential values.
+- `model` contains input and deterministic computed values. Use it for resource
+  identity, `for_each`, filters, and validation.
+- `runtime` adds provider-backed values under `addresses`, `attributes`,
+  `credentials`, `hosts`, and `urls`.
 
-Feature filters use model/input data only, so resource addresses never depend on values those resources produce.
+Never derive resource keys or collection membership from runtime or rendered
+values. Those values may be unknown until apply.
 
 ## File Organization
 
-Root HCL files use three patterns:
+- Use `{domain}_{stage}.tf` for staged pipelines, such as `services_model.tf`.
+- Use one root file per provider or utility provider, such as `cloudflare.tf`.
+- Keep backend, locals, outputs, providers, Terraform requirements, and
+  variables in their conventional root files.
+- Put service templates under `templates/services/<identity.service>/`.
+- Omit `identity.service` for inventory-only services with no artifacts.
 
-- **Domain stages**: `{domain}_{layer}.tf`, for example `servers_input.tf`, `services_model.tf`, `dns_render.tf`.
-- **Per-provider files**: one file per provider or utility provider, for example `cloudflare.tf`, `github.tf`, `random.tf`.
-- **Conventional OpenTofu files**: `backend.tf`, `locals.tf`, `outputs.tf`, `providers.tf`, `terraform.tf`, and `variables.tf`.
-
-Per-service templates live under `templates/services/<identity.service>/`. Omit
-`identity.service` for dashboard/inventory-only services.
+Keep root HCL service-agnostic. Put service-specific behaviour in YAML, its
+template directory, or `services_render_custom.tf` when it aggregates services.
 
 ## Sorting Convention
 
-Sort within any object — YAML, HCL, or JSON Schema `properties`:
+Sort object assignments in this order:
 
-- Single-line assignments alphabetical by key, first
-- Multi-line assignments alphabetical by key, after
-- Underscore-prefixed names sort before non-prefixed (`_` = ASCII 95 < `a` = 97)
+1. Single-line values, alphabetically by key.
+2. Multi-line values, alphabetically by key.
 
-A "multi-line" assignment is one whose value spans multiple lines:
+Underscore-prefixed names sort before other names. Apply this to HCL objects and
+argument blocks, YAML mappings, JSON Schema `properties`, environment blocks,
+and template argument objects. A non-empty object is multi-line. A scalar-only
+JSON array sorts as a single-line value even when formatting wraps it; an array
+containing an object or array is multi-line. Apply the same rule inside each
+local's object value.
 
-- `identity = v.identity` is single-line and sorts with the other single-line keys
-- `CONTENT = base64encode(<spans multiple lines>)` is multi-line and sorts after the single-line block
-- Single-line `CONTENT = "value"` sorts alphabetically with the other single-line keys
-- In JSON, scalar-only arrays such as `required` and `enum` sort as single-line values even when Prettier wraps them; arrays containing objects or arrays sort as multi-line values
-
-Applies consistently to:
-
-- `data/` YAML files
-- `schemas/*.json` property lists
-- HCL resource attribute blocks
-- HCL `environment {}` blocks
-- HCL `templatefile()` argument objects
-
-The single-line/multi-line ordering also applies inside each local's object value.
+List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
+use `id`, then `name`. Sort the remaining fields normally.
 
 ## HCL Standards
 
-- **Formatting**: `tofu fmt -recursive` (run via `mise run fmt`)
-- **Top-level ordering**: In mixed HCL files, put data sources before locals, then provisioning blocks, then outputs. Order provisioning blocks by dependency and keep an `import` immediately after its resource. Conventional files such as `providers.tf` and `variables.tf` contain their expected block type.
-- **`for_each`**: Always prefer over `count`; use a named local for filtered/shaped resource/data `for_each` inputs. **Filters that determine map membership (keys) must use only model/input data and file existence checks (`fileexists`)**, never render outputs like `services_render_write_compose` or `services_render_write_sidecars`. Render outputs wrap bootstrapped credential values from `random_id` which are unknown at plan time; when used in a `for_each` filter they make the entire map's keys indeterministic.
-- **Block ordering**: In resource/data/module blocks, put `for_each` and module `source` first (alphabetically), blank line, then sort remaining arguments using the single-line/multi-line convention
-- **Comprehensions**: Use descriptive names (`server_key`, `service`, `record`, `file_path`). Avoid `k`/`v` except in trivial non-nested expressions. Use `for k, v in map` when both key and value are needed; `for v in values(map)` when only the value is needed; `for k in keys(map)` when only the key is needed. Never `for _, v in map` — discard the key with `values(map)` instead. Use `can(map[key])` when testing membership so present nullable values are not mistaken for absent keys.
-- **Helper locals**: Prefer formatting an expression clearly over extracting a helper local used only once. Add a helper only when it represents a meaningful domain concept, avoids real duplication, or makes a complex pipeline materially easier to review.
-- **Locals — naming and ordering**:
-  - `snake_case` for all resources, locals, and variables
-  - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_write_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
-  - Prefix every file-private local with `_`, including locals in per-provider files. Exported locals omit the prefix.
-  - Sort locals alphabetically by their full names. Prefer names that make alphabetical order read naturally as data flow, but alphabetical order and consistency take precedence; HCL resolves dependencies declaratively.
-  - The main output of a stage drops suffixes like `_all`, `_final`, `_merged`, and `_write`: use `dns_render_records`, not `dns_render_records_all`.
-- **Object literals**: Domain, configuration, argument, and list-element objects are multi-line with one key per line. Empty `{}` stays inline. A temporary one-key object inside an expression may stay inline when that is clearer than expanding it. Applies inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes.
-- **Runtime shape**: Runtime values live under `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, `runtime.urls`, and `runtime.credentials`. Use model fields unless the value is provider-backed.
-- **Host and URL shape**: Use server `hosts.*` for hostnames without a scheme. Use service `urls.*.host` for hostnames and `urls.*.href` for full URLs. Use `runtime.addresses.*` for provider-discovered IP addresses. Avoid new scalar `fqdn_*`, `url_*`, or ambiguous `*_address` fields.
-- **Sensitive data**: `sensitive = true` on all outputs containing credentials; credential values live under `runtime.credentials`
-- **Consumer data source**: Use input locals in input/model stages, referential validation, and early cross-domain normalization required to construct a model. Resource keys, filters, and deterministic downstream consumers use `local.servers_model` / `local.services_model`. Consumers that need provider-backed values use `local.servers` / `local.services` only after their address set is fixed.
-- **Defaults**: Put global parameters in `data/config.yml` and fields merged into every server, service, or DNS record in `data/defaults.yml`. Use `try()` / `coalesce()` only when neither default layer can represent the fallback.
-- **Fallbacks and sentinels**:
-  - Prefer normalising optional values once in the input/model layer, then direct field access in render/resource code.
-  - Use `coalesce()` only for nullable values with a guaranteed non-null fallback. For string sentinels where `""` means unset, use an explicit `value != "" ? value : fallback` normalization.
-  - Use `can(map[key])` when relationship membership matters. Use `try(map[key], null)` when retrieving a nullable value across a relationship boundary. Avoid repeating either form in consumers; create a shaped local when the same relationship is reused.
-  - Use `try(map[key], fallback)` for provider-controlled/external maps, optional generated object keys, and default fallback reads. Avoid `lookup()` unless a provider function or schema makes it clearer. Do not contort code into length guards just to avoid `try()`.
-  - Use `try()` when the expression itself is the cleanest way to handle dynamic absence or errors: provider/API/decoded data, parsing probes, empty ordered candidate lists, and other cases defaults cannot prevent.
-  - Use `one()` for true singleton assertions. For ordered “first match, else null” logic, prefer the clearest expression; `try()` around the first-candidate expression is acceptable.
-- **Merge functions**: Use `merge()` for shallow merges of flat objects; use `provider::deepmerge::mergo()` only when nested keys must combine recursively (server/service YAML overrides, config blob composition, JSON catalog overlays)
-- **Multi-condition predicates**: Expand a predicate when it has more than two conditions, mixes `&&` and `||`, or must guard a dependent dereference. Wrap expanded predicates in parentheses and put each condition on its own line with `&&` or `||` at the end. Two short, symmetric conditions using the same operator may stay on one line. `tofu fmt` renders comprehension filters as `if(`; do not fight the formatter for a space. Order broad discriminators first (`platform`, `type`, target/source), then existence guards immediately before dependent dereferences, then specific field/value checks. Sort sibling conditions alphabetically only when that does not weaken readability or guard ordering. Single-condition predicates stay on one line.
-- **Validation**: Use `terraform_data` preconditions for referential integrity checks
+- Format with `mise run fmt`.
+- In mixed files, order data sources, locals, provisioning blocks, then outputs.
+  Keep an `import` next to its resource. Order provisioning blocks by dependency.
+- Always prefer `for_each` over `count`. Use stable logical keys and shape its
+  input in a named local. Membership filters may use model/input data and
+  `fileexists()`, never runtime or rendered values.
+- Put `for_each` and module `source` first in a block, add a blank line, then
+  sort the remaining arguments.
+- Use descriptive comprehension names. Use `values()`, `keys()`, or both
+  variables as needed; do not write `for _, value in map`. Test map membership
+  with `can(map[key])` so a present null value is not treated as absent.
+- Name resources, locals, and variables in `snake_case`. Prefix file-private
+  locals with `_`; exported locals omit it. Staged locals use
+  `{domain}_{stage}_{noun}` where practical. Sort locals alphabetically by full
+  name; choose names that make the resulting order easy to follow.
+- Keep the main stage output concise. Drop temporary suffixes such as `_all`,
+  `_final`, `_merged`, and `_write`.
+- Add a helper local only when it names a useful concept, removes duplication,
+  or makes a complex expression easier to review.
+- Normalize optional values once in the input or model stage, then use direct
+  access in consumers. Prefer defaults when every object needs the same value.
+- Use `coalesce()` only for nullable values with a guaranteed non-null fallback.
+  Normalize empty-string sentinels with an explicit conditional.
+- Use `can(map[key])` for relationship membership and `try(map[key], null)` to
+  retrieve a nullable related value. Shape reused relationships once.
+- Use `try()` for provider/API data, parsing probes, optional generated keys,
+  external maps, and ordered candidates that may be empty. Avoid `lookup()`
+  unless it is clearer than `try()`.
+- Use `one()` for a true singleton, not for first-match selection.
+- Use `merge()` for flat objects and `provider::deepmerge::mergo()` only when
+  nested values must combine.
+- Write domain, configuration, argument, and list-element objects over multiple
+  lines with one key per line, including objects inside `merge()`, `jsonencode()`,
+  and `templatestring()`. Empty objects and clear temporary one-key objects may
+  stay inline.
+- Expand predicates with more than two conditions, mixed operators, or guarded
+  dereferences. Put one condition per line with the operator at the end. Order
+  broad discriminators first and guards immediately before dependent access.
+  Two short symmetric conditions may stay on one line. Accept `tofu fmt`'s
+  `if(` formatting in comprehensions. Sort sibling conditions only when it does
+  not weaken guard order or readability.
+- Use `terraform_data` preconditions for referential validation.
+- Mark every credential-bearing output sensitive. Keep credentials under
+  `runtime.credentials` and expose only the fields consumers need.
 
-### Template authoring
+Use input locals while constructing and validating models. Use model locals for
+stable resource keys, filters, and deterministic consumers. Use runtime locals
+only after the address set is fixed and a provider-backed value is required.
 
-- Always use a leading `~` on control-flow directives (`%{~ if …}`, `%{~ for …}`, `%{~ endif }`) to suppress whitespace before the directive. Add a trailing `~` only when removing the following newline is intentional; careless right trimming can join structured YAML lines.
-- Keep root HCL service-agnostic. Service-specific logic belongs in YAML `data`, per-service templates, or `services_render_custom.tf` for cross-service aggregation.
-- Treat the GitHub deployment repositories as generated outputs. Never edit them directly; manage workflows under `templates/workflows/`, service artifacts in this repository, and repository-owned files through OpenTofu.
-- Use `.tftpl` for files needing template rendering (suffix stripped on deploy); `.raw.tftpl` for binary-encrypted files where SOPS structured encryption is unsuitable (e.g. top-level arrays)
-- Guard `templatefile()` with `fileexists()` when the template may not be present
-
-## YAML Standards
-
-- **Formatting**: Prettier (run via `mise run fmt`)
-- **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, DNS TXT content, values starting with `@`, and strings that look like YAML scalars (numbers, booleans, null) but must stay strings. Email addresses containing `@` do not need quotes. **`truenas.env` values**: do not quote booleans or numbers — the base template's `tostring()` normalizes them to environment variable strings regardless of YAML type. Only quote values that YAML would structurally misparse (leading `:` in scalars, values starting with `{`, `[`, `#`, `%`, `@`, `` ` ``, `&`, `*`, `!`, `|`, `>`).
-- **Defaults are split across two files**, both merged into `local.defaults`:
-  - `data/config.yml` — global parameters shared across resource types
-  - `data/defaults.yml` — field values merged into every server/service/DNS record
-- Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
-- **Descriptions**: Short, title case
-- **Identifier fields first**: In list-item objects, place every present identifier key before all non-identifier keys. When multiple identifier keys are present, order them `type` → `name` → `id`, then sort the remaining keys using the standard single-line/multi-line convention. Applies to DNS records, dashboard cards, widget lists, and all other list-item objects unless a more specific order is documented.
-- **Prek hooks**: Hook objects use `id` → `name` (when overridden) as their identifier order, then sort the remaining keys using the standard single-line/multi-line convention.
-- **Service shape**:
-  - Root keys apply to every target: `credentials`, `dashboard`, `data`, `features`, `identity`, `imports`, `routing`, `target_feature`.
-  - `targets.<key>` may override `credentials`, `data`, `features`, `fly`, and `truenas`.
-  - Put app-owned config in `data` instead of root HCL when possible.
-  - Set `identity.service` only when templates or deploy artifacts exist.
-  - Omit `targets` when `target_feature` supplies every target.
-  - Use `targets.<key>: {}` for a single target with no overrides.
-
-## TrueNAS Services
-
-Before editing a service that deploys through a TrueNAS community catalog app,
-read and follow `docs/truenas-services.md`. That provider-specific guide is
-mandatory for the service YAML and its templates.
+Use server `hosts.*` and service `urls.*.{host,href}` instead of new scalar
+`fqdn_*`, `url_*`, or ambiguous `*_address` fields. Provider-discovered IPs
+belong under `runtime.addresses`.
 
 ## JSON Schema Standards
 
-- `"additionalProperties": false` on closed object types. Pass-through data objects such as `data` and dashboard cards may allow arbitrary JSON-compatible keys.
-- `"type": ["string", "null"]` for optional string fields
-- Feature flag descriptions state what resources are provisioned and what variables are exposed
-- The `if`/`then`/`else` conditional triplet keeps its canonical reading order, exempt from the sorting convention (the `mise run sort-check` linter skips it)
+- Define closed objects with `additionalProperties: false`. Allow open
+  JSON-compatible objects only for deliberate pass-through data.
+- Use `["string", "null"]` for nullable strings.
+- Describe what each feature provisions and which runtime values it exposes.
+- Keep JSON Schema `if`, `then`, `else` in that reading order.
+
+## YAML Standards
+
+- Put global configuration in `data/config.yml` and merged defaults in
+  `data/defaults.yml`. Per-resource YAML should contain overrides only.
+- Keep short descriptions in title case.
+- Avoid quotes unless YAML would change the value or structure. Quote empty
+  strings, DNS TXT content, values starting with `@`, and scalar-looking strings
+  that must remain strings. Email addresses do not need quotes.
+- In `truenas.env`, leave booleans and numbers typed; templates convert them to
+  strings. Quote values with a leading `:` or starting with `{`, `[`, `#`, `%`,
+  `@`, `` ` ``, `&`, `*`, `!`, `|`, or `>`.
+- Root service keys are `credentials`, `dashboard`, `data`, `features`,
+  `identity`, `imports`, `routing`, and `target_feature`. Target entries may
+  override `credentials`, `data`, `features`, `fly`, and `truenas`.
+- Put app-owned configuration in `data`. Set `identity.service` only when the
+  service has templates or deployment artifacts.
+- Omit `targets` when `target_feature` supplies every target. Use
+  `targets.<key>: {}` for one target with no overrides.
+
+## Templates & Deployments
+
+- Start template control directives with `%{~`. Add trailing trim markers only
+  when the following newline should also disappear.
+- Use `.tftpl` for rendered text and `.raw.tftpl` for binary-encrypted content.
+- Guard optional templates with `fileexists()`.
+- Treat deployment repositories as generated output. Change their workflows and
+  files through this repository, never in the generated repository.
+
+## TrueNAS Services
+
+Read and follow `docs/truenas-services.md` before changing a TrueNAS catalog
+service or its templates.
 
 ## General
 
-- **Comments**: Only for non-obvious business logic, kept specific to the code at the call site. General explainers (architecture, data flow, usage) belong in `README.md`; conventions belong here in `AGENTS.md`
-- **Prefer readable over clever**: Don't introduce abstractions, helpers, or cleverness beyond what the task requires
-- **Python ordering**: Sort imports with Ruff. Sort top-level constants, classes, and helper functions alphabetically within their groups; keep `main()` and the execution guard last.
-- **Listing order**: When listing both folders and files (docs file trees, multi-line lint commands, etc.) put folders above files; sort alphabetically within each group
-- **Trailing newlines**: Required in all files
-- **Verification**: `mise run check` is the canonical source validation. Run `mise run prek` for the complete repository hook suite before handoff, and review `mise run plan` before applying HCL or data changes.
+- Prefer plain, direct code over abstraction.
+- Keep comments local and specific. Put architecture and usage explanations in
+  docs instead of code comments.
+- Sort Python imports with Ruff. Sort top-level constants, classes, and helper
+  functions within their groups; keep `main()` and the execution guard last.
+- When a list mixes directories and files, list directories first and sort each
+  group alphabetically.
+- End every file with a newline.
+
+## Verification
+
+- Run `mise run check` once before handoff.
+- Run `mise run prek` when hooks or workflows changed, or when a complete suite
+  is requested.
+- Run `mise run plan` only when requested or immediately before an explicitly
+  approved apply.
+- Never run `mise run apply` without explicit user approval.

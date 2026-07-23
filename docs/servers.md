@@ -3,7 +3,7 @@
 Servers are declared in `data/servers/*.yml`. Defaults from
 `data/defaults.yml` are deep-merged before the model is built.
 
-## Keys And Parents
+## Keys & Parents
 
 Server YAML filenames must match the derived server key:
 
@@ -22,7 +22,7 @@ is self, parent, then grandparent.
 Server dashboard cards are generated automatically when
 `networking.management_port` is set and `dashboard` is null.
 
-## Hosts And URLs
+## Hosts & URLs
 
 The host prefix is:
 

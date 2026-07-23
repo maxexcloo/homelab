@@ -3,9 +3,9 @@
 Services are declared in `data/services/*.yml`. Explicit targets and servers
 selected by `target_feature` each produce an expanded service instance.
 
-Expanded service keys use `service-target`, for example
+Expanded service keys use `<service>-<target>`, for example
 `immich-au-truenas`. Target-level `credentials`, `data`, `features`, `fly`, and
-`truenas` values deep-merge over the service-level values.
+`truenas` values deep-merge over service-level values.
 
 `target_feature` adds every server with the matching feature flag as a target.
 Explicit `targets` entries are merged on top, so they can override automatic

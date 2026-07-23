@@ -6,20 +6,10 @@ config, or select automatic targets.
 Defaults live in `data/defaults.yml`. Server and service YAML files usually
 only set overrides.
 
-## Service Features
-
-- `mail` provisions credentials for the default SMTP provider and exposes the
-  generic `mail_*` runtime values.
-- `monitoring` includes the service in generated monitoring config.
-- `monitoring_alerts` attaches generated monitoring alerts when monitoring is
-  enabled.
-- `object_storage` provisions storage through the default S3-compatible provider
-  and exposes generic `object_storage_*` runtime values.
-- `oidc` provisions a client through the configured identity provider.
-- `password` adds a service password and password hash.
-- `tailscale` provisions a Tailscale auth key.
-
-Target-level `features` deep-merge over service-level features.
+Service-facing names stay provider-neutral. The current implementations are
+Resend for `mail`, Backblaze B2 for `object_storage`, and Pocket ID for `oidc`.
+Changing a default provider should preserve the feature names and runtime
+credential interface.
 
 ## Server Features
 
@@ -41,6 +31,21 @@ Target-level `features` deep-merge over service-level features.
 - `zfs` marks the server for ZFS-related config.
 
 All servers also get read-only `age_secret_key` credentials.
+
+## Service Features
+
+- `mail` provisions credentials for the default SMTP provider and exposes the
+  generic `mail_*` runtime values.
+- `monitoring` includes the service in generated monitoring config.
+- `monitoring_alerts` attaches generated monitoring alerts when monitoring is
+  enabled.
+- `object_storage` provisions storage through the default S3-compatible provider
+  and exposes generic `object_storage_*` runtime values.
+- `oidc` provisions a client through the configured identity provider.
+- `password` adds a service password and password hash.
+- `tailscale` provisions a Tailscale auth key.
+
+Target-level `features` deep-merge over service-level features.
 
 ## Target Selection
 
