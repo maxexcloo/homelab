@@ -45,4 +45,7 @@ routing:
     - expose: internal
       url: photos.excloo.com
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        IMMICH_LOG_FORMAT: json

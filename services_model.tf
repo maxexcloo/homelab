@@ -297,6 +297,10 @@ locals {
     for service_key, service in local.services_model : service_key => service.imports.services
   }
 
+  services_model_server_imports = {
+    for service_key, service in local.services_model : service_key => service.imports.servers
+  }
+
   services_model_x509_credentials = merge({}, [
     for service_key, service in local.services_model : {
       for credential_name, generator in service.credentials.generated :

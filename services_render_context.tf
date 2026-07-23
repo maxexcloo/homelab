@@ -8,8 +8,16 @@ locals {
     for service_key, service in local.services : service_key => {
       defaults = local.defaults
       server   = try(local.servers_render_servers[service.target], null)
-      servers  = local.servers_render_servers
       service  = service
+
+      servers = merge(
+        local.servers_render_servers,
+        {
+          for alias, real_key in local.services_model_server_imports[service_key] :
+          alias => local.servers_render_servers[real_key]
+          if can(local.servers_render_servers[real_key])
+        },
+      )
 
       services = merge(
         local.services_model,

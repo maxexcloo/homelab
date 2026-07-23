@@ -6,6 +6,12 @@ locals {
     # Ephemeral: health checks, ping, and dashboard traffic only
     {
       action = "accept"
+      dst    = ["tag:appliance:*", "tag:router:*", "tag:server:*", "tag:vm:*"]
+      proto  = "icmp"
+      src    = ["tag:ephemeral"]
+    },
+    {
+      action = "accept"
       dst    = ["tag:appliance:80", "tag:appliance:443"]
       src    = ["tag:ephemeral"]
     },
@@ -121,6 +127,14 @@ resource "tailscale_acl" "default" {
     groups = {
       "group:admin" = local.defaults.tailscale.admin_identities
     }
+
+    tests = [
+      {
+        accept = ["tag:appliance:0", "tag:router:0", "tag:server:0", "tag:vm:0"]
+        proto  = "icmp"
+        src    = "tag:ephemeral"
+      },
+    ]
   })
 }
 

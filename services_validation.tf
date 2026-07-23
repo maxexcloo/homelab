@@ -70,6 +70,13 @@ locals {
     ]
   ])
 
+  _services_validation_invalid_server_imports = flatten([
+    for service_key, imports in local.services_model_server_imports : [
+      for import_alias, server_ref in imports : "${service_key}.${import_alias} -> ${server_ref}"
+      if !can(local.servers_model[server_ref])
+    ]
+  ])
+
   _services_validation_invalid_targets = flatten([
     for service_key, service in local.services_input : [
       for target in keys(service.targets) : "${service_key} -> ${target}"
@@ -157,6 +164,13 @@ locals {
     for service_key, service in local.services_model : service_key
     if length(compact([for route in service.routing.urls : route.host])) != length(distinct(compact([for route in service.routing.urls : route.host])))
   ]
+
+  _services_validation_server_import_alias_conflicts = flatten([
+    for service_key, imports in local.services_model_server_imports : [
+      for import_alias, server_ref in imports : "${service_key}.${import_alias} -> ${server_ref}"
+      if can(local.servers_model[import_alias])
+    ]
+  ])
 
   _services_validation_server_routes_missing_traefik = flatten([
     for server_key, server in local.servers_model : [
@@ -290,6 +304,13 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
+      condition = length(local._services_validation_invalid_server_imports) == 0
+      error_message = (
+        "Invalid server imports found in services configuration: ${join(", ", local._services_validation_invalid_server_imports)}"
+      )
+    }
+
+    precondition {
       condition = length(local._services_validation_invalid_targets) == 0
       error_message = (
         "Invalid server references found in services configuration: ${join(", ", local._services_validation_invalid_targets)}"
@@ -331,6 +352,13 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local._services_validation_routes_not_unique) == 0
       error_message = "Service routing hostnames must be unique per target: ${join(", ", local._services_validation_routes_not_unique)}"
+    }
+
+    precondition {
+      condition = length(local._services_validation_server_import_alias_conflicts) == 0
+      error_message = (
+        "Server import aliases must not shadow real server keys: ${join(", ", local._services_validation_server_import_alias_conflicts)}"
+      )
     }
 
     precondition {

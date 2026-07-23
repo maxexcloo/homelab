@@ -8,7 +8,6 @@ locals {
             route.backend_port != null ? merge(
               {
                 "traefik.enable"                                                 = "true"
-                "traefik.http.routers.${route.name}.middlewares"                 = route.expose == "internal" ? "internal-only@docker" : null
                 "traefik.http.routers.${route.name}.rule"                        = route.host != null ? "Host(`${route.host}`)" : null
                 "traefik.http.routers.${route.name}.service"                     = route.name
                 "traefik.http.routers.${route.name}.tls.certresolver"            = route.acme ? "cloudflare" : null
@@ -20,6 +19,14 @@ locals {
                   ? "webinternal" : (
                     route.https ? "websecure" : "web"
                 ))
+                "traefik.http.routers.${route.name}.middlewares" = (
+                  route.expose == "internal" || service.features.oidc_forward_auth
+                  ? join(",", concat(
+                    route.expose == "internal" ? ["internal-only@docker"] : [],
+                    service.features.oidc_forward_auth ? ["oauth2-login@docker", "oauth2-forward-auth@docker"] : [],
+                  ))
+                  : null
+                )
               },
               route.acme ? {
                 "traefik.http.routers.${route.name}-http.entrypoints" = "web"

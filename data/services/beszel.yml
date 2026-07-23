@@ -20,6 +20,7 @@ data:
     - /api/oauth2-redirect
 features:
   mail: true
+  object_storage: true
   oidc: true
   password: true
 identity:

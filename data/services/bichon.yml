@@ -24,4 +24,8 @@ routing:
   backend_port: 15630
   backend_scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        BICHON_CORS_ORIGINS: ${service.urls.default.href}
+        BICHON_PUBLIC_URL: ${service.urls.default.href}

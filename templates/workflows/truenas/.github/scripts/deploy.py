@@ -5,6 +5,8 @@ import subprocess
 import tempfile
 from pathlib import Path, PurePosixPath
 
+IX_VOLUME_ROOT = PurePosixPath("/mnt/.ix-apps/app_mounts")
+
 
 def app_containers(service):
     app = json.loads(output(["midclt", "call", "app.get_instance", service]))
@@ -168,6 +170,16 @@ def managed_relative_paths(target, files):
     }
 
 
+def managed_storage_mount(mount, service):
+    if mount["type"] == "volume":
+        return True
+    if mount["type"] != "bind":
+        return False
+
+    source = PurePosixPath(mount["source"])
+    return source.is_relative_to(IX_VOLUME_ROOT / service)
+
+
 def output(command):
     return subprocess.check_output(command, text=True).strip()
 
@@ -184,9 +196,9 @@ def remove_sidecars(service, sidecars):
     for rel_path in sorted(sidecars):
         validate_sidecar_path(rel_path)
         try:
-            container = volume_container(containers, rel_path)
+            container = volume_container(containers, rel_path, service)
         except RuntimeError:
-            print(f"⚠ {service}:/{rel_path} was not stored in a Docker volume")
+            print(f"⚠ {service}:/{rel_path} was not stored in managed storage")
             continue
         destination = f"/{rel_path}"
         run(["docker", "exec", container, "rm", "-f", destination])
@@ -223,7 +235,7 @@ def validate_sidecar_path(path):
         raise ValueError(f"Invalid managed sidecar path: {path}")
 
 
-def volume_container(containers, path):
+def volume_container(containers, path, service):
     target = PurePosixPath("/") / path
     candidates = []
 
@@ -234,14 +246,14 @@ def volume_container(containers, path):
             destination = PurePosixPath(mount["destination"])
             if (
                 mount["mode"] == "rw"
-                and mount["type"] == "volume"
+                and managed_storage_mount(mount, service)
                 and destination in target.parents
             ):
                 candidates.append((len(destination.parts), container["id"]))
 
     if not candidates:
         raise RuntimeError(
-            f"Managed sidecar /{path} is not backed by a writable Docker volume"
+            f"Managed sidecar /{path} is not backed by writable managed storage"
         )
 
     return max(candidates)[1]
@@ -255,7 +267,7 @@ def write_sidecars(service, target, sidecars):
         if not source.is_file():
             raise FileNotFoundError(f"Managed sidecar not found: {source}")
 
-        container = volume_container(containers, rel_path)
+        container = volume_container(containers, rel_path, service)
         destination = PurePosixPath("/") / rel_path
         run(["docker", "exec", container, "mkdir", "-p", str(destination.parent)])
         run(["docker", "cp", source.as_posix(), f"{container}:{destination}"])

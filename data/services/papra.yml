@@ -1,5 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
+  fields:
+    openrouter_api_key: {}
   generated:
     auth_secret:
       length: 48
@@ -11,7 +13,12 @@ dashboard:
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
+data:
+  oidc_pkce_enabled: true
+  oidc_callback_urls:
+    - /api/auth/oauth2/callback/pocket-id
 features:
+  oidc: true
   password: true
 identity:
   description: Document Management
@@ -24,4 +31,13 @@ routing:
   backend_port: 1221
   backend_scheme: http
 targets:
-  au-truenas: {}
+  au-truenas:
+    truenas:
+      env:
+        AI_DEFAULT_MODEL: openrouter://${defaults.ai.default_model_provider}/${defaults.ai.default_model}
+        AI_IS_ENABLED: true
+        AUTH_PROVIDERS_CUSTOMS: >-
+          [{"clientId":"${service.runtime.credentials.oidc_client_id}","clientSecret":"${service.runtime.credentials.oidc_client_secret}","discoveryUrl":"${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration","pkce":true,"providerId":"pocket-id","providerName":"Excloo ID","scopes":["openid","profile","email"],"type":"oidc"}]
+        AUTO_TAGGING_ENABLED: true
+        AUTO_TAGGING_MODEL: openrouter://${defaults.ai.default_model_provider}/${defaults.ai.default_model}
+        OPENROUTER_API_KEY: ${service.runtime.credentials.openrouter_api_key}

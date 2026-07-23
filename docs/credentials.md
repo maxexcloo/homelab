@@ -103,11 +103,12 @@ Servers also always get read-only `age_secret_key`.
 
 ## Imports
 
-Services can reference another service by declaring an `imports.services` alias.
-Imported services are exposed to templates through the `services` map under the
+Services can reference another server or service by declaring an
+`imports.servers` or `imports.services` alias. Imported dependencies are
+exposed to templates through the matching `servers` or `services` map under the
 declared alias.
 
-Each import value is an explicit expanded service key, for example
+Each service import value is an explicit expanded service key, for example
 `pocket_id: pocket-id-au-truenas`. Keeping aliases separate from target keys
 lets templates use readable references such as `${services.pocket_id...}`
 without making dependency identity depend on target counts.

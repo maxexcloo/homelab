@@ -6,6 +6,9 @@ dashboard:
     href: ${service.urls.default.href}
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
+    widgets:
+      - type: traefik
+        url: ${service.urls.default.href}
 identity:
   description: Reverse Proxy
   name: traefik

@@ -87,9 +87,11 @@ Each TrueNAS server has its own age key. The key is included in its sensitive
 
 The deploy request stores a sorted file list and a hash. The workflow uses the
 file lists to update, add, or remove managed sidecars. A sidecar destination
-must be backed by a writable Docker volume exposed by the catalog or custom app;
-deployment fails rather than writing to a container layer. Changed sidecars are
-followed by an app redeploy so the app reads the new volume content.
+must be backed by writable managed storage exposed by the catalog or custom app:
+either a Docker volume or an app-scoped TrueNAS `ix_volume`. Deployment fails
+rather than writing to a container layer or an arbitrary host-path bind.
+Changed sidecars are followed by an app redeploy so the app reads the new
+volume content.
 
 The workflow reads the app's reported volume mounts and copies through the
 mounted container path. It does not depend on TrueNAS dataset paths or Docker

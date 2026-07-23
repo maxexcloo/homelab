@@ -6,10 +6,10 @@ data "http" "onepassword_service_item" {
 }
 
 data "http" "onepassword_service_search" {
-  for_each = local._onepassword_service_items
+  for_each = local._onepassword_service_searches
 
   request_headers = local.onepassword_connect_request_headers
-  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${each.key}\"")}"
+  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.services.id}/items?filter=${urlencode("title eq \"${each.value.title}\"")}"
 }
 
 locals {
@@ -111,7 +111,7 @@ locals {
       category = "LOGIN"
       id       = local._onepassword_service_existing_ids[service_key]
       tags     = local.defaults.onepassword.vaults.services.tags
-      title    = service_key
+      title    = "${service.identity.title} (${service_key})"
 
       fields = [
         for label in sort(keys(local._onepassword_service_item_fields[service_key])) :
@@ -149,7 +149,15 @@ locals {
   }
 
   _onepassword_service_search_results = {
-    for service_key, item in data.http.onepassword_service_search : service_key => jsondecode(item.response_body)
+    for service_key in keys(local._onepassword_service_items) :
+    service_key => jsondecode(data.http.onepassword_service_search[service_key].response_body)
+  }
+
+  _onepassword_service_searches = {
+    for service_key, service in local._onepassword_service_items : service_key => {
+      service_key = service_key
+      title       = "${service.identity.title} (${service_key})"
+    }
   }
 
   onepassword_service_existing_fields = {
@@ -174,7 +182,17 @@ resource "restapi_object" "onepassword_service" {
   lifecycle {
     precondition {
       condition     = length(local._onepassword_service_duplicate_items) == 0
-      error_message = "Multiple 1Password service items match a stable title: ${join(", ", nonsensitive(local._onepassword_service_duplicate_items))}"
+      error_message = "1Password service item lookup is ambiguous: ${join(", ", nonsensitive(local._onepassword_service_duplicate_items))}"
     }
   }
+}
+
+moved {
+  from = restapi_object.onepassword_service["auth-au-hsp"]
+  to   = restapi_object.onepassword_service["oauth2-proxy-au-hsp"]
+}
+
+moved {
+  from = restapi_object.onepassword_service["auth-au-truenas"]
+  to   = restapi_object.onepassword_service["oauth2-proxy-au-truenas"]
 }

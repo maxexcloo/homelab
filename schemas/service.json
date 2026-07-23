@@ -211,6 +211,10 @@
           "description": "Per-target override. Provision an OIDC client using the configured provider. Exposes runtime.attributes.oidc_issuer_url and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Stored in 1Password.",
           "type": "boolean"
         },
+        "oidc_forward_auth": {
+          "description": "Per-target override. Protect generated Traefik routes with the shared OIDC OAuth2 Proxy login and forward-auth middlewares. Internal routes retain the internal-only middleware first.",
+          "type": "boolean"
+        },
         "password": {
           "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
@@ -425,6 +429,10 @@
           "description": "Provision an OIDC client using the configured provider. Exposes runtime.attributes.oidc_issuer_url and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Configure callback URL paths or absolute URLs in data.oidc_callback_urls, and optional public-client and PKCE behavior in data.oidc_is_public and data.oidc_pkce_enabled. Stored in 1Password.",
           "type": "boolean"
         },
+        "oidc_forward_auth": {
+          "description": "Protect generated Traefik routes with the shared OIDC OAuth2 Proxy login and forward-auth middlewares. Internal routes retain the internal-only middleware first.",
+          "type": "boolean"
+        },
         "password": {
           "description": "Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
           "type": "boolean"
@@ -471,9 +479,20 @@
     },
     "imports": {
       "additionalProperties": false,
-      "description": "Private service dependencies exposed to this service template as services.{alias}.",
+      "description": "Explicit server and service dependencies exposed to this service template under local aliases.",
       "type": "object",
       "properties": {
+        "servers": {
+          "description": "Map of local alias to a server key. Imported servers are exposed to templates as servers.{alias}.",
+          "type": "object",
+          "additionalProperties": {
+            "pattern": "^[a-z0-9][a-z0-9-]*$",
+            "type": "string"
+          },
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
+          }
+        },
         "services": {
           "description": "Map of local alias to an explicit target-expanded service key. Imported services are exposed to templates as services.{alias}.",
           "type": "object",

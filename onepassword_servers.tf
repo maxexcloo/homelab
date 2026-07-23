@@ -8,10 +8,10 @@ data "http" "onepassword_server_item" {
 }
 
 data "http" "onepassword_server_search" {
-  for_each = local.servers_model
+  for_each = local._onepassword_server_searches
 
   request_headers = local.onepassword_connect_request_headers
-  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items?filter=${urlencode("title eq \"${each.key}\"")}"
+  url             = "${var.onepassword_connect_url}/v1/vaults/${local.defaults.onepassword.vaults.servers.id}/items?filter=${urlencode("title eq \"${each.value.title}\"")}"
 }
 
 locals {
@@ -82,7 +82,7 @@ locals {
       category = "LOGIN"
       id       = local._onepassword_server_existing_ids[server_key]
       tags     = local.defaults.onepassword.vaults.servers.tags
-      title    = server_key
+      title    = "${server.identity.title} (${server_key})"
 
       fields = [
         for label in sort(keys(local._onepassword_server_item_fields[server_key])) :
@@ -104,7 +104,15 @@ locals {
   }
 
   _onepassword_server_search_results = {
-    for server_key, item in data.http.onepassword_server_search : server_key => jsondecode(item.response_body)
+    for server_key in keys(local.servers_model) :
+    server_key => jsondecode(data.http.onepassword_server_search[server_key].response_body)
+  }
+
+  _onepassword_server_searches = {
+    for server_key, server in local.servers_model : server_key => {
+      server_key = server_key
+      title      = "${server.identity.title} (${server_key})"
+    }
   }
 
   onepassword_server_existing_fields = {
@@ -129,7 +137,7 @@ resource "restapi_object" "onepassword_server" {
   lifecycle {
     precondition {
       condition     = length(local._onepassword_server_duplicate_items) == 0
-      error_message = "Multiple 1Password server items have the same title: ${join(", ", nonsensitive(local._onepassword_server_duplicate_items))}"
+      error_message = "1Password server item lookup is ambiguous: ${join(", ", nonsensitive(local._onepassword_server_duplicate_items))}"
     }
   }
 }

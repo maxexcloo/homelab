@@ -11,7 +11,7 @@ dashboard:
     icon: ${service.identity.service}
     siteMonitor: ${service.urls.default.href}
 features:
-  password: true
+  oidc_forward_auth: true
 identity:
   description: Container Log Viewer
   group: Infrastructure
@@ -22,10 +22,6 @@ identity:
 routing:
   backend_port: 30064
   backend_scheme: http
-  labels:
-    traefik.http.middlewares.dozzle-auth.basicauth.headerfield: Remote-User
-    traefik.http.middlewares.dozzle-auth.basicauth.users: ${service.identity.username}:${service.runtime.credentials.password_hash}
-    traefik.http.routers.dozzle.middlewares: internal-only@docker,dozzle-auth@docker
 targets:
   au-truenas:
     truenas:

@@ -1,5 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
+  fields:
+    homeassistant_token: {}
   generated:
     monitoring_token:
       length: 32
@@ -23,6 +25,9 @@ identity:
   name: gatus
   service: gatus
   title: Gatus
+imports:
+  servers:
+    homeassistant: au-haos
 routing:
   backend_port: 8080
   backend_scheme: http

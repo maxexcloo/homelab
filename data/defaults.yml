@@ -116,6 +116,7 @@ services:
     monitoring_alerts: true
     object_storage: false
     oidc: false
+    oidc_forward_auth: false
     password: false
     tailscale: false
   identity:
@@ -126,6 +127,7 @@ services:
     title: ""
     username: ""
   imports:
+    servers: {}
     services: {}
   routing:
     backend_port: null

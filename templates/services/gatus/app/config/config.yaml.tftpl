@@ -13,31 +13,52 @@ alerting:
       send-on-resolved: true
       success-threshold: 5
   %{~ endif }
+  homeassistant:
+    token: $${HOMEASSISTANT_TOKEN}
+    url: ${servers.homeassistant.urls.management.href}
+    default-alert:
+      description: ${service.identity.title} Check Failed
+      failure-threshold: 5
+      send-on-resolved: true
+      success-threshold: 5
 endpoints:
+  - group: Connectivity
+    name: Internet DNS
+    url: tcp://1.1.1.1:53
+    alerts:
+      %{~ if service.features.mail }
+      - type: email
+      %{~ endif }
+      - type: homeassistant
+    conditions:
+      - "[CONNECTED] == true"
   %{~ for monitored_service in values(services) }
   %{~ if monitored_service.features.monitoring && monitored_service.routing.backend_scheme != "" }
   %{~ for url_key, url in monitored_service.urls }
   %{~ if url_key != "default" && url.href != null && url.zone != null }
-  - conditions:
-      %{~ if monitored_service.routing.https && monitored_service.routing.https_verify }
-      - "[CERTIFICATE_EXPIRATION] > 48h"
-      %{~ endif }
-      - "[RESPONSE_TIME] < 5000"
-      - "[STATUS] == any(200, 401)"
-    group: " ${url.zone}"
+  - group: " ${url.zone}"
     name: "${monitored_service.identity.title} (${monitored_service.target})"
     url: "${url.href}"
-    %{~ if contains(values(monitored_service.imports.services), service.key) }
-    headers:
-      X-Gatus-Token: $${GATUS_MONITORING_TOKEN}
-    %{~ endif }
-    %{~ if monitored_service.features.monitoring_alerts && service.features.mail }
+    %{~ if monitored_service.features.monitoring_alerts }
     alerts:
+      %{~ if service.features.mail }
       - type: email
+      %{~ endif }
+      - type: homeassistant
     %{~ endif }
     %{~ if monitored_service.routing.https_verify == false }
     client:
       insecure: true
+    %{~ endif }
+    conditions:
+      %{~ if monitored_service.routing.https && monitored_service.routing.https_verify }
+      - "[CERTIFICATE_EXPIRATION] > 168h"
+      %{~ endif }
+      - "[RESPONSE_TIME] < 5000"
+      - "[STATUS] == any(200, 401)"
+    %{~ if contains(values(monitored_service.imports.services), service.key) }
+    headers:
+      X-Gatus-Token: $${GATUS_MONITORING_TOKEN}
     %{~ endif }
   %{~ endif }
   %{~ endfor }
@@ -45,15 +66,18 @@ endpoints:
   %{~ endfor }
   %{~ for server_key, server in servers }
   %{~ if server.features.monitoring }
-  - conditions:
-      - "[CONNECTED] == true"
-    group: "${defaults.server_types[server.type].display_name}"
-    name: "${server_key}"
-    url: "icmp://${server.hosts.internal}"
-    %{~ if server.features.monitoring_alerts && service.features.mail }
+  - group: "Tailscale / ${defaults.server_types[server.type].display_name}"
+    name: "${server.identity.title} (${server_key})"
+    url: "icmp://${server.runtime.addresses.tailscale_ipv4}"
+    %{~ if server.features.monitoring_alerts }
     alerts:
+      %{~ if service.features.mail }
       - type: email
+      %{~ endif }
+      - type: homeassistant
     %{~ endif }
+    conditions:
+      - "[CONNECTED] == true"
   %{~ endif }
   %{~ endfor }
 ui:
