@@ -245,7 +245,7 @@ def volume_container(containers, path, service):
         for mount in container["volume_mounts"]:
             destination = PurePosixPath(mount["destination"])
             if (
-                mount["mode"] == "rw"
+                "ro" not in mount["mode"].split(",")
                 and managed_storage_mount(mount, service)
                 and destination in target.parents
             ):
