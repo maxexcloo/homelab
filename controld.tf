@@ -6,7 +6,7 @@ locals {
     if(
       route.hostname != null &&
       route.server_key != null &&
-      try(local.servers_model[route.server_key].features.tailscale, false)
+      try(module.servers.model.servers[route.server_key].features.tailscale, false)
     )
   }
 
@@ -19,8 +19,8 @@ locals {
 
   _controld_dns_records_runtime = {
     for hostname, record in local._controld_dns_records_model : hostname => {
-      ipv4 = local.servers[record.server_key].runtime.addresses.tailscale_ipv4
-      ipv6 = local.servers[record.server_key].runtime.addresses.tailscale_ipv6
+      ipv4 = module.servers.runtime[record.server_key].runtime.addresses.tailscale_ipv4
+      ipv6 = module.servers.runtime[record.server_key].runtime.addresses.tailscale_ipv6
 
       data = jsonencode(merge(
         {
@@ -28,11 +28,11 @@ locals {
           hostnames = [hostname]
           status    = 1
         },
-        local.servers[record.server_key].runtime.addresses.tailscale_ipv4 != "" ? {
-          via = local.servers[record.server_key].runtime.addresses.tailscale_ipv4
+        module.servers.runtime[record.server_key].runtime.addresses.tailscale_ipv4 != "" ? {
+          via = module.servers.runtime[record.server_key].runtime.addresses.tailscale_ipv4
         } : {},
-        local.servers[record.server_key].runtime.addresses.tailscale_ipv6 != "" ? {
-          via_v6 = local.servers[record.server_key].runtime.addresses.tailscale_ipv6
+        module.servers.runtime[record.server_key].runtime.addresses.tailscale_ipv6 != "" ? {
+          via_v6 = module.servers.runtime[record.server_key].runtime.addresses.tailscale_ipv6
         } : {},
       ))
     }

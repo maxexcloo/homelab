@@ -19,7 +19,7 @@ packages:
 runcmd:
   - set -e
   %{~ if server.features.beszel ~}
-  - curl -fsLS https://get.beszel.dev | sh -s -- -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true
+  - curl -fsLS https://get.beszel.dev | sh -s -- -k '${beszel.public_key}' -p '${beszel.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${beszel.hub_url}' --auto-update true
   %{~ endif ~}
   %{~ if server.features.cloudflared ~}
   - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb

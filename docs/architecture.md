@@ -7,17 +7,18 @@ resources, stores credentials, and renders deployment artifacts.
 
 ## Data Flow
 
-The root HCL files are organized as staged pipelines:
+Each domain module is organized as a staged pipeline:
 
-1. `*_input.tf` loads YAML and applies defaults.
-2. `*_model.tf` computes deterministic fields that are safe for `for_each`.
-3. `*_outputs.tf` overlays provider-backed runtime values and credentials.
-4. `*_render.tf` and platform files render deployment artifacts.
-5. `*_validation.tf` enforces cross-file and relationship rules with
+1. `{domain}_input.tf` loads YAML and applies defaults.
+2. `{domain}_model.tf` computes deterministic fields that are safe for `for_each`.
+3. Runtime files overlay provider-backed values and credentials.
+4. Render files produce bootstrap and deployment artifacts.
+5. `{domain}_validation.tf` enforces cross-file and relationship rules with
    `terraform_data` preconditions.
 
 Service-specific cross-service aggregation belongs in
-`services_render_custom.tf`. Other render stages stay service-agnostic.
+`modules/services/services_render_custom_*.tf`. Other render stages stay
+service-agnostic.
 
 The model layer is the boundary between input data and provider resources.
 Resource keys and collection membership should come from input/model data, not
@@ -88,3 +89,31 @@ low-risk service deploy should not share a plan with core infrastructure.
 Use a module only when it removes real duplication or defines a stable
 boundary. The encryption/write path is shared, while Docker, Fly, and TrueNAS
 remain separate because their deployment requests and SOPS rules differ.
+
+Reusable capability modules own duplicated provider lifecycles:
+
+- `modules/credentials` generates scalar credentials, X.509 material, and
+  password hashes.
+- `modules/object_storage` provisions isolated B2 buckets and application keys.
+- `modules/onepassword` reads and persists generic 1Password Connect items.
+
+`modules/servers` owns server YAML input, deterministic modeling, credentials,
+runtime enrichment, rendered bootstrap content, webhooks, Cloudflare tunnels
+and tokens, and the Incus and OCI compute lifecycle.
+
+`modules/services` owns service YAML input, deterministic modeling, credentials,
+Pocket ID clients, runtime and template rendering, and Docker, Fly, and TrueNAS
+deployment publications.
+
+The root is the composition layer. It loads shared config and DNS data,
+configures providers, and owns only cross-domain DNS, routing, repository,
+Tailscale, tunnel ingress, and access policy. Module outputs create the
+dependency graph directly; there are no fingerprint marker resources or broad
+module-level `depends_on` lists.
+
+The two root calls live in `servers.tf` and `services.tf`. Their contracts are
+kept broad: merged `defaults`, shared DNS data, and provider-facing
+`integrations`; the service module additionally receives the server module's
+model/runtime/render interface. Each module exposes its deterministic model for
+shared root consumers. Default provider configurations inherit from the root,
+while aliased REST providers are passed explicitly.

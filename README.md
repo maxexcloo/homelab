@@ -7,6 +7,11 @@
 OpenTofu manages this homelab from YAML in `data/`. It provisions resources and
 renders encrypted deployment artifacts from the same source data.
 
+The root configuration loads shared configuration and DNS data, then composes
+two domain modules: `modules/servers` owns server modeling, runtime, and
+infrastructure, while `modules/services` owns service modeling, runtime,
+rendering, integrations, and deployment publications.
+
 ## Quick Start
 
 ```bash
@@ -25,8 +30,8 @@ Review the plan before applying it.
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev/) for task management and tool installation
-- 1Password Connect server with access to the server and service credential
-  vaults in `data/config.yml`
+- Optional 1Password Connect server with access to the server and service
+  credential vaults in `data/config.yml`
 - Terraform Cloud account for state backend
 
 Run `mise run setup` to create `.mise.local.toml` from the template, then add

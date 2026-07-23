@@ -40,21 +40,6 @@ resource "github_repository" "deployment" {
   }
 }
 
-resource "github_repository_webhook" "doco_cd" {
-  for_each = local.docker_webhook_servers
-
-  active     = true
-  events     = ["push"]
-  repository = github_repository.deployment["docker"].name
-
-  configuration {
-    content_type = "json"
-    insecure_ssl = false
-    secret       = local.servers[each.key].runtime.credentials.doco_cd_webhook_secret
-    url          = "https://doco-cd.${each.value.hosts.external}/v1/webhook/${each.key}"
-  }
-}
-
 resource "github_repository_file" "readme" {
   for_each = local.defaults.github.deployment_repositories
 

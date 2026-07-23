@@ -1,5 +1,5 @@
 [env]
-# 1Password Connect
+# 1Password Connect (required only when onepassword.enabled is true)
 TF_VAR_onepassword_connect_token = "REPLACE_ME"
 TF_VAR_onepassword_connect_url = "REPLACE_ME"
 
@@ -24,7 +24,7 @@ OCI_USER_OCID = "REPLACE_ME"
 TF_VAR_oci_private_key_base64 = "REPLACE_ME"
 TF_VAR_oci_tenancy_ocid = "REPLACE_ME"
 
-# Pocket ID
+# Pocket ID (required only when pocketid.enabled is true)
 TF_VAR_pocketid_api_token = "REPLACE_ME"
 TF_VAR_pocketid_url = "REPLACE_ME"
 

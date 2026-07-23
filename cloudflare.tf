@@ -70,7 +70,7 @@ locals {
 
   # Stable model-only service route inventory shared by Cloudflare features.
   _cloudflare_service_routes = merge([
-    for service_key, service in local.services_model : {
+    for service_key, service in module.services.model.services : {
       for route in service.routing.routes : jsonencode([service_key, route.host]) => {
         route       = route
         service     = service
@@ -83,7 +83,7 @@ locals {
   # Routes are only added when backed by a managed DNS record. The
   # http_status:503 catch-all is required by Cloudflare Tunnel.
   _cloudflare_tunnel_ingress = {
-    for server_key in keys(local.servers_model_by_feature.cloudflared) : server_key => concat(
+    for server_key in keys(module.servers.model.by_feature.cloudflared) : server_key => concat(
       [
         for route in values(local._cloudflare_routes_tunnel) : merge(
           {
@@ -131,7 +131,7 @@ locals {
         {
           expression = sensitive(templatestring(
             rule.expression,
-            local.services_render_context_base[rule.service_key],
+            nonsensitive(module.services.render.context_base[rule.service_key]),
           ))
         },
       )
@@ -144,71 +144,38 @@ locals {
   }
 }
 
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "server" {
+  for_each = module.servers.model.by_feature.cloudflared
+
+  account_id = data.cloudflare_account.default.id
+  tunnel_id  = module.servers.infrastructure.cloudflare_tunnel_ids[each.key]
+
+  config = {
+    ingress = local._cloudflare_tunnel_ingress[each.key]
+
+    warp_routing = {
+      enabled = false
+    }
+  }
+}
+
 resource "cloudflare_zero_trust_access_identity_provider" "pocketid" {
-  for_each = local.pocketid_cloudflare_access_identity_providers
+  for_each = nonsensitive(module.services.integrations.pocketid.cloudflare_access_identity_providers)
 
   account_id = data.cloudflare_account.default.id
   name       = each.value.display_name
   type       = "oidc"
 
   config = {
-    auth_url         = local.pocketid_discovery.authorization_endpoint
-    certs_url        = local.pocketid_discovery.jwks_uri
-    client_id        = pocketid_client.cloudflare_access[each.key].id
-    client_secret    = pocketid_client.cloudflare_access[each.key].client_secret
+    auth_url         = nonsensitive(module.services.integrations.pocketid.discovery.authorization_endpoint)
+    certs_url        = nonsensitive(module.services.integrations.pocketid.discovery.jwks_uri)
+    client_id        = nonsensitive(module.services.integrations.pocketid.cloudflare_access_clients[each.key].id)
+    client_secret    = module.services.integrations.pocketid.cloudflare_access_clients[each.key].client_secret
     email_claim_name = "email"
     pkce_enabled     = true
     scopes           = ["openid", "profile", "email"]
-    token_url        = local.pocketid_discovery.token_endpoint
+    token_url        = nonsensitive(module.services.integrations.pocketid.discovery.token_endpoint)
   }
-}
-
-import {
-  id = "accounts/${data.cloudflare_account.default.id}/1b295422-1c33-4b28-a94f-8be3a4dffae4"
-  to = cloudflare_zero_trust_access_identity_provider.pocketid["excloo_id"]
-}
-
-resource "cloudflare_account_token" "server_acme" {
-  for_each = local.servers_model_by_feature.cloudflare_acme
-
-  account_id = data.cloudflare_account.default.id
-  name       = each.key
-
-  policies = [
-    {
-      effect = "allow"
-      permission_groups = [
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
-        }
-      ]
-      resources = jsonencode({
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domains.acme].zone_id}" = "*"
-      })
-    }
-  ]
-}
-
-resource "cloudflare_account_token" "server_acme_legacy" {
-  for_each = local.servers_model_by_feature.cloudflare_acme_legacy
-
-  account_id = data.cloudflare_account.default.id
-  name       = "${each.key}-zones"
-
-  policies = [
-    {
-      effect = "allow"
-      permission_groups = [
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
-        }
-      ]
-      resources = jsonencode({
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domains.external].zone_id}" = "*"
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.all[local.defaults.domains.internal].zone_id}" = "*"
-      })
-    }
-  ]
 }
 
 resource "cloudflare_dns_record" "all" {
@@ -294,16 +261,4 @@ resource "cloudflare_zero_trust_access_application" "all" {
       require    = try(policy.require, [])
     }
   ]
-}
-
-module "cloudflare_tunnel" {
-  for_each = local.servers_model_by_feature.cloudflared
-  source   = "./modules/cloudflare_tunnel"
-
-  account_id = data.cloudflare_account.default.id
-  ingress    = local._cloudflare_tunnel_ingress[each.key]
-  name       = each.key
-  tunnel_read_permission_group_id = one(
-    data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result,
-  ).id
 }

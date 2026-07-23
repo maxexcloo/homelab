@@ -151,7 +151,7 @@
     },
     "targets": {
       "additionalProperties": false,
-      "description": "Per-platform defaults merged into each service deployment target during expansion (services_input.tf).",
+      "description": "Per-platform defaults merged into each service deployment target during expansion (modules/services/services_input.tf).",
       "required": ["fly", "truenas"],
       "type": "object",
       "properties": {

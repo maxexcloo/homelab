@@ -19,9 +19,9 @@ dashboard:
           - memory
           - network
 data:
-  hub_url: ${services.beszel.urls.default.href}
-  listen: ${services.beszel.data.agent_listen}
-  public_key: ${services.beszel.data.agent_public_key}
+  hub_url: ${defaults.beszel.hub_url}
+  listen: ${defaults.beszel.listen}
+  public_key: ${defaults.beszel.public_key}
 identity:
   description: Resource Monitoring Agent
   service: beszel-agent

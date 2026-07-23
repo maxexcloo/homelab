@@ -12,15 +12,6 @@ Populate these read-write fields in the existing 1Password service items:
 - `gatus-fly`: `homeassistant_token`
 - `papra-au-truenas`: `openrouter_api_key`
 
-The first migration plan renames 1Password items in place from their current
-stable-ID titles to `Title (stable-id)`. It must retain the existing item IDs
-and resource addresses. The configuration deliberately fails when both titles
-exist, either search returns multiple items, or the combined lookup is
-ambiguous. Remove the legacy-title searches immediately after every item has
-been confirmed under its formatted title. The two OAuth2 Proxy `previous`
-title searches are part of the same one-apply migration and must be removed at
-the same time.
-
 ## Immich
 
 Before restarting Immich, inspect the rendered TrueNAS `app.json` and the

@@ -4,6 +4,7 @@
   "description": "Global configuration shared across all resources. Loaded into local.defaults alongside data/defaults.yml.",
   "required": [
     "ai",
+    "beszel",
     "cloudflare",
     "controld",
     "domains",
@@ -11,6 +12,7 @@
     "networking",
     "onepassword",
     "organization",
+    "pocketid",
     "resend",
     "server_types",
     "system",
@@ -31,6 +33,30 @@
         },
         "default_model_provider": {
           "description": "Default AI provider name for constructing full provider/model paths (e.g. 'deepseek').",
+          "type": "string"
+        }
+      }
+    },
+    "beszel": {
+      "additionalProperties": false,
+      "description": "Beszel agent bootstrap settings shared by managed servers.",
+      "required": ["hub_url", "listen", "public_key"],
+      "type": "object",
+      "properties": {
+        "hub_url": {
+          "description": "Beszel hub URL used by monitoring agents.",
+          "format": "uri",
+          "type": "string"
+        },
+        "listen": {
+          "description": "Beszel agent listen port.",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "public_key": {
+          "description": "Beszel agent SSH public key.",
+          "minLength": 1,
           "type": "string"
         }
       }
@@ -232,10 +258,22 @@
     },
     "onepassword": {
       "additionalProperties": false,
-      "description": "1Password Connect integration settings for storing generated credentials.",
-      "required": ["vaults"],
+      "description": "Optional 1Password Connect integration for preserving and storing generated credentials.",
+      "required": ["enabled"],
       "type": "object",
+      "if": {
+        "required": ["enabled"],
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
       "properties": {
+        "enabled": {
+          "description": "Whether OpenTofu reads and writes credentials through 1Password Connect.",
+          "type": "boolean"
+        },
         "vaults": {
           "additionalProperties": false,
           "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",
@@ -294,6 +332,9 @@
             }
           }
         }
+      },
+      "then": {
+        "required": ["vaults"]
       }
     },
     "organization": {
@@ -316,6 +357,18 @@
           "description": "Organisation short name used in resource display names and identifiers.",
           "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
+        }
+      }
+    },
+    "pocketid": {
+      "additionalProperties": false,
+      "description": "Optional Pocket ID integration for managing OIDC clients.",
+      "required": ["enabled"],
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Whether OpenTofu manages Pocket ID application settings and OIDC clients.",
+          "type": "boolean"
         }
       }
     },

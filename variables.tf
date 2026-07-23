@@ -59,53 +59,67 @@ variable "oci_tenancy_ocid" {
 }
 
 variable "onepassword_connect_token" {
-  description = "1Password Connect API token"
+  default     = null
+  description = "1Password Connect API token. Required when onepassword.enabled is true."
+  nullable    = true
   sensitive   = true
   type        = string
 
   validation {
-    condition     = length(nonsensitive(var.onepassword_connect_token)) > 0
-    error_message = "1Password Connect API token must not be empty."
+    condition     = var.onepassword_connect_token == null || length(nonsensitive(var.onepassword_connect_token)) > 0
+    error_message = "1Password Connect API token must be null or non-empty."
   }
 }
 
 variable "onepassword_connect_url" {
-  description = "1Password Connect API base URL, for example https://onepassword-connect.example.com"
+  default     = null
+  description = "1Password Connect API base URL. Required when onepassword.enabled is true."
+  nullable    = true
   sensitive   = false
   type        = string
 
   validation {
-    error_message = "1Password Connect URL must start with http:// or https:// and must not end with a slash."
+    error_message = "1Password Connect URL must be null or start with http:// or https:// and not end with a slash."
 
     condition = (
-      can(regex("^https?://[^/]+", var.onepassword_connect_url)) &&
-      !endswith(var.onepassword_connect_url, "/")
+      var.onepassword_connect_url == null ||
+      (
+        can(regex("^https?://[^/]+", var.onepassword_connect_url)) &&
+        !endswith(var.onepassword_connect_url, "/")
+      )
     )
   }
 }
 
 variable "pocketid_api_token" {
-  description = "Pocket ID API token used to manage OIDC clients."
+  default     = null
+  description = "Pocket ID API token. Required when pocketid.enabled is true."
+  nullable    = true
   sensitive   = true
   type        = string
 
   validation {
-    condition     = length(nonsensitive(var.pocketid_api_token)) > 0
-    error_message = "Pocket ID API token must not be empty."
+    condition     = var.pocketid_api_token == null || length(nonsensitive(var.pocketid_api_token)) > 0
+    error_message = "Pocket ID API token must be null or non-empty."
   }
 }
 
 variable "pocketid_url" {
-  description = "Pocket ID base URL used to bootstrap the provider and OIDC discovery."
+  default     = null
+  description = "Pocket ID base URL. Required when pocketid.enabled is true."
+  nullable    = true
   sensitive   = false
   type        = string
 
   validation {
-    error_message = "Pocket ID URL must start with http:// or https:// and must not end with a slash."
+    error_message = "Pocket ID URL must be null or start with http:// or https:// and not end with a slash."
 
     condition = (
-      can(regex("^https?://[^/]+", var.pocketid_url)) &&
-      !endswith(var.pocketid_url, "/")
+      var.pocketid_url == null ||
+      (
+        can(regex("^https?://[^/]+", var.pocketid_url)) &&
+        !endswith(var.pocketid_url, "/")
+      )
     )
   }
 }

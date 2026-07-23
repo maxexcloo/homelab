@@ -16,7 +16,7 @@ locals {
   # an explicit hostname in a managed zone.
   _dns_render_records_routing = {
     for route_key, route in local.dns_model_routes : route_key => {
-      content = route.tunnel != null ? "${local.servers[route.tunnel.server_key].runtime.attributes.cloudflare_tunnel_id}.cfargotunnel.com" : route.dns.content
+      content = route.tunnel != null ? "${module.servers.infrastructure.cloudflare_tunnel_ids[route.tunnel.server_key]}.cfargotunnel.com" : route.dns.content
       name    = route.hostname
       proxied = route.dns.proxied
       type    = "CNAME"
@@ -26,7 +26,7 @@ locals {
   }
 
   _dns_render_records_servers = merge([
-    for server_key, server in local.servers_model : merge(
+    for server_key, server in module.servers.model.servers : merge(
       (
         server.platform != "oci" &&
         server.addresses.public_ipv4 != null
@@ -55,7 +55,7 @@ locals {
       } : {},
       server.platform == "oci" ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
-          content  = oci_core_instance.server[server_key].public_ip
+          content  = module.servers.infrastructure.oci_addresses[server_key].public_ipv4
           name     = server.hosts.external
           proxied  = false
           type     = "A"
@@ -63,7 +63,7 @@ locals {
           zone     = local.defaults.domains.external
         }
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
-          content  = one(one(oci_core_instance.server[server_key].create_vnic_details).ipv6address_ipv6subnet_cidr_pair_details).ipv6address
+          content  = module.servers.infrastructure.oci_addresses[server_key].public_ipv6
           name     = server.hosts.external
           proxied  = false
           type     = "AAAA"

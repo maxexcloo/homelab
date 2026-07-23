@@ -13,21 +13,25 @@ credential interface.
 
 ## Server Features
 
-- `beszel` adds Beszel agent credential fields.
-- `bootstrap` renders platform-specific bootstrap artifacts.
+- `beszel` creates a Beszel agent service target, adds agent credential fields,
+  and installs the agent in generated setup artifacts when bootstrap is enabled.
+- `bootstrap` renders platform-specific bootstrap artifacts. TrueNAS servers
+  also receive a `truenas_cd_access_token` credential.
 - `cloudflare_acme` provisions an ACME DNS token for the ACME zone.
 - `cloudflare_acme_legacy` provisions an ACME DNS token for external and
   internal zones.
 - `cloudflared` provisions a Cloudflare tunnel and tunnel credentials.
 - `docker` installs Docker, renders Docker Compose deployments to the Docker
   repo, and installs doco-cd in generated setup artifacts.
+- `dozzle` includes the server in the central Dozzle remote-agent list.
 - `mail` provisions credentials for the default SMTP provider.
 - `monitoring` includes the server in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
 - `object_storage` provisions storage through the default S3-compatible provider.
 - `password` adds a server password and password hash.
-- `tailscale` provisions a Tailscale auth key.
+- `tailscale` provisions a Tailscale auth key and service target, and installs
+  Tailscale in generated setup artifacts when bootstrap is enabled.
 - `zfs` marks the server for ZFS-related config.
 
 All servers also get read-only `age_secret_key` credentials.
@@ -42,6 +46,8 @@ All servers also get read-only `age_secret_key` credentials.
 - `object_storage` provisions storage through the default S3-compatible provider
   and exposes generic `object_storage_*` runtime values.
 - `oidc` provisions a client through the configured identity provider.
+- `oidc_forward_auth` protects generated Traefik routes with the shared OAuth2
+  Proxy login and forward-auth middlewares.
 - `password` adds a service password and password hash.
 - `tailscale` provisions a Tailscale auth key.
 

@@ -648,7 +648,7 @@
                 "type": "string"
               },
               "id": {
-                "description": "Stable route identity. Defaults to the route list index for backward compatibility.",
+                "description": "Stable route identity. Defaults to the route list index when omitted.",
                 "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
                 "type": "string"
               }

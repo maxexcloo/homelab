@@ -63,7 +63,7 @@ sudo chmod 0600 /opt/doco-cd/docker-compose.yaml /opt/doco-cd/sops_age_key.txt
 
 # Commands
 %{~ if server.features.beszel }
-curl -fsLS https://get.beszel.dev | sudo sh -s -- -k '${services["beszel-agent-${server.key}"].data.public_key}' -p '${services["beszel-agent-${server.key}"].data.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${services["beszel-agent-${server.key}"].data.hub_url}' --auto-update true
+curl -fsLS https://get.beszel.dev | sudo sh -s -- -k '${beszel.public_key}' -p '${beszel.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${beszel.hub_url}' --auto-update true
 %{~ endif }
 
 %{~ if server.features.cloudflared }

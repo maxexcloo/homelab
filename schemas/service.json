@@ -798,7 +798,7 @@
                 "type": "boolean"
               },
               "id": {
-                "description": "Stable route identity used for generated DNS and Traefik names. Defaults to the expanded route list index for backward compatibility.",
+                "description": "Stable route identity used for generated DNS and Traefik names. Defaults to the expanded route list index when omitted.",
                 "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
                 "type": "string"
               },

@@ -2,6 +2,10 @@
 ai:
   default_model: deepseek-v4-flash
   default_model_provider: deepseek
+beszel:
+  hub_url: https://beszel.truenas.au.excloo.dev
+  listen: 45876
+  public_key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPkxnKuxsVqSVZVXQ3OGHjZZFMAAclU/xLrEDdwOyRt+
 cloudflare:
   account_name: excloo
   access:
@@ -41,6 +45,7 @@ networking:
       - ::1/128
       - fd7a:115c:a1e0::/48
 onepassword:
+  enabled: true
   vaults:
     servers:
       display_name: Servers
@@ -56,6 +61,8 @@ organization:
   email: max@excloo.com
   managed_comment: OpenTofu Managed
   name: excloo
+pocketid:
+  enabled: true
 resend:
   host: smtp.resend.com
   port: 465
