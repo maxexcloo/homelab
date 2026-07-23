@@ -1,4 +1,9 @@
 locals {
+  dns_input = {
+    for zone_name, zone_files in local.dns_input_source_files_by_zone :
+    zone_name => try(one(zone_files).zone.records, [])
+  }
+
   dns_input_source_files = [
     for file_path in fileset(path.module, "data/dns/*.yml") : {
       file_key = trimsuffix(basename(file_path), ".yml")
@@ -8,11 +13,5 @@ locals {
 
   dns_input_source_files_by_zone = {
     for dns_file in local.dns_input_source_files : dns_file.zone.name => dns_file...
-  }
-
-  # Final DNS input map: zone name -> list of manually declared records.
-  dns_input = {
-    for zone_name, zone_files in local.dns_input_source_files_by_zone :
-    zone_name => try(one(zone_files).zone.records, [])
   }
 }

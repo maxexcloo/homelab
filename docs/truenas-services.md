@@ -54,6 +54,9 @@ Follow the catalog template's `add_storage()` calls exactly:
   `/mnt/truenas-nvme/<app>`.
 - Use `ix_volume` otherwise.
 - Do not add storage keys the catalog template does not reference.
+- Mount every generated sidecar destination through writable `ix_volume`
+  storage. The deployment workflow refuses to copy a sidecar into a container
+  layer.
 
 Follow the existing structures in `templates/services/aiostreams/`,
 `templates/services/beszel/`, and `templates/services/grimmory/` for network

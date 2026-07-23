@@ -1,37 +1,4 @@
 locals {
-  # Docker hosts managed by doco-cd. Each host polls the same deployment repo
-  # with its server key as the doco-cd target.
-  _docker_servers = {
-    for server_key, server in local.servers_model : server_key => server
-    if server.features.docker
-  }
-
-  doco_cd_compose = {
-    for server_key, server in local.servers_render_servers : server_key => templatefile(
-      "${path.module}/templates/doco_cd/docker-compose.yaml.tftpl",
-      {
-        defaults = local.defaults
-        server   = server
-      },
-    )
-    if server.features.docker
-  }
-
-  _docker_services = {
-    for service_key, service in local.services_model : service_key => service
-    if(
-      can(local._docker_servers[service.target]) &&
-      can(local.services_render_compose_inputs[service_key])
-    )
-  }
-
-  docker_webhook_servers = {
-    for server_key, server in local._docker_servers : server_key => server
-    if anytrue([
-      for route in server.routing.urls : route.expose == "cloudflare" && route.url == "doco-cd.${server.hosts.external}"
-    ])
-  }
-
   _docker_render_file_keys = setunion(
     toset([
       for server_key in keys(local._docker_servers) : ".doco-cd.${server_key}.yml"
@@ -90,6 +57,37 @@ locals {
       if can(local._docker_services[file_input.stack])
     }
   )
+
+  _docker_servers = {
+    for server_key, server in local.servers_model : server_key => server
+    if server.features.docker
+  }
+
+  _docker_services = {
+    for service_key, service in local.services_model : service_key => service
+    if(
+      can(local._docker_servers[service.target]) &&
+      can(local.services_render_compose_inputs[service_key])
+    )
+  }
+
+  docker_webhook_servers = {
+    for server_key, server in local._docker_servers : server_key => server
+    if anytrue([
+      for route in server.routing.urls : route.expose == "cloudflare" && route.url == "doco-cd.${server.hosts.external}"
+    ])
+  }
+
+  doco_cd_compose = {
+    for server_key, server in local.servers_render_servers : server_key => templatefile(
+      "${path.module}/templates/doco_cd/docker-compose.yaml.tftpl",
+      {
+        defaults = local.defaults
+        server   = server
+      },
+    )
+    if server.features.docker
+  }
 }
 
 resource "github_repository_file" "docker_sops_config" {

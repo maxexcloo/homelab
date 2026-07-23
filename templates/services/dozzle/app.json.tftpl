@@ -26,12 +26,20 @@
     "storage": {
       "additional_storage": [
         {
+          "mount_path": "/data",
+          "type": "ix_volume",
           "ix_volume_config": {
             "acl_enable": false,
             "dataset_name": "data"
-          },
-          "mount_path": "/data",
-          "type": "ix_volume"
+          }
+        },
+        {
+          "mount_path": "/managed",
+          "type": "ix_volume",
+          "ix_volume_config": {
+            "acl_enable": false,
+            "dataset_name": "managed"
+          }
         }
       ]
     }

@@ -1,17 +1,5 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
-  _services_model_generated_credentials = {
-    for service_key, service in local.services_input_targets : service_key => merge(
-      service.credentials.generated,
-      service.features.password ? {
-        password = {
-          length = 32
-          type   = "alphanumeric"
-        }
-      } : {},
-    )
-  }
-
   # Credential field shape for each service. Runtime values are added in services_outputs.tf.
   _services_model_credentials = {
     for service_key, service in local.services_input_targets : service_key => {
@@ -67,6 +55,18 @@ locals {
   _services_model_fly_app_names = {
     for service_key, service in local.services_input_targets : service_key =>
     service.fly.app_name != "" ? service.fly.app_name : "${local.defaults.organization.name}-${service.identity.name}"
+  }
+
+  _services_model_generated_credentials = {
+    for service_key, service in local.services_input_targets : service_key => merge(
+      service.credentials.generated,
+      service.features.password ? {
+        password = {
+          length = 32
+          type   = "alphanumeric"
+        }
+      } : {},
+    )
   }
 
   _services_model_route_entries = {

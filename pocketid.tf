@@ -5,8 +5,10 @@ data "http" "pocketid_discovery" {
 locals {
   pocketid_cloudflare_access_identity_providers = {
     for alias, identity_provider in local.defaults.cloudflare.access.identity_providers : alias => identity_provider
-    if identity_provider.provider == "pocket_id"
+    if identity_provider.provider == "pocketid"
   }
+
+  pocketid_discovery = jsondecode(data.http.pocketid_discovery.response_body)
 }
 
 resource "pocketid_application_config" "default" {

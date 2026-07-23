@@ -13,43 +13,6 @@ data "http" "onepassword_service_search" {
 }
 
 locals {
-  # Services that get a 1Password item: any with credential material to store.
-  # Dashboard cards and routable URLs alone are not credentials. Iterates
-  # services_model (no runtime) so the search/fetch HTTP calls don't depend on
-  # the resources whose values they read.
-  _onepassword_service_items = {
-    for service_key, service in local.services_model : service_key => service
-    if(
-      service.identity.username != "" ||
-      length(service.credentials.fields) > 0
-    )
-  }
-
-  _onepassword_service_search_results = {
-    for service_key, item in data.http.onepassword_service_search : service_key => jsondecode(item.response_body)
-  }
-
-  _onepassword_service_duplicate_items = [
-    for service_key, items in local._onepassword_service_search_results : service_key
-    if length(items) > 1
-  ]
-
-  _onepassword_service_existing_ids = {
-    for service_key, items in local._onepassword_service_search_results : service_key => length(items) == 1 ? one(items).id : null
-  }
-
-  _onepassword_service_existing_items = {
-    for service_key, item_id in local._onepassword_service_existing_ids : service_key => item_id
-    if item_id != null
-  }
-
-  onepassword_service_existing_fields = {
-    for service_key, item in data.http.onepassword_service_item : service_key => {
-      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
-      if try(field.value != null && field.value != "", false)
-    }
-  }
-
   _onepassword_service_dashboard_urls = {
     for service_key, service in local.services : service_key => values({
       for card_index, dashboard_card in local.services_render_template_context[service_key].service.dashboard :
@@ -64,6 +27,20 @@ locals {
         !contains([for url in values(service.urls) : url.href], try(dashboard_card.href, ""))
       )
     })
+  }
+
+  _onepassword_service_duplicate_items = [
+    for service_key, items in local._onepassword_service_search_results : service_key
+    if length(items) > 1
+  ]
+
+  _onepassword_service_existing_ids = {
+    for service_key, items in local._onepassword_service_search_results : service_key => length(items) == 1 ? one(items).id : null
+  }
+
+  _onepassword_service_existing_items = {
+    for service_key, item_id in local._onepassword_service_existing_ids : service_key => item_id
+    if item_id != null
   }
 
   _onepassword_service_host_urls = {
@@ -161,6 +138,25 @@ locals {
       }
     }
     if can(local._onepassword_service_items[service_key])
+  }
+
+  _onepassword_service_items = {
+    for service_key, service in local.services_model : service_key => service
+    if(
+      service.identity.username != "" ||
+      length(service.credentials.fields) > 0
+    )
+  }
+
+  _onepassword_service_search_results = {
+    for service_key, item in data.http.onepassword_service_search : service_key => jsondecode(item.response_body)
+  }
+
+  onepassword_service_existing_fields = {
+    for service_key, item in data.http.onepassword_service_item : service_key => {
+      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
+      if try(field.value != null && field.value != "", false)
+    }
   }
 }
 

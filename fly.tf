@@ -1,14 +1,4 @@
 locals {
-  # Expanded services whose deployment target is Fly.io.
-  _fly_services = {
-    for service_key, service in local.services_model : service_key => service
-    if(
-      service.target == "fly" &&
-      service.identity.service != null
-    )
-  }
-
-  # File identity is derived only from model data and discovered sidecars.
   _fly_render_file_keys = setunion(
     toset([
       for service in values(local._fly_services) : "${service.fly.app_name}/fly.toml"
@@ -80,6 +70,14 @@ locals {
       if file_input.target == "fly"
     }
   )
+
+  _fly_services = {
+    for service_key, service in local.services_model : service_key => service
+    if(
+      service.target == "fly" &&
+      service.identity.service != null
+    )
+  }
 }
 
 # Shared age key for the Fly deployment repository; per-service files are

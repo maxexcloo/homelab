@@ -24,32 +24,6 @@ data "cloudflare_zone" "all" {
 }
 
 locals {
-  _cloudflare_access_idp_ids = {
-    for alias in keys(local.pocketid_cloudflare_access_identity_providers) :
-    alias => cloudflare_zero_trust_access_identity_provider.pocket_id[alias].id
-  }
-
-  _cloudflare_access_pocketid_discovery = jsondecode(data.http.pocketid_discovery.response_body)
-
-  # Stable model-only service route inventory shared by Cloudflare features.
-  _cloudflare_service_routes = merge([
-    for service_key, service in local.services_model : {
-      for route in service.routing.urls : jsonencode([service_key, route.host]) => {
-        route       = route
-        service     = service
-        service_key = service_key
-      }
-      if route.host != null
-    }
-  ]...)
-
-  cloudflare_routes = {
-    for route_key, route in local.dns_model_routes : route_key => route
-    if route.expose == "cloudflare"
-  }
-
-  # Natural identity separates the mutable display name from the routed
-  # hostname and protected path that uniquely identify an Access application.
   _cloudflare_access_applications = {
     for item in flatten([
       for route_config in values(local._cloudflare_service_routes) : [
@@ -62,6 +36,11 @@ locals {
         )
       ]
     ]) : jsonencode([item.service_key, item.route.host, item.access_path]) => item
+  }
+
+  _cloudflare_access_idp_ids = {
+    for alias in keys(local.pocketid_cloudflare_access_identity_providers) :
+    alias => cloudflare_zero_trust_access_identity_provider.pocketid[alias].id
   }
 
   # Flatten service rate limiting rules by zone. Each zone gets one
@@ -87,23 +66,17 @@ locals {
     if route.tunnel != null
   }
 
-  # Flatten service WAF rules by zone. Each zone gets one cloudflare_ruleset
-  # resource managing the http_request_firewall_custom phase.
-  _cloudflare_waf_rules_model_by_zone = {
-    for rule in flatten([
-      for route_config in values(local._cloudflare_service_routes) : [
-        for rule in try(route_config.route.cloudflare_waf_rules, []) : {
-          action      = rule.action
-          description = try(rule.description, null)
-          enabled     = try(rule.enabled, true)
-          expression  = rule.expression
-          service_key = route_config.service_key
-          zone        = route_config.route.zone
-        }
-      ]
-      if route_config.route.zone != null
-    ]) : rule.zone => rule...
-  }
+  # Stable model-only service route inventory shared by Cloudflare features.
+  _cloudflare_service_routes = merge([
+    for service_key, service in local.services_model : {
+      for route in service.routing.urls : jsonencode([service_key, route.host]) => {
+        route       = route
+        service     = service
+        service_key = service_key
+      }
+      if route.host != null
+    }
+  ]...)
 
   # Routes are only added when backed by a managed DNS record. The
   # http_status:503 catch-all is required by Cloudflare Tunnel.
@@ -131,6 +104,24 @@ locals {
     )
   }
 
+  # Flatten service WAF rules by zone. Each zone gets one cloudflare_ruleset
+  # resource managing the http_request_firewall_custom phase.
+  _cloudflare_waf_rules_model_by_zone = {
+    for rule in flatten([
+      for route_config in values(local._cloudflare_service_routes) : [
+        for rule in try(route_config.route.cloudflare_waf_rules, []) : {
+          action      = rule.action
+          description = try(rule.description, null)
+          enabled     = try(rule.enabled, true)
+          expression  = rule.expression
+          service_key = route_config.service_key
+          zone        = route_config.route.zone
+        }
+      ]
+      if route_config.route.zone != null
+    ]) : rule.zone => rule...
+  }
+
   _cloudflare_waf_rules_runtime_by_zone = {
     for zone, rules in local._cloudflare_waf_rules_model_by_zone : zone => [
       for rule in rules : merge(
@@ -144,9 +135,14 @@ locals {
       )
     ]
   }
+
+  cloudflare_routes = {
+    for route_key, route in local.dns_model_routes : route_key => route
+    if route.expose == "cloudflare"
+  }
 }
 
-resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
+resource "cloudflare_zero_trust_access_identity_provider" "pocketid" {
   for_each = local.pocketid_cloudflare_access_identity_providers
 
   account_id = data.cloudflare_account.default.id
@@ -154,20 +150,25 @@ resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
   type       = "oidc"
 
   config = {
-    auth_url         = local._cloudflare_access_pocketid_discovery.authorization_endpoint
-    certs_url        = local._cloudflare_access_pocketid_discovery.jwks_uri
+    auth_url         = local.pocketid_discovery.authorization_endpoint
+    certs_url        = local.pocketid_discovery.jwks_uri
     client_id        = pocketid_client.cloudflare_access[each.key].id
     client_secret    = pocketid_client.cloudflare_access[each.key].client_secret
     email_claim_name = "email"
     pkce_enabled     = true
     scopes           = ["openid", "profile", "email"]
-    token_url        = local._cloudflare_access_pocketid_discovery.token_endpoint
+    token_url        = local.pocketid_discovery.token_endpoint
   }
 }
 
 import {
   id = "accounts/${data.cloudflare_account.default.id}/1b295422-1c33-4b28-a94f-8be3a4dffae4"
-  to = cloudflare_zero_trust_access_identity_provider.pocket_id["excloo_id"]
+  to = cloudflare_zero_trust_access_identity_provider.pocketid["excloo_id"]
+}
+
+moved {
+  from = cloudflare_zero_trust_access_identity_provider.pocket_id
+  to   = cloudflare_zero_trust_access_identity_provider.pocketid
 }
 
 resource "cloudflare_account_token" "server_acme" {

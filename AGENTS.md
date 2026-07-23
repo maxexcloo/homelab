@@ -59,8 +59,8 @@ The single-line/multi-line ordering also applies inside each local's object valu
   - `snake_case` for all resources, locals, and variables
   - Within a staged file, names follow the `{domain}_{layer}_{noun}` shape (e.g. `services_render_write_compose`) so producers and consumers sort near each other alphabetically and read in data-flow order
   - Prefix every file-private local with `_`, including locals in per-provider files. Exported locals omit the prefix.
-  - Order locals topologically: dependencies before consumers. Sort independent locals within the same dependency layer alphabetically by their full names. Dependency order takes precedence over alphabetical order.
-  - The main output of a stage drops suffixes like `_all`, `_final`, `_merged`, and `_write`: use `dns_render_records`, not `dns_render_records_all`. If that output depends on same-prefix intermediates, keep it at the bottom as a deliberate data-flow exception.
+  - Sort locals alphabetically by their full names. Prefer names that make alphabetical order read naturally as data flow, but alphabetical order and consistency take precedence; HCL resolves dependencies declaratively.
+  - The main output of a stage drops suffixes like `_all`, `_final`, `_merged`, and `_write`: use `dns_render_records`, not `dns_render_records_all`.
 - **Object literals**: Domain, configuration, argument, and list-element objects are multi-line with one key per line. Empty `{}` stays inline. A temporary one-key object inside an expression may stay inline when that is clearer than expanding it. Applies inside `merge()`, `jsonencode()`, `templatestring()`, list elements, and resource attributes.
 - **Runtime shape**: Runtime values live under `runtime.addresses`, `runtime.attributes`, `runtime.hosts`, `runtime.urls`, and `runtime.credentials`. Use model fields unless the value is provider-backed.
 - **Host and URL shape**: Use server `hosts.*` for hostnames without a scheme. Use service `urls.*.host` for hostnames and `urls.*.href` for full URLs. Use `runtime.addresses.*` for provider-discovered IP addresses. Avoid new scalar `fqdn_*`, `url_*`, or ambiguous `*_address` fields.

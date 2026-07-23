@@ -13,19 +13,6 @@ locals {
     udp    = "17"
   }
 
-  # Keep all requested OCI servers visible so validation can report unsupported
-  # types before the provisionable VM subset is selected.
-  oci_servers = {
-    for server_key, server in local.servers_model : server_key => server
-    if server.platform == "oci"
-  }
-
-  # OCI resources in this root manage VM servers only.
-  oci_vms = {
-    for server_key, server in local.oci_servers : server_key => server
-    if server.type == "vm"
-  }
-
   # Explicit names keep rule identity stable when mutable fields or list order change.
   _oci_vms_ingress_rules = merge([
     for vm_key, vm in local.oci_vms : {
@@ -44,6 +31,19 @@ locals {
   _oci_vms_regions = toset([
     for vm in values(local.oci_vms) : vm.identity.region
   ])
+
+  # Keep all requested OCI servers visible so validation can report unsupported
+  # types before the provisionable VM subset is selected.
+  oci_servers = {
+    for server_key, server in local.servers_model : server_key => server
+    if server.platform == "oci"
+  }
+
+  # OCI resources in this root manage VM servers only.
+  oci_vms = {
+    for server_key, server in local.oci_servers : server_key => server
+    if server.type == "vm"
+  }
 }
 
 resource "oci_core_default_dhcp_options" "default" {

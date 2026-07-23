@@ -31,8 +31,10 @@ targets:
     truenas:
       env:
         DOZZLE_AUTH_PROVIDER: forward-proxy
+        DOZZLE_CERT: /managed/dozzle_cert.pem
         DOZZLE_ENABLE_ACTIONS: true
         DOZZLE_ENABLE_MCP: true
         DOZZLE_ENABLE_SHELL: true
         DOZZLE_HOSTNAME: ${server.key}
+        DOZZLE_KEY: /managed/dozzle_key.pem
         DOZZLE_NO_ANALYTICS: true

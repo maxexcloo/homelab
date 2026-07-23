@@ -6,6 +6,11 @@ import tempfile
 from pathlib import Path, PurePosixPath
 
 
+def app_containers(service):
+    app = json.loads(output(["midclt", "call", "app.get_instance", service]))
+    return app["active_workloads"]["container_details"]
+
+
 def app_exists(service):
     return (
         subprocess.run(
@@ -81,7 +86,6 @@ def deploy_services():
     for target_path in json.loads(os.environ["TARGET_PATHS"]):
         target = Path(target_path)
         service = target.name
-        service_changed = False
         print(f"Deploying {service}")
 
         current_managed = managed_relative_paths(
@@ -92,6 +96,11 @@ def deploy_services():
             target,
             previous_managed_files.get(target_path, []),
         )
+        removed_sidecars = sidecar_paths(previous_managed) - sidecar_paths(
+            current_managed
+        )
+        if removed_sidecars and app_exists(service):
+            remove_sidecars(service, removed_sidecars)
 
         app_file = target / "app.json"
         if "app.json" in current_managed:
@@ -101,7 +110,6 @@ def deploy_services():
                 )
             previous_app = load_previous_json(f"{target_path}/app.json")
             deploy_catalog_service(service, app_file, previous_app)
-            service_changed = True
 
         compose_file = target / "compose.json"
         if "compose.json" in current_managed:
@@ -110,74 +118,15 @@ def deploy_services():
                     f"Managed compose configuration not found: {compose_file}"
                 )
             deploy_custom_service(service, compose_file)
-            service_changed = True
 
         current_sidecars = sidecar_paths(current_managed)
-        previous_sidecars = sidecar_paths(previous_managed)
-
-        containers = docker_containers()
-        for rel_path in sorted(previous_sidecars - current_sidecars):
-            validate_sidecar_path(rel_path)
-            container_service = sidecar_container_service(rel_path, service)
-            container = find_container(containers, service, container_service)
-
-            if container:
-                run(["docker", "exec", container, "rm", "-f", f"/{rel_path}"])
-                service_changed = True
-                print(f"✓ {container}:/{rel_path} removed")
-            else:
-                print(f"⚠ no container found to remove /{rel_path} from {service}")
-
-        for rel_path in sorted(current_sidecars):
-            validate_sidecar_path(rel_path)
-            path = target / rel_path
-            if not path.is_file():
-                raise FileNotFoundError(f"Managed sidecar not found: {path}")
-
-            container_service = sidecar_container_service(rel_path, service)
-            container = find_container(containers, service, container_service)
-
-            if container:
-                parent = PurePosixPath(rel_path).parent.as_posix()
-                if parent != ".":
-                    run(
-                        [
-                            "docker",
-                            "exec",
-                            container,
-                            "mkdir",
-                            "-p",
-                            f"/{parent}",
-                        ]
-                    )
-                run(["docker", "cp", path.as_posix(), f"{container}:/{rel_path}"])
-                service_changed = True
-                print(f"✓ {container}:/{rel_path}")
-            else:
-                print(
-                    f"⚠ no container found matching ix-{service}-{container_service}-* or ix-{service}-{service}-*"
-                )
-
-        if service_changed:
-            restart_service_containers(service)
-
-
-def docker_containers():
-    names = output(["docker", "ps", "--format", "{{.Names}}"])
-    return [name for name in names.splitlines() if name]
-
-
-def find_container(containers, service, container_service):
-    candidates = [f"ix-{service}-{container_service}-"]
-    if container_service != service:
-        candidates.append(f"ix-{service}-{service}-")
-
-    for candidate in candidates:
-        for container in containers:
-            if container.startswith(candidate):
-                return container
-
-    return None
+        if current_sidecars:
+            write_sidecars(service, target, current_sidecars)
+            run(
+                ["midclt", "call", "-j", "app.redeploy", service],
+                stdout=subprocess.DEVNULL,
+            )
+            print(f"✓ {service} redeployed")
 
 
 def load_previous_json(path):
@@ -230,6 +179,20 @@ def reconcile_values(current, previous, desired):
     return deep_merge(reconciled, desired)
 
 
+def remove_sidecars(service, sidecars):
+    containers = app_containers(service)
+    for rel_path in sorted(sidecars):
+        validate_sidecar_path(rel_path)
+        try:
+            container = volume_container(containers, rel_path)
+        except RuntimeError:
+            print(f"⚠ {service}:/{rel_path} was not stored in a Docker volume")
+            continue
+        destination = f"/{rel_path}"
+        run(["docker", "exec", container, "rm", "-f", destination])
+        print(f"✓ {service}:{destination} removed")
+
+
 def remove_stale_owned(current, previous, desired):
     for key, previous_value in previous.items():
         if key not in desired:
@@ -246,28 +209,8 @@ def remove_stale_owned(current, previous, desired):
                 remove_stale_owned(current_value, previous_value, desired[key])
 
 
-def restart_service_containers(service):
-    matching = [
-        container
-        for container in docker_containers()
-        if container.startswith(f"ix-{service}-")
-    ]
-    if not matching:
-        print(f"⚠ no running containers found matching ix-{service}-*")
-        return
-
-    for container in matching:
-        run(["docker", "restart", container], stdout=subprocess.DEVNULL)
-        print(f"✓ {container} restarted")
-
-
 def run(command, **kwargs):
     return subprocess.run(command, check=True, text=True, **kwargs)
-
-
-def sidecar_container_service(path, service):
-    parts = PurePosixPath(path).parts
-    return parts[0] if len(parts) > 1 else service
 
 
 def sidecar_paths(paths):
@@ -278,6 +221,45 @@ def validate_sidecar_path(path):
     parsed = PurePosixPath(path)
     if parsed.is_absolute() or ".." in parsed.parts:
         raise ValueError(f"Invalid managed sidecar path: {path}")
+
+
+def volume_container(containers, path):
+    target = PurePosixPath("/") / path
+    candidates = []
+
+    for container in containers:
+        if container["state"] != "running":
+            continue
+        for mount in container["volume_mounts"]:
+            destination = PurePosixPath(mount["destination"])
+            if (
+                mount["mode"] == "rw"
+                and mount["type"] == "volume"
+                and destination in target.parents
+            ):
+                candidates.append((len(destination.parts), container["id"]))
+
+    if not candidates:
+        raise RuntimeError(
+            f"Managed sidecar /{path} is not backed by a writable Docker volume"
+        )
+
+    return max(candidates)[1]
+
+
+def write_sidecars(service, target, sidecars):
+    containers = app_containers(service)
+    for rel_path in sorted(sidecars):
+        validate_sidecar_path(rel_path)
+        source = target / rel_path
+        if not source.is_file():
+            raise FileNotFoundError(f"Managed sidecar not found: {source}")
+
+        container = volume_container(containers, rel_path)
+        destination = PurePosixPath("/") / rel_path
+        run(["docker", "exec", container, "mkdir", "-p", str(destination.parent)])
+        run(["docker", "cp", source.as_posix(), f"{container}:{destination}"])
+        print(f"✓ {service}:{destination}")
 
 
 if __name__ == "__main__":

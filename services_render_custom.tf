@@ -1,21 +1,5 @@
 # Stage: render — service-specific cross-service aggregation.
 locals {
-  services_render_custom_homepage_count_invalid = length([
-    for service_key, service in local.services_model : service_key
-    if service.identity.name == "homepage"
-  ]) != 1
-
-  services_render_custom_homepage_data = try(one([
-    for service in values(local.services_render_services) : service.data
-    if service.identity.name == "homepage"
-  ]), {})
-
-  # Model-only Traefik subset shared by custom rendering and validation.
-  services_render_custom_traefik_services = {
-    for service_key, service in local.services_model : service_key => service
-    if service.identity.name == "traefik"
-  }
-
   services_render_custom_context = {
     for service_key, service in local.services : service_key => merge(
       service.identity.name == "homepage" ? {
@@ -75,5 +59,21 @@ locals {
         )
       },
     )
+  }
+
+  services_render_custom_homepage_count_invalid = length([
+    for service_key, service in local.services_model : service_key
+    if service.identity.name == "homepage"
+  ]) != 1
+
+  services_render_custom_homepage_data = try(one([
+    for service in values(local.services_render_services) : service.data
+    if service.identity.name == "homepage"
+  ]), {})
+
+  # Model-only Traefik subset shared by custom rendering and validation.
+  services_render_custom_traefik_services = {
+    for service_key, service in local.services_model : service_key => service
+    if service.identity.name == "traefik"
   }
 }

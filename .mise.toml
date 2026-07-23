@@ -86,5 +86,5 @@ description = "Render plaintext deployment artifacts via debug_dir"
 run = "tofu plan -refresh=false -var debug_dir=$RENDER_DIR"
 
 [tasks.sort-check]
-description = "Check YAML and JSON Schema key ordering"
+description = "Check HCL local, JSON Schema, and YAML key ordering"
 run = "uv run scripts/sort_check.py"

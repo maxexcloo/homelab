@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml>=6"]
 # ///
-"""Lint YAML and JSON key ordering per AGENTS.md sorting convention.
+"""Lint HCL local assignments and YAML/JSON keys per AGENTS.md.
 
 Within each mapping: single-line keys come first (alphabetical), then
 multi-line keys (alphabetical).
@@ -22,11 +22,13 @@ What counts as "multi-line" depends on the file format:
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
 import yaml
 
+HCL_GLOBS = ["*.tf", "modules/**/*.tf"]
 IDENTIFIER_KEYS = ["type", "name", "id"]
 JSON_GLOBS = ["schemas/*.json"]
 # JSON Schema's `if`/`then`/`else` triplet has a canonical reading order that
@@ -53,6 +55,39 @@ def expected_order(data, kind, identifier_keys=()):
     singles = sorted(k for k in sortable_keys if not is_multi(data[k], kind))
     multis = sorted(k for k in sortable_keys if is_multi(data[k], kind))
     return identifiers + singles + multis
+
+
+def hcl_local_errors(path):
+    errors = []
+    local_names = []
+    locals_line = None
+
+    for line_number, line in enumerate(path.read_text().splitlines(), start=1):
+        if line == "locals {":
+            local_names = []
+            locals_line = line_number
+            continue
+
+        if locals_line is None:
+            continue
+
+        if line == "}":
+            expected = sorted(local_names)
+            if local_names != expected:
+                errors.append(
+                    f"{path}:{locals_line}: locals out of order\n"
+                    f"    actual:   {local_names}\n"
+                    f"    expected: {expected}"
+                )
+            local_names = []
+            locals_line = None
+            continue
+
+        match = re.match(r"^  (_?[a-z][a-z0-9_]*)\s*=", line)
+        if match:
+            local_names.append(match.group(1))
+
+    return errors
 
 
 def is_json_schema_conditional(keys):
@@ -105,8 +140,12 @@ def walk(path, data, location, errors, kind, identifier_keys=()):
 
 def main():
     errors = []
-    yaml_paths = collect(YAML_GLOBS)
+    hcl_paths = collect(HCL_GLOBS)
     json_paths = collect(JSON_GLOBS)
+    yaml_paths = collect(YAML_GLOBS)
+
+    for path in hcl_paths:
+        errors.extend(hcl_local_errors(path))
 
     for path in yaml_paths:
         try:
@@ -131,7 +170,10 @@ def main():
         print(f"\nsort-check: {len(errors)} issue(s)", file=sys.stderr)
         sys.exit(1)
 
-    print(f"sort-check: {len(yaml_paths)} YAML + {len(json_paths)} JSON - clean")
+    print(
+        f"sort-check: {len(hcl_paths)} HCL + {len(json_paths)} JSON + "
+        f"{len(yaml_paths)} YAML - clean"
+    )
 
 
 if __name__ == "__main__":

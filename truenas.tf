@@ -1,25 +1,4 @@
 locals {
-  # Deploy artifacts are grouped by target server: each server has its own
-  # truenas-cd runner and age key.
-  truenas_servers = {
-    for server_key, server in local.servers_model : server_key => server
-    if server.platform == "truenas"
-  }
-
-  truenas_services = {
-    for service_key, service in local.services_model : service_key => service
-    if(
-      service.identity.service != null &&
-      can(local.truenas_servers[service.target])
-    )
-  }
-
-  truenas_catalog_templates = {
-    for service_key, service in local.truenas_services :
-    service_key => "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
-    if fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
-  }
-
   # TrueNAS prefers a catalog app when app.json.tftpl exists and falls back to
   # a custom Compose app. Docker targets use docker-compose.yaml.tftpl directly.
   _truenas_render_file_keys = setunion(
@@ -109,6 +88,25 @@ locals {
       if can(local.truenas_servers[file_input.target])
     }
   )
+
+  truenas_catalog_templates = {
+    for service_key, service in local.truenas_services :
+    service_key => "${path.module}/templates/services/${service.identity.service}/app.json.tftpl"
+    if fileexists("${path.module}/templates/services/${service.identity.service}/app.json.tftpl")
+  }
+
+  truenas_servers = {
+    for server_key, server in local.servers_model : server_key => server
+    if server.platform == "truenas"
+  }
+
+  truenas_services = {
+    for service_key, service in local.services_model : service_key => service
+    if(
+      service.identity.service != null &&
+      can(local.truenas_servers[service.target])
+    )
+  }
 }
 
 resource "github_repository_file" "truenas_sops_config" {

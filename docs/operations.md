@@ -13,7 +13,7 @@ mise run plan        # Review infrastructure changes
 mise run prek        # Run all repository hooks
 mise run render      # Render plaintext deploy artifacts via debug_dir
 mise run setup       # Initial project setup and Git hook installation
-mise run sort-check  # Check YAML and JSON Schema key ordering
+mise run sort-check  # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate    # Check and validate OpenTofu configuration
 ```
 
@@ -48,10 +48,18 @@ toolchain. The workflow initializes OpenTofu with the backend disabled, so
 validation requires no Terraform Cloud token or provider credentials and is
 safe for public pull requests.
 
-Plan and apply remain operator-controlled. A future standalone delivery
-workflow should create one saved plan with protected provider credentials,
-retain it as the reviewed artifact, and apply that exact artifact only through
-a protected environment with approval.
+Plan and apply remain operator-controlled.
+
+## Intentional Provider Exceptions
+
+- The legacy Cloudflare ACME token remains available for clients, currently
+  TrueNAS, that cannot follow delegated ACME CNAME records.
+- Backblaze B2 application keys use the deprecated singular `bucket_id` field
+  because `bucket_ids` cannot create an equivalent bucket-scoped key.
+- Incus user data and OCI instance metadata ignore updates after creation
+  because cloud-init consumes them only during first boot.
+- Control D, 1Password, and Resend REST resources tolerate API-owned fields or
+  changes so managed fields can reconcile without deleting unmanaged data.
 
 ## Protected Resources
 

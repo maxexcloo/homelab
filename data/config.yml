@@ -9,7 +9,7 @@ cloudflare:
       excloo_id:
         client_name: Cloudflare Access
         display_name: Excloo ID
-        provider: pocket_id
+        provider: pocketid
 controld:
   profile_id: 653224sydwhf
 domains:

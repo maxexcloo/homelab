@@ -13,20 +13,20 @@
     "storage": {
       "additional_storage": [
         {
+          "mount_path": "/app/public/images",
+          "type": "ix_volume",
           "ix_volume_config": {
             "acl_enable": false,
             "dataset_name": "images"
-          },
-          "mount_path": "/app/public/images",
-          "type": "ix_volume"
+          }
         }
       ],
       "config": {
+        "type": "ix_volume",
         "ix_volume_config": {
           "acl_enable": false,
           "dataset_name": "config"
-        },
-        "type": "ix_volume"
+        }
       }
     }
   }

@@ -15,10 +15,6 @@ data "http" "onepassword_server_search" {
 }
 
 locals {
-  _onepassword_server_search_results = {
-    for server_key, item in data.http.onepassword_server_search : server_key => jsondecode(item.response_body)
-  }
-
   _onepassword_server_duplicate_items = [
     for server_key, items in local._onepassword_server_search_results : server_key
     if length(items) > 1
@@ -31,13 +27,6 @@ locals {
   _onepassword_server_existing_items = {
     for server_key, item_id in local._onepassword_server_existing_ids : server_key => item_id
     if item_id != null
-  }
-
-  onepassword_server_existing_fields = {
-    for server_key, item in data.http.onepassword_server_item : server_key => {
-      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
-      if try(field.value != null && field.value != "", false)
-    }
   }
 
   _onepassword_server_item_fields = {
@@ -111,6 +100,17 @@ locals {
       vault = {
         id = local.defaults.onepassword.vaults.servers.id
       }
+    }
+  }
+
+  _onepassword_server_search_results = {
+    for server_key, item in data.http.onepassword_server_search : server_key => jsondecode(item.response_body)
+  }
+
+  onepassword_server_existing_fields = {
+    for server_key, item in data.http.onepassword_server_item : server_key => {
+      for field in jsondecode(item.response_body).fields : field.id => try(field.value, "")
+      if try(field.value != null && field.value != "", false)
     }
   }
 }

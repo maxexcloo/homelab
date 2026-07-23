@@ -1,4 +1,24 @@
 locals {
+  # Cloudflare Universal SSL covers only one subdomain level.
+  _services_validation_cloudflare_deep_subdomains = [
+    for route_key, route in local.dns_model_routes : "${route_key} (${route.hostname})"
+    if(
+      route.dns != null &&
+      route.dns.proxied &&
+      route.source == "service" &&
+      length(split(".", route.hostname)) - length(split(".", route.dns.zone)) > 1
+    )
+  ]
+
+  _services_validation_cloudflared_missing = [
+    for route_key, route in local.cloudflare_routes : "${route_key} -> ${route.hostname}"
+    if(
+      route.source == "service" &&
+      route.server_key != null &&
+      route.tunnel == null
+    )
+  ]
+
   _services_validation_credential_names = {
     for service_key, service in local.services_input_targets : service_key => concat(
       keys(service.credentials.fields),
@@ -21,26 +41,6 @@ locals {
   _services_validation_credential_names_conflicting = [
     for service_key, credential_names in local._services_validation_credential_names : service_key
     if length(credential_names) != length(distinct(credential_names))
-  ]
-
-  # Cloudflare Universal SSL covers only one subdomain level.
-  _services_validation_cloudflare_deep_subdomains = [
-    for route_key, route in local.dns_model_routes : "${route_key} (${route.hostname})"
-    if(
-      route.dns != null &&
-      route.dns.proxied &&
-      route.source == "service" &&
-      length(split(".", route.hostname)) - length(split(".", route.dns.zone)) > 1
-    )
-  ]
-
-  _services_validation_cloudflared_missing = [
-    for route_key, route in local.cloudflare_routes : "${route_key} -> ${route.hostname}"
-    if(
-      route.source == "service" &&
-      route.server_key != null &&
-      route.tunnel == null
-    )
   ]
 
   _services_validation_file_key_mismatches = [

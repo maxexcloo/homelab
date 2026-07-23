@@ -1,4 +1,12 @@
 locals {
+  _servers_validation_cloudflare_routes_missing = [
+    for route_key, route in local.cloudflare_routes : "${route_key} -> ${route.hostname}"
+    if(
+      route.source == "server" &&
+      route.tunnel == null
+    )
+  ]
+
   _servers_validation_credential_names = {
     for server_key, server in local.servers_input : server_key => concat(
       keys(server.credentials.fields),
@@ -23,14 +31,6 @@ locals {
   _servers_validation_credential_names_conflicting = [
     for server_key, credential_names in local._servers_validation_credential_names : server_key
     if length(credential_names) != length(distinct(credential_names))
-  ]
-
-  _servers_validation_cloudflare_routes_missing = [
-    for route_key, route in local.cloudflare_routes : "${route_key} -> ${route.hostname}"
-    if(
-      route.source == "server" &&
-      route.tunnel == null
-    )
   ]
 
   _servers_validation_invalid_incus_vm_parents = [

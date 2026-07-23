@@ -1,22 +1,4 @@
 locals {
-  # Byte credentials use random_id so hex/base64 lengths mean bytes. Password
-  # credentials use random_password for character and special-character controls.
-  random_server_credentials = merge({}, [
-    for server_key, server in local.servers_model : {
-      for credential_name, generator in server.credentials.generated :
-      "${server_key}-${credential_name}" => generator
-      if contains(["alphanumeric", "base64", "hex"], generator.type)
-    }
-  ]...)
-
-  random_service_credentials = merge({}, [
-    for service_key, service in local.services_model : {
-      for credential_name, generator in service.credentials.generated :
-      "${service_key}-${credential_name}" => generator
-      if contains(["alphanumeric", "base64", "hex"], generator.type)
-    }
-  ]...)
-
   _random_server_credential_bytes = {
     for credential_key, generator in local.random_server_credentials : credential_key => {
       byte_length = generator.length
@@ -44,6 +26,22 @@ locals {
     }
     if generator.type == "alphanumeric"
   }
+
+  random_server_credentials = merge({}, [
+    for server_key, server in local.servers_model : {
+      for credential_name, generator in server.credentials.generated :
+      "${server_key}-${credential_name}" => generator
+      if contains(["alphanumeric", "base64", "hex"], generator.type)
+    }
+  ]...)
+
+  random_service_credentials = merge({}, [
+    for service_key, service in local.services_model : {
+      for credential_name, generator in service.credentials.generated :
+      "${service_key}-${credential_name}" => generator
+      if contains(["alphanumeric", "base64", "hex"], generator.type)
+    }
+  ]...)
 }
 
 resource "random_id" "server_secret" {

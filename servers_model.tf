@@ -1,23 +1,5 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
-  _servers_model_generated_credentials = {
-    for server_key, server in local.servers_input : server_key => merge(
-      server.credentials.generated,
-      server.features.docker ? {
-        doco_cd_webhook_secret = {
-          length = 48
-          type   = "alphanumeric"
-        }
-      } : {},
-      server.features.password ? {
-        password = {
-          length = 32
-          type   = "alphanumeric"
-        }
-      } : {},
-    )
-  }
-
   # Credential field shape for each server. Runtime values are added in servers_outputs.tf.
   _servers_model_credentials = {
     for server_key, server in local.servers_input : server_key => {
@@ -85,6 +67,24 @@ locals {
       )
       generated = local._servers_model_generated_credentials[server_key]
     }
+  }
+
+  _servers_model_generated_credentials = {
+    for server_key, server in local.servers_input : server_key => merge(
+      server.credentials.generated,
+      server.features.docker ? {
+        doco_cd_webhook_secret = {
+          length = 48
+          type   = "alphanumeric"
+        }
+      } : {},
+      server.features.password ? {
+        password = {
+          length = 32
+          type   = "alphanumeric"
+        }
+      } : {},
+    )
   }
 
   # "name.region" for child servers; plain name when name equals region (region root).
