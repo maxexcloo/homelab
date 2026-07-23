@@ -44,13 +44,3 @@ resource "pocketid_client" "service" {
     startswith(callback_url, "/") ? "${each.value.urls.default.href}${callback_url}" : callback_url
   ]
 }
-
-moved {
-  from = pocketid_client.service["auth-au-hsp"]
-  to   = pocketid_client.service["oauth2-proxy-au-hsp"]
-}
-
-moved {
-  from = pocketid_client.service["auth-au-truenas"]
-  to   = pocketid_client.service["oauth2-proxy-au-truenas"]
-}

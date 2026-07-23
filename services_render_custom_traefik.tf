@@ -86,7 +86,7 @@ locals {
   }
 
   services_render_custom_traefik_labels = {
-    for service_key, service in local.services : service_key => {
+    for service_key, service in local.services_model : service_key => {
       for container in distinct(compact([for route in service.routing.routes : route.container])) : container => merge([
         for route in service.routing.routes : {
           for label_key, label_value in merge(

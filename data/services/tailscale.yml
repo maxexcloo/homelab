@@ -1,10 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
 target_feature: tailscale
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${server.identity.group}
-    href: https://login.tailscale.com/admin/machines/${server.runtime.addresses.tailscale_ipv4}
+  - href: https://login.tailscale.com/admin/machines/${server.runtime.addresses.tailscale_ipv4}
     widgets:
       - type: ${service.identity.service}
         deviceid: ${server.runtime.attributes.tailscale_device_id}

@@ -1,10 +1,7 @@
 # yaml-language-server: $schema=../../schemas/service.json
 target_feature: cloudflared
 dashboard:
-  - name: ${service.identity.title}
-    description: ${service.identity.description}
-    group: ${server.identity.group}
-    href: https://dash.cloudflare.com/${server.runtime.attributes.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.runtime.attributes.cloudflare_tunnel_id}/edit?tab=overview
+  - href: https://dash.cloudflare.com/${server.runtime.attributes.cloudflare_account_id}/one/networks/connectors/cloudflare-tunnels/cfd_tunnel/${server.runtime.attributes.cloudflare_tunnel_id}/edit?tab=overview
     icon: cloudflare
     widgets:
       - type: ${service.identity.service}

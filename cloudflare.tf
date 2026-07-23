@@ -168,11 +168,6 @@ import {
   to = cloudflare_zero_trust_access_identity_provider.pocketid["excloo_id"]
 }
 
-moved {
-  from = cloudflare_zero_trust_access_identity_provider.pocket_id
-  to   = cloudflare_zero_trust_access_identity_provider.pocketid
-}
-
 resource "cloudflare_account_token" "server_acme" {
   for_each = local.servers_model_by_feature.cloudflare_acme
 

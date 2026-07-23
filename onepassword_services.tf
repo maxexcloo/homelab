@@ -186,13 +186,3 @@ resource "restapi_object" "onepassword_service" {
     }
   }
 }
-
-moved {
-  from = restapi_object.onepassword_service["auth-au-hsp"]
-  to   = restapi_object.onepassword_service["oauth2-proxy-au-hsp"]
-}
-
-moved {
-  from = restapi_object.onepassword_service["auth-au-truenas"]
-  to   = restapi_object.onepassword_service["oauth2-proxy-au-truenas"]
-}

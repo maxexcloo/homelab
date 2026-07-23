@@ -56,16 +56,6 @@ resource "random_id" "service_secret" {
   byte_length = each.value.byte_length
 }
 
-moved {
-  from = random_id.service_secret["auth-au-hsp-cookie_secret"]
-  to   = random_id.service_secret["oauth2-proxy-au-hsp-cookie_secret"]
-}
-
-moved {
-  from = random_id.service_secret["auth-au-truenas-cookie_secret"]
-  to   = random_id.service_secret["oauth2-proxy-au-truenas-cookie_secret"]
-}
-
 resource "random_password" "server_secret" {
   for_each = local._random_server_credential_passwords
 
