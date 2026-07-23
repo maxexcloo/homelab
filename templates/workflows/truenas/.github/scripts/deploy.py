@@ -177,7 +177,8 @@ def managed_storage_mount(mount, service):
         return False
 
     source = PurePosixPath(mount["source"])
-    return source.is_relative_to(IX_VOLUME_ROOT / service)
+    managed_root = IX_VOLUME_ROOT / service
+    return source == managed_root or managed_root in source.parents
 
 
 def output(command):
