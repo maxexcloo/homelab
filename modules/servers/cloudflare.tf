@@ -1,3 +1,24 @@
+data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
+  account_id = var.integrations.cloudflare.account_id
+  max_items  = 1
+  name       = "DNS%20Write"
+  scope      = "com.cloudflare.api.account.zone"
+}
+
+data "cloudflare_account_api_token_permission_groups_list" "tunnel_read" {
+  account_id = var.integrations.cloudflare.account_id
+  max_items  = 1
+  name       = "Cloudflare%20Tunnel%20Read"
+  scope      = "com.cloudflare.api.account"
+}
+
+data "cloudflare_zero_trust_tunnel_cloudflared_token" "server" {
+  for_each = local.servers_model_by_feature.cloudflared
+
+  account_id = var.integrations.cloudflare.account_id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.server[each.key].id
+}
+
 resource "cloudflare_account_token" "server_acme" {
   for_each = local.servers_model_by_feature.cloudflare_acme
 
@@ -9,7 +30,7 @@ resource "cloudflare_account_token" "server_acme" {
       effect = "allow"
       permission_groups = [
         {
-          id = var.integrations.cloudflare.dns_write_permission_group_id
+          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
         }
       ]
       resources = jsonencode({
@@ -30,7 +51,7 @@ resource "cloudflare_account_token" "server_acme_legacy" {
       effect = "allow"
       permission_groups = [
         {
-          id = var.integrations.cloudflare.dns_write_permission_group_id
+          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
         }
       ]
       resources = jsonencode({
@@ -39,13 +60,6 @@ resource "cloudflare_account_token" "server_acme_legacy" {
       })
     }
   ]
-}
-
-data "cloudflare_zero_trust_tunnel_cloudflared_token" "server" {
-  for_each = local.servers_model_by_feature.cloudflared
-
-  account_id = var.integrations.cloudflare.account_id
-  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.server[each.key].id
 }
 
 resource "cloudflare_account_token" "server_tunnel_read" {
@@ -59,7 +73,7 @@ resource "cloudflare_account_token" "server_tunnel_read" {
       effect = "allow"
       permission_groups = [
         {
-          id = var.integrations.cloudflare.tunnel_read_permission_group_id
+          id = one(data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result).id
         }
       ]
       resources = jsonencode({

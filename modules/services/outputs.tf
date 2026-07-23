@@ -1,21 +1,3 @@
-output "integrations" {
-  description = "Service integration values consumed by shared root policy"
-  sensitive   = true
-  value = {
-    pocketid = {
-      cloudflare_access_identity_providers = local.pocketid_cloudflare_access_identity_providers
-      discovery                            = local.pocketid_discovery
-
-      cloudflare_access_clients = {
-        for client_key, client in pocketid_client.cloudflare_access : client_key => {
-          id            = client.id
-          client_secret = client.client_secret
-        }
-      }
-    }
-  }
-}
-
 output "model" {
   description = "Deterministic service input and computed model"
   value = nonsensitive({
@@ -34,7 +16,6 @@ output "render" {
   sensitive   = true
   value = {
     compose_inputs = local.services_render_compose_inputs
-    context_base   = local.services_render_context_base
     inventory      = local.services_render_services_inventory
     services       = local.services_render_services
 

@@ -91,7 +91,7 @@ locals {
             {
               age_public_key        = age_secret_key.server[server_key].public_key
               cloudflare_account_id = var.integrations.cloudflare.account_id
-              ssh_keys              = var.integrations.github.ssh_keys
+              ssh_keys              = data.github_user.default.ssh_keys
               tailscale_device_id   = try(local.tailscale_device_addresses[server_key].id, "")
             },
             server.features.cloudflared ? {

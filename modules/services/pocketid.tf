@@ -37,12 +37,12 @@ resource "pocketid_client" "cloudflare_access" {
 
   client_id    = "cloudflare-access-${each.key}"
   is_public    = false
-  launch_url   = "https://${var.integrations.cloudflare.access_auth_domain}"
+  launch_url   = "https://${data.cloudflare_zero_trust_organization.default.auth_domain}"
   name         = each.value.client_name
   pkce_enabled = true
 
   callback_urls = [
-    "https://${var.integrations.cloudflare.access_auth_domain}/cdn-cgi/access/callback",
+    "https://${data.cloudflare_zero_trust_organization.default.auth_domain}/cdn-cgi/access/callback",
   ]
 }
 

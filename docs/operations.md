@@ -53,8 +53,8 @@ Compose schema until rendered because they still contain template expressions.
 GitHub Actions runs prek for pull requests and pushes to `main`. Actions and
 hook repositories use explicit release versions, while mise pins the executable
 toolchain. The workflow initializes OpenTofu with the backend disabled, so
-validation requires no Terraform Cloud token or provider credentials and is
-safe for public pull requests.
+validation requires no HCP Terraform token or provider credentials and is safe
+for public pull requests.
 
 Plan and apply remain operator-controlled.
 

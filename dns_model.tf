@@ -20,6 +20,13 @@ locals {
     ],
   ]))
 
+  _dns_model_managed_zones_by_host = {
+    for host, matches in local._dns_model_zones_by_host : host => try(
+      one([for match in matches : match.name if match.length == max(matches[*].length...)]),
+      null,
+    )
+  }
+
   _dns_model_manual_entries = flatten([
     for zone, records in local.dns_input : [
       for record in records : {
@@ -44,13 +51,6 @@ locals {
     ]
   }
 
-  dns_model_managed_zones_by_host = {
-    for host, matches in local._dns_model_zones_by_host : host => try(
-      one([for match in matches : match.name if match.length == max(matches[*].length...)]),
-      null,
-    )
-  }
-
   dns_model_manual_entries_by_key = {
     for entry in local._dns_model_manual_entries :
     "${entry.zone}-manual-${entry.key}" => entry...
@@ -65,9 +65,9 @@ locals {
           server_key = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key
           source     = "server"
 
-          dns = local.dns_model_managed_zones_by_host[route.host] != null ? {
+          dns = local._dns_model_managed_zones_by_host[route.host] != null ? {
             proxied = route.expose == "cloudflare"
-            zone    = local.dns_model_managed_zones_by_host[route.host]
+            zone    = local._dns_model_managed_zones_by_host[route.host]
 
             content = (
               startswith(route.expose, "proxy-")
@@ -80,7 +80,7 @@ locals {
           tunnel = (
             route.expose == "cloudflare" &&
             server.features.cloudflared &&
-            local.dns_model_managed_zones_by_host[route.host] != null
+            local._dns_model_managed_zones_by_host[route.host] != null
             ) ? {
             server_key = server_key
             url        = route.backend_url

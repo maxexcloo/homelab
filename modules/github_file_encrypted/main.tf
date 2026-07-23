@@ -16,8 +16,3 @@ resource "github_repository_file" "file" {
   overwrite_on_create = true
   repository          = var.repository
 }
-
-moved {
-  from = module.sops_encrypt
-  to   = module.sops_encrypt["default"]
-}

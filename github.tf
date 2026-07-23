@@ -1,8 +1,3 @@
-# username = "" resolves to the currently authenticated GitHub user.
-data "github_user" "default" {
-  username = ""
-}
-
 locals {
   _github_workflow_files = merge([
     for repository_key in keys(local.defaults.github.deployment_repositories) : {

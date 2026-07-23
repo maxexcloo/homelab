@@ -32,7 +32,7 @@ Review the plan before applying it.
 - [mise](https://mise.jdx.dev/) for task management and tool installation
 - Optional 1Password Connect server with access to the server and service
   credential vaults in `data/config.yml`
-- Terraform Cloud account for state backend
+- HCP Terraform account for the state backend
 
 Run `mise run setup` to create `.mise.local.toml` from the template, then add
 credentials for the providers used by the current data. See
@@ -73,6 +73,7 @@ mise run validate        # Check and validate OpenTofu configuration
 - [docs/operations.md](docs/operations.md) - Common workflows and local commands
 - [docs/routing.md](docs/routing.md) - URLs, DNS, Traefik labels, and containers
 - [docs/servers.md](docs/servers.md) - Server inheritance, hostnames, and runtime values
+- [docs/service-rollout.md](docs/service-rollout.md) - Manual service rollout runbook
 - [docs/services.md](docs/services.md) - Service data, targets, routing, and templates
 - [docs/truenas-services.md](docs/truenas-services.md) - TrueNAS catalog service authoring
 

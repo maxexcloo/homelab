@@ -11,7 +11,7 @@ Servers and services have two layers:
 - `model` contains input and deterministic computed values. Use it for resource
   identity, `for_each`, filters, and validation.
 - `runtime` adds provider-backed values under `addresses`, `attributes`,
-  `credentials`, `hosts`, and `urls`.
+  `credentials`, `hosts`, and `urls`, as applicable to the domain.
 
 Never derive resource keys or collection membership from runtime or rendered
 values. Those values may be unknown until apply.
@@ -19,14 +19,21 @@ values. Those values may be unknown until apply.
 ## File Organization
 
 - Use `{domain}_{stage}.tf` for staged pipelines, such as `services_model.tf`.
-- Use one root file per provider or utility provider, such as `cloudflare.tf`.
+- Use one root file per provider or utility provider when it owns shared or
+  cross-domain behaviour, such as `cloudflare.tf`.
 - Keep backend, locals, outputs, providers, Terraform requirements, and
   variables in their conventional root files.
 - Put service templates under `templates/services/<identity.service>/`.
 - Omit `identity.service` for inventory-only services with no artifacts.
 
 Keep root HCL service-agnostic. Put service-specific behaviour in YAML, its
-template directory, or `services_render_custom.tf` when it aggregates services.
+template directory, or `services_render_custom_<service>.tf` when it aggregates
+services.
+
+Keep provider data sources and resources in the consuming domain module when
+only that domain uses them. Keep identical data lookups in root when both
+domains consume them, and pass only the resolved values each module needs. Do
+not hoist domain-specific resources solely to deduplicate provider blocks.
 
 ## Sorting Convention
 

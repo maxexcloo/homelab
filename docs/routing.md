@@ -142,7 +142,8 @@ routing server.
 ## Cloudflare Rules
 
 Route-level `cloudflare_access`, `cloudflare_rate_limiting_rules`, and
-`cloudflare_waf_rules` are grouped by DNS zone in `cloudflare.tf`.
+`cloudflare_waf_rules` are grouped by DNS zone in
+`modules/services/cloudflare.tf`.
 Cloudflare Access IDP aliases come from
 `cloudflare.access.identity_providers` in `data/config.yml`. The `provider`
 selects the integration, `client_name` names the client in the identity

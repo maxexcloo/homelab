@@ -8,7 +8,8 @@ module "services" {
     debug_dir = var.debug_dir
 
     cloudflare = {
-      access_auth_domain = data.cloudflare_zero_trust_organization.default.auth_domain
+      account_id = data.cloudflare_account.default.id
+      zone_ids   = local.cloudflare_zone_ids
     }
 
     github = {

@@ -5,6 +5,9 @@ terraform {
     age = {
       source = "clementblaise/age"
     }
+    cloudflare = {
+      source = "cloudflare/cloudflare"
+    }
     deepmerge = {
       source = "isometry/deepmerge"
     }

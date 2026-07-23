@@ -1,5 +1,10 @@
 # Stage: render — Homepage-specific dashboard aggregation.
 locals {
+  _services_render_custom_homepage_data = try(one([
+    for service in values(local.services_render_services) : service.data
+    if service.identity.name == "homepage"
+  ]), {})
+
   _services_render_custom_homepage_server_cards = flatten([
     for server_key, server in local.servers_render_servers : [
       for card_index, dashboard_card in server.dashboard : {
@@ -72,21 +77,7 @@ locals {
     local._services_render_custom_homepage_sorted_server_groups,
   )
 
-  services_render_custom_homepage_context = {
-    for service_key, service in local.services_model : service_key => {
-      custom = {
-        homepage = local.services_render_custom_homepage_view
-      }
-    }
-    if service.identity.name == "homepage"
-  }
-
-  services_render_custom_homepage_data = try(one([
-    for service in values(local.services_render_services) : service.data
-    if service.identity.name == "homepage"
-  ]), {})
-
-  services_render_custom_homepage_view = {
+  _services_render_custom_homepage_view = {
     layout = [
       for group in local._services_render_custom_homepage_union_groups : {
         (group) = merge(
@@ -96,8 +87,8 @@ locals {
             tab     = contains(local._services_render_custom_homepage_sorted_server_groups, group) ? "Servers" : "Services"
           },
           contains(local._services_render_custom_homepage_sorted_service_groups, group) ? {
-            columns = try(local.services_render_custom_homepage_data.groups[group].columns, 2)
-            style   = try(local.services_render_custom_homepage_data.groups[group].style, "row")
+            columns = try(local._services_render_custom_homepage_data.groups[group].columns, 2)
+            style   = try(local._services_render_custom_homepage_data.groups[group].style, "row")
           } : {},
         )
       }
@@ -109,5 +100,14 @@ locals {
       }
       if group != "Providers"
     ]
+  }
+
+  services_render_custom_homepage_context = {
+    for service_key, service in local.services_model : service_key => {
+      custom = {
+        homepage = local._services_render_custom_homepage_view
+      }
+    }
+    if service.identity.name == "homepage"
   }
 }

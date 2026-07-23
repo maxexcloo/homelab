@@ -7,21 +7,11 @@ module "servers" {
   integrations = {
     cloudflare = {
       account_id = data.cloudflare_account.default.id
-      dns_write_permission_group_id = one(
-        data.cloudflare_account_api_token_permission_groups_list.dns_write.result,
-      ).id
-      tunnel_read_permission_group_id = one(
-        data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result,
-      ).id
-      zone_ids = {
-        for zone_name, zone in data.cloudflare_zone.all :
-        zone_name => zone.zone_id
-      }
+      zone_ids   = local.cloudflare_zone_ids
     }
 
     github = {
       docker_repository = github_repository.deployment["docker"].name
-      ssh_keys          = data.github_user.default.ssh_keys
     }
 
     onepassword = {

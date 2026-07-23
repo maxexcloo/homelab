@@ -1,5 +1,10 @@
+# username = "" resolves to the currently authenticated GitHub user.
+data "github_user" "default" {
+  username = ""
+}
+
 locals {
-  docker_webhook_servers = {
+  _docker_webhook_servers = {
     for server_key, server in local.servers_model : server_key => server
     if(
       server.features.docker &&
@@ -12,7 +17,7 @@ locals {
 }
 
 resource "github_repository_webhook" "doco_cd" {
-  for_each = local.docker_webhook_servers
+  for_each = local._docker_webhook_servers
 
   active     = true
   events     = ["push"]

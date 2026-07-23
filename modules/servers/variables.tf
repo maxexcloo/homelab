@@ -15,15 +15,12 @@ variable "integrations" {
     tailscale_device_addresses = any
 
     cloudflare = object({
-      account_id                      = string
-      dns_write_permission_group_id   = string
-      tunnel_read_permission_group_id = string
-      zone_ids                        = map(string)
+      account_id = string
+      zone_ids   = map(string)
     })
 
     github = object({
       docker_repository = string
-      ssh_keys          = any
     })
 
     onepassword = object({

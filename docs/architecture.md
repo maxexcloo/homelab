@@ -34,8 +34,9 @@ Control D derive their provider-specific resources from this shape.
 Each server and service has two shapes:
 
 - `*_model` contains YAML input plus deterministic computed fields.
-- runtime objects add provider-backed addresses, URLs, attributes, hosts, and
-  credentials.
+- runtime objects add provider-backed values under domain-specific
+  `addresses`, `attributes`, `credentials`, `hosts`, and `urls` objects as
+  applicable.
 
 Use model locals for resource keys and filters. Runtime values can be unknown at
 plan time, so they should only feed resource arguments, outputs, and render
@@ -102,18 +103,20 @@ runtime enrichment, rendered bootstrap content, webhooks, Cloudflare tunnels
 and tokens, and the Incus and OCI compute lifecycle.
 
 `modules/services` owns service YAML input, deterministic modeling, credentials,
-Pocket ID clients, runtime and template rendering, and Docker, Fly, and TrueNAS
-deployment publications.
+Pocket ID clients, service-specific Cloudflare Access and rulesets, runtime and
+template rendering, and Docker, Fly, and TrueNAS deployment publications.
 
 The root is the composition layer. It loads shared config and DNS data,
 configures providers, and owns only cross-domain DNS, routing, repository,
-Tailscale, tunnel ingress, and access policy. Module outputs create the
-dependency graph directly; there are no fingerprint marker resources or broad
-module-level `depends_on` lists.
+Tailscale, and tunnel ingress policy. Module outputs create the dependency graph
+directly; there are no fingerprint marker resources or broad module-level
+`depends_on` lists.
 
 The two root calls live in `servers.tf` and `services.tf`. Their contracts are
-kept broad: merged `defaults`, shared DNS data, and provider-facing
-`integrations`; the service module additionally receives the server module's
-model/runtime/render interface. Each module exposes its deterministic model for
-shared root consumers. Default provider configurations inherit from the root,
-while aliased REST providers are passed explicitly.
+limited to merged `defaults`, shared DNS data, and the provider-derived values
+each domain needs; the service module additionally receives the server module's
+model/runtime/render interface. Shared provider data lookups stay in root, while
+single-domain lookups and resources live in their owning module. Each module
+exposes its deterministic model for shared root consumers. Default provider
+configurations inherit from the root, while aliased REST providers are passed
+explicitly.

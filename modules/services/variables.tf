@@ -15,7 +15,8 @@ variable "integrations" {
     tailscale_auth_keys = map(string)
 
     cloudflare = object({
-      access_auth_domain = string
+      account_id = string
+      zone_ids   = map(string)
     })
 
     github = object({
