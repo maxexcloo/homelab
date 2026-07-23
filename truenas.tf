@@ -22,9 +22,26 @@ locals {
 
   # TrueNAS prefers a catalog app when app.json.tftpl exists and falls back to
   # a custom Compose app. Docker targets use docker-compose.yaml.tftpl directly.
+  _truenas_render_file_keys = setunion(
+    toset([
+      for service_key, service in local.truenas_services : "${service.target}/${service.identity.name}/compose.json"
+      if(
+        !can(local.truenas_catalog_templates[service_key]) &&
+        fileexists("${path.module}/templates/services/${service.identity.service}/docker-compose.yaml.tftpl")
+      )
+    ]),
+    toset([
+      for service_key, service in local.truenas_services : "${service.target}/${service.identity.name}/app.json"
+      if can(local.truenas_catalog_templates[service_key])
+    ]),
+    toset([
+      for file_input in values(local.services_render_sidecar_inputs) : "${file_input.target}/${local.services_model[file_input.stack].identity.name}/${file_input.rel_path}"
+      if can(local.truenas_servers[file_input.target])
+    ]),
+  )
+
   _truenas_render_files = merge(
     {
-      # 1) Custom Docker Compose apps
       for service_key, service in local.truenas_services : "${service.target}/${service.identity.name}/compose.json" => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} compose"
@@ -51,7 +68,6 @@ locals {
       )
     },
     {
-      # 2) TrueNAS catalog apps
       for service_key, service in local.truenas_services : "${service.target}/${service.identity.name}/app.json" => {
         age_public_key = age_secret_key.server[service.target].public_key
         commit_message = "Update ${service_key} catalog app"
@@ -82,18 +98,46 @@ locals {
       if can(local.truenas_catalog_templates[service_key])
     },
     {
-      # 3) Generic sidecar files (env, configs, etc.)
-      for file_config in values(local.services_render_write_sidecars) : "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}" => merge(
-        file_config,
+      for sidecar_key, file_input in local.services_render_sidecar_inputs : "${file_input.target}/${local.services_model[file_input.stack].identity.name}/${file_input.rel_path}" => merge(
+        local.services_render_write_sidecars[sidecar_key],
         {
-          age_public_key = age_secret_key.server[file_config.target].public_key
-          commit_message = "Update ${file_config.stack} ${file_config.rel_path}"
-          file           = "${file_config.target}/${local.services_model[file_config.stack].identity.name}/${file_config.rel_path}"
+          age_public_key = age_secret_key.server[file_input.target].public_key
+          commit_message = "Update ${file_input.stack} ${file_input.rel_path}"
+          file           = "${file_input.target}/${local.services_model[file_input.stack].identity.name}/${file_input.rel_path}"
         },
       )
-      if can(local.truenas_servers[file_config.target])
+      if can(local.truenas_servers[file_input.target])
     }
   )
+}
+
+resource "github_repository_file" "truenas_sops_config" {
+  commit_message      = "Update SOPS configuration"
+  file                = ".sops.yaml"
+  overwrite_on_create = true
+  repository          = github_repository.deployment["truenas"].name
+
+  content = yamlencode({
+    creation_rules = [
+      for server_key in keys(local.truenas_servers) : {
+        age        = age_secret_key.server[server_key].public_key
+        path_regex = "^${server_key}/"
+      }
+    ]
+  })
+}
+
+module "encrypted_github_file_truenas" {
+  for_each = local._truenas_render_file_keys
+  source   = "./modules/github_file_encrypted"
+
+  age_public_key = local._truenas_render_files[each.key].age_public_key
+  commit_message = local._truenas_render_files[each.key].commit_message
+  content_base64 = local._truenas_render_files[each.key].content_base64
+  content_type   = local._truenas_render_files[each.key].content_type
+  debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.deployment_repositories.truenas.name}/${each.key}" : ""
+  file           = local._truenas_render_files[each.key].file
+  repository     = github_repository.deployment["truenas"].name
 }
 
 resource "github_repository_file" "truenas_deploy_request" {
@@ -108,7 +152,7 @@ resource "github_repository_file" "truenas_deploy_request" {
     deployments = {
       for service in values(local.truenas_services) : "${service.target}/${service.identity.name}" => {
         files = sort([
-          for file_key in nonsensitive(keys(local._truenas_render_files)) : file_key
+          for file_key in local._truenas_render_file_keys : file_key
           if startswith(file_key, "${service.target}/${service.identity.name}/")
         ])
 
@@ -129,33 +173,4 @@ resource "github_repository_file" "truenas_deploy_request" {
     github_repository_file.workflow_file,
     module.encrypted_github_file_truenas,
   ]
-}
-
-module "encrypted_github_file_truenas" {
-  for_each = toset(nonsensitive(keys(local._truenas_render_files)))
-  source   = "./modules/github_file_encrypted"
-
-  age_public_key = local._truenas_render_files[each.key].age_public_key
-  commit_message = local._truenas_render_files[each.key].commit_message
-  content_base64 = local._truenas_render_files[each.key].content_base64
-  content_type   = local._truenas_render_files[each.key].content_type
-  debug_path     = var.debug_dir != "" ? "${var.debug_dir}/${local.defaults.github.deployment_repositories.truenas.name}/${each.key}" : ""
-  file           = local._truenas_render_files[each.key].file
-  repository     = github_repository.deployment["truenas"].name
-}
-
-resource "github_repository_file" "truenas_sops_config" {
-  commit_message      = "Update SOPS configuration"
-  file                = ".sops.yaml"
-  overwrite_on_create = true
-  repository          = github_repository.deployment["truenas"].name
-
-  content = yamlencode({
-    creation_rules = [
-      for server_key in keys(local.truenas_servers) : {
-        age        = age_secret_key.server[server_key].public_key
-        path_regex = "^${server_key}/"
-      }
-    ]
-  })
 }

@@ -8,20 +8,21 @@ only set overrides.
 
 ## Service Features
 
-- `b2` provisions a Backblaze bucket and application key. It exposes
-  `runtime.attributes.b2_*` and read-only `b2_application_key`.
+- `mail` provisions credentials for the default SMTP provider and exposes the
+  generic `mail_*` runtime values.
 - `monitoring` includes the service in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
+- `object_storage` provisions storage through the default S3-compatible provider
+  and exposes generic `object_storage_*` runtime values.
+- `oidc` provisions a client through the configured identity provider.
 - `password` adds a service password and password hash.
-- `resend` provisions a Resend API key.
 - `tailscale` provisions a Tailscale auth key.
 
 Target-level `features` deep-merge over service-level features.
 
 ## Server Features
 
-- `b2` provisions a Backblaze bucket and application key.
 - `beszel` adds Beszel agent credential fields.
 - `bootstrap` renders platform-specific bootstrap artifacts.
 - `cloudflare_acme` provisions an ACME DNS token for the ACME zone.
@@ -30,11 +31,12 @@ Target-level `features` deep-merge over service-level features.
 - `cloudflared` provisions a Cloudflare tunnel and tunnel credentials.
 - `docker` installs Docker, renders Docker Compose deployments to the Docker
   repo, and installs doco-cd in generated setup artifacts.
+- `mail` provisions credentials for the default SMTP provider.
 - `monitoring` includes the server in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
+- `object_storage` provisions storage through the default S3-compatible provider.
 - `password` adds a server password and password hash.
-- `resend` provisions a Resend API key.
 - `tailscale` provisions a Tailscale auth key.
 - `zfs` marks the server for ZFS-related config.
 

@@ -41,7 +41,7 @@ resource "github_repository" "deployment" {
 }
 
 resource "github_repository_webhook" "doco_cd" {
-  for_each = local._docker_webhook_servers
+  for_each = local.docker_webhook_servers
 
   active     = true
   events     = ["push"]

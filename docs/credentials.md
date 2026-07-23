@@ -72,13 +72,28 @@ global defaults.
 
 Feature flags add credential fields automatically:
 
-- `b2` adds `b2_application_key` as read-only.
-- `bootstrap` adds read-write `truenas_cd_access_token` on TrueNAS servers.
-- `docker` adds read-write `doco_cd_git_access_token` and generated
-  read-write `doco_cd_webhook_secret`.
-- `password` adds a read-write password and read-only `password_hash`.
-- `resend` adds read-only `resend_api_key`.
-- `tailscale` adds read-only `tailscale_auth_key`.
+Services may receive:
+
+- `mail`: read-only `mail_password`.
+- `object_storage`: read-only `object_storage_secret_access_key`.
+- `oidc`: read-only `oidc_client_id` and, for confidential clients,
+  `oidc_client_secret`.
+- `password`: read-write `password` and read-only `password_hash`.
+- `tailscale`: read-only `tailscale_auth_key`.
+
+Servers may receive:
+
+- `beszel`: read-write `beszel_agent_token` and `beszel_system_id`.
+- `bootstrap`: read-write `truenas_cd_access_token` on TrueNAS servers.
+- `cloudflare_acme`: read-only `cloudflare_acme_token`.
+- `cloudflare_acme_legacy`: read-only `cloudflare_acme_legacy_token`.
+- `cloudflared`: read-only tunnel and tunnel-read tokens.
+- `docker`: read-write `doco_cd_git_access_token` and generated
+  `doco_cd_webhook_secret`.
+- `mail`: read-only `mail_password`.
+- `object_storage`: read-only `object_storage_secret_access_key`.
+- `password`: read-write `password` and read-only `password_hash`.
+- `tailscale`: read-only `tailscale_auth_key`.
 
 Servers also always get read-only `age_secret_key`.
 

@@ -1,12 +1,12 @@
+data "http" "pocketid_discovery" {
+  url = "${var.pocketid_url}/.well-known/openid-configuration"
+}
+
 locals {
-  _pocketid_cloudflare_access_identity_providers = {
+  pocketid_cloudflare_access_identity_providers = {
     for alias, identity_provider in local.defaults.cloudflare.access.identity_providers : alias => identity_provider
     if identity_provider.provider == "pocket_id"
   }
-}
-
-data "http" "pocketid_discovery" {
-  url = "${var.pocketid_url}/.well-known/openid-configuration"
 }
 
 resource "pocketid_application_config" "default" {
@@ -15,7 +15,7 @@ resource "pocketid_application_config" "default" {
 }
 
 resource "pocketid_client" "cloudflare_access" {
-  for_each = local._pocketid_cloudflare_access_identity_providers
+  for_each = local.pocketid_cloudflare_access_identity_providers
 
   client_id    = "cloudflare-access-${each.key}"
   is_public    = false

@@ -24,12 +24,12 @@ data "cloudflare_zone" "all" {
 }
 
 locals {
-  _cloudflare_access_pocketid_discovery = jsondecode(data.http.pocketid_discovery.response_body)
-
   _cloudflare_access_idp_ids = {
-    for alias in keys(local._pocketid_cloudflare_access_identity_providers) :
+    for alias in keys(local.pocketid_cloudflare_access_identity_providers) :
     alias => cloudflare_zero_trust_access_identity_provider.pocket_id[alias].id
   }
+
+  _cloudflare_access_pocketid_discovery = jsondecode(data.http.pocketid_discovery.response_body)
 
   # Stable model-only service route inventory shared by Cloudflare features.
   _cloudflare_service_routes = merge([
@@ -105,20 +105,6 @@ locals {
     ]) : rule.zone => rule...
   }
 
-  _cloudflare_waf_rules_runtime_by_zone = {
-    for zone, rules in local._cloudflare_waf_rules_model_by_zone : zone => [
-      for rule in rules : merge(
-        rule,
-        {
-          expression = sensitive(templatestring(
-            rule.expression,
-            local.services_render_context_base[rule.service_key],
-          ))
-        },
-      )
-    ]
-  }
-
   # Routes are only added when backed by a managed DNS record. The
   # http_status:503 catch-all is required by Cloudflare Tunnel.
   _cloudflare_tunnel_ingress = {
@@ -144,10 +130,24 @@ locals {
       ]
     )
   }
+
+  _cloudflare_waf_rules_runtime_by_zone = {
+    for zone, rules in local._cloudflare_waf_rules_model_by_zone : zone => [
+      for rule in rules : merge(
+        rule,
+        {
+          expression = sensitive(templatestring(
+            rule.expression,
+            local.services_render_context_base[rule.service_key],
+          ))
+        },
+      )
+    ]
+  }
 }
 
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
-  for_each = local._pocketid_cloudflare_access_identity_providers
+  for_each = local.pocketid_cloudflare_access_identity_providers
 
   account_id = data.cloudflare_account.default.id
   name       = each.value.display_name
@@ -160,9 +160,8 @@ resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
     client_secret    = pocketid_client.cloudflare_access[each.key].client_secret
     email_claim_name = "email"
     pkce_enabled     = true
+    scopes           = ["openid", "profile", "email"]
     token_url        = local._cloudflare_access_pocketid_discovery.token_endpoint
-
-    scopes = ["openid", "profile", "email"]
   }
 }
 

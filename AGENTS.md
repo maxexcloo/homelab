@@ -50,6 +50,7 @@ The single-line/multi-line ordering also applies inside each local's object valu
 ## HCL Standards
 
 - **Formatting**: `tofu fmt -recursive` (run via `mise run fmt`)
+- **Top-level ordering**: In mixed HCL files, put data sources before locals, then provisioning blocks, then outputs. Order provisioning blocks by dependency and keep an `import` immediately after its resource. Conventional files such as `providers.tf` and `variables.tf` contain their expected block type.
 - **`for_each`**: Always prefer over `count`; use a named local for filtered/shaped resource/data `for_each` inputs. **Filters that determine map membership (keys) must use only model/input data and file existence checks (`fileexists`)**, never render outputs like `services_render_write_compose` or `services_render_write_sidecars`. Render outputs wrap bootstrapped credential values from `random_id` which are unknown at plan time; when used in a `for_each` filter they make the entire map's keys indeterministic.
 - **Block ordering**: In resource/data/module blocks, put `for_each` and module `source` first (alphabetically), blank line, then sort remaining arguments using the single-line/multi-line convention
 - **Comprehensions**: Use descriptive names (`server_key`, `service`, `record`, `file_path`). Avoid `k`/`v` except in trivial non-nested expressions. Use `for k, v in map` when both key and value are needed; `for v in values(map)` when only the value is needed; `for k in keys(map)` when only the key is needed. Never `for _, v in map` — discard the key with `values(map)` instead. Use `can(map[key])` when testing membership so present nullable values are not mistaken for absent keys.
@@ -90,7 +91,7 @@ The single-line/multi-line ordering also applies inside each local's object valu
 - **Formatting**: Prettier (run via `mise run fmt`)
 - **Quotes**: Avoid unless YAML would misparse the value or the intended type would change. Use quotes for empty strings, DNS TXT content, values starting with `@`, and strings that look like YAML scalars (numbers, booleans, null) but must stay strings. Email addresses containing `@` do not need quotes. **`truenas.env` values**: do not quote booleans or numbers — the base template's `tostring()` normalizes them to environment variable strings regardless of YAML type. Only quote values that YAML would structurally misparse (leading `:` in scalars, values starting with `{`, `[`, `#`, `%`, `@`, `` ` ``, `&`, `*`, `!`, `|`, `>`).
 - **Defaults are split across two files**, both merged into `local.defaults`:
-  - `data/config.yml` — global parameters (cloudflare, controld, domains, github, networking, onepassword, organization, resend, server_types, system, tailscale)
+  - `data/config.yml` — global parameters shared across resource types
   - `data/defaults.yml` — field values merged into every server/service/DNS record
 - Per-resource files (`data/servers/*.yml`, `data/services/*.yml`) only include overrides
 - **Descriptions**: Short, title case
