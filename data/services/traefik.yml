@@ -3,6 +3,8 @@ dashboard:
   - widgets:
       - type: traefik
         url: ${service.urls.default.href}
+features:
+  oidc_forward_auth: true
 identity:
   description: Reverse Proxy
   service: traefik

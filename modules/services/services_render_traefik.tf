@@ -85,6 +85,7 @@ locals {
           (
             service.features.monitoring &&
             service.features.oidc_forward_auth &&
+            service.routing.backend_scheme != "" &&
             route.host != null
             ) ? {
             "traefik.http.middlewares.${route.name}-monitoring.basicauth.headerfield"  = "X-Auth-Request-User"

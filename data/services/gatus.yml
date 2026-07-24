@@ -16,7 +16,7 @@ data:
         - "[RESPONSE_TIME] < 5000"
     - name: Cloudflare DNS
       group: Connectivity
-      url: dns://1.1.1.1
+      url: 1.1.1.1
       alerts:
         - type: email
       conditions:
@@ -36,7 +36,7 @@ data:
         - "[RESPONSE_TIME] < 5000"
     - name: Tailscale DNS
       group: Connectivity
-      url: dns://100.100.100.100
+      url: 100.100.100.100
       alerts:
         - type: email
       conditions:
