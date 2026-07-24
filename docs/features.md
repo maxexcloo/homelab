@@ -28,8 +28,7 @@ credential interface.
 - `monitoring` includes the server in generated monitoring config.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
-- `monitoring_external` adds a public ICMP check when the server has a public
-  hostname or IP address.
+- `monitoring_external` adds an ICMP check using the server's external hostname.
 - `object_storage` provisions storage through the default S3-compatible provider.
 - `password` adds a server password and password hash.
 - `tailscale` provisions a Tailscale auth key and service target, and installs

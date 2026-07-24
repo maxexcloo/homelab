@@ -54,7 +54,7 @@ endpoints:
   %{~ if server.features.monitoring }
   - group: "Internal / ${defaults.server_types[server.type].display_name}"
     name: "${server.identity.title} (${server_key})"
-    url: "icmp://${server.runtime.addresses.tailscale_ipv4}"
+    url: "icmp://${server.hosts.internal}"
     %{~ if server.features.monitoring_alerts }
     alerts:
       %{~ if service.features.mail }
@@ -64,17 +64,10 @@ endpoints:
     conditions:
       - "[CONNECTED] == true"
       - "[RESPONSE_TIME] < 5000"
-  %{~ if(
-    server.features.monitoring_external &&
-    (
-      server.networking.public_host != "" ||
-      server.networking.public_ipv4 != "" ||
-      server.networking.public_ipv6 != ""
-    )
-  ) }
+  %{~ if server.features.monitoring_external }
   - group: "External / ${defaults.server_types[server.type].display_name}"
     name: "${server.identity.title} (${server_key})"
-    url: "icmp://${server.networking.public_host != "" ? server.networking.public_host : server.networking.public_ipv4 != "" ? server.networking.public_ipv4 : "[${server.networking.public_ipv6}]"}"
+    url: "icmp://${server.hosts.external}"
     %{~ if server.features.monitoring_alerts }
     alerts:
       %{~ if service.features.mail }
