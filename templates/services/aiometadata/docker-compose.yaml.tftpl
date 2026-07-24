@@ -21,7 +21,7 @@ services:
       start_period: 10s
       test: ["CMD", "redis-cli", "ping"]
       timeout: 5s
-    image: redis:8.8.0
+    image: redis:8.8.1
     restart: unless-stopped
     volumes:
       - redis:/data
