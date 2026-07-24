@@ -1,6 +1,10 @@
-__pycache__
+.render/
+.ruff_cache/
+.terraform/
+__pycache__/
 .mise.local.toml
-.render
-.ruff_cache
-.terraform
+*.plan
 *.pyc
+*.tfplan
+*.tfstate
+*.tfstate.*

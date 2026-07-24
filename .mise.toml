@@ -18,16 +18,16 @@ description = "Initialize OpenTofu"
 run = "tofu init"
 
 [tasks.setup]
-description = "Initial project setup"
-depends = ["hooks"]
+description = "Clean up, configure, initialize, and install Git hooks"
+depends = ["cleanup"]
 run = """
-# Setting up project...
 if [[ ! -f .mise.local.toml ]]; then
-  echo "Creating .mise.local.toml template..."
   cp .mise.local.toml.default .mise.local.toml
   echo "Created .mise.local.toml - please add your tokens"
   exit 1
 fi
+tofu init
+prek install
 """
 
 # Development
@@ -35,22 +35,29 @@ fi
 description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
-ruff format --check modules scripts templates/workflows
 prettier --check ".github/**/*.{yaml,yml}" "data/**/*.yml" "schemas/*.json" "templates/**/*.yml" ".pre-commit-config.yaml" "renovate.json"
+ruff format --check modules scripts templates/workflows
+"""
+
+[tasks.cleanup]
+description = "Remove rendered artifacts, caches, bytecode, and saved plans"
+run = """
+find . -path ./.git -prune -o \
+  -type d \\( -name .render -o -name .ruff_cache -o -name .terraform -o -name __pycache__ \\) \
+  -prune -exec rm -rf -- {} +
+find . -path ./.git -prune -o \
+  -type f \\( -name '*.plan' -o -name '*.pyc' -o -name '*.tfplan' \\) \
+  -exec rm -f -- {} +
 """
 
 [tasks.fmt]
 description = "Format all files"
 run = """
+prettier --log-level warn --write ".github/**/*.{yaml,yml}" "data/**/*.yml" "schemas/*.json" "templates/**/*.yml" ".pre-commit-config.yaml" "renovate.json"
 ruff check --fix --select I modules scripts templates/workflows
 ruff format modules scripts templates/workflows
-prettier --log-level warn --write ".github/**/*.{yaml,yml}" "data/**/*.yml" "schemas/*.json" "templates/**/*.yml" ".pre-commit-config.yaml" "renovate.json"
 tofu fmt -recursive
 """
-
-[tasks.hooks]
-description = "Install Git hooks with prek"
-run = "prek install"
 
 [tasks.lint]
 description = "Validate source and default-merged YAML against JSON schemas"
@@ -71,19 +78,7 @@ tofu fmt -check -recursive
 tofu validate
 """
 
-# Deployment
-[tasks.apply]
-description = "Apply all changes"
-run = 'tofu apply'
-
-[tasks.apply-servers]
-description = "Apply server module changes"
-run = "tofu apply -target=module.servers"
-
-[tasks.apply-services]
-description = "Apply service module changes"
-run = "tofu apply -target=module.services"
-
+# Plan
 [tasks.plan]
 description = "Plan all changes"
 run = "tofu plan"
@@ -95,6 +90,19 @@ run = "tofu plan -target=module.servers"
 [tasks.plan-services]
 description = "Plan service module changes"
 run = "tofu plan -target=module.services"
+
+# Deploy
+[tasks.apply]
+description = "Apply all changes"
+run = 'tofu apply'
+
+[tasks.apply-servers]
+description = "Apply server module changes"
+run = "tofu apply -target=module.servers"
+
+[tasks.apply-services]
+description = "Apply service module changes"
+run = "tofu apply -target=module.services"
 
 # Scripts
 [tasks.render]

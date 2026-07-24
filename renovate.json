@@ -1,40 +1,49 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "customManagers": [
-    {
-      "customType": "regex",
-      "datasourceTemplate": "docker",
-      "fileMatch": ["(^|/)templates/.+\\.ya?ml\\.tftpl$"],
-      "matchStrings": [
-        "(?m)^\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*):(?<currentValue>[^\\s@#]+)"
-      ]
-    },
-    {
-      "customType": "regex",
-      "fileMatch": ["(^|/)templates/.+\\.ya?ml\\.tftpl$"],
-      "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: extractVersion=(?<extractVersion>\\S+))?(?: versioning=(?<versioning>\\S+))?\\s*\\n\\s*-\\s*[A-Z0-9_]*VERSION=(?<currentValue>[^\\s]+)"
-      ],
-      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
-    },
-    {
-      "customType": "regex",
-      "datasourceTemplate": "github-releases",
-      "fileMatch": ["(^|/)templates/.+\\.ya?ml\\.tftpl$"],
-      "matchStrings": [
-        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/(?<currentValue>v?\\d[^/$]*)/download/",
-        "https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/(?<currentValue>v?\\d[^/$]*)/"
-      ],
-      "versioningTemplate": "loose"
-    }
-  ],
   "dependencyDashboard": true,
   "extends": ["config:recommended"],
   "ignoreDeps": ["hashicorp/terraform"],
   "labels": ["dependencies"],
+  "prConcurrentLimit": 20,
+  "rangeStrategy": "bump",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "docker",
+      "managerFilePatterns": ["/(^|/)templates/.+\\.ya?ml\\.tftpl$/"],
+      "matchStrings": [
+        "(?:^|\\r?\\n)\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*):(?<currentValue>[^\\s@#]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
+      ],
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "currentValueTemplate": "latest",
+      "datasourceTemplate": "docker",
+      "managerFilePatterns": ["/(^|/)templates/.+\\.ya?ml\\.tftpl$/"],
+      "matchStrings": [
+        "(?:^|\\r?\\n)\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "jdx/mise",
+      "extractVersionTemplate": "^v?(?<version>.*)$",
+      "managerFilePatterns": ["/(^|/)\\.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "uses:\\s+jdx/mise-action@\\S+\\s+with:\\s+version:\\s+(?<currentValue>\\S+)"
+      ],
+      "versioningTemplate": "semver-coerced"
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "packageRules": [
     {
-      "description": "Group GitHub Actions updates from workflow templates",
+      "description": "Group GitHub Actions updates",
       "groupName": "GitHub Actions",
       "matchManagers": ["github-actions"]
     },
@@ -54,6 +63,7 @@
       "pinDigests": true
     }
   ],
-  "prConcurrentLimit": 20,
-  "rangeStrategy": "bump"
+  "pre-commit": {
+    "enabled": true
+  }
 }

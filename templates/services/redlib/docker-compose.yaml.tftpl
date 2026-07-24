@@ -2,7 +2,7 @@ services:
   ctrld:
     command: --cd=${service.runtime.credentials.ctrld_endpoint}
     dns: 127.0.0.1
-    image: controldns/ctrld:latest
+    image: controldns/ctrld:1.5.4
     restart: unless-stopped
   redlib:
     environment:
@@ -13,6 +13,7 @@ services:
       REDLIB_ROBOTS_DISABLE_INDEXING: "${service.data.settings.robots_disable_indexing}"
     healthcheck:
       disable: true
-    image: ghcr.io/nachtalb/redlib:latest
+    # Upstream publishes no version tags; pin the current manifest.
+    image: ghcr.io/nachtalb/redlib@sha256:8d3672ad029114482e6265bf90172be23b1d4164a1e1af531383a935c6fb1da4
     network_mode: service:ctrld
     restart: unless-stopped

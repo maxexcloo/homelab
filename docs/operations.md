@@ -7,8 +7,8 @@ mise run apply           # Apply infrastructure changes
 mise run apply-servers   # Apply server module changes
 mise run apply-services  # Apply service module changes
 mise run check           # Format check, lint, and validate
+mise run cleanup         # Remove rendered artifacts, caches, bytecode, and saved plans
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
-mise run hooks           # Install Git hooks with prek
 mise run init            # Initialize OpenTofu providers and backend
 mise run lint            # Validate source and default-merged YAML against JSON schemas
 mise run plan            # Review infrastructure changes
@@ -16,7 +16,7 @@ mise run plan-servers    # Review server module changes
 mise run plan-services   # Review service module changes
 mise run prek            # Run all repository hooks
 mise run render          # Render plaintext deploy artifacts via debug_dir
-mise run setup           # Initial project setup and Git hook installation
+mise run setup           # Clean, configure, initialize, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration
 ```
@@ -40,9 +40,10 @@ full plan when checking for changes outside that module boundary.
 
 ## Automated Checks
 
-`mise run setup` installs the local prek-managed Git hook. Use `mise run check`
-for normal source validation and `mise run prek` for the complete hook suite.
-Run `mise run hooks` only when the hook needs reinstalling.
+`mise run setup` cleans generated files, creates the local configuration when
+missing, initializes OpenTofu, and installs the prek-managed Git hook. Use
+`mise run check` for normal source validation and `mise run prek` for the
+complete hook suite.
 
 The hook suite checks file hygiene, GitHub Actions, Dockerfiles, concrete Docker
 Compose files, JSON Schemas, Renovate configuration, OpenTofu formatting and

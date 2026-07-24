@@ -34,9 +34,10 @@ Review the plan before applying it.
   credential vaults in `data/config.yml`
 - HCP Terraform account for the state backend
 
-Run `mise run setup` to create `.mise.local.toml` from the template, then add
-credentials for the providers used by the current data. See
-`.mise.local.toml.default` for the full list.
+Run `mise run setup` to clean generated files, create `.mise.local.toml` from
+the template, initialize OpenTofu, and install the Git hook. On first run, add
+the required credentials and run setup again. See `.mise.local.toml.default`
+for the full variable list.
 
 Commit `.terraform.lock.hcl` when provider selections change. Keep the
 `.terraform/` directory and plan or state files local.
@@ -48,8 +49,8 @@ mise run apply           # Apply infrastructure changes
 mise run apply-servers   # Apply server module changes
 mise run apply-services  # Apply service module changes
 mise run check           # Format check, lint, and validate
+mise run cleanup         # Remove rendered artifacts, caches, bytecode, and saved plans
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
-mise run hooks           # Install Git hooks with prek
 mise run init            # Initialize OpenTofu providers and backend
 mise run lint            # Validate source and default-merged YAML against JSON schemas
 mise run plan            # Review infrastructure changes
@@ -57,7 +58,7 @@ mise run plan-servers    # Review server module changes
 mise run plan-services   # Review service module changes
 mise run prek            # Run all repository hooks
 mise run render          # Render plaintext deployment artifacts via debug_dir
-mise run setup           # Initial project setup and Git hook installation
+mise run setup           # Clean, configure, initialize, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration
 ```

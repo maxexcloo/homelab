@@ -16,7 +16,7 @@ services:
         - CMD-SHELL
         - curl --fail --silent http://localhost:8080/up
       timeout: 10s
-    image: ghcr.io/usetrmnl/larapaper:latest
+    image: ghcr.io/usetrmnl/larapaper:0.39.0
     restart: unless-stopped
     volumes:
       - database:/var/www/html/database/storage

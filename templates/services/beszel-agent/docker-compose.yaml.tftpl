@@ -5,7 +5,7 @@ services:
       KEY: ${service.data.public_key}
       LISTEN: ${service.data.listen}
       TOKEN: ${server.runtime.credentials.beszel_agent_token}
-    image: henrygd/beszel-agent:latest
+    image: henrygd/beszel-agent:0.18.7
     network_mode: host
     restart: unless-stopped
     volumes:

@@ -1,6 +1,7 @@
 services:
   anisette:
-    image: dadoum/anisette-v3-server
+    # Upstream publishes no version tags; pin the current manifest.
+    image: dadoum/anisette-v3-server@sha256:1e20384985d3c49965f444bef39d627768dacc39ea0dca91f2a535edb7591ba3
     restart: unless-stopped
     volumes:
       - data:/home/Alcoholic/.config/anisette-v3/lib

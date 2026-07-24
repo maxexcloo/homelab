@@ -35,7 +35,7 @@ repos:
         name: Lint Dockerfiles
         entry: mise exec -- hadolint
         language: system
-        # Rolling image tags and unpinned Alpine packages remain warnings.
+        # Unpinned Alpine packages remain warnings.
         args:
           - --failure-threshold
           - error
