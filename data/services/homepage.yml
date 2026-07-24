@@ -42,7 +42,7 @@ data:
             - description: VPN
               href: https://login.tailscale.com/admin
               icon: si-tailscale-#ffffff
-        - Unifi:
+        - UniFi:
             - description: Network
               href: https://unifi.ui.com
               icon: si-ubiquiti-#ffffff
