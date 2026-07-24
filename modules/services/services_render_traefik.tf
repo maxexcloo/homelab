@@ -90,16 +90,23 @@ locals {
             ) ? {
             "traefik.http.middlewares.${route.name}-monitoring.basicauth.headerfield"  = "X-Auth-Request-User"
             "traefik.http.middlewares.${route.name}-monitoring.basicauth.removeheader" = "true"
-            "traefik.http.middlewares.${route.name}-monitoring.basicauth.users"        = "gatus:${module.credentials.hashes["${service_key}-monitoring_token"]}"
+            "traefik.http.middlewares.${route.name}-monitoring.basicauth.users"        = "monitoring:${module.credentials.hashes["${service_key}-monitoring_token"]}"
             "traefik.http.routers.${route.name}-monitoring.entrypoints"                = route.https ? "websecure" : "web"
             "traefik.http.routers.${route.name}-monitoring.rule"                       = "Host(`${route.host}`) && HeaderRegexp(`Authorization`, `^Basic `)"
-            "traefik.http.routers.${route.name}-monitoring.service"                    = route.name
             "traefik.http.routers.${route.name}-monitoring.tls.certresolver"           = route.acme ? "cloudflare" : null
 
             "traefik.http.routers.${route.name}-monitoring.middlewares" = join(",", concat(
               route.expose == "internal" ? ["internal-only@docker"] : [],
               ["${route.name}-monitoring@docker"],
             ))
+
+            "traefik.http.routers.${route.name}-monitoring.service" = try(
+              templatestring(
+                tostring(route.labels["traefik.http.routers.${route.name}.service"]),
+                local.services_render_context_base[service_key],
+              ),
+              route.name,
+            )
           } : {},
         ) : {},
         local._services_render_traefik_redirect_labels[service_key][route.name],

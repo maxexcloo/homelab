@@ -51,7 +51,7 @@ All servers also get read-only `age_secret_key` credentials.
 - `oidc` provisions a client through the configured identity provider.
 - `oidc_forward_auth` protects generated Traefik routes with the shared OAuth2
   Proxy forward-auth middleware. Monitored routes also receive a per-target
-  Basic Auth route for Gatus.
+  Basic Auth route for machine clients such as Gatus and Homepage.
 - `password` adds a service password and password hash.
 - `tailscale` provisions a Tailscale auth key.
 

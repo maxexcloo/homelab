@@ -2,7 +2,9 @@
 dashboard:
   - widgets:
       - type: traefik
+        password: ${service.runtime.credentials.monitoring_token}
         url: ${service.urls.default.href}
+        username: monitoring
 features:
   oidc_forward_auth: true
 identity:

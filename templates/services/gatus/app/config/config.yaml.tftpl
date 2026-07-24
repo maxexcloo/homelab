@@ -44,7 +44,7 @@ endpoints:
       %{~ endif }
     headers:
       %{~ if monitored_service.features.oidc_forward_auth }
-      Authorization: "Basic ${base64encode("gatus:${monitored_service.runtime.credentials.monitoring_token}")}"
+      Authorization: "Basic ${base64encode("monitoring:${monitored_service.runtime.credentials.monitoring_token}")}"
       %{~ endif }
       X-Gatus-Token: "${monitored_service.runtime.credentials.monitoring_token}"
   %{~ endif }
