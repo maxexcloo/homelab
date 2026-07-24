@@ -12,7 +12,7 @@ data:
               icon: si-1password-#ffffff
         - Backblaze:
             - description: Object Storage
-              href: https://secure.backblaze.com/b2_buckets.htm
+              href: https://backblaze.com
               icon: si-backblaze-#ffffff
         - Cloudflare:
             - description: DNS & Zero Trust

@@ -6,6 +6,7 @@
   "labels": ["dependencies"],
   "prConcurrentLimit": 20,
   "rangeStrategy": "bump",
+  "rebaseWhen": "behind-base-branch",
   "customManagers": [
     {
       "customType": "regex",
@@ -61,6 +62,11 @@
       "description": "Pin Docker image digests in templates and Dockerfiles",
       "matchDatasources": ["docker"],
       "pinDigests": true
+    },
+    {
+      "automerge": true,
+      "description": "Automerge passing digest, patch, and pin updates",
+      "matchUpdateTypes": ["digest", "patch", "pin", "pinDigest"]
     }
   ],
   "pre-commit": {
