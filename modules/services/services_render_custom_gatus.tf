@@ -1,7 +1,40 @@
 # Stage: render — Gatus-specific global inventory.
 locals {
+  _services_render_custom_gatus_provider_endpoints = flatten([
+    for bookmark_group in try(local.services_render_custom_homepage_data.bookmarks, []) : flatten([
+      for group_name, bookmarks in bookmark_group : flatten([
+        for bookmark in bookmarks : [
+          for bookmark_name, bookmark_items in bookmark : {
+            name  = bookmark_name
+            group = group_name
+            url   = one(bookmark_items).href
+
+            alerts = [
+              {
+                type = "email"
+              },
+            ]
+
+            conditions = [
+              "[STATUS] == any(200, 401, 403)",
+              "[RESPONSE_TIME] < 5000",
+            ]
+          }
+          if try(one(bookmark_items).href, "") != ""
+        ]
+      ])
+      if group_name == "Providers"
+    ])
+  ])
+
   services_render_custom_gatus_context = {
     for service_key, service in local.services : service_key => {
+      custom = {
+        gatus = {
+          provider_endpoints = local._services_render_custom_gatus_provider_endpoints
+        }
+      }
+
       servers = merge(
         local.servers_model,
         local.servers_render_servers,

@@ -30,6 +30,12 @@ service groups and server groups.
 Homepage layout defaults to two columns and row style. The Homepage service can
 override service-group layout through `service.data.groups`.
 
+## Provider Checks
+
+Bookmarks in Homepage's `Providers` group generate Gatus HTTP checks with the
+same name and URL. Keep protocol-specific checks, such as DNS queries, in the
+Gatus service's `data.endpoints`.
+
 ## URLs In 1Password
 
 Service dashboard links that are not already present in `service.urls` are added

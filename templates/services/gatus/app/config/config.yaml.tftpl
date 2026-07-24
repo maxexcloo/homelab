@@ -14,7 +14,6 @@ alerting:
       success-threshold: 5
   %{~ endif }
 endpoints:
-  ${indent(2, yamlencode(service.data.endpoints))}
   %{~ for monitored_service in values(services) }
   %{~ if monitored_service.features.monitoring && monitored_service.routing.backend_scheme != "" }
   %{~ for url_key, url in monitored_service.urls }
@@ -88,6 +87,7 @@ endpoints:
   %{~ endif }
   %{~ endif }
   %{~ endfor }
+  ${indent(2, yamlencode(concat(service.data.endpoints, custom.gatus.provider_endpoints)))}
 ui:
   dashboard-heading: ${service.identity.title}
   dashboard-subheading: ${service.identity.description}

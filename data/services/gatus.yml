@@ -5,15 +5,6 @@ dashboard:
         url: ${service.urls.default.href}
 data:
   endpoints:
-    - name: Cloudflare
-      group: Providers
-      url: https://cloudflare.com/cdn-cgi/trace
-      alerts:
-        - type: email
-      conditions:
-        - "[STATUS] == 200"
-        - "[BODY] == pat(*colo=*)"
-        - "[RESPONSE_TIME] < 5000"
     - name: Cloudflare DNS
       group: Providers
       url: 1.1.1.1
@@ -26,14 +17,6 @@ data:
       dns:
         query-name: ${defaults.domains.external}
         query-type: A
-    - name: Tailscale
-      group: Providers
-      url: https://login.tailscale.com/derpmap/default
-      alerts:
-        - type: email
-      conditions:
-        - "[STATUS] == 200"
-        - "[RESPONSE_TIME] < 5000"
 features:
   mail: true
   tailscale: true

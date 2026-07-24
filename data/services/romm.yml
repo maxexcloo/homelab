@@ -3,6 +3,8 @@ credentials:
   fields:
     igdb_client_id: {}
     igdb_client_secret: {}
+    mobygames_api_key: {}
+    retroachievements_api_key: {}
     screenscraper_password: {}
     steamgriddb_api_key: {}
   generated:
