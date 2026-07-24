@@ -8,7 +8,7 @@ services:
       RUNNER_NAME: truenas-cd-${server.key}
       SOPS_AGE_KEY: ${server.runtime.credentials.age_secret_key}
       UNSET_CONFIG_VARS: "true"
-    image: myoung34/github-runner:2.335.1-ubuntu-focal
+    image: myoung34/github-runner:2.336.0-ubuntu-focal
     restart: unless-stopped
     volumes:
       - /run/middleware/middlewared.sock:/run/middleware/middlewared.sock
