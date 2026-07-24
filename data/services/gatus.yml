@@ -6,7 +6,7 @@ dashboard:
 data:
   endpoints:
     - name: Cloudflare
-      group: Connectivity
+      group: Providers
       url: https://cloudflare.com/cdn-cgi/trace
       alerts:
         - type: email
@@ -15,7 +15,7 @@ data:
         - "[BODY] == pat(*colo=*)"
         - "[RESPONSE_TIME] < 5000"
     - name: Cloudflare DNS
-      group: Connectivity
+      group: Providers
       url: 1.1.1.1
       alerts:
         - type: email
@@ -27,25 +27,13 @@ data:
         query-name: ${defaults.domains.external}
         query-type: A
     - name: Tailscale
-      group: Connectivity
+      group: Providers
       url: https://login.tailscale.com/derpmap/default
       alerts:
         - type: email
       conditions:
         - "[STATUS] == 200"
         - "[RESPONSE_TIME] < 5000"
-    - name: Tailscale DNS
-      group: Connectivity
-      url: 100.100.100.100
-      alerts:
-        - type: email
-      conditions:
-        - "[CONNECTED] == true"
-        - "[DNS_RCODE] == NOERROR"
-        - "[RESPONSE_TIME] < 5000"
-      dns:
-        query-name: ${defaults.domains.external}
-        query-type: A
 features:
   mail: true
   tailscale: true
