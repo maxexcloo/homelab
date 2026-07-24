@@ -24,9 +24,13 @@ targets:
   au-truenas:
     truenas:
       env:
-        SMTP_ENCRYPTION: TLS
-        SMTP_FROM_ADDRESS: ${service.key}@${defaults.domains.internal}
+        APP_NAME: ${service.identity.title}
+        EMAILS_VERIFIED: true
+        REQUIRE_USER_EMAIL: true
+        SMTP_FROM: ${service.runtime.attributes.mail_from_address}
         SMTP_HOST: ${service.runtime.attributes.mail_host}
         SMTP_PASSWORD: ${service.runtime.credentials.mail_password}
         SMTP_PORT: ${service.runtime.attributes.mail_port}
-        SMTP_USERNAME: ${service.runtime.attributes.mail_username}
+        SMTP_TLS: tls
+        SMTP_USER: ${service.runtime.attributes.mail_username}
+        UI_CONFIG_DISABLED: true

@@ -93,7 +93,16 @@ locals {
         [
           for url_key in [
             for key in sort(keys(service.urls)) : key
-            if !contains(["default", "external", "internal"], key)
+            if(
+              !contains(["default", "external", "internal"], key) &&
+              !contains(
+                [
+                  for alias in ["external", "internal"] : service.urls[alias].href
+                  if can(service.urls[alias])
+                ],
+                service.urls[key].href,
+              )
+            )
             ] : {
             href    = service.urls[url_key].href
             label   = service.urls[url_key].label

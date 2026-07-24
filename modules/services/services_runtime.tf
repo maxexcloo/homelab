@@ -8,9 +8,10 @@ locals {
         runtime = {
           attributes = merge(
             service.features.mail ? {
-              mail_host     = local.defaults.resend.host
-              mail_port     = local.defaults.resend.port
-              mail_username = local.defaults.resend.username
+              mail_from_address = "${service.key}@${local.defaults.domains.internal}"
+              mail_host         = local.defaults.resend.host
+              mail_port         = local.defaults.resend.port
+              mail_username     = local.defaults.resend.username
             } : {},
             service.features.object_storage ? {
               object_storage_access_key_id = module.object_storage.items[service_key].access_key_id

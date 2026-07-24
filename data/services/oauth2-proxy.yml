@@ -3,7 +3,7 @@ credentials:
   generated:
     cookie_secret:
       length: 32
-      type: base64
+      type: alphanumeric
 data:
   oidc_pkce_enabled: true
   oidc_callback_urls:

@@ -25,13 +25,6 @@ locals {
   pocketid_discovery = try(jsondecode(data.http.pocketid_discovery["default"].response_body), null)
 }
 
-resource "pocketid_application_config" "default" {
-  for_each = local._pocketid_integration_ready ? { default = true } : {}
-
-  emails_verified    = "true"
-  require_user_email = "true"
-}
-
 resource "pocketid_client" "cloudflare_access" {
   for_each = local.pocketid_cloudflare_access_identity_providers
 

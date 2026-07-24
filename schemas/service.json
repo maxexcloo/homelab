@@ -192,7 +192,7 @@
       "type": "object",
       "properties": {
         "mail": {
-          "description": "Per-target override. Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.mail_host, runtime.attributes.mail_port, runtime.attributes.mail_username, and runtime.credentials.mail_password as template variables.",
+          "description": "Per-target override. Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.mail_from_address, runtime.attributes.mail_host, runtime.attributes.mail_port, runtime.attributes.mail_username, and runtime.credentials.mail_password as template variables.",
           "type": "boolean"
         },
         "monitoring": {
@@ -410,7 +410,7 @@
       "type": "object",
       "properties": {
         "mail": {
-          "description": "Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.mail_host, runtime.attributes.mail_port, runtime.attributes.mail_username, and runtime.credentials.mail_password as template variables.",
+          "description": "Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.mail_from_address, runtime.attributes.mail_host, runtime.attributes.mail_port, runtime.attributes.mail_username, and runtime.credentials.mail_password as template variables.",
           "type": "boolean"
         },
         "monitoring": {

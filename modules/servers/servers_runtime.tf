@@ -98,9 +98,10 @@ locals {
               cloudflare_tunnel_id = cloudflare_zero_trust_tunnel_cloudflared.server[server_key].id
             } : {},
             server.features.mail ? {
-              mail_host     = local.defaults.resend.host
-              mail_port     = local.defaults.resend.port
-              mail_username = local.defaults.resend.username
+              mail_from_address = "${server_key}@${local.defaults.domains.internal}"
+              mail_host         = local.defaults.resend.host
+              mail_port         = local.defaults.resend.port
+              mail_username     = local.defaults.resend.username
             } : {},
             server.features.object_storage ? {
               object_storage_access_key_id = module.object_storage.items[server_key].access_key_id

@@ -184,7 +184,7 @@
           "type": "boolean"
         },
         "mail": {
-          "description": "Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.{mail_host, mail_port, mail_username} and runtime.credentials.mail_password.",
+          "description": "Provision credentials for the default SMTP provider, currently Resend. Exposes runtime.attributes.{mail_from_address, mail_host, mail_port, mail_username} and runtime.credentials.mail_password.",
           "type": "boolean"
         },
         "monitoring": {

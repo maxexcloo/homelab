@@ -1,7 +1,7 @@
 alerting:
   %{~ if service.features.mail }
   email:
-    from: ${service.target}@${defaults.domains.internal}
+    from: ${service.runtime.attributes.mail_from_address}
     host: ${service.runtime.attributes.mail_host}
     password: $${MAIL_PASSWORD}
     port: ${service.runtime.attributes.mail_port}
@@ -13,14 +13,6 @@ alerting:
       send-on-resolved: true
       success-threshold: 5
   %{~ endif }
-  homeassistant:
-    token: $${HOMEASSISTANT_TOKEN}
-    url: ${servers.homeassistant.urls.management.href}
-    default-alert:
-      description: ${service.identity.title} Check Failed
-      failure-threshold: 5
-      send-on-resolved: true
-      success-threshold: 5
 endpoints:
   - group: Connectivity
     name: Internet DNS
@@ -29,7 +21,6 @@ endpoints:
       %{~ if service.features.mail }
       - type: email
       %{~ endif }
-      - type: homeassistant
     conditions:
       - "[CONNECTED] == true"
   %{~ for monitored_service in values(services) }
@@ -44,7 +35,6 @@ endpoints:
       %{~ if service.features.mail }
       - type: email
       %{~ endif }
-      - type: homeassistant
     %{~ endif }
     %{~ if monitored_service.routing.https_verify == false }
     client:
@@ -74,7 +64,6 @@ endpoints:
       %{~ if service.features.mail }
       - type: email
       %{~ endif }
-      - type: homeassistant
     %{~ endif }
     conditions:
       - "[CONNECTED] == true"

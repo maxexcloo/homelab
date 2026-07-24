@@ -38,7 +38,7 @@ targets:
     truenas:
       env:
         BASE_URL: ${service.urls.default.href}
-        EMAIL_FROM: ${service.key}@${defaults.domains.internal}
+        EMAIL_FROM: ${service.runtime.attributes.mail_from_address}
         EMAIL_SERVER: smtps://${service.runtime.attributes.mail_username}:${urlencode(service.runtime.credentials.mail_password)}@${service.runtime.attributes.mail_host}:${service.runtime.attributes.mail_port}
         KEYCLOAK_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         KEYCLOAK_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
