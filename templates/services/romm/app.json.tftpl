@@ -15,13 +15,12 @@
       "igdb_client_id": "${service.runtime.credentials.igdb_client_id}",
       "igdb_client_secret": "${service.runtime.credentials.igdb_client_secret}",
       "launchbox_api_enabled": true,
-      "mobygames_api_key": "${service.runtime.credentials.mobygames_api_key}",
       "playmatch_api_enabled": true,
       "postgres_image_selector": "postgres_18_image",
       "redis_password": "${service.runtime.credentials.redis_password}",
       "retroachievements_api_key": "${service.runtime.credentials.retroachievements_api_key}",
       "screenscraper_password": "${service.runtime.credentials.screenscraper_password}",
-      "screenscraper_user": "${defaults.organization.email}",
+      "screenscraper_user": "${service.runtime.credentials.screenscraper_username}",
       "steamgriddb_api_key": "${service.runtime.credentials.steamgriddb_api_key}"
     },
     "storage": {

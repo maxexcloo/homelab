@@ -3,9 +3,9 @@ credentials:
   fields:
     igdb_client_id: {}
     igdb_client_secret: {}
-    mobygames_api_key: {}
     retroachievements_api_key: {}
     screenscraper_password: {}
+    screenscraper_username: {}
     steamgriddb_api_key: {}
   generated:
     auth_secret_key:
@@ -43,7 +43,7 @@ targets:
         OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
         OIDC_ENABLED: true
-        OIDC_PROVIDER: Excloo ID
+        OIDC_PROVIDER: ${service.runtime.attributes.oidc_provider_name}
         OIDC_REDIRECT_URI: ${service.urls.default.href}/api/oauth/openid
         OIDC_SERVER_APPLICATION_URL: ${service.runtime.attributes.oidc_issuer_url}
         ROMM_BASE_URL: ${service.urls.default.href}

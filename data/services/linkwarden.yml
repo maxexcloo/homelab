@@ -42,7 +42,7 @@ targets:
         EMAIL_SERVER: smtps://${service.runtime.attributes.mail_username}:${urlencode(service.runtime.credentials.mail_password)}@${service.runtime.attributes.mail_host}:${service.runtime.attributes.mail_port}
         KEYCLOAK_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         KEYCLOAK_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
-        KEYCLOAK_CUSTOM_NAME: Excloo ID
+        KEYCLOAK_CUSTOM_NAME: ${service.runtime.attributes.oidc_provider_name}
         KEYCLOAK_ISSUER: ${service.runtime.attributes.oidc_issuer_url}
         NEXTAUTH_URL: ${service.urls.default.href}/api/v1/auth
         NEXT_PUBLIC_EMAIL_PROVIDER: true

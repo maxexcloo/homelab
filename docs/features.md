@@ -48,7 +48,8 @@ All servers also get read-only `age_secret_key` credentials.
   enabled.
 - `object_storage` provisions storage through the default S3-compatible provider
   and exposes generic `object_storage_*` runtime values.
-- `oidc` provisions a client through the configured identity provider.
+- `oidc` provisions a client through the configured identity provider and
+  exposes its issuer URL and display name.
 - `oidc_forward_auth` protects generated Traefik routes with the shared OAuth2
   Proxy forward-auth middleware. Monitored routes also receive a per-target
   Basic Auth route for machine clients such as Gatus and Homepage.

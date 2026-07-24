@@ -41,7 +41,7 @@ targets:
         HARDCOVER_ENABLED: true
         LIBGEN_MIRROR_URLS: ${service.data.libgen_mirror_urls}
         METADATA_PROVIDER: hardcover
-        OIDC_BUTTON_LABEL: Excloo ID
+        OIDC_BUTTON_LABEL: ${service.runtime.attributes.oidc_provider_name}
         OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
         OIDC_DISCOVERY_URL: ${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration

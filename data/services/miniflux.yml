@@ -33,7 +33,7 @@ targets:
         OAUTH2_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
         OAUTH2_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
         OAUTH2_OIDC_DISCOVERY_ENDPOINT: ${service.runtime.attributes.oidc_issuer_url}
-        OAUTH2_OIDC_PROVIDER_NAME: Excloo ID
+        OAUTH2_OIDC_PROVIDER_NAME: ${service.runtime.attributes.oidc_provider_name}
         OAUTH2_PROVIDER: oidc
         OAUTH2_REDIRECT_URL: ${service.urls.default.href}/oauth2/oidc/callback
         OAUTH2_USER_CREATION: 1

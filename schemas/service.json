@@ -208,7 +208,7 @@
           "type": "boolean"
         },
         "oidc": {
-          "description": "Per-target override. Provision an OIDC client using the configured provider. Exposes runtime.attributes.oidc_issuer_url and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Stored in 1Password.",
+          "description": "Per-target override. Provision an OIDC client using the configured provider. Exposes runtime.attributes.{oidc_issuer_url,oidc_provider_name} and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Stored in 1Password.",
           "type": "boolean"
         },
         "oidc_forward_auth": {
@@ -426,7 +426,7 @@
           "type": "boolean"
         },
         "oidc": {
-          "description": "Provision an OIDC client using the configured provider. Exposes runtime.attributes.oidc_issuer_url and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Configure callback URL paths or absolute URLs in data.oidc_callback_urls, and optional public-client and PKCE behavior in data.oidc_is_public and data.oidc_pkce_enabled. Stored in 1Password.",
+          "description": "Provision an OIDC client using the configured provider. Exposes runtime.attributes.{oidc_issuer_url,oidc_provider_name} and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Configure callback URL paths or absolute URLs in data.oidc_callback_urls, and optional public-client and PKCE behavior in data.oidc_is_public and data.oidc_pkce_enabled. Stored in 1Password.",
           "type": "boolean"
         },
         "oidc_forward_auth": {

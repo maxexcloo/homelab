@@ -17,6 +17,18 @@ data:
       dns:
         query-name: ${defaults.domains.external}
         query-type: A
+    - name: Control D DNS
+      group: Providers
+      url: 76.76.2.0
+      alerts:
+        - type: email
+      conditions:
+        - "[CONNECTED] == true"
+        - "[DNS_RCODE] == NOERROR"
+        - "[RESPONSE_TIME] < 5000"
+      dns:
+        query-name: ${defaults.domains.internal}
+        query-type: A
 features:
   mail: true
   tailscale: true

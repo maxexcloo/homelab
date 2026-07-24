@@ -30,7 +30,7 @@ targets:
         AI_DEFAULT_MODEL: openrouter://${defaults.ai.default_model_provider}/${defaults.ai.default_model}
         AI_IS_ENABLED: true
         AUTH_PROVIDERS_CUSTOMS: >-
-          [{"clientId":"${service.runtime.credentials.oidc_client_id}","clientSecret":"${service.runtime.credentials.oidc_client_secret}","discoveryUrl":"${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration","pkce":true,"providerId":"pocket-id","providerName":"Excloo ID","scopes":["openid","profile","email"],"type":"oidc"}]
+          [{"clientId":"${service.runtime.credentials.oidc_client_id}","clientSecret":"${service.runtime.credentials.oidc_client_secret}","discoveryUrl":"${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration","pkce":true,"providerId":"pocket-id","providerName":"${service.runtime.attributes.oidc_provider_name}","scopes":["openid","profile","email"],"type":"oidc"}]
         AUTO_TAGGING_ENABLED: true
         AUTO_TAGGING_MODEL: openrouter://${defaults.ai.default_model_provider}/${defaults.ai.default_model}
         OPENROUTER_API_KEY: ${service.runtime.credentials.openrouter_api_key}

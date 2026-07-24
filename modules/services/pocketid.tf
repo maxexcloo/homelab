@@ -23,6 +23,11 @@ locals {
   }
 
   pocketid_discovery = try(jsondecode(data.http.pocketid_discovery["default"].response_body), null)
+
+  pocketid_provider_name = try(one([
+    for service in values(local.services_model) : service.identity.title
+    if service.identity.name == "pocket-id"
+  ]), "Pocket ID")
 }
 
 resource "pocketid_client" "cloudflare_access" {

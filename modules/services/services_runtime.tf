@@ -19,7 +19,8 @@ locals {
               object_storage_endpoint      = module.object_storage.items[service_key].endpoint
             } : {},
             service.features.oidc && local._pocketid_integration_ready ? {
-              oidc_issuer_url = var.integrations.pocketid.url
+              oidc_issuer_url    = var.integrations.pocketid.url
+              oidc_provider_name = local.pocketid_provider_name
             } : {},
           )
 
