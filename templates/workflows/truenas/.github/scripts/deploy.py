@@ -238,7 +238,13 @@ def remove_stale_owned(current, previous, desired):
 
 
 def run(command, **kwargs):
-    return subprocess.run(command, check=True, text=True, **kwargs)
+    try:
+        return subprocess.run(command, check=True, text=True, **kwargs)
+    except subprocess.CalledProcessError as error:
+        summary = " ".join(command[:4])
+        raise RuntimeError(
+            f"{summary} failed with exit code {error.returncode}"
+        ) from None
 
 
 def sidecar_paths(paths):

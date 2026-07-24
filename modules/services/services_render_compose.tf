@@ -16,7 +16,6 @@ locals {
                     for label_key, label_value in local._services_render_traefik_routing_labels[service_key][compose_service_key] :
                     # TrueNAS escapes Compose interpolation itself; direct Docker Compose does not.
                     label_key => can(local.truenas_servers[local.services_model[service_key].target]) ? label_value : replace(label_value, "$", "$$")
-                    if label_value != null
                   },
                 )
               } : {},

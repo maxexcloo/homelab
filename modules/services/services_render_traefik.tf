@@ -114,11 +114,15 @@ locals {
   _services_render_traefik_routing_labels = {
     for service_key, service in local.services_model : service_key => {
       for container in distinct(compact([for route in service.routing.routes : route.container])) :
-      container => merge([
-        for route in service.routing.routes :
-        local._services_render_traefik_route_labels[service_key][route.name]
-        if route.container == container
-      ]...)
+      container => {
+        for label_key, label_value in merge([
+          for route in service.routing.routes :
+          local._services_render_traefik_route_labels[service_key][route.name]
+          if route.container == container
+        ]...) :
+        label_key => label_value
+        if label_value != null
+      }
     }
   }
 }
