@@ -6,6 +6,7 @@ features:
   bootstrap: true
   cloudflared: true
   mail: true
+  monitoring_external: true
   password: true
   tailscale: true
   zfs: true

@@ -66,9 +66,12 @@ endpoints:
       - "[CONNECTED] == true"
       - "[RESPONSE_TIME] < 5000"
   %{~ if(
-    server.networking.public_host != "" ||
-    server.networking.public_ipv4 != "" ||
-    server.networking.public_ipv6 != ""
+    server.features.monitoring_external &&
+    (
+      server.networking.public_host != "" ||
+      server.networking.public_ipv4 != "" ||
+      server.networking.public_ipv6 != ""
+    )
   ) }
   - group: "External / ${defaults.server_types[server.type].display_name}"
     name: "${server.identity.title} (${server_key})"
