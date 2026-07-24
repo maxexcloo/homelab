@@ -196,7 +196,7 @@
           "type": "boolean"
         },
         "monitoring": {
-          "description": "Per-target override. Include this service in generated monitoring configuration. Does not provision resources or expose template variables.",
+          "description": "Per-target override. Include this service in generated monitoring configuration and expose runtime.credentials.monitoring_token to its templates. The generated token is unique per expanded service target.",
           "type": "boolean"
         },
         "monitoring_alerts": {
@@ -212,7 +212,7 @@
           "type": "boolean"
         },
         "oidc_forward_auth": {
-          "description": "Per-target override. Protect generated Traefik routes with the shared OIDC OAuth2 Proxy login and forward-auth middlewares. Internal routes retain the internal-only middleware first.",
+          "description": "Per-target override. Protect generated Traefik routes with the shared OIDC OAuth2 Proxy forward-auth middleware. Internal routes retain the internal-only middleware first. Monitored routes also receive a per-target Basic Auth route for Gatus.",
           "type": "boolean"
         },
         "password": {
@@ -414,7 +414,7 @@
           "type": "boolean"
         },
         "monitoring": {
-          "description": "Include this service in generated monitoring configuration. Does not provision resources or expose template variables.",
+          "description": "Include this service in generated monitoring configuration and expose runtime.credentials.monitoring_token to its templates. The generated token is unique per expanded service target.",
           "type": "boolean"
         },
         "monitoring_alerts": {
@@ -430,7 +430,7 @@
           "type": "boolean"
         },
         "oidc_forward_auth": {
-          "description": "Protect generated Traefik routes with the shared OIDC OAuth2 Proxy login and forward-auth middlewares. Internal routes retain the internal-only middleware first.",
+          "description": "Protect generated Traefik routes with the shared OIDC OAuth2 Proxy forward-auth middleware. Internal routes retain the internal-only middleware first. Monitored routes also receive a per-target Basic Auth route for Gatus.",
           "type": "boolean"
         },
         "password": {

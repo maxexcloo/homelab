@@ -1,13 +1,12 @@
 locals {
-  _onepassword_integration_enabled = local.defaults.onepassword.enabled
   _onepassword_integration_ready = (
-    local._onepassword_integration_enabled &&
+    local.defaults.onepassword.enabled &&
     nonsensitive(var.onepassword_connect_token != null) &&
     var.onepassword_connect_url != null
   )
-  _pocketid_integration_enabled = local.defaults.pocketid.enabled
+
   _pocketid_integration_ready = (
-    local._pocketid_integration_enabled &&
+    local.defaults.pocketid.enabled &&
     nonsensitive(var.pocketid_api_token != null) &&
     var.pocketid_url != null
   )

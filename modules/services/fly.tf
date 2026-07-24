@@ -45,12 +45,12 @@ resource "github_repository_file" "fly_deploy_request" {
 
     deployments = {
       for service in values(local._fly_services) : service.fly.app_name => sha256(jsonencode({
+        sops = sha256(age_secret_key.fly.public_key)
+
         files = {
           for file_config in values(local._fly_render_files) : file_config.file => nonsensitive(sha256(file_config.content_base64))
           if startswith(file_config.file, "${service.fly.app_name}/")
         }
-
-        sops = sha256(age_secret_key.fly.public_key)
       }))
     }
   })

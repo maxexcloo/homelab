@@ -3,6 +3,8 @@ locals {
   # Credential field shape for each server. Runtime values are added in runtime.tf.
   _servers_model_credentials = {
     for server_key, server in local.servers_input : server_key => {
+      generated = local._servers_model_generated_credentials[server_key]
+
       fields = merge(
         {
           for field_name, field in server.credentials.fields : field_name => merge(
@@ -53,6 +55,7 @@ locals {
         } : {},
         server.features.password ? {
           password_hash = local.defaults.credentials.ro
+
           password = merge(
             local.defaults.credentials.rw,
             {
@@ -65,7 +68,6 @@ locals {
           tailscale_auth_key = local.defaults.credentials.ro
         } : {},
       )
-      generated = local._servers_model_generated_credentials[server_key]
     }
   }
 
@@ -104,6 +106,7 @@ locals {
           ? "${server.identity.title} (${upper(server.identity.region)})"
           : "${try(local.servers_input[server.parent].identity.title, server.parent)} ${server.identity.title} (${upper(server.identity.region)})"
         )
+
         group = (
           server.identity.group != "" ? server.identity.group
           : "${server.identity.title} (${upper(server.identity.region)})"

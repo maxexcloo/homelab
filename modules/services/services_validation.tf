@@ -266,6 +266,7 @@ resource "terraform_data" "services_validation" {
     # Cloudflare-exposed server services need a tunnel on the target server.
     precondition {
       condition = length(local._services_validation_cloudflared_missing) == 0
+
       error_message = (
         "Cloudflare-exposed services deployed to servers require cloudflared on the target server: ${join(", ", local._services_validation_cloudflared_missing)}"
       )
@@ -277,15 +278,17 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
+      error_message = "Exactly one expanded service with identity.name = homepage is required for the dashboard to render"
+
       condition = length([
         for service_key, service in local.services_model : service_key
         if service.identity.name == "homepage"
       ]) == 1
-      error_message = "Exactly one expanded service with identity.name = homepage is required for the dashboard to render"
     }
 
     precondition {
       condition = length(local._services_validation_import_alias_conflicts) == 0
+
       error_message = (
         "Service import aliases must not shadow real service keys: ${join(", ", local._services_validation_import_alias_conflicts)}"
       )
@@ -293,6 +296,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_invalid_imports) == 0
+
       error_message = (
         "Invalid service imports found in services configuration: ${join(", ", local._services_validation_invalid_imports)}"
       )
@@ -300,6 +304,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_invalid_server_imports) == 0
+
       error_message = (
         "Invalid server imports found in services configuration: ${join(", ", local._services_validation_invalid_server_imports)}"
       )
@@ -307,6 +312,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_invalid_targets) == 0
+
       error_message = (
         "Invalid server references found in services configuration: ${join(", ", local._services_validation_invalid_targets)}"
       )
@@ -334,6 +340,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_redirects_invalid) == 0
+
       error_message = (
         "Service routing redirects require a distinct managed hostname, canonical destination, and non-Fly target: ${join(", ", local._services_validation_redirects_invalid)}"
       )
@@ -351,6 +358,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_server_import_alias_conflicts) == 0
+
       error_message = (
         "Server import aliases must not shadow real server keys: ${join(", ", local._services_validation_server_import_alias_conflicts)}"
       )
@@ -363,6 +371,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_target_credentials_invalid) == 0
+
       error_message = (
         "Service credentials.source = target requires a server target with password enabled: ${join(", ", local._services_validation_target_credentials_invalid)}"
       )
@@ -370,6 +379,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_target_credentials_password_feature) == 0
+
       error_message = (
         "Service credentials.source = target cannot be combined with service features.password: ${join(", ", local._services_validation_target_credentials_password_feature)}"
       )
@@ -382,6 +392,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition = length(local._services_validation_truenas_config_invalid_targets) == 0
+
       error_message = (
         "targets.<key>.truenas settings are only valid for services targeting TrueNAS servers: ${join(", ", local._services_validation_truenas_config_invalid_targets)}"
       )
@@ -396,6 +407,7 @@ resource "terraform_data" "services_validation" {
     # HTTPS service URLs need managed DNS so ACME delegation can resolve.
     precondition {
       condition = length(local._services_validation_unmanaged_hosts) == 0
+
       error_message = (
         "Service route hosts must be in a managed DNS zone (data/dns/) for ACME delegation: ${join(", ", local._services_validation_unmanaged_hosts)}"
       )

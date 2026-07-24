@@ -1,6 +1,17 @@
+output "hashes" {
+  description = "Bcrypt hashes of selected generated scalar credentials"
+  sensitive   = true
+
+  value = {
+    for credential_key in var.hashes :
+    credential_key => htpasswd_password.generated[credential_key].bcrypt
+  }
+}
+
 output "passwords" {
   description = "Selected plaintext passwords and their bcrypt hashes keyed by item"
   sensitive   = true
+
   value = {
     for item_key in var.passwords : item_key => {
       hash  = htpasswd_password.password[item_key].bcrypt
@@ -18,6 +29,7 @@ output "values" {
 output "x509" {
   description = "Generated certificates and private keys keyed by compound credential key"
   sensitive   = true
+
   value = {
     for credential_key in keys(local._generated_x509) : credential_key => {
       certificate = tls_self_signed_cert.generated[credential_key].cert_pem

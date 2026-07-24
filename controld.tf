@@ -56,10 +56,12 @@ resource "restapi_object" "controld_dns" {
     results_key  = "body/rules"
     search_key   = "PK"
     search_value = each.key
+
     search_patch = jsonencode([
       {
         op   = "add"
         path = "/hostnames"
+
         value = [
           each.key,
         ]
@@ -105,11 +107,12 @@ resource "restapi_object" "controld_dns" {
 
   lifecycle {
     precondition {
+      error_message = "Control D hostname ${each.key} has no Tailscale address."
+
       condition = (
         local._controld_dns_records_runtime[each.key].ipv4 != "" ||
         local._controld_dns_records_runtime[each.key].ipv6 != ""
       )
-      error_message = "Control D hostname ${each.key} has no Tailscale address."
     }
   }
 }
@@ -117,10 +120,11 @@ resource "restapi_object" "controld_dns" {
 resource "terraform_data" "controld_validation" {
   lifecycle {
     precondition {
+      error_message = "Control D hostnames must resolve to exactly one Tailscale server."
+
       condition = alltrue([
         for records in values(local._controld_dns_records_by_hostname) : length(distinct(records[*].server_key)) == 1
       ])
-      error_message = "Control D hostnames must resolve to exactly one Tailscale server."
     }
   }
 }

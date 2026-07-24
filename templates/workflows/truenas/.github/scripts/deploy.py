@@ -60,6 +60,7 @@ def deploy_catalog_service(service, app_file, previous_app):
             stdout=subprocess.DEVNULL,
         )
         print(f"✓ {service} created")
+    ensure_app_started(service)
 
 
 def deploy_custom_service(service, compose_file):
@@ -79,6 +80,7 @@ def deploy_custom_service(service, compose_file):
             stdout=subprocess.DEVNULL,
         )
         print(f"✓ {service} created")
+    ensure_app_started(service)
 
 
 def deploy_services():
@@ -129,6 +131,19 @@ def deploy_services():
                 stdout=subprocess.DEVNULL,
             )
             print(f"✓ {service} redeployed")
+
+
+def ensure_app_started(service):
+    app = json.loads(output(["midclt", "call", "app.get_instance", service]))
+    if app["state"] == "RUNNING":
+        return
+
+    print(f"{service} is {app['state'].lower()}; starting")
+    run(
+        ["midclt", "call", "-j", "app.start", service],
+        stdout=subprocess.DEVNULL,
+    )
+    print(f"✓ {service} started")
 
 
 def load_previous_json(path):

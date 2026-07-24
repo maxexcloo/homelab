@@ -5,9 +5,11 @@ terraform {
     htpasswd = {
       source = "loafoe/htpasswd"
     }
+
     random = {
       source = "hashicorp/random"
     }
+
     tls = {
       source = "hashicorp/tls"
     }

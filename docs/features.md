@@ -40,14 +40,16 @@ All servers also get read-only `age_secret_key` credentials.
 
 - `mail` provisions credentials for the default SMTP provider and exposes the
   generic `mail_*` runtime values.
-- `monitoring` includes the service in generated monitoring config.
+- `monitoring` includes the service in generated monitoring config and exposes a
+  per-target `monitoring_token` runtime credential.
 - `monitoring_alerts` attaches generated monitoring alerts when monitoring is
   enabled.
 - `object_storage` provisions storage through the default S3-compatible provider
   and exposes generic `object_storage_*` runtime values.
 - `oidc` provisions a client through the configured identity provider.
 - `oidc_forward_auth` protects generated Traefik routes with the shared OAuth2
-  Proxy login and forward-auth middlewares.
+  Proxy forward-auth middleware. Monitored routes also receive a per-target
+  Basic Auth route for Gatus.
 - `password` adds a service password and password hash.
 - `tailscale` provisions a Tailscale auth key.
 

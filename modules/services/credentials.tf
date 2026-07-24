@@ -23,6 +23,17 @@ module "credentials" {
   generators         = nonsensitive(local._service_credential_generators)
   organization       = local.defaults.organization.name
   password_overrides = local._service_password_overrides
+
+  hashes = nonsensitive([
+    for service_key, service in local.services_model :
+    "${service_key}-monitoring_token"
+    if(
+      service.features.monitoring &&
+      service.features.oidc_forward_auth &&
+      service.routing.backend_scheme != ""
+    )
+  ])
+
   passwords = nonsensitive([
     for service_key, service in local.services_model_by_feature.password : service_key
     if service.credentials.source == "service"

@@ -1,5 +1,6 @@
 output "model" {
   description = "Deterministic service input and computed model"
+
   value = nonsensitive({
     by_feature       = local.services_model_by_feature
     input            = local.services_input
@@ -14,6 +15,7 @@ output "model" {
 output "render" {
   description = "Rendered service objects and deterministic artifact inventories"
   sensitive   = true
+
   value = {
     compose_inputs = local.services_render_compose_inputs
     inventory      = local.services_render_services_inventory

@@ -1,23 +1,18 @@
 services:
   oauth2-proxy:
-    command:
-      - oauth2-proxy --config-test && exec oauth2-proxy
-    entrypoint:
-      - /bin/sh
-      - -c
     environment:
       OAUTH2_PROXY_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
       OAUTH2_PROXY_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
       OAUTH2_PROXY_CODE_CHALLENGE_METHOD: S256
+      OAUTH2_PROXY_COOKIE_CSRF_PER_REQUEST: "true"
+      OAUTH2_PROXY_COOKIE_CSRF_PER_REQUEST_LIMIT: 10
       OAUTH2_PROXY_COOKIE_DOMAINS: .${server.hosts.internal}
       OAUTH2_PROXY_COOKIE_SAMESITE: lax
       OAUTH2_PROXY_COOKIE_SECRET: ${service.runtime.credentials.cookie_secret}
       OAUTH2_PROXY_COOKIE_SECURE: "true"
       OAUTH2_PROXY_EMAIL_DOMAINS: "*"
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
-      OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "false"
       OAUTH2_PROXY_OIDC_ISSUER_URL: ${service.runtime.attributes.oidc_issuer_url}
-      OAUTH2_PROXY_PASS_USER_HEADERS: "true"
       OAUTH2_PROXY_PROVIDER: oidc
       OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: Excloo ID
       OAUTH2_PROXY_REDIRECT_URL: ${service.urls.default.href}/oauth2/callback
@@ -28,14 +23,6 @@ services:
       OAUTH2_PROXY_TRUSTED_PROXY_IPS: 127.0.0.1/32,::1/128,172.16.0.0/12,${server.runtime.addresses.tailscale_ipv4}/32
       OAUTH2_PROXY_UPSTREAMS: static://202
       OAUTH2_PROXY_WHITELIST_DOMAINS: .${server.hosts.internal}
-    healthcheck:
-      interval: 30s
-      retries: 3
-      start_period: 10s
-      test:
-        - CMD-SHELL
-        - wget --no-verbose --tries=1 --spider http://127.0.0.1:4180/ready || exit 1
-      timeout: 5s
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2-alpine
     ports:
       - 127.0.0.1:4180:4180

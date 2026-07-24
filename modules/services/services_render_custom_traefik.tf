@@ -1,180 +1,74 @@
-# Stage: render — Traefik-specific proxy aggregation and labels.
+# Stage: render — Traefik-specific proxy aggregation.
 locals {
-  _services_render_custom_traefik_labels = {
-    for service_key, service in local.services_model : service_key => {
-      for container in distinct(compact([for route in service.routing.routes : route.container])) : container => merge([
-        for route in service.routing.routes : {
-          for label_key, label_value in merge(
-            route.backend_port != null ? merge(
-              {
-                "traefik.enable"                                                 = "true"
-                "traefik.http.routers.${route.name}.rule"                        = route.host != null ? "Host(`${route.host}`)" : null
-                "traefik.http.routers.${route.name}.service"                     = route.name
-                "traefik.http.routers.${route.name}.tls.certresolver"            = route.acme ? "cloudflare" : null
-                "traefik.http.services.${route.name}.loadbalancer.server.port"   = tostring(route.backend_port)
-                "traefik.http.services.${route.name}.loadbalancer.server.scheme" = route.backend_scheme == "https" ? "https" : null
-
-                "traefik.http.routers.${route.name}.entrypoints" = (
-                  route.proxy_server != null
-                  ? "webinternal" : (
-                    route.https ? "websecure" : "web"
-                ))
-                "traefik.http.routers.${route.name}.middlewares" = (
-                  route.expose == "internal" || service.features.oidc_forward_auth
-                  ? join(",", concat(
-                    route.expose == "internal" ? ["internal-only@docker"] : [],
-                    service.features.oidc_forward_auth ? ["oauth2-login@docker", "oauth2-forward-auth@docker"] : [],
-                  ))
-                  : null
-                )
-              },
-              route.acme ? {
-                "traefik.http.routers.${route.name}-http.entrypoints" = "web"
-                "traefik.http.routers.${route.name}-http.middlewares" = route.expose == "internal" ? "internal-only@docker,redirect-to-https@docker" : "redirect-to-https@docker"
-                "traefik.http.routers.${route.name}-http.rule"        = route.host != null ? "Host(`${route.host}`)" : null
-                "traefik.http.routers.${route.name}-http.service"     = route.name
-              } : {},
-              (
-                route.acme &&
-                route.host_configured &&
-                route.zone != null
-                ) ? {
-                "traefik.http.routers.${route.name}.tls.domains[0].main" = route.host
-              } : {},
-            ) : {},
-            merge([
-              for redirect in route.redirects : merge(
-                {
-                  "traefik.enable"                                                      = "true"
-                  "traefik.http.middlewares.${redirect.name}.redirectregex.permanent"   = "true"
-                  "traefik.http.middlewares.${redirect.name}.redirectregex.regex"       = "^https?://${replace(redirect.host, ".", "\\.")}"
-                  "traefik.http.middlewares.${redirect.name}.redirectregex.replacement" = route.href
-                  "traefik.http.routers.${redirect.name}.entrypoints"                   = redirect.acme ? "websecure" : "webinternal"
-                  "traefik.http.routers.${redirect.name}.rule"                          = "Host(`${redirect.host}`)"
-                  "traefik.http.routers.${redirect.name}.service"                       = "noop@internal"
-                  "traefik.http.routers.${redirect.name}.tls.certresolver"              = redirect.acme ? "cloudflare" : null
-
-                  "traefik.http.routers.${redirect.name}.middlewares" = (
-                    redirect.expose == "internal"
-                    ? "internal-only@docker,${redirect.name}@docker"
-                    : "${redirect.name}@docker"
-                  )
-                },
-                redirect.acme ? {
-                  "traefik.http.routers.${redirect.name}-http.entrypoints" = "web"
-                  "traefik.http.routers.${redirect.name}-http.rule"        = "Host(`${redirect.host}`)"
-                  "traefik.http.routers.${redirect.name}-http.service"     = "noop@internal"
-
-                  "traefik.http.routers.${redirect.name}-http.middlewares" = (
-                    redirect.expose == "internal"
-                    ? "internal-only@docker,${redirect.name}@docker"
-                    : "${redirect.name}@docker"
-                  )
-                } : {},
-                (
-                  redirect.acme &&
-                  redirect.zone != null
-                  ) ? {
-                  "traefik.http.routers.${redirect.name}.tls.domains[0].main" = redirect.host
-                } : {},
-              )
-            ]...),
-            {
-              for label_key, label_value in route.labels :
-              label_key => templatestring(tostring(label_value), local.services_render_context_base[service_key])
-              if label_value != null
-            },
-          ) : label_key => label_value
-          if label_value != null
+  _services_render_custom_traefik_proxy_routes = concat(
+    flatten([
+      for source_service in values(local.services_model) : [
+        for route in source_service.routing.routes : {
+          name        = route.name
+          backend_url = "http://${local.servers_render_servers[source_service.target].runtime.addresses.tailscale_ipv4}:8000"
+          host        = route.host
+          redirect_to = null
+          target      = route.proxy_server
         }
-        if route.container == container
-      ]...)
-    }
-  }
-
-  # Final Compose files with Traefik labels injected into container label maps.
-  services_render_compose = {
-    for service_key, compose in local.services_render_compose_base : service_key => yamlencode(
-      merge(
-        compose,
-        {
-          services = {
-            for compose_service_key, compose_service in compose.services : compose_service_key => merge(
-              compose_service,
-              try(length(local._services_render_custom_traefik_labels[service_key][compose_service_key]), 0) > 0 ? {
-                labels = merge(
-                  try(compose_service.labels, {}),
-                  local._services_render_custom_traefik_labels[service_key][compose_service_key],
-                )
-              } : {},
-            )
+        if(
+          route.proxy_server != null &&
+          route.host != null
+        )
+      ]
+    ]),
+    flatten([
+      for source_service in values(local.services_model) : flatten([
+        for route in source_service.routing.routes : [
+          for redirect in route.redirects : {
+            name        = redirect.name
+            backend_url = null
+            host        = redirect.host
+            redirect_to = route.href
+            target      = redirect.proxy_server
           }
-        },
-      )
-    )
-  }
+          if(
+            redirect.proxy_server != null &&
+            redirect.host != null
+          )
+        ]
+      ])
+    ]),
+    flatten([
+      for source_server_key, source_server in local.servers_model : [
+        for route in source_server.routing.routes : {
+          name        = "server-${source_server_key}-${substr(sha1(route.host), 0, 12)}"
+          backend_url = route.backend_url
+          host        = route.host
+          redirect_to = null
+          target      = contains(["external", "internal"], route.expose) ? source_server_key : trimprefix(route.expose, "proxy-")
+        }
+        if(
+          contains(["external", "internal"], route.expose) ||
+          startswith(route.expose, "proxy-")
+        )
+      ]
+    ]),
+  )
 
   services_render_custom_traefik_context = {
     for service_key, service in local.services_model : service_key => merge(
       {
-        routing_labels = local._services_render_custom_traefik_labels[service_key]
+        routing_labels = local._services_render_traefik_routing_labels[service_key]
       },
       service.identity.name == "traefik" ? {
         custom = {
           # Port 8000 is the webinternal Traefik entrypoint on the target server.
-          proxy_routes = merge(
-            merge([
-              for source_service in values(local.services_model) : {
-                for route in source_service.routing.routes :
-                route.name => {
-                  backend_url = "http://${local.servers_render_servers[source_service.target].runtime.addresses.tailscale_ipv4}:8000"
-                  host        = route.host
-                  redirect_to = null
-                }
-                if(
-                  route.proxy_server == service.target &&
-                  try(local.servers_render_servers[source_service.target].runtime.addresses.tailscale_ipv4, "") != "" &&
-                  route.host != null
-                )
-              }
-            ]...),
-            merge([
-              for source_service in values(local.services_model) : merge([
-                for route in source_service.routing.routes : {
-                  for redirect in route.redirects :
-                  redirect.name => {
-                    backend_url = null
-                    host        = redirect.host
-                    redirect_to = route.href
-                  }
-                  if(
-                    redirect.proxy_server == service.target &&
-                    redirect.host != null
-                  )
-                }
-              ]...)
-            ]...),
-            merge([
-              for source_server_key, source_server in local.servers_render_servers : {
-                for route in source_server.routing.routes :
-                "server-${source_server_key}-${substr(sha1(route.host), 0, 12)}" => {
-                  backend_url = route.backend_url
-                  host        = route.host
-                  redirect_to = null
-                }
-                if(
-                  (
-                    contains(["external", "internal"], route.expose) &&
-                    source_server_key == service.target
-                  ) ||
-                  route.expose == "proxy-${service.target}"
-                )
-              }
-            ]...),
-          )
+          proxy_routes = {
+            for proxy_route in local._services_render_custom_traefik_proxy_routes :
+            proxy_route.name => {
+              backend_url = proxy_route.backend_url
+              host        = proxy_route.host
+              redirect_to = proxy_route.redirect_to
+            }
+            if proxy_route.target == service.target
+          }
         }
       } : {},
     )
   }
-
 }

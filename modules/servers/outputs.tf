@@ -1,6 +1,7 @@
 output "bootstrap" {
   description = "Rendered server bootstrap artifacts"
   sensitive   = true
+
   value = {
     cloud_config        = local.bootstrap_cloud_config
     setup_commands      = local._bootstrap_setup_commands
@@ -10,15 +11,18 @@ output "bootstrap" {
 
 output "infrastructure" {
   description = "Server infrastructure values consumed outside the module"
+
   value = {
     age_public_keys = {
       for server_key, key in age_secret_key.server :
       server_key => key.public_key
     }
+
     cloudflare_tunnel_ids = {
       for server_key, tunnel in cloudflare_zero_trust_tunnel_cloudflared.server :
       server_key => tunnel.id
     }
+
     oci_addresses = {
       for server_key, server in oci_core_instance.server : server_key => {
         public_ipv4 = server.public_ip
@@ -30,6 +34,7 @@ output "infrastructure" {
 
 output "model" {
   description = "Deterministic server input and computed model"
+
   value = nonsensitive({
     by_feature       = local.servers_model_by_feature
     input            = local.servers_input

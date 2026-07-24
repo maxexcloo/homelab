@@ -14,15 +14,7 @@ alerting:
       success-threshold: 5
   %{~ endif }
 endpoints:
-  - group: Connectivity
-    name: Internet DNS
-    url: tcp://1.1.1.1:53
-    alerts:
-      %{~ if service.features.mail }
-      - type: email
-      %{~ endif }
-    conditions:
-      - "[CONNECTED] == true"
+  ${indent(2, yamlencode(service.data.endpoints))}
   %{~ for monitored_service in values(services) }
   %{~ if monitored_service.features.monitoring && monitored_service.routing.backend_scheme != "" }
   %{~ for url_key, url in monitored_service.urls }
@@ -45,18 +37,23 @@ endpoints:
       - "[CERTIFICATE_EXPIRATION] > 168h"
       %{~ endif }
       - "[RESPONSE_TIME] < 5000"
+      %{~ if monitored_service.features.oidc_forward_auth }
+      - "[STATUS] == 200"
+      %{~ else }
       - "[STATUS] == any(200, 401)"
-    %{~ if contains(values(monitored_service.imports.services), service.key) }
+      %{~ endif }
     headers:
-      X-Gatus-Token: $${GATUS_MONITORING_TOKEN}
-    %{~ endif }
+      %{~ if monitored_service.features.oidc_forward_auth }
+      Authorization: "Basic ${base64encode("gatus:${monitored_service.runtime.credentials.monitoring_token}")}"
+      %{~ endif }
+      X-Gatus-Token: "${monitored_service.runtime.credentials.monitoring_token}"
   %{~ endif }
   %{~ endfor }
   %{~ endif }
   %{~ endfor }
   %{~ for server_key, server in servers }
   %{~ if server.features.monitoring }
-  - group: "Tailscale / ${defaults.server_types[server.type].display_name}"
+  - group: "Internal / ${defaults.server_types[server.type].display_name}"
     name: "${server.identity.title} (${server_key})"
     url: "icmp://${server.runtime.addresses.tailscale_ipv4}"
     %{~ if server.features.monitoring_alerts }
@@ -67,6 +64,25 @@ endpoints:
     %{~ endif }
     conditions:
       - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 5000"
+  %{~ if(
+    server.networking.public_host != "" ||
+    server.networking.public_ipv4 != "" ||
+    server.networking.public_ipv6 != ""
+  ) }
+  - group: "External / ${defaults.server_types[server.type].display_name}"
+    name: "${server.identity.title} (${server_key})"
+    url: "icmp://${server.networking.public_host != "" ? server.networking.public_host : server.networking.public_ipv4 != "" ? server.networking.public_ipv4 : "[${server.networking.public_ipv6}]"}"
+    %{~ if server.features.monitoring_alerts }
+    alerts:
+      %{~ if service.features.mail }
+      - type: email
+      %{~ endif }
+    %{~ endif }
+    conditions:
+      - "[CONNECTED] == true"
+      - "[RESPONSE_TIME] < 5000"
+  %{~ endif }
   %{~ endif }
   %{~ endfor }
 ui:

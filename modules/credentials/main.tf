@@ -11,6 +11,12 @@ resource "random_password" "generated" {
   special = false
 }
 
+resource "htpasswd_password" "generated" {
+  for_each = var.hashes
+
+  password = sensitive(local.values[each.key])
+}
+
 resource "htpasswd_password" "password" {
   for_each = var.passwords
 

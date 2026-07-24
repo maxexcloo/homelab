@@ -5,21 +5,27 @@ terraform {
     age = {
       source = "clementblaise/age"
     }
+
     cloudflare = {
       source = "cloudflare/cloudflare"
     }
+
     deepmerge = {
       source = "isometry/deepmerge"
     }
+
     github = {
       source = "integrations/github"
     }
+
     incus = {
       source = "lxc/incus"
     }
+
     oci = {
       source = "oracle/oci"
     }
+
     restapi = {
       source = "mastercard/restapi"
 
@@ -28,6 +34,7 @@ terraform {
         restapi.resend,
       ]
     }
+
     unifi = {
       source = "ubiquiti-community/unifi"
     }

@@ -1,5 +1,32 @@
 # Stage: render — generic Compose template inventory and decoded files.
 locals {
+  # Final Compose files with Traefik labels injected into container label maps.
+  services_render_compose = {
+    for service_key, compose in local.services_render_compose_base : service_key => yamlencode(
+      merge(
+        compose,
+        {
+          services = {
+            for compose_service_key, compose_service in compose.services : compose_service_key => merge(
+              compose_service,
+              try(length(local._services_render_traefik_routing_labels[service_key][compose_service_key]), 0) > 0 ? {
+                labels = merge(
+                  try(compose_service.labels, {}),
+                  {
+                    for label_key, label_value in local._services_render_traefik_routing_labels[service_key][compose_service_key] :
+                    # TrueNAS escapes Compose interpolation itself; direct Docker Compose does not.
+                    label_key => can(local.truenas_servers[local.services_model[service_key].target]) ? label_value : replace(label_value, "$", "$$")
+                    if label_value != null
+                  },
+                )
+              } : {},
+            )
+          }
+        },
+      )
+    )
+  }
+
   services_render_compose_base = {
     for service_key, compose_input in local.services_render_compose_inputs : service_key => yamldecode(
       templatefile(

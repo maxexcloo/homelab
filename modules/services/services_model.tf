@@ -12,6 +12,8 @@ locals {
   # Credential field shape for each service. Runtime values are added in runtime.tf.
   _services_model_credentials = {
     for service_key, service in local.services_input_targets : service_key => {
+      generated = local._services_model_generated_credentials[service_key]
+
       fields = merge(
         {
           for field_name, field in service.credentials.fields : field_name => merge(
@@ -44,6 +46,7 @@ locals {
         ) : {},
         service.features.password ? {
           password_hash = local.defaults.credentials.ro
+
           password = merge(
             local.defaults.credentials.rw,
             {
@@ -56,7 +59,6 @@ locals {
           tailscale_auth_key = local.defaults.credentials.ro
         } : {},
       )
-      generated = local._services_model_generated_credentials[service_key]
     }
   }
 
@@ -87,6 +89,15 @@ locals {
   _services_model_generated_credentials = {
     for service_key, service in local.services_input_targets : service_key => merge(
       service.credentials.generated,
+      (
+        service.features.monitoring &&
+        service.routing.backend_scheme != ""
+        ) ? {
+        monitoring_token = {
+          length = 32
+          type   = "hex"
+        }
+      } : {},
       service.features.password ? {
         password = {
           length = 32
@@ -105,6 +116,7 @@ locals {
           : local._services_model_target_servers[service_key] != null ? local._services_model_target_servers[service_key].identity.group
           : "Applications"
         )
+
         username = (
           service.credentials.source == "target" &&
           local._services_model_target_servers[service_key] != null
@@ -211,10 +223,12 @@ locals {
             route.https &&
             route.proxy_server == null
           )
+
           href = (
             route.host_configured ||
             route.dns_target_host != null
           ) ? "${route.https ? "https" : "http"}://${route.host_configured ? route.host : route.dns_target_host}" : null
+
           zone = (
             route.dns_target_host == null &&
             !route.host_configured
@@ -242,6 +256,7 @@ locals {
         ][0],
         null,
       )
+
       external = try(
         [
           for route in local._services_model_routes[service_key] : route
@@ -255,6 +270,7 @@ locals {
         ][0],
         null,
       )
+
       internal = try(
         [
           for route in local._services_model_routes[service_key] : route
@@ -290,13 +306,12 @@ locals {
       {
         credentials = local._services_model_credentials[service_key]
         dashboard   = local._services_model_dashboards[service_key]
+        identity    = local._services_model_identities[service_key]
         key         = service_key
 
         fly = {
           app_name = service.target == "fly" ? local._services_model_fly_app_names[service_key] : service.fly.app_name
         }
-
-        identity = local._services_model_identities[service_key]
 
         routing = merge(
           {

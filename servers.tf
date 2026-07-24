@@ -5,6 +5,8 @@ module "servers" {
   dns      = local.dns_input
 
   integrations = {
+    tailscale_device_addresses = local.tailscale_device_addresses
+
     cloudflare = {
       account_id = data.cloudflare_account.default.id
       zone_ids   = local.cloudflare_zone_ids
@@ -16,7 +18,7 @@ module "servers" {
 
     onepassword = {
       connect_url     = var.onepassword_connect_url
-      enabled         = local._onepassword_integration_enabled
+      enabled         = local.defaults.onepassword.enabled
       ready           = local._onepassword_integration_ready
       request_headers = local.onepassword_connect_request_headers
     }
@@ -30,7 +32,6 @@ module "servers" {
       for server_key, key in tailscale_tailnet_key.server :
       server_key => key.key
     }
-    tailscale_device_addresses = local.tailscale_device_addresses
   }
 
   providers = {

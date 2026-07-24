@@ -44,12 +44,12 @@ resource "github_repository_file" "truenas_deploy_request" {
         ])
 
         hash = sha256(jsonencode({
+          sops = sha256(var.servers.age_public_keys[service.target])
+
           files = {
             for file_config in values(local._truenas_render_files) : file_config.file => nonsensitive(sha256(file_config.content_base64))
             if startswith(file_config.file, "${service.target}/${service.identity.name}/")
           }
-
-          sops = sha256(var.servers.age_public_keys[service.target])
         }))
       }
     }

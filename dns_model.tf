@@ -77,6 +77,7 @@ locals {
               : server.hosts.internal
             )
           } : null
+
           tunnel = (
             route.expose == "cloudflare" &&
             server.features.cloudflared &&
@@ -108,11 +109,13 @@ locals {
               : route.dns_target_host
             )
           } : null
+
           server_key = (
             service.target == "fly" ? null
             : route.proxy_server != null ? route.proxy_server
             : service.target
           )
+
           tunnel = (
             route.expose == "cloudflare" &&
             route.host != null &&

@@ -106,6 +106,7 @@ Feature flags add credential fields automatically:
 Services may receive:
 
 - `mail`: read-only `mail_password`.
+- `monitoring`: read-write `monitoring_token`.
 - `object_storage`: read-only `object_storage_secret_access_key`.
 - `oidc`: read-only `oidc_client_id` and, for confidential clients,
   `oidc_client_secret`.

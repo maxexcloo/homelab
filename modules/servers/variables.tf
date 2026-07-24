@@ -10,6 +10,7 @@ variable "dns" {
 
 variable "integrations" {
   description = "External integration inputs required by server resources"
+
   type = object({
     tailscale_auth_keys        = map(string)
     tailscale_device_addresses = any
@@ -37,10 +38,11 @@ variable "integrations" {
   })
 
   validation {
+    error_message = "1Password Connect URL and token are required when onepassword.enabled is true."
+
     condition = (
       !var.integrations.onepassword.enabled ||
       nonsensitive(var.integrations.onepassword.ready)
     )
-    error_message = "1Password Connect URL and token are required when onepassword.enabled is true."
   }
 }

@@ -238,6 +238,7 @@ resource "terraform_data" "servers_validation" {
 
     precondition {
       condition = length(local._servers_validation_key_mismatches) == 0
+
       error_message = (
         "Server YAML filenames must match the derived key (region for region roots, parent-name when parent is set, otherwise region-name): ${join(", ", local._servers_validation_key_mismatches)}"
       )
@@ -252,43 +253,48 @@ resource "terraform_data" "servers_validation" {
 
     # OCI Always Free quota enforcement. Only checked when var.integrations.oci.always_free is true.
     precondition {
+      error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", nonsensitive(local._servers_validation_oci_always_free_shapes_invalid))}"
+
       condition = (
         !var.integrations.oci.always_free ||
         length(local._servers_validation_oci_always_free_shapes_invalid) == 0
       )
-      error_message = "OCI VM shape must be Always Free eligible (VM.Standard.A1.Flex or VM.Standard.E2.1.Micro): ${join(", ", nonsensitive(local._servers_validation_oci_always_free_shapes_invalid))}"
     }
 
     precondition {
+      error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${nonsensitive(local._servers_validation_oci_always_free_a1_cpus)})."
+
       condition = (
         !var.integrations.oci.always_free ||
         local._servers_validation_oci_always_free_a1_cpus <= 4
       )
-      error_message = "Always Free A1 Flex total OCPUs must not exceed 4 (got ${nonsensitive(local._servers_validation_oci_always_free_a1_cpus)})."
     }
 
     precondition {
+      error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${nonsensitive(local._servers_validation_oci_always_free_a1_memory)} GB)."
+
       condition = (
         !var.integrations.oci.always_free ||
         local._servers_validation_oci_always_free_a1_memory <= 24
       )
-      error_message = "Always Free A1 Flex total memory must not exceed 24 GB (got ${nonsensitive(local._servers_validation_oci_always_free_a1_memory)} GB)."
     }
 
     precondition {
+      error_message = "Always Free Micro instances must not exceed 2 (got ${nonsensitive(local._servers_validation_oci_always_free_micro_instances)})."
+
       condition = (
         !var.integrations.oci.always_free ||
         local._servers_validation_oci_always_free_micro_instances <= 2
       )
-      error_message = "Always Free Micro instances must not exceed 2 (got ${nonsensitive(local._servers_validation_oci_always_free_micro_instances)})."
     }
 
     precondition {
+      error_message = "Always Free total boot volume size must not exceed 200 GB (got ${nonsensitive(local._servers_validation_oci_always_free_boot_volume_gbs)} GB)."
+
       condition = (
         !var.integrations.oci.always_free ||
         local._servers_validation_oci_always_free_boot_volume_gbs <= 200
       )
-      error_message = "Always Free total boot volume size must not exceed 200 GB (got ${nonsensitive(local._servers_validation_oci_always_free_boot_volume_gbs)} GB)."
     }
 
     precondition {
@@ -304,6 +310,7 @@ resource "terraform_data" "servers_validation" {
     # Catch short cycles before inherited address lookup hides the root cause.
     precondition {
       condition = length(local._servers_validation_parent_cycles) == 0
+
       error_message = (
         "Server parent references contain a cycle within the supported parent depth: ${join(", ", local._servers_validation_parent_cycles)}"
       )

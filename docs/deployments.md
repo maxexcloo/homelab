@@ -95,7 +95,8 @@ volume content.
 
 The workflow reads the app's reported volume mounts and copies through the
 mounted container path. It does not depend on TrueNAS dataset paths or Docker
-volume names.
+volume names. After creating or updating an app, the workflow starts it when
+TrueNAS reports any state other than `RUNNING`.
 
 Retrieve the copy/paste custom app definition for a server with:
 

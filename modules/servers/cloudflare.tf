@@ -28,11 +28,13 @@ resource "cloudflare_account_token" "server_acme" {
   policies = [
     {
       effect = "allow"
+
       permission_groups = [
         {
           id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
         }
       ]
+
       resources = jsonencode({
         "com.cloudflare.api.account.zone.${var.integrations.cloudflare.zone_ids[local.defaults.domains.acme]}" = "*"
       })
@@ -49,11 +51,13 @@ resource "cloudflare_account_token" "server_acme_legacy" {
   policies = [
     {
       effect = "allow"
+
       permission_groups = [
         {
           id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
         }
       ]
+
       resources = jsonencode({
         "com.cloudflare.api.account.zone.${var.integrations.cloudflare.zone_ids[local.defaults.domains.external]}" = "*"
         "com.cloudflare.api.account.zone.${var.integrations.cloudflare.zone_ids[local.defaults.domains.internal]}" = "*"
@@ -71,11 +75,13 @@ resource "cloudflare_account_token" "server_tunnel_read" {
   policies = [
     {
       effect = "allow"
+
       permission_groups = [
         {
           id = one(data.cloudflare_account_api_token_permission_groups_list.tunnel_read.result).id
         }
       ]
+
       resources = jsonencode({
         "com.cloudflare.api.account.${var.integrations.cloudflare.account_id}" = "*"
       })

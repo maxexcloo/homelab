@@ -1,4 +1,7 @@
 variable "capabilities" {
+  description = "Capabilities granted to each bucket-scoped application key"
+  type        = set(string)
+
   default = [
     "deleteFiles",
     "listBuckets",
@@ -8,8 +11,6 @@ variable "capabilities" {
     "shareFiles",
     "writeFiles",
   ]
-  description = "Capabilities granted to each bucket-scoped application key"
-  type        = set(string)
 }
 
 variable "endpoint" {

@@ -3,10 +3,16 @@
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml>=6"]
 # ///
-"""Lint HCL local assignments and YAML/JSON keys per AGENTS.md.
+"""Lint HCL assignments and YAML/JSON keys per AGENTS.md.
 
 Within each mapping: single-line keys come first (alphabetical), then
 multi-line keys (alphabetical).
+
+HCL assignment groups must follow the same single-line/multi-line order, and
+every multi-line assignment must be separated from adjacent assignments by a
+blank line. Top-level locals retain their required full-name ordering.
+Dynamically keyed object entries are exempt because `tofu fmt` removes their
+separators.
 
 List-item mappings place identifier keys before sorted fields. Data and schema
 items use type/name/id; Prek hooks use id/name.
@@ -57,6 +63,107 @@ def expected_order(data, kind, identifier_keys=()):
     return identifiers + singles + multis
 
 
+def hcl_assignment_errors(path):
+    errors = []
+    lines = path.read_text().splitlines()
+    locals_ranges = []
+    locals_start = None
+    records = {}
+
+    for index, line in enumerate(lines):
+        if line == "locals {":
+            locals_start = index
+        elif locals_start is not None and line == "}":
+            locals_ranges.append(range(locals_start, index + 1))
+            locals_start = None
+
+        match = re.match(
+            r'^(?P<indent>\s+)(?P<key>"[^"]+"|[A-Za-z_][A-Za-z0-9_-]*)\s*=\s*(?P<value>.*)$',
+            line,
+        )
+        if not match:
+            continue
+
+        end = hcl_expression_end(lines, index, match.group("value"))
+        records[index] = {
+            "dynamic_key": match.group("key").startswith('"${'),
+            "end": end,
+            "indent": len(match.group("indent")),
+            "key": match.group("key").strip('"'),
+            "multi": end > index,
+        }
+
+    last_by_indent = {}
+    for index, line in enumerate(lines):
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+
+        if stripped.startswith("}"):
+            last_by_indent = {
+                key: value for key, value in last_by_indent.items() if key <= indent
+            }
+
+        if index not in records:
+            if stripped.endswith("{") and "=" not in stripped:
+                last_by_indent.pop(indent + 2, None)
+            continue
+
+        current = records[index]
+        previous = last_by_indent.get(current["indent"])
+        if previous is not None:
+            has_separator = any(
+                not separator.strip()
+                for separator in lines[previous["end"] + 1 : index]
+            )
+            in_top_level_locals = current["indent"] == 2 and any(
+                index in locals_range for locals_range in locals_ranges
+            )
+            if previous["multi"] and not current["multi"] and not in_top_level_locals:
+                errors.append(
+                    f"{path}:{index + 1}: single-line assignment "
+                    f"{current['key']!r} follows a multi-line assignment"
+                )
+            if (
+                (previous["multi"] or current["multi"])
+                and not (previous["dynamic_key"] or current["dynamic_key"])
+                and not has_separator
+            ):
+                errors.append(
+                    f"{path}:{index + 1}: missing blank line adjacent to "
+                    "a multi-line assignment"
+                )
+
+        last_by_indent[current["indent"]] = current
+
+    return errors
+
+
+def hcl_expression_end(lines, start, first_value):
+    if first_value.startswith('"') and first_value.endswith('"'):
+        return start
+
+    heredoc = re.search(r"<<-?([A-Za-z_][A-Za-z0-9_]*)", first_value)
+    if heredoc:
+        marker = heredoc.group(1)
+        for index in range(start + 1, len(lines)):
+            if lines[index].strip() == marker:
+                return index
+        return len(lines) - 1
+
+    balance = {"(": 0, "[": 0, "{": 0}
+    pairs = {")": "(", "]": "[", "}": "{"}
+    for index in range(start, len(lines)):
+        text = first_value if index == start else lines[index]
+        for character in hcl_sanitized(text):
+            if character in balance:
+                balance[character] += 1
+            elif character in pairs:
+                balance[pairs[character]] -= 1
+        if all(value == 0 for value in balance.values()):
+            return index
+    return len(lines) - 1
+
+
 def hcl_local_errors(path):
     errors = []
     local_names = []
@@ -88,6 +195,37 @@ def hcl_local_errors(path):
             local_names.append(match.group(1))
 
     return errors
+
+
+def hcl_sanitized(line):
+    result = []
+    escaped = False
+    quoted = False
+    index = 0
+
+    while index < len(line):
+        character = line[index]
+        if quoted:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                quoted = False
+            index += 1
+            continue
+
+        if character == '"':
+            quoted = True
+        elif character == "#":
+            break
+        elif character == "/" and index + 1 < len(line) and line[index + 1] == "/":
+            break
+        else:
+            result.append(character)
+        index += 1
+
+    return "".join(result)
 
 
 def is_json_schema_conditional(keys):
@@ -145,6 +283,7 @@ def main():
     yaml_paths = collect(YAML_GLOBS)
 
     for path in hcl_paths:
+        errors.extend(hcl_assignment_errors(path))
         errors.extend(hcl_local_errors(path))
 
     for path in yaml_paths:

@@ -19,6 +19,23 @@ locals {
         local.services_model,
         local.services_render_services_inventory,
         {
+          for monitored_service_key, monitored_service in local.services_render_services :
+          monitored_service_key => merge(
+            local.services_render_services_inventory[monitored_service_key],
+            {
+              runtime = {
+                credentials = {
+                  monitoring_token = monitored_service.runtime.credentials.monitoring_token
+                }
+              }
+            },
+          )
+          if(
+            monitored_service.features.monitoring &&
+            monitored_service.routing.backend_scheme != ""
+          )
+        },
+        {
           for alias, real_key in local.services_model_imports[service_key] :
           alias => local.services_render_services[real_key]
           if can(local.services_render_services[real_key])

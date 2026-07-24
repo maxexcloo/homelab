@@ -47,7 +47,9 @@ argument blocks, YAML mappings, JSON Schema `properties`, environment blocks,
 and template argument objects. A non-empty object is multi-line. A scalar-only
 JSON array sorts as a single-line value even when formatting wraps it; an array
 containing an object or array is multi-line. Apply the same rule inside each
-local's object value.
+local's object value. Separate every multi-line assignment from adjacent
+assignments with a blank line, except dynamically keyed object entries where
+`tofu fmt` removes the separator.
 
 List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
 use `id`, then `name`. Sort the remaining fields normally.

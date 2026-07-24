@@ -6,6 +6,7 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.13"
     }
+
     shell = {
       source  = "linyinfeng/shell"
       version = "~> 1.7"

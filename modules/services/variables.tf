@@ -10,6 +10,7 @@ variable "dns" {
 
 variable "integrations" {
   description = "External integration inputs required by service resources"
+
   type = object({
     debug_dir           = string
     tailscale_auth_keys = map(string)
@@ -39,24 +40,27 @@ variable "integrations" {
   })
 
   validation {
+    error_message = "1Password Connect URL and token are required when onepassword.enabled is true."
+
     condition = (
       !var.integrations.onepassword.enabled ||
       nonsensitive(var.integrations.onepassword.ready)
     )
-    error_message = "1Password Connect URL and token are required when onepassword.enabled is true."
   }
 
   validation {
+    error_message = "Pocket ID URL and API token are required when pocketid.enabled is true."
+
     condition = (
       !var.integrations.pocketid.enabled ||
       nonsensitive(var.integrations.pocketid.ready)
     )
-    error_message = "Pocket ID URL and API token are required when pocketid.enabled is true."
   }
 }
 
 variable "servers" {
   description = "Server model, runtime, render, and encryption interface"
+
   type = object({
     age_public_keys = map(string)
     model           = any

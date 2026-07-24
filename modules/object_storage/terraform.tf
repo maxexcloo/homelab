@@ -5,6 +5,7 @@ terraform {
     b2 = {
       source = "backblaze/b2"
     }
+
     random = {
       source = "hashicorp/random"
     }

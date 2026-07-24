@@ -113,9 +113,6 @@ identity:
   group: Applications
   service: redlib
   title: Redlib
-imports:
-  services:
-    gatus: gatus-fly
 routing:
   backend_port: 8080
   container: ctrld
@@ -125,7 +122,7 @@ routing:
       cloudflare_waf_rules:
         - action: js_challenge
           # Intentionally stores the monitoring token in Cloudflare WAF configuration and OpenTofu state.
-          expression: '(http.request.full_uri wildcard r"https://reddit.excloo.com/*" and not any(http.request.headers["x-gatus-token"][*] eq "${services.gatus.runtime.credentials.monitoring_token}") and not http.cookie contains "cf_clearance" and not ends_with(http.request.uri.path, ".css") and not ends_with(http.request.uri.path, ".js") and not ends_with(http.request.uri.path, ".woff2") and not ends_with(http.request.uri.path, "favicon.ico") and not ends_with(http.request.uri.path, "manifest.json") and not ends_with(http.request.uri.path, "touch-icon-iphone.png"))'
+          expression: '(http.request.full_uri wildcard r"https://reddit.excloo.com/*" and not any(http.request.headers["x-gatus-token"][*] eq "${service.runtime.credentials.monitoring_token}") and not http.cookie contains "cf_clearance" and not ends_with(http.request.uri.path, ".css") and not ends_with(http.request.uri.path, ".js") and not ends_with(http.request.uri.path, ".woff2") and not ends_with(http.request.uri.path, "favicon.ico") and not ends_with(http.request.uri.path, "manifest.json") and not ends_with(http.request.uri.path, "touch-icon-iphone.png"))'
       redirects:
         - www.reddit.excloo.com
 targets:

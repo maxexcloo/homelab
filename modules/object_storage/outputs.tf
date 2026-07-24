@@ -1,6 +1,7 @@
 output "items" {
   description = "Object storage credentials and bucket details keyed by item"
   sensitive   = true
+
   value = {
     for item_key in var.items : item_key => {
       access_key_id     = b2_application_key.item[item_key].application_key_id
