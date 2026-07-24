@@ -23,7 +23,7 @@ services:
       OAUTH2_PROXY_TRUSTED_PROXY_IPS: 127.0.0.1/32,::1/128,172.16.0.0/12,${server.runtime.addresses.tailscale_ipv4}/32
       OAUTH2_PROXY_UPSTREAMS: static://202
       OAUTH2_PROXY_WHITELIST_DOMAINS: .${server.hosts.internal}
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2-alpine
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3-alpine
     ports:
       - 127.0.0.1:4180:4180
     restart: unless-stopped
