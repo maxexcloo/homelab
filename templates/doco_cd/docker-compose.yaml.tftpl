@@ -20,7 +20,7 @@ services:
         - /doco-cd
         - healthcheck
       timeout: 5s
-    image: ghcr.io/kimdre/doco-cd:0.101.0
+    image: ghcr.io/kimdre/doco-cd:0.101.1
     labels:
       traefik.enable: "true"
       traefik.http.routers.doco-cd-webhook.entrypoints: websecure
