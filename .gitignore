@@ -1,11 +1,11 @@
+__pycache__/
+.mise.local.toml
 .render/
 .ruff_cache/
 .terraform/
-__pycache__/
-docs/superpowers/
-.mise.local.toml
 *.plan
 *.pyc
 *.tfplan
 *.tfstate
 *.tfstate.*
+docs/superpowers/
