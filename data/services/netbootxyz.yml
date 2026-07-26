@@ -9,9 +9,6 @@ identity:
 routing:
   backend_port: 31010
   container: netboot
-  routes:
-    - expose: internal
-      host: netboot.excloo.com
 targets:
   au-truenas:
     truenas:

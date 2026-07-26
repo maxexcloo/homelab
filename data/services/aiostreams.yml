@@ -16,9 +16,6 @@ identity:
   username: max@excloo.com
 routing:
   backend_port: 30375
-  routes:
-    - expose: internal
-      host: streams.excloo.com
 targets:
   au-truenas:
     truenas:
