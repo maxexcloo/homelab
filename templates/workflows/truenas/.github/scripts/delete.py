@@ -7,6 +7,7 @@ def app_exists(service):
     return (
         subprocess.run(
             ["midclt", "call", "app.get_instance", service],
+            check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         ).returncode

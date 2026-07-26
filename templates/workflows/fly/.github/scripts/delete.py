@@ -7,6 +7,7 @@ def main():
     exists = (
         subprocess.run(
             ["flyctl", "apps", "info", service],
+            check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         ).returncode

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml>=6"]
@@ -217,9 +216,9 @@ def hcl_sanitized(line):
 
         if character == '"':
             quoted = True
-        elif character == "#":
-            break
-        elif character == "/" and index + 1 < len(line) and line[index + 1] == "/":
+        elif character == "#" or (
+            character == "/" and index + 1 < len(line) and line[index + 1] == "/"
+        ):
             break
         else:
             result.append(character)
