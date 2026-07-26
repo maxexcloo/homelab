@@ -2,6 +2,7 @@
 .ruff_cache/
 .terraform/
 __pycache__/
+docs/superpowers/
 .mise.local.toml
 *.plan
 *.pyc

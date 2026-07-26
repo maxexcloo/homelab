@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - {}
+data:
+  oidc_callback_urls:
+    - /openid/callback
+features:
+  oidc: true
+  password: true
+identity:
+  description: Personal Finance
+  group: Applications
+  service: actual-budget
+  title: Actual Budget
+  username: max@excloo.com
+routing:
+  backend_port: 31012
+  routes:
+    - expose: internal
+      host: budget.excloo.com
+targets:
+  au-truenas:
+    truenas:
+      env:
+        ACTUAL_OPENID_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        ACTUAL_OPENID_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        ACTUAL_OPENID_DISCOVERY_URL: ${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration
+        ACTUAL_OPENID_SERVER_HOSTNAME: ${service.urls.default.href}
+        ACTUAL_USER_CREATION_MODE: login
