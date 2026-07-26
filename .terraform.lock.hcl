@@ -212,7 +212,7 @@ provider "registry.opentofu.org/integrations/github" {
 
 provider "registry.opentofu.org/isometry/deepmerge" {
   version     = "1.3.0"
-  constraints = ">= 1.0.0, != 1.2.2, < 2.0.0"
+  constraints = "~> 1.3"
   hashes = [
     "h1:1Ny4Sx37vrnlWBpOmTf9LiBmFRvcRwcPXhsgIb5A0BY=",
     "h1:4zQnBWXtz4dBuEdYZvtSBHLnZgTbp6sUjTmGTWR9jfI=",

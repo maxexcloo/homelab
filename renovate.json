@@ -27,17 +27,6 @@
         "(?:^|\\r?\\n)\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*)@(?<currentDigest>sha256:[a-f0-9]+)"
       ],
       "versioningTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "jdx/mise",
-      "extractVersionTemplate": "^v?(?<version>.*)$",
-      "managerFilePatterns": ["/(^|/)\\.github/workflows/.+\\.ya?ml$/"],
-      "matchStrings": [
-        "uses:\\s+jdx/mise-action@\\S+\\s+with:\\s+version:\\s+(?<currentValue>\\S+)"
-      ],
-      "versioningTemplate": "semver-coerced"
     }
   ],
   "lockFileMaintenance": {
