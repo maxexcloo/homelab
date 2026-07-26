@@ -5,6 +5,7 @@
   "ignoreDeps": ["hashicorp/terraform"],
   "labels": ["dependencies"],
   "prConcurrentLimit": 20,
+  "prHourlyLimit": 20,
   "rangeStrategy": "bump",
   "rebaseWhen": "behind-base-branch",
   "customManagers": [
