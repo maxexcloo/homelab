@@ -17,6 +17,7 @@ data:
     - askscience
     - auscorp
     - ausfinance
+    - auspropertychat
     - aussiefrugal
     - australia
     - australiannostalgia
@@ -52,6 +53,7 @@ data:
     - linux_gaming
     - linuxhardware
     - living_in_korea
+    - llmdevs
     - localllama
     - localllm
     - meshcore
@@ -91,6 +93,7 @@ data:
     - steamdeck
     - sydney
     - sydneyscene
+    - sydneytrains
     - sysadmin
     - tailscale
     - television
