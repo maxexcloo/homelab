@@ -23,6 +23,9 @@ identity:
   username: max@excloo.com
 routing:
   backend_port: 1221
+  routes:
+    - expose: internal
+      host: docs.excloo.com
 targets:
   au-truenas:
     truenas:

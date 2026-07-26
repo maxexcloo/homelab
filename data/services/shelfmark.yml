@@ -24,6 +24,9 @@ imports:
     grimmory: grimmory-au-truenas
 routing:
   backend_port: 30260
+  routes:
+    - expose: internal
+      host: shelf.excloo.com
 targets:
   au-truenas:
     truenas:
