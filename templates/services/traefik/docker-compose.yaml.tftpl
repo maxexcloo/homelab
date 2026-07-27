@@ -2,7 +2,10 @@ services:
   traefik:
     command:
       - --api.dashboard=true
+      - --certificatesresolvers.cloudflare.acme.dnschallenge.propagation.delayBeforeChecks=10s
+      - --certificatesresolvers.cloudflare.acme.dnschallenge.propagation.requireAllRNS=false
       - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
       - --certificatesresolvers.cloudflare.acme.email=${defaults.organization.email}
       - --certificatesresolvers.cloudflare.acme.storage=/letsencrypt/acme.json
       - --entrypoints.traefik.address=:8082
