@@ -17,16 +17,6 @@
         "(?:^|\\r?\\n)\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*):(?<currentValue>[^\\s@#]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
       ],
       "versioningTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "currentValueTemplate": "latest",
-      "datasourceTemplate": "docker",
-      "managerFilePatterns": ["/(^|/)templates/.+\\.ya?ml\\.tftpl$/"],
-      "matchStrings": [
-        "(?:^|\\r?\\n)\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*)@(?<currentDigest>sha256:[a-f0-9]+)"
-      ],
-      "versioningTemplate": "docker"
     }
   ],
   "lockFileMaintenance": {
@@ -49,14 +39,9 @@
       "matchManagers": ["mise"]
     },
     {
-      "description": "Pin Docker image digests in templates and Dockerfiles",
-      "matchDatasources": ["docker"],
-      "pinDigests": true
-    },
-    {
       "automerge": true,
-      "description": "Automerge passing digest, patch, and pin updates",
-      "matchUpdateTypes": ["digest", "patch", "pin", "pinDigest"]
+      "description": "Automerge passing patch and pin updates",
+      "matchUpdateTypes": ["patch", "pin"]
     }
   ],
   "pre-commit": {

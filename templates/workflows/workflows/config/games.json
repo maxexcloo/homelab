@@ -1,0 +1,64 @@
+{
+  "tested_romm_version": "5.0.0",
+  "version": 1,
+  "exports": [
+    {
+      "name": "es-de-full",
+      "selection": "all"
+    },
+    {
+      "name": "es-de-portable",
+      "collection": "ES-DE Portable",
+      "selection": "collection"
+    }
+  ],
+  "formats": {
+    "non_dat": [".chd", ".cso", ".nsp", ".rvz", ".xci"],
+    "preserve": [".chd", ".cso", ".nsp", ".rvz", ".xci", ".zip"]
+  },
+  "non_dat_manifests": [],
+  "paths": {
+    "exports": "/games/workflow/exports",
+    "inbox": "/games/workflow/staging/inbox",
+    "library": "/games/library",
+    "library_next": "/games/library.next",
+    "processed": "/games/workflow/staging/processed",
+    "reports": "/games/workflow/reports",
+    "validated": "/games/workflow/staging/validated"
+  },
+  "safety": {
+    "restore_confirmation": "/games/workflow/reports/application-consistent-restore.confirmed"
+  },
+  "sources": [
+    {
+      "name": "romm",
+      "canonical_seed": true,
+      "path": "/romm"
+    },
+    {
+      "name": "roms",
+      "canonical_seed": false,
+      "path": "/games/ROMs"
+    },
+    {
+      "name": "games",
+      "canonical_seed": false,
+      "path": "/games/Games"
+    },
+    {
+      "name": "ingest",
+      "canonical_seed": false,
+      "path": "/games/Ingest"
+    },
+    {
+      "name": "retrodeck-roms",
+      "canonical_seed": false,
+      "path": "/games/retrodeck/roms"
+    },
+    {
+      "name": "legacy-sync",
+      "canonical_seed": false,
+      "path": "/games/Data/Legacy/Sync/games-roms"
+    }
+  ]
+}

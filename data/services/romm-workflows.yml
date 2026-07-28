@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    github_token: {}
+data:
+  repository: ${defaults.github.owner}/${defaults.github.deployment_repositories.workflows.name}
+  runners:
+    games:
+      credential_environment:
+        GITHUB_RUNNER_TOKEN: github_token
+      labels:
+        - romm-workflows
+      mounts:
+        - /mnt/truenas/games:/games:rw
+        - /mnt/truenas-nvme/romm/library:/romm:ro
+features:
+  monitoring: false
+identity:
+  description: RomM Workflow Runner
+  service: github-runner
+  title: RomM Workflows
+targets:
+  au-truenas: {}

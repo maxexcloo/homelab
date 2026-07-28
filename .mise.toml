@@ -35,8 +35,9 @@ prek install
 description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
-prettier --check ".github/**/*.{yaml,yml}" "data/**/*.yml" "schemas/*.json" "templates/**/*.yml" ".pre-commit-config.yaml" "renovate.json"
-ruff format --check modules scripts templates/workflows
+actionlint .github/workflows/*.yml templates/workflows/*/.github/workflows/*.yml
+prettier --check .
+ruff format --check .
 """
 
 [tasks.cleanup]
@@ -53,17 +54,17 @@ find . -path ./.git -prune -o \
 [tasks.fmt]
 description = "Format all files"
 run = """
-prettier --log-level warn --write ".github/**/*.{yaml,yml}" "data/**/*.yml" "schemas/*.json" "templates/**/*.yml" ".pre-commit-config.yaml" "renovate.json"
-ruff check --fix --select I modules scripts templates/workflows
-ruff format modules scripts templates/workflows
+prettier --write .
+ruff check --fix --select I .
+ruff format .
 tofu fmt -recursive
 """
 
 [tasks.lint]
-description = "Validate source and default-merged YAML against JSON schemas"
+description = "Lint source and validate data"
 depends = ["sort-check"]
 run = """
-ruff check --extend-select I modules scripts templates/workflows
+ruff check --extend-select I .
 uv run scripts/validate_data.py
 """
 

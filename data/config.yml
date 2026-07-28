@@ -27,14 +27,22 @@ github:
       description: Homelab Docker configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
       display_name: Homelab Docker
       name: homelab-docker
+      visibility: private
     fly:
       description: Homelab Fly.io configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
       display_name: Homelab Fly.io
       name: homelab-fly
+      visibility: private
     truenas:
       description: Homelab TrueNAS configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
       display_name: Homelab TrueNAS
       name: homelab-truenas
+      visibility: private
+    workflows:
+      description: Homelab maintenance workflows, generated and managed by the homelab OpenTofu repository.
+      display_name: Homelab Workflows
+      name: homelab-workflows
+      visibility: private
 networking:
   allowlists:
     internal:

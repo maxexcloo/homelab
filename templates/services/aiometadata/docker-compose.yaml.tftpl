@@ -8,8 +8,7 @@ services:
       DATABASE_URI: sqlite://addon/data/db.sqlite
       HOST_NAME: ${service.urls.default.host}
       REDIS_URL: redis://redis:6379
-    # Upstream publishes no release tags; pin the current manifest.
-    image: ghcr.io/cedya77/aiometadata@sha256:1c0a0f10a609533b33ee350e04ac517f63d83ae21002658778b1b8f5263c1beb
+    image: ghcr.io/cedya77/aiometadata:latest
     restart: unless-stopped
     volumes:
       - data:/app/addon/data

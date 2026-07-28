@@ -1,0 +1,273 @@
+name: Games
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch:
+        description: Inbox batch name for ingest
+        required: false
+        type: string
+      mode:
+        description: Games operation
+        options:
+          - audit
+          - export
+          - ingest
+          - inventory
+          - reconcile
+        required: true
+        type: choice
+      publish_confirmation:
+        description: Type PUBLISH VERIFIED ROMS for reconcile or ingest
+        required: false
+        type: string
+
+concurrency:
+  cancel-in-progress: false
+  group: games
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: inputs.mode == 'audit'
+    name: Audit canonical library
+    runs-on: romm-workflows
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check out canonical DATs
+        uses: actions/checkout@v7
+        with:
+          path: fresh1g1r
+          persist-credentials: false
+          repository: UnluckyForSome/Fresh1G1R
+          sparse-checkout: |
+            daily-virgin-dat/no-intro
+            daily-virgin-dat/redump
+      - name: Set up tools
+        uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            node 24
+            npm:igir 5
+      - name: Verify reviewed inputs
+        run: |
+          set -euo pipefail
+          test "$(jq '.non_dat_manifests | length' config/games.json)" -gt 0
+          while IFS=$'\t' read -r file expected; do
+            printf '%s  %s\n' "$expected" "/games/workflow/dats/$file" | sha256sum --check -
+            (cd / && sha256sum --check "/games/workflow/dats/$file")
+          done < <(jq --raw-output '.non_dat_manifests[] | [.file, .sha256] | @tsv' config/games.json)
+      - name: Audit with IGIR
+        run: |
+          set -euo pipefail
+          report="/games/workflow/reports/audit-${GITHUB_RUN_ID}.csv"
+          args=(report test
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/no-intro"
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/redump"
+            --input /games/library
+            --report-output "$report")
+          igir "${args[@]}"
+          if grep --extended-regexp '(^|,)"?UNUSED"?($|,)' "$report"; then
+            echo "Canonical library contains content not covered by reviewed DATs" >&2
+            exit 1
+          fi
+
+  ingest:
+    if: inputs.mode == 'ingest'
+    name: Validate and ingest batch
+    runs-on: romm-workflows
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check out canonical DATs
+        uses: actions/checkout@v7
+        with:
+          path: fresh1g1r
+          persist-credentials: false
+          repository: UnluckyForSome/Fresh1G1R
+          sparse-checkout: |
+            daily-virgin-dat/no-intro
+            daily-virgin-dat/redump
+      - name: Set up tools
+        uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            node 24
+            npm:igir 5
+      - name: Validate request
+        env:
+          BATCH: ${{ inputs.batch }}
+          CONFIRMATION: ${{ inputs.publish_confirmation }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = "PUBLISH VERIFIED ROMS"
+          [[ "$BATCH" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+          test -d "/games/workflow/staging/inbox/$BATCH"
+          test ! -e "/games/workflow/staging/processed/$BATCH"
+          test ! -e "/games/workflow/staging/validated/$BATCH"
+      - name: Validate complete batch with IGIR
+        env:
+          BATCH: ${{ inputs.batch }}
+        run: |
+          set -euo pipefail
+          output="/games/workflow/staging/validated/$BATCH"
+          report="/games/workflow/reports/ingest-${BATCH}-${GITHUB_RUN_ID}.csv"
+          args=(copy test report
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/no-intro"
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/redump"
+            --input "/games/workflow/staging/inbox/$BATCH"
+            --output "$output/roms/{romm}"
+            --report-output "$report")
+          igir "${args[@]}"
+          if grep --extended-regexp '(^|,)"?UNUSED"?($|,)' "$report"; then
+            echo "Batch contains unknown content; nothing will be published" >&2
+            exit 1
+          fi
+      - name: Reject collisions before publication
+        env:
+          BATCH: ${{ inputs.batch }}
+        run: |
+          set -euo pipefail
+          source_root="/games/workflow/staging/validated/$BATCH"
+          while IFS= read -r -d '' source; do
+            relative="${source#"$source_root/"}"
+            destination="/games/library/$relative"
+            if test -e "$destination" && ! cmp --silent "$source" "$destination"; then
+              echo "Conflicting canonical destination: $relative" >&2
+              exit 1
+            fi
+          done < <(find "$source_root" -type f -print0)
+      - name: Publish with per-file atomic renames
+        env:
+          BATCH: ${{ inputs.batch }}
+        run: |
+          set -euo pipefail
+          source_root="/games/workflow/staging/validated/$BATCH"
+          while IFS= read -r -d '' source; do
+            relative="${source#"$source_root/"}"
+            destination="/games/library/$relative"
+            if test -e "$destination"; then
+              rm -- "$source"
+              continue
+            fi
+            mkdir --parents "$(dirname "$destination")"
+            mv -- "$source" "$destination"
+          done < <(find "$source_root" -type f -print0)
+          mv -- "/games/workflow/staging/inbox/$BATCH" "/games/workflow/staging/processed/$BATCH"
+          rmdir --ignore-fail-on-non-empty "$source_root"
+
+  inventory:
+    if: inputs.mode == 'inventory'
+    name: Inventory current sources
+    runs-on: romm-workflows
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check out canonical DATs
+        uses: actions/checkout@v7
+        with:
+          path: fresh1g1r
+          persist-credentials: false
+          repository: UnluckyForSome/Fresh1G1R
+          sparse-checkout: |
+            daily-virgin-dat/no-intro
+            daily-virgin-dat/redump
+      - name: Set up tools
+        uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            node 24
+            npm:igir 5
+      - name: Report on current sources with IGIR
+        run: |
+          set -euo pipefail
+          report="/games/workflow/reports/inventory-${GITHUB_RUN_ID}.csv"
+          mkdir --parents "$(dirname "$report")"
+          args=(report
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/no-intro"
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/redump"
+            --report-output "$report")
+          while IFS= read -r path; do
+            args+=(--input "$path")
+          done < <(jq --raw-output '.sources[].path' config/games.json)
+          igir "${args[@]}"
+
+  reconcile:
+    if: inputs.mode == 'reconcile'
+    name: Build library.next
+    runs-on: romm-workflows
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check out canonical DATs
+        uses: actions/checkout@v7
+        with:
+          path: fresh1g1r
+          persist-credentials: false
+          repository: UnluckyForSome/Fresh1G1R
+          sparse-checkout: |
+            daily-virgin-dat/no-intro
+            daily-virgin-dat/redump
+      - name: Set up tools
+        uses: jdx/mise-action@v4
+        with:
+          tool_versions: |
+            node 24
+            npm:igir 5
+      - name: Validate migration gates
+        env:
+          CONFIRMATION: ${{ inputs.publish_confirmation }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = "PUBLISH VERIFIED ROMS"
+          test "$(cat /games/workflow/reports/application-consistent-restore.confirmed)" = \
+            "application_consistent_restore_verified=true"
+          test "$(jq '.non_dat_manifests | length' config/games.json)" -gt 0
+          test -d /games/library.next
+          test -z "$(find /games/library.next -mindepth 1 -print -quit)"
+      - name: Seed existing RomM representation
+        run: cp --archive /romm/. /games/library.next/
+      - name: Reconcile all DAT-covered sources with IGIR
+        run: |
+          set -euo pipefail
+          report="/games/workflow/reports/reconcile-${GITHUB_RUN_ID}.csv"
+          args=(copy test report
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/no-intro"
+            --dat "$GITHUB_WORKSPACE/fresh1g1r/daily-virgin-dat/redump"
+            --output "/games/library.next/roms/{romm}"
+            --report-output "$report")
+          while IFS= read -r path; do
+            args+=(--input "$path")
+          done < <(jq --raw-output '.sources[].path' config/games.json)
+          igir "${args[@]}"
+          if grep --extended-regexp '(^|,)"?UNUSED"?($|,)' "$report"; then
+            echo "At least one source ROM is unknown; library.next is not publishable" >&2
+            exit 1
+          fi
+
+  export:
+    if: inputs.mode == 'export'
+    name: Verify export adapter
+    runs-on: romm-workflows
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Require reviewed RomM export compatibility
+        run: |
+          set -euo pipefail
+          echo "RomM 5.0.0 native ES-DE export must be compatibility-tested before enabling this job." >&2
+          echo "The portable target also requires exact filtering of the ES-DE Portable collection." >&2
+          exit 1

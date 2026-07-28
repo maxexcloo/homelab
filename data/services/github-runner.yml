@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    github_token: {}
+data:
+  repository: ${defaults.github.owner}/${defaults.github.deployment_repositories.workflows.name}
+  runners:
+    general:
+      labels: []
+      mounts: []
+      credential_environment:
+        GITHUB_RUNNER_TOKEN: github_token
+features:
+  monitoring: false
+identity:
+  description: GitHub Actions Runner
+  service: github-runner
+  title: GitHub Runner
+targets:
+  au-truenas: {}

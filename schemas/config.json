@@ -154,14 +154,14 @@
       "properties": {
         "deployment_repositories": {
           "additionalProperties": false,
-          "description": "GitHub repositories that store generated deployment configuration for each platform.",
-          "required": ["docker", "fly", "truenas"],
+          "description": "GitHub repositories that store generated deployment configuration and maintenance workflows.",
+          "required": ["docker", "fly", "truenas", "workflows"],
           "type": "object",
           "properties": {
             "docker": {
               "additionalProperties": false,
               "description": "Docker Compose deployment repository consumed by doco-cd.",
-              "required": ["description", "display_name", "name"],
+              "required": ["description", "display_name", "name", "visibility"],
               "type": "object",
               "properties": {
                 "description": {
@@ -176,13 +176,17 @@
                   "description": "GitHub repository name.",
                   "pattern": "^[A-Za-z0-9._-]+$",
                   "type": "string"
+                },
+                "visibility": {
+                  "description": "GitHub repository visibility.",
+                  "enum": ["private", "public"]
                 }
               }
             },
             "fly": {
               "additionalProperties": false,
               "description": "Fly.io deployment repository.",
-              "required": ["description", "display_name", "name"],
+              "required": ["description", "display_name", "name", "visibility"],
               "type": "object",
               "properties": {
                 "description": {
@@ -197,13 +201,17 @@
                   "description": "GitHub repository name.",
                   "pattern": "^[A-Za-z0-9._-]+$",
                   "type": "string"
+                },
+                "visibility": {
+                  "description": "GitHub repository visibility.",
+                  "enum": ["private", "public"]
                 }
               }
             },
             "truenas": {
               "additionalProperties": false,
               "description": "TrueNAS deployment repository.",
-              "required": ["description", "display_name", "name"],
+              "required": ["description", "display_name", "name", "visibility"],
               "type": "object",
               "properties": {
                 "description": {
@@ -218,6 +226,35 @@
                   "description": "GitHub repository name.",
                   "pattern": "^[A-Za-z0-9._-]+$",
                   "type": "string"
+                },
+                "visibility": {
+                  "description": "GitHub repository visibility.",
+                  "enum": ["private", "public"]
+                }
+              }
+            },
+            "workflows": {
+              "additionalProperties": false,
+              "description": "Private repository containing audited maintenance workflows and their versioned configuration.",
+              "required": ["description", "display_name", "name", "visibility"],
+              "type": "object",
+              "properties": {
+                "description": {
+                  "description": "Generated GitHub repository description and README body.",
+                  "type": "string"
+                },
+                "display_name": {
+                  "description": "Human-readable repository name used in generated descriptions and README files.",
+                  "type": "string"
+                },
+                "name": {
+                  "description": "GitHub repository name.",
+                  "pattern": "^[A-Za-z0-9._-]+$",
+                  "type": "string"
+                },
+                "visibility": {
+                  "description": "GitHub repository visibility.",
+                  "enum": ["private", "public"]
                 }
               }
             }

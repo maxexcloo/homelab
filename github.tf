@@ -6,7 +6,7 @@ locals {
         repository_key = repository_key
         source         = "${path.module}/${file_path}"
       }
-      if contains([".py", ".yml", ".yaml"], try(regex("\\.[^.]+$", lower(file_path)), ""))
+      if contains([".json", ".py", ".yaml", ".yml"], try(regex("\\.[^.]+$", lower(file_path)), ""))
     }
   ]...)
 
@@ -24,7 +24,7 @@ resource "github_repository" "deployment" {
   delete_branch_on_merge = true
   description            = each.value.description
   name                   = each.value.name
-  visibility             = "public"
+  visibility             = each.value.visibility
 
   lifecycle {
     prevent_destroy = true

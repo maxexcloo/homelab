@@ -61,7 +61,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v9.0.0
       - name: Setup midclt
-        run: uv tool install --python 3.12 git+https://github.com/truenas/api_client.git@b96ff63967962aa78d422d57a364722a1cda328f
+        run: uv tool install --python 3.12 git+https://github.com/truenas/api_client.git@TS-25.10.5
       - name: Decrypt Files
         env:
           DECRYPT_ROOT: ${{ matrix.target.server }}

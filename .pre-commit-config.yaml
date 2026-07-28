@@ -21,6 +21,7 @@ repos:
       # OpenTofu-rendered *.yaml.tftpl files are not concrete Compose documents.
       - id: check-compose-spec
       - id: check-github-workflows
+        files: ^(?:\.github/workflows|templates(?:/[^/]+)*/\.github/workflows)/.*\.ya?ml$
       - id: check-metaschema
         files: ^schemas/.*\.json$
       - id: check-renovate
@@ -29,7 +30,7 @@ repos:
       - id: actionlint
         name: Lint GitHub Actions workflows
         entry: mise exec -- actionlint
-        files: ^\.github/workflows/.*\.ya?ml$
+        files: ^(?:\.github/workflows|templates(?:/[^/]+)*/\.github/workflows)/.*\.ya?ml$
         language: system
       - id: hadolint
         name: Lint Dockerfiles
