@@ -70,20 +70,18 @@ Plan and apply remain operator-controlled.
 - Control D, 1Password, and Resend REST resources tolerate API-owned fields or
   changes so managed fields can reconcile without deleting unmanaged data.
 
-## Protected Resources
+## Destructive Changes
 
 Age keys, B2 buckets, GitHub deployment repositories, and Incus and OCI
-instances use `prevent_destroy`. Removing their source YAML or feature flag will
-stop the apply instead of deleting the resource.
+instances can all be destroyed. Removing their source YAML or feature flag can
+therefore delete the resource on the next apply.
 
 For an intentional deletion:
 
 1. Back up the workload and its data. Before replacing an age key, retain a
    recovery copy or re-encrypt every artifact for the replacement key.
-2. Remove `prevent_destroy` only from the relevant resource block.
-3. Run `mise run plan` and confirm that the plan destroys only the intended
+2. Run `mise run plan` and confirm that the plan destroys only the intended
    addresses.
-4. Apply the reviewed plan, then restore the guard if the resource block
-   remains configured.
+3. Apply only the reviewed plan.
 
-Do not combine temporary guard removal with unrelated infrastructure changes.
+Do not combine destructive changes with unrelated infrastructure changes.

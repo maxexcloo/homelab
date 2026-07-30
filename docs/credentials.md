@@ -26,8 +26,8 @@ Planning fails while Pocket ID is disabled and any service still enables
 
 Choose the integration mode before the first apply. Disabling an established
 integration can change credentials whose current value exists only in
-1Password. Managed 1Password items have `prevent_destroy`; leave the integration
-enabled until those resources are deliberately detached from state if
+1Password. Disabling the integration can delete managed 1Password items; leave
+it enabled until those resources are deliberately detached from state if
 1Password should stop being managed without deleting its items.
 
 Server and service item titles use stable keys, such as `au-hsp` and
