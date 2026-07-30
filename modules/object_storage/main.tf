@@ -12,10 +12,6 @@ resource "b2_bucket" "item" {
   bucket_name = "${each.key}-${random_string.suffix[each.key].result}"
   bucket_type = "allPrivate"
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
   default_server_side_encryption {
     algorithm = "AES256"
     mode      = "SSE-B2"

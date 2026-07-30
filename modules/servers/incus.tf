@@ -91,8 +91,6 @@ resource "incus_instance" "vm" {
   }
 
   lifecycle {
-    prevent_destroy = true
-
     ignore_changes = [
       config["user.user-data"]
     ]

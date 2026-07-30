@@ -23,8 +23,6 @@ resource "restapi_object" "item" {
   update_data             = sensitive(jsonencode(local._item_payloads[each.key]))
 
   lifecycle {
-    prevent_destroy = true
-
     precondition {
       condition     = length(local._duplicate_items) == 0
       error_message = "1Password item lookup is ambiguous: ${join(", ", nonsensitive(local._duplicate_items))}"

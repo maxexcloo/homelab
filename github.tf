@@ -27,8 +27,6 @@ resource "github_repository" "deployment" {
   visibility             = each.value.visibility
 
   lifecycle {
-    prevent_destroy = true
-
     ignore_changes = [
       has_downloads,
       ignore_vulnerability_alerts_during_read,
