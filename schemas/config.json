@@ -28,7 +28,7 @@
       "type": "object",
       "properties": {
         "default_model": {
-          "description": "Default AI model name without provider prefix (e.g. 'deepseek-v4-flash').",
+          "description": "Default AI model name without provider prefix (e.g. 'deepseek-v4-flash-latest').",
           "type": "string"
         },
         "default_model_provider": {
