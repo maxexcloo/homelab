@@ -44,7 +44,6 @@ targets:
         BOOKLORE_USERNAME: ${services.grimmory.identity.username}
         BOOKS_OUTPUT_MODE: booklore
         CALIBRE_WEB_URL: ${services.grimmory.urls.default.href}
-        DIRECT_DOWNLOAD_ENABLED: true
         GOOGLEBOOKS_API_KEY: ${service.runtime.credentials.googlebooks_api_key}
         GOOGLEBOOKS_ENABLED: true
         HARDCOVER_API_KEY: ${service.runtime.credentials.hardcover_api_key}
