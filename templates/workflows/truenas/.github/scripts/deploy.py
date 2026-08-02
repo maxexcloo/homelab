@@ -3,9 +3,13 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path, PurePosixPath
 
+APP_STATE_POLL_INTERVAL_SECONDS = 2
+APP_STATE_TIMEOUT_SECONDS = 600
 IX_VOLUME_ROOT = PurePosixPath("/mnt/.ix-apps/app_mounts")
+TRANSITIONAL_APP_STATES = {"DEPLOYING", "STOPPING"}
 
 
 def app_containers(service):
@@ -135,7 +139,7 @@ def deploy_services():
 
 
 def ensure_app_started(service):
-    app = json.loads(output(["midclt", "call", "app.get_instance", service]))
+    app = wait_for_app_settled(service)
     if app["state"] == "RUNNING":
         return
 
@@ -144,6 +148,11 @@ def ensure_app_started(service):
         ["midclt", "call", "-j", "app.start", service],
         stdout=subprocess.DEVNULL,
     )
+    app = wait_for_app_settled(service)
+    if app["state"] != "RUNNING":
+        raise RuntimeError(
+            f"Failed to start {service}: final app state is {app['state']}"
+        )
     print(f"✓ {service} started")
 
 
@@ -285,6 +294,19 @@ def volume_container(containers, path, service):
         candidates, key=lambda candidate: candidate[0]
     )
     return container, mount_destination
+
+
+def wait_for_app_settled(service):
+    deadline = time.monotonic() + APP_STATE_TIMEOUT_SECONDS
+    while True:
+        app = json.loads(output(["midclt", "call", "app.get_instance", service]))
+        if app["state"] not in TRANSITIONAL_APP_STATES:
+            return app
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"Timed out waiting for {service} to leave {app['state']} state"
+            )
+        time.sleep(APP_STATE_POLL_INTERVAL_SECONDS)
 
 
 def write_sidecars(service, target, sidecars):

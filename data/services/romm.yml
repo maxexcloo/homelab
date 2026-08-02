@@ -37,7 +37,7 @@ routing:
   backend_port: 8080
   host_port: 30061
   routes:
-    - expose: internal
+    - expose: cloudflare
       host: games.excloo.com
 targets:
   au-truenas:
