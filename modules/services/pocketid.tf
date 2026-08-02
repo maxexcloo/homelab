@@ -58,6 +58,11 @@ resource "pocketid_client" "cloudflare_access" {
   name         = each.value.client_name
   pkce_enabled = true
 
+  allowed_user_groups = [
+    for group_name in local.defaults.pocketid.default_groups :
+    pocketid_group.all[group_name].id
+  ]
+
   callback_urls = [
     "https://${data.cloudflare_zero_trust_organization.default.auth_domain}/cdn-cgi/access/callback",
   ]
