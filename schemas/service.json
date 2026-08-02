@@ -449,6 +449,15 @@
       "required": ["title"],
       "type": "object",
       "properties": {
+        "access_groups": {
+          "description": "Additional provider-neutral access group names allowed to authenticate to this service, combined with the identity provider's configured defaults.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
+          }
+        },
         "description": {
           "description": "One-line description of what this service does. Shown in dashboards and status pages.",
           "type": "string"

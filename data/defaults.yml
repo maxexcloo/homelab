@@ -121,6 +121,7 @@ services:
     password: false
     tailscale: false
   identity:
+    access_groups: []
     description: ""
     group: ""
     service: null

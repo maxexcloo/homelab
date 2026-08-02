@@ -21,6 +21,8 @@ identity:
   service: shelfmark
   title: Shelfmark
   username: max@excloo.com
+  access_groups:
+    - books
 imports:
   services:
     grimmory: grimmory-au-truenas

@@ -399,13 +399,44 @@
     },
     "pocketid": {
       "additionalProperties": false,
-      "description": "Optional Pocket ID integration for managing OIDC clients.",
-      "required": ["enabled"],
+      "description": "Optional Pocket ID integration for managing groups and OIDC clients.",
+      "required": ["default_groups", "enabled", "groups"],
       "type": "object",
       "properties": {
+        "default_groups": {
+          "description": "Pocket ID group names allowed to use every OIDC client, combined with each service's identity.access_groups.",
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
+          }
+        },
         "enabled": {
-          "description": "Whether OpenTofu manages Pocket ID application settings and OIDC clients.",
+          "description": "Whether OpenTofu manages Pocket ID application settings, groups, and OIDC clients.",
           "type": "boolean"
+        },
+        "groups": {
+          "description": "Pocket ID groups keyed by stable technical name.",
+          "minProperties": 1,
+          "type": "object",
+          "additionalProperties": {
+            "additionalProperties": false,
+            "description": "Managed Pocket ID group configuration.",
+            "required": ["display_name"],
+            "type": "object",
+            "properties": {
+              "display_name": {
+                "description": "Friendly group name displayed in Pocket ID.",
+                "minLength": 1,
+                "type": "string"
+              }
+            }
+          },
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]*$"
+          }
         }
       }
     },

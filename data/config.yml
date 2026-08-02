@@ -71,6 +71,13 @@ organization:
   name: excloo
 pocketid:
   enabled: true
+  default_groups:
+    - all_services
+  groups:
+    all_services:
+      display_name: All Services
+    books:
+      display_name: Books
 resend:
   host: smtp.resend.com
   port: 465

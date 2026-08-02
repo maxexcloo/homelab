@@ -5,6 +5,18 @@ data "http" "pocketid_discovery" {
 }
 
 locals {
+  _pocketid_groups = {
+    for group_name, group in local.defaults.pocketid.groups : group_name => group
+    if local._pocketid_integration_ready
+  }
+
+  _pocketid_service_groups = {
+    for service_key in local._pocketid_services : service_key => distinct(concat(
+      local.defaults.pocketid.default_groups,
+      local.services_model[service_key].identity.access_groups,
+    ))
+  }
+
   _pocketid_services = {
     for service_key, service in local.services_input_targets :
     service_key => service_key
@@ -30,6 +42,13 @@ locals {
   ]), "Pocket ID")
 }
 
+resource "pocketid_group" "all" {
+  for_each = local._pocketid_groups
+
+  friendly_name = each.value.display_name
+  name          = each.key
+}
+
 resource "pocketid_client" "cloudflare_access" {
   for_each = local.pocketid_cloudflare_access_identity_providers
 
@@ -52,6 +71,11 @@ resource "pocketid_client" "service" {
   launch_url   = local.services_model[each.key].urls.default.href
   name         = local.services_model[each.key].identity.title
   pkce_enabled = try(local.services_model[each.key].data.oidc_pkce_enabled, false)
+
+  allowed_user_groups = [
+    for group_name in local._pocketid_service_groups[each.key] :
+    pocketid_group.all[group_name].id
+  ]
 
   callback_urls = [
     for callback_url in local.services_model[each.key].data.oidc_callback_urls :

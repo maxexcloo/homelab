@@ -29,6 +29,8 @@ identity:
   service: grimmory
   title: Grimmory
   username: maxexcloo
+  access_groups:
+    - books
 routing:
   backend_port: 30396
   routes:

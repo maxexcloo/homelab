@@ -94,6 +94,33 @@ locals {
     )
   ]
 
+  _services_validation_oidc_groups_empty = [
+    for service_key, service in local.services_model : service_key
+    if(
+      service.features.oidc &&
+      length(distinct(concat(
+        local.defaults.pocketid.default_groups,
+        service.identity.access_groups,
+      ))) == 0
+    )
+  ]
+
+  _services_validation_oidc_groups_missing = concat(
+    [
+      for group_name in local.defaults.pocketid.default_groups : "pocketid.default_groups -> ${group_name}"
+      if !can(local.defaults.pocketid.groups[group_name])
+    ],
+    flatten([
+      for service_key, service in local.services_model : [
+        for group_name in service.identity.access_groups : "${service_key} -> ${group_name}"
+        if(
+          service.features.oidc &&
+          !can(local.defaults.pocketid.groups[group_name])
+        )
+      ]
+    ]),
+  )
+
   _services_validation_pocketid_required = (
     var.integrations.pocketid.enabled ? [] : keys(local.services_model_by_feature.oidc)
   )
@@ -321,6 +348,16 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local._services_validation_oidc_callbacks_missing) == 0
       error_message = "Services with features.oidc enabled require at least one data.oidc_callback_urls entry: ${join(", ", local._services_validation_oidc_callbacks_missing)}"
+    }
+
+    precondition {
+      condition     = length(local._services_validation_oidc_groups_empty) == 0
+      error_message = "Services with features.oidc enabled require at least one combined pocketid.default_groups and identity.access_groups entry: ${join(", ", local._services_validation_oidc_groups_empty)}"
+    }
+
+    precondition {
+      condition     = length(local._services_validation_oidc_groups_missing) == 0
+      error_message = "Pocket ID group references must exist in pocketid.groups: ${join(", ", local._services_validation_oidc_groups_missing)}"
     }
 
     precondition {
