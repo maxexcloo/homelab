@@ -71,13 +71,13 @@ def main():
         )
 
     deployments = [
-        {"action": "deploy", "service": service}
-        for service in targets
+        {"action": "delete", "service": service}
+        for service in removals
         if service_pattern.match(service)
     ]
     deployments.extend(
-        {"action": "delete", "service": service}
-        for service in removals
+        {"action": "deploy", "service": service}
+        for service in targets
         if service_pattern.match(service)
     )
 

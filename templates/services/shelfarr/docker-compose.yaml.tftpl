@@ -1,8 +1,5 @@
 services:
   shelfarr:
-    image: ghcr.io/pedro-revez-silva/shelfarr:0.39.7
-    restart: unless-stopped
-
     environment:
       CHOWN_ON_START: auto
       PGID: 568
@@ -17,17 +14,16 @@ services:
       SHELFARR_SETTING_OIDC_PROVIDER_NAME: ${service.runtime.attributes.oidc_provider_name}
       SHELFARR_SETTING_OIDC_SCOPES: openid profile email
       SOLID_QUEUE_IN_PUMA: 1
-
     healthcheck:
       interval: 30s
       retries: 3
       start_period: 40s
       test: [CMD, curl, --fail, http://localhost/up]
       timeout: 10s
-
+    image: ghcr.io/pedro-revez-silva/shelfarr:0.39.7
     ports:
       - ${service.routing.host_port}:80
-
+    restart: unless-stopped
     volumes:
       - /mnt/truenas-nvme/bookorbit/bookdrop:/audiobooks
       - /mnt/truenas-nvme/bookorbit/bookdrop:/comics
