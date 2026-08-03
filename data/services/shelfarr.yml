@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - icon: ${service.urls.default.href}/icon.png
+data:
+  oidc_callback_urls:
+    - /auth/oidc/callback
+features:
+  oidc: true
+  password: true
+identity:
+  description: Book Requests & Downloads
+  group: Media
+  service: shelfarr
+  title: Shelfarr
+  username: maxexcloo
+  access_groups:
+    - books
+routing:
+  backend_port: 30260
+  routes:
+    - expose: cloudflare
+      host: shelf.excloo.com
+targets:
+  au-truenas: {}

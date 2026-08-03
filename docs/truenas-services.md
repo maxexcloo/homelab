@@ -58,5 +58,5 @@ Follow the catalog template's `add_storage()` calls exactly:
   layer.
 
 Follow the existing structures in `templates/services/aiostreams/`,
-`templates/services/beszel/`, and `templates/services/grimmory/` for network
+`templates/services/beszel/`, and `templates/services/bookorbit/` for network
 ports, storage, and app configuration.
