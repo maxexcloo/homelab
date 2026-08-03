@@ -83,6 +83,7 @@ locals {
             server.features.cloudflared &&
             local._dns_model_managed_zones_by_host[route.host] != null
             ) ? {
+            path       = route.path
             server_key = server_key
             url        = route.backend_url
           } : null

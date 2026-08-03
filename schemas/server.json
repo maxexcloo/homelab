@@ -655,6 +655,11 @@
                 "description": "Stable route identity. Defaults to the route list index when omitted.",
                 "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
                 "type": "string"
+              },
+              "path": {
+                "description": "Optional regular expression limiting Cloudflare Tunnel ingress to matching request paths.",
+                "minLength": 1,
+                "type": "string"
               }
             }
           }

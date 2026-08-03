@@ -176,7 +176,8 @@ locals {
         },
         route,
         {
-          id = try(route.id, tostring(route_index))
+          id   = try(route.id, tostring(route_index))
+          path = try(route.path, null)
         },
       )
     ]

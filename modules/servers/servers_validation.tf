@@ -164,6 +164,13 @@ locals {
     if length(server.routing.routes) != length(distinct([for route in server.routing.routes : route.id]))
   ]
 
+  _servers_validation_routes_invalid_path_patterns = flatten([
+    for server_key, server in local.servers_model : [
+      for route in server.routing.routes : "${server_key} -> ${route.host}"
+      if route.path != null && !can(regexall(route.path, ""))
+    ]
+  ])
+
   _servers_validation_routes_invalid_proxies = flatten([
     for server_key, server in local.servers_input : [
       for route in server.routing.routes : "${server_key}.${route.host} -> ${trimprefix(route.expose, "proxy-")}"
@@ -185,6 +192,13 @@ locals {
     for server_key, server in local.servers_input : server_key
     if length(server.routing.routes) != length(distinct([for route in server.routing.routes : route.host]))
   ]
+
+  _servers_validation_routes_paths_without_cloudflare = flatten([
+    for server_key, server in local.servers_model : [
+      for route in server.routing.routes : "${server_key} -> ${route.host}"
+      if route.path != null && route.expose != "cloudflare"
+    ]
+  ])
 
   _servers_validation_routes_unmanaged = flatten([
     for server_key, server in local.servers_input : [
@@ -322,6 +336,11 @@ resource "terraform_data" "servers_validation" {
     }
 
     precondition {
+      condition     = length(local._servers_validation_routes_invalid_path_patterns) == 0
+      error_message = "Server route paths must be valid regular expressions: ${join(", ", nonsensitive(local._servers_validation_routes_invalid_path_patterns))}"
+    }
+
+    precondition {
       condition     = length(local._servers_validation_routes_invalid_proxies) == 0
       error_message = "Server routing proxy targets must reference an existing server: ${join(", ", nonsensitive(local._servers_validation_routes_invalid_proxies))}"
     }
@@ -334,6 +353,11 @@ resource "terraform_data" "servers_validation" {
     precondition {
       condition     = length(local._servers_validation_routes_not_unique) == 0
       error_message = "Server route hosts must be unique per server: ${join(", ", nonsensitive(local._servers_validation_routes_not_unique))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_routes_paths_without_cloudflare) == 0
+      error_message = "Server route path constraints require expose: cloudflare: ${join(", ", nonsensitive(local._servers_validation_routes_paths_without_cloudflare))}"
     }
 
     precondition {

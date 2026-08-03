@@ -33,6 +33,9 @@ locals {
             hostname = route.hostname
             service  = route.tunnel.url
           },
+          try(route.tunnel.path, null) != null ? {
+            path = route.tunnel.path
+          } : {},
           startswith(route.tunnel.url, "https://") ? {
             origin_request = {
               no_tls_verify = true

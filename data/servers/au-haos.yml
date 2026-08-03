@@ -67,3 +67,4 @@ routing:
   routes:
     - expose: cloudflare
       host: home-assistant.excloo.com
+      path: ^/api/webhook/.+$

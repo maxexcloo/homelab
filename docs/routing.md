@@ -137,7 +137,9 @@ port `8000`, the `webinternal` Traefik entrypoint.
 
 Server routes can also use `external`, `internal`, `cloudflare`, or
 `proxy-<server>`. Non-Cloudflare server routes require a Traefik service on the
-routing server.
+routing server. Cloudflare server routes may set `path` to a regular expression;
+the tunnel forwards only matching request paths and its catch-all returns HTTP
+503 for everything else.
 
 ## Cloudflare Rules
 
