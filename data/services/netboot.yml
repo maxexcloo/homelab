@@ -4,7 +4,7 @@ dashboard:
 identity:
   description: Network Boot Server
   group: Infrastructure
-  service: netbootxyz
+  service: netboot
   title: Netboot
 routing:
   backend_port: 31010
@@ -15,4 +15,5 @@ routing:
 targets:
   au-truenas:
     truenas:
+      catalog_app: netbootxyz
       port_key: web_http_port
