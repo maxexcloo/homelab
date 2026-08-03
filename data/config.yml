@@ -46,12 +46,16 @@ github:
 networking:
   allowlists:
     internal:
-      - 10.0.0.0/23
+      - 10.0.0.0/22
+      - 10.4.0.0/22
       - 100.64.0.0/10
       - 127.0.0.1/32
       - 172.16.0.0/12
       - ::1/128
+      - 2401:dc20:21ac::/64
+      - 2401:dc20:21ac:3::/64
       - fd7a:115c:a1e0::/48
+      - fdd0::/48
 onepassword:
   enabled: true
   vaults:
