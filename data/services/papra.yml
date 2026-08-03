@@ -25,7 +25,7 @@ routing:
   backend_port: 1221
   routes:
     - expose: internal
-      host: docs.excloo.com
+      host: papra.excloo.com
 targets:
   au-truenas:
     truenas:

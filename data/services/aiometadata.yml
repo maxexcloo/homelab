@@ -10,5 +10,8 @@ identity:
   title: AIOMetadata
 routing:
   backend_port: 3232
+  routes:
+    - expose: internal
+      host: aiometadata.excloo.com
 targets:
   au-truenas: {}

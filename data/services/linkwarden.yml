@@ -33,6 +33,9 @@ identity:
   username: max@excloo.com
 routing:
   backend_port: 30243
+  routes:
+    - expose: cloudflare
+      host: links.excloo.com
 targets:
   au-truenas:
     truenas:
