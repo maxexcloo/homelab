@@ -1,0 +1,21 @@
+{
+  "values": {
+    "TZ": "${defaults.system.timezone}",
+    "network": {
+      "host_network": false,
+      "web_port": {
+        "bind_mode": "published",
+        "port_number": ${service.routing.host_port}
+      }
+    },
+    "storage": {
+      "screenshots": {
+        "type": "ix_volume",
+        "ix_volume_config": {
+          "acl_enable": false,
+          "dataset_name": "screenshots"
+        }
+      }
+    }
+  }
+}

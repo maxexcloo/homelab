@@ -1,28 +1,18 @@
 services:
   shelfarr:
     environment:
-      CHOWN_ON_START: auto
-      PGID: 568
-      PUID: 568
-      SHELFARR_SETTING_OIDC_AUTO_CREATE_USERS: "true"
-      SHELFARR_SETTING_OIDC_AUTO_REDIRECT: "true"
-      SHELFARR_SETTING_OIDC_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
-      SHELFARR_SETTING_OIDC_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
-      SHELFARR_SETTING_OIDC_DEFAULT_ROLE: user
-      SHELFARR_SETTING_OIDC_ENABLED: "true"
-      SHELFARR_SETTING_OIDC_ISSUER: ${service.runtime.attributes.oidc_issuer_url}
-      SHELFARR_SETTING_OIDC_PROVIDER_NAME: ${service.runtime.attributes.oidc_provider_name}
-      SHELFARR_SETTING_OIDC_SCOPES: openid profile email
-      SOLID_QUEUE_IN_PUMA: 1
+%{~ for name, value in service.data.environment }
+      ${name}: ${jsonencode(tostring(value))}
+%{~ endfor }
     healthcheck:
       interval: 30s
       retries: 3
       start_period: 40s
-      test: [CMD, curl, --fail, http://localhost/up]
+      test: [CMD, curl, --fail, http://localhost:${service.routing.backend_port}/up]
       timeout: 10s
     image: ghcr.io/pedro-revez-silva/shelfarr:0.39.7
     ports:
-      - ${service.routing.host_port}:80
+      - ${service.routing.backend_port}:${service.routing.backend_port}
     restart: unless-stopped
     volumes:
       - /mnt/truenas-nvme/bookorbit/bookdrop:/audiobooks
@@ -30,7 +20,6 @@ services:
       - /mnt/truenas-nvme/bookorbit/bookdrop:/ebooks
       - downloads:/downloads
       - storage:/rails/storage
-
 volumes:
   downloads: {}
   storage: {}

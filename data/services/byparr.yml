@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../schemas/service.json
+identity:
+  description: Anti-Bot Challenge Solver
+  service: byparr
+  title: Byparr
+routing:
+  backend_port: 8191
+targets:
+  au-truenas: {}
