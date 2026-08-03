@@ -24,6 +24,7 @@ services:
       - --serverstransport.insecureskipverify=true
     environment:
       CF_DNS_API_TOKEN: ${server.runtime.credentials.cloudflare_acme_token}
+    extra_hosts: [host.docker.internal:127.0.0.1]
     image: traefik:v3.7.10
 %{~ if length(custom.proxy_routes) > 0 }
     labels:
