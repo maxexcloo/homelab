@@ -84,7 +84,7 @@ resource "terraform_data" "config_deploy" {
   triggers_replace = [sha256(github_actions_variable.config[each.key].value)]
 
   provisioner "local-exec" {
-    command = "gh workflow run deploy.yml --repo ${local.defaults.github.owner}/${github_repository.deployment[each.key].name} --ref main"
+    command = "gh workflow run ${each.value.workflow} --repo ${local.defaults.github.owner}/${github_repository.deployment[each.key].name} --ref main"
   }
 }
 

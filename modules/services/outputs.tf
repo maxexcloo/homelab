@@ -19,6 +19,7 @@ output "configs" {
     docker = {
       repository = "docker"
       version    = 1
+      workflow   = "render.yml"
 
       deployments = [
         for service_key, service in local._docker_services : {
@@ -89,6 +90,7 @@ output "configs" {
       repository = "fly"
       vault_id   = local.defaults.onepassword.vaults.services.id
       version    = 2
+      workflow   = "deploy.yml"
 
       deployments = [
         for service_key, service in local.services_model : {
