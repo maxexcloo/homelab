@@ -57,6 +57,8 @@ use `id`, then `name`. Sort the remaining fields normally.
 
 Sort mise tools alphabetically and tasks alphabetically within each lifecycle
 section. Sort Renovate package rules by description and Prek hooks by `id`.
+GitHub workflows use conventional top-level order: `name`, `on`, `permissions`,
+`concurrency`, then `jobs`. Preserve dependency order within workflow steps.
 
 ## HCL Standards
 

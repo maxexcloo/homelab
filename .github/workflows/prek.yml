@@ -1,5 +1,15 @@
 name: Prek
 
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
 concurrency:
   cancel-in-progress: true
   group: prek-${{ github.workflow }}-${{ github.ref }}
@@ -21,13 +31,3 @@ jobs:
         run: mise exec -- tofu init -backend=false -input=false
       - name: Run prek
         run: mise run prek
-
-on:
-  pull_request:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
