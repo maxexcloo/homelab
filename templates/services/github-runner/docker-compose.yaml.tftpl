@@ -1,7 +1,7 @@
 services:
   %{~ for runner_key, runner in service.data.runners }
   ${runner_key}:
-    image: ghcr.io/actions/actions-runner:2.334.0
+    image: ghcr.io/actions/actions-runner:2.336.0
     restart: unless-stopped
     command:
       - /bin/bash
