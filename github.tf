@@ -1,6 +1,14 @@
 locals {
   _github_catalogs = module.services.catalogs
 
+  _github_fly_deployments = {
+    for deployment in local._github_catalogs.fly.deployments : deployment.key => {
+      app        = deployment.app
+      owner      = local.defaults.github.owner
+      repository = local.defaults.github.deployment_repositories.fly.name
+    }
+  }
+
   _github_generated_repositories = {
     for repository_key, repository in local.defaults.github.deployment_repositories :
     repository_key => repository
@@ -83,6 +91,18 @@ resource "terraform_data" "catalog_deploy" {
 moved {
   from = terraform_data.catalog_deploy
   to   = terraform_data.catalog_deploy["fly"]
+}
+
+resource "terraform_data" "fly_deployment" {
+  for_each = local._github_fly_deployments
+
+  input            = each.value
+  triggers_replace = [each.value.app]
+
+  provisioner "local-exec" {
+    command = "gh workflow run delete.yml --repo ${self.input.owner}/${self.input.repository} --ref main -f app=${self.input.app}"
+    when    = destroy
+  }
 }
 
 resource "github_repository_file" "readme" {
