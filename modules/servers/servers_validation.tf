@@ -22,7 +22,7 @@ locals {
       server.features.cloudflare_acme ? ["cloudflare_acme_token"] : [],
       server.features.cloudflare_acme_legacy ? ["cloudflare_acme_legacy_token"] : [],
       server.features.cloudflared ? ["cloudflare_tunnel_read_token", "cloudflare_tunnel_token"] : [],
-      server.features.docker ? ["doco_cd_git_access_token", "doco_cd_webhook_secret"] : [],
+      server.features.docker ? ["github_packages_token"] : [],
       server.features.mail ? ["mail_password"] : [],
       server.features.object_storage ? ["object_storage_secret_access_key"] : [],
       server.features.password ? ["password", "password_hash"] : [],
@@ -33,6 +33,14 @@ locals {
   _servers_validation_credential_names_conflicting = [
     for server_key, credential_names in local._servers_validation_credential_names : server_key
     if length(credential_names) != length(distinct(credential_names))
+  ]
+
+  _servers_validation_docker_registry_credentials_missing = [
+    for server_key, server in local.servers : server_key
+    if(
+      server.features.docker &&
+      nonsensitive(server.runtime.credentials.github_packages_token == "")
+    )
   ]
 
   _servers_validation_invalid_incus_vm_parents = [
@@ -225,6 +233,11 @@ resource "terraform_data" "servers_validation" {
     precondition {
       condition     = length(local._servers_validation_cloudflare_routes_missing) == 0
       error_message = "Cloudflare server routes require features.cloudflared: ${join(", ", nonsensitive(local._servers_validation_cloudflare_routes_missing))}"
+    }
+
+    precondition {
+      condition     = length(local._servers_validation_docker_registry_credentials_missing) == 0
+      error_message = "Docker servers require a GitHub package token in 1Password: ${join(", ", local._servers_validation_docker_registry_credentials_missing)}"
     }
 
     # Incus remotes are configured from parent server management addresses.

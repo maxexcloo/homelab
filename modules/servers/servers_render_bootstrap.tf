@@ -3,10 +3,11 @@ locals {
     for server_key, server in local.servers_render_servers : server_key => templatefile(
       "${path.root}/templates/bootstrap/setup.sh.tftpl",
       {
-        defaults = local.defaults
-        doco_cd  = try(local._doco_cd_compose[server_key], null)
-        server   = server
-        beszel   = local.defaults.beszel
+        beszel                  = local.defaults.beszel
+        defaults                = local.defaults
+        doco_cd                 = try(local._doco_cd_compose[server_key], null)
+        doco_cd_registry_config = try(local._doco_cd_registry_configs[server_key], null)
+        server                  = server
       },
     )
     if(
@@ -40,14 +41,26 @@ locals {
     if server.features.docker
   }
 
+  _doco_cd_registry_configs = {
+    for server_key, server in local.servers_render_servers : server_key => jsonencode({
+      auths = {
+        "ghcr.io" = {
+          auth = base64encode("${local.defaults.github.owner}:${server.runtime.credentials.github_packages_token}")
+        }
+      }
+    })
+    if server.features.docker
+  }
+
   bootstrap_cloud_config = {
     for server_key, server in local.servers_render_servers : server_key => templatefile(
       "${path.root}/templates/bootstrap/cloud-config.yaml.tftpl",
       {
-        defaults = local.defaults
-        doco_cd  = try(local._doco_cd_compose[server_key], null)
-        server   = server
-        beszel   = local.defaults.beszel
+        beszel                  = local.defaults.beszel
+        defaults                = local.defaults
+        doco_cd                 = try(local._doco_cd_compose[server_key], null)
+        doco_cd_registry_config = try(local._doco_cd_registry_configs[server_key], null)
+        server                  = server
       },
     )
     if(

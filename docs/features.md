@@ -21,8 +21,8 @@ credential interface.
 - `cloudflare_acme_legacy` provisions an ACME DNS token for external and
   internal zones.
 - `cloudflared` provisions a Cloudflare tunnel and tunnel credentials.
-- `docker` installs Docker, renders Docker Compose deployments to the Docker
-  repo, and installs doco-cd in generated setup artifacts.
+- `docker` installs Docker and doco-cd, publishes non-secret deployment config,
+  and configures doco-cd to poll a target-specific OCI package.
 - `dozzle` includes the server in the central Dozzle remote-agent list.
 - `mail` provisions credentials for the default SMTP provider.
 - `monitoring` includes the server in generated monitoring config.

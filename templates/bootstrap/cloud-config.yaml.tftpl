@@ -61,6 +61,10 @@ write_files:
     permissions: "0600"
     content: |
       ${indent(6, doco_cd)}
+  - path: /opt/doco-cd/registry_config.json
+    permissions: "0600"
+    content: |
+      ${indent(6, doco_cd_registry_config)}
   - path: /opt/doco-cd/sops_age_key.txt
     permissions: "0600"
     content: |

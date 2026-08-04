@@ -2,15 +2,12 @@ services:
   doco-cd:
     container_name: doco-cd
     environment:
-      GIT_ACCESS_TOKEN: ${server.runtime.credentials.doco_cd_git_access_token}
       POLL_CONFIG: |
         - interval: 180s
-          reference: refs/heads/main
-          target: ${server.key}
-          url: https://github.com/${defaults.github.owner}/${defaults.github.deployment_repositories.docker.name}.git
+          source: oci
+          url: ghcr.io/${defaults.github.owner}/${defaults.github.deployment_repositories.docker.name}-${server.key}:main
       SOPS_AGE_KEY_FILE: /run/secrets/sops_age_key
       TZ: ${defaults.system.timezone}
-      WEBHOOK_SECRET: ${server.runtime.credentials.doco_cd_webhook_secret}
     healthcheck:
       interval: 30s
       retries: 3
@@ -23,9 +20,6 @@ services:
     image: ghcr.io/kimdre/doco-cd:0.102.0
     labels:
       traefik.enable: "true"
-      traefik.http.routers.doco-cd-webhook.entrypoints: websecure
-      traefik.http.routers.doco-cd-webhook.rule: "Host(`doco-cd.${server.hosts.external}`) && Path(`/v1/webhook/${server.key}`)"
-      traefik.http.routers.doco-cd-webhook.service: doco-cd
       traefik.http.routers.doco-cd.entrypoints: websecure
       traefik.http.routers.doco-cd.middlewares: internal-only@docker
       traefik.http.routers.doco-cd.rule: "Host(`doco-cd.${server.hosts.internal}`)"
@@ -35,11 +29,15 @@ services:
       - 127.0.0.1:9120:9120
     restart: unless-stopped
     secrets:
+      - source: registry_config
+        target: /root/.docker/config.json
       - sops_age_key
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - data:/data
 secrets:
+  registry_config:
+    file: ./registry_config.json
   sops_age_key:
     file: ./sops_age_key.txt
 volumes:

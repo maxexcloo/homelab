@@ -45,7 +45,7 @@ locals {
           cloudflare_tunnel_token      = local.defaults.credentials.ro
         } : {},
         server.features.docker ? {
-          doco_cd_git_access_token = local.defaults.credentials.rw
+          github_packages_token = local.defaults.credentials.rw
         } : {},
         server.features.mail ? {
           mail_password = local.defaults.credentials.ro
@@ -74,12 +74,6 @@ locals {
   _servers_model_generated_credentials = {
     for server_key, server in local.servers_input : server_key => merge(
       server.credentials.generated,
-      server.features.docker ? {
-        doco_cd_webhook_secret = {
-          length = 48
-          type   = "alphanumeric"
-        }
-      } : {},
       server.features.password ? {
         password = {
           length = 32

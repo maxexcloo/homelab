@@ -112,8 +112,8 @@ Servers may receive:
 - `cloudflare_acme`: read-only `cloudflare_acme_token`.
 - `cloudflare_acme_legacy`: read-only `cloudflare_acme_legacy_token`.
 - `cloudflared`: read-only tunnel and tunnel-read tokens.
-- `docker`: read-write `doco_cd_git_access_token` and generated
-  `doco_cd_webhook_secret`.
+- `docker`: read-write `github_packages_token` for pulling private deployment
+  packages from GHCR.
 - `mail`: read-only `mail_password`.
 - `object_storage`: read-only `object_storage_secret_access_key`.
 - `password`: read-write `password` and read-only `password_hash`.

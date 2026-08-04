@@ -55,10 +55,13 @@ sudo install -d -m 0700 /opt/doco-cd
 sudo tee /opt/doco-cd/docker-compose.yaml >/dev/null <<'EOF'
 ${doco_cd}
 EOF
+sudo tee /opt/doco-cd/registry_config.json >/dev/null <<'EOF'
+${doco_cd_registry_config}
+EOF
 sudo tee /opt/doco-cd/sops_age_key.txt >/dev/null <<'EOF'
 ${server.runtime.credentials.age_secret_key}
 EOF
-sudo chmod 0600 /opt/doco-cd/docker-compose.yaml /opt/doco-cd/sops_age_key.txt
+sudo chmod 0600 /opt/doco-cd/docker-compose.yaml /opt/doco-cd/registry_config.json /opt/doco-cd/sops_age_key.txt
 %{~ endif }
 
 # Commands

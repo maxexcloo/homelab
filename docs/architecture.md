@@ -23,7 +23,8 @@ The root creates deployment repositories and publishes a `CONFIG` variable to
 each one. Target repositories own their templates, workflows, rendering, and
 deployment code.
 
-- Docker renders for doco-cd and encrypts secret files with SOPS.
+- Docker publishes target-specific OCI packages for doco-cd and encrypts every
+  deployment file with SOPS.
 - Fly resolves credentials on a hosted runner and deploys with Fly tooling.
 - TrueNAS renders and encrypts on a hosted runner, then decrypts and deploys on
   the matching self-hosted runner.

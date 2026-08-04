@@ -149,13 +149,13 @@
     },
     "github": {
       "additionalProperties": false,
-      "description": "GitHub organisation and repository names used to push encrypted configuration files.",
+      "description": "GitHub organisation and source repositories used for target deployments.",
       "required": ["owner", "deployment_repositories"],
       "type": "object",
       "properties": {
         "deployment_repositories": {
           "additionalProperties": false,
-          "description": "GitHub repositories that store generated deployment configuration and maintenance workflows.",
+          "description": "GitHub repositories that own target templates, workflows, and deployment tooling.",
           "required": ["docker", "fly", "truenas", "workflows"],
           "type": "object",
           "properties": {
@@ -166,7 +166,7 @@
               "type": "object",
               "properties": {
                 "description": {
-                  "description": "Generated GitHub repository description and README body.",
+                  "description": "GitHub repository description.",
                   "type": "string"
                 },
                 "display_name": {
@@ -191,7 +191,7 @@
               "type": "object",
               "properties": {
                 "description": {
-                  "description": "Generated GitHub repository description and README body.",
+                  "description": "GitHub repository description.",
                   "type": "string"
                 },
                 "display_name": {
@@ -216,7 +216,7 @@
               "type": "object",
               "properties": {
                 "description": {
-                  "description": "Generated GitHub repository description and README body.",
+                  "description": "GitHub repository description.",
                   "type": "string"
                 },
                 "display_name": {
@@ -241,7 +241,7 @@
               "type": "object",
               "properties": {
                 "description": {
-                  "description": "Generated GitHub repository description and README body.",
+                  "description": "GitHub repository description.",
                   "type": "string"
                 },
                 "display_name": {

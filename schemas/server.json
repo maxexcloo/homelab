@@ -176,7 +176,7 @@
           "type": "boolean"
         },
         "docker": {
-          "description": "Install Docker and doco-cd in generated setup artifacts and publish a non-secret deployment config for the source-owned Docker repository. Exposes runtime.credentials.{doco_cd_git_access_token,doco_cd_webhook_secret}.",
+          "description": "Install Docker and doco-cd in generated setup artifacts and publish a non-secret deployment config for the source-owned Docker repository. Doco-cd polls target-specific OCI deployment packages.",
           "type": "boolean"
         },
         "dozzle": {

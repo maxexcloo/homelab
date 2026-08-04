@@ -13,9 +13,11 @@ and resolve credentials only where they are deployed. Changing `CONFIG` triggers
 the target workflow automatically. Removing a deployment triggers its target's
 delete action.
 
-Docker renders encrypted files for doco-cd. Fly deploys from a hosted runner.
-TrueNAS renders on a hosted runner, uploads a short-lived SOPS-encrypted artifact,
-and decrypts it only on the matching TrueNAS runner.
+Docker publishes encrypted OCI packages for doco-cd. Fly deploys from a hosted
+runner.
+TrueNAS publishes encrypted OCI packages on a hosted runner and decrypts them
+only on the matching TrueNAS runner.
 
-Deployment repositories are private. They can become public only after their
-templates, workflows, history, and generated artifacts are confirmed secret-free.
+Deployment packages remain private. Source repositories may become public after
+their templates, workflows, history, logs, and variables pass a visibility
+audit.

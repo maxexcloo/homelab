@@ -1,5 +1,36 @@
 # Homelab Simplification Plan
 
+## Current Scope Override
+
+Client-side OpenTofu state and plan encryption is explicitly deferred. Do not
+create an encryption passphrase, a dedicated encryption item or vault, or
+`encryption.tf` during the current simplification work. GCS server-side
+encryption, uniform bucket-level access, public access prevention, narrow IAM,
+and Object Versioning are the current controls.
+
+Sections 6, 7, 12, 13, and the encrypted delivery workflow in section 15 are
+future work only. Their encryption requirements are not current dependencies or
+completion gates. Do not upload saved plan or state artifacts while encryption
+is deferred.
+
+The isolated GCS version-restore drill and a dedicated recovery runbook are
+also skipped in the current scope. The absence of a tested restore procedure is
+an accepted temporary limitation.
+
+## Repository Maintenance Rules
+
+- Use `mise run check` as the single repository check entry point; it may
+  delegate to Prek when that avoids duplicated orchestration.
+- Keep Prek useful and small: repository hygiene, formatters, linters, and
+  schema checks only, with no checker executed twice in one path.
+- Prefer Renovate's recommended defaults, add only project-specific overrides,
+  and group compatible updates by ecosystem.
+- Keep tool, action, hook, and image pins current through Renovate where
+  supported.
+- Sort mise tools and tasks, Prek hooks, and Renovate rules alphabetically
+  within their semantic groups.
+- Use `.yaml`, never `.yml`, across homelab repositories.
+
 1. **Lock the architectural decisions before changing code.**
 
    - OpenTofu version floor: `1.12.5`, matching the existing `mise` pin.
@@ -13,7 +44,8 @@
    - 1Password Connect remains because it supports the required network and vault behavior.
    - No remote or cross-network Docker socket access.
    - Provider-managed services such as B2, Resend, Pocket ID, Cloudflare, and Tailscale remain supported.
-   - Backend migration, state encryption, secret refactoring, repository splitting, and state splitting happen in separate phases.
+   - Backend migration, secret refactoring, repository splitting, and state splitting happen in separate phases.
+   - Client-side state and plan encryption is deferred until explicitly resumed.
 
 2. **Treat GCS as effectively inexpensive, but not technically free in Sydney.**
 
@@ -106,7 +138,9 @@
 
    Workload Identity Federation avoids long-lived cloud keys and supports GitHub Actions. [Google WIF](https://docs.cloud.google.com/iam/docs/workload-identity-federation) [Google GitHub auth action](https://github.com/google-github-actions/auth)
 
-6. **Prepare a dedicated 1Password item for state encryption.**
+6. **[Deferred] Prepare a dedicated 1Password item for state encryption.**
+
+   Do not implement this section during the current simplification work.
 
    Add an `Automation` or `Infrastructure` vault rather than mixing backend credentials with the existing Servers and Services vaults.
 
@@ -145,7 +179,9 @@
 
    GCP project ID, bucket name, region, and state prefixes stay in Git because they are configuration, not secrets.
 
-7. **Make the OpenTofu version requirement match the encryption requirement.**
+7. **[Deferred] Make the OpenTofu version requirement match the encryption requirement.**
+
+   Do not change the version constraint solely for encryption while encryption is deferred.
 
    In `terraform.tf`, change the current broad floor:
 
@@ -261,7 +297,9 @@
 
     If GCS has already accepted state changes, migrate the latest GCS state back rather than simply reopening the stale HCP workspace.
 
-12. **Enable OpenTofu client-side encryption in a separate phase.**
+12. **[Deferred] Enable OpenTofu client-side encryption in a separate phase.**
+
+    Do not implement this section until client-side encryption is explicitly resumed.
 
     Add a sensitive root variable in `variables.tf`:
 
@@ -337,7 +375,9 @@
 
     Do not rename the key provider, method, or metadata alias later. OpenTofu records those identifiers in encrypted metadata. [OpenTofu state and plan encryption](https://opentofu.org/docs/v1.12/language/state/encryption/)
 
-13. **Perform an encrypted restore drill.**
+13. **[Deferred] Perform an encrypted restore drill.**
+
+    Do not implement this section until client-side encryption is explicitly resumed.
 
     Do not test recovery by overwriting live state.
 
@@ -362,7 +402,7 @@
 
 14. **Keep pull-request CI credential-free.**
 
-    The existing `.github/workflows/prek.yml` should continue to:
+    The existing `.github/workflows/prek.yaml` should continue to:
 
     - Run on GitHub-hosted runners.
     - Use `tofu init -backend=false`.
@@ -374,7 +414,9 @@
 
     This lets pull requests validate untrusted changes without exposing infrastructure access.
 
-15. **Add a separate protected delivery workflow after GCS is stable.**
+15. **[Deferred] Add a separate protected delivery workflow after GCS and encryption are stable.**
+
+    Do not implement the saved-plan delivery workflow while plan encryption is deferred. Continue using reviewed local plans and explicitly approved local applies; never upload an unencrypted saved plan as a substitute.
 
     Delivery should run only:
 
@@ -421,19 +463,24 @@
 
 16. **Define the permanent 1Password schema before moving credentials.**
 
-    Existing item titles such as `Beszel (beszel-au-truenas)` should migrate to exact stable resource keys:
+    Status: the metadata inventory and field-label normalization are complete.
+    Existing item titles, IDs, values, purposes, URLs, categories, and vaults
+    were preserved.
+
+    Keep the existing title convention:
 
     ```text
-    beszel-au-truenas
-    au-truenas
-    opentofu-state-homelab
+    Display Name (resource-key)
     ```
+
+    The trailing parenthesized resource key is the programmatic identity. Keep
+    the complete title stable, validate the convention, and reject duplicate
+    resource keys within a vault. Do not rename existing items.
 
     Use the existing vault separation:
 
     - `Servers`
     - `Services`
-    - Add `Automation`
 
     Standard sections:
 
@@ -455,7 +502,7 @@
     Example service item:
 
     ```text
-    Item: beszel-au-truenas
+    Item: Beszel (beszel-au-truenas)
 
     credentials.monitoring_token
     credentials.object_storage_secret_access_key
@@ -477,22 +524,23 @@
     admin
     ```
 
-    Tags should also be deterministic:
-
-    ```text
-    homelab/managed
-    service/beszel
-    target/truenas
-    ```
+    Preserve the existing category, tags, and URLs unless a consumer requires a
+    deliberate change.
 
 17. **Move 1Password reconciliation outside OpenTofu.**
 
     The current `modules/onepassword` reads complete item responses through `data.http.item`. Those response bodies can persist credential values in state.
 
-    Replace that lifecycle with one thin reconciler using the official `op` CLI and Connect:
+    The `op` CLI does not use Connect as its item CRUD transport. Keep Connect
+    as the reconciliation writer and multi-vault API. A target deployment may
+    use the official `op` CLI with a dedicated read-only service account when
+    it needs only direct references from one vault; scope that account to the
+    exact vault and do not give the hosted runner access to Connect. Use one
+    small shell command around the Connect REST API with `curl` and `jq` for
+    reconciliation:
 
     1. Select the vault by exact configured ID or name.
-    2. Search for the exact stable item title.
+    2. Search for the exact current item title.
     3. Fail if more than one item matches.
     4. Retrieve the existing item JSON into process memory.
     5. Validate sections, field IDs, labels, and URL labels.
@@ -501,10 +549,12 @@
     8. Never rotate without an explicit rotation flag.
     9. Update native URLs and managed metadata.
     10. Warn about unknown fields; do not delete them automatically.
-    11. Write through `op item create` or `op item edit`.
+    11. Write through the Connect item API.
     12. Return only item IDs and `op://` references, never values.
 
-    Keep this as one small purpose-built command, not a general framework. Use JSON stdin/stdout between `op` and the reconciler so secrets do not appear in process arguments or logs.
+    Keep this as one small purpose-built command, not a general framework. Pass
+    JSON through stdin/stdout so secrets do not appear in process arguments or
+    logs.
 
 18. **Use two explicit credential flows.**
 
@@ -553,22 +603,40 @@
 
     Migration order:
 
-    1. Add stable metadata to existing items.
-    2. Match old human-readable titles to stable resource keys.
-    3. Rename items once.
-    4. Rename field labels from `_ro`/`_rw` to their stable names.
-    5. Keep temporary alias fields if any deployment still uses the old reference.
-    6. Update deployments to new references.
-    7. Verify all consumers.
-    8. Use `removed` blocks with `lifecycle.destroy = false` for managed 1Password resources where possible.
-    9. Remove the corresponding data sources and REST resources from state.
-    10. Remove the custom stateful module only after a no-change plan confirms no item deletion.
+    1. Field labels are normalized to their stable names.
+    2. Update target deployments to stable references.
+    3. Verify all consumers.
+    4. Use `removed` blocks with `lifecycle.destroy = false` for managed 1Password resources where possible.
+    5. Remove the corresponding data sources and REST resources from state.
+    6. Remove the custom stateful module only after a no-change plan confirms no item deletion.
 
-    Historical HCP and early GCS generations will still contain the old item response data. Keep them access-controlled, client-encrypt new GCS generations, and let their retention windows expire.
+    Historical HCP and GCS generations will still contain the old item response data. Keep them narrowly access-controlled and let their retention windows expire. Client-side encryption remains deferred.
 
 20. **Convert generated deployment repositories into authoritative source repositories.**
 
+    Status: the `homelab-fly` source cutover is complete. Core retains repository
+    governance and publishes one non-secret config variable, but owns no Fly
+    repository files or Fly deployment-encryption credentials. The target
+    repository owns reusable service implementations and templates, renders
+    selected instances from the config during the job, resolves direct
+    1Password references with a Services-vault read-only service account, and
+    has completed the config-driven deployment successfully.
+
+    Generated deployment workspaces belong under an ignored `.render/`
+    directory. Shared tooling copies the selected service source there and
+    renders every service-local `*.tmpl` to the same relative path without the
+    suffix. Do not add generated template counterparts to `.gitignore` one by
+    one or commit them. Docker and TrueNAS publish target-specific OCI packages
+    from this ephemeral workspace; Fly deploys directly from it.
+
     Today `github.tf` and the service modules write repository files through `github_repository_file` and `modules/github_file_encrypted`.
+
+    Repository-level tooling must remain generic, as it is in `homelab`:
+
+    - `mise` tasks, shared workflows, repository configuration, and root documentation describe the platform and discover deployments from the repository layout.
+    - Do not hard-code a service name or service-specific path in repository-level tooling.
+    - Keep service-specific behavior in its data and template directories.
+    - Adding a service should require adding its source files, not editing shared tooling.
 
     For each target repository:
 
@@ -586,26 +654,17 @@
 
     ```text
     .github/workflows/
-      check.yml
-      deploy.yml
-
-    data/
-      defaults.yml
-      services/*.yml
+      check.yaml
+      deploy.yaml
 
     templates/
+      app.json.tmpl
+      compose.json.tmpl
       services/<service>/
 
-    scripts/
-      only target-specific code
-
-    backend.tf
-    encryption.tf
-    main.tf
-    outputs.tf
-    providers.tf
-    terraform.tf
-    variables.tf
+    .render/                 # ignored
+      <target>/
+        <service>/           # OCI package root after selecting one target
     mise.toml
     README.md
     ```
@@ -637,31 +696,68 @@
 
     Fly:
 
-    - Keep `fly.toml`, Dockerfiles, and service templates in `homelab-fly`.
+    - Keep Dockerfiles and service-local deployment templates in `homelab-fly`.
+    - Discover deployment instances from the non-secret config, not directory names or 1Password items.
+    - Render `fly.toml`, certificates, scaling configuration, and application configuration during the selected deployment job.
     - Resolve secrets from 1Password during the job.
     - Use `fly secrets set` or `fly secrets import`.
     - Use `flyctl deploy`.
     - Require an explicit workflow input for deletion; never infer app deletion solely from a removed directory.
-    - Python should not be required for normal Fly deployment.
+    - Keep one small Python lifecycle command for selection, rendering, deployment, and deletion; call `flyctl`, Gomplate, and `op` directly without shell wrappers.
 
     Docker/doco-cd:
 
-    - Keep Compose definitions in `homelab-docker`.
-    - Use doco-cd's native Git/OCI and 1Password Connect support.
-    - Store `op://` references or doco-cd external-secret declarations, not rendered values.
+    - Keep Compose definitions and service-local templates under `templates/services/<service>/` in `homelab-docker`, even when a similar TrueNAS template exists.
+    - Discover deployment instances from the repository-specific non-secret config.
+    - Render into an ignored target-specific workspace and never commit generated deployment output.
+    - Resolve 1Password references only in GitHub Actions and stream every generated Compose, environment, certificate, and sidecar file directly into SOPS.
+    - Keep only the minimal root and service `.doco-cd.yaml` discovery metadata plaintext.
+    - Package each target as an OCI image with the strict `doco.v1` layout and publish immutable commit and moving `main` tags to GHCR.
+    - Put rendered services directly at the OCI artifact root (`/<service>/`); the package name already identifies the target, so do not add `deployments/` or `<target>/` path layers. Reject duplicate instances of one service on the same target rather than silently overwriting a directory.
+    - Let doco-cd poll the target-specific OCI package instead of cloning the source repository.
+    - Give doco-cd only its target age private key; do not give it a 1Password token.
+    - Keep the package private and mount a standard Docker config containing a classic GitHub PAT limited to `read:packages`; store that token as `github_packages_token` on the target server item in 1Password.
+    - Let doco-cd use its native SOPS support when reading encrypted deployment files.
     - The doco-cd agent accesses its local Docker socket.
     - GitHub runners do not access that socket locally or across networks.
+    - Use one repository-generic renderer for discovery, Gomplate rendering, encryption, and doco-cd metadata.
+    - Delete services automatically through doco-cd auto-discovery when they disappear from the published desired-state package.
     - Preserve volumes on service removal unless an explicit destructive input is approved.
+    - Treat doco-cd OCI support as experimental: keep the previous Git-based deployment revision recoverable until OCI polling, update, deletion, and rollback are verified.
+
+    Status: the `homelab-docker` source cutover is implemented and pushed. The
+    initial private package publication and layer audit pass: the package has
+    the expected root service layout, all deployment payloads are encrypted for
+    the target recipient, and only Doco discovery metadata is plaintext. The
+    package remains private by policy. Doco polling uses standard registry
+    authentication, so the core cutover no longer depends on public package
+    visibility.
 
     TrueNAS:
 
-    - Keep app templates, Compose templates, and sidecars in `homelab-truenas`.
+    - Keep app templates, Compose templates, and sidecars under `templates/services/<service>/` in `homelab-truenas`; keep shared templates directly under `templates/`.
+    - Render every target deployment on a hosted runner, resolve 1Password there, and SOPS-encrypt every file for the target age recipient.
+    - Publish one complete target-specific OCI package with immutable commit and moving `main` tags instead of uploading normal GitHub Actions artifacts.
+    - Put rendered services directly at the OCI artifact root (`/<service>/`); do not repeat the target or add a `deployments/` directory inside the target-specific package (`/redlib/`, `/aiometadata/`, and so on).
     - Run deployment on the target-local runner.
+    - Pull the immutable OCI package identified by the workflow commit, then decrypt only the selected deployment in a temporary directory.
     - Reach TrueNAS through its supported API rather than Docker.
-    - Resolve 1Password values into a protected temporary workspace.
     - Clean the workspace after the API call.
-    - Retain a small target-specific Python command only where structured TrueNAS API reconciliation and sidecar copying genuinely need it.
-    - Consolidate the existing selection, deploy, delete, and decrypt scripts rather than creating a general deployment framework.
+    - Keep selection, hosted rendering, and target deployment as separate small scripts matching their trust boundaries; deployment and deletion remain one lifecycle command.
+    - Retain target-specific Python only where structured TrueNAS API reconciliation and sidecar copying genuinely need it.
+
+    Status: the `homelab-truenas` source cutover is implemented and pushed. Its
+    no-config bootstrap workflow passes. Publishing `CONFIG`, rendering the
+    first private target package, and reconciling it on the TrueNAS runner remain
+    pending the reviewed core apply; no deployment has been triggered.
+
+    OCI visibility and publication:
+
+    - Keep OCI packages private.
+    - Repository and GHCR package visibility are independent; do not assume a public repository makes a package public.
+    - Make source repositories public only after their history, Actions logs, variables, templates, and workflows pass the same audit.
+    - Give edge consumers only the narrow registry access they need: Doco uses a classic PAT with `read:packages`; TrueNAS uses the workflow's short-lived `GITHUB_TOKEN` with `packages: read`.
+    - Do not give edge consumers a 1Password service-account token.
 
 23. **Split multi-target services by expanded deployment identity.**
 
@@ -681,7 +777,37 @@
 
 24. **Preserve global Homepage, Gatus, and Traefik aggregation through a small nonsecret contract.**
 
-    Every target repository should expose the same minimal service-catalog fields in its YAML:
+    Use this as the general rendering boundary:
+
+    - A normal service renders entirely from data and templates in its owning target repository.
+    - An aggregator such as Homepage, Gatus, or Traefik may consume a shared, explicitly projected non-secret config because it needs cross-service context.
+    - Never give an aggregator full remote-state access or the complete runtime service model.
+    - The config contains only stable identity, target, display metadata, URLs or hosts, required feature flags, and programmatic secret references.
+    - Keep credentials in 1Password and resolve them only in the consuming deployment job.
+    - Publish the config independently of repository files so OpenTofu does not generate or commit target repository contents.
+    - Reuse one stable config shape where practical; each aggregator projects only the fields it needs.
+
+    Versioned configs are keyed and projected by target repository, then
+    published as that repository's non-secret `CONFIG` GitHub Actions
+    variable. The Fly config contains only Fly deployment instances and the
+    monitored service fields consumed by Gatus. Do not publish one complete
+    global config to every target. Each config must remain below the GitHub
+    variable size limit, and publication must fail if a referenced service
+    lacks a 1Password item. A per-repository config-hash trigger dispatches
+    the target deployment workflow after the variable update; changing a
+    variable without dispatching its deployment is incomplete.
+
+    Service-local secret templates derive environment-variable names and
+    `op://` references from the config. Do not commit enumerated item IDs or
+    monitored-service secret lists. Derived fields such as `monitoring_basic`
+    are reconciled in 1Password from their source token so rotation cannot
+    leave the derived value stale.
+
+    Shared external-provider metadata belongs in `data/config.yaml`. Homepage
+    projects it into bookmarks and Gatus projects it into availability probes;
+    neither aggregator reads the other service's data.
+
+    Every target repository should expose the same minimal service-config fields in its YAML:
 
     ```text
     key
@@ -705,9 +831,9 @@
 
     Aggregation behavior:
 
-    - Traefik consumes only its local target catalog.
-    - Homepage may merge selected private target catalogs.
-    - Gatus merges monitoring entries from all target catalogs.
+    - Traefik consumes only its local target config.
+    - Homepage may merge selected private target configs.
+    - Gatus merges monitoring entries from all target configs.
     - Aggregator workflows check out the other private repositories read-only.
     - Duplicate service keys fail validation.
     - The deployed configuration records the consumed commit SHA of each source repository.
@@ -722,11 +848,11 @@
 
     - Use the same GCS bucket.
     - Use a dedicated prefix.
-    - Use the same encryption configuration and 1Password recovery key initially.
+    - Keep client-side encryption deferred consistently across all state roots.
     - Use distinct GitHub concurrency groups.
     - Keep the same provider versions until the transfer is complete.
 
-    Later, separate encryption keys per state can be introduced with OpenTofu fallback-based key rotation if the extra isolation is worthwhile.
+    If client-side encryption is resumed later, introduce it as a separate reviewed migration after the state split is stable.
 
 26. **Build an address-by-address state transfer manifest.**
 
@@ -812,7 +938,7 @@
     GCS gate:
 
     - Native locking passes.
-    - Version restore passes.
+    - Object Versioning is enabled; the restore drill is deferred.
     - No public access.
     - Correct bucket region and lifecycle.
     - No credentials in backend configuration.
@@ -825,7 +951,7 @@
     - HCP is read-only.
     - Secure backup exists.
 
-    Encryption gate:
+    Deferred encryption gate, applicable only after encryption is explicitly resumed:
 
     - Raw current GCS object is ciphertext.
     - Missing passphrase causes a safe failure.
@@ -835,7 +961,8 @@
 
     1Password gate:
 
-    - Exact stable item titles.
+    - Existing item titles and IDs are preserved.
+    - Parenthesized resource keys are unique within each vault.
     - Exact `snake_case` field names.
     - Duplicate items fail.
     - Existing values are preserved.
@@ -861,19 +988,19 @@
 31. **Keep rollback paths live until each phase proves itself.**
 
     - Backend migration: retain HCP.
-    - Encryption migration: retain the unencrypted fallback temporarily and keep the offline passphrase.
+    - Deferred encryption migration: if resumed, retain the unencrypted fallback temporarily and keep the offline passphrase.
     - 1Password migration: retain old fields as aliases until consumer validation completes.
     - Repository cutover: keep the old deploy workflow disabled but recoverable for one release cycle.
-    - Target deployment: roll back to the previous Git commit or Fly/TrueNAS deployment revision.
-    - State split: retain encrypted source and destination state backups until both roots pass no-change plans.
+    - Target deployment: roll back to the previous Git commit, OCI digest, or Fly/TrueNAS deployment revision.
+    - State split: retain access-controlled source and destination state backups until both roots pass no-change plans.
     - Credential rotation: retain the old credential until the new application health check passes.
 
 32. **Defer optional improvements until the core plan is complete.**
 
     Later options:
 
-    - Copy each raw encrypted GCS generation to R2 under a generation-specific key.
-    - Make target template repositories public after separating topology and deployment data.
+    - Copy selected GCS generations to R2 under generation-specific keys if another backup tier becomes worthwhile.
+    - Make target template repositories public only after their visibility audit; keep deployment packages private.
     - Replace GitHub with Forgejo/Woodpecker only if GitHub becomes an actual constraint.
     - Use separate GCS buckets or encryption keys per repository if stronger state isolation becomes necessary.
     - Replace the remaining target-specific Python only when a simpler supported platform tool exists.
@@ -885,8 +1012,9 @@
     The simplification is complete when:
 
     - HCP is gone.
-    - GCS locking, versioning, restore, and encryption are tested.
-    - Current repositories remain private.
+    - GCS locking and versioning are tested; the restore drill remains outside the current completion criteria.
+    - Client-side state and plan encryption remains explicitly outside the current completion criteria.
+    - Source repository visibility matches the verified exposure policy and OCI packages remain private.
     - Target repositories own their service source, templates, deployment, and service-scoped resources.
     - Core no longer generates target repository contents.
     - Application-owned secrets originate in and remain in 1Password.
@@ -898,4 +1026,4 @@
     - Every state root produces a reviewed no-change plan.
     - `mise run check` and `mise run prek` pass in every affected repository.
 
-The Terrashark failure-mode review drives the strict separation between backend migration, encryption, secret migration, repository ownership, and cross-state transfer; combining those phases would make rollback and identity verification unreliable.
+The Terrashark failure-mode review drives the strict separation between backend migration, secret migration, repository ownership, and cross-state transfer. Client-side encryption remains documented but deferred until explicitly resumed.
