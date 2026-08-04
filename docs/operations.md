@@ -71,8 +71,8 @@ Plan and apply remain operator-controlled.
   because `bucket_ids` cannot create an equivalent bucket-scoped key.
 - Incus user data and OCI instance metadata ignore updates after creation
   because cloud-init consumes them only during first boot.
-- Control D, 1Password, and Resend REST resources tolerate API-owned fields or
-  changes so managed fields can reconcile without deleting unmanaged data.
+- Control D and Resend REST resources tolerate API-owned fields or changes so
+  managed fields can reconcile without deleting unmanaged data.
 
 ## Destructive Changes
 

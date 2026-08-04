@@ -1,8 +1,8 @@
 # Architecture
 
 YAML in `data/` is the source of truth. OpenTofu validates it, builds stable
-models, provisions infrastructure, stores credentials in 1Password, and
-publishes non-secret deployment configs.
+models, provisions infrastructure, and publishes non-secret deployment configs.
+1Password Connect stores the credential inventory.
 
 ## Stages
 
@@ -36,7 +36,8 @@ references resolved by the target workflow.
 
 - `modules/credentials` generates scalar credentials, hashes, and X.509 material.
 - `modules/object_storage` provisions isolated object-storage credentials.
-- `modules/onepassword` manages generic 1Password Connect items.
+- `modules/onepassword` finds generic 1Password Connect items and reads values
+  still required by OpenTofu consumers.
 - `modules/servers` owns server models, infrastructure, and bootstrap output.
 - `modules/services` owns service models and provider-backed service resources.
 

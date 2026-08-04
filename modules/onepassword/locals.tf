@@ -14,18 +14,10 @@ locals {
     if item_id != null
   }
 
-  _item_payloads = {
-    for item_key, payload in var.payloads : item_key => merge(
-      payload,
-      {
-        id = try(local._existing_ids[item_key], null)
-
-        vault = {
-          id = var.vault_id
-        }
-      },
-    )
-  }
+  _missing_items = [
+    for item_key, item_id in local._existing_ids : item_key
+    if item_id == null
+  ]
 
   _search_results = {
     for item_key, search in data.http.search :

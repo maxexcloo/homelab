@@ -1,11 +1,10 @@
 # Credentials
 
-Generated credentials can be preserved and stored in 1Password through
-1Password Connect. Set `onepassword.enabled` in `data/config.yaml` to select the
-credential source:
+Credentials are stored in 1Password through 1Password Connect. Set
+`onepassword.enabled` in `data/config.yaml` to select the credential source:
 
-- `true` reads existing values from 1Password, uses generated values as
-  fallbacks, and writes the complete credential inventory back to 1Password.
+- `true` reads existing values from 1Password and uses generated values as
+  fallbacks for OpenTofu consumers.
 - `false` skips all 1Password API calls and item writes. Generated credentials
   remain in sensitive OpenTofu state; target deployments cannot resolve their
   credential references until 1Password is enabled.
@@ -17,6 +16,12 @@ Provider access comes from `TF_VAR_onepassword_connect_url` and
 `TF_VAR_onepassword_connect_token`. Both are required only when the integration
 is enabled.
 
+OpenTofu looks up items by exact title and requires every configured item to
+exist. `mise run check-onepassword` compares the desired inventory without
+writing. `mise run sync-onepassword` fills missing values and metadata while
+preserving non-empty and unknown fields. Both stream the sensitive manifest
+directly from state and print no values.
+
 Pocket ID follows the same opt-in pattern. Set `pocketid.enabled` in
 `data/config.yaml`; `TF_VAR_pocketid_url` and `TF_VAR_pocketid_api_token` are
 required only while it is enabled. Disabling it skips discovery, application
@@ -24,27 +29,19 @@ configuration, OIDC clients, and the Cloudflare Access identity provider.
 Planning fails while Pocket ID is disabled and any service still enables
 `features.oidc`.
 
-Choose the integration mode before the first apply. Disabling an established
-integration can change credentials whose current value exists only in
-1Password. Disabling the integration can delete managed 1Password items; leave
-it enabled until those resources are deliberately detached from state if
-1Password should stop being managed without deleting its items.
-
-OpenTofu looks up items by exact title and reuses their IDs.
-
 ## Fields
 
 Manually supplied credential fields are declared under `credentials.fields`.
-OpenTofu creates missing fields on the matching 1Password item, reads values
-back, and exposes them as `runtime.credentials.<name>`.
+The reconciler creates missing fields on the matching 1Password item. OpenTofu
+temporarily reads required values back as `runtime.credentials.<name>`.
 
 The 1Password item is built from the complete modeled credential map. Declared
 fields, typed generators, and feature-created provider values are all surfaced;
 there is no service-specific allowlist.
 
-The server and service modules shape their domain-specific item payloads, then
-use `modules/onepassword` for the shared Connect search, read, and write
-lifecycle. `modules/credentials` owns generated scalar values, X.509 material,
+The server and service modules shape their domain-specific item payloads.
+`modules/onepassword` owns exact-title search and reads; the external reconciler
+owns writes. `modules/credentials` owns generated scalar values, X.509 material,
 and bcrypt hashes.
 
 Declared fields default to `credentials.rw` from `data/defaults.yaml`.

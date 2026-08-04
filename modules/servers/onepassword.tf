@@ -81,12 +81,7 @@ module "onepassword" {
 
   connect_url     = var.integrations.onepassword.connect_url
   enabled         = local._onepassword_integration_ready
-  payloads        = local._onepassword_server_item_payloads
   request_headers = var.integrations.onepassword.request_headers
   titles          = local._onepassword_server_titles
   vault_id        = try(local.defaults.onepassword.vaults.servers.id, "disabled")
-
-  providers = {
-    restapi = restapi.onepassword
-  }
 }

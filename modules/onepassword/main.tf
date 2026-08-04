@@ -12,20 +12,10 @@ data "http" "item" {
   url             = "${var.connect_url}/v1/vaults/${var.vault_id}/items/${each.value}"
 }
 
-resource "restapi_object" "item" {
-  for_each = var.enabled ? var.titles : {}
-
-  data                    = sensitive(jsonencode(local._item_payloads[each.key]))
-  id_attribute            = "id"
-  ignore_server_additions = true
-  path                    = "/v1/vaults/${var.vault_id}/items"
-  read_path               = "/v1/vaults/${var.vault_id}/items/{id}"
-  update_data             = sensitive(jsonencode(local._item_payloads[each.key]))
+removed {
+  from = restapi_object.item
 
   lifecycle {
-    precondition {
-      condition     = length(local._duplicate_items) == 0
-      error_message = "1Password item lookup is ambiguous: ${join(", ", nonsensitive(local._duplicate_items))}"
-    }
+    destroy = false
   }
 }

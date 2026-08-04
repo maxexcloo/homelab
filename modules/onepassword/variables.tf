@@ -5,19 +5,8 @@ variable "connect_url" {
 }
 
 variable "enabled" {
-  description = "Whether to read and manage 1Password items"
+  description = "Whether to read 1Password items"
   type        = bool
-}
-
-variable "payloads" {
-  description = "Item payloads keyed identically to titles"
-  sensitive   = true
-  type        = any
-
-  validation {
-    condition     = toset(keys(var.payloads)) == toset(keys(var.titles))
-    error_message = "1Password payload and title keys must match."
-  }
 }
 
 variable "request_headers" {

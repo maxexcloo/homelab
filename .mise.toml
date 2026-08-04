@@ -39,6 +39,10 @@ prettier --check .
 ruff format --check .
 """
 
+[tasks.check-onepassword]
+description = "Check 1Password reconciliation"
+run = "tofu output -json onepassword_reconciliation | uv run scripts/reconcile_onepassword.py"
+
 [tasks.cleanup]
 description = "Remove rendered artifacts, caches, bytecode, and saved plans"
 run = """
@@ -103,6 +107,10 @@ run = "tofu apply -target=module.servers"
 [tasks.apply-services]
 description = "Apply service module changes"
 run = "tofu apply -target=module.services"
+
+[tasks.sync-onepassword]
+description = "Reconcile 1Password items"
+run = "tofu output -json onepassword_reconciliation | uv run scripts/reconcile_onepassword.py --write"
 
 [tasks.sort-check]
 description = "Check HCL assignment grouping, JSON Schema, and YAML key ordering"

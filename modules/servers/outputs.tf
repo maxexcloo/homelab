@@ -45,6 +45,17 @@ output "model" {
   })
 }
 
+output "onepassword" {
+  description = "Desired 1Password item state"
+  sensitive   = true
+
+  value = {
+    enabled  = var.integrations.onepassword.enabled
+    items    = local._onepassword_server_item_payloads
+    vault_id = local.defaults.onepassword.vaults.servers.id
+  }
+}
+
 output "render" {
   description = "Rendered server objects keyed by server"
   sensitive   = true

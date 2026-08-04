@@ -49,6 +49,7 @@ mise run apply           # Apply infrastructure changes
 mise run apply-servers   # Apply server module changes
 mise run apply-services  # Apply service module changes
 mise run check           # Format check, lint, and validate
+mise run check-onepassword # Check 1Password reconciliation without writing
 mise run cleanup         # Remove rendered artifacts, caches, bytecode, and saved plans
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
 mise run init            # Initialize OpenTofu providers and backend
@@ -59,6 +60,7 @@ mise run plan-services   # Review service module changes
 mise run prek            # Run all repository hooks
 mise run setup           # Clean, configure, initialize, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
+mise run sync-onepassword # Reconcile 1Password items
 mise run validate        # Check and validate OpenTofu configuration
 ```
 

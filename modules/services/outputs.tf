@@ -12,6 +12,17 @@ output "model" {
   })
 }
 
+output "onepassword" {
+  description = "Desired 1Password item state"
+  sensitive   = true
+
+  value = {
+    enabled  = var.integrations.onepassword.enabled
+    items    = local._onepassword_service_item_payloads
+    vault_id = local.defaults.onepassword.vaults.services.id
+  }
+}
+
 output "configs" {
   description = "Non-secret deployment configs keyed by repository"
 

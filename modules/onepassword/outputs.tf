@@ -8,6 +8,17 @@ output "item_ids" {
   description = "Non-secret item IDs keyed by resource key"
 
   value = nonsensitive({
-    for item_key, item in restapi_object.item : item_key => item.id
+    for item_key, item_id in local._existing_ids : item_key => item_id
+    if item_id != null
   })
+
+  precondition {
+    condition     = length(local._duplicate_items) == 0
+    error_message = "1Password item lookup is ambiguous: ${join(", ", nonsensitive(local._duplicate_items))}"
+  }
+
+  precondition {
+    condition     = length(local._missing_items) == 0
+    error_message = "1Password items are missing: ${join(", ", nonsensitive(local._missing_items))}"
+  }
 }

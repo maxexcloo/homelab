@@ -529,6 +529,11 @@ an accepted temporary limitation.
 
 17. **Move 1Password reconciliation outside OpenTofu.**
 
+    Status: the external reconciler is implemented and verified read-only
+    against the complete current inventory. OpenTofu item writes are configured
+    for non-destructive state detachment. Full item reads remain temporarily
+    for bootstrap hashes and other consumers that still need existing values.
+
     The current `modules/onepassword` reads complete item responses through `data.http.item`. Those response bodies can persist credential values in state.
 
     The `op` CLI does not use Connect as its item CRUD transport. Keep Connect
@@ -536,8 +541,10 @@ an accepted temporary limitation.
     use the official `op` CLI with a dedicated read-only service account when
     it needs only direct references from one vault; scope that account to the
     exact vault and do not give the hosted runner access to Connect. Use one
-    small shell command around the Connect REST API with `curl` and `jq` for
-    reconciliation:
+    small Python command using the official Connect SDK for authenticated
+    transport and raw item JSON for lossless reconciliation. The SDK's typed
+    item model does not retain every supported field, including URL labels, so
+    it must not be used for item round-trips:
 
     1. Select the vault by exact configured ID or name.
     2. Search for the exact current item title.
