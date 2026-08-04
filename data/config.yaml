@@ -39,7 +39,7 @@ github:
       name: homelab-truenas
       visibility: private
     workflows:
-      description: Homelab maintenance workflows, generated and managed by the homelab OpenTofu repository.
+      description: Homelab maintenance workflows and configuration.
       display_name: Homelab Workflows
       name: homelab-workflows
       visibility: private

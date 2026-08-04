@@ -34,7 +34,7 @@ prek install
 description = "Format check, lint, and validate"
 depends = ["lint", "validate"]
 run = """
-actionlint .github/workflows/*.yaml templates/workflows/*/.github/workflows/*.yaml
+actionlint .github/workflows/*.yaml
 prettier --check .
 ruff format --check .
 """

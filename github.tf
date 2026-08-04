@@ -14,12 +14,6 @@ locals {
     }
   }
 
-  _github_generated_repositories = {
-    for repository_key, repository in local.defaults.github.deployment_repositories :
-    repository_key => repository
-    if !contains(["docker", "fly", "truenas"], repository_key)
-  }
-
   _github_truenas_deployments = {
     for deployment in local._github_configs.truenas.deployments : deployment.key => {
       name       = deployment.name
@@ -29,16 +23,6 @@ locals {
     }
   }
 
-  _github_workflow_files = merge([
-    for repository_key in keys(local._github_generated_repositories) : {
-      for file_path in fileset(path.module, "templates/workflows/${repository_key}/**") : "${repository_key}/${trimprefix(file_path, "templates/workflows/${repository_key}/")}" => {
-        file           = trimprefix(file_path, "templates/workflows/${repository_key}/")
-        repository_key = repository_key
-        source         = "${path.module}/${file_path}"
-      }
-      if contains([".json", ".py", ".yaml"], try(regex("\\.[^.]+$", lower(file_path)), ""))
-    }
-  ]...)
 }
 
 resource "github_repository" "deployment" {
@@ -124,23 +108,20 @@ resource "terraform_data" "truenas_deployment" {
   }
 }
 
-resource "github_repository_file" "generated_readme" {
-  for_each = local._github_generated_repositories
-
-  commit_message      = "Update README"
-  content             = "# ${each.value.display_name} configuration\n\n${each.value.description}\n"
-  file                = "README.md"
-  overwrite_on_create = true
-  repository          = github_repository.deployment[each.key].name
+removed {
+  from = github_repository_file.generated_readme
 
   lifecycle {
     destroy = false
   }
 }
 
-import {
-  id = "${local.defaults.github.deployment_repositories.workflows.name}:README.md:"
-  to = github_repository_file.generated_readme["workflows"]
+removed {
+  from = github_repository_file.generated_renovate
+
+  lifecycle {
+    destroy = false
+  }
 }
 
 removed {
@@ -151,28 +132,6 @@ removed {
   }
 }
 
-resource "github_repository_file" "generated_renovate" {
-  for_each = local._github_generated_repositories
-
-  commit_message      = "Disable Renovate"
-  file                = "renovate.json"
-  overwrite_on_create = true
-  repository          = github_repository.deployment[each.key].name
-
-  content = jsonencode({
-    enabled = false
-  })
-
-  lifecycle {
-    destroy = false
-  }
-}
-
-import {
-  id = "${local.defaults.github.deployment_repositories.workflows.name}:renovate.json:"
-  to = github_repository_file.generated_renovate["workflows"]
-}
-
 removed {
   from = github_repository_file.renovate
 
@@ -181,26 +140,10 @@ removed {
   }
 }
 
-resource "github_repository_file" "workflow_file" {
-  for_each = local._github_workflow_files
-
-  commit_message      = "Update ${each.value.file}"
-  content             = file(each.value.source)
-  file                = each.value.file
-  overwrite_on_create = true
-  repository          = github_repository.deployment[each.value.repository_key].name
+removed {
+  from = github_repository_file.workflow_file
 
   lifecycle {
     destroy = false
   }
-}
-
-moved {
-  from = github_repository_file.workflow_file["truenas/.github/workflows/deploy.yml"]
-  to   = github_repository_file.workflow_file["truenas/.github/workflows/deploy.yaml"]
-}
-
-moved {
-  from = github_repository_file.workflow_file["workflows/.github/workflows/games.yml"]
-  to   = github_repository_file.workflow_file["workflows/.github/workflows/games.yaml"]
 }

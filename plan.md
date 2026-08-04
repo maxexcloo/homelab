@@ -747,9 +747,20 @@ an accepted temporary limitation.
     - Retain target-specific Python only where structured TrueNAS API reconciliation and sidecar copying genuinely need it.
 
     Status: the `homelab-truenas` source cutover is implemented and pushed. Its
-    no-config bootstrap workflow passes. Publishing `CONFIG`, rendering the
-    first private target package, and reconciling it on the TrueNAS runner remain
-    pending the reviewed core apply; no deployment has been triggered.
+    private target package renders and publishes successfully, and the
+    target-local runner reconciles it through the supported TrueNAS API.
+
+    Workflows:
+
+    - Keep maintenance workflows and their reviewed configuration in
+      `homelab-workflows`.
+    - Keep the repository independent of deployment configuration and secrets.
+    - Use only the minimal shared mise, Prek, actionlint, Prettier, and Renovate
+      tooling needed by its authored files.
+
+    Status: the `homelab-workflows` source cutover is complete. The repository
+    owns its workflow, configuration, checks, and maintenance tooling. Core
+    retains repository governance but no longer generates or manages its files.
 
     OCI visibility and publication:
 

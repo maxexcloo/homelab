@@ -21,7 +21,7 @@ repos:
       # OpenTofu-rendered *.yaml.tftpl files are not concrete Compose documents.
       - id: check-compose-spec
       - id: check-github-workflows
-        files: ^(?:\.github/workflows|templates(?:/[^/]+)*/\.github/workflows)/.*\.yaml$
+        files: ^\.github/workflows/.*\.yaml$
       - id: check-metaschema
         files: ^schemas/.*\.json$
       - id: check-renovate
