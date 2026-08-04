@@ -40,6 +40,12 @@ resource "github_repository" "deployment" {
   }
 }
 
+resource "github_actions_variable" "catalog" {
+  repository    = github_repository.deployment["fly"].name
+  value         = jsonencode(module.services.catalog)
+  variable_name = "HOMELAB_CATALOG"
+}
+
 resource "github_repository_file" "readme" {
   for_each = local._github_generated_repositories
 

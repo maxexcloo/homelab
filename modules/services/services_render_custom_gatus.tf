@@ -27,6 +27,108 @@ locals {
     ])
   ])
 
+  _services_render_custom_gatus_service_key = one([
+    for service_key, service in local.services : service_key
+    if service.identity.name == "gatus"
+  ])
+
+  services_catalog_gatus = {
+    mail = {
+      from     = local.services[local._services_render_custom_gatus_service_key].runtime.attributes.mail_from_address
+      host     = local.services[local._services_render_custom_gatus_service_key].runtime.attributes.mail_host
+      port     = local.services[local._services_render_custom_gatus_service_key].runtime.attributes.mail_port
+      to       = local.defaults.organization.email
+      username = local.services[local._services_render_custom_gatus_service_key].runtime.attributes.mail_username
+
+      default-alert = {
+        description       = "${local.services[local._services_render_custom_gatus_service_key].identity.title} Check Failed"
+        failure-threshold = 5
+        send-on-resolved  = true
+        success-threshold = 5
+      }
+    }
+
+    probes = concat(
+      flatten([
+        for server_key, server in local.services_render_custom_gatus_context[local._services_render_custom_gatus_service_key].servers : concat(
+          server.features.monitoring ? [merge(
+            {
+              group = "Internal / ${local.defaults.server_types[server.type].display_name}"
+              name  = "${server.identity.title} (${server_key})"
+              url   = "icmp://${server.hosts.internal}"
+
+              conditions = [
+                "[CONNECTED] == true",
+                "[RESPONSE_TIME] < 5000",
+              ]
+            },
+            server.features.monitoring_alerts ? {
+              alerts = [
+                {
+                  type = "email"
+                },
+              ]
+            } : {},
+          )] : [],
+          server.features.monitoring && server.features.monitoring_external ? [merge(
+            {
+              group = "External / ${local.defaults.server_types[server.type].display_name}"
+              name  = "${server.identity.title} (${server_key})"
+              url   = "icmp://${server.hosts.external}"
+
+              conditions = [
+                "[CONNECTED] == true",
+                "[RESPONSE_TIME] < 5000",
+              ]
+            },
+            server.features.monitoring_alerts ? {
+              alerts = [
+                {
+                  type = "email"
+                },
+              ]
+            } : {},
+          )] : [],
+        )
+      ]),
+      local.services_render_services[local._services_render_custom_gatus_service_key].data.endpoints,
+      local._services_render_custom_gatus_provider_endpoints,
+    )
+
+    services = [
+      for service_key, service in local.services_render_services : merge(
+        {
+          name  = "${service.identity.title} (${service.target})"
+          token = "MONITORING_TOKEN_${upper(replace(service_key, "-", "_"))}"
+
+          urls = [
+            for url_key, url in service.urls : {
+              host = url.zone
+              href = url.href
+            }
+            if url_key != "default" && url.href != null && url.zone != null
+          ]
+        },
+        service.features.monitoring_alerts ? {} : {
+          alerts = false
+        },
+        service.features.oidc_forward_auth ? {
+          basic = "MONITORING_BASIC_${upper(replace(service_key, "-", "_"))}"
+        } : {},
+      )
+      if service.features.monitoring && service.routing.backend_scheme != ""
+    ]
+
+    ui = {
+      dashboard-heading    = local.services[local._services_render_custom_gatus_service_key].identity.title
+      dashboard-subheading = local.services[local._services_render_custom_gatus_service_key].identity.description
+      default-sort-by      = "group"
+      description          = local.services[local._services_render_custom_gatus_service_key].identity.description
+      header               = local.services[local._services_render_custom_gatus_service_key].identity.title
+      title                = local.services[local._services_render_custom_gatus_service_key].identity.title
+    }
+  }
+
   services_render_custom_gatus_context = {
     for service_key, service in local.services : service_key => {
       custom = {

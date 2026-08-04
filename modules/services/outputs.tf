@@ -12,6 +12,37 @@ output "model" {
   })
 }
 
+output "catalog" {
+  description = "Non-secret deployment catalogs"
+
+  value = nonsensitive({
+    gatus = local.services_catalog_gatus
+
+    deployments = [
+      for service_key, service in local.services_model : {
+        app           = service.fly.app_name
+        backend_port  = service.routing.backend_port
+        cpu_kind      = service.fly.cpu_kind
+        cpus          = service.fly.cpus
+        force_https   = alltrue([for route in service.routing.routes : route.https])
+        image         = service.fly.image
+        key           = service_key
+        machine_count = service.fly.machine_count
+        memory_mb     = service.fly.memory_mb
+        region        = service.fly.region
+        service       = service.identity.service
+        target        = service.target
+
+        certificates = [
+          for route in service.routing.routes : route.host
+          if route.host_configured
+        ]
+      }
+      if service.target == "fly" && service.identity.service != null
+    ]
+  })
+}
+
 output "render" {
   description = "Rendered service objects and deterministic artifact inventories"
   sensitive   = true
