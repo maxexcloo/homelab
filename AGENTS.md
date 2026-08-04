@@ -50,7 +50,7 @@ containing an object or array is multi-line. Apply the same rule inside each
 local's object value. Separate every multi-line assignment from adjacent
 assignments with a blank line, except dynamically keyed object entries where
 `tofu fmt` removes the separator. Keep assignments contiguous without separator
-blank lines in `data/services/*.yml` and `data/servers/*.yml`.
+blank lines in `data/services/*.yaml` and `data/servers/*.yaml`.
 
 List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
 use `id`, then `name`. Sort the remaining fields normally.
@@ -125,8 +125,9 @@ belong under `runtime.addresses`.
 
 ## YAML Standards
 
-- Put global configuration in `data/config.yml` and merged defaults in
-  `data/defaults.yml`. Per-resource YAML should contain overrides only.
+- Use `.yaml`, never `.yml`.
+- Put global configuration in `data/config.yaml` and merged defaults in
+  `data/defaults.yaml`. Per-resource YAML should contain overrides only.
 - Keep short descriptions in title case.
 - Avoid quotes unless YAML would change the value or structure. Quote empty
   strings, DNS TXT content, values starting with `@`, and scalar-looking strings

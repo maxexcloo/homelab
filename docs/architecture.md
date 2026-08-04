@@ -51,7 +51,7 @@ Use schemas for shape and type checks. Use HCL validation locals for
 cross-resource relationships that need the expanded model, such as missing
 targets, invalid routes, duplicate IDs, or unmanaged DNS.
 
-Defaults from `data/config.yml` and `data/defaults.yml` are deep-merged before
+Defaults from `data/config.yaml` and `data/defaults.yaml` are deep-merged before
 models are built. Per-resource YAML should usually contain only overrides.
 
 ## Service Deployment

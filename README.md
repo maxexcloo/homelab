@@ -31,7 +31,7 @@ Review the plan before applying it.
 
 - [mise](https://mise.jdx.dev/) for task management and tool installation
 - Optional 1Password Connect server with access to the server and service
-  credential vaults in `data/config.yml`
+  credential vaults in `data/config.yaml`
 - Google Application Default Credentials for the GCS state backend
 
 Run `mise run setup` to clean generated files, create `.mise.local.toml` from

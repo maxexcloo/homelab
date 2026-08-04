@@ -18,7 +18,7 @@ Content type is inferred from the rendered file extension:
 
 - `.env` becomes `dotenv`
 - `.json` becomes `json`
-- `.yaml` and `.yml` become `yaml`
+- `.yaml` becomes `yaml`
 - everything else becomes `binary`
 
 ## Docker
@@ -30,7 +30,7 @@ deployment identity, non-secret runtime data, age recipient, and programmatic
 
 Each Docker server gets a target-specific deployment config:
 
-- `.doco-cd.<server>.yml`
+- `.doco-cd.<server>.yaml`
 - `<server>/<service>/compose.yaml`
 - sidecars under `<server>/<service>/...`
 

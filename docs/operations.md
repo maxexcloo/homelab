@@ -31,13 +31,13 @@ not require `gcloud`.
 
 ## Adding Servers
 
-1. Create `data/servers/<key>.yml` following `schemas/server.json`.
+1. Create `data/servers/<key>.yaml` following `schemas/server.json`.
 2. Fill in `platform`, `type`, `features`, `identity`, and `networking`.
 3. Run `mise run plan` and review the diff before `mise run apply`.
 
 ## Adding Services
 
-1. Create `data/services/<key>.yml` following `schemas/service.json`.
+1. Create `data/services/<key>.yaml` following `schemas/service.json`.
 2. Fill in `identity`, `routing`, and either `targets` or `target_feature`.
 3. Set `identity.service` only when templates or deploy artifacts exist.
 4. Add templates under `templates/services/<identity.service>/` when needed.

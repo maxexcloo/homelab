@@ -1,8 +1,8 @@
 # Stage: input — loads raw YAML and merges global defaults.
 locals {
   servers_input = {
-    for file_path in fileset(path.root, "data/servers/*.yml") :
-    trimsuffix(basename(file_path), ".yml") => provider::deepmerge::mergo(
+    for file_path in fileset(path.root, "data/servers/*.yaml") :
+    trimsuffix(basename(file_path), ".yaml") => provider::deepmerge::mergo(
       local.defaults.servers,
       yamldecode(file("${path.root}/${file_path}")),
     )

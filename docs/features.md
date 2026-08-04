@@ -3,7 +3,7 @@
 Feature flags either provision provider resources, add credentials, render
 config, or select automatic targets.
 
-Defaults live in `data/defaults.yml`. Server and service YAML files usually
+Defaults live in `data/defaults.yaml`. Server and service YAML files usually
 only set overrides.
 
 Service-facing names stay provider-neutral. The current implementations are

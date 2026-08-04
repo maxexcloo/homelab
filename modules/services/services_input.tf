@@ -1,13 +1,13 @@
 # Stage: input — loads raw YAML and expands each target into its own keyed entry.
 locals {
   _services_input_raw = {
-    for file_path in fileset(path.root, "data/services/*.yml") :
-    trimsuffix(basename(file_path), ".yml") => provider::deepmerge::mergo(
+    for file_path in fileset(path.root, "data/services/*.yaml") :
+    trimsuffix(basename(file_path), ".yaml") => provider::deepmerge::mergo(
       local.defaults.services,
       yamldecode(file("${path.root}/${file_path}")),
       {
         identity = {
-          name = trimsuffix(basename(file_path), ".yml")
+          name = trimsuffix(basename(file_path), ".yaml")
         }
       },
     )

@@ -43,7 +43,7 @@ JSON_GLOBS = ["schemas/*.json"]
 JSON_SCHEMA_CONDITIONAL = {"if", "then", "else"}
 PREK_IDENTIFIER_KEYS = ["id", "name"]
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-YAML_GLOBS = ["data/**/*.yml", ".pre-commit-config.yaml"]
+YAML_GLOBS = ["data/**/*.yaml", ".pre-commit-config.yaml"]
 
 
 def collect(globs):

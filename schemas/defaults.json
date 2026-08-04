@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
-  "description": "Default field values deep-merged into every server, service, and DNS record before processing. Loaded into local.defaults alongside data/config.yml.",
+  "description": "Default field values deep-merged into every server, service, and DNS record before processing. Loaded into local.defaults alongside data/config.yaml.",
   "required": ["credentials", "dns", "servers", "services", "targets"],
   "title": "Defaults",
   "type": "object",
@@ -17,7 +17,7 @@
           "type": "object",
           "properties": {
             "identity_providers": {
-              "description": "Default empty map; config.yml overrides with actual IDP aliases.",
+              "description": "Default empty map; config.yaml overrides with actual IDP aliases.",
               "type": "object",
               "additionalProperties": {
                 "additionalProperties": false,

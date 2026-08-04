@@ -1,7 +1,7 @@
 # Credentials
 
 Generated credentials can be preserved and stored in 1Password through
-1Password Connect. Set `onepassword.enabled` in `data/config.yml` to select the
+1Password Connect. Set `onepassword.enabled` in `data/config.yaml` to select the
 credential source:
 
 - `true` reads existing values from 1Password, uses generated values as
@@ -18,7 +18,7 @@ Provider access comes from `TF_VAR_onepassword_connect_url` and
 is enabled.
 
 Pocket ID follows the same opt-in pattern. Set `pocketid.enabled` in
-`data/config.yml`; `TF_VAR_pocketid_url` and `TF_VAR_pocketid_api_token` are
+`data/config.yaml`; `TF_VAR_pocketid_url` and `TF_VAR_pocketid_api_token` are
 required only while it is enabled. Disabling it skips discovery, application
 configuration, OIDC clients, and the Cloudflare Access identity provider.
 Planning fails while Pocket ID is disabled and any service still enables
@@ -47,7 +47,7 @@ use `modules/onepassword` for the shared Connect search, read, and write
 lifecycle. `modules/credentials` owns generated scalar values, X.509 material,
 and bcrypt hashes.
 
-Declared fields default to `credentials.rw` from `data/defaults.yml`.
+Declared fields default to `credentials.rw` from `data/defaults.yaml`.
 Read-write fields are created in 1Password even when empty, so values can be
 entered manually later. Read-only fields are written from provider-generated
 runtime values.

@@ -30,7 +30,6 @@ locals {
               ".env"  = "dotenv"
               ".json" = "json"
               ".yaml" = "yaml"
-              ".yml"  = "yaml"
             }[try(regex("\\.[^.]+$", lower(file_input.rel_path)), "")],
             "binary",
           )

@@ -48,7 +48,7 @@ CNAMEs are created from eligible generated server/manual records unless
 ### Tailscale DNS
 
 The tailnet already uses the dedicated Control D profile configured by
-`controld.profile_id` in `data/config.yml`. OpenTofu creates a Control D spoof
+`controld.profile_id` in `data/config.yaml`. OpenTofu creates a Control D spoof
 rule for every modeled server, service, and redirect hostname served by a
 Tailscale-enabled server. Each rule returns that server's Tailscale IPv4 and
 IPv6 addresses.
@@ -149,7 +149,7 @@ Route-level `cloudflare_access`, `cloudflare_rate_limiting_rules`, and
 `cloudflare_waf_rules` are grouped by DNS zone in
 `modules/services/cloudflare.tf`.
 Cloudflare Access IDP aliases come from
-`cloudflare.access.identity_providers` in `data/config.yml`. The `provider`
+`cloudflare.access.identity_providers` in `data/config.yaml`. The `provider`
 selects the integration, `client_name` names the client in the identity
 provider, and `display_name` names the provider in Cloudflare Access.
 

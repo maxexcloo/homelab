@@ -1,7 +1,7 @@
 # Servers
 
-Servers are declared in `data/servers/*.yml`. Defaults from
-`data/defaults.yml` are deep-merged before the model is built.
+Servers are declared in `data/servers/*.yaml`. Defaults from
+`data/defaults.yaml` are deep-merged before the model is built.
 
 ## Keys & Parents
 

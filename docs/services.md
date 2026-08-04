@@ -1,6 +1,6 @@
 # Services
 
-Services are declared in `data/services/*.yml`. Explicit targets and servers
+Services are declared in `data/services/*.yaml`. Explicit targets and servers
 selected by `target_feature` each produce an expanded service instance.
 
 Expanded service keys use `<service>-<target>`, for example

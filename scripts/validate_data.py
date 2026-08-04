@@ -103,14 +103,14 @@ def validate_feature_keys(defaults, schemas, errors):
             unexpected = sorted(keys - expected)
             if missing or unexpected:
                 errors.append(
-                    f"{label}: feature keys differ from data/defaults.yml"
+                    f"{label}: feature keys differ from data/defaults.yaml"
                     f" (missing: {missing}, unexpected: {unexpected})"
                 )
 
 
 def main():
     errors = []
-    defaults = load_yaml(PROJECT_ROOT / "data/defaults.yml")
+    defaults = load_yaml(PROJECT_ROOT / "data/defaults.yaml")
 
     schemas = {
         name: load_json(PROJECT_ROOT / f"schemas/{name}.json")
@@ -118,23 +118,23 @@ def main():
     }
 
     validate(
-        load_yaml(PROJECT_ROOT / "data/config.yml"),
+        load_yaml(PROJECT_ROOT / "data/config.yaml"),
         schemas["config"],
-        "data/config.yml",
+        "data/config.yaml",
         errors,
     )
-    validate(defaults, schemas["defaults"], "data/defaults.yml", errors)
+    validate(defaults, schemas["defaults"], "data/defaults.yaml", errors)
     validate_feature_keys(defaults, schemas, errors)
 
-    for path in sorted((PROJECT_ROOT / "data/servers").glob("*.yml")):
+    for path in sorted((PROJECT_ROOT / "data/servers").glob("*.yaml")):
         server = deep_merge(defaults["servers"], load_yaml(path))
         validate(server, schemas["server"], path.relative_to(PROJECT_ROOT), errors)
 
-    for path in sorted((PROJECT_ROOT / "data/services").glob("*.yml")):
+    for path in sorted((PROJECT_ROOT / "data/services").glob("*.yaml")):
         service = deep_merge(defaults["services"], load_yaml(path))
         validate(service, schemas["service"], path.relative_to(PROJECT_ROOT), errors)
 
-    for path in sorted((PROJECT_ROOT / "data/dns").glob("*.yml")):
+    for path in sorted((PROJECT_ROOT / "data/dns").glob("*.yaml")):
         zone = load_yaml(path)
         zone["records"] = [
             deep_merge(defaults["dns"], record) for record in zone.get("records", [])
@@ -145,7 +145,7 @@ def main():
         validate(
             defaults["targets"][target_name],
             schemas["service"]["definitions"][f"{target_name}_target"],
-            f"data/defaults.yml: targets.{target_name}",
+            f"data/defaults.yaml: targets.{target_name}",
             errors,
         )
 

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
-  "description": "Global configuration shared across all resources. Loaded into local.defaults alongside data/defaults.yml.",
+  "description": "Global configuration shared across all resources. Loaded into local.defaults alongside data/defaults.yaml.",
   "required": [
     "ai",
     "beszel",

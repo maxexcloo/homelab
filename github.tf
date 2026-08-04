@@ -22,7 +22,7 @@ locals {
         repository_key = repository_key
         source         = "${path.module}/${file_path}"
       }
-      if contains([".json", ".py", ".yaml", ".yml"], try(regex("\\.[^.]+$", lower(file_path)), ""))
+      if contains([".json", ".py", ".yaml"], try(regex("\\.[^.]+$", lower(file_path)), ""))
     }
   ]...)
 
@@ -100,7 +100,7 @@ resource "terraform_data" "fly_deployment" {
   triggers_replace = [each.value.app]
 
   provisioner "local-exec" {
-    command = "gh workflow run deploy.yml --repo ${self.input.owner}/${self.input.repository} --ref main -f action=delete -f deployment=${self.input.app}"
+    command = "gh workflow run deploy.yaml --repo ${self.input.owner}/${self.input.repository} --ref main -f action=delete -f deployment=${self.input.app}"
     when    = destroy
   }
 }
@@ -184,4 +184,14 @@ resource "github_repository_file" "workflow_file" {
   lifecycle {
     destroy = false
   }
+}
+
+moved {
+  from = github_repository_file.workflow_file["truenas/.github/workflows/deploy.yml"]
+  to   = github_repository_file.workflow_file["truenas/.github/workflows/deploy.yaml"]
+}
+
+moved {
+  from = github_repository_file.workflow_file["workflows/.github/workflows/games.yml"]
+  to   = github_repository_file.workflow_file["workflows/.github/workflows/games.yaml"]
 }

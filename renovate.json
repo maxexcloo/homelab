@@ -7,7 +7,7 @@
     {
       "customType": "regex",
       "datasourceTemplate": "docker",
-      "managerFilePatterns": ["/(^|/)templates/.+\\.ya?ml\\.tftpl$/"],
+      "managerFilePatterns": ["/(^|/)templates/.+\\.yaml\\.tftpl$/"],
       "matchStrings": [
         "(?:^|\\r?\\n)\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*):(?<currentValue>[^\\s@#]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
       ],
@@ -24,6 +24,11 @@
       "matchUpdateTypes": ["patch", "pin"]
     },
     {
+      "description": "Group Docker image updates",
+      "groupName": "Docker images",
+      "matchDatasources": ["docker"]
+    },
+    {
       "description": "Group GitHub Actions updates",
       "groupName": "GitHub Actions",
       "matchManagers": ["github-actions"]
@@ -32,6 +37,11 @@
       "description": "Group mise tool updates",
       "groupName": "mise tools",
       "matchManagers": ["mise"]
+    },
+    {
+      "description": "Group Prek hook updates",
+      "groupName": "Prek hooks",
+      "matchManagers": ["pre-commit"]
     },
     {
       "description": "Resolve OpenTofu provider updates from the OpenTofu registry",

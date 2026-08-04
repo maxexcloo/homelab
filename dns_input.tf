@@ -5,8 +5,8 @@ locals {
   }
 
   dns_input_source_files = [
-    for file_path in fileset(path.module, "data/dns/*.yml") : {
-      file_key = trimsuffix(basename(file_path), ".yml")
+    for file_path in fileset(path.module, "data/dns/*.yaml") : {
+      file_key = trimsuffix(basename(file_path), ".yaml")
       zone     = yamldecode(file("${path.module}/${file_path}"))
     }
   ]
