@@ -40,7 +40,7 @@ locals {
         [
           for field_name, field_value in service.runtime.attributes : {
             id    = field_name
-            label = "${field_name}_ro"
+            label = field_name
             type  = "STRING"
             value = tostring(field_value)
           }
@@ -54,7 +54,7 @@ locals {
             for item_key, item_value in merge(
               {
                 id    = field_name
-                label = field_config.purpose == "PASSWORD" ? field_name : "${field_name}_${field_config.mode}"
+                label = field_name
                 value = try(tostring(service.runtime.credentials[field_name]), "")
               },
               field_config.purpose != null ? {

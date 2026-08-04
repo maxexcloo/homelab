@@ -32,7 +32,7 @@ Review the plan before applying it.
 - [mise](https://mise.jdx.dev/) for task management and tool installation
 - Optional 1Password Connect server with access to the server and service
   credential vaults in `data/config.yml`
-- HCP Terraform account for the state backend
+- Google Application Default Credentials for the GCS state backend
 
 Run `mise run setup` to clean generated files, create `.mise.local.toml` from
 the template, initialize OpenTofu, and install the Git hook. On first run, add

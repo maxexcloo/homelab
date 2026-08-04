@@ -30,10 +30,7 @@ integration can change credentials whose current value exists only in
 it enabled until those resources are deliberately detached from state if
 1Password should stop being managed without deleting its items.
 
-Server and service item titles use stable keys, such as `au-hsp` and
-`pocket-id-au-truenas`. OpenTofu searches by that title and uses the matching
-1Password item ID for updates, so item IDs do not need to be stored in the
-repository.
+OpenTofu looks up items by exact title and reuses their IDs.
 
 ## Fields
 
@@ -55,14 +52,9 @@ Read-write fields are created in 1Password even when empty, so values can be
 entered manually later. Read-only fields are written from provider-generated
 runtime values.
 
-1Password labels include the mode suffix:
-
-- `field_rw` for editable fields
-- `field_ro` for provider-owned values
-- `field` for fields with `purpose: PASSWORD`
-
-The stable field ID remains `field` in every case. Templates use
-`runtime.credentials.field`, not the 1Password label.
+1Password field IDs and labels use the same `snake_case` name. Ownership mode
+stays in repository configuration. Templates use
+`runtime.credentials.<field>`.
 
 ## Typed Generators
 
