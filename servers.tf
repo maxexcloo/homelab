@@ -14,6 +14,7 @@ module "servers" {
 
     github = {
       docker_repository = github_repository.deployment["docker"].name
+      packages_token    = var.homelab_packages_token
     }
 
     onepassword = {

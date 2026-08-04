@@ -9,6 +9,17 @@ variable "controld_api_token" {
   }
 }
 
+variable "homelab_packages_token" {
+  description = "Shared read-only GitHub Packages token used by external deployment hosts."
+  sensitive   = true
+  type        = string
+
+  validation {
+    condition     = length(nonsensitive(var.homelab_packages_token)) > 0
+    error_message = "Homelab packages token must not be empty."
+  }
+}
+
 variable "oci_always_free" {
   default     = true
   description = "Enforce OCI Always Free quota limits during planning. Set to false if you have a paid tenancy."

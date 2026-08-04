@@ -12,10 +12,6 @@ locals {
     )
   }
 
-  _servers_runtime_credential_aliases = {
-    github_packages_token = "doco_cd_git_access_token"
-  }
-
   # Static model hostnames plus runtime-discovered private and Tailscale hostnames.
   _servers_runtime_hosts = {
     for server_key, server in local.servers_model : server_key => merge(
@@ -121,7 +117,6 @@ locals {
             {
               for field_name, field in server.credentials.fields : field_name => sensitive(try(coalesce(
                 try(local.onepassword_server_existing_fields[server_key][field_name], null),
-                try(local.onepassword_server_existing_fields[server_key][local._servers_runtime_credential_aliases[field_name]], null),
                 try(module.credentials.values["${server_key}-${field_name}"], null),
               ), ""))
               if field.mode == "rw"

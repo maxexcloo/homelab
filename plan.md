@@ -716,7 +716,7 @@ an accepted temporary limitation.
     - Put rendered services directly at the OCI artifact root (`/<service>/`); the package name already identifies the target, so do not add `deployments/` or `<target>/` path layers. Reject duplicate instances of one service on the same target rather than silently overwriting a directory.
     - Let doco-cd poll the target-specific OCI package instead of cloning the source repository.
     - Give doco-cd only its target age private key; do not give it a 1Password token.
-    - Keep the package private and mount a standard Docker config containing a classic GitHub PAT limited to `read:packages`; store that token as `github_packages_token` on the target server item in 1Password.
+    - Keep the package private and mount a standard Docker config containing one shared classic GitHub PAT limited to `read:packages`; pass it through the sensitive `homelab_packages_token` root variable.
     - Let doco-cd use its native SOPS support when reading encrypted deployment files.
     - The doco-cd agent accesses its local Docker socket.
     - GitHub runners do not access that socket locally or across networks.

@@ -22,6 +22,7 @@ variable "integrations" {
 
     github = object({
       docker_repository = string
+      packages_token    = string
     })
 
     onepassword = object({

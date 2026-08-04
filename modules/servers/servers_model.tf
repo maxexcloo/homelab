@@ -44,9 +44,6 @@ locals {
           cloudflare_tunnel_read_token = local.defaults.credentials.ro
           cloudflare_tunnel_token      = local.defaults.credentials.ro
         } : {},
-        server.features.docker ? {
-          github_packages_token = local.defaults.credentials.rw
-        } : {},
         server.features.mail ? {
           mail_password = local.defaults.credentials.ro
         } : {},

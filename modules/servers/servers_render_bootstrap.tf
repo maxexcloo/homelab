@@ -45,7 +45,7 @@ locals {
     for server_key, server in local.servers_render_servers : server_key => jsonencode({
       auths = {
         "ghcr.io" = {
-          auth = base64encode("${local.defaults.github.owner}:${server.runtime.credentials.github_packages_token}")
+          auth = base64encode("${local.defaults.github.owner}:${var.integrations.github.packages_token}")
         }
       }
     })
