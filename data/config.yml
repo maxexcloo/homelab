@@ -29,7 +29,7 @@ github:
       name: homelab-docker
       visibility: private
     fly:
-      description: Homelab Fly.io configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      description: Homelab Fly.io deployments and configuration.
       display_name: Homelab Fly.io
       name: homelab-fly
       visibility: private

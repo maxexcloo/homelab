@@ -15,4 +15,8 @@ resource "github_repository_file" "file" {
   file                = var.file
   overwrite_on_create = true
   repository          = var.repository
+
+  lifecycle {
+    destroy = false
+  }
 }

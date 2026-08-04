@@ -1,6 +1,12 @@
 locals {
+  _github_generated_repositories = {
+    for repository_key, repository in local.defaults.github.deployment_repositories :
+    repository_key => repository
+    if repository_key != "fly"
+  }
+
   _github_workflow_files = merge([
-    for repository_key in keys(local.defaults.github.deployment_repositories) : {
+    for repository_key in keys(local._github_generated_repositories) : {
       for file_path in fileset(path.module, "templates/workflows/${repository_key}/**") : "${repository_key}/${trimprefix(file_path, "templates/workflows/${repository_key}/")}" => {
         file           = trimprefix(file_path, "templates/workflows/${repository_key}/")
         repository_key = repository_key
@@ -11,7 +17,7 @@ locals {
   ]...)
 
   github_workflow_revisions = {
-    for repository_key in keys(local.defaults.github.deployment_repositories) : repository_key => sha256(jsonencode({
+    for repository_key in keys(local._github_generated_repositories) : repository_key => sha256(jsonencode({
       for file_config in values(local._github_workflow_files) : file_config.file => filesha256(file_config.source)
       if file_config.repository_key == repository_key
     }))
@@ -35,17 +41,21 @@ resource "github_repository" "deployment" {
 }
 
 resource "github_repository_file" "readme" {
-  for_each = local.defaults.github.deployment_repositories
+  for_each = local._github_generated_repositories
 
   commit_message      = "Update README"
   content             = "# ${each.value.display_name} configuration\n\n${each.value.description}\n"
   file                = "README.md"
   overwrite_on_create = true
   repository          = github_repository.deployment[each.key].name
+
+  lifecycle {
+    destroy = false
+  }
 }
 
 resource "github_repository_file" "renovate" {
-  for_each = local.defaults.github.deployment_repositories
+  for_each = local._github_generated_repositories
 
   commit_message      = "Disable Renovate"
   file                = "renovate.json"
@@ -55,6 +65,10 @@ resource "github_repository_file" "renovate" {
   content = jsonencode({
     enabled = false
   })
+
+  lifecycle {
+    destroy = false
+  }
 }
 
 resource "github_repository_file" "workflow_file" {
@@ -65,4 +79,8 @@ resource "github_repository_file" "workflow_file" {
   file                = each.value.file
   overwrite_on_create = true
   repository          = github_repository.deployment[each.value.repository_key].name
+
+  lifecycle {
+    destroy = false
+  }
 }
