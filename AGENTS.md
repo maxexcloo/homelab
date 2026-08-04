@@ -148,8 +148,9 @@ belong under `runtime.addresses`.
   when the following newline should also disappear.
 - Use `.tftpl` for rendered text and `.raw.tftpl` for binary-encrypted content.
 - Guard optional templates with `fileexists()`.
-- Treat deployment repositories as generated output. Change their workflows and
-  files through this repository, never in the generated repository.
+- Keep platform service implementations and workflows in their deployment
+  repositories. This repository owns shared infrastructure, governance, and
+  non-secret deployment configs.
 
 ## TrueNAS Services
 

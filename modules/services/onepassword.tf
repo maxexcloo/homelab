@@ -79,7 +79,13 @@ locals {
             label = "monitoring_basic"
             type  = "CONCEALED"
             value = base64encode("monitoring:${service.runtime.credentials.monitoring_token}")
-          }
+          },
+          {
+            id    = "monitoring_password_hash"
+            label = "monitoring_password_hash"
+            type  = "CONCEALED"
+            value = "monitoring:${module.credentials.hashes["${service_key}-monitoring_token"]}"
+          },
         ] : [],
       ) : field.label => field
     }

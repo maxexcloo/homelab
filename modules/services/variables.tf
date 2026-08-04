@@ -63,6 +63,7 @@ variable "servers" {
 
   type = object({
     age_public_keys = map(string)
+    item_ids        = map(string)
     model           = any
     render          = any
     runtime         = any

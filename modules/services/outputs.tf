@@ -16,6 +16,74 @@ output "configs" {
   description = "Non-secret deployment configs keyed by repository"
 
   value = nonsensitive({
+    docker = {
+      repository = "docker"
+      version    = 1
+
+      deployments = [
+        for service_key, service in local._docker_services : {
+          item    = try(module.onepassword.item_ids[service_key], null)
+          key     = service_key
+          service = service.identity.service
+          target  = service.target
+
+          attributes = local.services[service_key].runtime.attributes
+
+          custom = try(
+            local.services_render_custom_traefik_context[service_key].custom,
+            {},
+          )
+
+          imports = {
+            for alias, imported_service_key in local.services_model_imports[service_key] : alias => {
+              item = try(module.onepassword.item_ids[imported_service_key], null)
+              key  = imported_service_key
+            }
+          }
+
+          labels = {
+            for label_key, label_value in try(
+              local._services_render_traefik_routing_labels[service_key][service.identity.service],
+              {},
+              ) : label_key => (
+              endswith(label_key, ".basicauth.users")
+              ? "$${MONITORING_PASSWORD_HASH}"
+              : label_value
+            )
+          }
+
+          routing = {
+            backend_port = service.routing.backend_port
+          }
+
+          urls = {
+            for url_key, url in local.services_render_services[service_key].urls : url_key => {
+              href = url.href
+            }
+          }
+        }
+      ]
+
+      targets = [
+        for server_key, server in local._docker_servers : {
+          age_public_key = var.servers.age_public_keys[server_key]
+          email          = local.defaults.organization.email
+          hosts          = server.hosts
+          item           = var.servers.item_ids[server_key]
+          key            = server_key
+
+          addresses = {
+            tailscale_ipv4 = local.servers_render_servers[server_key].runtime.addresses.tailscale_ipv4
+          }
+        }
+      ]
+
+      vaults = {
+        servers  = local.defaults.onepassword.vaults.servers.id
+        services = local.defaults.onepassword.vaults.services.id
+      }
+    }
+
     fly = {
       gatus      = local.services_config_gatus
       repository = "fly"

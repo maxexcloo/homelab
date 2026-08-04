@@ -47,6 +47,7 @@ module "services" {
 
   servers = {
     age_public_keys = module.servers.infrastructure.age_public_keys
+    item_ids        = module.servers.infrastructure.item_ids
     model           = module.servers.model
     render          = module.servers.render
     runtime         = module.servers.runtime

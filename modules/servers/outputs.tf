@@ -13,6 +13,8 @@ output "infrastructure" {
   description = "Server infrastructure values consumed outside the module"
 
   value = {
+    item_ids = module.onepassword.item_ids
+
     age_public_keys = {
       for server_key, key in age_secret_key.server :
       server_key => key.public_key

@@ -56,25 +56,22 @@ models are built. Per-resource YAML should usually contain only overrides.
 
 ## Service Deployment
 
-Services expand into one modeled service per target. Each expanded service
-renders through its target platform:
+Services expand into one modeled service per target. Each target platform owns
+its deployment implementation:
 
-- Docker services render Compose projects on Docker hosts.
-- Fly services render `fly.toml`, optional cert and scale files, plus sidecars.
+- Docker and Fly implementations live in their deployment repositories and
+  render from non-secret configs published by OpenTofu.
 - TrueNAS services prefer catalog `app.json.tftpl` and fall back to custom
   Compose when only `docker-compose.yaml.tftpl` exists.
 
-Rendered artifacts are SOPS-encrypted through `modules/github_file_encrypted`
-and written to the platform repositories configured in `data/config.yml`.
-
-Those deployment repositories are generated outputs, not independent sources
-of truth. Repository-owned files, workflows, and Renovate disablement are also
-managed here and published by OpenTofu.
+Docker CI resolves 1Password references and SOPS-encrypts only secret files for
+local doco-cd deployment. Fly CI sends resolved secrets directly to Fly. Core
+continues to render generated TrueNAS artifacts.
 
 Template inventory is discovered by file name:
 
 - `app.json.tftpl` is handled by the TrueNAS catalog renderer.
-- `docker-compose.yaml.tftpl` is handled by Compose renderers.
+- `docker-compose.yaml.tftpl` is handled by the TrueNAS Compose renderer.
 - Other files under `templates/services/<identity.service>/` become sidecars.
 - `.tftpl` files are rendered and have the suffix stripped.
 - `.raw.tftpl` files are rendered, have `.raw.tftpl` stripped, and are encrypted

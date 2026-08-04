@@ -24,7 +24,7 @@ github:
   owner: maxexcloo
   deployment_repositories:
     docker:
-      description: Homelab Docker configuration (SOPS-encrypted), generated and managed by the homelab OpenTofu repository.
+      description: Homelab Docker Compose deployments and configuration.
       display_name: Homelab Docker
       name: homelab-docker
       visibility: private

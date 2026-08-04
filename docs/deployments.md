@@ -1,19 +1,14 @@
 # Deployments
 
-Service artifacts are rendered from `templates/services/<identity.service>/`
-and encrypted before they are written to deployment repositories.
-
-Deployment repositories are generated outputs. Do not edit their files or
-merge dependency updates there; make changes in this repository and publish
-them through a reviewed OpenTofu apply. OpenTofu writes `renovate.json` with
-`enabled: false` to each deployment repository so dependency updates originate
-from the authoritative templates here.
+Docker and Fly repositories own their service implementations, workflows, and
+dependency updates. OpenTofu owns repository governance and publishes a small
+non-secret `CONFIG` variable to each repository. TrueNAS artifacts remain
+rendered from this repository.
 
 ## File Discovery
 
 - `app.json.tftpl` is handled by the TrueNAS catalog renderer.
-- `docker-compose.yaml.tftpl` is handled by Docker and custom TrueNAS Compose
-  renderers.
+- `docker-compose.yaml.tftpl` is handled by the custom TrueNAS Compose renderer.
 - Other files under the service template directory become sidecars.
 - `.tftpl` files are rendered and have the suffix stripped.
 - `.raw.tftpl` files are rendered, have `.raw.tftpl` stripped, and are encrypted
@@ -28,8 +23,10 @@ Content type is inferred from the rendered file extension:
 
 ## Docker
 
-Docker targets render into the `docker` deployment repository for doco-cd.
-Servers opt in with `features.docker`.
+Docker services and Compose templates live in the Docker deployment repository.
+Servers opt in with `features.docker`; OpenTofu publishes their stable
+deployment identity, non-secret runtime data, age recipient, and programmatic
+1Password references.
 
 Each Docker server gets a target-specific deployment config:
 
@@ -43,10 +40,14 @@ decryption. It contains no credentials and uses auto-discovery with
 Compose project. Deleted service directories are removed by doco-cd, but
 volumes are preserved.
 
-All deployment files are SOPS-encrypted to the target server's age key. The
-cloud-init and setup-script bootstrap writes `/opt/doco-cd/sops_age_key.txt`,
-sets `SOPS_AGE_KEY_FILE`, configures polling against the `docker` repo with
-`target: <server>`, and also sets `WEBHOOK_SECRET` for later webhook use.
+GitHub Actions renders plaintext Compose files and streams secret `.env`, PEM,
+and other secret files directly from 1Password into SOPS using the target age
+recipient. Plaintext secrets are never written to disk or committed. Doco-cd
+holds only its target age key and deploys through the local Docker socket.
+
+The bootstrap writes `/opt/doco-cd/sops_age_key.txt`, sets
+`SOPS_AGE_KEY_FILE`, configures repository polling with `target: <server>`, and
+sets `WEBHOOK_SECRET` for webhook use.
 
 The doco-cd container binds HTTP to `127.0.0.1:8089` and metrics to
 `127.0.0.1:9120`. Traefik publishes its HTTP endpoints internally at
@@ -56,19 +57,10 @@ at `doco-cd.<server external host>/v1/webhook/<server key>`.
 
 ## Fly
 
-Fly targets render into the Fly deployment repository under the Fly app name.
-If `targets.fly.fly.app_name` is empty, the app name defaults to
-`<organization.name>-<identity.name>`.
-
-Rendered files:
-
-- `fly.toml`
-- `.certs` when the service has custom URLs
-- `.machine-count` when `fly.machine_count` is non-null
-- sidecars
-
-Fly uses one shared age key for the repository. The deploy request hashes the
-rendered file content, the SOPS recipient key, and the workflow revision.
+Fly service implementations live in the Fly deployment repository. Its workflow
+renders the selected deployment, resolves 1Password references in memory,
+reconciles certificates and secrets, deploys with `flyctl`, and applies the
+configured machine count.
 
 ## TrueNAS
 
