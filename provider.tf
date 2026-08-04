@@ -38,13 +38,6 @@ provider "restapi" {
 }
 
 provider "restapi" {
-  alias                 = "onepassword"
-  create_returns_object = true
-  headers               = local.onepassword_connect_request_headers
-  uri                   = local._onepassword_integration_ready ? var.onepassword_connect_url : "http://127.0.0.1"
-}
-
-provider "restapi" {
   alias                 = "resend"
   bearer_token          = var.resend_api_key
   create_returns_object = true

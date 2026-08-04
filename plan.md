@@ -530,9 +530,9 @@ an accepted temporary limitation.
 17. **Move 1Password reconciliation outside OpenTofu.**
 
     Status: the external reconciler is implemented and verified read-only
-    against the complete current inventory. OpenTofu item writes are configured
-    for non-destructive state detachment. Full item reads remain temporarily
-    for bootstrap hashes and other consumers that still need existing values.
+    against the complete current inventory. OpenTofu item writers have been
+    detached non-destructively. Full item reads remain temporarily for bootstrap
+    hashes and other consumers that still need existing values.
 
     The current `modules/onepassword` reads complete item responses through `data.http.item`. Those response bodies can persist credential values in state.
 

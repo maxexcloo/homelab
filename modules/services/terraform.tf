@@ -30,7 +30,6 @@ terraform {
       source = "mastercard/restapi"
 
       configuration_aliases = [
-        restapi.onepassword,
         restapi.resend,
       ]
     }

@@ -11,11 +11,3 @@ data "http" "item" {
   request_headers = var.request_headers
   url             = "${var.connect_url}/v1/vaults/${var.vault_id}/items/${each.value}"
 }
-
-removed {
-  from = restapi_object.item
-
-  lifecycle {
-    destroy = false
-  }
-}

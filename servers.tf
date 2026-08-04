@@ -36,7 +36,6 @@ module "servers" {
   }
 
   providers = {
-    restapi.onepassword = restapi.onepassword
-    restapi.resend      = restapi.resend
+    restapi.resend = restapi.resend
   }
 }
