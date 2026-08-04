@@ -82,6 +82,57 @@ pocketid:
       display_name: All Services
     books:
       display_name: Books
+providers:
+  backblaze:
+    description: Object Storage
+    href: https://backblaze.com
+    icon: si-backblaze-#ffffff
+    title: Backblaze
+  cloudflare:
+    description: DNS & Zero Trust
+    href: https://dash.cloudflare.com
+    icon: si-cloudflare-#ffffff
+    title: Cloudflare
+  controld:
+    description: DNS
+    href: https://controld.com
+    icon: control-d
+    title: Control D
+  flyio:
+    description: App Platform
+    href: https://fly.io/dashboard
+    icon: si-flydotio-#ffffff
+    title: Fly.io
+  github:
+    description: Source Control
+    href: https://github.com/maxexcloo
+    icon: si-github-#ffffff
+    title: GitHub
+  onepassword:
+    description: Passwords & Secrets
+    href: https://my.1password.com
+    icon: si-1password-#ffffff
+    title: 1Password
+  oracle_cloud:
+    description: Cloud VMs
+    href: https://cloud.oracle.com
+    icon: si-oracle-#ffffff
+    title: Oracle Cloud
+  resend:
+    description: Email API
+    href: https://resend.com/overview
+    icon: si-resend-#ffffff
+    title: Resend
+  tailscale:
+    description: VPN
+    href: https://login.tailscale.com/admin
+    icon: si-tailscale-#ffffff
+    title: Tailscale
+  unifi:
+    description: Network
+    href: https://unifi.ui.com
+    icon: si-ubiquiti-#ffffff
+    title: UniFi
 resend:
   host: smtp.resend.com
   port: 465

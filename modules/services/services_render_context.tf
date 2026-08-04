@@ -86,7 +86,6 @@ locals {
       },
       local.services_render_custom_traefik_context[service_key],
       try(local.services_render_custom_homepage_context[service_key], {}),
-      try(local.services_render_custom_gatus_context[service_key], {}),
     )
   }
 }

@@ -1,35 +1,27 @@
 # Stage: render — Gatus-specific global inventory.
 locals {
-  _services_render_custom_gatus_provider_endpoints = flatten([
-    for bookmark_group in try(local.services_render_custom_homepage_data.bookmarks, []) : flatten([
-      for group_name, bookmarks in bookmark_group : flatten([
-        for bookmark in bookmarks : [
-          for bookmark_name, bookmark_items in bookmark : {
-            name  = bookmark_name
-            group = group_name
-            url   = one(bookmark_items).href
+  _services_render_custom_gatus_provider_endpoints = [
+    for provider in local.services_render_providers : {
+      group = "Providers"
+      name  = provider.title
+      url   = provider.href
 
-            alerts = [
-              {
-                type = "email"
-              },
-            ]
+      alerts = [
+        {
+          type = "email"
+        },
+      ]
 
-            conditions = [
-              "[STATUS] == any(200, 401, 403)",
-              "[RESPONSE_TIME] < 5000",
-            ]
-          }
-          if try(one(bookmark_items).href, "") != ""
-        ]
-      ])
-      if group_name == "Providers"
-    ])
-  ])
+      conditions = [
+        "[STATUS] == any(200, 401, 403)",
+        "[RESPONSE_TIME] < 5000",
+      ]
+    }
+  ]
 
   _services_render_custom_gatus_service_key = one([
-    for service_key, service in local.services : service_key
-    if service.identity.name == "gatus"
+    for service_key, service in local.services_model : service_key
+    if service.identity.service == "gatus"
   ])
 
   services_catalog_gatus = {
@@ -50,19 +42,19 @@ locals {
 
     probes = concat(
       flatten([
-        for server_key, server in local.services_render_custom_gatus_context[local._services_render_custom_gatus_service_key].servers : concat(
-          server.features.monitoring ? [merge(
+        for server_key in sort(keys(local.servers_model)) : concat(
+          local.servers_model[server_key].features.monitoring ? [merge(
             {
-              group = "Internal / ${local.defaults.server_types[server.type].display_name}"
-              name  = "${server.identity.title} (${server_key})"
-              url   = "icmp://${server.hosts.internal}"
+              group = "Internal / ${local.defaults.server_types[local.servers_model[server_key].type].display_name}"
+              name  = "${local.servers_model[server_key].identity.title} (${server_key})"
+              url   = "icmp://${local.servers_model[server_key].hosts.internal}"
 
               conditions = [
                 "[CONNECTED] == true",
                 "[RESPONSE_TIME] < 5000",
               ]
             },
-            server.features.monitoring_alerts ? {
+            local.servers_model[server_key].features.monitoring_alerts ? {
               alerts = [
                 {
                   type = "email"
@@ -70,18 +62,18 @@ locals {
               ]
             } : {},
           )] : [],
-          server.features.monitoring && server.features.monitoring_external ? [merge(
+          local.servers_model[server_key].features.monitoring && local.servers_model[server_key].features.monitoring_external ? [merge(
             {
-              group = "External / ${local.defaults.server_types[server.type].display_name}"
-              name  = "${server.identity.title} (${server_key})"
-              url   = "icmp://${server.hosts.external}"
+              group = "External / ${local.defaults.server_types[local.servers_model[server_key].type].display_name}"
+              name  = "${local.servers_model[server_key].identity.title} (${server_key})"
+              url   = "icmp://${local.servers_model[server_key].hosts.external}"
 
               conditions = [
                 "[CONNECTED] == true",
                 "[RESPONSE_TIME] < 5000",
               ]
             },
-            server.features.monitoring_alerts ? {
+            local.servers_model[server_key].features.monitoring_alerts ? {
               alerts = [
                 {
                   type = "email"
@@ -103,56 +95,5 @@ locals {
       header               = local.services[local._services_render_custom_gatus_service_key].identity.title
       title                = local.services[local._services_render_custom_gatus_service_key].identity.title
     }
-  }
-
-  services_render_custom_gatus_context = {
-    for service_key, service in local.services : service_key => {
-      custom = {
-        gatus = {
-          provider_endpoints = local._services_render_custom_gatus_provider_endpoints
-        }
-      }
-
-      servers = merge(
-        local.servers_model,
-        local.servers_render_servers,
-        service.target != "fly" && can(local.servers_render_servers[service.target]) ? {
-          (service.target) = local.servers_render_servers[service.target]
-        } : {},
-        {
-          for alias, real_key in local.services_model_server_imports[service_key] :
-          alias => local.servers_render_servers[real_key]
-          if can(local.servers_render_servers[real_key])
-        },
-      )
-
-      services = merge(
-        local.services_model,
-        local.services_render_services_inventory,
-        {
-          for monitored_service_key, monitored_service in local.services_render_services :
-          monitored_service_key => merge(
-            local.services_render_services_inventory[monitored_service_key],
-            {
-              runtime = {
-                credentials = {
-                  monitoring_token = monitored_service.runtime.credentials.monitoring_token
-                }
-              }
-            },
-          )
-          if(
-            monitored_service.features.monitoring &&
-            monitored_service.routing.backend_scheme != ""
-          )
-        },
-        {
-          for alias, real_key in local.services_model_imports[service_key] :
-          alias => local.services_render_services[real_key]
-          if can(local.services_render_services[real_key])
-        },
-      )
-    }
-    if service.identity.name == "gatus"
   }
 }

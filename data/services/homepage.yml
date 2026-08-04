@@ -4,48 +4,6 @@ credentials:
   fields:
     tailscale_homepage_widget_key: {}
 data:
-  bookmarks:
-    - Providers:
-        - 1Password:
-            - description: Passwords & Secrets
-              href: https://my.1password.com
-              icon: si-1password-#ffffff
-        - Backblaze:
-            - description: Object Storage
-              href: https://backblaze.com
-              icon: si-backblaze-#ffffff
-        - Cloudflare:
-            - description: DNS & Zero Trust
-              href: https://dash.cloudflare.com
-              icon: si-cloudflare-#ffffff
-        - Control D:
-            - description: DNS
-              href: https://controld.com
-              icon: control-d
-        - Fly.io:
-            - description: App Platform
-              href: https://fly.io/dashboard
-              icon: si-flydotio-#ffffff
-        - GitHub:
-            - description: Source Control
-              href: https://github.com/${defaults.github.owner}
-              icon: si-github-#ffffff
-        - Oracle Cloud:
-            - description: Cloud VMs
-              href: https://cloud.oracle.com
-              icon: si-oracle-#ffffff
-        - Resend:
-            - description: Email API
-              href: https://resend.com/overview
-              icon: si-resend-#ffffff
-        - Tailscale:
-            - description: VPN
-              href: https://login.tailscale.com/admin
-              icon: si-tailscale-#ffffff
-        - UniFi:
-            - description: Network
-              href: https://unifi.ui.com
-              icon: si-ubiquiti-#ffffff
   groups:
     Applications:
       columns: 4

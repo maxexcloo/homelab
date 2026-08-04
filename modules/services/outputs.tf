@@ -45,21 +45,21 @@ output "catalog" {
     ]
 
     services = [
-      for service_key, service in local.services_render_services : {
+      for service_key in sort(keys(local.services_model)) : {
         item    = try(module.onepassword.item_ids[service_key], null)
         key     = service_key
-        service = service.identity.service
-        target  = service.target
-        title   = service.identity.title
+        service = local.services_model[service_key].identity.service
+        target  = local.services_model[service_key].target
+        title   = local.services_model[service_key].identity.title
 
         features = {
-          monitoring        = service.features.monitoring && service.routing.backend_scheme != ""
-          monitoring_alerts = service.features.monitoring_alerts
-          oidc_forward_auth = service.features.oidc_forward_auth
+          monitoring        = local.services_model[service_key].features.monitoring && local.services_model[service_key].routing.backend_scheme != ""
+          monitoring_alerts = local.services_model[service_key].features.monitoring_alerts
+          oidc_forward_auth = local.services_model[service_key].features.oidc_forward_auth
         }
 
         urls = [
-          for url_key, url in service.urls : {
+          for url_key, url in local.services_render_services[service_key].urls : {
             host = url.zone
             href = url.href
           }

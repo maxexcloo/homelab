@@ -13,6 +13,7 @@
     "onepassword",
     "organization",
     "pocketid",
+    "providers",
     "resend",
     "server_types",
     "system",
@@ -438,6 +439,42 @@
             "pattern": "^[a-z][a-z0-9_]*$"
           }
         }
+      }
+    },
+    "providers": {
+      "description": "External provider metadata shared by dashboards and monitoring.",
+      "minProperties": 1,
+      "type": "object",
+      "additionalProperties": {
+        "additionalProperties": false,
+        "description": "Display and endpoint metadata for one external provider.",
+        "required": ["description", "href", "icon", "title"],
+        "type": "object",
+        "properties": {
+          "description": {
+            "description": "Short description shown by dashboards.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "href": {
+            "description": "Provider endpoint used by dashboards and availability monitoring.",
+            "format": "uri",
+            "type": "string"
+          },
+          "icon": {
+            "description": "Homepage icon identifier.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": {
+            "description": "Human-readable provider name.",
+            "minLength": 1,
+            "type": "string"
+          }
+        }
+      },
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
       }
     },
     "resend": {

@@ -1,5 +1,21 @@
 # Stage: render — Homepage-specific dashboard aggregation.
 locals {
+  _services_render_custom_homepage_bookmarks = [
+    {
+      Providers = [
+        for provider in local.services_render_providers : {
+          (provider.title) = [
+            {
+              description = provider.description
+              href        = provider.href
+              icon        = provider.icon
+            },
+          ]
+        }
+      ]
+    },
+  ]
+
   _services_render_custom_homepage_server_cards = flatten([
     for server_key, server in local.servers_render_servers : [
       for card_index, dashboard_card in server.dashboard : {
@@ -73,6 +89,8 @@ locals {
   )
 
   _services_render_custom_homepage_view = {
+    bookmarks = local._services_render_custom_homepage_bookmarks
+
     layout = [
       for group in local._services_render_custom_homepage_union_groups : {
         (group) = merge(
