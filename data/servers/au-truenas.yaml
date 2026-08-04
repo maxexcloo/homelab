@@ -14,7 +14,7 @@ dashboard:
     siteMonitor: ${server.urls.management.href}
     widgets:
       - type: truenas
-        enablePools: "true"
+        enablePools: true
         key: ${server.runtime.credentials.homepage_widget_key}
         url: ${server.urls.management.href}
         version: 2
