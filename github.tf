@@ -100,7 +100,7 @@ resource "terraform_data" "fly_deployment" {
   triggers_replace = [each.value.app]
 
   provisioner "local-exec" {
-    command = "gh workflow run delete.yml --repo ${self.input.owner}/${self.input.repository} --ref main -f app=${self.input.app}"
+    command = "gh workflow run deploy.yml --repo ${self.input.owner}/${self.input.repository} --ref main -f action=delete -f deployment=${self.input.app}"
     when    = destroy
   }
 }
