@@ -73,6 +73,14 @@ locals {
             )
           )
         ],
+        service.features.oidc_forward_auth ? [
+          {
+            id    = "monitoring_basic"
+            label = "monitoring_basic"
+            type  = "CONCEALED"
+            value = base64encode("monitoring:${service.runtime.credentials.monitoring_token}")
+          }
+        ] : [],
       ) : field.label => field
     }
     if can(local._onepassword_service_items[service_key])

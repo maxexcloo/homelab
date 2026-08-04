@@ -95,30 +95,6 @@ locals {
       local._services_render_custom_gatus_provider_endpoints,
     )
 
-    services = [
-      for service_key, service in local.services_render_services : merge(
-        {
-          name  = "${service.identity.title} (${service.target})"
-          token = "MONITORING_TOKEN_${upper(replace(service_key, "-", "_"))}"
-
-          urls = [
-            for url_key, url in service.urls : {
-              host = url.zone
-              href = url.href
-            }
-            if url_key != "default" && url.href != null && url.zone != null
-          ]
-        },
-        service.features.monitoring_alerts ? {} : {
-          alerts = false
-        },
-        service.features.oidc_forward_auth ? {
-          basic = "MONITORING_BASIC_${upper(replace(service_key, "-", "_"))}"
-        } : {},
-      )
-      if service.features.monitoring && service.routing.backend_scheme != ""
-    ]
-
     ui = {
       dashboard-heading    = local.services[local._services_render_custom_gatus_service_key].identity.title
       dashboard-subheading = local.services[local._services_render_custom_gatus_service_key].identity.description

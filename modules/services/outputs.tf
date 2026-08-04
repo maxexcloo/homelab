@@ -16,7 +16,9 @@ output "catalog" {
   description = "Non-secret deployment catalogs"
 
   value = nonsensitive({
-    gatus = local.services_catalog_gatus
+    gatus    = local.services_catalog_gatus
+    vault_id = local.defaults.onepassword.vaults.services.id
+    version  = 1
 
     deployments = [
       for service_key, service in local.services_model : {
@@ -26,6 +28,7 @@ output "catalog" {
         cpus          = service.fly.cpus
         force_https   = alltrue([for route in service.routing.routes : route.https])
         image         = service.fly.image
+        item          = try(module.onepassword.item_ids[service_key], null)
         key           = service_key
         machine_count = service.fly.machine_count
         memory_mb     = service.fly.memory_mb
@@ -39,6 +42,30 @@ output "catalog" {
         ]
       }
       if service.target == "fly" && service.identity.service != null
+    ]
+
+    services = [
+      for service_key, service in local.services_render_services : {
+        item    = try(module.onepassword.item_ids[service_key], null)
+        key     = service_key
+        service = service.identity.service
+        target  = service.target
+        title   = service.identity.title
+
+        features = {
+          monitoring        = service.features.monitoring && service.routing.backend_scheme != ""
+          monitoring_alerts = service.features.monitoring_alerts
+          oidc_forward_auth = service.features.oidc_forward_auth
+        }
+
+        urls = [
+          for url_key, url in service.urls : {
+            host = url.zone
+            href = url.href
+          }
+          if url_key != "default" && url.href != null && url.zone != null
+        ]
+      }
     ]
   })
 }

@@ -44,6 +44,30 @@ resource "github_actions_variable" "catalog" {
   repository    = github_repository.deployment["fly"].name
   value         = jsonencode(module.services.catalog)
   variable_name = "HOMELAB_CATALOG"
+
+  lifecycle {
+    precondition {
+      condition     = length(jsonencode(module.services.catalog)) <= 48000
+      error_message = "The deployment catalog exceeds the safe GitHub Actions variable size."
+    }
+
+    precondition {
+      error_message = "Every monitored service must have a 1Password item."
+
+      condition = alltrue([
+        for service in module.services.catalog.services : service.item != null
+        if service.features.monitoring
+      ])
+    }
+  }
+}
+
+resource "terraform_data" "catalog_deploy" {
+  triggers_replace = [sha256(github_actions_variable.catalog.value)]
+
+  provisioner "local-exec" {
+    command = "gh workflow run deploy.yml --repo ${local.defaults.github.owner}/${github_repository.deployment["fly"].name} --ref main"
+  }
 }
 
 resource "github_repository_file" "readme" {
