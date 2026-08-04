@@ -44,7 +44,7 @@ terraform {
 
     oci = {
       source  = "oracle/oci"
-      version = "~> 8.24"
+      version = "~> 8.25"
     }
 
     pocketid = {
