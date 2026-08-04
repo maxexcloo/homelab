@@ -56,36 +56,4 @@ locals {
     )
   }
 
-  # Rendered services with runtime stripped. File templates see adjacent services
-  # without credentials unless they are explicitly imported.
-  services_render_services_inventory = {
-    for service_key, service in local.services_render_services : service_key => {
-      for field_name, field_value in service : field_name => field_value
-      if field_name != "runtime"
-    }
-  }
-
-  # Full context passed to templatefile() for deploy artifact files. Uses rendered
-  # service values while still protecting adjacent service credentials.
-  services_render_template_context = {
-    for service_key, service in local.services : service_key => merge(
-      local.services_render_context_base[service_key],
-      {
-        custom  = {}
-        service = local.services_render_services[service_key]
-        zones   = keys(local.dns_input)
-
-        services = merge(
-          local.services_model,
-          {
-            for alias, real_key in local.services_model_imports[service_key] :
-            alias => local.services_render_services[real_key]
-            if can(local.services_render_services[real_key])
-          },
-        )
-      },
-      local.services_render_custom_traefik_context[service_key],
-      try(local.services_render_custom_homepage_context[service_key], {}),
-    )
-  }
 }

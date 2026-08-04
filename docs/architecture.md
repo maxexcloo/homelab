@@ -1,119 +1,43 @@
 # Architecture
 
-This repository is the control plane for a YAML-defined homelab. Files in
-`data/` describe DNS zones, servers, services, global config, and defaults.
-OpenTofu loads that data, computes stable models, provisions provider
-resources, stores credentials, and renders deployment artifacts.
+YAML in `data/` is the source of truth. OpenTofu validates it, builds stable
+models, provisions infrastructure, stores credentials in 1Password, and
+publishes non-secret deployment configs.
 
-## Data Flow
+## Stages
 
-Each domain module is organized as a staged pipeline:
+Each server and service moves through three boundaries:
 
-1. `{domain}_input.tf` loads YAML and applies defaults.
-2. `{domain}_model.tf` computes deterministic fields that are safe for `for_each`.
-3. Runtime files overlay provider-backed values and credentials.
-4. Render files produce bootstrap and deployment artifacts.
-5. `{domain}_validation.tf` enforces cross-file and relationship rules with
-   `terraform_data` preconditions.
+1. Input loads YAML and applies defaults.
+2. Model computes deterministic values used for identity, relationships,
+   validation, and `for_each`.
+3. Runtime adds provider-backed addresses, attributes, credentials, hosts, and
+   URLs after resource membership is fixed.
 
-Service-specific cross-service aggregation belongs in
-`modules/services/services_render_custom_*.tf`. Other render stages stay
-service-agnostic.
+Resource keys and collection membership must never depend on runtime values.
+JSON Schema validates data shape; HCL preconditions validate relationships.
 
-The model layer is the boundary between input data and provider resources.
-Resource keys and collection membership should come from input/model data, not
-runtime values.
+## Deployments
 
-`dns_model_routes` is the shared routing boundary for DNS providers. It gives
-each server route, service route, and redirect a stable key plus its hostname,
-managed zone, public target, serving server, and tunnel origin. Cloudflare and
-Control D derive their provider-specific resources from this shape.
+The root creates deployment repositories and publishes a `CONFIG` variable to
+each one. Target repositories own their templates, workflows, rendering, and
+deployment code.
 
-## Model & Runtime Boundaries
+- Docker renders for doco-cd and encrypts secret files with SOPS.
+- Fly resolves credentials on a hosted runner and deploys with Fly tooling.
+- TrueNAS renders and encrypts on a hosted runner, then decrypts and deploys on
+  the matching self-hosted runner.
 
-Each server and service has two shapes:
+`CONFIG` contains no secret values. Credential fields are programmatic `op://`
+references resolved by the target workflow.
 
-- `*_model` contains YAML input plus deterministic computed fields.
-- runtime objects add provider-backed values under domain-specific
-  `addresses`, `attributes`, `credentials`, `hosts`, and `urls` objects as
-  applicable.
+## Modules
 
-Use model locals for resource keys and filters. Runtime values can be unknown at
-plan time, so they should only feed resource arguments, outputs, and render
-content after the resource address set is already fixed.
+- `modules/credentials` generates scalar credentials, hashes, and X.509 material.
+- `modules/object_storage` provisions isolated object-storage credentials.
+- `modules/onepassword` manages generic 1Password Connect items.
+- `modules/servers` owns server models, infrastructure, and bootstrap output.
+- `modules/services` owns service models and provider-backed service resources.
 
-## Data Contracts
-
-JSON Schemas in `schemas/` define the YAML API. They validate both source YAML
-and default-merged objects via `scripts/validate_data.py`.
-
-Use schemas for shape and type checks. Use HCL validation locals for
-cross-resource relationships that need the expanded model, such as missing
-targets, invalid routes, duplicate IDs, or unmanaged DNS.
-
-Defaults from `data/config.yaml` and `data/defaults.yaml` are deep-merged before
-models are built. Per-resource YAML should usually contain only overrides.
-
-## Service Deployment
-
-Services expand into one modeled service per target. Each target platform owns
-its deployment implementation:
-
-- Docker and Fly implementations live in their deployment repositories and
-  render from non-secret configs published by OpenTofu.
-- TrueNAS services prefer catalog `app.json.tftpl` and fall back to custom
-  Compose when only `docker-compose.yaml.tftpl` exists.
-
-Docker CI resolves 1Password references and SOPS-encrypts only secret files for
-local doco-cd deployment. Fly CI sends resolved secrets directly to Fly. Core
-continues to render generated TrueNAS artifacts.
-
-Template inventory is discovered by file name:
-
-- `app.json.tftpl` is handled by the TrueNAS catalog renderer.
-- `docker-compose.yaml.tftpl` is handled by the TrueNAS Compose renderer.
-- Other files under `templates/services/<identity.service>/` become sidecars.
-- `.tftpl` files are rendered and have the suffix stripped.
-- `.raw.tftpl` files are rendered, have `.raw.tftpl` stripped, and are encrypted
-  as binary.
-
-## When To Split
-
-Keep this as one OpenTofu stack while the graph benefits from shared DNS,
-credential, service, and server context. Consider splitting only if applies
-become operationally painful, provider credentials need hard isolation, or a
-low-risk service deploy should not share a plan with core infrastructure.
-
-Use a module only when it removes real duplication or defines a stable
-boundary. The encryption/write path is shared, while Docker, Fly, and TrueNAS
-remain separate because their deployment requests and SOPS rules differ.
-
-Reusable capability modules own duplicated provider lifecycles:
-
-- `modules/credentials` generates scalar credentials, X.509 material, and
-  password hashes.
-- `modules/object_storage` provisions isolated B2 buckets and application keys.
-- `modules/onepassword` reads and persists generic 1Password Connect items.
-
-`modules/servers` owns server YAML input, deterministic modeling, credentials,
-runtime enrichment, rendered bootstrap content, webhooks, Cloudflare tunnels
-and tokens, and the Incus and OCI compute lifecycle.
-
-`modules/services` owns service YAML input, deterministic modeling, credentials,
-Pocket ID clients, service-specific Cloudflare Access and rulesets, runtime and
-template rendering, and Docker, Fly, and TrueNAS deployment publications.
-
-The root is the composition layer. It loads shared config and DNS data,
-configures providers, and owns only cross-domain DNS, routing, repository,
-Tailscale, and tunnel ingress policy. Module outputs create the dependency graph
-directly; there are no fingerprint marker resources or broad module-level
-`depends_on` lists.
-
-The two root calls live in `servers.tf` and `services.tf`. Their contracts are
-limited to merged `defaults`, shared DNS data, and the provider-derived values
-each domain needs; the service module additionally receives the server module's
-model/runtime/render interface. Shared provider data lookups stay in root, while
-single-domain lookups and resources live in their owning module. Each module
-exposes its deterministic model for shared root consumers. Default provider
-configurations inherit from the root, while aliased REST providers are passed
-explicitly.
+The root composes both domains and owns shared DNS, routing, repositories, and
+cross-domain provider data.

@@ -5,20 +5,9 @@ module "services" {
   dns      = local.dns_input
 
   integrations = {
-    debug_dir = var.debug_dir
-
     cloudflare = {
       account_id = data.cloudflare_account.default.id
       zone_ids   = local.cloudflare_zone_ids
-    }
-
-    github = {
-      workflow_revisions = local.github_workflow_revisions
-
-      repositories = {
-        for repository_key, repository in github_repository.deployment :
-        repository_key => repository.name
-      }
     }
 
     onepassword = {

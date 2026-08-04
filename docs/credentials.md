@@ -7,8 +7,8 @@ credential source:
 - `true` reads existing values from 1Password, uses generated values as
   fallbacks, and writes the complete credential inventory back to 1Password.
 - `false` skips all 1Password API calls and item writes. Generated credentials
-  come from OpenTofu-managed random, TLS, and provider resources and remain in
-  sensitive state and encrypted deployment artifacts.
+  remain in sensitive OpenTofu state; target deployments cannot resolve their
+  credential references until 1Password is enabled.
 
 - Servers use the vault configured at `onepassword.vaults.servers.id`.
 - Services use the vault configured at `onepassword.vaults.services.id`.
@@ -53,8 +53,8 @@ entered manually later. Read-only fields are written from provider-generated
 runtime values.
 
 1Password field IDs and labels use the same `snake_case` name. Ownership mode
-stays in repository configuration. Templates use
-`runtime.credentials.<field>`.
+stays in repository configuration. Deployment configs publish the same field
+names as `op://` references.
 
 ## Typed Generators
 
@@ -125,10 +125,9 @@ Servers also always get read-only `age_secret_key`.
 
 Services can reference another server or service by declaring an
 `imports.servers` or `imports.services` alias. Imported dependencies are
-exposed to templates through the matching `servers` or `services` map under the
-declared alias.
+published to target deployment contexts under that alias.
 
 Each service import value is an explicit expanded service key, for example
 `pocket_id: pocket-id-au-truenas`. Keeping aliases separate from target keys
-lets templates use readable references such as `${services.pocket_id...}`
-without making dependency identity depend on target counts.
+keeps template references readable without making dependency identity depend on
+target counts.

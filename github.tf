@@ -1,4 +1,9 @@
 locals {
+  _github_config_values = {
+    for repository_key, config in local._github_configs :
+    repository_key => repository_key == "truenas" ? base64gzip(jsonencode(config)) : jsonencode(config)
+  }
+
   _github_configs = module.services.configs
 
   _github_fly_deployments = {
@@ -12,13 +17,16 @@ locals {
   _github_generated_repositories = {
     for repository_key, repository in local.defaults.github.deployment_repositories :
     repository_key => repository
-    if !contains(["docker", "fly"], repository_key)
+    if !contains(["docker", "fly", "truenas"], repository_key)
   }
 
-  _github_metadata_repositories = {
-    for repository_key, repository in local._github_generated_repositories :
-    repository_key => repository
-    if repository_key != "truenas"
+  _github_truenas_deployments = {
+    for deployment in local._github_configs.truenas.deployments : deployment.key => {
+      name       = deployment.name
+      owner      = local.defaults.github.owner
+      repository = local.defaults.github.deployment_repositories.truenas.name
+      target     = deployment.target
+    }
   }
 
   _github_workflow_files = merge([
@@ -31,13 +39,6 @@ locals {
       if contains([".json", ".py", ".yaml"], try(regex("\\.[^.]+$", lower(file_path)), ""))
     }
   ]...)
-
-  github_workflow_revisions = {
-    for repository_key in keys(local._github_generated_repositories) : repository_key => sha256(jsonencode({
-      for file_config in values(local._github_workflow_files) : file_config.file => filesha256(file_config.source)
-      if file_config.repository_key == repository_key
-    }))
-  }
 }
 
 resource "github_repository" "deployment" {
@@ -60,20 +61,20 @@ resource "github_actions_variable" "config" {
   for_each = local._github_configs
 
   repository    = github_repository.deployment[each.key].name
-  value         = jsonencode(each.value)
+  value         = local._github_config_values[each.key]
   variable_name = "CONFIG"
 
   lifecycle {
     precondition {
-      condition     = length(jsonencode(each.value)) <= 48000
+      condition     = length(local._github_config_values[each.key]) <= 48000
       error_message = "The ${each.key} deployment config exceeds the safe GitHub Actions variable size."
     }
 
     precondition {
       error_message = "Every service in the ${each.key} deployment config must have a 1Password item."
 
-      condition = alltrue([
-        for service in try(each.value.services, []) : service.item != null
+      condition = each.key != "fly" || alltrue([
+        for service in each.value.services : service.item != null
       ])
     }
   }
@@ -111,8 +112,20 @@ resource "terraform_data" "fly_deployment" {
   }
 }
 
+resource "terraform_data" "truenas_deployment" {
+  for_each = local._github_truenas_deployments
+
+  input            = each.value
+  triggers_replace = [each.value.name]
+
+  provisioner "local-exec" {
+    command = "gh workflow run deploy.yaml --repo ${self.input.owner}/${self.input.repository} --ref main -f action=delete -f deployment=${self.input.target}/${self.input.name}"
+    when    = destroy
+  }
+}
+
 resource "github_repository_file" "generated_readme" {
-  for_each = local._github_metadata_repositories
+  for_each = local._github_generated_repositories
 
   commit_message      = "Update README"
   content             = "# ${each.value.display_name} configuration\n\n${each.value.description}\n"
@@ -139,7 +152,7 @@ removed {
 }
 
 resource "github_repository_file" "generated_renovate" {
-  for_each = local._github_metadata_repositories
+  for_each = local._github_generated_repositories
 
   commit_message      = "Disable Renovate"
   file                = "renovate.json"

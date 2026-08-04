@@ -16,6 +16,8 @@ output "configs" {
   description = "Non-secret deployment configs keyed by repository"
 
   value = nonsensitive({
+    truenas = local.services_config_truenas
+
     docker = {
       repository = "docker"
       version    = 1
@@ -141,24 +143,8 @@ output "configs" {
         )
       ]
     }
+
   })
-}
-
-output "render" {
-  description = "Rendered service objects and deterministic artifact inventories"
-  sensitive   = true
-
-  value = {
-    compose_inputs = local.services_render_compose_inputs
-    inventory      = local.services_render_services_inventory
-    services       = local.services_render_services
-
-    truenas = {
-      catalog_templates = local.truenas_catalog_templates
-      servers           = local.truenas_servers
-      services          = local.truenas_services
-    }
-  }
 }
 
 output "runtime" {

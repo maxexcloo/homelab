@@ -8,7 +8,8 @@ locals {
     for service_key, service in local.services_model : service_key => service
     if(
       can(local._docker_servers[service.target]) &&
-      can(local.services_render_compose_inputs[service_key])
+      service.identity.service != null &&
+      (service.target_feature == "" || service.target_feature == "docker")
     )
   }
 }

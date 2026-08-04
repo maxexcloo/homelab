@@ -297,7 +297,7 @@
     },
     "truenas_target": {
       "additionalProperties": false,
-      "description": "Configuration for TrueNAS catalog app deployments. Custom apps are inferred from docker-compose.yaml.tftpl in the service's template directory.",
+      "description": "Configuration published to TrueNAS catalog and custom app deployments.",
       "type": "object",
       "properties": {
         "catalog_app": {
@@ -311,7 +311,7 @@
           "type": "string"
         },
         "env": {
-          "description": "TrueNAS catalog app environment variables rendered into additional_envs. Custom compose apps should put environment directly in docker-compose.yaml.tftpl. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
+          "description": "TrueNAS catalog app environment variables rendered into additional_envs. Custom apps put environment in the target repository's Compose template. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}. String arrays render as '+'-joined values.",
           "type": "object",
           "additionalProperties": {
             "anyOf": [
@@ -467,7 +467,7 @@
           "type": "string"
         },
         "service": {
-          "description": "Implementation key used to select templates from templates/services/{service}. Null means inventory/dashboard-only and no service-specific deploy artifacts.",
+          "description": "Implementation key used to select templates in target repositories. Null means inventory/dashboard-only and no service-specific deployment artifacts.",
           "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": ["string", "null"]
         },

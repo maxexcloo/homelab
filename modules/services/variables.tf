@@ -12,17 +12,11 @@ variable "integrations" {
   description = "External integration inputs required by service resources"
 
   type = object({
-    debug_dir           = string
     tailscale_auth_keys = map(string)
 
     cloudflare = object({
       account_id = string
       zone_ids   = map(string)
-    })
-
-    github = object({
-      repositories       = map(string)
-      workflow_revisions = map(string)
     })
 
     onepassword = object({

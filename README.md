@@ -57,7 +57,6 @@ mise run plan            # Review infrastructure changes
 mise run plan-servers    # Review server module changes
 mise run plan-services   # Review service module changes
 mise run prek            # Run all repository hooks
-mise run render          # Render plaintext deployment artifacts via debug_dir
 mise run setup           # Clean, configure, initialize, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration

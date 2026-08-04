@@ -263,14 +263,6 @@ locals {
     )
   ]
 
-  _services_validation_truenas_missing_template = [
-    for service_key, service in local.truenas_services : service_key
-    if(
-      !can(local.services_render_compose_inputs[service_key]) &&
-      !can(local.truenas_catalog_templates[service_key])
-    )
-  ]
-
   _services_validation_unmanaged_hosts = flatten([
     for service_key, service in local.services_model : [
       for route in service.routing.routes : "${service_key} -> ${route.host}"
@@ -451,11 +443,6 @@ resource "terraform_data" "services_validation" {
     }
 
     # TrueNAS services need either a catalog app or custom Compose template.
-    precondition {
-      condition     = length(local._services_validation_truenas_missing_template) == 0
-      error_message = "TrueNAS services require app.json.tftpl or docker-compose.yaml.tftpl: ${join(", ", nonsensitive(local._services_validation_truenas_missing_template))}"
-    }
-
     # HTTPS service URLs need managed DNS so ACME delegation can resolve.
     precondition {
       condition = length(local._services_validation_unmanaged_hosts) == 0

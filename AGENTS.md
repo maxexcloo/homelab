@@ -4,7 +4,7 @@
 
 This repository manages homelab infrastructure with OpenTofu. YAML in `data/`
 is the source of truth. OpenTofu validates it, builds deterministic models,
-provisions resources, and renders encrypted deployment artifacts.
+provisions resources, and publishes non-secret deployment configs.
 
 Servers and services have two layers:
 
@@ -23,7 +23,7 @@ values. Those values may be unknown until apply.
   cross-domain behaviour, such as `cloudflare.tf`.
 - Keep backend, locals, outputs, providers, Terraform requirements, and
   variables in their conventional root files.
-- Put service templates under `templates/services/<identity.service>/`.
+- Put service templates in the repository that owns the target platform.
 - Omit `identity.service` for inventory-only services with no artifacts.
 
 Keep root HCL service-agnostic. Put service-specific behaviour in YAML, its
@@ -143,15 +143,11 @@ belong under `runtime.addresses`.
 - Omit `targets` when `target_feature` supplies every target. Use
   `targets.<key>: {}` for one target with no overrides.
 
-## Templates & Deployments
+## Deployments
 
-- Start template control directives with `%{~`. Add trailing trim markers only
-  when the following newline should also disappear.
-- Use `.tftpl` for rendered text and `.raw.tftpl` for binary-encrypted content.
-- Guard optional templates with `fileexists()`.
-- Keep platform service implementations and workflows in their deployment
-  repositories. This repository owns shared infrastructure, governance, and
-  non-secret deployment configs.
+- Keep root HCL unaware of target repository template files.
+- Publish non-secret deployment context through repository `CONFIG` variables.
+- Keep target templates, workflows, and deployment logic in their target repository.
 
 ## TrueNAS Services
 

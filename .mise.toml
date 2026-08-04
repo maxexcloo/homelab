@@ -1,6 +1,5 @@
 [env]
 API_DATA_IS_SENSITIVE = "true"
-RENDER_DIR = ".render"
 
 [tools]
 actionlint = "1.7.12"
@@ -104,11 +103,6 @@ run = "tofu apply -target=module.servers"
 [tasks.apply-services]
 description = "Apply service module changes"
 run = "tofu apply -target=module.services"
-
-# Scripts
-[tasks.render]
-description = "Render plaintext deployment artifacts via debug_dir"
-run = "tofu plan -refresh=false -var debug_dir=$RENDER_DIR"
 
 [tasks.sort-check]
 description = "Check HCL assignment grouping, JSON Schema, and YAML key ordering"

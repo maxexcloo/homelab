@@ -9,22 +9,6 @@ variable "controld_api_token" {
   }
 }
 
-variable "debug_dir" {
-  default     = ""
-  description = "Optional local directory to write plaintext rendered content for debugging. Leave empty unless actively troubleshooting encryption output."
-  sensitive   = false
-  type        = string
-
-  validation {
-    error_message = "Debug directory must be empty or a single-line path."
-
-    condition = (
-      var.debug_dir == "" ||
-      !can(regex("[\r\n]", var.debug_dir))
-    )
-  }
-}
-
 variable "oci_always_free" {
   default     = true
   description = "Enforce OCI Always Free quota limits during planning. Set to false if you have a paid tenancy."

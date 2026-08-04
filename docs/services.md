@@ -41,12 +41,5 @@ See `docs/deployments.md` for platform deployment behaviour and
 
 ## Files
 
-Files under `templates/services/<identity.service>/` are discovered
-automatically:
-
-- `app.json.tftpl` is a TrueNAS catalog app template.
-- `docker-compose.yaml.tftpl` is a Compose template.
-- Other files are sidecars copied into deployment repositories.
-- `.tftpl` files are rendered and lose the suffix.
-- `.raw.tftpl` files are rendered, lose `.raw.tftpl`, and are encrypted as
-  binary.
+Templates live in the repository that owns the target platform. This repository
+publishes only the modeled deployment context through its `CONFIG` output.
