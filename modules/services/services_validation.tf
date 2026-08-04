@@ -159,6 +159,16 @@ locals {
     ]
   ])
 
+  _services_validation_redirects_without_routes = [
+    for service_key, service in local.services_input_targets : service_key
+    if(
+      length(service.routing.redirects) > 0 &&
+      length(service.routing.routes) == 0 &&
+      service.routing.backend_port == null &&
+      service.routing.backend_scheme == ""
+    )
+  ]
+
   _services_validation_route_host_entries = flatten([
     for service_key, service in local.services_model : [
       for route in service.routing.routes : concat(
@@ -381,6 +391,11 @@ resource "terraform_data" "services_validation" {
       error_message = (
         "Service routing redirects require a distinct managed hostname, canonical destination, and non-Fly target: ${join(", ", local._services_validation_redirects_invalid)}"
       )
+    }
+
+    precondition {
+      condition     = length(local._services_validation_redirects_without_routes) == 0
+      error_message = "Service routing redirects require at least one modeled route: ${join(", ", local._services_validation_redirects_without_routes)}"
     }
 
     precondition {
