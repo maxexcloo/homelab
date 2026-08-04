@@ -7,15 +7,19 @@
 # ///
 
 import argparse
+import base64
 import json
 import os
 import re
+import secrets
+import string
 import sys
 from copy import deepcopy
 
 from httpx import HTTPError
 from onepasswordconnectsdk.client import Client
 
+ALPHANUMERIC = string.ascii_letters + string.digits
 FIELD_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
 SYSTEM_FIELD_IDS = frozenset({"notesPlain", "password", "username"})
 
@@ -60,6 +64,20 @@ def describe_url_changes(existing, merged):
     return changes
 
 
+def generate_value(recipe):
+    length = recipe.get("length")
+    value_type = recipe.get("type")
+    if not isinstance(length, int) or length < 1:
+        raise RuntimeError("generated credential length must be a positive integer")
+    if value_type == "alphanumeric":
+        return "".join(secrets.choice(ALPHANUMERIC) for _ in range(length))
+    if value_type == "base64":
+        return base64.b64encode(secrets.token_bytes(length)).decode()
+    if value_type == "hex":
+        return secrets.token_hex(length)
+    raise RuntimeError(f"unsupported generated credential type: {value_type}")
+
+
 def index_by(items, key, context):
     indexed = {}
     for item in items:
@@ -72,10 +90,11 @@ def index_by(items, key, context):
     return indexed
 
 
-def merge_fields(existing, desired):
+def merge_fields(existing, desired, recipes, write):
     existing_fields = existing.setdefault("fields", [])
     existing_by_id = index_by(existing_fields, "id", "1Password item fields")
     desired_by_id = index_by(desired.get("fields", []), "id", "desired item fields")
+    generated = []
     preserved = []
 
     for field_id, desired_field in desired_by_id.items():
@@ -84,15 +103,27 @@ def merge_fields(existing, desired):
         ):
             raise RuntimeError(f"field ID and label must match snake_case: {field_id}")
 
+        existing_value = existing_by_id.get(field_id, {}).get("value")
+        desired_value = desired_field.get("value")
+        if (
+            existing_value in (None, "")
+            and desired_value in (None, "")
+            and field_id in recipes
+            and recipes[field_id].get("type") in {"alphanumeric", "base64", "hex"}
+        ):
+            generated.append(field_id)
+            if write:
+                desired_value = generate_value(recipes[field_id])
+                desired_field = deepcopy(desired_field)
+                desired_field["value"] = desired_value
+
         if field_id not in existing_by_id:
             existing_fields.append(deepcopy(desired_field))
             continue
 
         existing_field = existing_by_id[field_id]
-        existing_value = existing_field.get("value")
-        desired_value = desired_field.get("value")
         if existing_value not in (None, ""):
-            if desired_value not in (None, "") and existing_value != desired_value:
+            if existing_value != desired_value:
                 preserved.append(field_id)
         elif desired_value not in (None, ""):
             existing_field["value"] = desired_value
@@ -102,12 +133,12 @@ def merge_fields(existing, desired):
                 existing_field[key] = deepcopy(desired_field[key])
 
     unknown = sorted(set(existing_by_id) - set(desired_by_id) - SYSTEM_FIELD_IDS)
-    return preserved, unknown
+    return generated, preserved, unknown
 
 
-def merge_item(existing, desired):
+def merge_item(existing, desired, recipes, write):
     merged = deepcopy(existing)
-    preserved, unknown = merge_fields(merged, desired)
+    generated, preserved, unknown = merge_fields(merged, desired, recipes, write)
 
     if not merged.get("category"):
         merged["category"] = desired.get("category")
@@ -131,7 +162,7 @@ def merge_item(existing, desired):
             else:
                 existing_urls.append(desired_url)
 
-    return merged, preserved, unknown
+    return generated, merged, preserved, unknown
 
 
 def parse_args():
@@ -176,7 +207,9 @@ def reconcile_vault(client, vault_key, vault, write):
         summaries_by_title.setdefault(summary.title, []).append(summary)
 
     for item_key in sorted(desired_items):
-        desired = deepcopy(desired_items[item_key])
+        item_config = desired_items[item_key]
+        desired = deepcopy(item_config.get("payload", item_config))
+        recipes = item_config.get("recipes", {}) if "payload" in item_config else {}
         title = desired.get("title")
         if not title or not title.endswith(f" ({item_key})"):
             raise RuntimeError(f"invalid stable item title: {vault_key}/{item_key}")
@@ -186,6 +219,15 @@ def reconcile_vault(client, vault_key, vault, write):
 
         if not matches:
             desired["vault"] = {"id": vault_id}
+            prepared = deepcopy(desired)
+            generated, _, _ = merge_fields(prepared, desired, recipes, write)
+            desired = prepared
+            if generated:
+                print(
+                    f"{vault_key}/{item_key}: values "
+                    f"{'generated' if write else 'to generate'}: "
+                    f"{', '.join(generated)}"
+                )
             if write:
                 api_request(client, "POST", f"/v1/vaults/{vault_id}/items", desired)
             print(f"{vault_key}/{item_key}: {'created' if write else 'create'}")
@@ -194,7 +236,9 @@ def reconcile_vault(client, vault_key, vault, write):
         item_id = matches[0].id
         path = f"/v1/vaults/{vault_id}/items/{item_id}"
         existing = api_request(client, "GET", path).json()
-        merged, preserved, unknown = merge_item(existing, desired)
+        generated, merged, preserved, unknown = merge_item(
+            existing, desired, recipes, write
+        )
         changed = sorted(
             key
             for key in set(existing) | set(merged)
@@ -211,16 +255,22 @@ def reconcile_vault(client, vault_key, vault, write):
                 f"{vault_key}/{item_key}: non-empty values preserved: "
                 f"{', '.join(preserved)}"
             )
+        if generated:
+            print(
+                f"{vault_key}/{item_key}: values "
+                f"{'generated' if write else 'to generate'}: {', '.join(generated)}"
+            )
         if url_changes:
             print(f"{vault_key}/{item_key}: URL changes: {', '.join(url_changes)}")
 
-        if merged == existing:
+        change_summary = ", ".join(changed or ["generated values"])
+        if merged == existing and not generated:
             print(f"{vault_key}/{item_key}: current")
         elif write:
             api_request(client, "PUT", path, merged)
-            print(f"{vault_key}/{item_key}: updated ({', '.join(changed)})")
+            print(f"{vault_key}/{item_key}: updated ({change_summary})")
         else:
-            print(f"{vault_key}/{item_key}: update ({', '.join(changed)})")
+            print(f"{vault_key}/{item_key}: update ({change_summary})")
 
 
 def main():

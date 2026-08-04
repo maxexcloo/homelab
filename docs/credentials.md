@@ -65,14 +65,15 @@ credentials:
       type: hex
 ```
 
-Scalar generators create an initial value for a read-write 1Password field:
+Scalar generators let the reconciler create an initial value directly in a
+read-write 1Password field:
 
 - `hex` and `base64` lengths are byte counts.
 - `alphanumeric` lengths are character counts.
 - Generated password-style values use `special = false`.
 
-Existing non-empty 1Password values win over generated seed values. This
-lets generated values seed a field once while preserving later manual changes.
+Generation happens only when both the desired and stored value are empty.
+Existing non-empty 1Password values always win, preserving later manual changes.
 
 The `x509` generator creates an Ed25519 private key and self-signed certificate:
 

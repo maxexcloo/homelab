@@ -532,7 +532,9 @@ an accepted temporary limitation.
     Status: the external reconciler is implemented and verified read-only
     against the complete current inventory. OpenTofu item writers have been
     detached non-destructively. Full item reads remain temporarily for bootstrap
-    hashes and other consumers that still need existing values.
+    hashes and other consumers that still need existing values. Scalar
+    application-owned recipes are generated in reconciler memory when their
+    1Password field is missing or empty.
 
     The current `modules/onepassword` reads complete item responses through `data.http.item`. Those response bodies can persist credential values in state.
 

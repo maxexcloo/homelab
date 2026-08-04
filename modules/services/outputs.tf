@@ -18,8 +18,14 @@ output "onepassword" {
 
   value = {
     enabled  = var.integrations.onepassword.enabled
-    items    = local._onepassword_service_item_payloads
     vault_id = local.defaults.onepassword.vaults.services.id
+
+    items = {
+      for service_key, payload in local._onepassword_service_item_payloads : service_key => {
+        payload = payload
+        recipes = local.services_model[service_key].credentials.generated
+      }
+    }
   }
 }
 
