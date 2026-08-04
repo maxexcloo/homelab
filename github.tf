@@ -15,6 +15,12 @@ locals {
     if !contains(["docker", "fly"], repository_key)
   }
 
+  _github_metadata_repositories = {
+    for repository_key, repository in local._github_generated_repositories :
+    repository_key => repository
+    if repository_key != "truenas"
+  }
+
   _github_workflow_files = merge([
     for repository_key in keys(local._github_generated_repositories) : {
       for file_path in fileset(path.module, "templates/workflows/${repository_key}/**") : "${repository_key}/${trimprefix(file_path, "templates/workflows/${repository_key}/")}" => {
@@ -106,7 +112,7 @@ resource "terraform_data" "fly_deployment" {
 }
 
 resource "github_repository_file" "generated_readme" {
-  for_each = local._github_generated_repositories
+  for_each = local._github_metadata_repositories
 
   commit_message      = "Update README"
   content             = "# ${each.value.display_name} configuration\n\n${each.value.description}\n"
@@ -117,11 +123,6 @@ resource "github_repository_file" "generated_readme" {
   lifecycle {
     destroy = false
   }
-}
-
-import {
-  id = "${local.defaults.github.deployment_repositories.truenas.name}:README.md:"
-  to = github_repository_file.generated_readme["truenas"]
 }
 
 import {
@@ -138,7 +139,7 @@ removed {
 }
 
 resource "github_repository_file" "generated_renovate" {
-  for_each = local._github_generated_repositories
+  for_each = local._github_metadata_repositories
 
   commit_message      = "Disable Renovate"
   file                = "renovate.json"
@@ -152,11 +153,6 @@ resource "github_repository_file" "generated_renovate" {
   lifecycle {
     destroy = false
   }
-}
-
-import {
-  id = "${local.defaults.github.deployment_repositories.truenas.name}:renovate.json:"
-  to = github_repository_file.generated_renovate["truenas"]
 }
 
 import {

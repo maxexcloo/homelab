@@ -1,4 +1,4 @@
-name: Deploy
+name: TrueNAS
 
 on:
   push:
@@ -7,7 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: "Deploy all, a server, a service, or server/service"
+        description: Deploy all, a server, a service, or server/service
+        required: false
+        type: string
 
 concurrency:
   cancel-in-progress: false
@@ -17,56 +19,56 @@ permissions:
   contents: read
 
 jobs:
-  deployments:
-    name: Select Deployments
+  prepare:
+    name: Check & Select
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.deployments.outputs.deployments }}
+      deployments: ${{ steps.select.outputs.deployments }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Select Deployments
-        id: deployments
+          persist-credentials: false
+      - name: Setup tools
+        uses: jdx/mise-action@v4
+        with:
+          version: 2026.8.1
+      - name: Run checks
+        run: mise run check
+      - name: Select deployments
+        id: select
         env:
           BEFORE: ${{ github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
           INPUT_TARGET: ${{ inputs.target }}
-        run: python3 .github/scripts/select-deployments.py
+        run: uv run --no-project .github/scripts/select-deployments.py
 
-  deploy:
-    if: needs.deployments.outputs.matrix != '[]'
-    name: Deploy ${{ matrix.target.server }}
-    needs: [deployments]
-    runs-on: [self-hosted, truenas-cd, "${{ matrix.target.server }}"]
+  run:
+    name: Deploy ${{ matrix.deployment.server }}
+    needs: prepare
+    if: needs.prepare.outputs.deployments != '[]'
+    runs-on: [self-hosted, truenas-cd, "${{ matrix.deployment.server }}"]
     strategy:
       fail-fast: false
       max-parallel: 1
+
       matrix:
-        target: ${{ fromJSON(needs.deployments.outputs.matrix) }}
+        deployment: ${{ fromJSON(needs.prepare.outputs.deployments) }}
     env:
       BEFORE: ${{ github.event.before }}
-      MANAGED_FILES: ${{ toJSON(matrix.target.files) }}
-      PREVIOUS_MANAGED_FILES: ${{ toJSON(matrix.target.previous_files) }}
-      REMOVALS: ${{ toJSON(matrix.target.removals) }}
-      TARGET_PATHS: ${{ toJSON(matrix.target.paths) }}
+      DEPLOYMENT: ${{ toJSON(matrix.deployment) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Setup sops
-        uses: nhedger/setup-sops@v3
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v9.0.0
-      - name: Setup midclt
+          persist-credentials: false
+      - name: Setup tools
+        uses: jdx/mise-action@v4
+        with:
+          version: 2026.8.1
+      - name: Setup TrueNAS client
         run: uv tool install --python 3.12 git+https://github.com/truenas/api_client.git@TS-25.10.5
-      - name: Decrypt Files
-        env:
-          DECRYPT_ROOT: ${{ matrix.target.server }}
-        run: python3 .github/scripts/decrypt.py
-      - name: Delete Services
-        run: python3 .github/scripts/delete.py
-      - name: Deploy Services
-        run: python3 .github/scripts/deploy.py
+      - name: Deploy
+        run: uv run --no-project .github/scripts/truenas.py

@@ -40,6 +40,47 @@ def deep_merge(base, overlay):
     return merged
 
 
+def decrypt_files(root):
+    for path in Path(root).rglob("*"):
+        if not path.is_file():
+            continue
+
+        content = path.read_text(errors="ignore")
+        if (
+            "BEGIN AGE ENCRYPTED FILE" not in content
+            and "ENC[AES256_GCM" not in content
+        ):
+            continue
+
+        if is_binary_sops_json(content):
+            decrypted = subprocess.check_output(
+                [
+                    "sops",
+                    "--decrypt",
+                    "--input-type",
+                    "json",
+                    "--output-type",
+                    "binary",
+                    path,
+                ]
+            )
+            path.write_bytes(decrypted)
+        else:
+            subprocess.run(["sops", "--decrypt", "--in-place", path], check=True)
+
+
+def delete_services(services):
+    for service in services:
+        if app_exists(service):
+            run(
+                ["midclt", "call", "-j", "app.delete", service],
+                stdout=subprocess.DEVNULL,
+            )
+            print(f"✓ {service} deleted")
+        else:
+            print(f"⚠ {service} not found, skipping deletion")
+
+
 def deploy_catalog_service(service, app_file, previous_app):
     print(f"Deploying catalog service {service}")
     if app_exists(service):
@@ -88,11 +129,8 @@ def deploy_custom_service(service, compose_file):
     ensure_app_started(service)
 
 
-def deploy_services():
-    managed_files = json.loads(os.environ["MANAGED_FILES"])
-    previous_managed_files = json.loads(os.environ["PREVIOUS_MANAGED_FILES"])
-
-    for target_path in json.loads(os.environ["TARGET_PATHS"]):
+def deploy_services(paths, managed_files, previous_managed_files):
+    for target_path in paths:
         target = Path(target_path)
         service = target.name
         print(f"Deploying {service}")
@@ -154,6 +192,19 @@ def ensure_app_started(service):
             f"Failed to start {service}: final app state is {app['state']}"
         )
     print(f"✓ {service} started")
+
+
+def is_binary_sops_json(content):
+    try:
+        payload = json.loads(content)
+    except json.JSONDecodeError:
+        return False
+
+    if set(payload) != {"data", "sops"}:
+        return False
+
+    data = payload["data"]
+    return isinstance(data, str) and data.startswith("ENC[AES256_GCM")
 
 
 def load_previous_json(path):
@@ -325,5 +376,16 @@ def write_sidecars(service, target, sidecars):
         print(f"✓ {service}:{destination}")
 
 
+def main():
+    deployment = json.loads(os.environ["DEPLOYMENT"])
+    decrypt_files(deployment["server"])
+    delete_services(deployment["removals"])
+    deploy_services(
+        deployment["paths"],
+        deployment["files"],
+        deployment["previous_files"],
+    )
+
+
 if __name__ == "__main__":
-    deploy_services()
+    main()
