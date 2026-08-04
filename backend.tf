@@ -1,10 +1,6 @@
 terraform {
-  cloud {
-    hostname     = "app.terraform.io"
-    organization = "excloo"
-
-    workspaces {
-      name = "homelab"
-    }
+  backend "gcs" {
+    bucket = "homelab-opentofu"
+    prefix = "states/core"
   }
 }
