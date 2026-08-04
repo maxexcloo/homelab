@@ -4,13 +4,13 @@ RENDER_DIR = ".render"
 
 [tools]
 actionlint = "1.7.12"
-hadolint = "2.14.0"
+hadolint = "2.15.1"
 opentofu = "1.12.5"
-prek = "0.4.11"
+prek = "0.4.12"
 prettier = "3.9.6"
-ruff = "0.16.0"
+ruff = "0.16.1"
 sops = "3.13.3"
-uv = "0.11.32"
+uv = "0.12.1"
 
 # Setup
 [tasks.init]

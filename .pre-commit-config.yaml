@@ -27,11 +27,6 @@ repos:
       - id: check-renovate
   - repo: local
     hooks:
-      - id: actionlint
-        name: Lint GitHub Actions workflows
-        entry: mise exec -- actionlint
-        files: ^(?:\.github/workflows|templates(?:/[^/]+)*/\.github/workflows)/.*\.ya?ml$
-        language: system
       - id: hadolint
         name: Lint Dockerfiles
         entry: mise exec -- hadolint

@@ -55,6 +55,9 @@ blank lines in `data/services/*.yml` and `data/servers/*.yml`.
 List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
 use `id`, then `name`. Sort the remaining fields normally.
 
+Sort mise tools alphabetically and tasks alphabetically within each lifecycle
+section. Sort Renovate package rules by description and Prek hooks by `id`.
+
 ## HCL Standards
 
 - Format with `mise run fmt`.
@@ -154,6 +157,11 @@ service or its templates.
 ## General
 
 - Prefer plain, direct code over abstraction.
+- Keep tool, action, hook, and image pins current through Renovate where
+  supported. Prefer `config:recommended`, group compatible updates by
+  ecosystem, and add overrides only for project-specific behavior.
+- Keep check orchestration single-layered. Do not run the same checker through
+  both a direct Prek hook and a nested mise task in one check path.
 - Keep comments local and specific. Put architecture and usage explanations in
   docs instead of code comments.
 - Sort Python imports with Ruff. Sort top-level constants, classes, and helper

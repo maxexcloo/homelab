@@ -1,13 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "dependencyDashboard": true,
   "extends": ["config:recommended"],
   "ignoreDeps": ["hashicorp/terraform"],
   "labels": ["dependencies"],
-  "prConcurrentLimit": 20,
-  "prHourlyLimit": 20,
-  "rangeStrategy": "bump",
-  "rebaseWhen": "behind-base-branch",
   "customManagers": [
     {
       "customType": "regex",
@@ -24,14 +19,14 @@
   },
   "packageRules": [
     {
+      "automerge": true,
+      "description": "Automerge passing patch and pin updates",
+      "matchUpdateTypes": ["patch", "pin"]
+    },
+    {
       "description": "Group GitHub Actions updates",
       "groupName": "GitHub Actions",
       "matchManagers": ["github-actions"]
-    },
-    {
-      "description": "Resolve OpenTofu provider updates from the OpenTofu registry",
-      "matchDatasources": ["terraform-module", "terraform-provider"],
-      "registryUrls": ["https://registry.opentofu.org"]
     },
     {
       "description": "Group mise tool updates",
@@ -39,9 +34,9 @@
       "matchManagers": ["mise"]
     },
     {
-      "automerge": true,
-      "description": "Automerge passing patch and pin updates",
-      "matchUpdateTypes": ["patch", "pin"]
+      "description": "Resolve OpenTofu provider updates from the OpenTofu registry",
+      "matchDatasources": ["terraform-module", "terraform-provider"],
+      "registryUrls": ["https://registry.opentofu.org"]
     }
   ],
   "pre-commit": {
