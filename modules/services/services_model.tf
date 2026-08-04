@@ -1,12 +1,10 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
   _services_model_configured_hosts = distinct(flatten([
-    for service in values(local.services_input_targets) : [
-      for route in service.routing.routes : concat(
-        route.host != null ? [route.host] : [],
-        try(route.redirects, []),
-      )
-    ]
+    for service in values(local.services_input_targets) : concat(
+      service.routing.redirects,
+      [for route in service.routing.routes : route.host if route.host != null],
+    )
   ]))
 
   # Credential field shape for each service. Runtime values are added in runtime.tf.
@@ -190,7 +188,7 @@ locals {
           )
 
           redirects = [
-            for redirect in try(route.redirects, []) : {
+            for redirect in route_index == 0 ? service.routing.redirects : [] : {
               expose       = route.expose == "cloudflare" ? "external" : route.expose
               host         = redirect
               name         = "${service.identity.name}-redirect-${substr(sha1(redirect), 0, 12)}"

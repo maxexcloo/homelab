@@ -567,6 +567,15 @@
             ]
           }
         },
+        "redirects": {
+          "description": "Additional hostnames that permanently redirect to the first modeled route while preserving the path and query string.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+            "type": "string"
+          }
+        },
         "routes": {
           "description": "Additional routes that inherit shared routing fields and may override route-specific backend and TLS settings. Services with a backend port or scheme also receive a derived internal route.",
           "type": "array",
@@ -810,16 +819,6 @@
                 "description": "Stable route identity used for generated DNS and Traefik names. Defaults to the expanded route list index when omitted.",
                 "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
                 "type": "string"
-              },
-              "redirects": {
-                "description": "Additional hostnames that permanently redirect to this route while preserving the path and query string. Exposure follows the canonical route, except Cloudflare routes use direct external Traefik exposure so ACME can cover deep aliases.",
-                "minItems": 1,
-                "type": "array",
-                "uniqueItems": true,
-                "items": {
-                  "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
-                  "type": "string"
-                }
               }
             }
           }

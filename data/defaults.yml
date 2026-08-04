@@ -139,6 +139,7 @@ services:
     https: true
     https_verify: true
     labels: {}
+    redirects: []
     routes: []
 targets:
   fly:

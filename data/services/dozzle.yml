@@ -15,9 +15,8 @@ identity:
   username: max@excloo.com
 routing:
   backend_port: 30064
-  routes:
-    - expose: internal
-      host: dozzle.excloo.com
+  redirects:
+    - dozzle.excloo.com
 targets:
   au-truenas:
     truenas:

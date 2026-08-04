@@ -103,21 +103,23 @@ labels can override generated labels. Null labels are dropped.
 
 ## Redirects
 
-Add redirect aliases to a route as hostname strings:
+Add redirect aliases as hostname strings:
 
 ```yaml
 routing:
+  redirects:
+    - www.reddit.excloo.com
   routes:
     - expose: cloudflare
       host: reddit.excloo.com
-      redirects:
-        - www.reddit.excloo.com
 ```
 
-Aliases inherit the canonical route's target and exposure path. They receive a
-public DNS record, ACME delegation, Traefik HTTPS redirect router, HTTP redirect
-router, and Control D override. The redirect is permanent and preserves the
-request suffix while replacing the hostname with the canonical route URL.
+Aliases attach to the first modeled route, which is the canonical explicit
+route when one exists and otherwise the derived internal route. They inherit
+that route's target and exposure path and receive a public DNS record, ACME
+delegation, Traefik HTTPS redirect router, HTTP redirect router, and Control D
+override. The redirect is permanent and preserves the request suffix while
+replacing the hostname with the canonical route URL.
 
 ## Containers
 
