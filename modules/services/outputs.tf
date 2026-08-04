@@ -12,12 +12,12 @@ output "model" {
   })
 }
 
-output "catalogs" {
-  description = "Non-secret deployment catalogs keyed by repository"
+output "configs" {
+  description = "Non-secret deployment configs keyed by repository"
 
   value = nonsensitive({
     fly = {
-      gatus      = local.services_catalog_gatus
+      gatus      = local.services_config_gatus
       repository = "fly"
       vault_id   = local.defaults.onepassword.vaults.services.id
       version    = 2

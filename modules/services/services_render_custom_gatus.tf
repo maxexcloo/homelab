@@ -24,7 +24,7 @@ locals {
     if service.identity.service == "gatus"
   ])
 
-  services_catalog_gatus = {
+  services_config_gatus = {
     mail = {
       from     = local.services[local._services_render_custom_gatus_service_key].runtime.attributes.mail_from_address
       host     = local.services[local._services_render_custom_gatus_service_key].runtime.attributes.mail_host

@@ -1,8 +1,8 @@
 locals {
-  _github_catalogs = module.services.catalogs
+  _github_configs = module.services.configs
 
   _github_fly_deployments = {
-    for deployment in local._github_catalogs.fly.deployments : deployment.key => {
+    for deployment in local._github_configs.fly.deployments : deployment.key => {
       app        = deployment.app
       owner      = local.defaults.github.owner
       repository = local.defaults.github.deployment_repositories.fly.name
@@ -50,21 +50,21 @@ resource "github_repository" "deployment" {
   }
 }
 
-resource "github_actions_variable" "catalog" {
-  for_each = local._github_catalogs
+resource "github_actions_variable" "config" {
+  for_each = local._github_configs
 
   repository    = github_repository.deployment[each.key].name
   value         = jsonencode(each.value)
-  variable_name = "HOMELAB_CATALOG"
+  variable_name = "CONFIG"
 
   lifecycle {
     precondition {
       condition     = length(jsonencode(each.value)) <= 48000
-      error_message = "The ${each.key} deployment catalog exceeds the safe GitHub Actions variable size."
+      error_message = "The ${each.key} deployment config exceeds the safe GitHub Actions variable size."
     }
 
     precondition {
-      error_message = "Every service in the ${each.key} deployment catalog must have a 1Password item."
+      error_message = "Every service in the ${each.key} deployment config must have a 1Password item."
 
       condition = alltrue([
         for service in try(each.value.services, []) : service.item != null
@@ -74,14 +74,14 @@ resource "github_actions_variable" "catalog" {
 }
 
 moved {
-  from = github_actions_variable.catalog
-  to   = github_actions_variable.catalog["fly"]
+  from = github_actions_variable.catalog["fly"]
+  to   = github_actions_variable.config["fly"]
 }
 
-resource "terraform_data" "catalog_deploy" {
-  for_each = local._github_catalogs
+resource "terraform_data" "config_deploy" {
+  for_each = local._github_configs
 
-  triggers_replace = [sha256(github_actions_variable.catalog[each.key].value)]
+  triggers_replace = [sha256(github_actions_variable.config[each.key].value)]
 
   provisioner "local-exec" {
     command = "gh workflow run deploy.yml --repo ${local.defaults.github.owner}/${github_repository.deployment[each.key].name} --ref main"
@@ -89,8 +89,8 @@ resource "terraform_data" "catalog_deploy" {
 }
 
 moved {
-  from = terraform_data.catalog_deploy
-  to   = terraform_data.catalog_deploy["fly"]
+  from = terraform_data.catalog_deploy["fly"]
+  to   = terraform_data.config_deploy["fly"]
 }
 
 resource "terraform_data" "fly_deployment" {
