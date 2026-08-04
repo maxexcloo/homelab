@@ -1,4 +1,6 @@
 locals {
+  _github_catalogs = module.services.catalogs
+
   _github_generated_repositories = {
     for repository_key, repository in local.defaults.github.deployment_repositories :
     repository_key => repository
@@ -41,33 +43,46 @@ resource "github_repository" "deployment" {
 }
 
 resource "github_actions_variable" "catalog" {
-  repository    = github_repository.deployment["fly"].name
-  value         = jsonencode(module.services.catalog)
+  for_each = local._github_catalogs
+
+  repository    = github_repository.deployment[each.key].name
+  value         = jsonencode(each.value)
   variable_name = "HOMELAB_CATALOG"
 
   lifecycle {
     precondition {
-      condition     = length(jsonencode(module.services.catalog)) <= 48000
-      error_message = "The deployment catalog exceeds the safe GitHub Actions variable size."
+      condition     = length(jsonencode(each.value)) <= 48000
+      error_message = "The ${each.key} deployment catalog exceeds the safe GitHub Actions variable size."
     }
 
     precondition {
-      error_message = "Every monitored service must have a 1Password item."
+      error_message = "Every service in the ${each.key} deployment catalog must have a 1Password item."
 
       condition = alltrue([
-        for service in module.services.catalog.services : service.item != null
-        if service.features.monitoring
+        for service in try(each.value.services, []) : service.item != null
       ])
     }
   }
 }
 
+moved {
+  from = github_actions_variable.catalog
+  to   = github_actions_variable.catalog["fly"]
+}
+
 resource "terraform_data" "catalog_deploy" {
-  triggers_replace = [sha256(github_actions_variable.catalog.value)]
+  for_each = local._github_catalogs
+
+  triggers_replace = [sha256(github_actions_variable.catalog[each.key].value)]
 
   provisioner "local-exec" {
-    command = "gh workflow run deploy.yml --repo ${local.defaults.github.owner}/${github_repository.deployment["fly"].name} --ref main"
+    command = "gh workflow run deploy.yml --repo ${local.defaults.github.owner}/${github_repository.deployment[each.key].name} --ref main"
   }
+}
+
+moved {
+  from = terraform_data.catalog_deploy
+  to   = terraform_data.catalog_deploy["fly"]
 }
 
 resource "github_repository_file" "readme" {
