@@ -64,11 +64,6 @@ resource "github_actions_variable" "config" {
   }
 }
 
-moved {
-  from = github_actions_variable.catalog["fly"]
-  to   = github_actions_variable.config["fly"]
-}
-
 resource "terraform_data" "config_deploy" {
   for_each = local._github_configs
 
@@ -77,11 +72,6 @@ resource "terraform_data" "config_deploy" {
   provisioner "local-exec" {
     command = "gh workflow run ${each.value.workflow} --repo ${local.defaults.github.owner}/${github_repository.deployment[each.key].name} --ref main"
   }
-}
-
-moved {
-  from = terraform_data.catalog_deploy["fly"]
-  to   = terraform_data.config_deploy["fly"]
 }
 
 resource "terraform_data" "fly_deployment" {
@@ -105,45 +95,5 @@ resource "terraform_data" "truenas_deployment" {
   provisioner "local-exec" {
     command = "gh workflow run deploy.yaml --repo ${self.input.owner}/${self.input.repository} --ref main -f action=delete -f deployment=${self.input.target}/${self.input.name}"
     when    = destroy
-  }
-}
-
-removed {
-  from = github_repository_file.generated_readme
-
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = github_repository_file.generated_renovate
-
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = github_repository_file.readme
-
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = github_repository_file.renovate
-
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = github_repository_file.workflow_file
-
-  lifecycle {
-    destroy = false
   }
 }

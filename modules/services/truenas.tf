@@ -12,27 +12,3 @@ locals {
     )
   }
 }
-
-removed {
-  from = github_repository_file.truenas_sops_config
-
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = module.encrypted_github_file_truenas
-
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = github_repository_file.truenas_deploy_request
-
-  lifecycle {
-    destroy = false
-  }
-}
