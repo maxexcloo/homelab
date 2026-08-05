@@ -26,7 +26,7 @@ jobs:
       - name: Set up mise
         uses: jdx/mise-action@v4
         with:
-          version: 2026.8.1
+          version: 2026.8.2
       - name: Initialize OpenTofu
         run: mise exec -- tofu init -backend=false -input=false
       - name: Run prek
