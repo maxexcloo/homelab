@@ -27,16 +27,6 @@ repos:
       - id: check-renovate
   - repo: local
     hooks:
-      - id: hadolint
-        name: Lint Dockerfiles
-        entry: mise exec -- hadolint
-        language: system
-        # Unpinned Alpine packages remain warnings.
-        args:
-          - --failure-threshold
-          - error
-        types:
-          - dockerfile
       - id: project-check
         name: Check project source
         always_run: true

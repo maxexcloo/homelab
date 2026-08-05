@@ -37,6 +37,8 @@ an accepted temporary limitation.
 - Track field and URL ownership in each item. Delete removed OpenTofu-owned
   values and abandoned empty placeholders, while preserving populated manual
   placeholders and unknown fields.
+- Keep one OpenTofu root in `homelab`. Target repositories own deployment
+  source and execution, not duplicate infrastructure models or state.
 
 1. **Lock the architectural decisions before changing code.**
 
@@ -51,7 +53,8 @@ an accepted temporary limitation.
    - 1Password Connect remains because it supports the required network and vault behavior.
    - No remote or cross-network Docker socket access.
    - Provider-managed services such as B2, Resend, Pocket ID, Cloudflare, and Tailscale remain supported.
-   - Backend migration, secret refactoring, repository splitting, and state splitting happen in separate phases.
+   - Backend migration, secret refactoring, and repository cutovers happen in separate phases.
+   - Keep provider resources and 1Password reconciliation in the core OpenTofu root unless a target develops a substantial independent infrastructure boundary.
    - Client-side state and plan encryption is deferred until explicitly resumed.
 
 2. **Treat GCS as effectively inexpensive, but not technically free in Sydney.**
@@ -67,21 +70,20 @@ an accepted temporary limitation.
 
 3. **Use this final repository ownership model.**
 
-   | Repository | Final responsibility | GCS state prefix |
+   | Repository | Final responsibility | OpenTofu state |
    | --- | --- | --- |
-   | `homelab` | Shared network, zones, servers, account-level resources, GitHub repository governance | `states/core` |
-   | `homelab-fly` | Fly services, templates, service-scoped external resources, deployment | `states/fly` |
-   | `homelab-truenas` | TrueNAS services, templates, sidecars, service-scoped resources, deployment | `states/truenas` |
-   | `homelab-docker` | Docker/doco-cd services and templates | `states/docker` |
-   | `homelab-workflows` | Cross-target maintenance jobs only | State only if it eventually owns resources |
+   | `homelab` | YAML source of truth, provider resources, 1Password reconciliation, non-secret deployment config, and GitHub governance | `states/core` |
+   | `homelab-fly` | Fly service source, templates, rendering, and deployment | None |
+   | `homelab-truenas` | TrueNAS service source, templates, packaging, and deployment | None |
+   | `homelab-docker` | Docker/doco-cd service source, templates, packaging, and deployment | None |
+   | `homelab-workflows` | Cross-target maintenance jobs | None |
 
-   Core owns account-level resources; target repositories own service-level resources. For example:
-
-   - Core owns a Cloudflare zone; the target repo owns the DNS record for its service.
-   - Core owns the Resend account/domain; the target repo owns a service-specific API key.
-   - Core owns the B2 account credentials; the target repo owns a service-specific bucket and application key.
-   - Core owns shared Pocket ID configuration; the target repo owns the service's OIDC client.
-   - GitHub repository settings can remain in core, but repository files and workflows must become normally authored files in their respective repositories.
+   Core owns both account-level and service-scoped provider resources. Target
+   repositories consume only the projected non-secret `CONFIG` and direct
+   `op://` references needed to deploy. This avoids duplicating the service
+   model, provider authentication, GCS state, and 1Password writers in every
+   target repository. Repository files and workflows remain normally authored
+   in their respective repositories.
 
 4. **Bootstrap the GCP project and bucket manually.**
 
@@ -578,8 +580,9 @@ an accepted temporary limitation.
     Application-owned secret:
 
     ```text
-    Declarative recipe
-        -> reconciler generates in memory
+    OpenTofu random resource generates value
+        -> value is held in restricted GCS state
+        -> reconciler writes the same value
         -> stored in 1Password
         -> deployment resolves op:// reference
     ```
@@ -596,8 +599,8 @@ an accepted temporary limitation.
 
     ```text
     OpenTofu/provider creates resource
-        -> secret exists in encrypted target state
-        -> post-apply sync writes it to 1Password
+        -> secret exists in restricted GCS state
+        -> reconciler writes it to 1Password during apply
         -> deployment consumes 1Password copy
     ```
 
@@ -618,14 +621,9 @@ an accepted temporary limitation.
 
 19. **Detach existing 1Password items without deleting them.**
 
-    Migration order:
-
-    1. Field labels are normalized to their stable names.
-    2. Update target deployments to stable references.
-    3. Verify all consumers.
-    4. Use `removed` blocks with `lifecycle.destroy = false` for managed 1Password resources where possible.
-    5. Remove the corresponding data sources and REST resources from state.
-    6. Remove the custom stateful module only after a no-change plan confirms no item deletion.
+    Status: complete. Existing item IDs and values were preserved, full item
+    HTTP reads were removed from current state, and the ownership-aware Connect
+    reconciler was applied successfully. A follow-up plan reported no changes.
 
     Historical HCP and GCS generations will still contain the old item response data. Keep them narrowly access-controlled and let their retention windows expire. Client-side encryption remains deferred.
 
@@ -646,8 +644,6 @@ an accepted temporary limitation.
     one or commit them. Docker and TrueNAS publish target-specific OCI packages
     from this ephemeral workspace; Fly deploys directly from it.
 
-    Today `github.tf` and the service modules write repository files through `github_repository_file` and `modules/github_file_encrypted`.
-
     Repository-level tooling must remain generic, as it is in `homelab`:
 
     - `mise` tasks, shared workflows, repository configuration, and root documentation describe the platform and discover deployments from the repository layout.
@@ -665,7 +661,7 @@ an accepted temporary limitation.
     - Add its own checks and schemas.
     - Enable Renovate normally.
     - Stop describing it as generated output.
-    - Keep core ownership only for repository settings and protections.
+    - Keep core ownership of provider resources, 1Password items, repository settings, and protections.
 
     Recommended layout:
 
@@ -868,98 +864,52 @@ an accepted temporary limitation.
     - No aggregator reads another repository's OpenTofu state.
     - No aggregator discovers services by accessing remote Docker APIs.
 
-25. **Create separate GCS state prefixes only after deployment ownership is stable.**
+25. **Keep one OpenTofu state while it remains the simplest ownership boundary.**
 
-    Do not split state while target deployment code is still changing.
+    Status: decided. Keep `states/core` as the only active OpenTofu state. The
+    Fly inventory demonstrated that splitting four resources would require a
+    second service model, provider authentication, backend, and 1Password
+    writer. That adds more machinery and failure modes than it isolates.
 
-    For each new target state:
+    Reconsider a separate state only when a target has a substantial,
+    independently operated infrastructure lifecycle. A future split must still
+    be a dedicated migration with state backups, an address manifest, explicit
+    approval, and no resource recreation.
 
-    - Use the same GCS bucket.
-    - Use a dedicated prefix.
-    - Keep client-side encryption deferred consistently across all state roots.
-    - Use distinct GitHub concurrency groups.
-    - Keep the same provider versions until the transfer is complete.
+26. **[Deferred] Build a state transfer manifest only if a real split is approved.**
 
-    If client-side encryption is resumed later, introduce it as a separate reviewed migration after the state split is stable.
+    Do not maintain a speculative transfer manifest. Build it from live state
+    immediately before an approved migration so addresses and provider import
+    behavior are current.
 
-26. **Build an address-by-address state transfer manifest.**
+27. **[Deferred] Transfer importable resources only during an approved state split.**
 
-    Each entry must contain:
+    Use imports or exact state removal between roots; `moved` blocks apply only
+    within one state. Freeze applies and retain both state backups until source
+    and destination plans converge.
 
-    ```text
-    source address
-    destination address
-    remote object ID
-    provider
-    target repository
-    import supported
-    secret returned only at creation
-    planned transfer method
-    rollback method
-    ```
+28. **[Deferred] Rotate secret-on-create resources only when ownership moves.**
 
-    Classify every resource:
-
-    - Importable stable resource: bucket, DNS record, repository, OIDC client where supported.
-    - Secret-on-create resource: B2 key, Resend key, temporary auth token.
-    - Generated local material: random passwords, TLS keys, age keys.
-    - Generated repository file: stop managing rather than import.
-    - Shared account-level resource: remain in core.
-
-27. **Transfer importable resources without recreation.**
-
-    Per target maintenance window:
-
-    1. Freeze both source and destination applies.
-    2. Back up both states securely.
-    3. Add destination configuration and import blocks.
-    4. Preview imports without applying.
-    5. Record all remote object IDs.
-    6. Remove exact source bindings using a reviewed `removed` block or exact `tofu state rm`.
-    7. Do not destroy the remote object.
-    8. Immediately apply the destination import plan.
-    9. Run a source plan and require no destroy/create.
-    10. Run a destination plan and require no change.
-    11. Resume applies only after both pass.
-
-    Use `moved` blocks for address changes within one state. They cannot transfer ownership between two active backends. OpenTofu recommends import or explicit state removal for moving an object between configurations. [OpenTofu moving resources](https://opentofu.org/docs/cli/state/move/) [OpenTofu imports](https://opentofu.org/docs/language/import/)
-
-28. **Rotate secret-on-create resources instead of moving opaque state.**
-
-    For B2, Resend, and similar keys:
-
-    1. Create a new target-owned credential.
-    2. Store it under the stable 1Password field.
-    3. Deploy the application with the new credential.
-    4. Verify application health.
-    5. Revoke the old credential.
-    6. Remove the old resource from core.
-    7. Confirm the old key no longer authenticates.
-
-    This is safer than copying secret-bearing state fragments or relying on incomplete import behavior.
+    B2, Resend, Tailscale, and generated credentials stay in core. If a future
+    state split moves their ownership, rotate them through 1Password and verify
+    the consumer before revoking the old value.
 
 29. **Remove the current overengineered machinery only after all cutovers.**
 
-    Expected removals from the core repository:
+    Status: complete for the current scope. Removed:
 
     - `modules/github_file_encrypted`
-    - Generated GitHub repository file resources
-    - Generated deploy-request hash machinery
-    - Generated workflow templates
-    - Shared SOPS/age deployment encryption where 1Password references replace it
-    - Stateful `modules/onepassword`
-    - The OnePassword REST provider alias
-    - Python decrypt/select scripts no longer needed by target repos
-    - Debug render paths that exist solely for generated repositories
-    - Targeted steady-state apply tasks such as `apply-services` and `apply-servers`
+    - Generated repository files and workflow templates.
+    - Obsolete render, decrypt, and selection helpers.
+    - The OnePassword REST alias and full-item state reads.
+    - Targeted steady-state plan/apply tasks.
 
-    Keep only:
+    Retain:
 
-    - Root-independent validation.
-    - Shared infrastructure.
-    - Stable model logic still used by core.
-    - Provider-specific functionality with a real current consumer.
-    - Target-local code in its owning repository.
+    - Config publication and workflow dispatch when projected config changes.
+    - Automatic target deletion guards.
+    - SOPS/age where edge deployment artifacts still require encryption.
+    - The ownership-aware Connect reconciler.
 
 30. **Use explicit validation gates after every phase.**
 
@@ -994,7 +944,7 @@ an accepted temporary limitation.
     - Exact `snake_case` field names.
     - Duplicate items fail.
     - Existing values are preserved.
-    - No application-owned generated value remains in OpenTofu state.
+    - Generated and provider-issued secrets remain only in restricted state and 1Password.
     - Full item response bodies are absent from new state.
 
     Target-repository gate:
@@ -1006,7 +956,7 @@ an accepted temporary limitation.
     - No remote Docker access exists.
     - Core no longer proposes changes to target files.
 
-    State-split gate:
+    Future state-split gate, applicable only after a split is explicitly approved:
 
     - Every transferred object appears in exactly one state.
     - Neither source nor destination proposes recreation.
@@ -1020,7 +970,7 @@ an accepted temporary limitation.
     - 1Password migration: retain old fields as aliases until consumer validation completes.
     - Repository cutover: keep the old deploy workflow disabled but recoverable for one release cycle.
     - Target deployment: roll back to the previous Git commit, OCI digest, or Fly/TrueNAS deployment revision.
-    - State split: retain access-controlled source and destination state backups until both roots pass no-change plans.
+    - Future state split: retain access-controlled source and destination state backups until both roots pass no-change plans.
     - Credential rotation: retain the old credential until the new application health check passes.
 
 32. **Defer optional improvements until the core plan is complete.**
@@ -1030,7 +980,7 @@ an accepted temporary limitation.
     - Copy selected GCS generations to R2 under generation-specific keys if another backup tier becomes worthwhile.
     - Make target template repositories public only after their visibility audit; keep deployment packages private.
     - Replace GitHub with Forgejo/Woodpecker only if GitHub becomes an actual constraint.
-    - Use separate GCS buckets or encryption keys per repository if stronger state isolation becomes necessary.
+    - Split state only if a target develops a substantial independent infrastructure lifecycle.
     - Replace the remaining target-specific Python only when a simpler supported platform tool exists.
 
     None of these belongs in the HCP-to-GCS migration.
@@ -1043,15 +993,19 @@ an accepted temporary limitation.
     - GCS locking and versioning are tested; the restore drill remains outside the current completion criteria.
     - Client-side state and plan encryption remains explicitly outside the current completion criteria.
     - Source repository visibility matches the verified exposure policy and OCI packages remain private.
-    - Target repositories own their service source, templates, deployment, and service-scoped resources.
+    - Target repositories own their service source, templates, and deployment.
+    - Core owns provider resources and the single 1Password reconciliation boundary.
     - Core no longer generates target repository contents.
-    - Application-owned secrets originate in and remain in 1Password.
-    - Provider-issued credentials are mirrored to 1Password through a controlled post-apply path.
+    - Generated and provider-issued credentials are reconciled into 1Password during apply.
     - 1Password titles, sections, fields, URLs, and tags follow one stable schema.
     - No cross-network Docker access exists.
     - Homepage, Gatus, and Traefik still receive the data they need.
     - B2, Resend, OIDC, Fly, TrueNAS, Docker/doco-cd, and other live features remain supported.
-    - Every state root produces a reviewed no-change plan.
+    - The core state produces a reviewed no-change plan.
     - `mise run check` and `mise run prek` pass in every affected repository.
 
-The Terrashark failure-mode review drives the strict separation between backend migration, secret migration, repository ownership, and cross-state transfer. Client-side encryption remains documented but deferred until explicitly resumed.
+The Terrashark failure-mode review keeps backend migration, secret migration,
+and repository ownership changes separate. It also rejects speculative state
+splitting when the additional roots would increase complexity and secret
+exposure more than they reduce blast radius. Client-side encryption remains
+documented but deferred until explicitly resumed.
