@@ -54,34 +54,26 @@ variable "oci_tenancy_ocid" {
 }
 
 variable "onepassword_connect_token" {
-  default     = null
-  description = "1Password Connect API token. Required when onepassword.enabled is true."
-  nullable    = true
+  description = "1Password Connect API token"
   sensitive   = true
   type        = string
 
   validation {
-    condition     = var.onepassword_connect_token == null || length(nonsensitive(var.onepassword_connect_token)) > 0
-    error_message = "1Password Connect API token must be null or non-empty."
+    condition     = length(nonsensitive(var.onepassword_connect_token)) > 0
+    error_message = "1Password Connect API token must be non-empty."
   }
 }
 
 variable "onepassword_connect_url" {
-  default     = null
-  description = "1Password Connect API base URL. Required when onepassword.enabled is true."
-  nullable    = true
-  sensitive   = false
+  description = "1Password Connect API base URL"
   type        = string
 
   validation {
-    error_message = "1Password Connect URL must be null or start with http:// or https:// and not end with a slash."
+    error_message = "1Password Connect URL must start with http:// or https:// and not end with a slash."
 
     condition = (
-      var.onepassword_connect_url == null ||
-      (
-        can(regex("^https?://[^/]+", var.onepassword_connect_url)) &&
-        !endswith(var.onepassword_connect_url, "/")
-      )
+      can(regex("^https?://[^/]+", var.onepassword_connect_url)) &&
+      !endswith(var.onepassword_connect_url, "/")
     )
   }
 }

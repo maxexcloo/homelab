@@ -25,25 +25,10 @@ variable "integrations" {
       packages_token    = string
     })
 
-    onepassword = object({
-      connect_url     = string
-      enabled         = bool
-      ready           = bool
-      request_headers = map(string)
-    })
-
     oci = object({
       always_free  = bool
       tenancy_ocid = string
     })
   })
 
-  validation {
-    error_message = "1Password Connect URL and token are required when onepassword.enabled is true."
-
-    condition = (
-      !var.integrations.onepassword.enabled ||
-      nonsensitive(var.integrations.onepassword.ready)
-    )
-  }
 }

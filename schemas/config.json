@@ -296,22 +296,10 @@
     },
     "onepassword": {
       "additionalProperties": false,
-      "description": "Optional 1Password Connect integration for preserving and storing generated credentials.",
-      "required": ["enabled"],
+      "description": "1Password Connect vaults used to preserve and store credentials.",
+      "required": ["vaults"],
       "type": "object",
-      "if": {
-        "required": ["enabled"],
-        "properties": {
-          "enabled": {
-            "const": true
-          }
-        }
-      },
       "properties": {
-        "enabled": {
-          "description": "Whether OpenTofu reads and writes credentials through 1Password Connect.",
-          "type": "boolean"
-        },
         "vaults": {
           "additionalProperties": false,
           "description": "1Password vaults that receive generated credentials, keyed by resource kind. Each entry holds the vault UUID and the tags applied to items written into it.",
@@ -370,9 +358,6 @@
             }
           }
         }
-      },
-      "then": {
-        "required": ["vaults"]
       }
     },
     "organization": {

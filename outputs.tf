@@ -16,18 +16,6 @@ output "bootstrap_truenas_custom_apps" {
   value       = module.servers.bootstrap.truenas_custom_apps
 }
 
-output "onepassword_reconciliation" {
-  description = "Desired 1Password item state for external reconciliation"
-  sensitive   = true
-
-  value = {
-    vaults = {
-      servers  = module.servers.onepassword
-      services = module.services.onepassword
-    }
-  }
-}
-
 output "servers" {
   description = "Server configurations"
   sensitive   = true

@@ -28,7 +28,7 @@ locals {
           {
             credentials = {
               for credential_name in keys(local.services[service_key].runtime.credentials) :
-              credential_name => "op://${local.defaults.onepassword.vaults.services.id}/${module.onepassword.item_ids[service_key]}/${credential_name}"
+              credential_name => "op://${local.defaults.onepassword.vaults.services.id}/${local.onepassword_service_item_ids[service_key]}/${credential_name}"
             }
           },
         )
@@ -157,7 +157,7 @@ locals {
         for container, labels in local._services_render_traefik_routing_labels[service_key] : container => {
           for label_key, label_value in labels : label_key => (
             endswith(label_key, ".basicauth.users")
-            ? "op://${local.defaults.onepassword.vaults.services.id}/${module.onepassword.item_ids[service_key]}/monitoring_password_hash"
+            ? "op://${local.defaults.onepassword.vaults.services.id}/${local.onepassword_service_item_ids[service_key]}/monitoring_password_hash"
             : label_value
           )
         }

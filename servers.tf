@@ -17,13 +17,6 @@ module "servers" {
       packages_token    = var.homelab_packages_token
     }
 
-    onepassword = {
-      connect_url     = var.onepassword_connect_url
-      enabled         = local.defaults.onepassword.enabled
-      ready           = local._onepassword_integration_ready
-      request_headers = local.onepassword_connect_request_headers
-    }
-
     oci = {
       always_free  = var.oci_always_free
       tenancy_ocid = var.oci_tenancy_ocid

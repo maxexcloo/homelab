@@ -1,34 +1,7 @@
 locals {
-  _duplicate_items = [
-    for item_key, items in local._search_results : item_key
-    if length(items) > 1
-  ]
-
-  _existing_ids = {
-    for item_key, items in local._search_results :
-    item_key => length(items) == 1 ? one(items).id : null
-  }
-
-  _existing_items = {
-    for item_key, item_id in local._existing_ids : item_key => item_id
-    if item_id != null
-  }
-
-  _missing_items = [
-    for item_key, item_id in local._existing_ids : item_key
-    if item_id == null
-  ]
-
-  _search_results = {
-    for item_key, search in data.http.search :
-    item_key => jsondecode(search.response_body)
-  }
-
-  existing_fields = {
-    for item_key, item in data.http.item : item_key => {
-      for field in jsondecode(item.response_body).fields :
-      field.id => try(field.value, "")
-      if try(field.value != null && field.value != "", false)
-    }
-  }
+  _duplicate_items  = local._inventory != null ? jsondecode(local._inventory.duplicates) : []
+  _inventory        = length(data.external.inventory) > 0 ? one(data.external.inventory).result : null
+  _missing_items    = local._inventory != null ? jsondecode(local._inventory.missing) : []
+  existing_fields   = local._inventory != null ? jsondecode(local._inventory.existing_fields) : {}
+  onepassword_items = local._inventory != null ? jsondecode(local._inventory.item_ids) : {}
 }

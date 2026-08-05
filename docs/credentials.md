@@ -1,26 +1,17 @@
 # Credentials
 
-Credentials are stored in 1Password through 1Password Connect. Set
-`onepassword.enabled` in `data/config.yaml` to select the credential source:
-
-- `true` reads existing values from 1Password and uses generated values as
-  fallbacks for OpenTofu consumers.
-- `false` skips all 1Password API calls and item writes. Generated credentials
-  remain in sensitive OpenTofu state; target deployments cannot resolve their
-  credential references until 1Password is enabled.
+Credentials are stored in 1Password through 1Password Connect. Connect is a
+required dependency for planning and applying this repository.
 
 - Servers use the vault configured at `onepassword.vaults.servers.id`.
 - Services use the vault configured at `onepassword.vaults.services.id`.
 
 Provider access comes from `TF_VAR_onepassword_connect_url` and
-`TF_VAR_onepassword_connect_token`. Both are required only when the integration
-is enabled.
+`TF_VAR_onepassword_connect_token`.
 
-OpenTofu looks up items by exact title and requires every configured item to
-exist. `mise run check-onepassword` compares the desired inventory without
-writing. `mise run sync-onepassword` fills missing values and metadata while
-preserving non-empty and unknown fields. Both stream the sensitive manifest
-directly from state and print no values.
+OpenTofu looks up items by their stable key suffix. Apply automatically creates
+missing items, adds new fields, updates owned values and URLs, and then resolves
+the resulting item IDs for deployment references.
 
 Pocket ID follows the same opt-in pattern. Set `pocketid.enabled` in
 `data/config.yaml`; `TF_VAR_pocketid_url` and `TF_VAR_pocketid_api_token` are
@@ -33,21 +24,27 @@ Planning fails while Pocket ID is disabled and any service still enables
 
 Manually supplied credential fields are declared under `credentials.fields`.
 The reconciler creates missing fields on the matching 1Password item. OpenTofu
-temporarily reads required values back as `runtime.credentials.<name>`.
+reads only the declared values it consumes as `runtime.credentials.<name>`;
+complete item responses are not stored in state.
 
 The 1Password item is built from the complete modeled credential map. Declared
 fields, typed generators, and feature-created provider values are all surfaced;
 there is no service-specific allowlist.
 
 The server and service modules shape their domain-specific item payloads.
-`modules/onepassword` owns exact-title search and reads; the external reconciler
-owns writes. `modules/credentials` owns generated scalar values, X.509 material,
-and bcrypt hashes.
+`modules/onepassword` owns lookup and selected reads; the Connect reconciler
+owns whole-item merges. `modules/credentials` owns generated scalar values,
+X.509 material, and bcrypt hashes.
 
 Declared fields default to `credentials.rw` from `data/defaults.yaml`.
 Read-write fields are created in 1Password even when empty, so values can be
 entered manually later. Read-only fields are written from provider-generated
 runtime values.
+
+Each item records its OpenTofu-owned fields, placeholder fields, and URLs in a
+`Homelab` metadata section. Removing an owned field or URL deletes it. Removing
+an empty placeholder deletes it, while a populated placeholder and every
+unknown field remain untouched.
 
 1Password field IDs and labels use the same `snake_case` name. Ownership mode
 stays in repository configuration. Deployment configs publish the same field
@@ -65,15 +62,14 @@ credentials:
       type: hex
 ```
 
-Scalar generators let the reconciler create an initial value directly in a
-read-write 1Password field:
+Scalar generators create an initial value in a read-write 1Password field:
 
 - `hex` and `base64` lengths are byte counts.
 - `alphanumeric` lengths are character counts.
 - Generated password-style values use `special = false`.
 
-Generation happens only when both the desired and stored value are empty.
-Existing non-empty 1Password values always win, preserving later manual changes.
+Existing non-empty 1Password values win when constructing runtime state. A
+missing value is generated once and written during reconciliation.
 
 The `x509` generator creates an Ed25519 private key and self-signed certificate:
 

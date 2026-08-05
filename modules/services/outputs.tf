@@ -12,23 +12,6 @@ output "model" {
   })
 }
 
-output "onepassword" {
-  description = "Desired 1Password item state"
-  sensitive   = true
-
-  value = {
-    enabled  = var.integrations.onepassword.enabled
-    vault_id = local.defaults.onepassword.vaults.services.id
-
-    items = {
-      for service_key, payload in local._onepassword_service_item_payloads : service_key => {
-        payload = payload
-        recipes = local.services_model[service_key].credentials.generated
-      }
-    }
-  }
-}
-
 output "configs" {
   description = "Non-secret deployment configs keyed by repository"
 
@@ -42,7 +25,7 @@ output "configs" {
 
       deployments = [
         for service_key, service in local._docker_services : {
-          item    = try(module.onepassword.item_ids[service_key], null)
+          item    = try(local.onepassword_service_item_ids[service_key], null)
           key     = service_key
           service = service.identity.service
           target  = service.target
@@ -56,7 +39,7 @@ output "configs" {
 
           imports = {
             for alias, imported_service_key in local.services_model_imports[service_key] : alias => {
-              item = try(module.onepassword.item_ids[imported_service_key], null)
+              item = try(local.onepassword_service_item_ids[imported_service_key], null)
               key  = imported_service_key
             }
           }
@@ -119,7 +102,7 @@ output "configs" {
           cpus          = service.fly.cpus
           force_https   = alltrue([for route in service.routing.routes : route.https])
           image         = service.fly.image
-          item          = try(module.onepassword.item_ids[service_key], null)
+          item          = try(local.onepassword_service_item_ids[service_key], null)
           key           = service_key
           machine_count = service.fly.machine_count
           memory_mb     = service.fly.memory_mb
@@ -136,7 +119,7 @@ output "configs" {
 
       services = [
         for service_key in sort(keys(local.services_model)) : {
-          item   = try(module.onepassword.item_ids[service_key], null)
+          item   = try(local.onepassword_service_item_ids[service_key], null)
           key    = service_key
           target = local.services_model[service_key].target
           title  = local.services_model[service_key].identity.title

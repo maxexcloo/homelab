@@ -1,18 +1,7 @@
-variable "connect_url" {
-  description = "1Password Connect API base URL"
-  nullable    = true
-  type        = string
-}
-
-variable "enabled" {
-  description = "Whether to read 1Password items"
-  type        = bool
-}
-
-variable "request_headers" {
-  description = "1Password Connect request headers"
-  sensitive   = true
-  type        = map(string)
+variable "field_names" {
+  default     = {}
+  description = "Field IDs to return for each item"
+  type        = map(set(string))
 }
 
 variable "titles" {

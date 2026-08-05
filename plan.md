@@ -30,6 +30,13 @@ an accepted temporary limitation.
 - Sort mise tools and tasks, Prek hooks, and Renovate rules alphabetically
   within their semantic groups.
 - Use `.yaml`, never `.yml`, across homelab repositories.
+- Treat 1Password Connect as required. OpenTofu automatically creates and
+  reconciles server and service items during apply.
+- Keep full 1Password item responses out of OpenTofu state. Persist only fields
+  that OpenTofu genuinely consumes.
+- Track field and URL ownership in each item. Delete removed OpenTofu-owned
+  values and abandoned empty placeholders, while preserving populated manual
+  placeholders and unknown fields.
 
 1. **Lock the architectural decisions before changing code.**
 
@@ -527,16 +534,17 @@ an accepted temporary limitation.
     Preserve the existing category, tags, and URLs unless a consumer requires a
     deliberate change.
 
-17. **Move 1Password reconciliation outside OpenTofu.**
+17. **Reconcile 1Password through an OpenTofu-owned Connect boundary.**
 
-    Status: the external reconciler is implemented and verified read-only
-    against the complete current inventory. OpenTofu item writers have been
-    detached non-destructively. Full item reads remain temporarily for bootstrap
-    hashes and other consumers that still need existing values. Scalar
-    application-owned recipes are generated in reconciler memory when their
-    1Password field is missing or empty.
+    Status: implemented, applied, and verified with a no-change follow-up plan.
+    Connect is required. OpenTofu invokes one ownership-aware reconciler when a
+    server or service manifest changes, creates missing items during the same
+    apply, and resolves only missing item IDs after reconciliation. Existing IDs
+    remain known so unrelated deployment workflows are not retriggered.
 
-    The current `modules/onepassword` reads complete item responses through `data.http.item`. Those response bodies can persist credential values in state.
+    Full item responses stay in reconciler memory. OpenTofu persists only the
+    selected manual fields it genuinely consumes, provider-owned values already
+    present in state, item IDs, and manifest hashes.
 
     The `op` CLI does not use Connect as its item CRUD transport. Keep Connect
     as the reconciliation writer and multi-vault API. A target deployment may
@@ -549,21 +557,21 @@ an accepted temporary limitation.
     it must not be used for item round-trips:
 
     1. Select the vault by exact configured ID or name.
-    2. Search for the exact current item title.
+    2. Search by the stable item-key suffix and update the display title.
     3. Fail if more than one item matches.
     4. Retrieve the existing item JSON into process memory.
     5. Validate sections, field IDs, labels, and URL labels.
-    6. Generate only missing application-owned secrets.
-    7. Preserve every existing nonempty value.
-    8. Never rotate without an explicit rotation flag.
-    9. Update native URLs and managed metadata.
-    10. Warn about unknown fields; do not delete them automatically.
-    11. Write through the Connect item API.
-    12. Return only item IDs and `op://` references, never values.
+    6. Create missing items and empty manual placeholders.
+    7. Update provider-backed and generated values owned by OpenTofu.
+    8. Preserve populated manual placeholders and unknown fields.
+    9. Delete removed OpenTofu-owned fields and URLs.
+    10. Delete removed placeholders only while they remain empty.
+    11. Write ownership metadata and native URLs through the Connect item API.
+    12. Return only selected consumed fields, item IDs, and references.
 
     Keep this as one small purpose-built command, not a general framework. Pass
-    JSON through stdin/stdout so secrets do not appear in process arguments or
-    logs.
+    reconciliation JSON through a sensitive environment value and inventory
+    queries through stdin so secrets do not appear in process arguments or logs.
 
 18. **Use two explicit credential flows.**
 

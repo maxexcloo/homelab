@@ -10,13 +10,6 @@ module "services" {
       zone_ids   = local.cloudflare_zone_ids
     }
 
-    onepassword = {
-      connect_url     = var.onepassword_connect_url
-      enabled         = local.defaults.onepassword.enabled
-      ready           = local._onepassword_integration_ready
-      request_headers = local.onepassword_connect_request_headers
-    }
-
     pocketid = {
       enabled = local.defaults.pocketid.enabled
       ready   = local._pocketid_integration_ready

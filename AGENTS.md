@@ -149,6 +149,14 @@ belong under `runtime.addresses`.
 - Publish non-secret deployment context through repository `CONFIG` variables.
 - Keep target templates, workflows, and deployment logic in their target repository.
 
+## 1Password
+
+- Treat 1Password Connect as required.
+- Let OpenTofu own item structure and provider-backed values while preserving
+  manually populated placeholder values.
+- Reconcile through the ownership-aware Connect boundary. Never place full item
+  responses or unused secrets in OpenTofu state.
+
 ## TrueNAS Services
 
 Read and follow `docs/truenas-services.md` before changing a TrueNAS catalog

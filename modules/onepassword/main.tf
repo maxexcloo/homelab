@@ -1,13 +1,16 @@
-data "http" "search" {
-  for_each = var.enabled ? var.titles : {}
+data "external" "inventory" {
+  count = length(var.titles) > 0 ? 1 : 0
 
-  request_headers = var.request_headers
-  url             = "${var.connect_url}/v1/vaults/${var.vault_id}/items?filter=${urlencode("title eq \"${each.value}\"")}"
-}
+  program = [
+    "uv",
+    "run",
+    "${path.root}/scripts/reconcile_onepassword.py",
+    "--inventory",
+  ]
 
-data "http" "item" {
-  for_each = var.enabled ? local._existing_items : {}
-
-  request_headers = var.request_headers
-  url             = "${var.connect_url}/v1/vaults/${var.vault_id}/items/${each.value}"
+  query = {
+    field_names = jsonencode(var.field_names)
+    titles      = jsonencode(var.titles)
+    vault_id    = var.vault_id
+  }
 }

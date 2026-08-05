@@ -1,5 +1,5 @@
 [env]
-# 1Password Connect (required only when onepassword.enabled is true)
+# 1Password Connect
 TF_VAR_onepassword_connect_token = "REPLACE_ME"
 TF_VAR_onepassword_connect_url = "REPLACE_ME"
 

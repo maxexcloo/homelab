@@ -1,20 +1,9 @@
 locals {
-  _onepassword_integration_ready = (
-    local.defaults.onepassword.enabled &&
-    nonsensitive(var.onepassword_connect_token != null) &&
-    var.onepassword_connect_url != null
-  )
-
   _pocketid_integration_ready = (
     local.defaults.pocketid.enabled &&
     nonsensitive(var.pocketid_api_token != null) &&
     var.pocketid_url != null
   )
-
-  onepassword_connect_request_headers = local._onepassword_integration_ready ? {
-    "Authorization" = "Bearer ${var.onepassword_connect_token}"
-    "Content-Type"  = "application/json"
-  } : {}
 }
 
 provider "github" {

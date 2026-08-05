@@ -1,5 +1,4 @@
 locals {
-  _onepassword_integration_ready              = nonsensitive(var.integrations.onepassword.ready)
   _pocketid_integration_ready                 = nonsensitive(var.integrations.pocketid.ready)
   defaults                                    = var.defaults
   dns_input                                   = var.dns

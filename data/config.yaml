@@ -57,7 +57,6 @@ networking:
       - fd7a:115c:a1e0::/48
       - fdd0::/48
 onepassword:
-  enabled: true
   vaults:
     servers:
       display_name: Servers

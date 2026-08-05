@@ -7,8 +7,7 @@ locals {
     )
   }
 
-  _onepassword_integration_ready = nonsensitive(var.integrations.onepassword.ready)
-  defaults                       = var.defaults
+  defaults = var.defaults
 
   incus_servers = {
     for server_key, server in local.servers_model : server_key => server

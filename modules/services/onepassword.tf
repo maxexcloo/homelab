@@ -15,6 +15,13 @@ locals {
     })
   }
 
+  _onepassword_service_field_names = {
+    for service_key, service in local._onepassword_service_items : service_key => toset([
+      for field_name, field in service.credentials.fields : field_name
+      if field.mode == "rw"
+    ])
+  }
+
   _onepassword_service_host_urls = {
     for service_key, service in local.services : service_key => [
       for url_key in ["external", "internal"] : {
@@ -55,7 +62,11 @@ locals {
               {
                 id    = field_name
                 label = field_name
-                value = try(tostring(service.runtime.credentials[field_name]), "")
+
+                value = (
+                  field_config.mode == "rw" &&
+                  !can(service.credentials.generated[field_name])
+                ) ? "" : try(tostring(service.runtime.credentials[field_name]), "")
               },
               field_config.purpose != null ? {
                 purpose = field_config.purpose
@@ -138,20 +149,91 @@ locals {
     )
   }
 
+  _onepassword_service_managed_fields = {
+    for service_key, service in local.services : service_key => sort(tolist(setintersection(
+      toset(keys(local._onepassword_service_item_fields[service_key])),
+      toset(concat(
+        service.identity.username != "" ? ["username"] : [],
+        keys(service.runtime.attributes),
+        [
+          for field_name, field in service.credentials.fields : field_name
+          if field.mode == "ro" || can(service.credentials.generated[field_name])
+        ],
+        service.features.oidc_forward_auth ? [
+          "monitoring_basic",
+          "monitoring_password_hash",
+        ] : [],
+      )),
+    )))
+    if can(local._onepassword_service_item_fields[service_key])
+  }
+
+  _onepassword_service_missing_titles = {
+    for service_key in module.onepassword.missing_items :
+    service_key => local._onepassword_service_titles[service_key]
+  }
+
+  _onepassword_service_placeholder_fields = {
+    for service_key in keys(local._onepassword_service_item_fields) : service_key => sort(tolist(setsubtract(
+      toset(keys(local._onepassword_service_item_fields[service_key])),
+      toset(local._onepassword_service_managed_fields[service_key]),
+    )))
+  }
+
   _onepassword_service_titles = {
     for service_key, service in local._onepassword_service_items :
     service_key => "${service.identity.title} (${service_key})"
   }
 
   onepassword_service_existing_fields = module.onepassword.existing_fields
+
+  onepassword_service_item_ids = {
+    for service_key in keys(local._onepassword_service_titles) : service_key => (
+      can(module.onepassword.item_ids[service_key])
+      ? module.onepassword.item_ids[service_key]
+      : module.onepassword_created.item_ids[service_key]
+    )
+  }
+
+  onepassword_service_manifest = {
+    vault_id = local.defaults.onepassword.vaults.services.id
+
+    items = {
+      for service_key, payload in local._onepassword_service_item_payloads : service_key => {
+        managed_fields     = local._onepassword_service_managed_fields[service_key]
+        managed_urls       = [for url in payload.urls : url.label]
+        payload            = payload
+        placeholder_fields = local._onepassword_service_placeholder_fields[service_key]
+      }
+    }
+  }
 }
 
 module "onepassword" {
   source = "../onepassword"
 
-  connect_url     = var.integrations.onepassword.connect_url
-  enabled         = local._onepassword_integration_ready
-  request_headers = var.integrations.onepassword.request_headers
-  titles          = local._onepassword_service_titles
-  vault_id        = try(local.defaults.onepassword.vaults.services.id, "disabled")
+  field_names = local._onepassword_service_field_names
+  titles      = local._onepassword_service_titles
+  vault_id    = try(local.defaults.onepassword.vaults.services.id, "disabled")
+}
+
+resource "terraform_data" "onepassword" {
+  triggers_replace = [nonsensitive(sha256(jsonencode(local.onepassword_service_manifest)))]
+
+  provisioner "local-exec" {
+    command = "uv run ${path.root}/scripts/reconcile_onepassword.py --write"
+
+    environment = {
+      ONEPASSWORD_MANIFEST = jsonencode({ vaults = { services = local.onepassword_service_manifest } })
+    }
+  }
+}
+
+module "onepassword_created" {
+  source = "../onepassword"
+
+  titles   = local._onepassword_service_missing_titles
+  vault_id = try(local.defaults.onepassword.vaults.services.id, "disabled")
+
+  depends_on = [terraform_data.onepassword]
 }

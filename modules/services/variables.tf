@@ -19,28 +19,12 @@ variable "integrations" {
       zone_ids   = map(string)
     })
 
-    onepassword = object({
-      connect_url     = string
-      enabled         = bool
-      ready           = bool
-      request_headers = map(string)
-    })
-
     pocketid = object({
       enabled = bool
       ready   = bool
       url     = string
     })
   })
-
-  validation {
-    error_message = "1Password Connect URL and token are required when onepassword.enabled is true."
-
-    condition = (
-      !var.integrations.onepassword.enabled ||
-      nonsensitive(var.integrations.onepassword.ready)
-    )
-  }
 
   validation {
     error_message = "Pocket ID URL and API token are required when pocketid.enabled is true."

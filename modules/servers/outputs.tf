@@ -13,7 +13,7 @@ output "infrastructure" {
   description = "Server infrastructure values consumed outside the module"
 
   value = {
-    item_ids = module.onepassword.item_ids
+    item_ids = local.onepassword_server_item_ids
 
     age_public_keys = {
       for server_key, key in age_secret_key.server :
@@ -43,23 +43,6 @@ output "model" {
     servers          = local.servers_model
     x509_credentials = local.servers_model_x509_credentials
   })
-}
-
-output "onepassword" {
-  description = "Desired 1Password item state"
-  sensitive   = true
-
-  value = {
-    enabled  = var.integrations.onepassword.enabled
-    vault_id = local.defaults.onepassword.vaults.servers.id
-
-    items = {
-      for server_key, payload in local._onepassword_server_item_payloads : server_key => {
-        payload = payload
-        recipes = local.servers_model[server_key].credentials.generated
-      }
-    }
-  }
 }
 
 output "render" {
