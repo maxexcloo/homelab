@@ -6,8 +6,8 @@ actionlint = "1.7.12"
 opentofu = "1.12.5"
 prek = "0.4.12"
 prettier = "3.9.6"
-ruff = "0.16.1"
-uv = "0.12.2"
+ruff = "0.16.2"
+uv = "0.12.3"
 
 # Setup
 [tasks.init]
