@@ -70,6 +70,16 @@ locals {
     ]) : rule.zone => rule...
   }
 
+  _cloudflare_routes = {
+    for route_key, route in local.dns_model_routes : route_key => route
+    if route.expose == "cloudflare"
+  }
+
+  _cloudflare_routes_tunnel = {
+    for route_key, route in local._cloudflare_routes : route_key => route
+    if route.tunnel != null
+  }
+
   # Stable model-only service route inventory shared by Cloudflare features.
   _cloudflare_service_routes = merge([
     for service_key, service in local.services_model : {
@@ -81,6 +91,35 @@ locals {
       if route.host != null
     }
   ]...)
+
+  # Routes are only added when backed by a managed DNS record. The
+  # http_status:503 catch-all is required by Cloudflare Tunnel.
+  _cloudflare_tunnel_ingress = {
+    for server_key in keys(local.servers_model_by_feature.cloudflared) : server_key => concat(
+      [
+        for route in values(local._cloudflare_routes_tunnel) : merge(
+          {
+            hostname = route.hostname
+            service  = route.tunnel.url
+          },
+          try(route.tunnel.path, null) != null ? {
+            path = route.tunnel.path
+          } : {},
+          startswith(route.tunnel.url, "https://") ? {
+            origin_request = {
+              no_tls_verify = true
+            }
+          } : {},
+        )
+        if route.tunnel.server_key == server_key
+      ],
+      [
+        {
+          service = "http_status:503"
+        }
+      ]
+    )
+  }
 
   # Flatten service WAF rules by zone. Each zone gets one cloudflare_ruleset
   # resource managing the http_request_firewall_custom phase.
@@ -114,47 +153,6 @@ locals {
         },
       )
     ]
-  }
-}
-
-locals {
-  _cloudflare_routes = {
-    for route_key, route in local.dns_model_routes : route_key => route
-    if route.expose == "cloudflare"
-  }
-
-  _cloudflare_routes_tunnel = {
-    for route_key, route in local._cloudflare_routes : route_key => route
-    if route.tunnel != null
-  }
-
-  # Routes are only added when backed by a managed DNS record. The
-  # http_status:503 catch-all is required by Cloudflare Tunnel.
-  _cloudflare_tunnel_ingress = {
-    for server_key in keys(local.servers_model_by_feature.cloudflared) : server_key => concat(
-      [
-        for route in values(local._cloudflare_routes_tunnel) : merge(
-          {
-            hostname = route.hostname
-            service  = route.tunnel.url
-          },
-          try(route.tunnel.path, null) != null ? {
-            path = route.tunnel.path
-          } : {},
-          startswith(route.tunnel.url, "https://") ? {
-            origin_request = {
-              no_tls_verify = true
-            }
-          } : {},
-        )
-        if route.tunnel.server_key == server_key
-      ],
-      [
-        {
-          service = "http_status:503"
-        }
-      ]
-    )
   }
 
   cloudflare_zone_ids = {

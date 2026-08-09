@@ -38,9 +38,7 @@ locals {
       try(fields.password, "") != ""
     )
   }
-}
 
-locals {
   _service_credential_generators = merge(
     merge({}, [
       for service_key, service in local.services_model : {

@@ -50,25 +50,7 @@ locals {
     ]),
   )
 
-  services_config_traefik = {
-    for service_key, service in local.services_model : service_key => {
-      # Port 8000 is the webinternal Traefik entrypoint on the target server.
-      proxy_routes = {
-        for proxy_route in local._services_config_traefik_proxy_routes :
-        proxy_route.name => {
-          backend_url = proxy_route.backend_url
-          host        = proxy_route.host
-          redirect_to = proxy_route.redirect_to
-        }
-        if proxy_route.target == service.target
-      }
-    }
-    if service.identity.service == "traefik"
-  }
-}
-
-# Route and redirect labels.
-locals {
+  # Route and redirect labels.
   _services_config_traefik_redirect_labels = {
     for service_key, service in local.services_model : service_key => {
       for route in service.routing.routes : route.name => merge([
@@ -195,5 +177,21 @@ locals {
         if label_value != null
       }
     }
+  }
+
+  services_config_traefik = {
+    for service_key, service in local.services_model : service_key => {
+      # Port 8000 is the webinternal Traefik entrypoint on the target server.
+      proxy_routes = {
+        for proxy_route in local._services_config_traefik_proxy_routes :
+        proxy_route.name => {
+          backend_url = proxy_route.backend_url
+          host        = proxy_route.host
+          redirect_to = proxy_route.redirect_to
+        }
+        if proxy_route.target == service.target
+      }
+    }
+    if service.identity.service == "traefik"
   }
 }

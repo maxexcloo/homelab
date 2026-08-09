@@ -119,34 +119,6 @@ locals {
     server_key => "${server.identity.title} (${server_key})"
   }
 
-  # Selected existing values consumed by server providers or bootstrap rendering.
-  onepassword_server_existing_fields = module.server_onepassword.existing_fields
-
-  # Existing item IDs, with a post-reconciliation lookup for newly created items.
-  onepassword_server_item_ids = {
-    for server_key in keys(local._onepassword_server_titles) : server_key => (
-      can(module.server_onepassword.item_ids[server_key])
-      ? module.server_onepassword.item_ids[server_key]
-      : module.server_onepassword_created.item_ids[server_key]
-    )
-  }
-
-  onepassword_server_manifest = {
-    vault_id = local.defaults.onepassword.vaults.servers.id
-
-    items = {
-      for server_key, payload in local._onepassword_server_item_payloads : server_key => {
-        generated_fields   = local._server_onepassword_generators[server_key]
-        managed_fields     = local._onepassword_server_managed_fields[server_key]
-        managed_urls       = [for url in payload.urls : url.label]
-        payload            = payload
-        placeholder_fields = local._onepassword_server_placeholder_fields[server_key]
-      }
-    }
-  }
-}
-
-locals {
   _onepassword_service_dashboard_urls = {
     for service_key, service in local.services : service_key => values({
       for card_index, dashboard_card in local.services_resolved[service_key].dashboard :
@@ -315,6 +287,32 @@ locals {
   _onepassword_service_titles = {
     for service_key, service in local._onepassword_service_items :
     service_key => "${service.identity.title} (${service_key})"
+  }
+
+  # Selected existing values consumed by server providers or bootstrap rendering.
+  onepassword_server_existing_fields = module.server_onepassword.existing_fields
+
+  # Existing item IDs, with a post-reconciliation lookup for newly created items.
+  onepassword_server_item_ids = {
+    for server_key in keys(local._onepassword_server_titles) : server_key => (
+      can(module.server_onepassword.item_ids[server_key])
+      ? module.server_onepassword.item_ids[server_key]
+      : module.server_onepassword_created.item_ids[server_key]
+    )
+  }
+
+  onepassword_server_manifest = {
+    vault_id = local.defaults.onepassword.vaults.servers.id
+
+    items = {
+      for server_key, payload in local._onepassword_server_item_payloads : server_key => {
+        generated_fields   = local._server_onepassword_generators[server_key]
+        managed_fields     = local._onepassword_server_managed_fields[server_key]
+        managed_urls       = [for url in payload.urls : url.label]
+        payload            = payload
+        placeholder_fields = local._onepassword_server_placeholder_fields[server_key]
+      }
+    }
   }
 
   # Selected existing values consumed by root service providers.
