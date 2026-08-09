@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  generated:
+    cliproxy_api_key:
+      length: 32
+      type: hex
+    comfy_control_api_key:
+      length: 32
+      type: hex
+dashboard:
+  - name: Bifrost
+    description: LLM Gateway
+    href: https://bifrost.excloo.com
+    icon: mdi-bridge-#8b5cf6
+    siteMonitor: https://bifrost.excloo.com
+  - name: CLIProxyAPI
+    description: Subscription Proxy
+    href: https://cliproxy.excloo.com/management.html
+    icon: mdi-console-network-outline-#22c55e
+    siteMonitor: https://cliproxy.excloo.com/management.html
+  - name: Inference Control
+    description: Media Inference Controller
+    href: https://inference.excloo.com
+    icon: mdi-tune-vertical-#3b82f6
+    siteMonitor: https://inference.excloo.com
+features:
+  password: true
+identity:
+  description: AI Inference Gateway
+  group: Infrastructure
+  service: inference-control
+  title: Inference Control
+  username: admin
+routing:
+  backend_port: 28080
+  routes:
+    - id: bifrost
+      expose: internal
+      host: bifrost.excloo.com
+    - id: cliproxy
+      backend_port: 28317
+      expose: internal
+      host: cliproxy.excloo.com
+    - id: control
+      backend_port: 28081
+      expose: internal
+      host: inference.excloo.com
+targets:
+  au-truenas: {}
