@@ -42,4 +42,5 @@ See `docs/deployments.md` for platform deployment behaviour and
 ## Files
 
 Templates live in the repository that owns the target platform. This repository
-publishes only the modeled deployment context through its `CONFIG` output.
+publishes only the modeled deployment context through each target repository's
+GitHub Actions `CONFIG` variable.
