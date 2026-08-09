@@ -14,7 +14,7 @@ terraform {
 
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5.22"
+      version = "~> 5.23"
     }
 
     deepmerge = {
@@ -49,7 +49,7 @@ terraform {
 
     oci = {
       source  = "oracle/oci"
-      version = "~> 8.24"
+      version = "~> 8.26"
     }
 
     pocketid = {
