@@ -13,12 +13,10 @@ OpenTofu looks up items by their stable key suffix. Apply automatically creates
 missing items, adds new fields, updates owned values and URLs, and then resolves
 the resulting item IDs for deployment references.
 
-Pocket ID follows the same opt-in pattern. Set `pocketid.enabled` in
-`data/config.yaml`; `TF_VAR_pocketid_url` and `TF_VAR_pocketid_api_token` are
-required only while it is enabled. Disabling it skips discovery, application
-configuration, OIDC clients, and the Cloudflare Access identity provider.
-Planning fails while Pocket ID is disabled and any service still enables
-`features.oidc`.
+Pocket ID is a required dependency. `TF_VAR_pocketid_url` and
+`TF_VAR_pocketid_api_token` must be available for planning and applying this
+repository. OpenTofu always performs discovery and manages configured groups;
+service OIDC clients remain controlled by `features.oidc`.
 
 ## Fields
 

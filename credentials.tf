@@ -14,21 +14,6 @@ locals {
     local.servers_model_x509_credentials,
   )
 
-  _server_onepassword_generators = {
-    for server_key, server in local.servers_model : server_key => {
-      for credential_name, generator in server.credentials.generated :
-      credential_name => generator
-      if(
-        generator.type != "x509" &&
-        !(
-          credential_name == "password" &&
-          server.features.bootstrap &&
-          server.platform != "truenas"
-        )
-      )
-    }
-  }
-
   _server_password_overrides = {
     for server_key, fields in local.onepassword_server_existing_fields :
     server_key => fields.password
@@ -44,24 +29,39 @@ locals {
       for service_key, service in local.services_model : {
         for credential_name, generator in service.credentials.generated :
         "${service_key}-${credential_name}" => generator
-        if contains(local._service_provider_credential_names[service_key], credential_name)
+        if contains(local.service_provider_credential_names[service_key], credential_name)
       }
     ]...),
     local.services_model_x509_credentials,
   )
 
-  _service_onepassword_generators = {
+  server_onepassword_generators = {
+    for server_key, server in local.servers_model : server_key => {
+      for credential_name, generator in server.credentials.generated :
+      credential_name => generator
+      if(
+        generator.type != "x509" &&
+        !(
+          credential_name == "password" &&
+          server.features.bootstrap &&
+          server.platform != "truenas"
+        )
+      )
+    }
+  }
+
+  service_onepassword_generators = {
     for service_key, service in local.services_model : service_key => {
       for credential_name, generator in service.credentials.generated :
       credential_name => generator
       if(
         generator.type != "x509" &&
-        !contains(local._service_provider_credential_names[service_key], credential_name)
+        !contains(local.service_provider_credential_names[service_key], credential_name)
       )
     }
   }
 
-  _service_provider_credential_names = {
+  service_provider_credential_names = {
     for service_key, service in local.services_model : service_key => toset([
       for credential_name in keys(service.credentials.fields) : credential_name
       if anytrue(flatten([

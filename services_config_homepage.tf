@@ -1,4 +1,3 @@
-# Homepage deployment configuration.
 locals {
   _services_config_homepage_bookmarks = [
     {
@@ -15,6 +14,11 @@ locals {
       ]
     },
   ]
+
+  _services_config_homepage_data = try(one([
+    for service in values(local.services_config_services) : service.data
+    if service.identity.service == "homepage"
+  ]), {})
 
   _services_config_homepage_server_cards = flatten([
     for server_key, server in local.services_config_servers : [
@@ -100,8 +104,8 @@ locals {
             tab     = contains(local._services_config_homepage_sorted_server_groups, group) ? "Servers" : "Services"
           },
           contains(local._services_config_homepage_sorted_service_groups, group) ? {
-            columns = try(local.services_config_homepage_data.groups[group].columns, 2)
-            style   = try(local.services_config_homepage_data.groups[group].style, "row")
+            columns = try(local._services_config_homepage_data.groups[group].columns, 2)
+            style   = try(local._services_config_homepage_data.groups[group].style, "row")
           } : {},
         )
       }
@@ -115,8 +119,4 @@ locals {
     ]
   }
 
-  services_config_homepage_data = try(one([
-    for service in values(local.services_config_services) : service.data
-    if service.identity.service == "homepage"
-  ]), {})
 }

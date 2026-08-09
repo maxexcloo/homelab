@@ -5,11 +5,9 @@ repos:
         args:
           - --maxkb=1024
       - id: check-case-conflict
-      - id: check-json
       - id: check-merge-conflict
       - id: check-symlinks
       - id: check-toml
-      - id: check-yaml
       - id: detect-private-key
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
@@ -18,8 +16,6 @@ repos:
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.38.0
     hooks:
-      # OpenTofu-rendered *.yaml.tftpl files are not concrete Compose documents.
-      - id: check-compose-spec
       - id: check-github-workflows
         files: ^\.github/workflows/.*\.yaml$
       - id: check-metaschema

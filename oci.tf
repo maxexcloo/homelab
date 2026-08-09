@@ -102,7 +102,7 @@ resource "oci_core_default_security_list" "default" {
 
 }
 
-resource "oci_core_instance" "server" {
+resource "oci_core_instance" "vm" {
   for_each = local.oci_vms
 
   availability_domain = data.oci_identity_availability_domain.default[each.value.identity.region].name
@@ -116,7 +116,7 @@ resource "oci_core_instance" "server" {
     assign_public_ip          = each.value.platform_config.oci.assign_public_ip
     display_name              = each.key
     hostname_label            = each.value.identity.name
-    nsg_ids                   = [oci_core_network_security_group.server[each.key].id]
+    nsg_ids                   = [oci_core_network_security_group.vm[each.key].id]
     subnet_id                 = oci_core_subnet.default[each.value.identity.region].id
   }
 
@@ -150,7 +150,7 @@ resource "oci_core_internet_gateway" "default" {
   vcn_id         = oci_core_vcn.default[each.value].id
 }
 
-resource "oci_core_network_security_group" "server" {
+resource "oci_core_network_security_group" "vm" {
   for_each = local.oci_vms
 
   compartment_id = var.oci_tenancy_ocid
@@ -158,11 +158,11 @@ resource "oci_core_network_security_group" "server" {
   vcn_id         = oci_core_vcn.default[each.value.identity.region].id
 }
 
-resource "oci_core_network_security_group_security_rule" "server_ingress_port" {
+resource "oci_core_network_security_group_security_rule" "vm_ingress" {
   for_each = local._oci_vms_ingress_rules
 
   direction                 = "INGRESS"
-  network_security_group_id = oci_core_network_security_group.server[each.value.vm_key].id
+  network_security_group_id = oci_core_network_security_group.vm[each.value.vm_key].id
   protocol                  = each.value.protocol_number
   source                    = each.value.source
   source_type               = "CIDR_BLOCK"

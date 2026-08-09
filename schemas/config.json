@@ -385,8 +385,8 @@
     },
     "pocketid": {
       "additionalProperties": false,
-      "description": "Optional Pocket ID integration for managing groups and OIDC clients.",
-      "required": ["default_groups", "enabled", "groups"],
+      "description": "Pocket ID integration for managing groups and OIDC clients.",
+      "required": ["default_groups", "groups"],
       "type": "object",
       "properties": {
         "default_groups": {
@@ -398,10 +398,6 @@
             "pattern": "^[a-z][a-z0-9_]*$",
             "type": "string"
           }
-        },
-        "enabled": {
-          "description": "Whether OpenTofu manages Pocket ID application settings, groups, and OIDC clients.",
-          "type": "boolean"
         },
         "groups": {
           "description": "Pocket ID groups keyed by stable technical name.",

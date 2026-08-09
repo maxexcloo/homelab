@@ -21,7 +21,7 @@ output "x509" {
   sensitive   = true
 
   value = {
-    for credential_key in keys(local._generated_x509) : credential_key => {
+    for credential_key in keys(local.generated_x509) : credential_key => {
       certificate = tls_self_signed_cert.generated[credential_key].cert_pem
       private_key = tls_private_key.generated[credential_key].private_key_pem
     }

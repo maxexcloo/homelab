@@ -7,7 +7,7 @@ locals {
     )
   ]))
 
-  # Credential field shape for each service. Runtime values are added in runtime.tf.
+  # Credential field shape for each service. Runtime values are added in services_runtime.tf.
   _services_model_credentials = {
     for service_key, service in local.services_input_targets : service_key => {
       generated = local._services_model_generated_credentials[service_key]

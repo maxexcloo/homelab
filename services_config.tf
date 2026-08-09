@@ -1,19 +1,5 @@
 # Stage: config — target repository deployment payloads.
 locals {
-  _services_config_custom = {
-    for service_key, service in local.services_model : service_key => merge(
-      service.identity.service == "gatus" ? {
-        gatus = local.services_config_gatus
-      } : {},
-      service.identity.service == "homepage" ? {
-        homepage = local.services_config_homepage
-      } : {},
-      service.identity.service == "traefik" ? {
-        traefik = local.services_config_traefik[service_key]
-      } : {},
-    )
-  }
-
   _services_config_docker_servers = {
     for server_key, server in local.servers_model : server_key => server
     if server.features.docker
@@ -28,6 +14,20 @@ locals {
     )
   }
 
+  services_config_custom = {
+    for service_key, service in local.services_model : service_key => merge(
+      service.identity.service == "gatus" ? {
+        gatus = local.services_config_gatus
+      } : {},
+      service.identity.service == "homepage" ? {
+        homepage = local.services_config_homepage
+      } : {},
+      service.identity.service == "traefik" ? {
+        traefik = local.services_config_traefik[service_key]
+      } : {},
+    )
+  }
+
   services_configs = {
     truenas = local.services_config_truenas
 
@@ -38,14 +38,12 @@ locals {
 
       deployments = [
         for service_key, service in local._services_config_docker_services : {
-          item    = try(local.onepassword_service_item_ids[service_key], null)
-          key     = service_key
-          service = service.identity.service
-          target  = service.target
-
           attributes = local.services[service_key].runtime.attributes
-
-          custom = local._services_config_custom[service_key]
+          custom     = local.services_config_custom[service_key]
+          item       = try(local.onepassword_service_item_ids[service_key], null)
+          key        = service_key
+          service    = service.identity.service
+          target     = service.target
 
           imports = {
             for alias, imported_service_key in local.services_model_imports[service_key] : alias => {
@@ -56,7 +54,7 @@ locals {
 
           labels = {
             for label_key, label_value in try(
-              local._services_config_traefik_routing_labels[service_key][service.identity.service],
+              local.services_config_traefik_routing_labels[service_key][service.identity.service],
               {},
               ) : label_key => replace(
               label_value,
@@ -108,6 +106,7 @@ locals {
           backend_port  = service.routing.backend_port
           cpu_kind      = service.fly.cpu_kind
           cpus          = service.fly.cpus
+          custom        = local.services_config_custom[service_key]
           force_https   = alltrue([for route in service.routing.routes : route.https])
           image         = service.fly.image
           item          = try(local.onepassword_service_item_ids[service_key], null)
@@ -116,8 +115,6 @@ locals {
           memory_mb     = service.fly.memory_mb
           region        = service.fly.region
           service       = service.identity.service
-
-          custom = local._services_config_custom[service_key]
 
           certificates = [
             for route in service.routing.routes : route.host

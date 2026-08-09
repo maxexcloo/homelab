@@ -155,7 +155,7 @@ locals {
     ]
   }
 
-  cloudflare_zone_ids = {
+  _cloudflare_zone_ids = {
     for zone_name, zone in data.cloudflare_zone.all : zone_name => zone.zone_id
   }
 }
@@ -177,7 +177,7 @@ resource "cloudflare_account_token" "server_acme" {
       ]
 
       resources = jsonencode({
-        "com.cloudflare.api.account.zone.${local.cloudflare_zone_ids[local.defaults.domains.acme]}" = "*"
+        "com.cloudflare.api.account.zone.${local._cloudflare_zone_ids[local.defaults.domains.acme]}" = "*"
       })
     }
   ]
@@ -200,8 +200,8 @@ resource "cloudflare_account_token" "server_acme_legacy" {
       ]
 
       resources = jsonencode({
-        "com.cloudflare.api.account.zone.${local.cloudflare_zone_ids[local.defaults.domains.external]}" = "*"
-        "com.cloudflare.api.account.zone.${local.cloudflare_zone_ids[local.defaults.domains.internal]}" = "*"
+        "com.cloudflare.api.account.zone.${local._cloudflare_zone_ids[local.defaults.domains.external]}" = "*"
+        "com.cloudflare.api.account.zone.${local._cloudflare_zone_ids[local.defaults.domains.internal]}" = "*"
       })
     }
   ]
@@ -273,7 +273,7 @@ resource "cloudflare_ruleset" "rate_limiting" {
   kind        = "zone"
   name        = "default"
   phase       = "http_ratelimit"
-  zone_id     = local.cloudflare_zone_ids[each.key]
+  zone_id     = local._cloudflare_zone_ids[each.key]
 
   rules = [
     for rule in each.value : {
@@ -293,7 +293,7 @@ resource "cloudflare_ruleset" "waf" {
   kind        = "zone"
   name        = "default"
   phase       = "http_request_firewall_custom"
-  zone_id     = local.cloudflare_zone_ids[each.key]
+  zone_id     = local._cloudflare_zone_ids[each.key]
 
   rules = [
     for rule in local._cloudflare_waf_rules_runtime_by_zone[each.key] : {

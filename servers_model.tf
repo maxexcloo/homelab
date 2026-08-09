@@ -1,6 +1,6 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
-  # Credential field shape for each server. Runtime values are added in runtime.tf.
+  # Credential field shape for each server. Runtime values are added in servers_runtime.tf.
   _servers_model_credentials = {
     for server_key, server in local.servers_input : server_key => {
       generated = local._servers_model_generated_credentials[server_key]

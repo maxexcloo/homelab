@@ -29,15 +29,16 @@ Review the plan before applying it.
 
 ## Prerequisites
 
-- [mise](https://mise.jdx.dev/) for task management and tool installation
 - 1Password Connect server with access to the server and service
   credential vaults in `data/config.yaml`
 - Google Application Default Credentials for the GCS state backend
+- [mise](https://mise.jdx.dev/) for task management and tool installation
+- Pocket ID instance and API token
 
-Run `mise run setup` to clean generated files, create `.mise.local.toml` from
-the template, initialise OpenTofu, and install the Git hook. On first run, add
-the required credentials and run setup again. See `.mise.local.toml.default`
-for the full variable list.
+Run `mise run setup` to remove local OpenTofu data, the Ruff cache, and any
+saved `tfplan`; create `.mise.local.toml` from the template; initialise
+OpenTofu; and install the Git hook. On first run, add the required credentials
+and run setup again. See `.mise.local.toml.default` for the full variable list.
 
 Commit `.terraform.lock.hcl` when provider selections change. Keep the
 `.terraform/` directory and plan or state files local.
@@ -47,14 +48,14 @@ Commit `.terraform.lock.hcl` when provider selections change. Keep the
 ```bash
 mise run apply           # Apply infrastructure changes
 mise run check           # Format check, lint, and validate
-mise run cleanup         # Remove rendered artefacts, caches, bytecode, and saved plans
+mise run cleanup         # Remove local OpenTofu data, the Ruff cache, and the saved plan
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
 mise run init            # Initialise OpenTofu providers and backend
-mise run lint            # Validate source and default-merged YAML against JSON schemas
+mise run lint            # Lint Python and validate YAML against JSON schemas
 mise run plan            # Review infrastructure changes
 mise run prek            # Run all repository hooks
-mise run setup           # Clean, configure, initialise, and install Git hooks
-mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
+mise run setup           # Clean local data, configure, initialise, and install Git hooks
+mise run sort-check      # Check HCL assignments, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration
 ```
 

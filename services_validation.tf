@@ -87,7 +87,7 @@ locals {
   ])
 
   _services_validation_monitoring_items_missing = [
-    for service in local._services_config_gatus_monitored_services : service.key
+    for service in local.gatus_monitored_services : service.key
     if service.item == null
   ]
 
@@ -124,10 +124,6 @@ locals {
         )
       ]
     ]),
-  )
-
-  _services_validation_pocketid_required = (
-    local.defaults.pocketid.enabled ? [] : keys(local.services_model_by_feature.oidc)
   )
 
   _services_validation_proxy_no_port = flatten([
@@ -370,11 +366,6 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local._services_validation_oidc_groups_missing) == 0
       error_message = "Pocket ID group references must exist in pocketid.groups: ${join(", ", local._services_validation_oidc_groups_missing)}"
-    }
-
-    precondition {
-      condition     = length(local._services_validation_pocketid_required) == 0
-      error_message = "Pocket ID must be enabled while services use features.oidc: ${join(", ", local._services_validation_pocketid_required)}"
     }
 
     precondition {

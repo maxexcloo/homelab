@@ -1,6 +1,4 @@
 data "external" "inventory" {
-  for_each = length(var.titles) > 0 ? { default = true } : {}
-
   program = [
     "uv",
     "run",

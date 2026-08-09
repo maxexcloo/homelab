@@ -18,7 +18,7 @@ locals {
               object_storage_bucket        = module.service_object_storage.items[service_key].bucket
               object_storage_endpoint      = module.service_object_storage.items[service_key].endpoint
             } : {},
-            service.features.oidc && local._pocketid_integration_ready ? {
+            service.features.oidc ? {
               oidc_issuer_url    = var.pocketid_url
               oidc_provider_name = local.pocketid_provider_name
             } : {},
@@ -44,7 +44,7 @@ locals {
             service.features.object_storage ? {
               object_storage_secret_access_key = module.service_object_storage.items[service_key].secret_access_key
             } : {},
-            service.features.oidc && local._pocketid_integration_ready ? merge(
+            service.features.oidc ? merge(
               {
                 oidc_client_id = pocketid_client.service[service_key].id
               },

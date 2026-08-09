@@ -74,18 +74,6 @@ def find_items(summaries, item_key, title):
     ]
 
 
-def index_by(items, key, context):
-    indexed = {}
-    for item in items:
-        value = item.get(key)
-        if not value:
-            raise RuntimeError(f"{context} has an entry without {key}")
-        if value in indexed:
-            raise RuntimeError(f"{context} has duplicate {key}: {value}")
-        indexed[value] = item
-    return indexed
-
-
 def generated_value(seed, generator):
     length = generator["length"]
     generator_type = generator["type"]
@@ -115,11 +103,176 @@ def generation_recipe(generator):
     raise RuntimeError(f"unsupported 1Password generator type: {generator_type}")
 
 
-def strip_generation_directives(item):
-    for field in item.get("fields", []):
-        field.pop("generate", None)
-        field.pop("recipe", None)
-    return item
+def index_by(items, key, context):
+    indexed = {}
+    for item in items:
+        value = item.get(key)
+        if not value:
+            raise RuntimeError(f"{context} has an entry without {key}")
+        if value in indexed:
+            raise RuntimeError(f"{context} has duplicate {key}: {value}")
+        indexed[value] = item
+    return indexed
+
+
+def merge_fields(existing, desired, ownership, previous_ownership):
+    existing_fields = existing.setdefault("fields", [])
+    existing_by_id = index_by(existing_fields, "id", "1Password item fields")
+    desired_by_id = index_by(desired.get("fields", []), "id", "desired item fields")
+    current_fields = set(ownership["managed_fields"]) | set(
+        ownership["placeholder_fields"]
+    )
+    preserved = []
+
+    removed = set(previous_ownership.get("managed_fields", [])) - current_fields
+    for field_id in (
+        set(previous_ownership.get("placeholder_fields", [])) - current_fields
+    ):
+        if existing_by_id.get(field_id, {}).get("value") in (None, ""):
+            removed.add(field_id)
+        elif field_id in existing_by_id:
+            preserved.append(field_id)
+    if removed:
+        existing_fields[:] = [
+            field for field in existing_fields if field.get("id") not in removed
+        ]
+        existing_by_id = index_by(existing_fields, "id", "1Password item fields")
+
+    for field_id, desired_field in desired_by_id.items():
+        if desired_field.get("label") != field_id or not FIELD_NAME_PATTERN.fullmatch(
+            field_id
+        ):
+            raise RuntimeError(f"field ID and label must match snake_case: {field_id}")
+
+        existing_value = existing_by_id.get(field_id, {}).get("value")
+        desired_value = desired_field.get("value")
+        if field_id not in existing_by_id:
+            existing_fields.append(deepcopy(desired_field))
+            continue
+
+        existing_field = existing_by_id[field_id]
+        if field_id in ownership["managed_fields"]:
+            if desired_value not in (None, ""):
+                existing_field["value"] = desired_value
+        elif existing_value not in (None, ""):
+            if existing_value != desired_value:
+                preserved.append(field_id)
+        elif desired_value not in (None, ""):
+            existing_field["value"] = desired_value
+
+        for key in ("label", "purpose", "section", "type"):
+            if key in desired_field:
+                existing_field[key] = deepcopy(desired_field[key])
+
+    unknown = sorted(
+        set(existing_by_id)
+        - set(desired_by_id)
+        - SYSTEM_FIELD_IDS
+        - {OWNERSHIP_FIELD_ID}
+    )
+    return preserved, sorted(removed), unknown
+
+
+def merge_item(existing, item_config):
+    desired = deepcopy(item_config.get("payload", item_config))
+    ownership = ownership_config(item_config, desired)
+    previous_ownership = read_ownership(existing)
+    merged = deepcopy(existing)
+    preserved, removed_fields, unknown = merge_fields(
+        merged,
+        desired,
+        ownership,
+        previous_ownership,
+    )
+    removed_urls = merge_urls(merged, desired, ownership, previous_ownership)
+
+    merged["category"] = desired["category"]
+    merged["title"] = desired["title"]
+
+    existing_tags = merged.setdefault("tags", [])
+    existing_tags.extend(
+        tag for tag in desired.get("tags", []) if tag not in existing_tags
+    )
+    write_ownership(merged, ownership)
+    return merged, preserved, removed_fields, removed_urls, unknown
+
+
+def merge_urls(existing, desired, ownership, previous_ownership):
+    existing_urls = existing.setdefault("urls", [])
+    desired_urls = desired.get("urls", [])
+    current_urls = set(ownership["managed_urls"])
+    removed = set(previous_ownership.get("managed_urls", [])) - current_urls
+    if removed:
+        existing_urls[:] = [
+            url for url in existing_urls if url.get("label") not in removed
+        ]
+
+    existing_by_label = index_by(existing_urls, "label", "1Password item URLs")
+    for desired_url in desired_urls:
+        desired_url = deepcopy(desired_url)
+        primary = desired_url.pop("primary", None)
+        label = desired_url["label"]
+        if label in existing_by_label:
+            existing_by_label[label].update(desired_url)
+            if primary:
+                existing_by_label[label]["primary"] = True
+            else:
+                existing_by_label[label].pop("primary", None)
+        else:
+            if primary:
+                desired_url["primary"] = True
+            existing_urls.append(desired_url)
+    return sorted(removed)
+
+
+def ownership_config(item_config, desired):
+    desired_fields = {field["id"] for field in desired.get("fields", [])}
+    desired_urls = {url["label"] for url in desired.get("urls", [])}
+    managed_fields = set(item_config.get("managed_fields", []))
+    managed_urls = set(item_config.get("managed_urls", []))
+    placeholder_fields = set(item_config.get("placeholder_fields", []))
+    generated_fields = set(item_config.get("generated_fields", {}))
+
+    if managed_fields & placeholder_fields:
+        overlap = ", ".join(sorted(managed_fields & placeholder_fields))
+        raise RuntimeError(f"fields cannot be managed and placeholders: {overlap}")
+    if not generated_fields <= managed_fields:
+        extra = ", ".join(sorted(generated_fields - managed_fields))
+        raise RuntimeError(f"generated fields must be managed: {extra}")
+    if desired_fields != managed_fields | placeholder_fields:
+        missing = ", ".join(
+            sorted(desired_fields - managed_fields - placeholder_fields)
+        )
+        extra = ", ".join(sorted(managed_fields | placeholder_fields - desired_fields))
+        raise RuntimeError(
+            f"field ownership does not match desired fields (missing: {missing or '-'}; "
+            f"extra: {extra or '-'})"
+        )
+    if desired_urls != managed_urls:
+        raise RuntimeError("URL ownership does not match desired URLs")
+    return {
+        "managed_fields": sorted(managed_fields),
+        "managed_urls": sorted(managed_urls),
+        "placeholder_fields": sorted(placeholder_fields),
+        "version": 1,
+    }
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Read or reconcile 1Password Connect items."
+    )
+    parser.add_argument(
+        "--inventory",
+        action="store_true",
+        help="Return selected item IDs and fields for the OpenTofu external provider.",
+    )
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Create and update items; reconciliation is otherwise read-only.",
+    )
+    return parser.parse_args()
 
 
 def populate_generated_fields(client, path, existing, item_config):
@@ -210,232 +363,6 @@ def populate_generated_fields(client, path, existing, item_config):
     return strip_generation_directives(existing), generated
 
 
-def ownership_config(item_config, desired):
-    desired_fields = {field["id"] for field in desired.get("fields", [])}
-    desired_urls = {url["label"] for url in desired.get("urls", [])}
-    managed_fields = set(item_config.get("managed_fields", []))
-    managed_urls = set(item_config.get("managed_urls", []))
-    placeholder_fields = set(item_config.get("placeholder_fields", []))
-    generated_fields = set(item_config.get("generated_fields", {}))
-
-    if managed_fields & placeholder_fields:
-        overlap = ", ".join(sorted(managed_fields & placeholder_fields))
-        raise RuntimeError(f"fields cannot be managed and placeholders: {overlap}")
-    if not generated_fields <= managed_fields:
-        extra = ", ".join(sorted(generated_fields - managed_fields))
-        raise RuntimeError(f"generated fields must be managed: {extra}")
-    if desired_fields != managed_fields | placeholder_fields:
-        missing = ", ".join(
-            sorted(desired_fields - managed_fields - placeholder_fields)
-        )
-        extra = ", ".join(sorted(managed_fields | placeholder_fields - desired_fields))
-        raise RuntimeError(
-            f"field ownership does not match desired fields (missing: {missing or '-'}; "
-            f"extra: {extra or '-'})"
-        )
-    if desired_urls != managed_urls:
-        raise RuntimeError("URL ownership does not match desired URLs")
-    return {
-        "managed_fields": sorted(managed_fields),
-        "managed_urls": sorted(managed_urls),
-        "placeholder_fields": sorted(placeholder_fields),
-        "version": 1,
-    }
-
-
-def read_ownership(item):
-    fields = index_by(item.get("fields", []), "id", "1Password item fields")
-    field = fields.get(OWNERSHIP_FIELD_ID)
-    if field is None or field.get("value") in (None, ""):
-        return {
-            "managed_fields": [],
-            "managed_urls": [],
-            "placeholder_fields": [],
-            "version": 1,
-        }
-    try:
-        ownership = json.loads(field["value"])
-    except (json.JSONDecodeError, TypeError) as error:
-        raise RuntimeError("invalid homelab ownership metadata") from error
-    if ownership.get("version") != 1:
-        raise RuntimeError("unsupported homelab ownership metadata version")
-    return ownership
-
-
-def write_ownership(item, ownership):
-    sections = item.setdefault("sections", [])
-    section = next(
-        (section for section in sections if section.get("id") == OWNERSHIP_SECTION_ID),
-        None,
-    )
-    if section is None:
-        sections.append({"id": OWNERSHIP_SECTION_ID, "label": "Homelab"})
-    else:
-        section["label"] = "Homelab"
-
-    fields = item.setdefault("fields", [])
-    fields_by_id = index_by(fields, "id", "1Password item fields")
-    value = json.dumps(ownership, separators=(",", ":"), sort_keys=True)
-    metadata = {
-        "id": OWNERSHIP_FIELD_ID,
-        "label": OWNERSHIP_FIELD_ID,
-        "section": {"id": OWNERSHIP_SECTION_ID},
-        "type": "STRING",
-        "value": value,
-    }
-    if OWNERSHIP_FIELD_ID in fields_by_id:
-        fields_by_id[OWNERSHIP_FIELD_ID].update(metadata)
-    else:
-        fields.append(metadata)
-
-
-def merge_fields(existing, desired, ownership, previous_ownership):
-    existing_fields = existing.setdefault("fields", [])
-    existing_by_id = index_by(existing_fields, "id", "1Password item fields")
-    desired_by_id = index_by(desired.get("fields", []), "id", "desired item fields")
-    current_fields = set(ownership["managed_fields"]) | set(
-        ownership["placeholder_fields"]
-    )
-    preserved = []
-
-    removed = set(previous_ownership.get("managed_fields", [])) - current_fields
-    for field_id in (
-        set(previous_ownership.get("placeholder_fields", [])) - current_fields
-    ):
-        if existing_by_id.get(field_id, {}).get("value") in (None, ""):
-            removed.add(field_id)
-        elif field_id in existing_by_id:
-            preserved.append(field_id)
-    if removed:
-        existing_fields[:] = [
-            field for field in existing_fields if field.get("id") not in removed
-        ]
-        existing_by_id = index_by(existing_fields, "id", "1Password item fields")
-
-    for field_id, desired_field in desired_by_id.items():
-        if desired_field.get("label") != field_id or not FIELD_NAME_PATTERN.fullmatch(
-            field_id
-        ):
-            raise RuntimeError(f"field ID and label must match snake_case: {field_id}")
-
-        existing_value = existing_by_id.get(field_id, {}).get("value")
-        desired_value = desired_field.get("value")
-        if field_id not in existing_by_id:
-            existing_fields.append(deepcopy(desired_field))
-            continue
-
-        existing_field = existing_by_id[field_id]
-        if field_id in ownership["managed_fields"]:
-            if desired_value not in (None, ""):
-                existing_field["value"] = desired_value
-        elif existing_value not in (None, ""):
-            if existing_value != desired_value:
-                preserved.append(field_id)
-        elif desired_value not in (None, ""):
-            existing_field["value"] = desired_value
-
-        for key in ("label", "purpose", "section", "type"):
-            if key in desired_field:
-                existing_field[key] = deepcopy(desired_field[key])
-
-    unknown = sorted(
-        set(existing_by_id)
-        - set(desired_by_id)
-        - SYSTEM_FIELD_IDS
-        - {OWNERSHIP_FIELD_ID}
-    )
-    return preserved, sorted(removed), unknown
-
-
-def merge_urls(existing, desired, ownership, previous_ownership):
-    existing_urls = existing.setdefault("urls", [])
-    desired_urls = desired.get("urls", [])
-    current_urls = set(ownership["managed_urls"])
-    removed = set(previous_ownership.get("managed_urls", [])) - current_urls
-    if removed:
-        existing_urls[:] = [
-            url for url in existing_urls if url.get("label") not in removed
-        ]
-
-    existing_by_label = index_by(existing_urls, "label", "1Password item URLs")
-    for desired_url in desired_urls:
-        desired_url = deepcopy(desired_url)
-        primary = desired_url.pop("primary", None)
-        label = desired_url["label"]
-        if label in existing_by_label:
-            existing_by_label[label].update(desired_url)
-            if primary:
-                existing_by_label[label]["primary"] = True
-            else:
-                existing_by_label[label].pop("primary", None)
-        else:
-            if primary:
-                desired_url["primary"] = True
-            existing_urls.append(desired_url)
-    return sorted(removed)
-
-
-def merge_item(existing, item_config):
-    desired = deepcopy(item_config.get("payload", item_config))
-    ownership = ownership_config(item_config, desired)
-    previous_ownership = read_ownership(existing)
-    merged = deepcopy(existing)
-    preserved, removed_fields, unknown = merge_fields(
-        merged,
-        desired,
-        ownership,
-        previous_ownership,
-    )
-    removed_urls = merge_urls(merged, desired, ownership, previous_ownership)
-
-    merged["category"] = desired["category"]
-    merged["title"] = desired["title"]
-
-    existing_tags = merged.setdefault("tags", [])
-    existing_tags.extend(
-        tag for tag in desired.get("tags", []) if tag not in existing_tags
-    )
-    write_ownership(merged, ownership)
-    return merged, preserved, removed_fields, removed_urls, unknown
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Read or reconcile 1Password Connect items."
-    )
-    parser.add_argument(
-        "--inventory",
-        action="store_true",
-        help="Return selected item IDs and fields for the OpenTofu external provider.",
-    )
-    parser.add_argument(
-        "--write",
-        action="store_true",
-        help="Create and update items; reconciliation is otherwise read-only.",
-    )
-    return parser.parse_args()
-
-
-def read_json_input(environment_name=None):
-    if environment_name and os.environ.get(environment_name):
-        try:
-            return json.loads(os.environ[environment_name])
-        except json.JSONDecodeError as error:
-            raise RuntimeError(f"{environment_name} must contain JSON") from error
-    try:
-        return json.load(sys.stdin)
-    except json.JSONDecodeError as error:
-        raise RuntimeError("stdin must contain JSON") from error
-
-
-def read_manifest():
-    manifest = read_json_input("ONEPASSWORD_MANIFEST")
-    vaults = manifest.get("vaults")
-    if not isinstance(vaults, dict) or not vaults:
-        raise RuntimeError("manifest.vaults must be a non-empty object")
-    return vaults
-
-
 def read_inventory(client):
     query = read_json_input()
     try:
@@ -486,6 +413,45 @@ def read_inventory(client):
             sort_keys=True,
         )
     )
+
+
+def read_json_input(environment_name=None):
+    if environment_name and os.environ.get(environment_name):
+        try:
+            return json.loads(os.environ[environment_name])
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"{environment_name} must contain JSON") from error
+    try:
+        return json.load(sys.stdin)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("stdin must contain JSON") from error
+
+
+def read_manifest():
+    manifest = read_json_input("ONEPASSWORD_MANIFEST")
+    vaults = manifest.get("vaults")
+    if not isinstance(vaults, dict) or not vaults:
+        raise RuntimeError("manifest.vaults must be a non-empty object")
+    return vaults
+
+
+def read_ownership(item):
+    fields = index_by(item.get("fields", []), "id", "1Password item fields")
+    field = fields.get(OWNERSHIP_FIELD_ID)
+    if field is None or field.get("value") in (None, ""):
+        return {
+            "managed_fields": [],
+            "managed_urls": [],
+            "placeholder_fields": [],
+            "version": 1,
+        }
+    try:
+        ownership = json.loads(field["value"])
+    except (json.JSONDecodeError, TypeError) as error:
+        raise RuntimeError("invalid homelab ownership metadata") from error
+    if ownership.get("version") != 1:
+        raise RuntimeError("unsupported homelab ownership metadata version")
+    return ownership
 
 
 def reconcile_vault(client, vault_key, vault, write):
@@ -583,6 +549,40 @@ def reconcile_vault(client, vault_key, vault, write):
             print(f"{vault_key}/{item_key}: updated ({change_summary})")
         else:
             print(f"{vault_key}/{item_key}: update ({change_summary})")
+
+
+def strip_generation_directives(item):
+    for field in item.get("fields", []):
+        field.pop("generate", None)
+        field.pop("recipe", None)
+    return item
+
+
+def write_ownership(item, ownership):
+    sections = item.setdefault("sections", [])
+    section = next(
+        (section for section in sections if section.get("id") == OWNERSHIP_SECTION_ID),
+        None,
+    )
+    if section is None:
+        sections.append({"id": OWNERSHIP_SECTION_ID, "label": "Homelab"})
+    else:
+        section["label"] = "Homelab"
+
+    fields = item.setdefault("fields", [])
+    fields_by_id = index_by(fields, "id", "1Password item fields")
+    value = json.dumps(ownership, separators=(",", ":"), sort_keys=True)
+    metadata = {
+        "id": OWNERSHIP_FIELD_ID,
+        "label": OWNERSHIP_FIELD_ID,
+        "section": {"id": OWNERSHIP_SECTION_ID},
+        "type": "STRING",
+        "value": value,
+    }
+    if OWNERSHIP_FIELD_ID in fields_by_id:
+        fields_by_id[OWNERSHIP_FIELD_ID].update(metadata)
+    else:
+        fields.append(metadata)
 
 
 def main():

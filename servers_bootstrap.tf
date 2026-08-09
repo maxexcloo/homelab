@@ -1,35 +1,4 @@
 locals {
-  _bootstrap_setup_commands = {
-    for server_key, server in local.servers_resolved : server_key => templatefile(
-      "${path.root}/templates/bootstrap/setup.sh.tftpl",
-      {
-        beszel                  = local.defaults.beszel
-        defaults                = local.defaults
-        doco_cd                 = try(local._doco_cd_compose[server_key], null)
-        doco_cd_registry_config = try(local._doco_cd_registry_configs[server_key], null)
-        server                  = server
-      },
-    )
-    if(
-      server.features.bootstrap &&
-      server.platform != "truenas"
-    )
-  }
-
-  _bootstrap_truenas_custom_apps = {
-    for server_key, server in local.servers_resolved : server_key => templatefile(
-      "${path.root}/templates/bootstrap/truenas-cd.yaml.tftpl",
-      {
-        defaults = local.defaults
-        server   = server
-      },
-    )
-    if(
-      server.features.bootstrap &&
-      server.platform == "truenas"
-    )
-  }
-
   _doco_cd_compose = {
     for server_key, server in local.servers_resolved : server_key => templatefile(
       "${path.root}/templates/bootstrap/docker-compose.yaml.tftpl",
@@ -66,6 +35,37 @@ locals {
     if(
       server.features.bootstrap &&
       server.platform != "truenas"
+    )
+  }
+
+  bootstrap_setup_commands = {
+    for server_key, server in local.servers_resolved : server_key => templatefile(
+      "${path.root}/templates/bootstrap/setup.sh.tftpl",
+      {
+        beszel                  = local.defaults.beszel
+        defaults                = local.defaults
+        doco_cd                 = try(local._doco_cd_compose[server_key], null)
+        doco_cd_registry_config = try(local._doco_cd_registry_configs[server_key], null)
+        server                  = server
+      },
+    )
+    if(
+      server.features.bootstrap &&
+      server.platform != "truenas"
+    )
+  }
+
+  bootstrap_truenas_custom_apps = {
+    for server_key, server in local.servers_resolved : server_key => templatefile(
+      "${path.root}/templates/bootstrap/truenas-cd.yaml.tftpl",
+      {
+        defaults = local.defaults
+        server   = server
+      },
+    )
+    if(
+      server.features.bootstrap &&
+      server.platform == "truenas"
     )
   }
 }

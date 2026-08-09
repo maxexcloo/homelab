@@ -1,4 +1,3 @@
-# Traefik deployment and routing configuration.
 locals {
   _services_config_traefik_proxy_routes = concat(
     flatten([
@@ -50,7 +49,7 @@ locals {
     ]),
   )
 
-  # Route and redirect labels.
+  # Redirect labels.
   _services_config_traefik_redirect_labels = {
     for service_key, service in local.services_model : service_key => {
       for route in service.routing.routes : route.name => merge([
@@ -164,21 +163,6 @@ locals {
     }
   }
 
-  _services_config_traefik_routing_labels = {
-    for service_key, service in local.services_model : service_key => {
-      for container in distinct(compact([for route in service.routing.routes : route.container])) :
-      container => {
-        for label_key, label_value in merge([
-          for route in service.routing.routes :
-          local._services_config_traefik_route_labels[service_key][route.name]
-          if route.container == container
-        ]...) :
-        label_key => label_value
-        if label_value != null
-      }
-    }
-  }
-
   services_config_traefik = {
     for service_key, service in local.services_model : service_key => {
       # Port 8000 is the webinternal Traefik entrypoint on the target server.
@@ -193,5 +177,20 @@ locals {
       }
     }
     if service.identity.service == "traefik"
+  }
+
+  services_config_traefik_routing_labels = {
+    for service_key, service in local.services_model : service_key => {
+      for container in distinct(compact([for route in service.routing.routes : route.container])) :
+      container => {
+        for label_key, label_value in merge([
+          for route in service.routing.routes :
+          local._services_config_traefik_route_labels[service_key][route.name]
+          if route.container == container
+        ]...) :
+        label_key => label_value
+        if label_value != null
+      }
+    }
   }
 }

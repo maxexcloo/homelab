@@ -5,14 +5,14 @@
 ```bash
 mise run apply           # Apply infrastructure changes
 mise run check           # Format check, lint, and validate
-mise run cleanup         # Remove rendered artefacts, caches, bytecode, and saved plans
+mise run cleanup         # Remove local OpenTofu data, the Ruff cache, and the saved plan
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
 mise run init            # Initialise OpenTofu providers and backend
-mise run lint            # Validate source and default-merged YAML against JSON schemas
+mise run lint            # Lint Python and validate YAML against JSON schemas
 mise run plan            # Review infrastructure changes
 mise run prek            # Run all repository hooks
-mise run setup           # Clean, configure, initialise, and install Git hooks
-mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
+mise run setup           # Clean local data, configure, initialise, and install Git hooks
+mise run sort-check      # Check HCL assignments, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration
 ```
 
@@ -38,16 +38,16 @@ OpenTofu uses GCS with Google Application Default Credentials. The mise-managed
 
 ## Automated Checks
 
-`mise run setup` cleans generated files, creates the local configuration when
-missing, initialises OpenTofu, and installs the prek-managed Git hook. Use
-`mise run check` for normal source validation and `mise run prek` for the
-complete hook suite.
+`mise run setup` removes local OpenTofu data, the Ruff cache, and any saved
+`tfplan`; creates the local configuration when missing; initialises OpenTofu;
+and installs the prek-managed Git hook. Use `mise run check` for normal source
+validation and `mise run prek` for the complete hook suite.
 
-The hook suite checks file hygiene, GitHub Actions, Dockerfiles, concrete Docker
-Compose files, JSON Schemas, Renovate configuration, OpenTofu formatting and
-validation, Python, and source/default-merged YAML. Compose templates ending in
-`.yaml.tftpl` are checked as OpenTofu templates; they are not passed to the
-Compose schema until rendered because they still contain template expressions.
+The hook suite checks assignment ordering, file hygiene, GitHub Actions, JSON
+Schema metaschemas, OpenTofu formatting and validation, Python lint and
+formatting, Renovate configuration, repository formatting, and
+source/default-merged YAML. YAML templates are formatted as source but are not
+validated as concrete Compose documents before rendering.
 
 GitHub Actions runs prek for pull requests and pushes to `main`. Actions and
 hook repositories use explicit release versions, while mise pins the executable
@@ -59,8 +59,6 @@ Plan and apply remain operator-controlled.
 
 ## Intentional Exceptions
 
-- The legacy Cloudflare ACME token remains available for clients, currently
-  TrueNAS, that cannot follow delegated ACME CNAME records.
 - Backblaze B2 application keys use the deprecated singular `bucket_id` field
   because `bucket_ids` cannot create an equivalent bucket-scoped key.
 - Incus user data and OCI instance metadata ignore updates after creation

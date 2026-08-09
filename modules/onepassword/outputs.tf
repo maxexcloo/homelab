@@ -9,12 +9,12 @@ output "item_ids" {
   value       = nonsensitive(local.onepassword_items)
 
   precondition {
-    condition     = length(local._duplicate_items) == 0
-    error_message = "1Password item lookup is ambiguous: ${join(", ", nonsensitive(local._duplicate_items))}"
+    condition     = length(local.duplicate_items) == 0
+    error_message = "1Password item lookup is ambiguous: ${join(", ", nonsensitive(local.duplicate_items))}"
   }
 }
 
 output "missing_items" {
   description = "Item keys not present in the vault"
-  value       = nonsensitive(local._missing_items)
+  value       = nonsensitive(local.missing_items)
 }

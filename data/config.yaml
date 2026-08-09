@@ -73,7 +73,6 @@ organisation:
   managed_comment: OpenTofu Managed
   name: excloo
 pocketid:
-  enabled: true
   default_groups:
     - all_services
   groups:

@@ -1,13 +1,10 @@
 data "http" "pocketid_discovery" {
-  for_each = local._pocketid_integration_ready ? { default = true } : {}
-
   url = "${var.pocketid_url}/.well-known/openid-configuration"
 }
 
 locals {
   _pocketid_groups = {
     for group_name, group in local.defaults.pocketid.groups : group_name => group
-    if local._pocketid_integration_ready
   }
 
   _pocketid_service_groups = {
@@ -20,21 +17,15 @@ locals {
   _pocketid_services = {
     for service_key, service in local.services_input_targets :
     service_key => service_key
-    if(
-      local._pocketid_integration_ready &&
-      service.features.oidc
-    )
+    if service.features.oidc
   }
 
   pocketid_cloudflare_access_identity_providers = {
     for alias, identity_provider in local.defaults.cloudflare.access.identity_providers : alias => identity_provider
-    if(
-      local._pocketid_integration_ready &&
-      identity_provider.provider == "pocketid"
-    )
+    if identity_provider.provider == "pocketid"
   }
 
-  pocketid_discovery = try(jsondecode(data.http.pocketid_discovery["default"].response_body), null)
+  pocketid_discovery = jsondecode(data.http.pocketid_discovery.response_body)
 
   pocketid_provider_name = try(one([
     for service in values(local.services_model) : service.identity.title

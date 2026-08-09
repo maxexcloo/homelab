@@ -1,6 +1,29 @@
-# Gatus deployment configuration.
 locals {
-  _services_config_gatus_monitored_services = [
+  _services_config_gatus_provider_endpoints = [
+    for provider in local.services_config_providers : {
+      group = "Providers"
+      name  = provider.title
+      url   = provider.href
+
+      alerts = [
+        {
+          type = "email"
+        },
+      ]
+
+      conditions = [
+        "[STATUS] == any(200, 401, 403)",
+        "[RESPONSE_TIME] < 5000",
+      ]
+    }
+  ]
+
+  _services_config_gatus_service_key = one([
+    for service_key, service in local.services_model : service_key
+    if service.identity.service == "gatus"
+  ])
+
+  gatus_monitored_services = [
     for service_key in sort(keys(local.services_model)) : {
       item   = try(local.onepassword_service_item_ids[service_key], null)
       key    = service_key
@@ -26,30 +49,6 @@ locals {
     )
   ]
 
-  _services_config_gatus_provider_endpoints = [
-    for provider in local.services_config_providers : {
-      group = "Providers"
-      name  = provider.title
-      url   = provider.href
-
-      alerts = [
-        {
-          type = "email"
-        },
-      ]
-
-      conditions = [
-        "[STATUS] == any(200, 401, 403)",
-        "[RESPONSE_TIME] < 5000",
-      ]
-    }
-  ]
-
-  _services_config_gatus_service_key = one([
-    for service_key, service in local.services_model : service_key
-    if service.identity.service == "gatus"
-  ])
-
   services_config_gatus = {
     environment = merge(
       {
@@ -57,7 +56,7 @@ locals {
         TAILSCALE_AUTH_KEY = "op://${local.defaults.onepassword.vaults.services.id}/${local.onepassword_service_item_ids[local._services_config_gatus_service_key]}/tailscale_auth_key"
       },
       {
-        for service in local._services_config_gatus_monitored_services :
+        for service in local.gatus_monitored_services :
         "MONITORING_TOKEN_${upper(replace(service.key, "-", "_"))}" => "op://${local.defaults.onepassword.vaults.services.id}/${service.item}/monitoring_token"
       },
     )
@@ -79,7 +78,7 @@ locals {
 
     probes = concat(
       flatten([
-        for service in local._services_config_gatus_monitored_services : [
+        for service in local.gatus_monitored_services : [
           for url in service.urls : merge(
             {
               group = " ${url.host}"

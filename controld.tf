@@ -39,7 +39,7 @@ locals {
   }
 }
 
-resource "restapi_object" "controld_dns" {
+resource "restapi_object" "controld_dns_rule" {
   for_each = local._controld_dns_records_model
 
   data                    = local._controld_dns_records_runtime[each.key].data

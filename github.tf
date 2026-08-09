@@ -58,7 +58,7 @@ resource "github_actions_variable" "config" {
   }
 }
 
-resource "terraform_data" "config_deploy" {
+resource "terraform_data" "config_deployment" {
   for_each = local.services_configs
 
   depends_on       = [terraform_data.server_onepassword, terraform_data.service_onepassword]

@@ -25,20 +25,18 @@ locals {
 
     deployments = [
       for service_key in sort(keys(local._services_config_truenas_services)) : {
-        key     = service_key
         name    = local.services_model[service_key].identity.name
+        custom  = local.services_config_custom[service_key]
+        imports = local.services_model_imports[service_key]
+        key     = service_key
         service = local.services_model[service_key].identity.service
         target  = local.services_model[service_key].target
-
-        custom = local._services_config_custom[service_key]
-
-        imports = local.services_model_imports[service_key]
       }
     ]
 
     routing_labels = {
       for service_key in sort(keys(local._services_config_truenas_services)) : service_key => {
-        for container, labels in local._services_config_traefik_routing_labels[service_key] :
+        for container, labels in local.services_config_traefik_routing_labels[service_key] :
         container => labels
       }
     }

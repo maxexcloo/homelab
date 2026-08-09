@@ -7,13 +7,13 @@ output "bootstrap_cloud_config" {
 output "bootstrap_setup_commands" {
   description = "Generated shell setup scripts for manual server provisioning"
   sensitive   = true
-  value       = local._bootstrap_setup_commands
+  value       = local.bootstrap_setup_commands
 }
 
 output "bootstrap_truenas_custom_apps" {
   description = "Generated TrueNAS custom app definitions for bootstrap services"
   sensitive   = true
-  value       = local._bootstrap_truenas_custom_apps
+  value       = local.bootstrap_truenas_custom_apps
 }
 
 output "summary" {

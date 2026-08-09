@@ -79,34 +79,26 @@ variable "onepassword_connect_url" {
 }
 
 variable "pocketid_api_token" {
-  default     = null
-  description = "Pocket ID API token. Required when pocketid.enabled is true."
-  nullable    = true
+  description = "Pocket ID API token"
   sensitive   = true
   type        = string
 
   validation {
-    condition     = var.pocketid_api_token == null || length(nonsensitive(var.pocketid_api_token)) > 0
-    error_message = "Pocket ID API token must be null or non-empty."
+    condition     = length(nonsensitive(var.pocketid_api_token)) > 0
+    error_message = "Pocket ID API token must be non-empty."
   }
 }
 
 variable "pocketid_url" {
-  default     = null
-  description = "Pocket ID base URL. Required when pocketid.enabled is true."
-  nullable    = true
-  sensitive   = false
+  description = "Pocket ID base URL"
   type        = string
 
   validation {
-    error_message = "Pocket ID URL must be null or start with http:// or https:// and not end with a slash."
+    error_message = "Pocket ID URL must start with http:// or https:// and not end with a slash."
 
     condition = (
-      var.pocketid_url == null ||
-      (
-        can(regex("^https?://[^/]+", var.pocketid_url)) &&
-        !endswith(var.pocketid_url, "/")
-      )
+      can(regex("^https?://[^/]+", var.pocketid_url)) &&
+      !endswith(var.pocketid_url, "/")
     )
   }
 }

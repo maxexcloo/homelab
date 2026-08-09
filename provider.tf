@@ -1,11 +1,3 @@
-locals {
-  _pocketid_integration_ready = (
-    local.defaults.pocketid.enabled &&
-    nonsensitive(var.pocketid_api_token != null) &&
-    var.pocketid_url != null
-  )
-}
-
 provider "github" {
   owner = local.defaults.github.owner
 }
@@ -16,8 +8,8 @@ provider "oci" {
 }
 
 provider "pocketid" {
-  api_token = local._pocketid_integration_ready ? var.pocketid_api_token : "disabled"
-  base_url  = local._pocketid_integration_ready ? var.pocketid_url : "http://127.0.0.1"
+  api_token = var.pocketid_api_token
+  base_url  = var.pocketid_url
 }
 
 provider "restapi" {

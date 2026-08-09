@@ -16,7 +16,7 @@ description = "Initialise OpenTofu"
 run = "tofu init"
 
 [tasks.setup]
-description = "Clean up, configure, initialise, and install Git hooks"
+description = "Clean local data, configure, initialise, and install Git hooks"
 depends = ["cleanup"]
 run = """
 if [[ ! -f .mise.local.toml ]]; then
@@ -39,13 +39,13 @@ ruff format --check .
 """
 
 [tasks.cleanup]
-description = "Remove rendered artefacts, caches, bytecode, and saved plans"
+description = "Remove local OpenTofu data, the Ruff cache, and the saved plan"
 run = """
 find . -path ./.git -prune -o \
-  -type d \\( -name .render -o -name .ruff_cache -o -name .terraform -o -name __pycache__ \\) \
+  -type d \\( -name .ruff_cache -o -name .terraform \\) \
   -prune -exec rm -rf -- {} +
 find . -path ./.git -prune -o \
-  -type f \\( -name '*.plan' -o -name '*.pyc' -o -name '*.tfplan' \\) \
+  -type f -name tfplan \
   -exec rm -f -- {} +
 """
 

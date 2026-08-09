@@ -43,7 +43,7 @@ locals {
                   field_config.mode == "rw" &&
                   (
                     !can(server.credentials.generated[field_name]) ||
-                    can(local._server_onepassword_generators[server_key][field_name])
+                    can(local.server_onepassword_generators[server_key][field_name])
                   )
                 ) ? "" : try(tostring(server.runtime.credentials[field_name]), "")
               },
@@ -102,6 +102,20 @@ locals {
     )))
   }
 
+  _onepassword_server_manifest = {
+    vault_id = local.defaults.onepassword.vaults.servers.id
+
+    items = {
+      for server_key, payload in local._onepassword_server_item_payloads : server_key => {
+        generated_fields   = local.server_onepassword_generators[server_key]
+        managed_fields     = local._onepassword_server_managed_fields[server_key]
+        managed_urls       = [for url in payload.urls : url.label]
+        payload            = payload
+        placeholder_fields = local._onepassword_server_placeholder_fields[server_key]
+      }
+    }
+  }
+
   _onepassword_server_missing_titles = {
     for server_key in module.server_onepassword.missing_items :
     server_key => local._onepassword_server_titles[server_key]
@@ -138,7 +152,7 @@ locals {
   # Read only fields consumed by root providers; deployment-only fields remain op:// references.
   _onepassword_service_field_names = {
     for service_key in keys(local._onepassword_service_items) :
-    service_key => local._service_provider_credential_names[service_key]
+    service_key => local.service_provider_credential_names[service_key]
   }
 
   _onepassword_service_host_urls = {
@@ -186,7 +200,7 @@ locals {
                   field_config.mode == "rw" &&
                   (
                     !can(service.credentials.generated[field_name]) ||
-                    can(local._service_onepassword_generators[service_key][field_name])
+                    can(local.service_onepassword_generators[service_key][field_name])
                   )
                 ) ? "" : try(tostring(service.runtime.credentials[field_name]), "")
               },
@@ -272,6 +286,20 @@ locals {
     if can(local._onepassword_service_item_fields[service_key])
   }
 
+  _onepassword_service_manifest = {
+    vault_id = local.defaults.onepassword.vaults.services.id
+
+    items = {
+      for service_key, payload in local._onepassword_service_item_payloads : service_key => {
+        generated_fields   = local.service_onepassword_generators[service_key]
+        managed_fields     = local._onepassword_service_managed_fields[service_key]
+        managed_urls       = [for url in payload.urls : url.label]
+        payload            = payload
+        placeholder_fields = local._onepassword_service_placeholder_fields[service_key]
+      }
+    }
+  }
+
   _onepassword_service_missing_titles = {
     for service_key in module.service_onepassword.missing_items :
     service_key => local._onepassword_service_titles[service_key]
@@ -301,20 +329,6 @@ locals {
     )
   }
 
-  onepassword_server_manifest = {
-    vault_id = local.defaults.onepassword.vaults.servers.id
-
-    items = {
-      for server_key, payload in local._onepassword_server_item_payloads : server_key => {
-        generated_fields   = local._server_onepassword_generators[server_key]
-        managed_fields     = local._onepassword_server_managed_fields[server_key]
-        managed_urls       = [for url in payload.urls : url.label]
-        payload            = payload
-        placeholder_fields = local._onepassword_server_placeholder_fields[server_key]
-      }
-    }
-  }
-
   # Selected existing values consumed by root service providers.
   onepassword_service_existing_fields = module.service_onepassword.existing_fields
 
@@ -327,19 +341,6 @@ locals {
     )
   }
 
-  onepassword_service_manifest = {
-    vault_id = local.defaults.onepassword.vaults.services.id
-
-    items = {
-      for service_key, payload in local._onepassword_service_item_payloads : service_key => {
-        generated_fields   = local._service_onepassword_generators[service_key]
-        managed_fields     = local._onepassword_service_managed_fields[service_key]
-        managed_urls       = [for url in payload.urls : url.label]
-        payload            = payload
-        placeholder_fields = local._onepassword_service_placeholder_fields[service_key]
-      }
-    }
-  }
 }
 
 module "server_onepassword" {
@@ -351,13 +352,13 @@ module "server_onepassword" {
 }
 
 resource "terraform_data" "server_onepassword" {
-  triggers_replace = [nonsensitive(sha256(jsonencode(local.onepassword_server_manifest)))]
+  triggers_replace = [nonsensitive(sha256(jsonencode(local._onepassword_server_manifest)))]
 
   provisioner "local-exec" {
     command = "uv run ${path.root}/scripts/reconcile_onepassword.py --write"
 
     environment = {
-      ONEPASSWORD_MANIFEST = jsonencode({ vaults = { servers = local.onepassword_server_manifest } })
+      ONEPASSWORD_MANIFEST = jsonencode({ vaults = { servers = local._onepassword_server_manifest } })
     }
   }
 }
@@ -381,13 +382,13 @@ module "service_onepassword" {
 }
 
 resource "terraform_data" "service_onepassword" {
-  triggers_replace = [nonsensitive(sha256(jsonencode(local.onepassword_service_manifest)))]
+  triggers_replace = [nonsensitive(sha256(jsonencode(local._onepassword_service_manifest)))]
 
   provisioner "local-exec" {
     command = "uv run ${path.root}/scripts/reconcile_onepassword.py --write"
 
     environment = {
-      ONEPASSWORD_MANIFEST = jsonencode({ vaults = { services = local.onepassword_service_manifest } })
+      ONEPASSWORD_MANIFEST = jsonencode({ vaults = { services = local._onepassword_service_manifest } })
     }
   }
 }
