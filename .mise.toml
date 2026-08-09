@@ -3,6 +3,7 @@ API_DATA_IS_SENSITIVE = "true"
 
 [tools]
 actionlint = "1.7.12"
+gcloud = "latest"
 opentofu = "1.12.5"
 prek = "0.4.12"
 prettier = "3.9.6"
