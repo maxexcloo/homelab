@@ -1,13 +1,3 @@
-output "hashes" {
-  description = "Bcrypt hashes of selected generated scalar credentials"
-  sensitive   = true
-
-  value = {
-    for credential_key in var.hashes :
-    credential_key => htpasswd_password.generated[credential_key].bcrypt
-  }
-}
-
 output "passwords" {
   description = "Selected plaintext passwords and their bcrypt hashes keyed by item"
   sensitive   = true
@@ -21,7 +11,7 @@ output "passwords" {
 }
 
 output "values" {
-  description = "Generated scalar credential values keyed by compound credential key"
+  description = "Provider-consumed scalar credential values keyed by compound credential key"
   sensitive   = true
   value       = local.values
 }

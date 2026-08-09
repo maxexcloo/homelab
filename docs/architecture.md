@@ -6,13 +6,18 @@ models, provisions infrastructure, and publishes non-secret deployment configs.
 
 ## Stages
 
-Each server and service moves through three boundaries:
+Each server and service moves through four public boundaries:
 
 1. Input loads YAML and applies defaults.
 2. Model computes deterministic values used for identity, relationships,
    validation, and `for_each`.
 3. Runtime adds provider-backed addresses, attributes, credentials, hosts, and
    URLs after resource membership is fixed.
+4. Config publishes the minimum non-secret context used by deployment
+   repositories.
+
+Private resolution locals expand YAML template expressions between runtime and
+config. They are an implementation detail, not another resource-identity layer.
 
 Resource keys and collection membership must never depend on runtime values.
 JSON Schema validates data shape; HCL preconditions validate relationships.
@@ -34,12 +39,14 @@ references resolved by the target workflow.
 
 ## Modules
 
-- `modules/credentials` generates scalar credentials, hashes, and X.509 material.
+- `modules/credentials` generates provider-consumed scalar credentials, hashes,
+  and X.509 material.
 - `modules/object_storage` provisions isolated object-storage credentials.
 - `modules/onepassword` finds generic 1Password Connect items and reads values
   still required by OpenTofu consumers.
-- `modules/servers` owns server models, infrastructure, and bootstrap output.
-- `modules/services` owns service models and provider-backed service resources.
+- `modules/resend` creates idempotent Resend API keys for servers and services.
 
-The root composes both domains and owns shared DNS, routing, repositories, and
-cross-domain provider data.
+Server and service pipelines live in root because each was used exactly once
+and their interfaces added indirection without reuse. Leaf modules remain for
+repeated resource groups. The root also owns shared DNS, routing, repositories,
+and cross-domain provider data.

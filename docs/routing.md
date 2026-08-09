@@ -12,11 +12,11 @@ server hostnames.
 
 Computed route behaviour:
 
-- `id` defaults to the route index.
-- `name` is `identity.name` for route `0`, otherwise `identity.name-id`.
 - `container` defaults to `identity.service`.
 - `host_port` defaults to `backend_port`.
 - `href` uses `https` unless the route overrides it.
+- `id` defaults to the route index.
+- `name` is `identity.name` for route `0`, otherwise `identity.name-id`.
 - `proxy_server` is set when `expose` is `proxy-<server>`.
 - `zone` is the managed DNS zone for custom hosts, `fly.dev` for Fly hostnames,
   the internal domain for internal routes, and the external domain otherwise.
@@ -25,10 +25,10 @@ Computed route behaviour:
 
 Aliases are derived from route order:
 
+- Custom hostnames also appear by hostname key in `service.urls`.
 - `urls.default` is the first route with an href.
 - `urls.external` is the first custom URL or explicit external route.
 - `urls.internal` is the first derived internal route.
-- Custom hostnames also appear by hostname key in `service.urls`.
 
 ## DNS
 
@@ -37,7 +37,7 @@ DNS zone. Cloudflare-exposed records point at the target server's tunnel.
 Proxy routes point at the proxy server. Other server-backed routes point at the
 route target host.
 
-`dns_model_routes` normalizes server routes, service routes, and redirects into
+`dns_model_routes` normalises server routes, service routes, and redirects into
 one provider-neutral hostname map. Public Cloudflare records, Cloudflare Tunnel
 ingress, and private Control D overrides consume that map.
 
@@ -49,7 +49,7 @@ CNAMEs are created from eligible generated server/manual records unless
 
 The tailnet already uses the dedicated Control D profile configured by
 `controld.profile_id` in `data/config.yaml`. OpenTofu creates a Control D spoof
-rule for every modeled server, service, and redirect hostname served by a
+rule for every modelled server, service, and redirect hostname served by a
 Tailscale-enabled server. Each rule returns that server's Tailscale IPv4 and
 IPv6 addresses.
 
@@ -69,27 +69,27 @@ Traefik service labels.
 
 Generated labels include:
 
-- `traefik.enable=true`
+- load balancer port from `backend_port`
+- load balancer scheme when `backend_scheme` is `https`
 - router entrypoints
 - router rule from `route.host`
 - router service name
-- load balancer port from `backend_port`
-- load balancer scheme when `backend_scheme` is `https`
+- `traefik.enable=true`
 
 Entrypoints:
 
-- `proxy-*` routes use `webinternal` on the source server.
-- HTTPS non-proxy routes use `websecure` and add a separate `-http` redirect
-  router on `web`.
-- HTTP non-proxy routes use `web`.
 - Cloudflare Tunnel connects to service routes through
   `https://localhost:443`, so public and Tailscale requests use the same HTTPS
   router.
+- HTTP non-proxy routes use `web`.
+- HTTPS non-proxy routes use `websecure` and add a separate `-http` redirect
+  router on `web`.
+- `proxy-*` routes use `webinternal` on the source server.
 
 Middlewares:
 
-- `internal` routes use `internal-only@docker`.
 - HTTP redirect routers use `redirect-to-https@docker`.
+- `internal` routes use `internal-only@docker`.
 - Internal HTTP redirect routers use both
   `internal-only@docker,redirect-to-https@docker`.
 
@@ -114,7 +114,7 @@ routing:
       host: reddit.excloo.com
 ```
 
-Aliases attach to the first modeled route, which is the canonical explicit
+Aliases attach to the first modelled route, which is the canonical explicit
 route when one exists and otherwise the derived internal route. They inherit
 that route's target and exposure path and receive a public DNS record, ACME
 delegation, Traefik HTTPS redirect router, HTTP redirect router, and Control D
@@ -133,7 +133,8 @@ container to attach to.
 ## Proxy Routes
 
 `proxy-<server>` routes are published through Traefik on another server. The
-proxy Traefik service receives `custom.proxy_routes` in its template context.
+proxy Traefik service receives `custom.traefik.proxy_routes` in its template
+context.
 Service proxy routes forward to the source target's Tailscale IPv4 address on
 port `8000`, the `webinternal` Traefik entrypoint.
 
@@ -147,7 +148,7 @@ the tunnel forwards only matching request paths and its catch-all returns HTTP
 
 Route-level `cloudflare_access`, `cloudflare_rate_limiting_rules`, and
 `cloudflare_waf_rules` are grouped by DNS zone in
-`modules/services/cloudflare.tf`.
+`services_cloudflare.tf`.
 Cloudflare Access IDP aliases come from
 `cloudflare.access.identity_providers` in `data/config.yaml`. The `provider`
 selects the integration, `client_name` names the client in the identity

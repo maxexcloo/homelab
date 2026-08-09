@@ -1,16 +1,16 @@
 # Homelab
 
-[![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![Licence](https://img.shields.io/badge/licence-AGPL--3.0-blue.svg)](LICENSE)
 [![OpenTofu](https://img.shields.io/badge/OpenTofu-1.x-blue)](https://opentofu.org/)
 [![Status](https://img.shields.io/badge/status-active-success)](https://github.com/maxexcloo/homelab)
 
 OpenTofu manages this homelab from YAML in `data/`. It provisions resources and
-renders encrypted deployment artifacts from the same source data.
+publishes non-secret deployment config from the same source data.
 
-The root configuration loads shared configuration and DNS data, then composes
-two domain modules: `modules/servers` owns server modeling, runtime, and
-infrastructure, while `modules/services` owns service modeling, runtime,
-rendering, integrations, and deployment publications.
+Server and service pipelines live directly in the root configuration. Small
+leaf modules remain only for repeated resource groups such as credentials,
+object storage, and 1Password item reconciliation. Platform repositories own
+their templates, rendering, and deployment workflows.
 
 ## Quick Start
 
@@ -35,7 +35,7 @@ Review the plan before applying it.
 - Google Application Default Credentials for the GCS state backend
 
 Run `mise run setup` to clean generated files, create `.mise.local.toml` from
-the template, initialize OpenTofu, and install the Git hook. On first run, add
+the template, initialise OpenTofu, and install the Git hook. On first run, add
 the required credentials and run setup again. See `.mise.local.toml.default`
 for the full variable list.
 
@@ -47,13 +47,13 @@ Commit `.terraform.lock.hcl` when provider selections change. Keep the
 ```bash
 mise run apply           # Apply infrastructure changes
 mise run check           # Format check, lint, and validate
-mise run cleanup         # Remove rendered artifacts, caches, bytecode, and saved plans
+mise run cleanup         # Remove rendered artefacts, caches, bytecode, and saved plans
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
-mise run init            # Initialize OpenTofu providers and backend
+mise run init            # Initialise OpenTofu providers and backend
 mise run lint            # Validate source and default-merged YAML against JSON schemas
 mise run plan            # Review infrastructure changes
 mise run prek            # Run all repository hooks
-mise run setup           # Clean, configure, initialize, and install Git hooks
+mise run setup           # Clean, configure, initialise, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration
 ```
@@ -64,7 +64,7 @@ mise run validate        # Check and validate OpenTofu configuration
 - [docs/architecture.md](docs/architecture.md) - Data flow and deployment boundaries
 - [docs/credentials.md](docs/credentials.md) - Credential storage and template access
 - [docs/dashboard.md](docs/dashboard.md) - Homepage card and layout generation
-- [docs/deployments.md](docs/deployments.md) - Rendered artifacts and deployment repositories
+- [docs/deployments.md](docs/deployments.md) - Rendered artefacts and deployment repositories
 - [docs/features.md](docs/features.md) - Server and service feature flag effects
 - [docs/operations.md](docs/operations.md) - Common workflows and local commands
 - [docs/routing.md](docs/routing.md) - URLs, DNS, Traefik labels, and containers
@@ -72,6 +72,6 @@ mise run validate        # Check and validate OpenTofu configuration
 - [docs/services.md](docs/services.md) - Service data, targets, routing, and templates
 - [docs/truenas-services.md](docs/truenas-services.md) - TrueNAS catalog service authoring
 
-## License
+## Licence
 
-AGPL-3.0 - see [LICENSE](LICENSE)
+AGPL-3.0 - see [LICENSE](LICENSE).

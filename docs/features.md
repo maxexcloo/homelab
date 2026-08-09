@@ -14,8 +14,8 @@ credential interface.
 ## Server Features
 
 - `beszel` creates a Beszel agent service target, adds agent credential fields,
-  and installs the agent in generated setup artifacts when bootstrap is enabled.
-- `bootstrap` renders platform-specific bootstrap artifacts. TrueNAS servers
+  and installs the agent in generated setup artefacts when bootstrap is enabled.
+- `bootstrap` renders platform-specific bootstrap artefacts. TrueNAS servers
   also receive a `truenas_cd_access_token` credential.
 - `cloudflare_acme` provisions an ACME DNS token for the ACME zone.
 - `cloudflare_acme_legacy` provisions an ACME DNS token for external and
@@ -30,9 +30,10 @@ credential interface.
   enabled.
 - `monitoring_external` adds an ICMP check using the server's external hostname.
 - `object_storage` provisions storage through the default S3-compatible provider.
-- `password` adds a server password and password hash.
+- `password` adds a server password. Non-TrueNAS bootstrap artefacts derive the
+  system password hash without storing it in 1Password.
 - `tailscale` provisions a Tailscale auth key and service target, and installs
-  Tailscale in generated setup artifacts when bootstrap is enabled.
+  Tailscale in generated setup artefacts when bootstrap is enabled.
 - `zfs` marks the server for ZFS-related config.
 
 All servers also get read-only `age_secret_key` credentials.
@@ -52,9 +53,9 @@ All servers also get read-only `age_secret_key` credentials.
   and exposes its issuer URL and display name. Pocket ID groups are declared in
   `pocketid.groups` and user membership remains managed in Pocket ID.
 - `oidc_forward_auth` protects generated Traefik routes with the shared OAuth2
-  Proxy forward-auth middleware. Monitored routes also receive a per-target
-  Basic Auth route for machine clients such as Gatus and Homepage.
-- `password` adds a service password and password hash.
+  Proxy forward-auth middleware. Monitored routes also accept their per-target
+  `X-Gatus-Token` credential.
+- `password` adds a service password.
 - `tailscale` provisions a Tailscale auth key.
 
 Target-level `features` deep-merge over service-level features.

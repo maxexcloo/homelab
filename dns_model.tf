@@ -1,20 +1,20 @@
 locals {
   _dns_model_hosts = distinct(flatten([
     [
-      for service in values(module.services.model.input_targets) : [
+      for service in values(local.services_input_targets) : [
         for route in service.routing.routes : route.host
         if route.host != null
       ]
     ],
     [
-      for service in values(module.services.model.input_targets) : [
+      for service in values(local.services_input_targets) : [
         for route in service.routing.routes : [
           for redirect in try(route.redirects, []) : redirect
         ]
       ]
     ],
     [
-      for server in values(module.servers.model.input) : [
+      for server in values(local.servers_input) : [
         for route in server.routing.routes : route.host
       ]
     ],
@@ -58,7 +58,7 @@ locals {
 
   dns_model_routes = merge(
     merge([
-      for server_key, server in module.servers.model.servers : {
+      for server_key, server in local.servers_model : {
         for route in server.routing.routes : "${server_key}-route-${route.id}" => {
           expose     = route.expose
           hostname   = route.host
@@ -71,7 +71,7 @@ locals {
 
             content = (
               startswith(route.expose, "proxy-")
-              ? try(module.servers.model.servers[trimprefix(route.expose, "proxy-")].hosts.external, null)
+              ? try(local.servers_model[trimprefix(route.expose, "proxy-")].hosts.external, null)
               : route.expose == "external"
               ? server.hosts.external
               : server.hosts.internal
@@ -91,7 +91,7 @@ locals {
       }
     ]...),
     merge([
-      for service_key, service in module.services.model.services : {
+      for service_key, service in local.services_model : {
         for route in service.routing.routes : "${service_key}-url-${route.id}" => {
           expose   = route.expose
           hostname = route.host
@@ -106,7 +106,7 @@ locals {
 
             content = (
               service.target == "fly" ? "${service.fly.app_name}.fly.dev"
-              : route.proxy_server != null ? module.servers.model.servers[route.proxy_server].hosts.external
+              : route.proxy_server != null ? local.servers_model[route.proxy_server].hosts.external
               : route.dns_target_host
             )
           } : null
@@ -121,7 +121,7 @@ locals {
             route.expose == "cloudflare" &&
             route.host != null &&
             route.zone != null &&
-            try(module.servers.model.servers[service.target].features.cloudflared, false)
+            try(local.servers_model[service.target].features.cloudflared, false)
             ) ? {
             server_key = service.target
             url        = "https://localhost:443"
@@ -130,7 +130,7 @@ locals {
       }
     ]...),
     merge(flatten([
-      for service_key, service in module.services.model.services : [
+      for service_key, service in local.services_model : [
         for route in service.routing.routes : {
           for redirect in route.redirects : "${service_key}-redirect-${substr(sha1(redirect.host), 0, 12)}" => {
             expose     = redirect.expose
@@ -145,10 +145,10 @@ locals {
 
               content = (
                 redirect.proxy_server != null
-                ? module.servers.model.servers[redirect.proxy_server].hosts.external
+                ? local.servers_model[redirect.proxy_server].hosts.external
                 : redirect.expose == "external"
-                ? module.servers.model.servers[service.target].hosts.external
-                : module.servers.model.servers[service.target].hosts.internal
+                ? local.servers_model[service.target].hosts.external
+                : local.servers_model[service.target].hosts.internal
               )
             } : null
           }

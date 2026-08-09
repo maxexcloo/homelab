@@ -12,7 +12,6 @@ output "item_ids" {
     condition     = length(local._duplicate_items) == 0
     error_message = "1Password item lookup is ambiguous: ${join(", ", nonsensitive(local._duplicate_items))}"
   }
-
 }
 
 output "missing_items" {

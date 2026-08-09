@@ -137,7 +137,7 @@
       }
     },
     "credential_generator": {
-      "description": "Typed credential generator. Scalar generators seed a read-write 1Password field; x509 generates a read-only certificate and private-key pair.",
+      "description": "Typed credential generator. 1Password Connect generates scalar fields; OpenTofu providers generate x509 certificate and private-key pairs.",
       "oneOf": [
         {
           "type": "object",
@@ -212,11 +212,11 @@
           "type": "boolean"
         },
         "oidc_forward_auth": {
-          "description": "Per-target override. Protect generated Traefik routes with the shared OIDC OAuth2 Proxy forward-auth middleware. Internal routes retain the internal-only middleware first. Monitored routes also receive a per-target Basic Auth route for Gatus.",
+          "description": "Per-target override. Protect generated Traefik routes with the shared OIDC OAuth2 Proxy forward-auth middleware. Internal routes retain the internal-only middleware first. Monitored routes also accept the per-target X-Gatus-Token credential.",
           "type": "boolean"
         },
         "password": {
-          "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
+          "description": "Per-target override. Generate a random password for this service. Exposes runtime.credentials.password as a template variable. Stored in 1Password.",
           "type": "boolean"
         },
         "tailscale": {
@@ -231,7 +231,7 @@
       "type": "object",
       "properties": {
         "app_name": {
-          "description": "Fly.io app name override. If empty, defaults to {organization.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
+          "description": "Fly.io app name override. If empty, defaults to {organisation.name}-{identity.name}; the matching {app_name}.fly.dev hostname is added to the computed service URLs.",
           "pattern": "^$|^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": "string"
         },
@@ -426,15 +426,15 @@
           "type": "boolean"
         },
         "oidc": {
-          "description": "Provision an OIDC client using the configured provider. Exposes runtime.attributes.{oidc_issuer_url,oidc_provider_name} and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Configure callback URL paths or absolute URLs in data.oidc_callback_urls, and optional public-client and PKCE behavior in data.oidc_is_public and data.oidc_pkce_enabled. Stored in 1Password.",
+          "description": "Provision an OIDC client using the configured provider. Exposes runtime.attributes.{oidc_issuer_url,oidc_provider_name} and runtime.credentials.oidc_client_id, plus runtime.credentials.oidc_client_secret for confidential clients, as template variables. Configure callback URL paths or absolute URLs in data.oidc_callback_urls, and optional public-client and PKCE behaviour in data.oidc_is_public and data.oidc_pkce_enabled. Stored in 1Password.",
           "type": "boolean"
         },
         "oidc_forward_auth": {
-          "description": "Protect generated Traefik routes with the shared OIDC OAuth2 Proxy forward-auth middleware. Internal routes retain the internal-only middleware first. Monitored routes also receive a per-target Basic Auth route for Gatus.",
+          "description": "Protect generated Traefik routes with the shared OIDC OAuth2 Proxy forward-auth middleware. Internal routes retain the internal-only middleware first. Monitored routes also accept the per-target X-Gatus-Token credential.",
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random password for this service. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt) as template variables. Stored in 1Password.",
+          "description": "Generate a random password for this service. Exposes runtime.credentials.password as a template variable. Stored in 1Password.",
           "type": "boolean"
         },
         "tailscale": {
@@ -467,7 +467,7 @@
           "type": "string"
         },
         "service": {
-          "description": "Implementation key used to select templates in target repositories. Null means inventory/dashboard-only and no service-specific deployment artifacts.",
+          "description": "Implementation key used to select templates in target repositories. Null means inventory/dashboard-only and no service-specific deployment artefacts.",
           "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
           "type": ["string", "null"]
         },
@@ -568,7 +568,7 @@
           }
         },
         "redirects": {
-          "description": "Additional hostnames that permanently redirect to the first modeled route while preserving the path and query string.",
+          "description": "Additional hostnames that permanently redirect to the first modelled route while preserving the path and query string.",
           "type": "array",
           "uniqueItems": true,
           "items": {

@@ -13,6 +13,11 @@ and resolve credentials only where they are deployed. Changing `CONFIG` triggers
 the target workflow automatically. Removing a deployment triggers its target's
 delete action.
 
+Service-wide generated settings are attached to the deployment that consumes
+them under `deployment.custom.<service>`. Homepage, Gatus, and Traefik therefore
+remain root-owned configuration and can move between Docker, Fly, and TrueNAS
+without moving their aggregation logic into a platform repository.
+
 Docker publishes encrypted OCI packages for doco-cd. Fly deploys from a hosted
 runner.
 TrueNAS publishes encrypted OCI packages on a hosted runner and decrypts them

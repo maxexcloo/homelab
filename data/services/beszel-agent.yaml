@@ -11,7 +11,7 @@ dashboard:
         password: ${services.beszel.runtime.credentials.password}
         systemId: ${server.runtime.credentials.beszel_system_id}
         url: ${services.beszel.urls.default.href}
-        username: ${defaults.organization.email}
+        username: ${defaults.organisation.email}
         version: 2
         fields:
           - status

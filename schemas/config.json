@@ -11,7 +11,7 @@
     "github",
     "networking",
     "onepassword",
-    "organization",
+    "organisation",
     "pocketid",
     "providers",
     "resend",
@@ -360,7 +360,7 @@
         }
       }
     },
-    "organization": {
+    "organisation": {
       "additionalProperties": false,
       "description": "Organisation-level metadata used across resources.",
       "required": ["email", "managed_comment", "name"],

@@ -1,5 +1,5 @@
 variable "generators" {
-  description = "Credential generators keyed by stable compound identity"
+  description = "Provider-created or provider-consumed credential generators keyed by stable compound identity"
 
   type = map(object({
     common_name           = optional(string)
@@ -21,22 +21,8 @@ variable "generators" {
   }
 }
 
-variable "hashes" {
-  default     = []
-  description = "Generated scalar credential keys requiring bcrypt hashes"
-  type        = set(string)
-
-  validation {
-    error_message = "Hash keys must reference configured scalar credential generators."
-
-    condition = alltrue([
-      for credential_key in var.hashes : can(var.generators[credential_key])
-    ])
-  }
-}
-
-variable "organization" {
-  description = "Organization written into generated X.509 subjects"
+variable "organisation" {
+  description = "Organisation written into generated X.509 subjects"
   type        = string
 }
 

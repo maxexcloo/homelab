@@ -4,7 +4,7 @@ dashboard:
 features:
   password: true
 identity:
-  description: File Synchronization
+  description: File Synchronisation
   service: syncthing
   title: Syncthing
   username: max@excloo.com

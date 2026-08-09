@@ -1,13 +1,16 @@
+# username = "" resolves to the currently authenticated GitHub user.
+data "github_user" "default" {
+  username = ""
+}
+
 locals {
   _github_config_values = {
-    for repository_key, config in local._github_configs :
+    for repository_key, config in local.services_configs :
     repository_key => repository_key == "truenas" ? base64gzip(jsonencode(config)) : jsonencode(config)
   }
 
-  _github_configs = module.services.configs
-
   _github_fly_deployments = {
-    for deployment in local._github_configs.fly.deployments : deployment.key => {
+    for deployment in local.services_configs.fly.deployments : deployment.key => {
       app        = deployment.app
       owner      = local.defaults.github.owner
       repository = local.defaults.github.deployment_repositories.fly.name
@@ -15,14 +18,13 @@ locals {
   }
 
   _github_truenas_deployments = {
-    for deployment in local._github_configs.truenas.deployments : deployment.key => {
+    for deployment in local.services_configs.truenas.deployments : deployment.key => {
       name       = deployment.name
       owner      = local.defaults.github.owner
       repository = local.defaults.github.deployment_repositories.truenas.name
       target     = deployment.target
     }
   }
-
 }
 
 resource "github_repository" "deployment" {
@@ -42,7 +44,7 @@ resource "github_repository" "deployment" {
 }
 
 resource "github_actions_variable" "config" {
-  for_each = local._github_configs
+  for_each = local.services_configs
 
   repository    = github_repository.deployment[each.key].name
   value         = local._github_config_values[each.key]
@@ -53,20 +55,13 @@ resource "github_actions_variable" "config" {
       condition     = length(local._github_config_values[each.key]) <= 48000
       error_message = "The ${each.key} deployment config exceeds the safe GitHub Actions variable size."
     }
-
-    precondition {
-      error_message = "Every service in the ${each.key} deployment config must have a 1Password item."
-
-      condition = each.key != "fly" || alltrue([
-        for service in each.value.services : service.item != null
-      ])
-    }
   }
 }
 
 resource "terraform_data" "config_deploy" {
-  for_each = local._github_configs
+  for_each = local.services_configs
 
+  depends_on       = [terraform_data.server_onepassword, terraform_data.service_onepassword]
   triggers_replace = [sha256(github_actions_variable.config[each.key].value)]
 
   provisioner "local-exec" {

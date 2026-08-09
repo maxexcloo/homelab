@@ -5,13 +5,13 @@
 ```bash
 mise run apply           # Apply infrastructure changes
 mise run check           # Format check, lint, and validate
-mise run cleanup         # Remove rendered artifacts, caches, bytecode, and saved plans
+mise run cleanup         # Remove rendered artefacts, caches, bytecode, and saved plans
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
-mise run init            # Initialize OpenTofu providers and backend
+mise run init            # Initialise OpenTofu providers and backend
 mise run lint            # Validate source and default-merged YAML against JSON schemas
 mise run plan            # Review infrastructure changes
 mise run prek            # Run all repository hooks
-mise run setup           # Clean, configure, initialize, and install Git hooks
+mise run setup           # Clean, configure, initialise, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration
 ```
@@ -32,14 +32,14 @@ OpenTofu uses GCS with Google Application Default Credentials. The mise-managed
 
 1. Create `data/services/<key>.yaml` following `schemas/service.json`.
 2. Fill in `identity`, `routing`, and either `targets` or `target_feature`.
-3. Set `identity.service` only when templates or deploy artifacts exist.
+3. Set `identity.service` only when templates or deploy artefacts exist.
 4. Add deployment templates to the repository that owns the target platform.
 5. Run `mise run plan` and review the diff before `mise run apply`.
 
 ## Automated Checks
 
 `mise run setup` cleans generated files, creates the local configuration when
-missing, initializes OpenTofu, and installs the prek-managed Git hook. Use
+missing, initialises OpenTofu, and installs the prek-managed Git hook. Use
 `mise run check` for normal source validation and `mise run prek` for the
 complete hook suite.
 
@@ -51,7 +51,7 @@ Compose schema until rendered because they still contain template expressions.
 
 GitHub Actions runs prek for pull requests and pushes to `main`. Actions and
 hook repositories use explicit release versions, while mise pins the executable
-toolchain. The workflow initializes OpenTofu with the backend disabled, so
+toolchain. The workflow initialises OpenTofu with the backend disabled, so
 validation requires no GCP or provider credentials and is safe for public pull
 requests.
 
@@ -77,7 +77,7 @@ therefore delete the resource on the next apply.
 For an intentional deletion:
 
 1. Back up the workload and its data. Before replacing an age key, retain a
-   recovery copy or re-encrypt every artifact for the replacement key.
+   recovery copy or re-encrypt every artefact for the replacement key.
 2. Run `mise run plan` and confirm that the plan destroys only the intended
    addresses.
 3. Apply only the reviewed plan.

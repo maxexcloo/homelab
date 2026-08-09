@@ -16,7 +16,7 @@ Servers and services have two layers:
 Never derive resource keys or collection membership from runtime or rendered
 values. Those values may be unknown until apply.
 
-## File Organization
+## File Organisation
 
 - Use `{domain}_{stage}.tf` for staged pipelines, such as `services_model.tf`.
 - Use one root file per provider or utility provider when it owns shared or
@@ -24,16 +24,16 @@ values. Those values may be unknown until apply.
 - Keep backend, locals, outputs, providers, Terraform requirements, and
   variables in their conventional root files.
 - Put service templates in the repository that owns the target platform.
-- Omit `identity.service` for inventory-only services with no artifacts.
+- Omit `identity.service` for inventory-only services with no artefacts.
 
 Keep root HCL service-agnostic. Put service-specific behaviour in YAML, its
-template directory, or `services_render_custom_<service>.tf` when it aggregates
+template directory, or `services_config_<service>.tf` when it aggregates
 services.
 
-Keep provider data sources and resources in the consuming domain module when
-only that domain uses them. Keep identical data lookups in root when both
-domains consume them, and pass only the resolved values each module needs. Do
-not hoist domain-specific resources solely to deduplicate provider blocks.
+Keep provider data sources and resources with their consuming root domain when
+only that domain uses them. Keep identical data lookups shared when both
+domains consume them. Do not combine domain-specific resources solely to
+deduplicate provider blocks.
 
 ## Sorting Convention
 
@@ -81,10 +81,10 @@ GitHub workflows use conventional top-level order: `name`, `on`, `permissions`,
   `_final`, `_merged`, and `_write`.
 - Add a helper local only when it names a useful concept, removes duplication,
   or makes a complex expression easier to review.
-- Normalize optional values once in the input or model stage, then use direct
+- Normalise optional values once in the input or model stage, then use direct
   access in consumers. Prefer defaults when every object needs the same value.
 - Use `coalesce()` only for nullable values with a guaranteed non-null fallback.
-  Normalize empty-string sentinels with an explicit conditional.
+  Normalise empty-string sentinels with an explicit conditional.
 - Use `can(map[key])` for relationship membership and `try(map[key], null)` to
   retrieve a nullable related value. Shape reused relationships once.
 - Use `try()` for provider/API data, parsing probes, optional generated keys,
@@ -139,7 +139,7 @@ belong under `runtime.addresses`.
   `identity`, `imports`, `routing`, and `target_feature`. Target entries may
   override `credentials`, `data`, `features`, `fly`, and `truenas`.
 - Put app-owned configuration in `data`. Set `identity.service` only when the
-  service has templates or deployment artifacts.
+  service has templates or deployment artefacts.
 - Omit `targets` when `target_feature` supplies every target. Use
   `targets.<key>: {}` for one target with no overrides.
 
@@ -152,6 +152,9 @@ belong under `runtime.addresses`.
 ## 1Password
 
 - Treat 1Password Connect as required.
+- Generate scalar application credentials through 1Password Connect. Keep
+  credential generation in OpenTofu only when a provider creates the value or
+  consumes it directly.
 - Let OpenTofu own item structure and provider-backed values while preserving
   manually populated placeholder values.
 - Reconcile through the ownership-aware Connect boundary. Never place full item
@@ -167,16 +170,23 @@ service or its templates.
 - Prefer plain, direct code over abstraction.
 - Keep tool, action, hook, and image pins current through Renovate where
   supported. Prefer `config:recommended`, group compatible updates by
-  ecosystem, and add overrides only for project-specific behavior.
+  ecosystem, and add overrides only for project-specific behaviour.
 - Keep check orchestration single-layered. Do not run the same checker through
   both a direct Prek hook and a nested mise task in one check path.
 - Keep comments local and specific. Put architecture and usage explanations in
   docs instead of code comments.
+- Sort unordered peer headings, lists, and table rows alphabetically. Preserve
+  narrative, procedural, dependency, interface, priority, and chronological order.
 - Sort Python imports with Ruff. Sort top-level constants, classes, and helper
   functions within their groups; keep `main()` and the execution guard last.
 - When a list mixes directories and files, list directories first and sort each
   group alphabetically.
 - End every file with a newline.
+- Preserve `LICENSE` and its legal text; never relicense without explicit approval.
+- Use Australian English throughout authored prose and every project-owned name,
+  including identifiers, configuration keys, environment variables, paths, CLI
+  commands, and options. Update every producer and consumer together; preserve only
+  externally defined names and terminology.
 
 ## Verification
 

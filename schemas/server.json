@@ -29,7 +29,7 @@
       }
     },
     "credential_generator": {
-      "description": "Typed credential generator. Scalar generators seed a read-write 1Password field; x509 generates a read-only certificate and private-key pair.",
+      "description": "Typed credential generator. 1Password Connect generates scalar fields; OpenTofu providers generate x509 certificate and private-key pairs.",
       "oneOf": [
         {
           "type": "object",
@@ -152,15 +152,15 @@
     },
     "features": {
       "additionalProperties": false,
-      "description": "Feature flags that provision resources, credentials, or generated setup artifacts for this server.",
+      "description": "Feature flags that provision resources, credentials, or generated setup artefacts for this server.",
       "type": "object",
       "properties": {
         "beszel": {
-          "description": "Create a Beszel agent service target and install the agent in generated setup artifacts when bootstrap is enabled. Exposes runtime.credentials.{beszel_agent_token, beszel_system_id}.",
+          "description": "Create a Beszel agent service target and install the agent in generated setup artefacts when bootstrap is enabled. Exposes runtime.credentials.{beszel_agent_token, beszel_system_id}.",
           "type": "boolean"
         },
         "bootstrap": {
-          "description": "Generate platform-specific bootstrap artifacts for this server. Exposes cloud-init and setup-script outputs for general servers. TrueNAS servers receive a read-write truenas_cd_access_token credential and a custom app output.",
+          "description": "Generate platform-specific bootstrap artefacts for this server. Exposes cloud-init and setup-script outputs for general servers. TrueNAS servers receive a read-write truenas_cd_access_token credential and a custom app output.",
           "type": "boolean"
         },
         "cloudflare_acme": {
@@ -172,11 +172,11 @@
           "type": "boolean"
         },
         "cloudflared": {
-          "description": "Create a Cloudflare tunnel and cloudflared service target, and install cloudflared in generated setup artifacts when bootstrap is enabled. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}.",
+          "description": "Create a Cloudflare tunnel and cloudflared service target, and install cloudflared in generated setup artefacts when bootstrap is enabled. Exposes runtime.attributes.cloudflare_tunnel_id and runtime.credentials.{cloudflare_tunnel_read_token, cloudflare_tunnel_token}.",
           "type": "boolean"
         },
         "docker": {
-          "description": "Install Docker and doco-cd in generated setup artifacts and publish a non-secret deployment config for the source-owned Docker repository. Doco-cd polls target-specific OCI deployment packages.",
+          "description": "Install Docker and doco-cd in generated setup artefacts and publish a non-secret deployment config for the source-owned Docker repository. Doco-cd polls target-specific OCI deployment packages.",
           "type": "boolean"
         },
         "dozzle": {
@@ -204,15 +204,15 @@
           "type": "boolean"
         },
         "password": {
-          "description": "Generate a random admin password. Exposes runtime.credentials.password and runtime.credentials.password_hash (bcrypt). Stored in 1Password.",
+          "description": "Generate a random admin password and expose runtime.credentials.password. Non-TrueNAS bootstrap artefacts also receive a derived runtime.credentials.password_hash that is not stored in 1Password.",
           "type": "boolean"
         },
         "tailscale": {
-          "description": "Generate a Tailscale auth key, create a Tailscale service target, and install Tailscale in generated setup artifacts when bootstrap is enabled. Exposes runtime.credentials.tailscale_auth_key.",
+          "description": "Generate a Tailscale auth key, create a Tailscale service target, and install Tailscale in generated setup artefacts when bootstrap is enabled. Exposes runtime.credentials.tailscale_auth_key.",
           "type": "boolean"
         },
         "zfs": {
-          "description": "Install Sanoid and ZFS administration packages in generated setup artifacts. Does not provision resources or expose template variables.",
+          "description": "Install Sanoid and ZFS administration packages in generated setup artefacts. Does not provision resources or expose template variables.",
           "type": "boolean"
         }
       }

@@ -68,7 +68,7 @@ onepassword:
       id: vjxx2dvl7ukvsqcic3bboeazbi
       tags:
         - Homelab
-organization:
+organisation:
   email: max@excloo.com
   managed_comment: OpenTofu Managed
   name: excloo

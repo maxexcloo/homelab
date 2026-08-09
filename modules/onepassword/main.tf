@@ -1,5 +1,5 @@
 data "external" "inventory" {
-  count = length(var.titles) > 0 ? 1 : 0
+  for_each = length(var.titles) > 0 ? { default = true } : {}
 
   program = [
     "uv",
