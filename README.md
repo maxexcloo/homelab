@@ -46,16 +46,12 @@ Commit `.terraform.lock.hcl` when provider selections change. Keep the
 
 ```bash
 mise run apply           # Apply infrastructure changes
-mise run apply-servers   # Apply server module changes
-mise run apply-services  # Apply service module changes
 mise run check           # Format check, lint, and validate
 mise run cleanup         # Remove rendered artifacts, caches, bytecode, and saved plans
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
 mise run init            # Initialize OpenTofu providers and backend
 mise run lint            # Validate source and default-merged YAML against JSON schemas
 mise run plan            # Review infrastructure changes
-mise run plan-servers    # Review server module changes
-mise run plan-services   # Review service module changes
 mise run prek            # Run all repository hooks
 mise run setup           # Clean, configure, initialize, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
@@ -73,7 +69,6 @@ mise run validate        # Check and validate OpenTofu configuration
 - [docs/operations.md](docs/operations.md) - Common workflows and local commands
 - [docs/routing.md](docs/routing.md) - URLs, DNS, Traefik labels, and containers
 - [docs/servers.md](docs/servers.md) - Server inheritance, hostnames, and runtime values
-- [docs/service-rollout.md](docs/service-rollout.md) - Manual service rollout runbook
 - [docs/services.md](docs/services.md) - Service data, targets, routing, and templates
 - [docs/truenas-services.md](docs/truenas-services.md) - TrueNAS catalog service authoring
 

@@ -4,29 +4,23 @@
 
 ```bash
 mise run apply           # Apply infrastructure changes
-mise run apply-servers   # Apply server module changes
-mise run apply-services  # Apply service module changes
 mise run check           # Format check, lint, and validate
 mise run cleanup         # Remove rendered artifacts, caches, bytecode, and saved plans
 mise run fmt             # Format HCL, Python, YAML, schemas, and templates
 mise run init            # Initialize OpenTofu providers and backend
 mise run lint            # Validate source and default-merged YAML against JSON schemas
 mise run plan            # Review infrastructure changes
-mise run plan-servers    # Review server module changes
-mise run plan-services   # Review service module changes
 mise run prek            # Run all repository hooks
 mise run setup           # Clean, configure, initialize, and install Git hooks
 mise run sort-check      # Check HCL local, JSON Schema, and YAML key ordering
 mise run validate        # Check and validate OpenTofu configuration
 ```
 
-Targeted commands include dependencies required by the selected module. Use the
-full plan when checking for changes outside that module boundary.
-
 ## State Backend
 
-OpenTofu uses GCS with Google Application Default Credentials. The project does
-not require `gcloud`.
+OpenTofu uses GCS with Google Application Default Credentials. The mise-managed
+`gcloud` CLI can establish those credentials with
+`gcloud auth application-default login`.
 
 ## Adding Servers
 
