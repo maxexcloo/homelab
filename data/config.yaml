@@ -94,7 +94,7 @@ providers:
   controld:
     description: DNS
     href: https://controld.com
-    icon: control-d
+    icon: sh-control-d-light
     title: Control D
   flyio:
     description: App Platform
