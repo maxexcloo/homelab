@@ -1,7 +1,7 @@
 # TrueNAS Services
 
 TrueNAS service templates live in the TrueNAS deployment repository under
-`templates/services/<service>/`.
+`<service>/`. Shared renderer templates live under `.github/templates/`.
 
 - Use `app.json.tmpl` for a catalog app or `compose.yaml.tmpl` for a custom app.
 - Put sidecars beside the app template; `.tmpl` is removed after rendering.

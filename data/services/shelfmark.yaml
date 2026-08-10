@@ -42,7 +42,6 @@ targets:
         GOOGLEBOOKS_ENABLED: true
         HARDCOVER_API_KEY: ${service.runtime.credentials.hardcover_api_key}
         HARDCOVER_ENABLED: true
-        INGEST_DIR: /books
         LIBGEN_MIRROR_URLS: ${service.data.libgen_mirror_urls}
         METADATA_PROVIDER: hardcover
         OIDC_BUTTON_LABEL: ${service.runtime.attributes.oidc_provider_name}
