@@ -49,20 +49,23 @@ identity:
   username: max@excloo.com
 routing:
   bifrost:
-    backend_port: 8080
     container: bifrost
     expose: internal
     host: bifrost.excloo.com
+    backend:
+      port: 8080
   cliproxy:
-    backend_port: 8317
     container: cliproxy
     expose: internal
     host: cliproxy.excloo.com
     path: /management.html
+    backend:
+      port: 8317
   control:
-    backend_port: 8000
     container: comfy-control
     expose: internal
     host: ai-router.excloo.com
+    backend:
+      port: 8000
 targets:
   au-truenas: {}

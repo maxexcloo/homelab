@@ -2,8 +2,9 @@
 
 Routes are declared as a map under `routing`. The map key is the stable
 route ID, and the map contains the complete route set. Use `default` for a
-single service route. Service routes with `backend_port` default
-`backend_scheme` to `http`; server routes set `backend_url` directly.
+single service route. Service routes describe their internal application
+endpoint under `backend`; `backend.scheme` defaults to `http` when
+`backend.port` is set. Server routes set `backend.href` directly.
 
 Use `service.urls.*.{host,href}` for service endpoints and `server.hosts.*` for
 server hostnames.
@@ -13,7 +14,7 @@ server hostnames.
 Computed route behaviour:
 
 - `container` defaults to `identity.service`.
-- `host_port` defaults to `backend_port`.
+- `backend.published_port` defaults to `backend.port`.
 - `href` uses `https` unless the route overrides it.
 - `href` appends the route `path` when present.
 - `id` is the route map key.
@@ -63,13 +64,13 @@ clients continue to receive the public Cloudflare records.
 ## Traefik Labels
 
 Labels are generated per route and injected into the route's `container` in the
-rendered Compose file. A route with no `backend_port` does not get generated
+rendered Compose file. A route with no `backend.port` does not get generated
 Traefik service labels.
 
 Generated labels include:
 
-- load balancer port from `backend_port`
-- load balancer scheme when `backend_scheme` is `https`
+- load balancer port from `backend.port`
+- load balancer scheme when `backend.scheme` is `https`
 - router entrypoints
 - router rule from `route.host`
 - router service name
@@ -107,9 +108,11 @@ Add redirect aliases as hostname strings:
 ```yaml
 routing:
   default:
-    backend_port: 8080
     expose: cloudflare
     host: reddit.excloo.com
+
+    backend:
+      port: 8080
 
     redirects:
       - www.reddit.excloo.com

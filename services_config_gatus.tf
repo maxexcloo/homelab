@@ -52,7 +52,7 @@ locals {
       local.services_model[service_key].features.monitoring &&
       anytrue([
         for route in values(local.services_model[service_key].routing) :
-        route.backend_scheme != ""
+        route.backend.scheme != ""
       ])
     )
   ]

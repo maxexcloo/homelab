@@ -19,9 +19,11 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 30064
     expose: internal
     host: null
+
+    backend:
+      port: 30064
 
     redirects:
       - dozzle.excloo.com

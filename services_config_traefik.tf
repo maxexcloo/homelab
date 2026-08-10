@@ -3,11 +3,14 @@ locals {
     flatten([
       for source_service in values(local.services_model) : [
         for route in source_service.routing : {
-          name        = route.name
-          backend_url = "http://${local.servers_resolved[source_service.target].runtime.addresses.tailscale_ipv4}:8000"
           host        = route.host
+          name        = route.name
           redirect_to = null
           target      = route.proxy_server
+
+          backend = {
+            href = "http://${local.servers_resolved[source_service.target].runtime.addresses.tailscale_ipv4}:8000"
+          }
         }
         if(
           route.proxy_server != null &&
@@ -19,9 +22,9 @@ locals {
       for source_service in values(local.services_model) : flatten([
         for route in source_service.routing : [
           for redirect in route.redirects : {
-            name        = redirect.name
-            backend_url = null
+            backend     = null
             host        = redirect.host
+            name        = redirect.name
             redirect_to = route.href
             target      = redirect.proxy_server
           }
@@ -35,9 +38,9 @@ locals {
     flatten([
       for source_server_key, source_server in local.servers_model : [
         for route in source_server.routing : {
-          name        = "server-${source_server_key}-${substr(sha1(route.host), 0, 12)}"
-          backend_url = route.backend_url
+          backend     = route.backend
           host        = route.host
+          name        = "server-${source_server_key}-${substr(sha1(route.host), 0, 12)}"
           redirect_to = null
           target      = contains(["external", "internal"], route.expose) ? source_server_key : trimprefix(route.expose, "proxy-")
         }
@@ -95,14 +98,14 @@ locals {
   _services_config_traefik_route_labels = {
     for service_key, service in local.services_model : service_key => {
       for route in service.routing : route.name => merge(
-        route.backend_port != null ? merge(
+        route.backend.port != null ? merge(
           {
             "traefik.enable"                                                 = "true"
             "traefik.http.routers.${route.name}.rule"                        = route.host != null ? "Host(`${route.host}`)" : null
             "traefik.http.routers.${route.name}.service"                     = route.name
             "traefik.http.routers.${route.name}.tls.certresolver"            = route.acme ? "cloudflare" : null
-            "traefik.http.services.${route.name}.loadbalancer.server.port"   = tostring(route.backend_port)
-            "traefik.http.services.${route.name}.loadbalancer.server.scheme" = route.backend_scheme == "https" ? "https" : null
+            "traefik.http.services.${route.name}.loadbalancer.server.port"   = tostring(route.backend.port)
+            "traefik.http.services.${route.name}.loadbalancer.server.scheme" = route.backend.scheme == "https" ? "https" : null
 
             "traefik.http.routers.${route.name}.entrypoints" = (
               route.proxy_server != null
@@ -135,7 +138,7 @@ locals {
           (
             service.features.monitoring &&
             service.features.oidc_forward_auth &&
-            route.backend_scheme != "" &&
+            route.backend.scheme != "" &&
             route.host != null
             ) ? {
             "traefik.http.routers.${route.name}-monitoring.entrypoints"      = route.https ? "websecure" : "web"
@@ -169,9 +172,10 @@ locals {
       proxy_routes = {
         for proxy_route in local._services_config_traefik_proxy_routes :
         proxy_route.name => {
-          backend_url = proxy_route.backend_url
           host        = proxy_route.host
           redirect_to = proxy_route.redirect_to
+
+          backend = proxy_route.backend
         }
         if proxy_route.target == service.target
       }

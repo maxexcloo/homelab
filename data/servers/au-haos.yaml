@@ -64,7 +64,8 @@ networking:
   management_port: 443
 routing:
   webhooks:
-    backend_url: https://homeassistant
     expose: cloudflare
     host: home-assistant.excloo.com
     path: ^/api/webhook/.+$
+    backend:
+      href: https://homeassistant

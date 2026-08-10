@@ -16,8 +16,9 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 8080
     expose: cloudflare
     host: larapaper.excloo.com
+    backend:
+      port: 8080
 targets:
   au-truenas: {}

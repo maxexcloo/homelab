@@ -35,10 +35,11 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 8080
     expose: cloudflare
     host: games.excloo.com
-    host_port: 30061
+    backend:
+      port: 8080
+      published_port: 30061
 targets:
   au-truenas:
     truenas:

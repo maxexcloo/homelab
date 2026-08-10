@@ -51,7 +51,7 @@ locals {
     for service_key, service in local.services_input : service_key
     if(
       can(service.targets.fly) &&
-      try(service.routing.default.backend_port, null) == null
+      try(service.routing.default.backend.port, null) == null
     )
   ]
 
@@ -131,7 +131,7 @@ locals {
       for route in service.routing : "${service_key} -> ${route.host}"
       if(
         route.proxy_server != null &&
-        route.backend_port == null
+        route.backend.port == null
       )
     ]
   ])
@@ -289,7 +289,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local._services_validation_fly_ports_missing) == 0
-      error_message = "Fly services must have routing.default.backend_port set: ${join(", ", nonsensitive(local._services_validation_fly_ports_missing))}"
+      error_message = "Fly services must have routing.default.backend.port set: ${join(", ", nonsensitive(local._services_validation_fly_ports_missing))}"
     }
 
     precondition {
@@ -355,7 +355,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local._services_validation_proxy_no_port) == 0
-      error_message = "Proxy-exposed service routes must have backend_port set: ${join(", ", local._services_validation_proxy_no_port)}"
+      error_message = "Proxy-exposed service routes must have backend.port set: ${join(", ", local._services_validation_proxy_no_port)}"
     }
 
     precondition {

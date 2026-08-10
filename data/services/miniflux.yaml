@@ -25,9 +25,10 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 30285
     expose: internal
     host: reader.excloo.com
+    backend:
+      port: 30285
 targets:
   au-truenas:
     truenas:

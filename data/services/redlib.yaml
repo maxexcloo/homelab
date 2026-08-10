@@ -121,10 +121,12 @@ identity:
   title: Redlib
 routing:
   default:
-    backend_port: 8080
     container: ctrld
     expose: cloudflare
     host: reddit.excloo.com
+
+    backend:
+      port: 8080
 
     cloudflare_waf_rules:
       - action: js_challenge

@@ -614,13 +614,21 @@
       "type": "object",
       "additionalProperties": {
         "additionalProperties": false,
-        "required": ["backend_url", "expose", "host"],
+        "required": ["backend", "expose", "host"],
         "type": "object",
         "properties": {
-          "backend_url": {
-            "description": "Full origin URL used by Cloudflare Tunnel or Traefik.",
-            "pattern": "^https?://",
-            "type": "string"
+          "backend": {
+            "additionalProperties": false,
+            "description": "Addressable internal endpoint used by Cloudflare Tunnel or Traefik.",
+            "required": ["href"],
+            "type": "object",
+            "properties": {
+              "href": {
+                "description": "Full internal endpoint URL.",
+                "pattern": "^https?://",
+                "type": "string"
+              }
+            }
           },
           "expose": {
             "description": "Access path for this route.",

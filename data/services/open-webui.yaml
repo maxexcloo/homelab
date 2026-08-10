@@ -24,9 +24,10 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 31028
     expose: cloudflare
     host: chat.excloo.com
+    backend:
+      port: 31028
 targets:
   au-truenas:
     truenas:

@@ -344,7 +344,7 @@
           }
         },
         "port_key": {
-          "description": "Primary TrueNAS network port key that receives routing.default.host_port as port_number.",
+          "description": "Primary TrueNAS network port key that receives routing.default.backend.published_port as port_number.",
           "pattern": "^[a-z0-9_]+$",
           "type": "string"
         },
@@ -518,21 +518,29 @@
         "required": ["expose", "host"],
         "type": "object",
         "properties": {
-          "backend_port": {
-            "description": "Container listening port used by Traefik and deployment platforms.",
-            "maximum": 65535,
-            "minimum": 1,
-            "type": ["integer", "null"]
-          },
-          "backend_scheme": {
-            "description": "Backend protocol. Defaults to http when backend_port is set.",
-            "enum": ["", "http", "https"],
-            "type": "string"
-          },
-          "backend_url": {
-            "description": "Cloudflare Tunnel origin URL.",
-            "pattern": "^https?://",
-            "type": "string"
+          "backend": {
+            "additionalProperties": false,
+            "description": "Internal application endpoint used by Traefik and deployment platforms.",
+            "type": "object",
+            "properties": {
+              "port": {
+                "description": "Application listening port used by Traefik and deployment platforms.",
+                "maximum": 65535,
+                "minimum": 1,
+                "type": ["integer", "null"]
+              },
+              "published_port": {
+                "description": "Published host port. Null uses port.",
+                "maximum": 65535,
+                "minimum": 1,
+                "type": ["integer", "null"]
+              },
+              "scheme": {
+                "description": "Application protocol. Defaults to http when port is set.",
+                "enum": ["", "http", "https"],
+                "type": "string"
+              }
+            }
           },
           "cloudflare_access": {
             "description": "Cloudflare Zero Trust Access applications protecting this route. Each entry creates a cloudflare_zero_trust_access_application resource for this route's hostname and path.",
@@ -740,18 +748,8 @@
             "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
             "type": ["string", "null"]
           },
-          "host_port": {
-            "description": "Published host port. Null uses backend_port.",
-            "maximum": 65535,
-            "minimum": 1,
-            "type": ["integer", "null"]
-          },
           "https": {
             "description": "Override whether the route URL uses HTTPS.",
-            "type": "boolean"
-          },
-          "https_verify": {
-            "description": "Whether health checks validate the TLS certificate.",
             "type": "boolean"
           },
           "labels": {

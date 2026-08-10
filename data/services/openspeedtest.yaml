@@ -7,9 +7,11 @@ identity:
   title: OpenSpeedTest
 routing:
   default:
-    backend_port: 30116
     expose: internal
     host: null
+
+    backend:
+      port: 30116
 
     labels:
       traefik.http.middlewares.openspeedtest-buffering.buffering.maxrequestbodybytes: 36700160

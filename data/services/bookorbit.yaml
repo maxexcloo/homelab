@@ -35,9 +35,10 @@ identity:
     - books
 routing:
   default:
-    backend_port: 30396
     expose: cloudflare
     host: books.excloo.com
+    backend:
+      port: 30396
 targets:
   au-truenas:
     truenas:

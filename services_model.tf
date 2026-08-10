@@ -80,7 +80,7 @@ locals {
       service.credentials.generated,
       (
         service.features.monitoring &&
-        anytrue([for route in values(service.routing) : try(route.backend_port, null) != null])
+        anytrue([for route in values(service.routing) : try(route.backend.port, null) != null])
         ) ? {
         monitoring_token = {
           length = 32
@@ -115,15 +115,10 @@ locals {
   }
 
   _services_model_route_defaults = {
-    backend_port   = null
-    backend_scheme = ""
-    backend_url    = "http://localhost:8000"
-    container      = ""
-    host_port      = null
-    https          = true
-    https_verify   = true
-    labels         = {}
-    redirects      = []
+    container = ""
+    https     = true
+    labels    = {}
+    redirects = []
   }
 
   _services_model_route_inputs = {
@@ -132,11 +127,16 @@ locals {
         local._services_model_route_defaults,
         route,
         {
-          backend_scheme  = try(route.backend_scheme, "") != "" ? route.backend_scheme : route.backend_port != null ? "http" : ""
           id              = route_id
           host_configured = route.host != null
           path            = try(route.path, "")
           proxy_server    = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : null
+
+          backend = {
+            port           = try(route.backend.port, null)
+            published_port = try(route.backend.published_port, null) != null ? route.backend.published_port : try(route.backend.port, null)
+            scheme         = try(route.backend.scheme, "") != "" ? route.backend.scheme : try(route.backend.port, null) != null ? "http" : ""
+          }
 
           dns_target_host = (
             service.target == "fly" ? "${local._services_model_fly_app_names[service_key]}.fly.dev"
@@ -150,7 +150,7 @@ locals {
             )
             : (
               route.expose == "internal" &&
-              (try(route.backend_scheme, "") != "" || route.backend_port != null)
+              (try(route.backend.scheme, "") != "" || try(route.backend.port, null) != null)
               ) ? try(
               "${service.identity.name}.${local.servers_model[service.target].hosts.internal}",
               null,
@@ -182,11 +182,9 @@ locals {
       for route_id, route in local._services_model_route_inputs[service_key] : route_id => merge(
         route,
         {
-          backend_url = route.backend_url
-          container   = route.container != "" ? route.container : service.identity.service
-          host        = route.host_configured ? route.host : route.dns_target_host
-          host_port   = route.host_port != null ? route.host_port : route.backend_port
-          name        = route.id == "default" ? service.identity.name : "${service.identity.name}-${route.id}"
+          container = route.container != "" ? route.container : service.identity.service
+          host      = route.host_configured ? route.host : route.dns_target_host
+          name      = route.id == "default" ? service.identity.name : "${service.identity.name}-${route.id}"
 
           acme = (
             route.https &&

@@ -17,9 +17,11 @@ identity:
   title: OAuth2 Proxy
 routing:
   default:
-    backend_port: 4180
     expose: internal
     host: null
+
+    backend:
+      port: 4180
 
     labels:
       traefik.http.middlewares.oauth2-forward-auth.forwardauth.address: http://127.0.0.1:4180

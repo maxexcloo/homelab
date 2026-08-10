@@ -10,9 +10,10 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 20910
     expose: internal
     host: null
+    backend:
+      port: 20910
 targets:
   au-truenas:
     truenas:

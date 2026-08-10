@@ -16,9 +16,10 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 15630
     expose: internal
     host: bichon.excloo.com
+    backend:
+      port: 15630
 targets:
   au-truenas:
     truenas:

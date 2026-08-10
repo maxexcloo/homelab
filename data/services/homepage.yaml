@@ -40,8 +40,9 @@ identity:
   title: Homepage
 routing:
   default:
-    backend_port: 30054
     expose: internal
     host: home.excloo.com
+    backend:
+      port: 30054
 targets:
   au-truenas: {}

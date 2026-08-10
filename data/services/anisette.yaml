@@ -8,8 +8,9 @@ identity:
   title: Anisette
 routing:
   default:
-    backend_port: 6969
     expose: cloudflare
     host: anisette.excloo.com
+    backend:
+      port: 6969
 targets:
   au-truenas: {}

@@ -13,9 +13,11 @@ identity:
   title: Traefik
 routing:
   default:
-    backend_port: 8082
     expose: internal
     host: null
+
+    backend:
+      port: 8082
 
     labels:
       traefik.http.middlewares.autocompress.compress: "true"

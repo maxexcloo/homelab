@@ -83,7 +83,7 @@ locals {
             ) ? {
             path       = route.path
             server_key = server_key
-            url        = route.backend_url
+            url        = route.backend.href
           } : null
         }
       }

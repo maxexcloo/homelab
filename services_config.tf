@@ -53,6 +53,7 @@ locals {
       deployments = [
         for service_key, service in local._services_config_docker_services : {
           attributes = local.services[service_key].runtime.attributes
+          backend    = try(service.routing.default.backend, null)
           custom     = local.services_config_custom[service_key]
           item       = try(local.onepassword_service_item_ids[service_key], null)
           key        = service_key
@@ -75,10 +76,6 @@ locals {
               "op://${local.defaults.onepassword.vaults.services.id}/${local.onepassword_service_item_ids[service_key]}/monitoring_token",
               "$${MONITORING_TOKEN}",
             )
-          }
-
-          routing = {
-            backend_port = try(service.routing.default.backend_port, null)
           }
 
           urls = {
@@ -116,7 +113,7 @@ locals {
       deployments = [
         for service_key, service in local.services_model : {
           app           = service.fly.app_name
-          backend_port  = service.routing.default.backend_port
+          backend       = service.routing.default.backend
           cpu_kind      = service.fly.cpu_kind
           cpus          = service.fly.cpus
           custom        = local.services_config_custom[service_key]

@@ -32,10 +32,11 @@ identity:
   username: max@excloo.com
 routing:
   default:
-    backend_port: 30041
     container: server
     expose: cloudflare
     host: photos.excloo.com
+    backend:
+      port: 30041
 targets:
   au-truenas:
     truenas:
