@@ -46,6 +46,10 @@ Each item records its OpenTofu-owned fields, placeholder fields, and URLs in a
 an empty placeholder deletes it, while a populated placeholder and every
 unknown field remain untouched.
 
+After reconciling current items, apply removes active Homelab-owned items that
+are no longer represented by server or service YAML. Items without the Homelab
+ownership marker remain untouched.
+
 1Password field IDs and labels use the same `snake_case` name. Ownership mode
 stays in repository configuration. Deployment configs publish the same field
 names as `op://` references. A post-reconciliation lookup supplies IDs for new

@@ -282,6 +282,11 @@ def parse_args():
         help="Return selected item IDs and fields for the OpenTofu external provider.",
     )
     parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="Remove Homelab-owned items absent from the supplied manifest.",
+    )
+    parser.add_argument(
         "--write",
         action="store_true",
         help="Create and update items; reconciliation is otherwise read-only.",
@@ -375,6 +380,42 @@ def populate_generated_fields(client, path, existing, item_config):
         generated.append(field_id)
 
     return strip_generation_directives(existing), generated
+
+
+def prune_vault(client, vault_key, vault, write):
+    if not vault.get("enabled", True):
+        print(f"{vault_key}: disabled")
+        return
+
+    vault_id = vault.get("vault_id")
+    desired_items = vault.get("items")
+    if not vault_id or not isinstance(desired_items, dict) or not desired_items:
+        raise RuntimeError(f"vault {vault_key} must contain vault_id and items")
+
+    summaries = client.get_items(vault_id)
+    desired_ids = set()
+    for item_key, item_config in sorted(desired_items.items()):
+        desired = item_config.get("payload", item_config)
+        title = desired.get("title")
+        if not title or not title.endswith(f" ({item_key})"):
+            raise RuntimeError(f"invalid stable item title: {vault_key}/{item_key}")
+        desired_ids.update(
+            summary.id for summary in find_items(summaries, item_key, title)
+        )
+
+    for summary in summaries:
+        if summary.id in desired_ids:
+            continue
+        path = f"/v1/vaults/{vault_id}/items/{summary.id}"
+        existing = api_request(client, "GET", path).json()
+        fields = index_by(existing.get("fields", []), "id", "1Password item fields")
+        ownership_field = fields.get(OWNERSHIP_FIELD_ID)
+        if ownership_field is None or ownership_field.get("value") in (None, ""):
+            continue
+        read_ownership(existing)
+        if write:
+            api_request(client, "DELETE", path)
+        print(f"{vault_key}/{summary.title}: {'removed' if write else 'remove'}")
 
 
 def read_inventory(client):
@@ -605,6 +646,9 @@ def main():
         client = connect_client()
         if args.inventory:
             read_inventory(client)
+        elif args.prune:
+            for vault_key, vault in sorted(read_manifest().items()):
+                prune_vault(client, vault_key, vault, args.write)
         else:
             for vault_key, vault in sorted(read_manifest().items()):
                 reconcile_vault(client, vault_key, vault, args.write)

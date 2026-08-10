@@ -83,7 +83,7 @@ resource "terraform_data" "config_deployment" {
 
   depends_on = [
     github_actions_variable.config,
-    terraform_data.onepassword,
+    terraform_data.onepassword_cleanup,
   ]
 
   provisioner "local-exec" {

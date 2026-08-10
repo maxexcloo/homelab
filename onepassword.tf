@@ -1,4 +1,30 @@
 locals {
+  _onepassword_cleanups = {
+    all = {
+      vaults = {
+        servers = {
+          vault_id = local._onepassword_server_manifest.vault_id
+
+          items = {
+            for item_key, title in local._onepassword_server_titles : item_key => {
+              title = title
+            }
+          }
+        }
+
+        services = {
+          vault_id = local._onepassword_service_manifest.vault_id
+
+          items = {
+            for item_key, title in local._onepassword_service_titles : item_key => {
+              title = title
+            }
+          }
+        }
+      }
+    }
+  }
+
   _onepassword_reconciliations = merge(
     {
       for item_key, item in local._onepassword_server_manifest.items : "servers/${item_key}" => {
@@ -403,6 +429,22 @@ resource "terraform_data" "onepassword" {
   }
 }
 
+resource "terraform_data" "onepassword_cleanup" {
+  for_each = local._onepassword_cleanups
+
+  triggers_replace = [sha256(jsonencode(each.value))]
+
+  depends_on = [terraform_data.onepassword]
+
+  provisioner "local-exec" {
+    command = "uv run ${path.root}/scripts/reconcile_onepassword.py --prune --write"
+
+    environment = {
+      ONEPASSWORD_MANIFEST = jsonencode(each.value)
+    }
+  }
+}
+
 module "server_onepassword_created" {
   source = "./modules/onepassword"
 
@@ -410,7 +452,7 @@ module "server_onepassword_created" {
   titles   = local._onepassword_server_missing_titles
   vault_id = try(local.defaults.onepassword.vaults.servers.id, "disabled")
 
-  depends_on = [terraform_data.onepassword]
+  depends_on = [terraform_data.onepassword_cleanup]
 }
 
 module "service_onepassword_created" {
@@ -420,5 +462,5 @@ module "service_onepassword_created" {
   titles   = local._onepassword_service_missing_titles
   vault_id = try(local.defaults.onepassword.vaults.services.id, "disabled")
 
-  depends_on = [terraform_data.onepassword]
+  depends_on = [terraform_data.onepassword_cleanup]
 }

@@ -44,6 +44,8 @@ targets:
         CALIBRE_WEB_URL: ${services.bookorbit.urls.default.href}
         DIRECT_DOWNLOAD_ENABLED: true
         DIRECT_DOWNLOAD_LANGUAGE_FROM_PATH: true
+        EXT_BYPASSER_PATH: /v1
+        EXT_BYPASSER_TIMEOUT: 60000
         EXT_BYPASSER_URL: ${services.byparr.urls.default.href}
         GOOGLEBOOKS_API_KEY: ${service.runtime.credentials.googlebooks_api_key}
         GOOGLEBOOKS_ENABLED: true
@@ -56,6 +58,7 @@ targets:
         OIDC_DISCOVERY_URL: ${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration
         OPENLIBRARY_ENABLED: true
         SESSION_COOKIE_SECURE: true
+        USE_CF_BYPASS: true
         USING_EXTERNAL_BYPASSER: true
         WELIB_MIRROR_URLS: ${service.data.welib_mirror_urls}
         ZLIB_MIRROR_URLS: ${service.data.zlib_mirror_urls}
