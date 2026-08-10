@@ -13,10 +13,13 @@ and resolve credentials only where they are deployed. Changing `CONFIG` triggers
 the target workflow automatically. Removing a deployment triggers its target's
 delete action.
 
+TrueNAS publishes one self-contained context per deployment. The same context is
+fingerprinted for change selection and passed unchanged to its platform template.
+
 Service-wide generated settings are attached to the deployment that consumes
-them under `deployment.custom.<service>`. Homepage, Gatus, and Traefik therefore
-remain root-owned configuration and can move between Docker, Fly, and TrueNAS
-without moving their aggregation logic into a platform repository.
+them under `deployment.custom.<service>`. Dozzle, Gatus, Homepage, and Traefik
+therefore remain root-owned configuration and can move between Docker, Fly, and
+TrueNAS without moving their aggregation logic into a platform repository.
 
 Docker publishes encrypted OCI packages for doco-cd. Fly deploys from a hosted
 runner.

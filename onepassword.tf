@@ -133,9 +133,22 @@ locals {
     server_key => "${server.identity.title} (${server_key})"
   }
 
+  _onepassword_service_dashboard_cards = {
+    for service_key, service in local.services : service_key => jsondecode(
+      templatestring(
+        replace(
+          jsonencode(service.dashboard),
+          local.render_json_template_expression_pattern,
+          local.render_json_template_expression_replacement,
+        ),
+        local.services_template_contexts[service_key],
+      ),
+    )
+  }
+
   _onepassword_service_dashboard_urls = {
     for service_key, service in local.services : service_key => values({
-      for card_index, dashboard_card in local.services_resolved[service_key].dashboard :
+      for card_index, dashboard_card in local._onepassword_service_dashboard_cards[service_key] :
       "${lower(try(dashboard_card.name, ""))}:${format("%05d", card_index)}" => {
         href    = try(dashboard_card.href, null)
         label   = try(dashboard_card.name, null)

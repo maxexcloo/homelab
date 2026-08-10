@@ -130,8 +130,12 @@ Servers also always get read-only `age_secret_key`.
 ## Imports
 
 Services can reference another server or service by declaring an
-`imports.servers` or `imports.services` alias. Imported dependencies are
-published to target deployment contexts under that alias.
+`imports.servers` or `imports.services` alias. Template expressions resolve the
+alias before the target deployment context is published. Platform templates
+therefore receive the resulting values without a second dependency graph.
+
+Docker artefacts may also receive the imported service's 1Password item identity
+when they must inject a credential directly.
 
 Each service import value is an explicit expanded service key, for example
 `pocket_id: pocket-id-au-truenas`. Keeping aliases separate from target keys

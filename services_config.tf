@@ -16,6 +16,17 @@ locals {
 
   services_config_custom = {
     for service_key, service in local.services_model : service_key => merge(
+      service.identity.service == "dozzle" ? {
+        dozzle = {
+          agents = [
+            for server_key in sort(keys(local.servers_model)) : {
+              host = local.servers_model[server_key].hosts.internal
+              key  = server_key
+            }
+            if local.servers_model[server_key].features.dozzle
+          ]
+        }
+      } : {},
       service.identity.service == "gatus" ? {
         gatus = local.services_config_gatus
       } : {},
@@ -72,7 +83,7 @@ locals {
           }
 
           urls = {
-            for url_key, url in local.services_resolved[service_key].urls : url_key => {
+            for url_key, url in service.urls : url_key => {
               href = url.href
             }
           }

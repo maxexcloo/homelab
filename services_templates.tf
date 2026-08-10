@@ -1,29 +1,5 @@
-# Stage: resolved — template contexts and resolved service fields.
+# Template contexts for resolving service-owned data at its consumers.
 locals {
-  # Services with data/dashboard/truenas fields resolved via templatestring().
-  # Used as the service value in template contexts and as service inventory for
-  # custom cross-service config helpers.
-  services_resolved = {
-    for service_key, service in local.services : service_key => merge(
-      service,
-      jsondecode(
-        templatestring(
-          replace(
-            jsonencode({
-              dashboard = service.dashboard
-              data      = service.data
-              truenas   = service.truenas
-            }),
-            local.render_json_template_expression_pattern,
-            local.render_json_template_expression_replacement,
-          ),
-          local.services_template_contexts[service_key],
-        ),
-      ),
-    )
-  }
-
-  # First-pass template data for templatestring() calls on service data fields.
   # Adjacent services use model values to avoid circular dependencies and prevent
   # implicit cross-service access to runtime credentials. Explicit imports receive
   # the imported service's runtime values.
@@ -55,5 +31,4 @@ locals {
       )
     }
   }
-
 }

@@ -41,7 +41,7 @@ locals {
       )
 
       urls = [
-        for url_key, url in local.services_resolved[service_key].urls : {
+        for url_key, url in local.services_model[service_key].urls : {
           host = url.zone
           href = url.href
         }

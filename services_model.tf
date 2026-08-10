@@ -1,12 +1,5 @@
 # Stage: model — adds deterministic computed fields. No provider values; safe for for_each keys.
 locals {
-  _services_model_configured_hosts = distinct(flatten([
-    for service in values(local.services_input_targets) : concat(
-      service.routing.redirects,
-      [for route in service.routing.routes : route.host if route.host != null],
-    )
-  ]))
-
   # Credential field shape for each service. Runtime values are added in services_runtime.tf.
   _services_model_credentials = {
     for service_key, service in local.services_input_targets : service_key => {
@@ -121,26 +114,6 @@ locals {
     )
   }
 
-  _services_model_managed_zone_matches = {
-    for host in local._services_model_configured_hosts : host => [
-      for zone in keys(local.dns_input) : {
-        length = length(zone)
-        name   = zone
-      }
-      if(
-        host == zone ||
-        endswith(host, ".${zone}")
-      )
-    ]
-  }
-
-  _services_model_managed_zones_by_host = {
-    for host, matches in local._services_model_managed_zone_matches : host => try(
-      one([for match in matches : match.name if match.length == max(matches[*].length...)]),
-      null,
-    )
-  }
-
   _services_model_route_inputs = {
     for service_key, service in local.services_input_targets : service_key => [
       for route_index, route in concat(
@@ -191,7 +164,7 @@ locals {
               host         = redirect
               name         = "${service.identity.name}-redirect-${substr(sha1(redirect), 0, 12)}"
               proxy_server = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : null
-              zone         = try(local._services_model_managed_zones_by_host[redirect], null)
+              zone         = try(local.dns_model_managed_zones_by_host[redirect], null)
 
               acme = (
                 try(route.https, service.routing.https) &&
@@ -229,7 +202,7 @@ locals {
             route.dns_target_host == null &&
             !route.host_configured
             ) ? null : (
-            route.host_configured ? local._services_model_managed_zones_by_host[route.host]
+            route.host_configured ? local.dns_model_managed_zones_by_host[route.host]
             : service.target == "fly" ? "fly.dev"
             : route.expose == "internal" ? local.defaults.domains.internal
             : local.defaults.domains.external

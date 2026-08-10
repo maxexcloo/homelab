@@ -16,8 +16,9 @@ Each server and service moves through four public boundaries:
 4. Config publishes the minimum non-secret context used by deployment
    repositories.
 
-Private resolution locals expand YAML template expressions between runtime and
-config. They are an implementation detail, not another resource-identity layer.
+Private template contexts expand only the YAML fields required by each consumer
+between runtime and config. They are an implementation detail, not another
+resource-identity layer.
 
 Resource keys and collection membership must never depend on runtime values.
 JSON Schema validates data shape; HCL preconditions validate relationships.
