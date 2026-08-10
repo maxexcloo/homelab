@@ -5,7 +5,7 @@ credentials:
       length: 32
       type: hex
 dashboard:
-  - icon: sh-aiostreams
+  - icon: sh-${service.identity.service}
 features:
   password: true
 identity:

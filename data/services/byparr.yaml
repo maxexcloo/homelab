@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=../../schemas/service.json
+dashboard:
+  - icon: sh-${service.identity.service}
 identity:
   description: Anti-Bot Challenge Solver
+  group: Infrastructure
   service: byparr
   title: Byparr
 routing:
