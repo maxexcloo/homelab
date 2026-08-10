@@ -252,7 +252,7 @@ locals {
             )
             ] : {
             href    = service.urls[url_key].href
-            label   = service.urls[url_key].label
+            label   = url_key
             primary = service.urls[url_key].href == service.urls.default.href
           }
         ],
