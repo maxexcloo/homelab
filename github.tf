@@ -4,6 +4,23 @@ data "github_user" "default" {
 }
 
 locals {
+  _github_config_deployments = merge([
+    for repository_key, config in local.services_configs : {
+      for dispatch_key, dispatch in try(local.services_config_workflow_dispatches[repository_key], {
+        (repository_key) = {
+          fingerprint = sha256(local._github_config_values[repository_key])
+          inputs      = {}
+        }
+        }) : dispatch_key => {
+        fingerprint = dispatch.fingerprint
+        inputs      = dispatch.inputs
+        owner       = local.defaults.github.owner
+        repository  = local.defaults.github.deployment_repositories[repository_key].name
+        workflow    = config.workflow
+      }
+    }
+  ]...)
+
   _github_config_values = {
     for repository_key, config in local.services_configs :
     repository_key => repository_key == "truenas" ? base64gzip(jsonencode(config)) : jsonencode(config)
@@ -59,13 +76,36 @@ resource "github_actions_variable" "config" {
 }
 
 resource "terraform_data" "config_deployment" {
-  for_each = local.services_configs
+  for_each = local._github_config_deployments
 
-  depends_on       = [terraform_data.server_onepassword, terraform_data.service_onepassword]
-  triggers_replace = [sha256(github_actions_variable.config[each.key].value)]
+  input            = each.value
+  triggers_replace = [each.value.fingerprint]
+
+  depends_on = [
+    github_actions_variable.config,
+    terraform_data.server_onepassword,
+    terraform_data.service_onepassword,
+  ]
 
   provisioner "local-exec" {
-    command = "gh workflow run ${each.value.workflow} --repo ${local.defaults.github.owner}/${github_repository.deployment[each.key].name} --ref main"
+    command = join(" ", concat(
+      [
+        "gh",
+        "workflow",
+        "run",
+        self.input.workflow,
+        "--repo",
+        "${self.input.owner}/${self.input.repository}",
+        "--ref",
+        "main",
+      ],
+      flatten([
+        for input_key, input_value in self.input.inputs : [
+          "--field",
+          "${input_key}=${input_value}",
+        ]
+      ]),
+    ))
   }
 }
 

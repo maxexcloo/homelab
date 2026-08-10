@@ -1,5 +1,21 @@
 # Stage: config — TrueNAS deployment context.
 locals {
+  _services_config_truenas_deployment_fingerprints = {
+    for deployment in local.services_config_truenas.deployments : deployment.key => sha256(jsonencode({
+      custom         = deployment.custom
+      defaults       = local.services_config_truenas.defaults
+      routing_labels = local.services_config_truenas.routing_labels[deployment.key]
+      server         = local.services_config_truenas.servers[deployment.target]
+      servers        = values(local.services_config_truenas.servers)
+      service        = local.services_config_truenas.services[deployment.key]
+
+      services = {
+        for alias, service_key in deployment.imports :
+        alias => local.services_config_truenas.services[service_key]
+      }
+    }))
+  }
+
   _services_config_truenas_services = {
     for service_key, service in local.services_model : service_key => service
     if(
@@ -75,6 +91,22 @@ locals {
         flatten(values(local.services_model_imports)),
         service_key,
       )
+    }
+  }
+
+  services_config_truenas_workflow_dispatches = {
+    for target_key in toset([
+      for deployment in local.services_config_truenas.deployments : deployment.target
+      ]) : "truenas/${target_key}" => {
+      fingerprint = sha256(jsonencode([
+        for deployment in local.services_config_truenas.deployments :
+        local._services_config_truenas_deployment_fingerprints[deployment.key]
+        if deployment.target == target_key
+      ]))
+
+      inputs = {
+        deployment = target_key
+      }
     }
   }
 }

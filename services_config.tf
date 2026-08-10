@@ -28,6 +28,10 @@ locals {
     )
   }
 
+  services_config_workflow_dispatches = {
+    truenas = local.services_config_truenas_workflow_dispatches
+  }
+
   services_configs = {
     truenas = local.services_config_truenas
 
