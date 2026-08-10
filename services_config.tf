@@ -34,7 +34,7 @@ locals {
     docker = {
       repository = "docker"
       version    = 2
-      workflow   = "render.yaml"
+      workflow   = "publish.yaml"
 
       deployments = [
         for service_key, service in local._services_config_docker_services : {

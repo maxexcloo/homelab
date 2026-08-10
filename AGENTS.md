@@ -18,6 +18,8 @@ values. Those values may be unknown until apply.
 
 ## File Organisation
 
+- Keep only `AGENTS.md` and `README.md` as root Markdown files; put other project
+  documentation in `docs/`.
 - Use `{domain}_{stage}.tf` for staged pipelines, such as `services_model.tf`.
 - Use one root file per provider or utility provider when it owns shared or
   cross-domain behaviour, such as `cloudflare.tf`.
@@ -125,7 +127,8 @@ belong under `runtime.addresses`.
 
 ## YAML Standards
 
-- Use `.yaml`, never `.yml`.
+- Use `.yaml`, never `.yml`, for project-owned YAML files unless external tooling
+  requires a fixed filename.
 - Put global configuration in `data/config.yaml` and merged defaults in
   `data/defaults.yaml`. Per-resource YAML should contain overrides only.
 - Keep short descriptions in title case.
