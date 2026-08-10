@@ -272,6 +272,11 @@ moved {
 }
 
 moved {
+  from = cloudflare_dns_record.all["ai-router-au-truenas-url-bifrost"]
+  to   = cloudflare_dns_record.all["ai-router-au-truenas-url-default"]
+}
+
+moved {
   from = cloudflare_dns_record.all["aiometadata-au-truenas-url-0"]
   to   = cloudflare_dns_record.all["aiometadata-au-truenas-url-default"]
 }

@@ -114,6 +114,38 @@ locals {
     )
   }
 
+  _services_model_internal_hosts = {
+    for service_key, service in local.services_input_targets : service_key => (
+      service.target != "fly"
+      ? try("${service.identity.name}.${local.servers_model[service.target].hosts.internal}", null)
+      : null
+    )
+  }
+
+  _services_model_route_catalogues = {
+    for service_key, service in local.services_input_targets : service_key => merge(
+      service.routing,
+      (
+        local._services_model_internal_hosts[service_key] != null &&
+        can(service.routing.default) &&
+        try(service.routing.default.backend.port, null) != null &&
+        !(
+          service.routing.default.expose == "internal" &&
+          service.routing.default.host == null
+        )
+        ) ? {
+        internal = {
+          container = try(service.routing.default.container, "")
+          expose    = "internal"
+          host      = null
+          https     = try(service.routing.default.https, true)
+
+          backend = service.routing.default.backend
+        }
+      } : {},
+    )
+  }
+
   _services_model_route_defaults = {
     container = ""
     https     = true
@@ -123,7 +155,7 @@ locals {
 
   _services_model_route_inputs = {
     for service_key, service in local.services_input_targets : service_key => {
-      for route_id, route in service.routing : route_id => merge(
+      for route_id, route in local._services_model_route_catalogues[service_key] : route_id => merge(
         local._services_model_route_defaults,
         route,
         {

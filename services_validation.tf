@@ -47,6 +47,15 @@ locals {
     if length(credential_names) != length(distinct(credential_names))
   ]
 
+  _services_validation_default_routes_missing = [
+    for service_key, service in local.services_input_targets : service_key
+    if(
+      service.target != "fly" &&
+      anytrue([for route in values(service.routing) : try(route.backend.port, null) != null]) &&
+      !can(service.routing.default)
+    )
+  ]
+
   _services_validation_fly_ports_missing = [
     for service_key, service in local.services_input : service_key
     if(
@@ -285,6 +294,11 @@ resource "terraform_data" "services_validation" {
       error_message = (
         "Cloudflare-exposed services deployed to servers require cloudflared on the target server: ${join(", ", local._services_validation_cloudflared_missing)}"
       )
+    }
+
+    precondition {
+      condition     = length(local._services_validation_default_routes_missing) == 0
+      error_message = "Server-backed services with routed backends must define routing.default for their generated internal hostname: ${join(", ", nonsensitive(local._services_validation_default_routes_missing))}"
     }
 
     precondition {

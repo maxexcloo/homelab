@@ -25,9 +25,9 @@ credentials:
 dashboard:
   - name: Bifrost
     description: LLM Gateway
-    href: ${service.routing.bifrost.href}
+    href: ${service.routing.default.href}
     icon: https://cdn.jsdelivr.net/gh/maximhq/bifrost@108a8c69d7e55029e4e1943be21e6ccfc7757c56/ui/public/bifrost-icon-dark.webp
-    siteMonitor: ${service.routing.bifrost.href}
+    siteMonitor: ${service.routing.default.href}
   - name: CLIProxyAPI
     description: Subscription Proxy
     href: ${service.routing.cliproxy.href}
@@ -48,12 +48,6 @@ identity:
   title: AI Router
   username: max@excloo.com
 routing:
-  bifrost:
-    container: bifrost
-    expose: internal
-    host: bifrost.excloo.com
-    backend:
-      port: 8080
   cliproxy:
     container: cliproxy
     expose: internal
@@ -67,5 +61,11 @@ routing:
     host: ai-router.excloo.com
     backend:
       port: 8000
+  default:
+    container: bifrost
+    expose: internal
+    host: bifrost.excloo.com
+    backend:
+      port: 8080
 targets:
   au-truenas: {}

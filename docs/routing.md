@@ -1,10 +1,12 @@
 # Routing
 
 Routes are declared as a map under `routing`. The map key is the stable
-route ID, and the map contains the complete route set. Use `default` for a
-single service route. Service routes describe their internal application
-endpoint under `backend`; `backend.scheme` defaults to `http` when
-`backend.port` is set. Server routes set `backend.href` directly.
+route ID. Use `default` for the canonical service backend; it also produces an
+`internal` route at `<service>.<target-server-hosts.internal>` unless the
+default route already uses that generated hostname. The `internal` route key is
+reserved. Service routes describe their internal application endpoint under
+`backend`; `backend.scheme` defaults to `http` when `backend.port` is set.
+Server routes set `backend.href` directly.
 
 Use `service.urls.*.{host,href}` for service endpoints and `server.hosts.*` for
 server hostnames.
@@ -15,6 +17,7 @@ Computed route behaviour:
 
 - `container` defaults to `identity.service`.
 - `backend.published_port` defaults to `backend.port`.
+- `internal` inherits the `default` route's backend, container, and HTTPS setting.
 - `href` uses `https` unless the route overrides it.
 - `href` appends the route `path` when present.
 - `id` is the route map key.
@@ -26,9 +29,12 @@ Computed route behaviour:
 
 ## URLs
 
-Each route with a hostname appears under its route ID in `service.urls`. A
-single-route service therefore uses `service.urls.default`; multi-route services
-use their explicit route IDs. No exposure-based aliases are generated.
+Each route with a hostname appears under its route ID in `service.urls`. When
+the canonical route has a custom hostname, the service therefore uses
+`service.urls.default` and `service.urls.internal`. If the default route already
+uses the generated internal hostname, it appears only as `service.urls.default`.
+Multi-route services use their explicit route IDs in addition to the generated
+entry. No exposure-based aliases are generated.
 
 ## DNS
 

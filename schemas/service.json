@@ -511,7 +511,7 @@
       }
     },
     "routing": {
-      "description": "Complete service route set keyed by stable route ID. The default key identifies the canonical route for single-route services and redirects.",
+      "description": "Service route set keyed by stable route ID. The default key identifies the canonical backend used for the always-present generated internal route. The internal key is reserved for that generated route.",
       "type": "object",
       "additionalProperties": {
         "additionalProperties": false,
@@ -786,7 +786,7 @@
         }
       },
       "propertyNames": {
-        "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+        "pattern": "^(?!internal$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
       }
     },
     "target_feature": {
