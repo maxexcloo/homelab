@@ -3,10 +3,6 @@ data "http" "pocketid_discovery" {
 }
 
 locals {
-  _pocketid_groups = {
-    for group_name, group in local.defaults.pocketid.groups : group_name => group
-  }
-
   _pocketid_service_groups = {
     for service_key in local._pocketid_services : service_key => distinct(concat(
       local.defaults.pocketid.default_groups,
@@ -34,7 +30,7 @@ locals {
 }
 
 resource "pocketid_group" "all" {
-  for_each = local._pocketid_groups
+  for_each = local.defaults.pocketid.groups
 
   friendly_name = each.value.display_name
   name          = each.key

@@ -70,14 +70,9 @@ locals {
     ]) : rule.zone => rule...
   }
 
-  _cloudflare_routes = {
-    for route_key, route in local.dns_model_routes : route_key => route
-    if route.expose == "cloudflare"
-  }
-
   _cloudflare_routes_tunnel = {
-    for route_key, route in local._cloudflare_routes : route_key => route
-    if route.tunnel != null
+    for route_key, route in local.dns_model_routes : route_key => route
+    if route.expose == "cloudflare" && route.tunnel != null
   }
 
   # Stable model-only service route inventory shared by Cloudflare features.

@@ -99,13 +99,6 @@ locals {
     }
   }
 
-  _onepassword_item_placeholder_fields = {
-    for item_id in keys(local._onepassword_items) : item_id => sort(tolist(setsubtract(
-      toset(keys(local._onepassword_item_fields[item_id])),
-      toset(local._onepassword_item_managed_fields[item_id]),
-    )))
-  }
-
   _onepassword_items = merge(
     {
       for server_key, server in local.servers_model : "servers/${server_key}" => {
@@ -156,11 +149,15 @@ locals {
 
       items = {
         for item_id, payload in local._onepassword_item_payloads : local._onepassword_items[item_id].item_key => {
-          generated_fields   = local._onepassword_items[item_id].generators
-          managed_fields     = local._onepassword_item_managed_fields[item_id]
-          managed_urls       = [for url in payload.urls : url.label]
-          payload            = payload
-          placeholder_fields = local._onepassword_item_placeholder_fields[item_id]
+          generated_fields = local._onepassword_items[item_id].generators
+          managed_fields   = local._onepassword_item_managed_fields[item_id]
+          managed_urls     = [for url in payload.urls : url.label]
+          payload          = payload
+
+          placeholder_fields = sort(tolist(setsubtract(
+            toset(keys(local._onepassword_item_fields[item_id])),
+            toset(local._onepassword_item_managed_fields[item_id]),
+          )))
         }
         if local._onepassword_items[item_id].vault_key == vault_key
       }
