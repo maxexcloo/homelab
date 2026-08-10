@@ -1,28 +1,43 @@
 # yaml-language-server: $schema=../../schemas/service.json
 credentials:
+  fields:
+    civitai_api_key: {}
+    huggingface_token: {}
+    runpod_api_key: {}
+    salad_api_key: {}
+    vast_api_key: {}
   generated:
+    bifrost_api_key:
+      length: 32
+      type: alphanumeric
+    bifrost_encryption_key:
+      length: 32
+      type: hex
     cliproxy_api_key:
       length: 32
       type: alphanumeric
     comfy_control_api_key:
       length: 32
       type: alphanumeric
+    worker_api_key:
+      length: 32
+      type: alphanumeric
 dashboard:
   - name: Bifrost
     description: LLM Gateway
-    href: https://bifrost.excloo.com
+    href: ${service.routing.routes[0].href}
     icon: https://cdn.jsdelivr.net/gh/maximhq/bifrost@108a8c69d7e55029e4e1943be21e6ccfc7757c56/ui/public/bifrost-icon-dark.webp
-    siteMonitor: https://bifrost.excloo.com
+    siteMonitor: ${service.routing.routes[0].href}
   - name: CLIProxyAPI
     description: Subscription Proxy
-    href: https://cliproxy.excloo.com/management.html
+    href: ${service.routing.routes[1].href}/management.html
     icon: https://cdn.jsdelivr.net/gh/router-for-me/Cli-Proxy-API-Management-Center@f60c8ca683b118be5750ff102187cc6d8ad4605b/logo.jpg
-    siteMonitor: https://cliproxy.excloo.com/management.html
-  - name: AI Router
-    description: Media Inference Controller
-    href: https://ai-router.excloo.com
+    siteMonitor: ${service.routing.routes[1].href}/management.html
+  - name: ${service.identity.title}
+    description: ${service.identity.description}
+    href: ${service.routing.routes[2].href}
     icon: mdi-tune-vertical-#3b82f6
-    siteMonitor: https://ai-router.excloo.com
+    siteMonitor: ${service.routing.routes[2].href}
 features:
   monitoring: false
   password: true
