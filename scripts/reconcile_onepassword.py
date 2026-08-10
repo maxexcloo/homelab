@@ -29,12 +29,16 @@ SYSTEM_FIELD_IDS = frozenset({"notesPlain", "password", "username"})
 def api_request(client, method, path, body=None):
     for attempt in range(5):
         response = client.build_request(method, path, body)
-        if response.status_code != 404 or method not in {"GET", "PUT"}:
+        detail = response.text.strip()
+        retryable = method in {"GET", "PUT"} and (
+            response.status_code == 404
+            or (response.status_code == 400 and "Unable to update item" in detail)
+        )
+        if not retryable:
             break
         if attempt < 4:
             time.sleep(0.5 * 2**attempt)
     if response.is_error:
-        detail = response.text.strip()
         message = f"1Password Connect returned HTTP {response.status_code}"
         if detail:
             message = f"{message}: {detail}"
