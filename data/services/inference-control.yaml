@@ -3,10 +3,10 @@ credentials:
   generated:
     cliproxy_api_key:
       length: 32
-      type: hex
+      type: alphanumeric
     comfy_control_api_key:
       length: 32
-      type: hex
+      type: alphanumeric
 dashboard:
   - name: Bifrost
     description: LLM Gateway
@@ -24,6 +24,7 @@ dashboard:
     icon: mdi-tune-vertical-#3b82f6
     siteMonitor: https://inference.excloo.com
 features:
+  monitoring: false
   password: true
 identity:
   description: AI Inference Gateway
