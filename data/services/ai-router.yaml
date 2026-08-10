@@ -18,33 +18,36 @@ dashboard:
     href: https://cliproxy.excloo.com/management.html
     icon: mdi-console-network-outline-#22c55e
     siteMonitor: https://cliproxy.excloo.com/management.html
-  - name: Inference Control
+  - name: AI Router
     description: Media Inference Controller
-    href: https://inference.excloo.com
+    href: https://ai-router.excloo.com
     icon: mdi-tune-vertical-#3b82f6
-    siteMonitor: https://inference.excloo.com
+    siteMonitor: https://ai-router.excloo.com
 features:
   monitoring: false
   password: true
 identity:
   description: AI Inference Gateway
   group: Infrastructure
-  service: inference-control
-  title: Inference Control
+  service: ai-router
+  title: AI Router
   username: admin
 routing:
   backend_port: 28080
+  container: bifrost
   routes:
     - id: bifrost
       expose: internal
       host: bifrost.excloo.com
     - id: cliproxy
       backend_port: 28317
+      container: cliproxy
       expose: internal
       host: cliproxy.excloo.com
     - id: control
       backend_port: 28081
+      container: comfy-control
       expose: internal
-      host: inference.excloo.com
+      host: ai-router.excloo.com
 targets:
   au-truenas: {}
