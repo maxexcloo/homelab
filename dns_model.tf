@@ -7,11 +7,8 @@ locals {
       ]
     ],
     [
-      for service in values(local.services_input_targets) : [
-        for route in service.routing.routes : [
-          for redirect in try(route.redirects, []) : redirect
-        ]
-      ]
+      for service in values(local.services_input_targets) :
+      service.routing.redirects
     ],
     [
       for server in values(local.servers_input) : [
