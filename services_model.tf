@@ -270,17 +270,24 @@ locals {
   }
 
   services_model = {
-    for service_key, service in local.services_input_targets : service_key => provider::deepmerge::mergo(
+    for service_key, service in local.services_input_targets : service_key => merge(
       service,
       {
-        credentials = local._services_model_credentials[service_key]
-        dashboard   = local._services_model_dashboards[service_key]
-        identity    = local._services_model_identities[service_key]
-        key         = service_key
+        dashboard = local._services_model_dashboards[service_key]
+        identity  = local._services_model_identities[service_key]
+        key       = service_key
 
-        fly = {
-          app_name = service.target == "fly" ? local._services_model_fly_app_names[service_key] : service.fly.app_name
-        }
+        credentials = merge(
+          service.credentials,
+          local._services_model_credentials[service_key],
+        )
+
+        fly = merge(
+          service.fly,
+          {
+            app_name = service.target == "fly" ? local._services_model_fly_app_names[service_key] : service.fly.app_name
+          },
+        )
 
         routing = merge(
           {

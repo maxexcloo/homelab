@@ -34,6 +34,11 @@ Templates receive:
 before file templates run. Adjacent services are exposed without runtime
 credentials unless they are explicitly imported.
 
+Template expressions use HCL syntax inside `${...}` and must produce values
+convertible to strings. Use `jsonencode()` explicitly when a consumer needs
+structured JSON inside a string. Rendering is a single pass, so an expression
+must not depend on another templated value being expanded first.
+
 ## Deployment
 
 See `docs/deployments.md` for platform deployment behaviour and
