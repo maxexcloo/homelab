@@ -35,6 +35,11 @@ locals {
         oidc_forward_auth = local.services_model[service_key].features.oidc_forward_auth
       }
 
+      status_codes = try(
+        local.services_model[service_key].data.monitoring_status_codes,
+        local.services_model[service_key].features.oidc_forward_auth ? [200] : [200, 401],
+      )
+
       urls = [
         for url_key, url in local.services_resolved[service_key].urls : {
           host = url.zone
@@ -81,14 +86,14 @@ locals {
         for service in local.gatus_monitored_services : [
           for url in service.urls : merge(
             {
-              group = " ${url.host}"
+              group = url.host
               name  = "${service.title} (${service.target})"
               url   = url.href
 
               conditions = [
                 "[CERTIFICATE_EXPIRATION] > 168h",
                 "[RESPONSE_TIME] < 5000",
-                service.features.oidc_forward_auth ? "[STATUS] == 200" : "[STATUS] == any(200, 401)",
+                "[STATUS] == any(${join(", ", service.status_codes)})",
               ]
 
               headers = merge(

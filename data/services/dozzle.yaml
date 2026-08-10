@@ -5,6 +5,10 @@ credentials:
       type: x509
 dashboard:
   - {}
+data:
+  monitoring_status_codes:
+    - 200
+    - 401
 features:
   oidc_forward_auth: true
 identity:
