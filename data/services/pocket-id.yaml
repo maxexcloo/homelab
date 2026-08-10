@@ -16,10 +16,10 @@ identity:
   title: Excloo ID
   username: max@excloo.com
 routing:
-  backend_port: 1411
-  routes:
-    - expose: cloudflare
-      host: id.excloo.com
+  default:
+    backend_port: 1411
+    expose: cloudflare
+    host: id.excloo.com
 targets:
   au-truenas:
     truenas:

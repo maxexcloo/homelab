@@ -60,9 +60,9 @@ locals {
           icon        = service.identity.service
           name        = local._services_model_identities[service_key].title
         },
-        local._services_model_url_aliases[service_key].default != null ? {
-          href        = local._services_model_url_aliases[service_key].default.href
-          siteMonitor = local._services_model_url_aliases[service_key].default.href
+        can(local._services_model_urls[service_key].default) ? {
+          href        = local._services_model_urls[service_key].default.href
+          siteMonitor = local._services_model_urls[service_key].default.href
         } : {},
         card,
       )
@@ -80,7 +80,7 @@ locals {
       service.credentials.generated,
       (
         service.features.monitoring &&
-        service.routing.backend_scheme != ""
+        anytrue([for route in values(service.routing) : try(route.backend_port, null) != null])
         ) ? {
         monitoring_token = {
           length = 32
@@ -114,28 +114,28 @@ locals {
     )
   }
 
+  _services_model_route_defaults = {
+    backend_port   = null
+    backend_scheme = ""
+    backend_url    = "http://localhost:8000"
+    container      = ""
+    host_port      = null
+    https          = true
+    https_verify   = true
+    labels         = {}
+    redirects      = []
+  }
+
   _services_model_route_inputs = {
-    for service_key, service in local.services_input_targets : service_key => [
-      for route_index, route in concat(
-        service.routing.routes,
-        (
-          service.routing.backend_port != null ||
-          service.routing.backend_scheme != ""
-          ) ? [
-          {
-            expose = "internal"
-            host   = null
-          }
-        ] : [],
-        ) : merge(
-        {
-          for field_name, field_value in service.routing : field_name => field_value
-          if field_name != "routes"
-        },
+    for service_key, service in local.services_input_targets : service_key => {
+      for route_id, route in service.routing : route_id => merge(
+        local._services_model_route_defaults,
         route,
         {
-          id              = try(route.id, tostring(route_index))
+          backend_scheme  = try(route.backend_scheme, "") != "" ? route.backend_scheme : route.backend_port != null ? "http" : ""
+          id              = route_id
           host_configured = route.host != null
+          path            = try(route.path, "")
           proxy_server    = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : null
 
           dns_target_host = (
@@ -150,7 +150,7 @@ locals {
             )
             : (
               route.expose == "internal" &&
-              try(route.backend_scheme, service.routing.backend_scheme) != ""
+              (try(route.backend_scheme, "") != "" || route.backend_port != null)
               ) ? try(
               "${service.identity.name}.${local.servers_model[service.target].hosts.internal}",
               null,
@@ -159,7 +159,7 @@ locals {
           )
 
           redirects = [
-            for redirect in route_index == 0 ? service.routing.redirects : [] : {
+            for redirect in try(route.redirects, []) : {
               expose       = route.expose == "cloudflare" ? "external" : route.expose
               host         = redirect
               name         = "${service.identity.name}-redirect-${substr(sha1(redirect), 0, 12)}"
@@ -167,26 +167,26 @@ locals {
               zone         = try(local.dns_model_managed_zones_by_host[redirect], null)
 
               acme = (
-                try(route.https, service.routing.https) &&
+                try(route.https, true) &&
                 !startswith(route.expose, "proxy-")
               )
             }
           ]
         },
       )
-    ]
+    }
   }
 
   _services_model_routes = {
-    for service_key, service in local.services_input_targets : service_key => [
-      for route in local._services_model_route_inputs[service_key] : merge(
+    for service_key, service in local.services_input_targets : service_key => {
+      for route_id, route in local._services_model_route_inputs[service_key] : route_id => merge(
         route,
         {
           backend_url = route.backend_url
           container   = route.container != "" ? route.container : service.identity.service
           host        = route.host_configured ? route.host : route.dns_target_host
           host_port   = route.host_port != null ? route.host_port : route.backend_port
-          name        = route.id == "0" ? service.identity.name : "${service.identity.name}-${route.id}"
+          name        = route.id == "default" ? service.identity.name : "${service.identity.name}-${route.id}"
 
           acme = (
             route.https &&
@@ -196,7 +196,7 @@ locals {
           href = (
             route.host_configured ||
             route.dns_target_host != null
-          ) ? "${route.https ? "https" : "http"}://${route.host_configured ? route.host : route.dns_target_host}" : null
+          ) ? "${route.https ? "https" : "http"}://${route.host_configured ? route.host : route.dns_target_host}${route.path}" : null
 
           zone = (
             route.dns_target_host == null &&
@@ -209,63 +209,22 @@ locals {
           )
         },
       )
-    ]
+    }
   }
 
   _services_model_target_servers = {
     for service_key, service in local.services_input_targets : service_key => try(local.servers_model[service.target], null)
   }
 
-  _services_model_url_aliases = {
-    for service_key, service in local.services_input_targets : service_key => {
-      default = try(
-        [
-          for route in local._services_model_routes[service_key] : route
-          if route.href != null
-        ][0],
-        null,
-      )
-
-      external = try(
-        [
-          for route in local._services_model_routes[service_key] : route
-          if(
-            route.href != null &&
-            (
-              route.host_configured ||
-              route.expose == "external"
-            )
-          )
-        ][0],
-        null,
-      )
-
-      internal = try(
-        [
-          for route in local._services_model_routes[service_key] : route
-          if(
-            route.href != null &&
-            !route.host_configured &&
-            route.expose == "internal"
-          )
-        ][0],
-        null,
-      )
-    }
-  }
-
   _services_model_urls = {
     for service_key, service in local.services_input_targets : service_key => {
-      for host, urls in {
-        for route in local._services_model_routes[service_key] :
-        route.host => {
-          host  = route.host
-          href  = route.href
-          label = route.host_configured ? "website" : route.expose
-          zone  = route.zone
-        }...
-        if route.host != null
-      } : host => urls[0]
+      for route_id, route in local._services_model_routes[service_key] : route_id => {
+        host  = route.host
+        href  = route.href
+        label = route_id
+        zone  = route.zone
+      }
+      if route.host != null
     }
   }
 
@@ -276,6 +235,8 @@ locals {
         dashboard = local._services_model_dashboards[service_key]
         identity  = local._services_model_identities[service_key]
         key       = service_key
+        routing   = local._services_model_routes[service_key]
+        urls      = local._services_model_urls[service_key]
 
         credentials = merge(
           service.credentials,
@@ -289,46 +250,6 @@ locals {
           },
         )
 
-        routing = merge(
-          {
-            for field_name, field_value in service.routing : field_name => field_value
-            if field_name != "routes"
-          },
-          {
-            backend_url = service.routing.backend_url
-            container   = service.routing.container != "" ? service.routing.container : service.identity.service
-            host_port   = service.routing.host_port != null ? service.routing.host_port : service.routing.backend_port
-            routes      = local._services_model_routes[service_key]
-          },
-        )
-
-        urls = merge(
-          {
-            default = {
-              host  = local._services_model_url_aliases[service_key].default != null ? local._services_model_url_aliases[service_key].default.host : null
-              href  = local._services_model_url_aliases[service_key].default != null ? local._services_model_url_aliases[service_key].default.href : null
-              label = "default"
-              zone  = null
-            }
-          },
-          local._services_model_url_aliases[service_key].external != null ? {
-            external = {
-              host  = local._services_model_url_aliases[service_key].external.host
-              href  = local._services_model_url_aliases[service_key].external.href
-              label = "external"
-              zone  = null
-            }
-          } : {},
-          local._services_model_url_aliases[service_key].internal != null ? {
-            internal = {
-              host  = local._services_model_url_aliases[service_key].internal.host
-              href  = local._services_model_url_aliases[service_key].internal.href
-              label = "internal"
-              zone  = null
-            }
-          } : {},
-          local._services_model_urls[service_key],
-        )
       },
     )
   }

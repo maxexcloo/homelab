@@ -34,11 +34,11 @@ identity:
   title: RoMM
   username: max@excloo.com
 routing:
-  backend_port: 8080
-  host_port: 30061
-  routes:
-    - expose: cloudflare
-      host: games.excloo.com
+  default:
+    backend_port: 8080
+    expose: cloudflare
+    host: games.excloo.com
+    host_port: 30061
 targets:
   au-truenas:
     truenas:

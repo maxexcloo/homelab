@@ -4,9 +4,9 @@ identity:
   service: byparr
   title: Byparr
 routing:
-  backend_port: 8191
-  routes:
-    - expose: internal
-      host: byparr.excloo.com
+  default:
+    backend_port: 8191
+    expose: internal
+    host: byparr.excloo.com
 targets:
   au-truenas: {}

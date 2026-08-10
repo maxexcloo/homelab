@@ -24,10 +24,10 @@ identity:
   title: Miniflux
   username: max@excloo.com
 routing:
-  backend_port: 30285
-  routes:
-    - expose: internal
-      host: reader.excloo.com
+  default:
+    backend_port: 30285
+    expose: internal
+    host: reader.excloo.com
 targets:
   au-truenas:
     truenas:

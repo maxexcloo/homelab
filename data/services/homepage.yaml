@@ -39,9 +39,9 @@ identity:
   service: homepage
   title: Homepage
 routing:
-  backend_port: 30054
-  routes:
-    - expose: internal
-      host: home.excloo.com
+  default:
+    backend_port: 30054
+    expose: internal
+    host: home.excloo.com
 targets:
   au-truenas: {}

@@ -157,19 +157,15 @@ locals {
   }
 
   _servers_model_routes = {
-    for server_key, server in local.servers_input : server_key => [
-      for route_index, route in server.routing.routes : merge(
-        {
-          for field_name, field_value in server.routing : field_name => field_value
-          if field_name != "routes"
-        },
+    for server_key, server in local.servers_input : server_key => {
+      for route_id, route in server.routing : route_id => merge(
         route,
         {
-          id   = try(route.id, tostring(route_index))
+          id   = route_id
           path = try(route.path, null)
         },
       )
-    ]
+    }
   }
 
   servers_model = {
@@ -180,6 +176,7 @@ locals {
         credentials = local._servers_model_credentials[server_key]
         identity    = local._servers_model_identity[server_key]
         key         = server_key
+        routing     = local._servers_model_routes[server_key]
 
         dashboard = jsondecode(server.dashboard != null ? jsonencode(server.dashboard) : jsonencode(server.networking.management_port != "" ? [
           {
@@ -193,12 +190,6 @@ locals {
           }
         ] : []))
 
-        routing = merge(
-          server.routing,
-          {
-            routes = local._servers_model_routes[server_key]
-          },
-        )
       }
     )
   }

@@ -1,9 +1,9 @@
 # Routing
 
-Routes are declared under `routing.routes` and inherit shared fields from
-`routing`. Setting `routing.backend_port` defaults `routing.backend_scheme` to
-`http`. Services with either value receive an implicit internal route with no
-custom hostname.
+Routes are declared as a map under `routing`. The map key is the stable
+route ID, and the map contains the complete route set. Use `default` for a
+single service route. Service routes with `backend_port` default
+`backend_scheme` to `http`; server routes set `backend_url` directly.
 
 Use `service.urls.*.{host,href}` for service endpoints and `server.hosts.*` for
 server hostnames.
@@ -15,20 +15,19 @@ Computed route behaviour:
 - `container` defaults to `identity.service`.
 - `host_port` defaults to `backend_port`.
 - `href` uses `https` unless the route overrides it.
-- `id` defaults to the route index.
-- `name` is `identity.name` for route `0`, otherwise `identity.name-id`.
+- `href` appends the route `path` when present.
+- `id` is the route map key.
+- `name` is `identity.name` for route `default`, otherwise
+  `identity.name-id`.
 - `proxy_server` is set when `expose` is `proxy-<server>`.
 - `zone` is the managed DNS zone for custom hosts, `fly.dev` for Fly hostnames,
   the internal domain for internal routes, and the external domain otherwise.
 
-## URL Aliases
+## URLs
 
-Aliases are derived from route order:
-
-- Custom hostnames also appear by hostname key in `service.urls`.
-- `urls.default` is the first route with an href.
-- `urls.external` is the first custom URL or explicit external route.
-- `urls.internal` is the first derived internal route.
+Each route with a hostname appears under its route ID in `service.urls`. A
+single-route service therefore uses `service.urls.default`; multi-route services
+use their explicit route IDs. No exposure-based aliases are generated.
 
 ## DNS
 
@@ -107,19 +106,20 @@ Add redirect aliases as hostname strings:
 
 ```yaml
 routing:
-  redirects:
-    - www.reddit.excloo.com
-  routes:
-    - expose: cloudflare
-      host: reddit.excloo.com
+  default:
+    backend_port: 8080
+    expose: cloudflare
+    host: reddit.excloo.com
+
+    redirects:
+      - www.reddit.excloo.com
 ```
 
-Aliases attach to the first modelled route, which is the canonical explicit
-route when one exists and otherwise the derived internal route. They inherit
-that route's target and exposure path and receive a public DNS record, ACME
-delegation, Traefik HTTPS redirect router, HTTP redirect router, and Control D
-override. The redirect is permanent and preserves the request suffix while
-replacing the hostname with the canonical route URL.
+Aliases are declared on their canonical route. They inherit that route's target
+and exposure path and receive a public DNS record, ACME delegation, Traefik HTTPS
+redirect router, HTTP redirect router, and Control D override. The redirect is
+permanent and preserves the request suffix while replacing the hostname with
+the canonical route URL.
 
 ## Containers
 

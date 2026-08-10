@@ -65,7 +65,7 @@ locals {
     for service_key, service in local.services_model : service_key => toset([
       for credential_name in keys(service.credentials.fields) : credential_name
       if anytrue(flatten([
-        for route in service.routing.routes : [
+        for route in service.routing : [
           for rule in try(route.cloudflare_waf_rules, []) :
           strcontains(rule.expression, format("$${service.runtime.credentials.%s}", credential_name))
         ]

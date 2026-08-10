@@ -10,7 +10,6 @@ locals {
 
   services_config_truenas = {
     repository = "truenas"
-    version    = 3
     workflow   = "deploy.yaml"
 
     contexts = {

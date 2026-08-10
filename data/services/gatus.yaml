@@ -38,9 +38,9 @@ identity:
   service: gatus
   title: Gatus
 routing:
-  backend_port: 8080
-  routes:
-    - expose: internal
-      host: status.excloo.com
+  default:
+    backend_port: 8080
+    expose: internal
+    host: status.excloo.com
 targets:
   fly: {}

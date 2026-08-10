@@ -9,9 +9,9 @@ identity:
   service: aiometadata
   title: AIOMetadata
 routing:
-  backend_port: 3232
-  routes:
-    - expose: internal
-      host: aiometadata.excloo.com
+  default:
+    backend_port: 3232
+    expose: internal
+    host: aiometadata.excloo.com
 targets:
   au-truenas: {}

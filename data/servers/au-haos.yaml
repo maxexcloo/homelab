@@ -63,8 +63,8 @@ networking:
   mac_address: 84:47:09:67:c8:33
   management_port: 443
 routing:
-  backend_url: https://homeassistant
-  routes:
-    - expose: cloudflare
-      host: home-assistant.excloo.com
-      path: ^/api/webhook/.+$
+  webhooks:
+    backend_url: https://homeassistant
+    expose: cloudflare
+    host: home-assistant.excloo.com
+    path: ^/api/webhook/.+$

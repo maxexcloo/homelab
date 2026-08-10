@@ -41,16 +41,19 @@ locals {
       )
 
       urls = [
-        for url_key, url in local.services_model[service_key].urls : {
+        for url in values(local.services_model[service_key].urls) : {
           host = url.zone
           href = url.href
         }
-        if url_key != "default" && url.href != null && url.zone != null
+        if url.href != null && url.zone != null
       ]
     }
     if(
       local.services_model[service_key].features.monitoring &&
-      local.services_model[service_key].routing.backend_scheme != ""
+      anytrue([
+        for route in values(local.services_model[service_key].routing) :
+        route.backend_scheme != ""
+      ])
     )
   ]
 

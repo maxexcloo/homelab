@@ -15,10 +15,10 @@ identity:
   title: AIOStreams
   username: max@excloo.com
 routing:
-  backend_port: 30375
-  routes:
-    - expose: internal
-      host: aiostreams.excloo.com
+  default:
+    backend_port: 30375
+    expose: internal
+    host: aiostreams.excloo.com
 targets:
   au-truenas:
     truenas:

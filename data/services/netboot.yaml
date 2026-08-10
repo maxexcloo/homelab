@@ -7,11 +7,11 @@ identity:
   service: netboot
   title: Netboot
 routing:
-  backend_port: 31010
-  container: netboot
-  routes:
-    - expose: internal
-      host: netboot.excloo.com
+  default:
+    backend_port: 31010
+    container: netboot
+    expose: internal
+    host: netboot.excloo.com
 targets:
   au-truenas:
     truenas:

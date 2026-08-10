@@ -23,10 +23,10 @@ identity:
   title: Open WebUI
   username: max@excloo.com
 routing:
-  backend_port: 31028
-  routes:
-    - expose: cloudflare
-      host: chat.excloo.com
+  default:
+    backend_port: 31028
+    expose: cloudflare
+    host: chat.excloo.com
 targets:
   au-truenas:
     truenas:

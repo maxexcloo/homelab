@@ -48,7 +48,6 @@ locals {
 
     docker = {
       repository = "docker"
-      version    = 2
       workflow   = "publish.yaml"
 
       deployments = [
@@ -79,7 +78,7 @@ locals {
           }
 
           routing = {
-            backend_port = service.routing.backend_port
+            backend_port = try(service.routing.default.backend_port, null)
           }
 
           urls = {
@@ -112,17 +111,16 @@ locals {
 
     fly = {
       repository = "fly"
-      version    = 3
       workflow   = "deploy.yaml"
 
       deployments = [
         for service_key, service in local.services_model : {
           app           = service.fly.app_name
-          backend_port  = service.routing.backend_port
+          backend_port  = service.routing.default.backend_port
           cpu_kind      = service.fly.cpu_kind
           cpus          = service.fly.cpus
           custom        = local.services_config_custom[service_key]
-          force_https   = alltrue([for route in service.routing.routes : route.https])
+          force_https   = alltrue([for route in service.routing : route.https])
           image         = service.fly.image
           item          = try(local.onepassword_service_item_ids[service_key], null)
           key           = service_key
@@ -132,7 +130,7 @@ locals {
           service       = service.identity.service
 
           certificates = [
-            for route in service.routing.routes : route.host
+            for route in service.routing : route.host
             if route.host_configured
           ]
         }

@@ -93,7 +93,10 @@ locals {
             service  = service
 
             servers = merge(
-              local.services_config_servers,
+              local.servers_model,
+              service.target != "fly" && can(local.services_config_servers[service.target]) ? {
+                (service.target) = local.services_config_servers[service.target]
+              } : {},
               {
                 for alias, imported_server_key in local.services_model_server_imports[service_key] :
                 alias => local.services_config_servers[imported_server_key]
@@ -102,7 +105,7 @@ locals {
             )
 
             services = merge(
-              local._services_config_service_bases,
+              local.services_model,
               {
                 for alias, imported_service_key in local.services_model_imports[service_key] :
                 alias => local._services_config_service_bases[imported_service_key]

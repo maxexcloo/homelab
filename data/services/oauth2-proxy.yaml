@@ -16,11 +16,15 @@ identity:
   service: oauth2-proxy
   title: OAuth2 Proxy
 routing:
-  backend_port: 4180
-  labels:
-    traefik.http.middlewares.oauth2-forward-auth.forwardauth.address: http://127.0.0.1:4180
-    traefik.http.middlewares.oauth2-forward-auth.forwardauth.authResponseHeaders: X-Auth-Request-Email,X-Auth-Request-Preferred-Username,X-Auth-Request-User
-    traefik.http.middlewares.oauth2-forward-auth.forwardauth.trustForwardHeader: "true"
+  default:
+    backend_port: 4180
+    expose: internal
+    host: null
+
+    labels:
+      traefik.http.middlewares.oauth2-forward-auth.forwardauth.address: http://127.0.0.1:4180
+      traefik.http.middlewares.oauth2-forward-auth.forwardauth.authResponseHeaders: X-Auth-Request-Email,X-Auth-Request-Preferred-Username,X-Auth-Request-User
+      traefik.http.middlewares.oauth2-forward-auth.forwardauth.trustForwardHeader: "true"
 targets:
   au-hsp: {}
   au-truenas: {}

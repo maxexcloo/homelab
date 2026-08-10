@@ -230,8 +230,8 @@ def merge_urls(existing, desired, ownership, previous_ownership):
             existing_by_label[label].update(desired_url)
             if primary:
                 existing_by_label[label]["primary"] = True
-            else:
-                existing_by_label[label].pop("primary", None)
+            elif existing_by_label[label].get("primary") is True:
+                existing_by_label[label]["primary"] = False
         else:
             if primary:
                 desired_url["primary"] = True

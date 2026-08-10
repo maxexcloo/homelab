@@ -14,10 +14,10 @@ identity:
   title: Actual Budget
   username: max@excloo.com
 routing:
-  backend_port: 31012
-  routes:
-    - expose: internal
-      host: budget.excloo.com
+  default:
+    backend_port: 31012
+    expose: internal
+    host: budget.excloo.com
 targets:
   au-truenas:
     truenas:

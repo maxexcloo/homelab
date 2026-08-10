@@ -22,6 +22,7 @@ servers:
   dashboard: null
   data: {}
   parent: ""
+  routing: {}
   credentials:
     fields: {}
     generated: {}
@@ -100,12 +101,10 @@ servers:
           port_min: 22
           protocol: tcp
           source: ::/0
-  routing:
-    backend_url: ""
-    routes: []
 services:
   dashboard: []
   data: {}
+  routing: {}
   target_feature: ""
   targets: {}
   credentials:
@@ -131,17 +130,6 @@ services:
   imports:
     servers: {}
     services: {}
-  routing:
-    backend_port: null
-    backend_scheme: ""
-    backend_url: http://localhost:8000
-    container: ""
-    host_port: null
-    https: true
-    https_verify: true
-    labels: {}
-    redirects: []
-    routes: []
 targets:
   fly:
     app_name: ""

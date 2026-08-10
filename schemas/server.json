@@ -610,60 +610,45 @@
       }
     },
     "routing": {
-      "additionalProperties": false,
-      "description": "Shared backend configuration and routes exposed through this server.",
+      "description": "Complete server route set keyed by stable route ID.",
       "type": "object",
-      "properties": {
-        "backend_url": {
-          "description": "Default full origin URL used by Cloudflare Tunnel or Traefik.",
-          "pattern": "^$|^https?://",
-          "type": "string"
-        },
-        "routes": {
-          "description": "Routes that inherit the shared backend URL.",
-          "type": "array",
-          "uniqueItems": true,
-          "items": {
-            "additionalProperties": false,
-            "required": ["expose", "host"],
-            "type": "object",
-            "properties": {
-              "backend_url": {
-                "description": "Override the full origin URL.",
-                "pattern": "^https?://",
-                "type": "string"
+      "additionalProperties": {
+        "additionalProperties": false,
+        "required": ["backend_url", "expose", "host"],
+        "type": "object",
+        "properties": {
+          "backend_url": {
+            "description": "Full origin URL used by Cloudflare Tunnel or Traefik.",
+            "pattern": "^https?://",
+            "type": "string"
+          },
+          "expose": {
+            "description": "Access path for this route.",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["cloudflare", "external", "internal"]
               },
-              "expose": {
-                "description": "Access path for this route.",
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": ["cloudflare", "external", "internal"]
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "^proxy-[a-z][a-z0-9-]+$"
-                  }
-                ]
-              },
-              "host": {
-                "description": "Hostname routed to this server. Must belong to a managed DNS zone.",
-                "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
-                "type": "string"
-              },
-              "id": {
-                "description": "Stable route identity. Defaults to the route list index when omitted.",
-                "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
-                "type": "string"
-              },
-              "path": {
-                "description": "Optional regular expression limiting Cloudflare Tunnel ingress to matching request paths.",
-                "minLength": 1,
-                "type": "string"
+              {
+                "type": "string",
+                "pattern": "^proxy-[a-z][a-z0-9-]+$"
               }
-            }
+            ]
+          },
+          "host": {
+            "description": "Hostname routed to this server. Must belong to a managed DNS zone.",
+            "pattern": "^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,}$",
+            "type": "string"
+          },
+          "path": {
+            "description": "Optional regular expression limiting Cloudflare Tunnel ingress to matching request paths.",
+            "minLength": 1,
+            "type": "string"
           }
         }
+      },
+      "propertyNames": {
+        "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
       }
     },
     "type": {

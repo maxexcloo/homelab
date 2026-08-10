@@ -83,7 +83,7 @@ locals {
   # Stable model-only service route inventory shared by Cloudflare features.
   _cloudflare_service_routes = merge([
     for service_key, service in local.services_model : {
-      for route in service.routing.routes : jsonencode([service_key, route.host]) => {
+      for route in service.routing : jsonencode([service_key, route.host]) => {
         route       = route
         service     = service
         service_key = service_key
@@ -264,6 +264,116 @@ resource "cloudflare_dns_record" "all" {
   ttl      = each.value.ttl
   type     = each.value.type
   zone_id  = data.cloudflare_zone.all[each.value.zone].zone_id
+}
+
+moved {
+  from = cloudflare_dns_record.all["actual-budget-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["actual-budget-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["aiometadata-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["aiometadata-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["aiostreams-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["aiostreams-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["anisette-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["anisette-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["au-haos-route-0"]
+  to   = cloudflare_dns_record.all["au-haos-route-webhooks"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["beszel-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["beszel-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["bichon-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["bichon-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["bookorbit-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["bookorbit-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["byparr-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["byparr-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["gatus-fly-url-0"]
+  to   = cloudflare_dns_record.all["gatus-fly-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["homepage-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["homepage-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["immich-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["immich-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["larapaper-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["larapaper-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["linkwarden-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["linkwarden-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["miniflux-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["miniflux-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["netboot-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["netboot-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["open-webui-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["open-webui-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["papra-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["papra-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["pocket-id-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["pocket-id-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["redlib-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["redlib-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["romm-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["romm-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["shelfmark-au-truenas-url-0"]
+  to   = cloudflare_dns_record.all["shelfmark-au-truenas-url-default"]
 }
 
 resource "cloudflare_ruleset" "rate_limiting" {

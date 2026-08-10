@@ -56,6 +56,8 @@ Provider-backed GitHub public SSH keys are available at
 Server-owned routes use the same exposure vocabulary as service routes:
 `cloudflare`, `external`, `internal`, and `proxy-<server>`.
 
+Routes are keyed by stable route ID and set their full `backend_url` directly.
+
 Cloudflare server routes require `features.cloudflared`. Non-Cloudflare server
 routes require a Traefik service on the routing server. Set an optional `path`
 regular expression on a Cloudflare route to constrain its tunnel ingress.

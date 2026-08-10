@@ -2,7 +2,7 @@ locals {
   # Cloudflare Universal SSL covers only one subdomain level.
   _services_validation_cloudflare_deep_subdomains = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.routes : "${service_key}-${route.id} (${route.host})"
+      for route in service.routing : "${service_key}-${route.id} (${route.host})"
       if(
         route.expose == "cloudflare" &&
         route.host != null &&
@@ -14,7 +14,7 @@ locals {
 
   _services_validation_cloudflared_missing = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.routes : "${service_key}-${route.id} -> ${route.host}"
+      for route in service.routing : "${service_key}-${route.id} -> ${route.host}"
       if(
         route.expose == "cloudflare" &&
         service.target != "fly" &&
@@ -51,7 +51,7 @@ locals {
     for service_key, service in local.services_input : service_key
     if(
       can(service.targets.fly) &&
-      service.routing.backend_port == null
+      try(service.routing.default.backend_port, null) == null
     )
   ]
 
@@ -128,7 +128,7 @@ locals {
 
   _services_validation_proxy_no_port = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.routes : "${service_key} -> ${route.host}"
+      for route in service.routing : "${service_key} -> ${route.host}"
       if(
         route.proxy_server != null &&
         route.backend_port == null
@@ -138,7 +138,7 @@ locals {
 
   _services_validation_proxy_server_missing = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.routes : "${service_key} -> ${route.proxy_server}"
+      for route in service.routing : "${service_key} -> ${route.proxy_server}"
       if(
         route.proxy_server != null &&
         !can(local.servers_model[route.proxy_server])
@@ -148,7 +148,7 @@ locals {
 
   _services_validation_redirects_invalid = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.routes : [
+      for route in service.routing : [
         for redirect in route.redirects : "${service_key} -> ${redirect.host}"
         if(
           redirect.host == route.host ||
@@ -160,19 +160,9 @@ locals {
     ]
   ])
 
-  _services_validation_redirects_without_routes = [
-    for service_key, service in local.services_input_targets : service_key
-    if(
-      length(service.routing.redirects) > 0 &&
-      length(service.routing.routes) == 0 &&
-      service.routing.backend_port == null &&
-      service.routing.backend_scheme == ""
-    )
-  ]
-
   _services_validation_route_host_entries = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.routes : concat(
+      for route in service.routing : concat(
         route.host != null ? [
           {
             host   = route.host
@@ -196,11 +186,6 @@ locals {
     if length(sources) > 1
   ]
 
-  _services_validation_route_ids_not_unique = [
-    for service_key, service in local.services_model : service_key
-    if length(service.routing.routes) != length(distinct([for route in service.routing.routes : route.id]))
-  ]
-
   _services_validation_server_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_server_imports : [
       for import_alias, server_ref in imports : "${service_key}.${import_alias} -> ${server_ref}"
@@ -210,7 +195,7 @@ locals {
 
   _services_validation_server_routes_missing_traefik = flatten([
     for server_key, server in local.servers_model : [
-      for route in server.routing.routes : "${server_key}.${route.host} -> ${startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key}"
+      for route in server.routing : "${server_key}.${route.host} -> ${startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key}"
       if(
         route.expose != "cloudflare" &&
         !contains(
@@ -266,7 +251,7 @@ locals {
 
   _services_validation_unmanaged_hosts = flatten([
     for service_key, service in local.services_model : [
-      for route in service.routing.routes : "${service_key} -> ${route.host}"
+      for route in service.routing : "${service_key} -> ${route.host}"
       if(
         route.host_configured &&
         service.target != "fly" &&
@@ -304,7 +289,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local._services_validation_fly_ports_missing) == 0
-      error_message = "Fly services must have routing.backend_port set: ${join(", ", nonsensitive(local._services_validation_fly_ports_missing))}"
+      error_message = "Fly services must have routing.default.backend_port set: ${join(", ", nonsensitive(local._services_validation_fly_ports_missing))}"
     }
 
     precondition {
@@ -370,7 +355,7 @@ resource "terraform_data" "services_validation" {
 
     precondition {
       condition     = length(local._services_validation_proxy_no_port) == 0
-      error_message = "Proxy-exposed services must have routing.backend_port set: ${join(", ", local._services_validation_proxy_no_port)}"
+      error_message = "Proxy-exposed service routes must have backend_port set: ${join(", ", local._services_validation_proxy_no_port)}"
     }
 
     precondition {
@@ -387,18 +372,8 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
-      condition     = length(local._services_validation_redirects_without_routes) == 0
-      error_message = "Service routing redirects require at least one modelled route: ${join(", ", local._services_validation_redirects_without_routes)}"
-    }
-
-    precondition {
       condition     = length(local._services_validation_route_hosts_conflicting) == 0
       error_message = "Service routing hostnames and redirects must be globally unique: ${join(", ", local._services_validation_route_hosts_conflicting)}"
-    }
-
-    precondition {
-      condition     = length(local._services_validation_route_ids_not_unique) == 0
-      error_message = "Service routing IDs must be unique per target: ${join(", ", local._services_validation_route_ids_not_unique)}"
     }
 
     precondition {

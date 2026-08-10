@@ -22,10 +22,10 @@ identity:
   title: Beszel
   username: max@excloo.com
 routing:
-  backend_port: 30333
-  routes:
-    - expose: internal
-      host: beszel.excloo.com
+  default:
+    backend_port: 30333
+    expose: internal
+    host: beszel.excloo.com
 targets:
   au-truenas:
     truenas:

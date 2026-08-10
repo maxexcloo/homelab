@@ -22,10 +22,10 @@ identity:
   title: Papra
   username: max@excloo.com
 routing:
-  backend_port: 1221
-  routes:
-    - expose: internal
-      host: papra.excloo.com
+  default:
+    backend_port: 1221
+    expose: internal
+    host: papra.excloo.com
 targets:
   au-truenas:
     truenas:

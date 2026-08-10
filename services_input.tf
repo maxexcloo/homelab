@@ -59,20 +59,6 @@ locals {
   }
 
   services_input_targets = {
-    for service_key, service in local._services_input_targets_raw : service_key => merge(
-      service,
-      {
-        routing = merge(
-          service.routing,
-          {
-            backend_scheme = (
-              service.routing.backend_scheme != "" ? service.routing.backend_scheme
-              : service.routing.backend_port != null ? "http"
-              : ""
-            )
-          },
-        )
-      },
-    )
+    for service_key, service in local._services_input_targets_raw : service_key => service
   }
 }

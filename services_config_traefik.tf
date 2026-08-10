@@ -2,7 +2,7 @@ locals {
   _services_config_traefik_proxy_routes = concat(
     flatten([
       for source_service in values(local.services_model) : [
-        for route in source_service.routing.routes : {
+        for route in source_service.routing : {
           name        = route.name
           backend_url = "http://${local.servers_resolved[source_service.target].runtime.addresses.tailscale_ipv4}:8000"
           host        = route.host
@@ -17,7 +17,7 @@ locals {
     ]),
     flatten([
       for source_service in values(local.services_model) : flatten([
-        for route in source_service.routing.routes : [
+        for route in source_service.routing : [
           for redirect in route.redirects : {
             name        = redirect.name
             backend_url = null
@@ -34,7 +34,7 @@ locals {
     ]),
     flatten([
       for source_server_key, source_server in local.servers_model : [
-        for route in source_server.routing.routes : {
+        for route in source_server.routing : {
           name        = "server-${source_server_key}-${substr(sha1(route.host), 0, 12)}"
           backend_url = route.backend_url
           host        = route.host
@@ -52,7 +52,7 @@ locals {
   # Redirect labels.
   _services_config_traefik_redirect_labels = {
     for service_key, service in local.services_model : service_key => {
-      for route in service.routing.routes : route.name => merge([
+      for route in service.routing : route.name => merge([
         for redirect in route.redirects : merge(
           {
             "traefik.enable"                                                      = "true"
@@ -94,7 +94,7 @@ locals {
 
   _services_config_traefik_route_labels = {
     for service_key, service in local.services_model : service_key => {
-      for route in service.routing.routes : route.name => merge(
+      for route in service.routing : route.name => merge(
         route.backend_port != null ? merge(
           {
             "traefik.enable"                                                 = "true"
@@ -135,7 +135,7 @@ locals {
           (
             service.features.monitoring &&
             service.features.oidc_forward_auth &&
-            service.routing.backend_scheme != "" &&
+            route.backend_scheme != "" &&
             route.host != null
             ) ? {
             "traefik.http.routers.${route.name}-monitoring.entrypoints"      = route.https ? "websecure" : "web"
@@ -181,10 +181,10 @@ locals {
 
   services_config_traefik_routing_labels = {
     for service_key, service in local.services_model : service_key => {
-      for container in distinct(compact([for route in service.routing.routes : route.container])) :
+      for container in distinct(compact([for route in service.routing : route.container])) :
       container => {
         for label_key, label_value in merge([
-          for route in service.routing.routes :
+          for route in service.routing :
           local._services_config_traefik_route_labels[service_key][route.name]
           if route.container == container
         ]...) :

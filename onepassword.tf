@@ -1,4 +1,23 @@
 locals {
+  _onepassword_reconciliations = merge(
+    {
+      for item_key, item in local._onepassword_server_manifest.items : "servers/${item_key}" => {
+        item      = item
+        item_key  = item_key
+        vault_id  = local._onepassword_server_manifest.vault_id
+        vault_key = "servers"
+      }
+    },
+    {
+      for item_key, item in local._onepassword_service_manifest.items : "services/${item_key}" => {
+        item      = item
+        item_key  = item_key
+        vault_id  = local._onepassword_service_manifest.vault_id
+        vault_key = "services"
+      }
+    },
+  )
+
   # Read only the server fields OpenTofu consumes; deployment-only fields remain op:// references.
   _onepassword_server_field_names = {
     for server_key, server in local.servers_model : server_key => toset(concat(
@@ -147,36 +166,25 @@ locals {
   }
 
   _onepassword_service_dashboard_urls = {
-    for service_key, service in local.services : service_key => values({
-      for card_index, dashboard_card in local._onepassword_service_dashboard_cards[service_key] :
-      "${lower(try(dashboard_card.name, ""))}:${format("%05d", card_index)}" => {
+    for service_key, service in local.services : service_key => {
+      for dashboard_card in local._onepassword_service_dashboard_cards[service_key] :
+      lower(try(dashboard_card.name, "")) => {
         href    = try(dashboard_card.href, null)
         label   = try(dashboard_card.name, null)
-        primary = try(dashboard_card.href, null) == service.urls.default.href
+        primary = try(try(dashboard_card.href, null) == service.urls.default.href, false)
       }
       if(
         try(dashboard_card.name, "") != "" &&
         try(dashboard_card.href, "") != "" &&
-        !contains([for url in values(service.urls) : url.href], try(dashboard_card.href, ""))
+        !contains([for route in values(service.routing) : route.href], try(dashboard_card.href, ""))
       )
-    })
+    }
   }
 
   # Read only fields consumed by root providers; deployment-only fields remain op:// references.
   _onepassword_service_field_names = {
     for service_key in keys(local._onepassword_service_items) :
     service_key => local.service_provider_credential_names[service_key]
-  }
-
-  _onepassword_service_host_urls = {
-    for service_key, service in local.services : service_key => [
-      for url_key in ["external", "internal"] : {
-        href    = service.urls[url_key].href
-        label   = service.urls[url_key].label
-        primary = service.urls[url_key].href == service.urls.default.href
-      }
-      if can(service.urls[url_key])
-    ]
   }
 
   _onepassword_service_item_fields = {
@@ -249,29 +257,10 @@ locals {
         local._onepassword_service_item_fields[service_key][label]
       ]
 
-      urls = concat(
-        [
-          for url_key in [
-            for key in sort(keys(service.urls)) : key
-            if(
-              !contains(["default", "external", "internal"], key) &&
-              !contains(
-                [
-                  for alias in ["external", "internal"] : service.urls[alias].href
-                  if can(service.urls[alias])
-                ],
-                service.urls[key].href,
-              )
-            )
-            ] : {
-            href    = service.urls[url_key].href
-            label   = url_key
-            primary = service.urls[url_key].href == service.urls.default.href
-          }
-        ],
-        local._onepassword_service_dashboard_urls[service_key],
-        local._onepassword_service_host_urls[service_key],
-      )
+      urls = [
+        for url_key in sort(keys(local._onepassword_service_urls[service_key])) :
+        local._onepassword_service_urls[service_key][url_key]
+      ]
     }
     if can(local._onepassword_service_items[service_key])
   }
@@ -325,9 +314,27 @@ locals {
     )))
   }
 
+  _onepassword_service_route_urls = {
+    for service_key, service in local.services : service_key => {
+      for route_id, route in service.routing : route_id => {
+        href    = route.href
+        label   = route_id
+        primary = try(route.href == service.urls.default.href, false)
+      }
+      if route.href != null
+    }
+  }
+
   _onepassword_service_titles = {
     for service_key, service in local._onepassword_service_items :
     service_key => "${service.identity.title} (${service_key})"
+  }
+
+  _onepassword_service_urls = {
+    for service_key, service in local.services : service_key => merge(
+      local._onepassword_service_dashboard_urls[service_key],
+      local._onepassword_service_route_urls[service_key],
+    )
   }
 
   # Selected existing values consumed by server providers or bootstrap rendering.
@@ -364,14 +371,34 @@ module "server_onepassword" {
   vault_id    = try(local.defaults.onepassword.vaults.servers.id, "disabled")
 }
 
-resource "terraform_data" "server_onepassword" {
-  triggers_replace = [nonsensitive(sha256(jsonencode(local._onepassword_server_manifest)))]
+module "service_onepassword" {
+  source = "./modules/onepassword"
+
+  field_names = local._onepassword_service_field_names
+  titles      = local._onepassword_service_titles
+  vault_id    = try(local.defaults.onepassword.vaults.services.id, "disabled")
+}
+
+resource "terraform_data" "onepassword" {
+  for_each = nonsensitive(toset(keys(local._onepassword_reconciliations)))
+
+  triggers_replace = [sha256(jsonencode(local._onepassword_reconciliations[each.key]))]
 
   provisioner "local-exec" {
     command = "uv run ${path.root}/scripts/reconcile_onepassword.py --write"
 
     environment = {
-      ONEPASSWORD_MANIFEST = jsonencode({ vaults = { servers = local._onepassword_server_manifest } })
+      ONEPASSWORD_MANIFEST = jsonencode({
+        vaults = {
+          (local._onepassword_reconciliations[each.key].vault_key) = {
+            vault_id = local._onepassword_reconciliations[each.key].vault_id
+
+            items = {
+              (local._onepassword_reconciliations[each.key].item_key) = local._onepassword_reconciliations[each.key].item
+            }
+          }
+        }
+      })
     }
   }
 }
@@ -383,27 +410,7 @@ module "server_onepassword_created" {
   titles   = local._onepassword_server_missing_titles
   vault_id = try(local.defaults.onepassword.vaults.servers.id, "disabled")
 
-  depends_on = [terraform_data.server_onepassword]
-}
-
-module "service_onepassword" {
-  source = "./modules/onepassword"
-
-  field_names = local._onepassword_service_field_names
-  titles      = local._onepassword_service_titles
-  vault_id    = try(local.defaults.onepassword.vaults.services.id, "disabled")
-}
-
-resource "terraform_data" "service_onepassword" {
-  triggers_replace = [nonsensitive(sha256(jsonencode(local._onepassword_service_manifest)))]
-
-  provisioner "local-exec" {
-    command = "uv run ${path.root}/scripts/reconcile_onepassword.py --write"
-
-    environment = {
-      ONEPASSWORD_MANIFEST = jsonencode({ vaults = { services = local._onepassword_service_manifest } })
-    }
-  }
+  depends_on = [terraform_data.onepassword]
 }
 
 module "service_onepassword_created" {
@@ -413,5 +420,5 @@ module "service_onepassword_created" {
   titles   = local._onepassword_service_missing_titles
   vault_id = try(local.defaults.onepassword.vaults.services.id, "disabled")
 
-  depends_on = [terraform_data.service_onepassword]
+  depends_on = [terraform_data.onepassword]
 }

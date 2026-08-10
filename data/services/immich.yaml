@@ -31,11 +31,11 @@ identity:
   title: Immich
   username: max@excloo.com
 routing:
-  backend_port: 30041
-  container: server
-  routes:
-    - expose: cloudflare
-      host: photos.excloo.com
+  default:
+    backend_port: 30041
+    container: server
+    expose: cloudflare
+    host: photos.excloo.com
 targets:
   au-truenas:
     truenas:

@@ -38,5 +38,6 @@ Gatus service's `data.endpoints`.
 
 ## URLs In 1Password
 
-Service dashboard links that are not already present in `service.urls` are added
-to the matching 1Password item as additional URLs.
+Service route URLs are added to the matching 1Password item under their stable
+route IDs. Dashboard links that differ from every route URL are added under the
+dashboard card name. URL entries are sorted by label.

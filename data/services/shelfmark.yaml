@@ -23,10 +23,10 @@ identity:
   access_groups:
     - books
 routing:
-  backend_port: 30260
-  routes:
-    - expose: cloudflare
-      host: shelf.excloo.com
+  default:
+    backend_port: 30260
+    expose: cloudflare
+    host: shelf.excloo.com
 targets:
   au-truenas:
     truenas:

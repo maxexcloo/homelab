@@ -2,17 +2,18 @@ locals {
   _dns_model_hosts = distinct(flatten([
     [
       for service in values(local.services_input_targets) : [
-        for route in service.routing.routes : route.host
+        for route in service.routing : route.host
         if route.host != null
       ]
     ],
     [
-      for service in values(local.services_input_targets) :
-      service.routing.redirects
+      for service in values(local.services_input_targets) : [
+        for route in values(service.routing) : try(route.redirects, [])
+      ]
     ],
     [
       for server in values(local.servers_input) : [
-        for route in server.routing.routes : route.host
+        for route in server.routing : route.host
       ]
     ],
   ]))
@@ -56,7 +57,7 @@ locals {
   dns_model_routes = merge(
     merge([
       for server_key, server in local.servers_model : {
-        for route in server.routing.routes : "${server_key}-route-${route.id}" => {
+        for route in server.routing : "${server_key}-route-${route.id}" => {
           expose     = route.expose
           hostname   = route.host
           server_key = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : server_key
@@ -89,7 +90,7 @@ locals {
     ]...),
     merge([
       for service_key, service in local.services_model : {
-        for route in service.routing.routes : "${service_key}-url-${route.id}" => {
+        for route in service.routing : "${service_key}-url-${route.id}" => {
           expose   = route.expose
           hostname = route.host
           source   = "service"
@@ -128,7 +129,7 @@ locals {
     ]...),
     merge(flatten([
       for service_key, service in local.services_model : [
-        for route in service.routing.routes : {
+        for route in service.routing : {
           for redirect in route.redirects : "${service_key}-redirect-${substr(sha1(redirect.host), 0, 12)}" => {
             expose     = redirect.expose
             hostname   = redirect.host
