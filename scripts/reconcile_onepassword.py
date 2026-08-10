@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sys
+import time
 from copy import deepcopy
 
 from httpx import HTTPError
@@ -26,9 +27,18 @@ SYSTEM_FIELD_IDS = frozenset({"notesPlain", "password", "username"})
 
 
 def api_request(client, method, path, body=None):
-    response = client.build_request(method, path, body)
+    for attempt in range(5):
+        response = client.build_request(method, path, body)
+        if response.status_code != 404 or method not in {"GET", "PUT"}:
+            break
+        if attempt < 4:
+            time.sleep(0.5 * 2**attempt)
     if response.is_error:
-        raise RuntimeError(f"1Password Connect returned HTTP {response.status_code}")
+        detail = response.text.strip()
+        message = f"1Password Connect returned HTTP {response.status_code}"
+        if detail:
+            message = f"{message}: {detail}"
+        raise RuntimeError(message)
     return response
 
 
