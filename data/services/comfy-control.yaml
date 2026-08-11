@@ -16,12 +16,12 @@ credentials:
       length: 32
       type: alphanumeric
 dashboard:
-  - icon: mdi-tune-vertical-#3b82f6
+  - icon: comfyui
 features:
   password: true
 identity:
-  description: AI Inference Control
-  group: AI
+  description: ComfyUI Control & Proxy
+  group: Artificial Intelligence
   service: comfy-control
   title: Comfy Control
   username: max@excloo.com

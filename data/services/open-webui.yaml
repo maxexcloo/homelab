@@ -18,7 +18,7 @@ features:
   password: true
 identity:
   description: AI Chat
-  group: AI
+  group: Artificial Intelligence
   service: open-webui
   title: Open WebUI
   username: max@excloo.com

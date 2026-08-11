@@ -8,12 +8,12 @@ credentials:
       length: 32
       type: hex
 dashboard:
-  - icon: https://cdn.jsdelivr.net/gh/maximhq/bifrost@108a8c69d7e55029e4e1943be21e6ccfc7757c56/ui/public/bifrost-icon-dark.webp
+  - icon: https://cdn.jsdelivr.net/gh/maximhq/bifrost/ui/public/bifrost-icon-dark.webp
 features:
   password: true
 identity:
   description: LLM Gateway
-  group: AI
+  group: Artificial Intelligence
   service: bifrost
   title: Bifrost
   username: max@excloo.com
