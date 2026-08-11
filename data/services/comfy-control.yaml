@@ -7,6 +7,8 @@ credentials:
     modal_token_secret: {}
     runpod_api_key: {}
     salad_api_key: {}
+    salad_organisation: {}
+    salad_project: {}
     vast_api_key: {}
   generated:
     comfy_control_api_key:
