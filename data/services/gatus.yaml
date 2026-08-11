@@ -34,7 +34,7 @@ features:
   tailscale: true
 identity:
   description: Health Monitoring & Status Page
-  group: Infrastructure
+  group: Operations
   service: gatus
   title: Gatus
 routing:

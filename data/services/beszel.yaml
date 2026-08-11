@@ -17,7 +17,7 @@ features:
   password: true
 identity:
   description: System Monitoring
-  group: Infrastructure
+  group: Operations
   service: beszel
   title: Beszel
   username: max@excloo.com

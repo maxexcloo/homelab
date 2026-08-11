@@ -13,7 +13,7 @@ features:
   oidc_forward_auth: true
 identity:
   description: Container Log Viewer
-  group: Infrastructure
+  group: Operations
   service: dozzle
   title: Dozzle
   username: max@excloo.com

@@ -9,17 +9,11 @@ credentials:
       type: hex
 dashboard:
   - icon: https://cdn.jsdelivr.net/gh/maximhq/bifrost@108a8c69d7e55029e4e1943be21e6ccfc7757c56/ui/public/bifrost-icon-dark.webp
-data:
-  cliproxy_api_key: ${services.cliproxyapi.runtime.credentials.cliproxy_api_key}
-  cliproxy_url: https://${services.cliproxyapi.urls.default.host}
-  comfy_control_api_key: ${services.comfy_control.runtime.credentials.comfy_control_api_key}
-  comfy_control_url: ${services.comfy_control.urls.default.href}
 features:
-  monitoring: false
   password: true
 identity:
   description: LLM Gateway
-  group: Infrastructure
+  group: AI
   service: bifrost
   title: Bifrost
   username: max@excloo.com

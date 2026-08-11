@@ -363,7 +363,7 @@
     "organisation": {
       "additionalProperties": false,
       "description": "Organisation-level metadata used across resources.",
-      "required": ["email", "managed_comment", "name"],
+      "required": ["email", "managed_comment", "name", "owner"],
       "type": "object",
       "properties": {
         "email": {
@@ -379,6 +379,11 @@
         "name": {
           "description": "Organisation short name used in resource display names and identifiers.",
           "pattern": "^(?=.{1,63}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
+          "type": "string"
+        },
+        "owner": {
+          "description": "Organisation owner display name used for application administration.",
+          "minLength": 1,
           "type": "string"
         }
       }

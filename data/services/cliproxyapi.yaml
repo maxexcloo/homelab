@@ -7,13 +7,12 @@ credentials:
 dashboard:
   - icon: https://cdn.jsdelivr.net/gh/router-for-me/Cli-Proxy-API-Management-Center@f60c8ca683b118be5750ff102187cc6d8ad4605b/logo.jpg
 features:
-  monitoring: false
   password: true
 identity:
   description: Subscription Proxy
-  group: Infrastructure
+  group: AI
   service: cliproxyapi
-  title: CLIProxyAPI
+  title: CLI Proxy API
   username: max@excloo.com
 routing:
   default:

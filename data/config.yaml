@@ -72,6 +72,7 @@ organisation:
   email: max@excloo.com
   managed_comment: OpenTofu Managed
   name: excloo
+  owner: Max Schaefer
 pocketid:
   default_groups:
     - all_services

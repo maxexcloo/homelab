@@ -18,7 +18,7 @@ features:
   password: true
 identity:
   description: AI Chat
-  group: Applications
+  group: AI
   service: open-webui
   title: Open WebUI
   username: max@excloo.com
@@ -43,6 +43,6 @@ targets:
         OPENID_PROVIDER_URL: ${service.runtime.attributes.oidc_issuer_url}/.well-known/openid-configuration
         OPENID_REDIRECT_URI: ${service.urls.default.href}/oauth/oidc/callback
         WEBUI_ADMIN_EMAIL: ${service.identity.username}
-        WEBUI_ADMIN_NAME: ${service.identity.username}
+        WEBUI_ADMIN_NAME: ${defaults.organisation.owner}
         WEBUI_ADMIN_PASSWORD: ${service.runtime.credentials.password}
         WEBUI_URL: ${service.urls.default.href}

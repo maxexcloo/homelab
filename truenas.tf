@@ -1,5 +1,14 @@
 # Stage: config — TrueNAS deployment context.
 locals {
+  _github_truenas_deployments = {
+    for deployment in local.services_configs.truenas.deployments : deployment.key => {
+      name       = deployment.name
+      owner      = local.defaults.github.owner
+      repository = local.defaults.github.deployment_repositories.truenas.name
+      target     = deployment.target
+    }
+  }
+
   _services_config_truenas_services = {
     for service_key, service in local.services_model : service_key => service
     if(
@@ -16,6 +25,16 @@ locals {
       for service_key, service in local._services_config_truenas_services : service_key => {
         custom         = local.services_config_custom[service_key]
         routing_labels = local.services_config_traefik_routing_labels[service_key]
+
+        imports = {
+          for alias, imported_service_key in local.services_model_imports[service_key] : alias => {
+            urls = local.services_config_services[imported_service_key].urls
+
+            runtime = {
+              credentials = local.services_config_services[imported_service_key].runtime.credentials
+            }
+          }
+        }
 
         defaults = {
           organisation = {
@@ -64,19 +83,21 @@ locals {
     ]
   }
 
-  services_config_truenas_workflow_dispatches = {
-    for target_key in toset([
-      for deployment in local.services_config_truenas.deployments : deployment.target
-      ]) : "truenas/${target_key}" => {
-      fingerprint = sha256(jsonencode([
-        for deployment in local.services_config_truenas.deployments :
-        local.services_config_truenas.contexts[deployment.key]
-        if deployment.target == target_key
-      ]))
+  services_config_workflow_dispatches = {
+    truenas = {
+      for target_key in toset([
+        for deployment in local.services_config_truenas.deployments : deployment.target
+        ]) : "truenas/${target_key}" => {
+        fingerprint = sha256(jsonencode([
+          for deployment in local.services_config_truenas.deployments :
+          local.services_config_truenas.contexts[deployment.key]
+          if deployment.target == target_key
+        ]))
 
-      inputs = {
-        changed_only = true
-        deployment   = target_key
+        inputs = {
+          changed_only = true
+          deployment   = target_key
+        }
       }
     }
   }

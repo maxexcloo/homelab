@@ -26,22 +26,6 @@ locals {
     repository_key => repository_key == "truenas" ? base64gzip(jsonencode(config)) : jsonencode(config)
   }
 
-  _github_fly_deployments = {
-    for deployment in local.services_configs.fly.deployments : deployment.key => {
-      app        = deployment.app
-      owner      = local.defaults.github.owner
-      repository = local.defaults.github.deployment_repositories.fly.name
-    }
-  }
-
-  _github_truenas_deployments = {
-    for deployment in local.services_configs.truenas.deployments : deployment.key => {
-      name       = deployment.name
-      owner      = local.defaults.github.owner
-      repository = local.defaults.github.deployment_repositories.truenas.name
-      target     = deployment.target
-    }
-  }
 }
 
 resource "github_repository" "deployment" {
