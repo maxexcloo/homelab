@@ -10,7 +10,7 @@ features:
   password: true
 identity:
   description: Email Archiving
-  group: Applications
+  group: Operations
   service: bichon
   title: Bichon
   username: max@excloo.com
