@@ -178,6 +178,15 @@ def merge_fields(existing, desired, ownership, previous_ownership):
             if key in desired_field:
                 existing_field[key] = deepcopy(desired_field[key])
 
+    desired_order = {
+        field_id: position for position, field_id in enumerate(desired_by_id)
+    }
+    existing_fields.sort(
+        key=lambda field: (
+            (0, desired_order[field["id"]]) if field["id"] in desired_order else (1, 0)
+        )
+    )
+
     unknown = sorted(
         set(existing_by_id)
         - set(desired_by_id)
