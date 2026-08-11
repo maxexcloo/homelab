@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  generated:
+    bifrost_api_key:
+      length: 32
+      type: alphanumeric
+    bifrost_encryption_key:
+      length: 32
+      type: hex
+dashboard:
+  - icon: https://cdn.jsdelivr.net/gh/maximhq/bifrost@108a8c69d7e55029e4e1943be21e6ccfc7757c56/ui/public/bifrost-icon-dark.webp
+data:
+  cliproxy_api_key: ${services.cliproxyapi.runtime.credentials.cliproxy_api_key}
+  cliproxy_url: https://${services.cliproxyapi.urls.default.host}
+  comfy_control_api_key: ${services.comfy_control.runtime.credentials.comfy_control_api_key}
+  comfy_control_url: ${services.comfy_control.urls.default.href}
+features:
+  monitoring: false
+  password: true
+identity:
+  description: LLM Gateway
+  group: Infrastructure
+  service: bifrost
+  title: Bifrost
+  username: max@excloo.com
+imports:
+  services:
+    cliproxyapi: cliproxyapi-au-truenas
+    comfy_control: comfy-control-au-truenas
+routing:
+  default:
+    expose: internal
+    host: bifrost.excloo.com
+    backend:
+      port: 8080
+targets:
+  au-truenas: {}

@@ -272,6 +272,21 @@ moved {
 }
 
 moved {
+  from = cloudflare_dns_record.all["ai-router-au-truenas-url-cliproxy"]
+  to   = cloudflare_dns_record.all["cliproxyapi-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["ai-router-au-truenas-url-control"]
+  to   = cloudflare_dns_record.all["comfy-control-au-truenas-url-default"]
+}
+
+moved {
+  from = cloudflare_dns_record.all["ai-router-au-truenas-url-default"]
+  to   = cloudflare_dns_record.all["bifrost-au-truenas-url-default"]
+}
+
+moved {
   from = cloudflare_dns_record.all["aiometadata-au-truenas-url-0"]
   to   = cloudflare_dns_record.all["aiometadata-au-truenas-url-default"]
 }

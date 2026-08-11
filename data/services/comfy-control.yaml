@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../schemas/service.json
+credentials:
+  fields:
+    civitai_api_key: {}
+    huggingface_token: {}
+    runpod_api_key: {}
+    salad_api_key: {}
+    vast_api_key: {}
+  generated:
+    comfy_control_api_key:
+      length: 32
+      type: alphanumeric
+    worker_api_key:
+      length: 32
+      type: alphanumeric
+dashboard:
+  - icon: mdi-tune-vertical-#3b82f6
+data:
+  cliproxy_api_key: ${services.cliproxyapi.runtime.credentials.cliproxy_api_key}
+  cliproxy_url: https://${services.cliproxyapi.urls.default.host}
+features:
+  monitoring: false
+  password: true
+identity:
+  description: AI Inference Control
+  group: Infrastructure
+  service: comfy-control
+  title: Comfy Control
+  username: max@excloo.com
+imports:
+  services:
+    cliproxyapi: cliproxyapi-au-truenas
+routing:
+  default:
+    expose: internal
+    host: ai-router.excloo.com
+    backend:
+      port: 8000
+targets:
+  au-truenas: {}
