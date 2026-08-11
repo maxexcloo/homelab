@@ -1,5 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "dependencyDashboard": false,
   "extends": ["config:recommended", ":enablePreCommit"],
   "ignoreDeps": ["hashicorp/terraform"],
   "customManagers": [
@@ -18,16 +19,6 @@
     "enabled": true
   },
   "packageRules": [
-    {
-      "description": "Group minor updates",
-      "groupName": "Minor updates",
-      "matchUpdateTypes": ["minor"]
-    },
-    {
-      "description": "Group patch and pin updates",
-      "groupName": "Patch and pin updates",
-      "matchUpdateTypes": ["patch", "pin"]
-    },
     {
       "description": "Resolve OpenTofu provider updates from the OpenTofu registry",
       "matchDatasources": ["terraform-module", "terraform-provider"],
