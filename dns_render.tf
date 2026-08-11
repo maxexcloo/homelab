@@ -29,7 +29,8 @@ locals {
     for server_key, server in local.servers_model : merge(
       (
         server.platform != "oci" &&
-        server.addresses.public_ipv4 != null
+        server.addresses.public_ipv4 != null &&
+        server.hosts.public == null
         ) ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
           content  = server.addresses.public_ipv4
@@ -42,7 +43,8 @@ locals {
       } : {},
       (
         server.platform != "oci" &&
-        server.addresses.public_ipv6 != null
+        server.addresses.public_ipv6 != null &&
+        server.hosts.public == null
         ) ? {
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
           content  = server.addresses.public_ipv6
@@ -53,7 +55,11 @@ locals {
           zone     = local.defaults.domains.external
         }
       } : {},
-      server.platform == "oci" ? {
+      (
+        server.platform == "oci" &&
+        server.platform_config.oci.assign_public_ip &&
+        server.hosts.public == null
+        ) ? {
         "${local.defaults.domains.external}-${server_key}-a" = {
           content  = oci_core_instance.vm[server_key].public_ip
           name     = server.hosts.external
@@ -62,6 +68,11 @@ locals {
           wildcard = true
           zone     = local.defaults.domains.external
         }
+      } : {},
+      (
+        server.platform == "oci" &&
+        server.hosts.public == null
+        ) ? {
         "${local.defaults.domains.external}-${server_key}-aaaa" = {
           content  = one(one(oci_core_instance.vm[server_key].create_vnic_details).ipv6address_ipv6subnet_cidr_pair_details).ipv6address
           name     = server.hosts.external

@@ -19,7 +19,6 @@ git clone https://github.com/maxexcloo/homelab.git
 cd homelab
 
 mise run setup
-mise run init
 mise run check
 mise run plan
 mise run apply
@@ -56,6 +55,7 @@ mise run plan            # Review infrastructure changes
 mise run prek            # Run all repository hooks
 mise run setup           # Clean local data, configure, initialise, and install Git hooks
 mise run sort-check      # Check HCL assignments, JSON Schema, and YAML key ordering
+mise run test            # Run unit tests
 mise run validate        # Check and validate OpenTofu configuration
 ```
 

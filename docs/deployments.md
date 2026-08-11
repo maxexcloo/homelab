@@ -21,6 +21,9 @@ them under `deployment.custom.<service>`. Dozzle, Gatus, Homepage, and Traefik
 therefore remain root-owned configuration and can move between Docker, Fly, and
 TrueNAS without moving their aggregation logic into a platform repository.
 
+Gatus and Homepage are optional singleton aggregators. When present, Gatus must
+enable the `mail` and `tailscale` features and provide a `data.endpoints` list.
+
 Docker publishes encrypted OCI packages for doco-cd. Fly deploys from a hosted
 runner.
 TrueNAS publishes encrypted OCI packages on a hosted runner and decrypts them

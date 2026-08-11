@@ -1,5 +1,6 @@
 [env]
 API_DATA_IS_SENSITIVE = "true"
+PYTHONDONTWRITEBYTECODE = "1"
 
 [tools]
 actionlint = "1.7.12"
@@ -31,7 +32,7 @@ prek install
 # Development
 [tasks.check]
 description = "Format check, lint, and validate"
-depends = ["lint", "validate"]
+depends = ["lint", "test", "validate"]
 run = """
 actionlint .github/workflows/*.yaml
 prettier --check .
@@ -73,6 +74,10 @@ run = "prek run --all-files"
 [tasks.sort-check]
 description = "Check HCL assignment grouping, JSON Schema, and YAML key ordering"
 run = "uv run scripts/sort_check.py"
+
+[tasks.test]
+description = "Run unit tests"
+run = "uv run --with httpx==0.28.1 --with onepasswordconnectsdk==2.1.0 --with pytest==9.0.2 pytest -p no:cacheprovider"
 
 [tasks.validate]
 description = "Check and validate OpenTofu configuration"

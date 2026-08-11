@@ -13,6 +13,7 @@ mise run plan            # Review infrastructure changes
 mise run prek            # Run all repository hooks
 mise run setup           # Clean local data, configure, initialise, and install Git hooks
 mise run sort-check      # Check HCL assignments, JSON Schema, and YAML key ordering
+mise run test            # Run unit tests
 mise run validate        # Check and validate OpenTofu configuration
 ```
 
@@ -45,9 +46,9 @@ validation and `mise run prek` for the complete hook suite.
 
 The hook suite checks assignment ordering, file hygiene, GitHub Actions, JSON
 Schema metaschemas, OpenTofu formatting and validation, Python lint and
-formatting, Renovate configuration, repository formatting, and
-source/default-merged YAML. YAML templates are formatted as source but are not
-validated as concrete Compose documents before rendering.
+formatting, reconciler unit tests, Renovate configuration, repository
+formatting, and source/default-merged YAML. YAML templates are formatted as
+source but are not validated as concrete Compose documents before rendering.
 
 GitHub Actions runs prek for pull requests and pushes to `main`. Actions and
 hook repositories use explicit release versions, while mise pins the executable

@@ -63,7 +63,7 @@ resource "terraform_data" "config_deployment" {
   for_each = local._github_config_deployments
 
   input            = each.value
-  triggers_replace = [each.value.fingerprint]
+  triggers_replace = [sha256(jsonencode(each.value))]
 
   depends_on = [
     github_actions_variable.config,

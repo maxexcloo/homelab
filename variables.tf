@@ -10,14 +10,10 @@ variable "controld_api_token" {
 }
 
 variable "homelab_packages_token" {
-  description = "Shared read-only GitHub Packages token used by external deployment hosts."
+  default     = ""
+  description = "Shared read-only GitHub Packages token used by Docker deployment hosts. Required when any server enables Docker."
   sensitive   = true
   type        = string
-
-  validation {
-    condition     = length(nonsensitive(var.homelab_packages_token)) > 0
-    error_message = "Homelab packages token must not be empty."
-  }
 }
 
 variable "oci_always_free" {

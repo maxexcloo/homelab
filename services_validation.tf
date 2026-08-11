@@ -64,6 +64,15 @@ locals {
     )
   ]
 
+  _services_validation_gatus_invalid = [
+    for service_key in local._services_config_gatus_service_keys : service_key
+    if !(
+      local.services_model[service_key].features.mail &&
+      local.services_model[service_key].features.tailscale &&
+      can(tolist(local.services_model[service_key].data.endpoints))
+    )
+  ]
+
   _services_validation_import_alias_conflicts = flatten([
     for service_key, imports in local.services_model_imports : [
       for import_alias, service_ref in imports : "${service_key}.${import_alias} -> ${service_ref}"
@@ -141,6 +150,16 @@ locals {
       if(
         route.proxy_server != null &&
         route.backend.port == null
+      )
+    ]
+  ])
+
+  _services_validation_proxy_routes_on_fly = flatten([
+    for service_key, service in local.services_model : [
+      for route in service.routing : "${service_key} -> ${route.proxy_server}"
+      if(
+        service.target == "fly" &&
+        route.proxy_server != null
       )
     ]
   ])
@@ -307,6 +326,16 @@ resource "terraform_data" "services_validation" {
     }
 
     precondition {
+      condition     = length(local._services_config_gatus_service_keys) <= 1
+      error_message = "At most one expanded service with identity.service = gatus is allowed"
+    }
+
+    precondition {
+      condition     = length(local._services_validation_gatus_invalid) == 0
+      error_message = "Gatus services require features.mail, features.tailscale, and a data.endpoints list: ${join(", ", local._services_validation_gatus_invalid)}"
+    }
+
+    precondition {
       error_message = "At most one expanded service with identity.service = homepage is allowed"
 
       condition = length([
@@ -370,6 +399,11 @@ resource "terraform_data" "services_validation" {
     precondition {
       condition     = length(local._services_validation_proxy_no_port) == 0
       error_message = "Proxy-exposed service routes must have backend.port set: ${join(", ", local._services_validation_proxy_no_port)}"
+    }
+
+    precondition {
+      condition     = length(local._services_validation_proxy_routes_on_fly) == 0
+      error_message = "Fly services cannot use proxy-server exposure because they have no source server backend: ${join(", ", local._services_validation_proxy_routes_on_fly)}"
     }
 
     precondition {

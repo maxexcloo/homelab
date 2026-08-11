@@ -18,10 +18,12 @@ locals {
     }
   ]
 
-  _services_config_gatus_service_key = one([
+  _services_config_gatus_service_key = try(one(local._services_config_gatus_service_keys), null)
+
+  _services_config_gatus_service_keys = [
     for service_key, service in local.services_model : service_key
     if service.identity.service == "gatus"
-  ])
+  ]
 
   gatus_monitored_services = [
     for service_key in sort(keys(local.services_model)) : {
@@ -57,7 +59,7 @@ locals {
     )
   ]
 
-  services_config_gatus = {
+  services_config_gatus = local._services_config_gatus_service_key != null ? {
     environment = merge(
       {
         MAIL_PASSWORD      = "op://${local.defaults.onepassword.vaults.services.id}/${local.onepassword_service_item_ids[local._services_config_gatus_service_key]}/mail_password"
@@ -169,5 +171,5 @@ locals {
       header               = local.services[local._services_config_gatus_service_key].identity.title
       title                = local.services[local._services_config_gatus_service_key].identity.title
     }
-  }
+  } : null
 }

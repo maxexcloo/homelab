@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["jsonschema>=4", "pyyaml>=6"]
+# dependencies = ["jsonschema==4.26.0", "pyyaml==6.0.3"]
 # ///
 """Validate source YAML and the default-merged objects consumed by OpenTofu."""
 
@@ -10,7 +10,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import yaml
-from jsonschema import Draft7Validator
+from jsonschema import Draft7Validator, FormatChecker
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -72,7 +72,7 @@ def load_yaml(path):
 
 
 def validate(instance, schema, label, errors):
-    validator = Draft7Validator(schema)
+    validator = Draft7Validator(schema, format_checker=FormatChecker())
     for error in sorted(
         validator.iter_errors(instance), key=lambda item: list(item.path)
     ):

@@ -13,6 +13,17 @@ locals {
     for dns_file in local.dns_input_source_files : "${dns_file.file_key} -> ${dns_file.zone.name}"
     if dns_file.file_key != dns_file.zone.name
   ]
+
+  _dns_validation_record_sets_conflicting = [
+    for record_name, records in {
+      for record in values(local.dns_render_records) :
+      "${record.zone}/${record.name}" => record...
+    } : record_name
+    if(
+      contains([for record in records : record.type], "CNAME") &&
+      length(records) > 1
+    )
+  ]
 }
 
 resource "terraform_data" "dns_validation" {
@@ -32,6 +43,11 @@ resource "terraform_data" "dns_validation" {
     precondition {
       condition     = length(local._dns_validation_file_key_mismatches) == 0
       error_message = "DNS YAML filenames must match the zone name: ${join(", ", local._dns_validation_file_key_mismatches)}"
+    }
+
+    precondition {
+      condition     = length(local._dns_validation_record_sets_conflicting) == 0
+      error_message = "DNS CNAME records cannot coexist with other records at the same name: ${join(", ", local._dns_validation_record_sets_conflicting)}"
     }
   }
 }

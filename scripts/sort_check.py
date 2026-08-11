@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pyyaml>=6"]
+# dependencies = ["pyyaml==6.0.3"]
 # ///
 """Lint HCL assignments and YAML/JSON keys per AGENTS.md.
 

@@ -1,5 +1,7 @@
 .mise.local.toml
+.pytest_cache/
 .ruff_cache/
 .terraform/
+__pycache__/
 terraform.tfstate*
 tfplan
