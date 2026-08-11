@@ -20,6 +20,7 @@ credentials:
 dashboard:
   - icon: comfyui
 features:
+  object_storage: true
   password: true
 identity:
   description: ComfyUI Control & Proxy
