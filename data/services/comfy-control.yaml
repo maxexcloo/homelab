@@ -3,6 +3,8 @@ credentials:
   fields:
     civitai_api_key: {}
     huggingface_token: {}
+    modal_token_id: {}
+    modal_token_secret: {}
     runpod_api_key: {}
     salad_api_key: {}
     vast_api_key: {}
