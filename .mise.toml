@@ -9,7 +9,7 @@ opentofu = "1.12.5"
 prek = "0.4.13"
 prettier = "3.9.6"
 ruff = "0.16.2"
-uv = "0.12.3"
+uv = "0.12.4"
 
 # Setup
 [tasks.init]
