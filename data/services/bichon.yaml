@@ -20,6 +20,7 @@ routing:
     host: bichon.excloo.com
     backend:
       port: 15630
+      published_port: 15630
 targets:
   au-truenas:
     truenas:

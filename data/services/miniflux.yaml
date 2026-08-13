@@ -29,6 +29,7 @@ routing:
     host: reader.excloo.com
     backend:
       port: 30285
+      published_port: 30285
 targets:
   au-truenas:
     truenas:

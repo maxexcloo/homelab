@@ -39,5 +39,6 @@ routing:
     host: comfy-control.excloo.com
     backend:
       port: 8000
+      published_port: 28081
 targets:
   au-truenas: {}

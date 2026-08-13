@@ -20,6 +20,7 @@ routing:
     host: aiostreams.excloo.com
     backend:
       port: 30375
+      published_port: 30375
 targets:
   au-truenas:
     truenas:

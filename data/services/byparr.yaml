@@ -12,5 +12,6 @@ routing:
     host: byparr.excloo.com
     backend:
       port: 8191
+      published_port: 8191
 targets:
   au-truenas: {}

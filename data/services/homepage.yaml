@@ -44,5 +44,6 @@ routing:
     host: home.excloo.com
     backend:
       port: 30054
+      published_port: 30054
 targets:
   au-truenas: {}

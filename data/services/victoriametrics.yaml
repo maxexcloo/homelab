@@ -20,3 +20,4 @@ routing:
     host: metrics.excloo.com
     backend:
       port: 8428
+      published_port: 8428

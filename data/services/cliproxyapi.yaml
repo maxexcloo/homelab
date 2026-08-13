@@ -21,5 +21,6 @@ routing:
     path: /management.html
     backend:
       port: 8317
+      published_port: 28317
 targets:
   au-truenas: {}

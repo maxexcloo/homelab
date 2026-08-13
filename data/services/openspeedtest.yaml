@@ -12,6 +12,7 @@ routing:
 
     backend:
       port: 30116
+      published_port: 30116
 
     labels:
       traefik.http.middlewares.openspeedtest-buffering.buffering.maxrequestbodybytes: 36700160

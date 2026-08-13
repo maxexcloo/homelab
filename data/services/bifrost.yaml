@@ -27,5 +27,6 @@ routing:
     host: bifrost.excloo.com
     backend:
       port: 8080
+      published_port: 28080
 targets:
   au-truenas: {}

@@ -39,6 +39,7 @@ routing:
     host: books.excloo.com
     backend:
       port: 30396
+      published_port: 30396
 targets:
   au-truenas:
     truenas:

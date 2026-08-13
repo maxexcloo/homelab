@@ -28,6 +28,7 @@ routing:
     host: chat.excloo.com
     backend:
       port: 31028
+      published_port: 31028
 targets:
   au-truenas:
     truenas:

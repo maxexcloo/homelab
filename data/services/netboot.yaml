@@ -13,6 +13,7 @@ routing:
     host: netboot.excloo.com
     backend:
       port: 31010
+      published_port: 31010
 targets:
   au-truenas:
     truenas:

@@ -27,6 +27,7 @@ routing:
     host: beszel.excloo.com
     backend:
       port: 30333
+      published_port: 30333
 targets:
   au-truenas:
     truenas:

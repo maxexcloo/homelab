@@ -24,6 +24,7 @@ routing:
 
     backend:
       port: 30064
+      published_port: 30064
 
     redirects:
       - dozzle.excloo.com

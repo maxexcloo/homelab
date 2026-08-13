@@ -37,6 +37,7 @@ routing:
     host: links.excloo.com
     backend:
       port: 30243
+      published_port: 30243
 targets:
   au-truenas:
     truenas:

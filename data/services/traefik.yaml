@@ -20,6 +20,7 @@ routing:
     host: null
     backend:
       port: 8082
+      published_port: 8082
     labels:
       traefik.http.middlewares.autocompress.compress: "true"
       traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}

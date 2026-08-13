@@ -543,7 +543,7 @@
                 "type": ["integer", "null"]
               },
               "published_port": {
-                "description": "Published host port. Null uses port.",
+                "description": "Published host port used instead of container routing when set.",
                 "maximum": 65535,
                 "minimum": 1,
                 "type": ["integer", "null"]

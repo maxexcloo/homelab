@@ -19,6 +19,7 @@ routing:
     host: budget.excloo.com
     backend:
       port: 31012
+      published_port: 31012
 targets:
   au-truenas:
     truenas:

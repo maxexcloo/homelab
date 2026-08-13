@@ -33,6 +33,7 @@ routing:
     host: shelf.excloo.com
     backend:
       port: 30260
+      published_port: 30260
 targets:
   au-truenas:
     truenas:

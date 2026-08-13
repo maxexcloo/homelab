@@ -166,7 +166,7 @@ locals {
 
           backend = {
             port           = try(route.backend.port, null)
-            published_port = try(route.backend.published_port, null) != null ? route.backend.published_port : try(route.backend.port, null)
+            published_port = try(route.backend.published_port, null)
             scheme         = try(route.backend.scheme, "") != "" ? route.backend.scheme : try(route.backend.port, null) != null ? "http" : ""
           }
 

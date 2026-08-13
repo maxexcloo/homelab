@@ -21,6 +21,7 @@ routing:
     host: id.excloo.com
     backend:
       port: 1411
+      published_port: 1411
 targets:
   au-truenas:
     truenas:
