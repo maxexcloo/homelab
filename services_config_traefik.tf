@@ -104,8 +104,9 @@ locals {
             "traefik.http.routers.${route.name}.rule"                        = route.host != null ? "Host(`${route.host}`)" : null
             "traefik.http.routers.${route.name}.service"                     = route.name
             "traefik.http.routers.${route.name}.tls.certresolver"            = route.acme ? "cloudflare" : null
-            "traefik.http.services.${route.name}.loadbalancer.server.port"   = tostring(route.backend.port)
-            "traefik.http.services.${route.name}.loadbalancer.server.scheme" = route.backend.scheme == "https" ? "https" : null
+            "traefik.http.services.${route.name}.loadbalancer.server.port"   = route.backend.published_port == null ? tostring(route.backend.port) : null
+            "traefik.http.services.${route.name}.loadbalancer.server.scheme" = route.backend.published_port == null && route.backend.scheme == "https" ? "https" : null
+            "traefik.http.services.${route.name}.loadbalancer.server.url"    = route.backend.published_port != null ? "${route.backend.scheme}://host.docker.internal:${route.backend.published_port}" : null
 
             "traefik.http.routers.${route.name}.entrypoints" = (
               route.proxy_server != null
