@@ -24,9 +24,6 @@ services:
       traefik.http.routers.doco-cd.middlewares: internal-only@docker
       traefik.http.routers.doco-cd.rule: "Host(`doco-cd.${server.hosts.internal}`)"
       traefik.http.services.doco-cd.loadbalancer.server.port: "80"
-    ports:
-      - 127.0.0.1:8089:80
-      - 127.0.0.1:9120:9120
     restart: unless-stopped
     secrets:
       - source: registry_config

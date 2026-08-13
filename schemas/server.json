@@ -203,6 +203,10 @@
           "description": "Provision S3-compatible object storage using the default provider, currently Backblaze B2. Exposes runtime.attributes.{object_storage_access_key_id, object_storage_bucket, object_storage_endpoint} and runtime.credentials.object_storage_secret_access_key.",
           "type": "boolean"
         },
+        "observability": {
+          "description": "Host Grafana and VictoriaMetrics through service target selection. Does not provision resources or expose runtime values by itself.",
+          "type": "boolean"
+        },
         "password": {
           "description": "Generate a random admin password and expose runtime.credentials.password. Non-TrueNAS bootstrap artefacts also receive a derived runtime.credentials.password_hash that is not stored in 1Password.",
           "type": "boolean"

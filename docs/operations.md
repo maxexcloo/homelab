@@ -23,6 +23,11 @@ OpenTofu uses GCS with Google Application Default Credentials. The mise-managed
 `gcloud` CLI can establish those credentials with
 `gcloud auth application-default login`.
 
+The backend bucket is managed outside this root so its lifecycle is independent
+of the state it stores. Keep Object Versioning and uniform bucket-level access
+enabled, restrict IAM to the operators that need it, and treat every state
+reader as a secret reader.
+
 ## Adding Servers
 
 1. Create `data/servers/<key>.yaml` following `schemas/server.json`.

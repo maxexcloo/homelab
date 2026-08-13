@@ -42,3 +42,4 @@ targets:
     truenas:
       env:
         IMMICH_LOG_FORMAT: json
+        LD_LIBRARY_PATH: /usr/lib/wsl/lib

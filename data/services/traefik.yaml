@@ -5,6 +5,9 @@ dashboard:
         url: ${service.urls.default.href}
         headers:
           X-Gatus-Token: ${service.runtime.credentials.monitoring_token}
+data:
+  shared:
+    metrics_url: http://${server.runtime.addresses.tailscale_ipv4}:28083/metrics
 features:
   oidc_forward_auth: true
 identity:
@@ -15,10 +18,8 @@ routing:
   default:
     expose: internal
     host: null
-
     backend:
       port: 8082
-
     labels:
       traefik.http.middlewares.autocompress.compress: "true"
       traefik.http.middlewares.internal-only.ipallowlist.sourcerange: ${join(", ", defaults.networking.allowlists.internal)}

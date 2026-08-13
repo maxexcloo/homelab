@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../../schemas/service.json
+target_feature: observability
+dashboard:
+  - {}
+data:
+  graphite_listen_port: 2003
+  retention_period: 90d
+  shared:
+    metrics_url: http://127.0.0.1:8428/metrics
+features:
+  oidc_forward_auth: true
+identity:
+  description: Metrics Storage
+  group: Operations
+  service: victoriametrics
+  title: VictoriaMetrics
+routing:
+  default:
+    expose: internal
+    host: metrics.excloo.com
+    backend:
+      port: 8428

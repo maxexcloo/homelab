@@ -29,6 +29,8 @@ data:
       dns:
         query-name: ${defaults.domains.internal}
         query-type: A
+  shared:
+    metrics_url: ${service.urls.default.href}/metrics
 features:
   mail: true
   tailscale: true

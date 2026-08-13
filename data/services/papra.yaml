@@ -27,6 +27,7 @@ routing:
     host: papra.excloo.com
     backend:
       port: 1221
+      published_port: 21221
 targets:
   au-truenas:
     truenas:

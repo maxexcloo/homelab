@@ -16,6 +16,11 @@ targets.
 Service YAML can include a root `data` value with any JSON-compatible shape.
 Templates receive the rendered value as `service.data`.
 
+Non-empty `data.shared` objects are also published generically to every
+deployment as `services.<expanded-service-key>.data`. This shares deliberate,
+non-secret service data across templates without adding service-specific HCL.
+When present, `data.shared` must be an object.
+
 Targets can set `targets.<key>.data`. Object values deep-merge with target
 values winning; scalars, arrays, and null replace the service-level value.
 
@@ -26,9 +31,11 @@ Templates receive:
 - `defaults` - merged global config and defaults
 - `server` - the rendered target server with runtime values, or null for
   non-server targets
-- `servers` - all rendered servers with runtime values
+- `servers` - all deterministic server models; the target and explicitly
+  imported aliases include their rendered runtime values
 - `service` - the current expanded service
-- `services` - all expanded services plus declared import aliases
+- `services` - all deterministic expanded service models; explicitly imported
+  aliases include their runtime values
 
 `data`, `dashboard`, and `truenas` values are rendered with `templatestring()`
 before file templates run. Adjacent services are exposed without runtime

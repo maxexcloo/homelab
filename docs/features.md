@@ -30,6 +30,8 @@ credential interface.
   enabled.
 - `monitoring_external` adds an ICMP check using the server's external hostname.
 - `object_storage` provisions storage through the default S3-compatible provider.
+- `observability` selects servers that host the shared Grafana and
+  VictoriaMetrics services.
 - `password` adds a server password. Non-TrueNAS bootstrap artefacts derive the
   system password hash without storing it in 1Password.
 - `tailscale` provisions a Tailscale auth key and service target, and installs

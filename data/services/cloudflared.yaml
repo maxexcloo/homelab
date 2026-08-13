@@ -8,6 +8,9 @@ dashboard:
         accountid: ${server.runtime.attributes.cloudflare_account_id}
         key: ${server.runtime.credentials.cloudflare_tunnel_read_token}
         tunnelid: ${server.runtime.attributes.cloudflare_tunnel_id}
+data:
+  shared:
+    metrics_url: http://${server.runtime.addresses.tailscale_ipv4}:20241/metrics
 identity:
   description: VPN
   service: cloudflared

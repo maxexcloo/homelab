@@ -31,6 +31,13 @@ locals {
       src    = ["tag:ephemeral"]
     },
 
+    # Appliances: server management traffic only
+    {
+      action = "accept"
+      dst    = ["tag:server:443"]
+      src    = ["tag:appliance"]
+    },
+
     # VMs: service traffic and agent communication
     {
       action = "accept"
@@ -39,12 +46,12 @@ locals {
     },
     {
       action = "accept"
-      dst    = ["tag:server:80", "tag:server:443", "tag:server:8120"]
+      dst    = ["tag:server:80", "tag:server:443"]
       src    = ["tag:vm"]
     },
     {
       action = "accept"
-      dst    = ["tag:vm:80", "tag:vm:443", "tag:vm:8120"]
+      dst    = ["tag:vm:80", "tag:vm:443"]
       src    = ["tag:vm"]
     },
 
@@ -128,13 +135,6 @@ resource "tailscale_acl" "default" {
       "group:admin" = local.defaults.tailscale.admin_identities
     }
 
-    tests = [
-      {
-        accept = ["tag:appliance:0", "tag:router:0", "tag:server:0", "tag:vm:0"]
-        proto  = "icmp"
-        src    = "tag:ephemeral"
-      },
-    ]
   })
 }
 

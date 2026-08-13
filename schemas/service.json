@@ -397,10 +397,23 @@
       }
     },
     "data": {
-      "description": "General-purpose service data exposed to templates as service.data and data. Values may be any JSON shape. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
+      "description": "General-purpose service data exposed to templates as service.data and data. Non-empty data.shared objects are also published to every deployment as services.<expanded-service-key>.data. Other values may use any JSON shape. String values support template interpolation with ${defaults.*}, ${server.*}, ${servers.*}, ${service.*}, and ${services.*}.",
       "allOf": [
         {
           "$ref": "#/definitions/json_data"
+        },
+        {
+          "if": {
+            "required": ["shared"],
+            "type": "object"
+          },
+          "then": {
+            "properties": {
+              "shared": {
+                "type": "object"
+              }
+            }
+          }
         }
       ]
     },
@@ -839,6 +852,19 @@
             "allOf": [
               {
                 "$ref": "#/definitions/json_data"
+              },
+              {
+                "if": {
+                  "required": ["shared"],
+                  "type": "object"
+                },
+                "then": {
+                  "properties": {
+                    "shared": {
+                      "type": "object"
+                    }
+                  }
+                }
               }
             ]
           },

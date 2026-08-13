@@ -21,12 +21,6 @@ runcmd:
   %{~ if server.features.beszel ~}
   - curl -fsLS https://get.beszel.dev | sh -s -- -k '${beszel.public_key}' -p '${beszel.listen}' -t '${server.runtime.credentials.beszel_agent_token}' -url '${beszel.hub_url}' --auto-update true
   %{~ endif ~}
-  %{~ if server.features.cloudflared ~}
-  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb
-  - dpkg -i /tmp/cloudflared.deb
-  - rm /tmp/cloudflared.deb
-  - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
-  %{~ endif ~}
   %{~ if server.features.docker ~}
   - curl -fsLS https://get.docker.com | sh
   - docker compose -f /opt/doco-cd/docker-compose.yaml -p doco-cd up -d
@@ -37,6 +31,14 @@ runcmd:
   - tailscale up --accept-dns=false --accept-routes=false --advertise-exit-node --auth-key=${server.runtime.credentials.tailscale_auth_key} --hostname=${server.key}
   - systemctl daemon-reload
   - systemctl enable --now tailscale-udp-gro.service
+  %{~ endif ~}
+  %{~ if server.features.cloudflared ~}
+  - install -d /etc/systemd/system/cloudflared.service.d
+  - printf '[Service]\nEnvironment="TUNNEL_METRICS=%s:20241"\n' "$(tailscale ip -4)" > /etc/systemd/system/cloudflared.service.d/metrics.conf
+  - curl -fsLS -o /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb
+  - dpkg -i /tmp/cloudflared.deb
+  - rm /tmp/cloudflared.deb
+  - cloudflared service install ${server.runtime.credentials.cloudflare_tunnel_token}
   %{~ endif ~}
   %{~ if server.features.zfs ~}
   - . /etc/os-release; if [ "$ID" = "debian" ]; then printf 'deb https://deb.debian.org/debian %s contrib\ndeb https://deb.debian.org/debian %s-updates contrib\ndeb https://security.debian.org/debian-security %s-security contrib\n' "$VERSION_CODENAME" "$VERSION_CODENAME" "$VERSION_CODENAME" > /etc/apt/sources.list.d/zfs.list; apt update; apt install -y "linux-headers-$(dpkg --print-architecture)"; fi

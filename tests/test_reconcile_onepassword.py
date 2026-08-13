@@ -187,6 +187,14 @@ def test_merge_item_removes_only_owned_urls():
     assert removed_urls == ["old"]
 
 
+def test_ownership_rejects_duplicate_url_labels():
+    url = {"href": "https://example.com", "label": "default"}
+    config = item_config(managed_urls=["default"], urls=[url, url])
+
+    with pytest.raises(RuntimeError, match="duplicate label: default"):
+        RECONCILER.ownership_config(config, config["payload"])
+
+
 def test_ownership_rejects_overlapping_field_modes():
     config = item_config(
         fields=[field("token", "")],

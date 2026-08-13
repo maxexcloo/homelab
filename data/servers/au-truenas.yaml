@@ -26,6 +26,7 @@ features:
   cloudflared: true
   mail: true
   object_storage: true
+  observability: true
   password: true
   tailscale: true
 identity:

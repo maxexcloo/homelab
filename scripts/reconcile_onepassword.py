@@ -249,8 +249,10 @@ def merge_urls(existing, desired, ownership, previous_ownership):
 
 
 def ownership_config(item_config, desired):
-    desired_fields = {field["id"] for field in desired.get("fields", [])}
-    desired_urls = {url["label"] for url in desired.get("urls", [])}
+    desired_fields = set(
+        index_by(desired.get("fields", []), "id", "desired item fields")
+    )
+    desired_urls = set(index_by(desired.get("urls", []), "label", "desired item URLs"))
     managed_fields = set(item_config.get("managed_fields", []))
     managed_urls = set(item_config.get("managed_urls", []))
     placeholder_fields = set(item_config.get("placeholder_fields", []))

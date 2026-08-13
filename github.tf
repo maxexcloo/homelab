@@ -5,8 +5,8 @@ data "github_user" "default" {
 
 locals {
   _github_config_deployments = merge([
-    for repository_key, config in local.services_configs : {
-      for dispatch_key, dispatch in try(local.services_config_workflow_dispatches[repository_key], {
+    for repository_key, config in local._github_configs : {
+      for dispatch_key, dispatch in try(local._github_config_workflow_dispatches[repository_key], {
         (repository_key) = {
           fingerprint = sha256(local._github_config_values[repository_key])
           inputs      = {}
@@ -22,10 +22,51 @@ locals {
   ]...)
 
   _github_config_values = {
-    for repository_key, config in local.services_configs :
+    for repository_key, config in local._github_configs :
     repository_key => repository_key == "truenas" ? base64gzip(jsonencode(config)) : jsonencode(config)
   }
 
+  _github_config_workflow_dispatches = {
+    truenas = {
+      for target_key in toset([
+        for deployment in local.services_config_truenas.deployments : deployment.target
+        ]) : "truenas/${target_key}" => {
+        fingerprint = sha256(jsonencode([
+          for deployment in local.services_config_truenas.deployments :
+          deployment
+          if deployment.target == target_key
+        ]))
+
+        inputs = {
+          changed_only = true
+          deployment   = target_key
+        }
+      }
+    }
+  }
+
+  _github_configs = {
+    docker  = local.services_config_docker
+    fly     = local.services_config_fly
+    truenas = local.services_config_truenas
+  }
+
+  _github_fly_deployments = {
+    for deployment in local._github_configs.fly.deployments : deployment.key => {
+      app        = deployment.app
+      owner      = local.defaults.github.owner
+      repository = local.defaults.github.deployment_repositories.fly.name
+    }
+  }
+
+  _github_truenas_deployments = {
+    for deployment in local._github_configs.truenas.deployments : deployment.key => {
+      name       = deployment.name
+      owner      = local.defaults.github.owner
+      repository = local.defaults.github.deployment_repositories.truenas.name
+      target     = deployment.target
+    }
+  }
 }
 
 resource "github_repository" "deployment" {
@@ -45,7 +86,7 @@ resource "github_repository" "deployment" {
 }
 
 resource "github_actions_variable" "config" {
-  for_each = local.services_configs
+  for_each = local._github_configs
 
   repository    = github_repository.deployment[each.key].name
   value         = local._github_config_values[each.key]

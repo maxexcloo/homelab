@@ -9,7 +9,7 @@ locals {
           target      = route.proxy_server
 
           backend = {
-            href = "http://${local.servers_resolved[source_service.target].runtime.addresses.tailscale_ipv4}:8000"
+            href = "http://${local.servers_resolved[source_service.target].runtime.addresses.tailscale_ipv4}:28000"
           }
         }
         if(
@@ -166,35 +166,43 @@ locals {
     }
   }
 
-  services_config_traefik = {
-    for service_key, service in local.services_model : service_key => {
-      # Port 8000 is the webinternal Traefik entrypoint on the target server.
-      proxy_routes = {
-        for proxy_route in local._services_config_traefik_proxy_routes :
-        proxy_route.name => {
-          host        = proxy_route.host
-          redirect_to = proxy_route.redirect_to
-
-          backend = proxy_route.backend
-        }
-        if proxy_route.target == service.target
-      }
-    }
-    if service.identity.service == "traefik"
-  }
-
   services_config_traefik_routing_labels = {
     for service_key, service in local.services_model : service_key => {
       for container in distinct(compact([for route in service.routing : route.container])) :
-      container => {
-        for label_key, label_value in merge([
-          for route in service.routing :
-          local._services_config_traefik_route_labels[service_key][route.name]
-          if route.container == container
-        ]...) :
-        label_key => label_value
-        if label_value != null
-      }
+      container => merge(
+        {
+          for label_key, label_value in merge([
+            for route in service.routing :
+            local._services_config_traefik_route_labels[service_key][route.name]
+            if route.container == container
+          ]...) :
+          label_key => label_value
+          if label_value != null
+        },
+        service.identity.service == "traefik" ? merge([
+          for proxy_route in local._services_config_traefik_proxy_routes : merge(
+            {
+              "traefik.http.routers.${proxy_route.name}.entrypoints" = "websecure"
+              "traefik.http.routers.${proxy_route.name}.rule"        = "Host(`${proxy_route.host}`)"
+
+              "traefik.http.routers.${proxy_route.name}.service" = (
+                proxy_route.redirect_to != null
+                ? "noop@internal"
+                : proxy_route.name
+              )
+            },
+            proxy_route.redirect_to != null ? {
+              "traefik.http.middlewares.${proxy_route.name}.redirectregex.permanent"   = "true"
+              "traefik.http.middlewares.${proxy_route.name}.redirectregex.regex"       = "^https?://${replace(proxy_route.host, ".", "\\.")}"
+              "traefik.http.middlewares.${proxy_route.name}.redirectregex.replacement" = proxy_route.redirect_to
+              "traefik.http.routers.${proxy_route.name}.middlewares"                   = proxy_route.name
+              } : {
+              "traefik.http.services.${proxy_route.name}.loadbalancer.server.url" = proxy_route.backend.href
+            },
+          )
+          if proxy_route.target == service.target
+        ]...) : {},
+      )
     }
   }
 }

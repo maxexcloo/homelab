@@ -67,6 +67,7 @@ mise run validate        # Check and validate OpenTofu configuration
 - [docs/dashboard.md](docs/dashboard.md) - Homepage card and layout generation
 - [docs/deployments.md](docs/deployments.md) - Rendered artefacts and deployment repositories
 - [docs/features.md](docs/features.md) - Server and service feature flag effects
+- [docs/observability.md](docs/observability.md) - Metrics collection and dashboards
 - [docs/operations.md](docs/operations.md) - Common workflows and local commands
 - [docs/routing.md](docs/routing.md) - URLs, DNS, Traefik labels, and containers
 - [docs/servers.md](docs/servers.md) - Server inheritance, hostnames, and runtime values

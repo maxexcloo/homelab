@@ -141,11 +141,10 @@ container to attach to.
 
 ## Proxy Routes
 
-`proxy-<server>` routes are published through Traefik on another server. The
-proxy Traefik service receives `custom.traefik.proxy_routes` in its template
-context.
-Service proxy routes forward to the source target's Tailscale IPv4 address on
-port `8000`, the `webinternal` Traefik entrypoint.
+`proxy-<server>` routes are published through Traefik on another server. Their
+routers, redirects, and services are included in the proxy Traefik container's
+generated routing labels. Service proxy routes forward to the source target's
+Tailscale IPv4 address on port `28000`, the `webinternal` Traefik entrypoint.
 
 Server routes can also use `external`, `internal`, `cloudflare`, or
 `proxy-<server>`. Non-Cloudflare server routes require a Traefik service on the
