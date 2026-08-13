@@ -6,12 +6,7 @@ data "github_user" "default" {
 locals {
   _github_config_deployments = merge([
     for repository_key, config in local._github_configs : {
-      for dispatch_key, dispatch in try(local._github_config_workflow_dispatches[repository_key], {
-        (repository_key) = {
-          fingerprint = sha256(local._github_config_values[repository_key])
-          inputs      = {}
-        }
-        }) : dispatch_key => {
+      for dispatch_key, dispatch in local._github_config_dispatches[repository_key] : dispatch_key => {
         fingerprint = dispatch.fingerprint
         inputs      = dispatch.inputs
         owner       = local.defaults.github.owner
@@ -21,6 +16,18 @@ locals {
     }
   ]...)
 
+  _github_config_dispatches = merge(
+    {
+      for repository_key in keys(local._github_configs) : repository_key => {
+        (repository_key) = {
+          fingerprint = sha256(local._github_config_values[repository_key])
+          inputs      = {}
+        }
+      }
+    },
+    local._github_config_workflow_dispatches,
+  )
+
   _github_config_values = {
     for repository_key, config in local._github_configs :
     repository_key => repository_key == "truenas" ? base64gzip(jsonencode(config)) : jsonencode(config)
@@ -29,12 +36,13 @@ locals {
   _github_config_workflow_dispatches = {
     truenas = {
       for target_key in toset([
-        for deployment in local.services_config_truenas.deployments : deployment.target
+        for service_key in keys(local._services_config_truenas_deployments) :
+        local.services_model[service_key].target
         ]) : "truenas/${target_key}" => {
         fingerprint = sha256(jsonencode([
-          for deployment in local.services_config_truenas.deployments :
+          for service_key, deployment in local._services_config_truenas_deployments :
           deployment
-          if deployment.target == target_key
+          if local.services_model[service_key].target == target_key
         ]))
 
         inputs = {
