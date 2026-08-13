@@ -165,9 +165,15 @@ locals {
           proxy_server    = startswith(route.expose, "proxy-") ? trimprefix(route.expose, "proxy-") : null
 
           backend = {
-            port           = try(route.backend.port, null)
-            published_port = try(route.backend.published_port, null)
-            scheme         = try(route.backend.scheme, "") != "" ? route.backend.scheme : try(route.backend.port, null) != null ? "http" : ""
+            port   = try(route.backend.port, null)
+            scheme = try(route.backend.scheme, "") != "" ? route.backend.scheme : try(route.backend.port, null) != null ? "http" : ""
+
+            published_port = (
+              route_id == "default" &&
+              try(service.truenas.published_port, null) != null
+              ? service.truenas.published_port
+              : try(route.backend.published_port, null)
+            )
           }
 
           dns_target_host = (

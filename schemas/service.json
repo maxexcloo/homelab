@@ -344,9 +344,15 @@
           }
         },
         "port_key": {
-          "description": "Primary TrueNAS network port key that receives routing.default.backend.published_port as port_number.",
+          "description": "Primary TrueNAS network port key that receives the default route's effective published port as port_number.",
           "pattern": "^[a-z0-9_]+$",
           "type": "string"
+        },
+        "published_port": {
+          "description": "TrueNAS-specific published host port for the default route. Overrides routing.default.backend.published_port when set.",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": ["integer", "null"]
         },
         "train": {
           "description": "TrueNAS catalog train.",
