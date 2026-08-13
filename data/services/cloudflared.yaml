@@ -15,3 +15,8 @@ identity:
   description: VPN
   service: cloudflared
   title: Cloudflare Tunnel
+targets:
+  au-truenas:
+    truenas:
+      env:
+        TUNNEL_METRICS: 0.0.0.0:20241

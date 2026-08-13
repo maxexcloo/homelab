@@ -25,3 +25,22 @@ routing:
     backend:
       port: 3000
       published_port: 30037
+targets:
+  au-truenas:
+    truenas:
+      env:
+        GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: true
+        GF_AUTH_GENERIC_OAUTH_API_URL: ${service.runtime.attributes.oidc_issuer_url}/api/oidc/userinfo
+        GF_AUTH_GENERIC_OAUTH_AUTH_URL: ${service.runtime.attributes.oidc_issuer_url}/authorize
+        GF_AUTH_GENERIC_OAUTH_CLIENT_ID: ${service.runtime.credentials.oidc_client_id}
+        GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ${service.runtime.credentials.oidc_client_secret}
+        GF_AUTH_GENERIC_OAUTH_ENABLED: true
+        GF_AUTH_GENERIC_OAUTH_NAME: ${service.runtime.attributes.oidc_provider_name}
+        GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile email
+        GF_AUTH_GENERIC_OAUTH_TOKEN_URL: ${service.runtime.attributes.oidc_issuer_url}/api/oidc/token
+        GF_AUTH_GENERIC_OAUTH_USE_PKCE: true
+        GF_SECURITY_ADMIN_PASSWORD: ${service.runtime.credentials.password}
+        GF_SECURITY_ADMIN_USER: ${service.identity.username}
+        GF_SERVER_DOMAIN: ${service.urls.default.host}
+        GF_SERVER_ROOT_URL: ${service.urls.default.href}
+        GF_USERS_AUTO_ASSIGN_ORG_ROLE: Admin
