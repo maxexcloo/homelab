@@ -105,7 +105,8 @@ Retain these patterns from the archive:
 
 Do not restore these patterns:
 
-- the YAML catalogue, JSON schemas, or input/model/runtime/render stages;
+- the multi-file server and service catalogue, JSON schemas, inheritance,
+  defaults, or input/model/runtime/render stages;
 - generic credential, object-storage, or 1Password reconciliation modules;
 - generated deployment, Homepage, Gatus, or target-repository configuration;
 - shell commands and workflow dispatches hidden behind `terraform_data`; or
@@ -122,7 +123,7 @@ the current state and ownership boundaries:
 | Tailscale                 | Rebuild global grants and tag owners in `foundations`, then add separate least-privilege operator OAuth and Talos bootstrap identities to each cluster root. Do not restore reusable per-server or per-service auth keys.                                                                                                                                             |
 | 1Password                 | Store reviewed cluster bootstrap and recovery material without restoring the generic reconciliation modules. Never expose generated credentials through ordinary outputs or human-readable plan artefacts.                                                                                                                                                            |
 | GitHub                    | Retain validation and Flux bootstrap ownership only where required. Do not restore generated repository variables, workflow dispatches, or destroy-time `local-exec` operations.                                                                                                                                                                                      |
-| TrueNAS                   | Keep the `br4` address move manual because the provider cannot batch it atomically. After the bridge exists, use the provider for the protected `taco` zvol, VM, and devices only after a read-only smoke test and reviewed plan.                                                                                                                                     |
+| TrueNAS                   | Manage `enp3s0` and `br4` as explicitly ordered, rollback-enabled resources through the unchanged `eno1` management path. Add the protected `taco` zvol, VM, and devices after the bridge plan succeeds.                                                                                                                                                              |
 | HAOS, Bazzite, and Hotdog | Treat these as retained appliances. Document their recovery and integration contracts; do not create inventory-only resources for them.                                                                                                                                                                                                                               |
 
 The archived OCI configuration is design evidence, not code to copy. It used
@@ -130,6 +131,12 @@ an Ubuntu image, generated bootstrap metadata, broad public SSH ingress, and
 catalogue-derived identity. The future `syd` root instead uses a pinned Talos
 image, explicit network rules, the host identity `hsp.syd.excloo.net`, and no
 dependency on the archived model pipeline.
+
+Keep stable, non-secret infrastructure facts in one flat
+`data/infrastructure.yaml` file and consume them directly from HCL. This file
+may contain location codes, canonical host identities, and network values used
+by real resources. Do not add per-host files, schemas, inheritance, feature
+flags, generated models, service definitions, or rendering stages.
 
 Use this ownership test: `kubelab` owns workloads and their app-scoped
 integrations; this repository owns everything required to rebuild, recover, or
@@ -243,24 +250,23 @@ The home network facts were verified read-only:
   inspected home, Tailscale, or local container routes.
 
 Create `br4` with `enp3s0` as its only member and move `10.4.0.3/22` from the
-physical interface to the bridge using TrueNAS staged network changes. Keep
-`eno1` and `10.0.0.3/22` unchanged as the management and recovery path. Do not
-use MACVLAN because the VM must communicate with its TrueNAS host for storage.
-This live bridge change still requires an exact preview and explicit approval.
+physical interface to the bridge using ordered, rollback-enabled
+`truenas_network_interface` resources. Connect the provider through `eno1` and
+keep `10.0.0.3/22` unchanged as the management and recovery path. Do not use
+MACVLAN because the VM must communicate with its TrueNAS host for storage. This
+live bridge change still requires an exact saved plan, console recovery access,
+and explicit approval.
 
 ### TrueNAS provider adoption decision
 
-PjSalty/truenas `v2.4.1` was reassessed on 2026-08-14. The initial bridge move
-remains manual, but the provider is eligible to manage the `taco` zvol, VM, and
-devices after `br4` exists.
-
-Do not manage the bridge with this provider. Although
-`truenas_network_interface` can adopt a physical NIC and create a bridge, each
-resource Create, Update, or Delete calls `interface.commit` and immediately
-calls `interface.checkin`. It therefore cannot stage removing `10.4.0.3/22`
-from `enp3s0` and creating `br4` with that address as one atomic TrueNAS
-transaction. Upstream live acceptance tests intentionally avoid network
-interface create, update, and delete because they can disconnect the provider.
+PjSalty/truenas `v2.4.1` was reassessed on 2026-08-14 and adopted for the home
+bridge and VM substrate. `truenas_network_interface` adopts `enp3s0`, removes
+its service address, commits and checks in that change, then the explicitly
+dependent `br4` resource creates the bridge with `10.4.0.3/22`. These are two
+transactions rather than one atomic transaction. The accepted guardrail is
+that the provider and operator remain connected through the unchanged `eno1`
+management path at `10.0.0.3/22`; loss of the Services network during the gap
+does not remove TrueNAS management access.
 
 The VM evidence is stronger than the earlier assessment: v2.4.1 has live
 create, update, import, disappearance, and post-apply empty-plan coverage for
@@ -269,16 +275,19 @@ The provider's 26.0 validation covered `26.0.0-BETA.1`, not the installed
 `26.0.0-BETA.2`; its four reported failures were in service and SMB APIs rather
 than these virtualization resources.
 
-Adopt the provider for the VM only through this sequence:
+Adopt the provider through this sequence:
 
-1. Complete and check in the manual `br4` staged change while `eno1` remains
-   the recovery path.
-2. Run a provider connection and inventory smoke test with `read_only = true`.
-3. Add the 160 GiB zvol, `taco` VM, and its disk, CD-ROM, display, and fixed-MAC
+1. Run a provider connection and inventory smoke test with `read_only = true`
+   through `eno1`.
+2. Review the ordered `enp3s0` and `br4` plan with rollback enabled, provider
+   destroy protection, resource `prevent_destroy`, and console recovery ready.
+3. Apply that exact saved network plan only after explicit approval and verify
+   both management paths before continuing.
+4. Add the 160 GiB zvol, `taco` VM, and its disk, CD-ROM, display, and fixed-MAC
    virtio NIC as direct resources in the `au` root, pinned to `v2.4.1`.
-4. Enable provider `destroy_protection`, add resource-level `prevent_destroy`
+5. Keep provider `destroy_protection`, add resource-level `prevent_destroy`
    to the zvol and VM, and review a saved plan before the first apply.
-5. If any VM object was created manually, import it first and require a no-op
+6. If any VM object was created manually, import it first and require a no-op
    plan; never create a duplicate to simplify adoption.
 
 ## Version baseline
@@ -331,13 +340,19 @@ Create only directories that immediately contain real files:
 ├── .terraform.lock.hcl
 ├── AGENTS.md
 ├── backend.tf
+├── data/
+│   └── infrastructure.yaml
 ├── image.tf
 ├── LICENSE
+├── locals.tf
 ├── outputs.tf
 ├── PLAN.md
+├── providers.tf
 ├── README.md
 ├── renovate.json
-└── terraform.tf
+├── terraform.tf
+├── truenas.tf
+└── variables.tf
 ```
 
 Do not create empty `foundations`, `au-oci`, or `truenas` roots as placeholders.
@@ -371,14 +386,14 @@ is ready for review.
 3. Resolve the home VM identity and TrueNAS ownership.
    - Use `taco` for the VM and node hostname, with canonical FQDN
      `taco.mbk.excloo.net`.
-   - Keep the bridge move manual. Add `PjSalty/truenas` only with the first
-     guarded zvol and VM resources after `br4` exists and the read-only smoke
-     test passes.
+   - Manage `enp3s0` and `br4` through the pinned TrueNAS provider, then add the
+     guarded zvol and VM resources after the bridge succeeds.
    - Exact VM target: 12 vCPU, 32 GiB RAM, 160 GiB boot zvol on
      `truenas-nvme`, UEFI, virtio NIC on `br4`, autostart, and a fixed MAC.
 
 4. Review the live home network and VM plan.
-   - Preview the TrueNAS staged bridge change and preserve the primary NIC.
+   - Preview the ordered TrueNAS bridge changes through the unchanged primary
+     NIC and keep console recovery ready.
    - After the bridge is checked in, review the protected OpenTofu zvol, VM,
      and device plan; create or import them only after approval.
    - Boot the provider-resolved Talos ISO in maintenance mode.

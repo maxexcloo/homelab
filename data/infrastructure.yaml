@@ -1,0 +1,47 @@
+locations:
+  fre:
+    name: Fremont
+  mbk:
+    name: Meadowbank
+  syd:
+    name: Sydney
+
+hosts:
+  hass:
+    fqdn: hass.mbk.excloo.net
+    location: mbk
+    platform: haos
+  hotdog:
+    fqdn: hotdog.fre.excloo.net
+    location: fre
+    platform: linux
+  hsp:
+    fqdn: hsp.syd.excloo.net
+    location: syd
+    platform: oci
+  kimbap:
+    fqdn: kimbap.mbk.excloo.net
+    location: mbk
+    management_port: 8443
+    platform: truenas
+  mandu:
+    fqdn: mandu.mbk.excloo.net
+    location: mbk
+    platform: bazzite
+  taco:
+    fqdn: taco.mbk.excloo.net
+    location: mbk
+    platform: talos
+
+networks:
+  mbk:
+    interfaces:
+      management:
+        address: 10.0.0.3
+        name: eno1
+        prefix_length: 22
+      services:
+        address: 10.4.0.3
+        bridge: br4
+        name: enp3s0
+        prefix_length: 22

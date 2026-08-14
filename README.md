@@ -30,22 +30,34 @@ Initialisation during setup uses `-backend=false`. Initialise a real backend
 only as part of a reviewed local planning or apply procedure. Never migrate the
 legacy `states/core` state into a new stack.
 
-The committed `.terraform.lock.hcl` records signed provider checksums for
-Apple Silicon development and Linux CI. Review lockfile changes with provider
+The committed `.terraform.lock.hcl` records provider checksums for Apple
+Silicon development and Linux CI. Review lockfile changes with provider
 updates.
+
+TrueNAS plans require an HTTPS management URL and API key supplied at runtime:
+
+```shell
+export TF_VAR_truenas_url=https://kimbap.mbk.excloo.net:8443
+export TRUENAS_API_KEY='retrieve from the configured secret store'
+```
+
+The provider defaults to read-only mode and always enables destroy protection.
+Set `truenas_read_only=false` only in the exact saved plan prepared for an
+explicitly approved apply. Never put the API key in a checked-in variable file.
 
 ## Repository Boundaries
 
-- Root OpenTofu configuration: home Talos cluster substrate, starting with
-  Image Factory.
+- Root OpenTofu configuration: home network, TrueNAS VM, and Talos cluster
+  substrate.
 - `kubelab`: Kubernetes and Flux resources after the API is healthy.
 - `PLAN.md`: architecture, migration gates, and recovery rules.
 
-The first resource creates a content-addressed Talos Image Factory schematic
-for a TrueNAS KVM guest. It includes only the official QEMU guest agent and
-Tailscale system extensions and derives the metal/amd64 ISO and installer image
-for Talos Linux `v1.13.8`. It does not create a VM, install Talos, configure a
-machine, or bootstrap Kubernetes.
+The initial configuration creates a content-addressed Talos Image Factory
+schematic and manages the ordered `enp3s0` to `br4` TrueNAS network change. The
+schematic includes only the official QEMU guest agent and Tailscale system
+extensions and derives the metal/amd64 ISO and installer image for Talos Linux
+`v1.13.8`. The network resources are live changes and must never be applied
+without their exact saved plan, console recovery access, and explicit approval.
 
 ## Licence
 

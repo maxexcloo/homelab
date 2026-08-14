@@ -6,5 +6,10 @@ terraform {
       source  = "siderolabs/talos"
       version = "0.11.0"
     }
+
+    truenas = {
+      source  = "PjSalty/truenas"
+      version = "2.4.1"
+    }
   }
 }
