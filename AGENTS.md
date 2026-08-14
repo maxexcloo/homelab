@@ -2,200 +2,63 @@
 
 ## Project Overview
 
-This repository manages homelab infrastructure with OpenTofu. YAML in `data/`
-is the source of truth. OpenTofu validates it, builds deterministic models,
-provisions resources, and publishes non-secret deployment configs.
+This repository owns homelab infrastructure and Kubernetes cluster substrate.
+The separate `kubelab` repository owns Kubernetes API resources reconciled by
+Flux.
 
-Servers and services have two layers:
+## Conventions
 
-- `model` contains input and deterministic computed values. Use it for resource
-  identity, `for_each`, filters, and validation.
-- `runtime` adds provider-backed values under `addresses`, `attributes`,
-  `credentials`, `hosts`, and `urls`, as applicable to the domain.
-
-Never derive resource keys or collection membership from runtime or rendered
-values. Those values may be unknown until apply.
+- Read `PLAN.md` before changing architecture, ownership, deletion behaviour,
+  networking, storage, secrets, state, or migration order.
+- Treat `PLAN.md` as authoritative for this repository's substrate details and
+  `kubelab/PLAN.md` as authoritative for cross-repository ordering and workload
+  ownership.
+- Use Australian English in project-owned prose and identifiers.
+- Use `.yaml`, not `.yml`, for project-owned YAML.
+- Pin tools and providers to exact stable versions. Let Renovate propose
+  upgrades for manual review.
+- Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
+- Treat anyone who can read OpenTofu state as able to read its secrets.
+- Never change live infrastructure without an explicit approval and a reviewed,
+  saved OpenTofu plan.
 
 ## File Organisation
 
-- Keep only `AGENTS.md` and `README.md` as root Markdown files; put other project
-  documentation in `docs/`.
-- Use `{domain}_{stage}.tf` for staged pipelines, such as `services_model.tf`.
-- Use one root file per provider or utility provider when it owns shared or
-  cross-domain behaviour, such as `cloudflare.tf`.
-- Keep backend, locals, outputs, providers, Terraform requirements, and
-  variables in their conventional root files.
-- Put service templates in the repository that owns the target platform.
-- Omit `identity.service` for inventory-only services with no artefacts.
+- `.github/workflows/`: validation only; infrastructure applies are local.
+- Root HCL: the `au` cluster substrate.
 
-Keep root HCL service-agnostic. Put service-specific behaviour in YAML, its
-template directory, or `services_config_<service>.tf` when it aggregates
-services.
+Use ordinary provider resources directly and keep the root small enough to
+review in one plan. Do not recreate the archived catalogue, schema, model,
+generator, or deployment pipeline. Add another state root only with its first
+reviewed resource and keep it outside the root `au` configuration.
 
-Keep provider data sources and resources with their consuming root domain when
-only that domain uses them. Keep identical data lookups shared when both
-domains consume them. Do not combine domain-specific resources solely to
-deduplicate provider blocks.
+Keep root Markdown limited to `AGENTS.md`, `PLAN.md`, and `README.md`. Put later
+operational documentation under `docs/`.
 
-## Sorting Convention
+## OpenTofu Safety
 
-Sort object assignments in this order:
-
-1. Single-line values, alphabetically by key.
-2. Multi-line values, alphabetically by key.
-
-Underscore-prefixed names sort before other names. Apply this to HCL objects and
-argument blocks, YAML mappings, JSON Schema `properties`, environment blocks,
-and template argument objects. A non-empty object is multi-line. A scalar-only
-JSON array sorts as a single-line value even when formatting wraps it; an array
-containing an object or array is multi-line. Apply the same rule inside each
-local's object value. Separate every multi-line assignment from adjacent
-assignments with a blank line, except dynamically keyed object entries where
-`tofu fmt` removes the separator. Keep assignments contiguous without separator
-blank lines in `data/services/*.yaml` and `data/servers/*.yaml`.
-
-List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
-use `id`, then `name`. Sort the remaining fields normally.
-
-Sort mise tools alphabetically and tasks alphabetically within each lifecycle
-section. Sort Renovate package rules by description and Prek hooks by `id`.
-GitHub workflows use conventional top-level order: `name`, `on`, `permissions`,
-`concurrency`, then `jobs`. Preserve dependency order within workflow steps.
-
-## HCL Standards
-
-- Format with `mise run fmt`.
-- In mixed files, order data sources, locals, provisioning blocks, then outputs.
-  Keep an `import` next to its resource. Order provisioning blocks by dependency.
-- Always prefer `for_each` over `count`. Use stable logical keys and shape its
-  input in a named local. Membership filters may use model/input data and
-  `fileexists()`, never runtime or rendered values.
-- Put `for_each` and module `source` first in a block, add a blank line, then
-  sort the remaining arguments.
-- Use descriptive comprehension names. Use `values()`, `keys()`, or both
-  variables as needed; do not write `for _, value in map`. Test map membership
-  with `can(map[key])` so a present null value is not treated as absent.
-- Name resources, locals, and variables in `snake_case`. Prefix file-private
-  locals with `_`; exported locals omit it. Staged locals use
-  `{domain}_{stage}_{noun}` where practical. Sort locals alphabetically by full
-  name; choose names that make the resulting order easy to follow.
-- Keep the main stage output concise. Drop temporary suffixes such as `_all`,
-  `_final`, `_merged`, and `_write`.
-- Add a helper local only when it names a useful concept, removes duplication,
-  or makes a complex expression easier to review.
-- Normalise optional values once in the input or model stage, then use direct
-  access in consumers. Prefer defaults when every object needs the same value.
-- Use `coalesce()` only for nullable values with a guaranteed non-null fallback.
-  Normalise empty-string sentinels with an explicit conditional.
-- Use `can(map[key])` for relationship membership and `try(map[key], null)` to
-  retrieve a nullable related value. Shape reused relationships once.
-- Use `try()` for provider/API data, parsing probes, optional generated keys,
-  external maps, and ordered candidates that may be empty. Avoid `lookup()`
-  unless it is clearer than `try()`.
-- Use `one()` for a true singleton, not for first-match selection.
-- Use `merge()` for flat objects and `provider::deepmerge::mergo()` only when
-  nested values must combine.
-- Write domain, configuration, argument, and list-element objects over multiple
-  lines with one key per line, including objects inside `merge()`, `jsonencode()`,
-  and `templatestring()`. Empty objects and clear temporary one-key objects may
-  stay inline.
-- Expand predicates with more than two conditions, mixed operators, or guarded
-  dereferences. Put one condition per line with the operator at the end. Order
-  broad discriminators first and guards immediately before dependent access.
-  Two short symmetric conditions may stay on one line. Accept `tofu fmt`'s
-  `if(` formatting in comprehensions. Sort sibling conditions only when it does
-  not weaken guard order or readability.
-- Use `terraform_data` preconditions for referential validation.
-- Mark every credential-bearing output sensitive. Keep credentials under
-  `runtime.credentials` and expose only the fields consumers need.
-
-Use input locals while constructing and validating models. Use model locals for
-stable resource keys, filters, and deterministic consumers. Use runtime locals
-only after the address set is fixed and a provider-backed value is required.
-
-Use server `hosts.*` and service `urls.*.{host,href}` instead of new scalar
-`fqdn_*`, `url_*`, or ambiguous `*_address` fields. Provider-discovered IPs
-belong under `runtime.addresses`.
-
-## JSON Schema Standards
-
-- Define closed objects with `additionalProperties: false`. Allow open
-  JSON-compatible objects only for deliberate pass-through data.
-- Use `["string", "null"]` for nullable strings.
-- Describe what each feature provisions and which runtime values it exposes.
-- Keep JSON Schema `if`, `then`, `else` in that reading order.
-
-## YAML Standards
-
-- Use `.yaml`, never `.yml`, for project-owned YAML files unless external tooling
-  requires a fixed filename.
-- Put global configuration in `data/config.yaml` and merged defaults in
-  `data/defaults.yaml`. Per-resource YAML should contain overrides only.
-- Keep short descriptions in title case.
-- Avoid quotes unless YAML would change the value or structure. Quote empty
-  strings, DNS TXT content, values starting with `@`, and scalar-looking strings
-  that must remain strings. Email addresses do not need quotes.
-- In `truenas.env`, leave booleans and numbers typed; templates convert them to
-  strings. Quote values with a leading `:` or starting with `{`, `[`, `#`, `%`,
-  `@`, `` ` ``, `&`, `*`, `!`, `|`, or `>`.
-- Root service keys are `credentials`, `dashboard`, `data`, `features`,
-  `identity`, `imports`, `routing`, and `target_feature`. Target entries may
-  override `credentials`, `data`, `features`, `fly`, and `truenas`.
-- Put app-owned configuration in `data`. Set `identity.service` only when the
-  service has templates or deployment artefacts.
-- Omit `targets` when `target_feature` supplies every target. Use
-  `targets.<key>: {}` for one target with no overrides.
-
-## Deployments
-
-- Keep root HCL unaware of target repository template files.
-- Publish non-secret deployment context through repository `CONFIG` variables.
-- Keep target templates, workflows, and deployment logic in their target repository.
-
-## 1Password
-
-- Treat 1Password Connect as required.
-- Generate scalar application credentials through 1Password Connect. Keep
-  credential generation in OpenTofu only when a provider creates the value or
-  consumes it directly.
-- Let OpenTofu own item structure and provider-backed values while preserving
-  manually populated placeholder values.
-- Reconcile through the ownership-aware Connect boundary. Never place full item
-  responses or unused secrets in OpenTofu state.
-
-## TrueNAS Services
-
-Read and follow `docs/truenas-services.md` before changing a TrueNAS catalog
-service or its templates.
-
-## General
-
-- Prefer plain, direct code over abstraction.
-- Keep tool, action, hook, and image pins current through Renovate where
-  supported. Prefer `config:recommended`, group compatible updates by
-  ecosystem, and add overrides only for project-specific behaviour.
-- Keep check orchestration single-layered. Do not run the same checker through
-  both a direct Prek hook and a nested mise task in one check path.
-- Keep comments local and specific. Put architecture and usage explanations in
-  docs instead of code comments.
-- Sort unordered peer headings, lists, and table rows alphabetically. Preserve
-  narrative, procedural, dependency, interface, priority, and chronological order.
-- Sort Python imports with Ruff. Sort top-level constants, classes, and helper
-  functions within their groups; keep `main()` and the execution guard last.
-- When a list mixes directories and files, list directories first and sort each
-  group alphabetically.
-- End every file with a newline.
-- Preserve `LICENSE` and its legal text; never relicense without explicit approval.
-- Use Australian English throughout authored prose and every project-owned name,
-  including identifiers, configuration keys, environment variables, paths, CLI
-  commands, and options. Update every producer and consumer together; preserve only
-  externally defined names and terminology.
+- Use stable resource names and `for_each` keys; never identify resources by
+  list position.
+- Keep one GCS prefix per state root and never manage a backend from the root
+  that consumes it.
+- Commit `.terraform.lock.hcl` for every root and include checksums for every
+  platform used to validate or plan it.
+- Never migrate, import, move, or remove state as part of an unrelated resource
+  change.
+- Never use `tofu init -migrate-state` for the new Kubernetes substrate roots.
+- Never run `tofu apply` without reviewing the exact saved plan first.
+- Do not make routine destroy operations reset Talos nodes or retained
+  substrate.
 
 ## Verification
 
-- Run `mise run check` once before handoff.
-- Run `mise run prek` when hooks or workflows changed, or when a complete suite
-  is requested.
-- Run `mise run plan` only when requested or immediately before an explicitly
-  approved apply.
-- Never run `mise run apply` without explicit user approval.
+- Run `mise run check` before handoff.
+- Run `mise run prek` after changing hooks or workflows.
+- Run plans only when requested or immediately before an explicitly approved
+  apply.
+
+## Git History
+
+Git history is the work log. Use small, imperative commit subjects and keep one
+coherent outcome per commit. Keep backend changes, ownership transfers, and
+resource changes separate when their risks differ.

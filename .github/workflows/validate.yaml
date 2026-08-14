@@ -1,4 +1,4 @@
-name: Prek
+name: Validate
 
 on:
   pull_request:
@@ -12,11 +12,11 @@ permissions:
 
 concurrency:
   cancel-in-progress: true
-  group: prek-${{ github.workflow }}-${{ github.ref }}
+  group: validate-${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  prek:
-    name: Prek
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,7 +27,7 @@ jobs:
         uses: jdx/mise-action@v4
         with:
           version: 2026.8.4
-      - name: Initialise OpenTofu
-        run: mise exec -- tofu init -backend=false -input=false
-      - name: Run prek
+      - name: Initialise providers
+        run: tofu init -backend=false -input=false
+      - name: Run hooks
         run: mise run prek

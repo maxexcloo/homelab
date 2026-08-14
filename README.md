@@ -1,78 +1,51 @@
 # Homelab
 
-[![Licence](https://img.shields.io/badge/licence-AGPL--3.0-blue.svg)](LICENSE)
-[![OpenTofu](https://img.shields.io/badge/OpenTofu-1.x-blue)](https://opentofu.org/)
-[![Status](https://img.shields.io/badge/status-active-success)](https://github.com/maxexcloo/homelab)
+This repository manages homelab infrastructure and Talos cluster substrate
+with OpenTofu. Kubernetes API resources and Flux reconciliation live in the
+separate `kubelab` repository.
 
-OpenTofu manages this homelab from YAML in `data/`. It provisions resources and
-publishes non-secret deployment config from the same source data.
+The migration begins with `au`, a single Talos control-plane VM on TrueNAS.
+The independent OCI Sydney cluster, `au-oci`, follows only after the home
+cluster passes the recovery and workload success gate in [PLAN.md](PLAN.md).
 
-Server and service pipelines live directly in the root configuration. Small
-leaf modules remain only for repeated resource groups such as credentials,
-object storage, and 1Password item reconciliation. Platform repositories own
-their templates, rendering, and deployment workflows.
+CI validates configuration and never receives infrastructure or cluster
+credentials. Plans and applies run locally from a trusted workstation after
+review and explicit approval.
 
-## Quick Start
+## First Setup
 
-```bash
-git clone https://github.com/maxexcloo/homelab.git
-cd homelab
-
+```shell
+mise trust
 mise run setup
 mise run check
-mise run plan
-mise run apply
 ```
 
-Review the plan before applying it.
+The main commands are:
 
-## Prerequisites
+- `mise run check`: check formatting, OpenTofu, workflows, and security.
+- `mise run fmt`: format project files.
+- `mise run prek`: run the complete local equivalent of CI.
 
-- 1Password Connect server with access to the server and service
-  credential vaults in `data/config.yaml`
-- Google Application Default Credentials for the GCS state backend
-- [mise](https://mise.jdx.dev/) for task management and tool installation
-- Pocket ID instance and API token
+Initialisation during setup uses `-backend=false`. Initialise a real backend
+only as part of a reviewed local planning or apply procedure. Never migrate the
+legacy `states/core` state into a new stack.
 
-Run `mise run setup` to remove local OpenTofu data, the Ruff cache, and any
-saved `tfplan`; create `.mise.local.toml` from the template; initialise
-OpenTofu; and install the Git hook. On first run, add the required credentials
-and run setup again. See `.mise.local.toml.default` for the full variable list.
+The committed `.terraform.lock.hcl` records signed provider checksums for
+Apple Silicon development and Linux CI. Review lockfile changes with provider
+updates.
 
-Commit `.terraform.lock.hcl` when provider selections change. Keep the
-`.terraform/` directory and plan or state files local.
+## Repository Boundaries
 
-## Commands
+- Root OpenTofu configuration: home Talos cluster substrate, starting with
+  Image Factory.
+- `kubelab`: Kubernetes and Flux resources after the API is healthy.
+- `PLAN.md`: architecture, migration gates, and recovery rules.
 
-```bash
-mise run apply           # Apply infrastructure changes
-mise run check           # Format check, lint, and validate
-mise run cleanup         # Remove local OpenTofu data, the Ruff cache, and the saved plan
-mise run fmt             # Format HCL, Python, YAML, schemas, and templates
-mise run init            # Initialise OpenTofu providers and backend
-mise run lint            # Lint Python and validate YAML against JSON schemas
-mise run plan            # Review infrastructure changes
-mise run prek            # Run all repository hooks
-mise run setup           # Clean local data, configure, initialise, and install Git hooks
-mise run sort-check      # Check HCL assignments, JSON Schema, and YAML key ordering
-mise run test            # Run unit tests
-mise run validate        # Check and validate OpenTofu configuration
-```
-
-## Documentation
-
-- [AGENTS.md](AGENTS.md) - Repository conventions for coding agents
-- [docs/architecture.md](docs/architecture.md) - Data flow and deployment boundaries
-- [docs/credentials.md](docs/credentials.md) - Credential storage and template access
-- [docs/dashboard.md](docs/dashboard.md) - Homepage card and layout generation
-- [docs/deployments.md](docs/deployments.md) - Rendered artefacts and deployment repositories
-- [docs/features.md](docs/features.md) - Server and service feature flag effects
-- [docs/observability.md](docs/observability.md) - Metrics collection and dashboards
-- [docs/operations.md](docs/operations.md) - Common workflows and local commands
-- [docs/routing.md](docs/routing.md) - URLs, DNS, Traefik labels, and containers
-- [docs/servers.md](docs/servers.md) - Server inheritance, hostnames, and runtime values
-- [docs/services.md](docs/services.md) - Service data, targets, routing, and templates
-- [docs/truenas-services.md](docs/truenas-services.md) - TrueNAS catalog service authoring
+The first resource creates a content-addressed Talos Image Factory schematic
+for a TrueNAS KVM guest. It includes only the official QEMU guest agent and
+Tailscale system extensions and derives the metal/amd64 ISO and installer image
+for Talos Linux `v1.13.8`. It does not create a VM, install Talos, configure a
+machine, or bootstrap Kubernetes.
 
 ## Licence
 

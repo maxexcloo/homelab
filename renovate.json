@@ -2,26 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "dependencyDashboard": false,
   "extends": ["config:recommended", ":enablePreCommit"],
-  "ignoreDeps": ["hashicorp/terraform"],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "datasourceTemplate": "docker",
-      "description": "Track Docker images in OpenTofu templates",
-      "managerFilePatterns": ["/(^|/)templates/.+\\.yaml\\.tftpl$/"],
-      "matchStrings": [
-        "(?:^|\\r?\\n)\\s*image:\\s*(?<depName>[^\\s:@]+(?:/[^\\s:@]+)*):(?<currentValue>[^\\s@#]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
-      ],
-      "versioningTemplate": "docker"
-    }
-  ],
-  "lockFileMaintenance": {
-    "enabled": true
-  },
   "packageRules": [
     {
-      "description": "Resolve OpenTofu provider updates from the OpenTofu registry",
-      "matchDatasources": ["terraform-module", "terraform-provider"],
+      "description": "Resolve OpenTofu providers from the OpenTofu registry",
+      "matchDatasources": ["terraform-provider"],
       "registryUrls": ["https://registry.opentofu.org"]
     }
   ]
