@@ -250,23 +250,28 @@ The home network facts were verified read-only:
   inspected home, Tailscale, or local container routes.
 
 Create `br4` with `enp3s0` as its only member and move `10.4.0.3/22` from the
-physical interface to the bridge using ordered, rollback-enabled
-`truenas_network_interface` resources. Connect the provider through `eno1` and
-keep `10.0.0.3/22` unchanged as the management and recovery path. Do not use
-MACVLAN because the VM must communicate with its TrueNAS host for storage. This
-live bridge change still requires an exact saved plan, console recovery access,
-and explicit approval.
+physical interface to the bridge as one staged TrueNAS network transaction.
+After the transaction is committed and checked in, import both interfaces into
+their rollback-enabled `truenas_network_interface` resources and require a
+no-op plan. Connect through `eno1` and keep `10.0.0.3/22` unchanged as the
+management and recovery path. Do not use MACVLAN because the VM must
+communicate with its TrueNAS host for storage. This live bridge change still
+requires an exact reviewed procedure, console recovery access, and explicit
+approval.
 
 ### TrueNAS provider adoption decision
 
-PjSalty/truenas `v2.4.1` was reassessed on 2026-08-14 and adopted for the home
-bridge and VM substrate. `truenas_network_interface` adopts `enp3s0`, removes
-its service address, commits and checks in that change, then the explicitly
-dependent `br4` resource creates the bridge with `10.4.0.3/22`. These are two
-transactions rather than one atomic transaction. The accepted guardrail is
-that the provider and operator remain connected through the unchanged `eno1`
-management path at `10.0.0.3/22`; loss of the Services network during the gap
-does not remove TrueNAS management access.
+PjSalty/truenas `v2.4.1` was reassessed on 2026-08-14 for the home bridge and VM
+substrate. A live apply proved that its physical-interface request cannot clear
+the last address: the request model marks `aliases` with `omitempty`, so
+`aliases = []` is omitted and OpenTofu rejects the unchanged address as an
+inconsistent provider result. The provider also commits each interface
+resource separately, whereas this migration should stage both interface
+changes before one commit and check-in. Do not retry the two-resource creation
+plan. Use one separately reviewed TrueNAS API transaction and import the
+resulting interfaces, or wait for a pinned provider release that fixes the
+empty-alias update and supports safe staging. The unchanged `eno1` management
+path at `10.0.0.3/22` remains the recovery path.
 
 The VM evidence is stronger than the earlier assessment: v2.4.1 has live
 create, update, import, disappearance, and post-apply empty-plan coverage for
@@ -277,12 +282,14 @@ than these virtualization resources.
 
 Adopt the provider through this sequence:
 
-1. Run a provider connection and inventory smoke test with `read_only = true`
-   through `eno1`.
-2. Review the ordered `enp3s0` and `br4` plan with rollback enabled, provider
-   destroy protection, resource `prevent_destroy`, and console recovery ready.
-3. Apply that exact saved network plan only after explicit approval and verify
-   both management paths before continuing.
+1. Run a provider connection and inventory smoke test with the native
+   `TRUENAS_READ_ONLY=true` environment guard through `eno1`.
+2. Review a one-transaction API procedure that stages the `enp3s0` address
+   removal and `br4` creation before commit and check-in, with console recovery
+   ready.
+3. Apply that exact procedure only after explicit approval, import both
+   interfaces into their declared resources, and require a no-op plan before
+   continuing.
 4. Add the 160 GiB zvol, `taco` VM, and its disk, CD-ROM, display, and fixed-MAC
    virtio NIC as direct resources in the `au` root, pinned to `v2.4.1`.
 5. Keep provider `destroy_protection`, add resource-level `prevent_destroy`
@@ -353,8 +360,7 @@ Create only directories that immediately contain real files:
 ├── README.md
 ├── renovate.json
 ├── terraform.tf
-├── truenas.tf
-└── variables.tf
+└── truenas.tf
 ```
 
 Do not create empty `foundations`, `au-oci`, or `truenas` roots as placeholders.

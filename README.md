@@ -42,8 +42,9 @@ export TRUENAS_URL=https://kimbap.mbk.excloo.net:8443
 export TRUENAS_API_KEY='retrieve from the configured secret store'
 ```
 
-The provider defaults to read-only mode and always enables destroy protection.
-Set `truenas_read_only=false` only in the exact saved plan prepared for an
+The provider always enables destroy protection. Set its native
+`TRUENAS_READ_ONLY=true` environment variable for read-only checks, and disable
+that environment guard only for the exact reviewed saved plan and its
 explicitly approved apply. Never put the API key in a checked-in variable file.
 
 ## Repository Boundaries
@@ -54,11 +55,12 @@ explicitly approved apply. Never put the API key in a checked-in variable file.
 - `PLAN.md`: architecture, migration gates, and recovery rules.
 
 The initial configuration creates a content-addressed Talos Image Factory
-schematic and manages the ordered `enp3s0` to `br4` TrueNAS network change. The
-schematic includes only the official QEMU guest agent and Tailscale system
+schematic and declares the adopted `enp3s0` and `br4` TrueNAS network end state.
+The schematic includes only the official QEMU guest agent and Tailscale system
 extensions and derives the metal/amd64 ISO and installer image for Talos Linux
-`v1.13.8`. The network resources are live changes and must never be applied
-without their exact saved plan, console recovery access, and explicit approval.
+`v1.13.8`. The first bridge adoption requires the staged procedure in
+`PLAN.md`; network resources must never be changed without its exact reviewed
+procedure, console recovery access, and explicit approval.
 
 ## Licence
 
