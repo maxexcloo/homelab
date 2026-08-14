@@ -239,7 +239,7 @@ The home network facts were verified read-only:
 - TrueNAS is a WTR PRO with 16 CPU cores and about 64 GiB RAM, running
   `26.0.0-BETA.2`.
 - Pools `truenas` and `truenas-nvme` are online; use the NVMe pool for the
-  160 GiB VM boot zvol.
+  64 GiB VM boot zvol.
 - `eno1` is `10.0.0.3/22` on the UniFi `Default` network.
 - `enp3s0` is `10.4.0.3/22` on the separate `Services` VLAN 4 used by hosts'
   second interfaces.
@@ -305,7 +305,7 @@ Adopt the provider through this sequence:
 3. Apply that exact procedure only after explicit approval, import both
    interfaces into their declared resources, and require a no-op plan before
    continuing.
-4. Add the 160 GiB zvol, `taco` VM, and its disk, CD-ROM, display, and fixed-MAC
+4. Add the 64 GiB zvol, `taco` VM, and its disk, CD-ROM, display, and fixed-MAC
    virtio NIC as direct resources in the `au` root, pinned to `v2.4.1`.
 5. Keep provider `destroy_protection`, add resource-level `prevent_destroy`
    to the zvol and VM, and review a saved plan before the first apply.
@@ -411,7 +411,7 @@ is ready for review.
      `taco.mbk.excloo.net`.
    - Manage `enp3s0` and `br4` through the pinned TrueNAS provider, then add the
      guarded zvol and VM resources after the bridge succeeds.
-   - Exact VM target: 12 vCPU, 32 GiB RAM, 160 GiB boot zvol on
+   - Exact VM target: 12 vCPU, 32 GiB RAM, 64 GiB boot zvol on
      `truenas-nvme`, UEFI, virtio NIC on `br4`, autostart, and a fixed MAC.
 
 4. Review the live home network and VM plan.
