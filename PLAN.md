@@ -123,7 +123,7 @@ the current state and ownership boundaries:
 | Tailscale                 | Rebuild global grants and tag owners in `foundations`, then add separate least-privilege operator OAuth and Talos bootstrap identities to each cluster root. Do not restore reusable per-server or per-service auth keys.                                                                                                                                             |
 | 1Password                 | Store reviewed cluster bootstrap and recovery material without restoring the generic reconciliation modules. Never expose generated credentials through ordinary outputs or human-readable plan artefacts.                                                                                                                                                            |
 | GitHub                    | Retain validation and Flux bootstrap ownership only where required. Do not restore generated repository variables, workflow dispatches, or destroy-time `local-exec` operations.                                                                                                                                                                                      |
-| TrueNAS                   | Manage `enp3s0` and `br4` as explicitly ordered, rollback-enabled resources through the unchanged `eno1` management path. Add the protected `taco` zvol, VM, and devices after the bridge plan succeeds.                                                                                                                                                              |
+| TrueNAS                   | Manage adopted `enp3s0` and `br4` resources through the unchanged `eno1` management path. Use a staged, rollback-enabled API transaction for network changes because provider v2.4.1 cannot safely perform them. Add the protected `taco` zvol, VM, and devices after the bridge succeeds.                                                                            |
 | HAOS, Bazzite, and Hotdog | Treat these as retained appliances. Document their recovery and integration contracts; do not create inventory-only resources for them.                                                                                                                                                                                                                               |
 
 The archived OCI configuration is design evidence, not code to copy. It used
@@ -252,8 +252,8 @@ The home network facts were verified read-only:
 Create `br4` with `enp3s0` as its only member and move `10.4.0.3/22` from the
 physical interface to the bridge as one staged TrueNAS network transaction.
 After the transaction is committed and checked in, import both interfaces into
-their rollback-enabled `truenas_network_interface` resources and require a
-no-op plan. Connect through `eno1` and keep `10.0.0.3/22` unchanged as the
+their `truenas_network_interface` resources and require a no-op plan. Connect
+through `eno1` and keep `10.0.0.3/22` unchanged as the
 management and recovery path. Do not use MACVLAN because the VM must
 communicate with its TrueNAS host for storage. This live bridge change still
 requires an exact reviewed procedure, console recovery access, and explicit
@@ -272,6 +272,21 @@ plan. Use one separately reviewed TrueNAS API transaction and import the
 resulting interfaces, or wait for a pinned provider release that fixes the
 empty-alias update and supports safe staging. The unchanged `eno1` management
 path at `10.0.0.3/22` remains the recovery path.
+
+Provider import also leaves its operation-only `rollback` attribute unset,
+while the schema plans a default of `true`. Updating only that metadata sends
+unrelated empty virtual-interface fields and fails TrueNAS validation. For the
+initial import, normalise only that state attribute to `true` from a verified
+state backup rather than asking the provider to perform a live update. Continue
+detecting drift in all live bridge attributes, and set rollback explicitly in
+every staged API procedure.
+
+The initial bridge adoption completed on 2026-08-14 as one staged API
+transaction with a 120-second rollback window. The committed state was verified
+through `eno1` before check-in: `br4` owns `10.4.0.3/22`, and its sole member
+`enp3s0` has no address. Both interfaces are in the `au` state, the imported
+bridge rollback metadata was normalised from a verified state backup, and the
+final provider-read-only plan reported no changes.
 
 The VM evidence is stronger than the earlier assessment: v2.4.1 has live
 create, update, import, disappearance, and post-apply empty-plan coverage for
