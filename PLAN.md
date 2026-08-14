@@ -122,7 +122,7 @@ the current state and ownership boundaries:
 | Tailscale                 | Rebuild global grants and tag owners in `foundations`, then add separate least-privilege operator OAuth and Talos bootstrap identities to each cluster root. Do not restore reusable per-server or per-service auth keys.                                                                                                                                             |
 | 1Password                 | Store reviewed cluster bootstrap and recovery material without restoring the generic reconciliation modules. Never expose generated credentials through ordinary outputs or human-readable plan artefacts.                                                                                                                                                            |
 | GitHub                    | Retain validation and Flux bootstrap ownership only where required. Do not restore generated repository variables, workflow dispatches, or destroy-time `local-exec` operations.                                                                                                                                                                                      |
-| TrueNAS                   | Keep the initial bridge and `taco` VM manual. Do not add the provider until exact release acceptance, atomic bridge modelling, and a drift-free imported VM plan prove adoption safe.                                                                                                                                                                                 |
+| TrueNAS                   | Keep the `br4` address move manual because the provider cannot batch it atomically. After the bridge exists, use the provider for the protected `taco` zvol, VM, and devices only after a read-only smoke test and reviewed plan.                                                                                                                                     |
 | HAOS, Bazzite, and Hotdog | Treat these as retained appliances. Document their recovery and integration contracts; do not create inventory-only resources for them.                                                                                                                                                                                                                               |
 
 The archived OCI configuration is design evidence, not code to copy. It used
@@ -250,36 +250,48 @@ This live bridge change still requires an exact preview and explicit approval.
 
 ### TrueNAS provider adoption decision
 
-The initial bridge and VM remain manual TrueNAS configuration. PjSalty/truenas
-`v2.4.1` was assessed on 2026-08-14 but was not added to this root or state:
+PjSalty/truenas `v2.4.1` was reassessed on 2026-08-14. The initial bridge move
+remains manual, but the provider is eligible to manage the `taco` zvol, VM, and
+devices after `br4` exists.
 
-- upstream validation for the 26.0 line covered `26.0.0-BETA.1`, not the
-  installed `26.0.0-BETA.2`, and still reported API drift elsewhere in the
-  provider surface;
-- each `truenas_network_interface` resource performs its own staged commit and
-  check-in, so it cannot express moving `10.4.0.3/22` from `enp3s0` to `br4`
-  as one atomic TrueNAS network transaction; and
-- upstream apply-idempotency coverage explicitly defers the VM resource because
-  of its complex computed fields.
+Do not manage the bridge with this provider. Although
+`truenas_network_interface` can adopt a physical NIC and create a bridge, each
+resource Create, Update, or Delete calls `interface.commit` and immediately
+calls `interface.checkin`. It therefore cannot stage removing `10.4.0.3/22`
+from `enp3s0` and creating `br4` with that address as one atomic TrueNAS
+transaction. Upstream live acceptance tests intentionally avoid network
+interface create, update, and delete because they can disconnect the provider.
 
-Provider-wide read-only and destroy-protection controls are useful but do not
-remove those modelling risks. Reconsider provider ownership only after the
-installed TrueNAS release has exact upstream acceptance coverage, the bridge
-move can be represented atomically, and a manually created VM imports to a
-reviewed no-op plan. Until then, create the bridge and VM through a reviewed
-TrueNAS staged-change procedure and keep them out of OpenTofu state.
+The VM evidence is stronger than the earlier assessment: v2.4.1 has live
+create, update, import, disappearance, and post-apply empty-plan coverage for
+`truenas_vm`, plus live coverage for `truenas_vm_device` and `truenas_zvol`.
+The provider's 26.0 validation covered `26.0.0-BETA.1`, not the installed
+`26.0.0-BETA.2`; its four reported failures were in service and SMB APIs rather
+than these virtualization resources.
+
+Adopt the provider for the VM only through this sequence:
+
+1. Complete and check in the manual `br4` staged change while `eno1` remains
+   the recovery path.
+2. Run a provider connection and inventory smoke test with `read_only = true`.
+3. Add the 160 GiB zvol, `taco` VM, and its disk, CD-ROM, display, and fixed-MAC
+   virtio NIC as direct resources in the `au` root, pinned to `v2.4.1`.
+4. Enable provider `destroy_protection`, add resource-level `prevent_destroy`
+   to the zvol and VM, and review a saved plan before the first apply.
+5. If any VM object was created manually, import it first and require a no-op
+   plan; never create a duplicate to simplify adoption.
 
 ## Version baseline
 
 Pin exact stable versions. The verified initial values are:
 
-| Component                  | Version                        |
-| -------------------------- | ------------------------------ |
-| OpenTofu                   | `1.12.5`                       |
-| Sidero Labs Talos provider | `0.11.0`                       |
-| PjSalty TrueNAS provider   | `v2.4.1` assessed, not adopted |
-| Talos Linux                | `v1.13.8`                      |
-| Kubernetes                 | `v1.36.3`                      |
+| Component                  | Version                                   |
+| -------------------------- | ----------------------------------------- |
+| OpenTofu                   | `1.12.5`                                  |
+| Sidero Labs Talos provider | `0.11.0`                                  |
+| PjSalty TrueNAS provider   | `v2.4.1` approved for guarded VM adoption |
+| Talos Linux                | `v1.13.8`                                 |
+| Kubernetes                 | `v1.36.3`                                 |
 
 Talos `v1.13.8` was verified as the current stable release on 2026-08-14. Use
 the stable provider rather than `0.12.0-alpha.5`.
@@ -359,14 +371,16 @@ is ready for review.
 3. Resolve the home VM identity and TrueNAS ownership.
    - Use `taco` for the VM and node hostname, with canonical FQDN
      `taco.mbk.excloo.net`.
-   - Keep the bridge and initial VM manual under the recorded provider adoption
-     decision; do not add `PjSalty/truenas` to this root or state yet.
+   - Keep the bridge move manual. Add `PjSalty/truenas` only with the first
+     guarded zvol and VM resources after `br4` exists and the read-only smoke
+     test passes.
    - Exact VM target: 12 vCPU, 32 GiB RAM, 160 GiB boot zvol on
      `truenas-nvme`, UEFI, virtio NIC on `br4`, autostart, and a fixed MAC.
 
 4. Review the live home network and VM plan.
    - Preview the TrueNAS staged bridge change and preserve the primary NIC.
-   - Create or manually configure the VM only after approval.
+   - After the bridge is checked in, review the protected OpenTofu zvol, VM,
+     and device plan; create or import them only after approval.
    - Boot the provider-resolved Talos ISO in maintenance mode.
    - Discover the actual install disk; never assume `/dev/sda` or `/dev/vda`.
    - Let the first boot use DHCP, then reserve `10.4.0.4` for the VM MAC in
