@@ -23,6 +23,60 @@ contain OpenTofu or Talos lifecycle configuration. Cloudflared and the
 Tailscale Kubernetes operator are Kubernetes workloads in `kubelab`; the
 cluster tunnel and Tailscale bootstrap identities remain substrate here.
 
+## Naming and DNS
+
+Use short, location-led DNS names with memorable food names for hosts. A
+host's canonical infrastructure identity has this form:
+
+```text
+<food>.<location>.excloo.net
+```
+
+APIs and services use `excloo.dev` and have this form:
+
+```text
+<service>.<location>.excloo.dev
+```
+
+The location labels are:
+
+| Label | Location            |
+| ----- | ------------------- |
+| `mbk` | Meadowbank, Sydney  |
+| `syd` | Sydney              |
+| `fre` | Fremont, California |
+
+Names describe location rather than provider so that moving a host between
+providers in the same location does not require a new location identity. Do
+not add intermediate `infra` or `k8s` labels, and do not use hyphens in new
+host, API, or service labels.
+
+The confirmed and pending host identities are:
+
+| Host                        | Location | Canonical FQDN          | Status    |
+| --------------------------- | -------- | ----------------------- | --------- |
+| Home Assistant OS appliance | `mbk`    | `hass.mbk.excloo.net`   | Confirmed |
+| TrueNAS appliance           | `mbk`    | `kimbap.mbk.excloo.net` | Confirmed |
+| Bazzite host                | `mbk`    | `mandu.mbk.excloo.net`  | Confirmed |
+| Home Talos node             | `mbk`    | `taco.mbk.excloo.net`   | Confirmed |
+| OCI Sydney node             | `syd`    | `hsp.syd.excloo.net`    | Confirmed |
+| ZFS.Rent host               | `fre`    | `hotdog.fre.excloo.net` | Confirmed |
+
+`hsp` means halal snack pack and remains a food name. ZFS.Rent's Fremont
+location is represented by `fre`. Host names are durable machine identities;
+service aliases can change with a machine's role.
+
+The Kubernetes cluster and API identities are:
+
+| Cluster | API FQDN             | Initial node FQDN     |
+| ------- | -------------------- | --------------------- |
+| `mbk`   | `api.mbk.excloo.dev` | `taco.mbk.excloo.net` |
+| `syd`   | `api.syd.excloo.dev` | `hsp.syd.excloo.net`  |
+
+The existing `au` and `au-oci` state-root names and GCS prefixes are separate
+infrastructure identities. Renaming them, and the corresponding paths in
+`kubelab`, requires a separately reviewed backend and cross-repository change.
+
 Keep this repository lean and direct. Do not recreate the previous YAML
 catalogue, JSON schemas, model/runtime pipeline, configuration generators,
 deployment templates, or repository scripts. Use ordinary, explicit OpenTofu
@@ -143,15 +197,15 @@ and explicit approval. The repository cleanup itself transfers no resources.
 
 ## Fixed cluster design
 
-| Cluster  | Substrate                                     | Role                                             |
-| -------- | --------------------------------------------- | ------------------------------------------------ |
-| `au`     | Single Talos control-plane VM on home TrueNAS | Primary workloads and learning cluster           |
-| `au-oci` | Single Talos control-plane VM on OCI Sydney   | Independent secondary cluster and upgrade canary |
+| Cluster | Substrate                                     | Role                                             |
+| ------- | --------------------------------------------- | ------------------------------------------------ |
+| `mbk`   | Single Talos control-plane VM on home TrueNAS | Primary workloads and learning cluster           |
+| `syd`   | Single Talos control-plane VM on OCI Sydney   | Independent secondary cluster and upgrade canary |
 
-`au` and `au-oci` are cluster names, not VM or node hostnames. The home VM and
-Talos node must receive a separate user-selected hostname that is not `au`,
-`talos`, or a Kubernetes role name. This choice is still unresolved and blocks
-VM creation and final machine configuration.
+`mbk` and `syd` are cluster identifiers, not VM or node hostnames. The home VM
+and Talos node use the hostname `taco`, with canonical FQDN
+`taco.mbk.excloo.net`. The OCI Sydney node uses the hostname `hsp`, with
+canonical FQDN `hsp.syd.excloo.net`.
 
 The home network facts were verified read-only:
 
@@ -283,7 +337,8 @@ is ready for review.
    - Commit and push the clean baseline before any apply.
 
 3. Resolve the home VM identity and TrueNAS ownership.
-   - Ask for the VM/node hostname.
+   - Use `taco` for the VM and node hostname, with canonical FQDN
+     `taco.mbk.excloo.net`.
    - Keep the bridge and initial VM manual under the recorded provider adoption
      decision; do not add `PjSalty/truenas` to this root or state yet.
    - Exact VM target: 12 vCPU, 32 GiB RAM, 160 GiB boot zvol on
@@ -301,7 +356,7 @@ is ready for review.
    - Use `talos_machine_secrets`, `talos_machine_configuration`,
      `talos_machine_configuration_apply`, `talos_machine_bootstrap`, cluster
      health, and kubeconfig resources from the stable official provider.
-   - Keep the cluster name `au` and the separate chosen node hostname.
+   - Use cluster name `mbk` and the separate node hostname `taco`.
    - Stop unless `kubelab/PLAN.md` records an upstream-supported Kubernetes and
      Cilium pair; use that reviewed Kubernetes version in machine configuration.
    - Configure Pod CIDR `10.100.0.0/22`, Service CIDR `10.100.4.0/22`, CNI
@@ -328,8 +383,8 @@ is ready for review.
 
 7. Continue Kubernetes work in `../kubelab`.
    - Install Cilium before Flux because Talos uses `cni.name: none`.
-   - Bootstrap Flux from the public `maxexcloo/kubelab` repository at
-     `clusters/au`.
+   - Bootstrap Flux from the public `maxexcloo/kubelab` repository at the path
+     selected by the separately reviewed cross-repository naming change.
    - Let Flux reconcile Gateway API, Traefik, cert-manager, Tailscale operator,
      cloudflared, External Secrets, Crossplane, static NFS, and the disposable
      OpenSpeedTest workload in dependency order.

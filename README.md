@@ -4,8 +4,8 @@ This repository manages homelab infrastructure and Talos cluster substrate
 with OpenTofu. Kubernetes API resources and Flux reconciliation live in the
 separate `kubelab` repository.
 
-The migration begins with `au`, a single Talos control-plane VM on TrueNAS.
-The independent OCI Sydney cluster, `au-oci`, follows only after the home
+The migration begins with `mbk`, a single Talos control-plane VM on TrueNAS.
+The independent OCI Sydney cluster, `syd`, follows only after the home
 cluster passes the recovery and workload success gate in [PLAN.md](PLAN.md).
 
 CI validates configuration and never receives infrastructure or cluster
