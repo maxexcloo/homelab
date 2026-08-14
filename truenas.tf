@@ -1,3 +1,7 @@
+data "truenas_network_interface" "services_physical" {
+  id = local.truenas_service_nic.name
+}
+
 resource "truenas_network_interface" "services_physical" {
   aliases   = []
   ipv4_dhcp = false
@@ -8,6 +12,18 @@ resource "truenas_network_interface" "services_physical" {
 
   lifecycle {
     prevent_destroy = true
+
+    precondition {
+      condition = (
+        data.truenas_network_interface.services_physical.type == "PHYSICAL" &&
+        data.truenas_network_interface.services_physical.ipv4_dhcp == false &&
+        length(data.truenas_network_interface.services_physical.aliases) == 1 &&
+        one(data.truenas_network_interface.services_physical.aliases).type == "INET" &&
+        one(data.truenas_network_interface.services_physical.aliases).address == local.truenas_service_nic.address &&
+        one(data.truenas_network_interface.services_physical.aliases).netmask == local.truenas_service_nic.prefix_length
+      )
+      error_message = "The live Services NIC must be a static physical interface with exactly the expected IPv4 address before bridge adoption."
+    }
   }
 }
 
