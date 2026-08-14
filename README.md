@@ -34,10 +34,11 @@ The committed `.terraform.lock.hcl` records provider checksums for Apple
 Silicon development and Linux CI. Review lockfile changes with provider
 updates.
 
-TrueNAS plans require an HTTPS management URL and API key supplied at runtime:
+TrueNAS plans use the provider's native environment variables for connection
+settings and credentials:
 
 ```shell
-export TF_VAR_truenas_url=https://kimbap.mbk.excloo.net:8443
+export TRUENAS_URL=https://kimbap.mbk.excloo.net:8443
 export TRUENAS_API_KEY='retrieve from the configured secret store'
 ```
 
