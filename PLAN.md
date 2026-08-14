@@ -323,7 +323,9 @@ Add `siderolabs/iscsi-tools` only in a later, isolated iSCSI trial.
 An earlier Tailscale-only schematic resolved to
 `4a0d65c669d46663f377e7161e50cfd570c401f26fd9e7bda34a0216b6f1922b`.
 Do not reuse it after adding the QEMU guest agent; let the provider create and
-record the new content-addressed schematic.
+record the new content-addressed schematic. The applied home schematic with
+both required extensions resolved to
+`7d4c31cbd96db9f90c874990697c523482b2bae27fb4631d5583dcd9c281b1ff`.
 
 ## Target repository shape
 
