@@ -174,16 +174,38 @@ physical interface to the bridge using TrueNAS staged network changes. Keep
 use MACVLAN because the VM must communicate with its TrueNAS host for storage.
 This live bridge change still requires an exact preview and explicit approval.
 
+### TrueNAS provider adoption decision
+
+The initial bridge and VM remain manual TrueNAS configuration. PjSalty/truenas
+`v2.4.1` was assessed on 2026-08-14 but was not added to this root or state:
+
+- upstream validation for the 26.0 line covered `26.0.0-BETA.1`, not the
+  installed `26.0.0-BETA.2`, and still reported API drift elsewhere in the
+  provider surface;
+- each `truenas_network_interface` resource performs its own staged commit and
+  check-in, so it cannot express moving `10.4.0.3/22` from `enp3s0` to `br4`
+  as one atomic TrueNAS network transaction; and
+- upstream apply-idempotency coverage explicitly defers the VM resource because
+  of its complex computed fields.
+
+Provider-wide read-only and destroy-protection controls are useful but do not
+remove those modelling risks. Reconsider provider ownership only after the
+installed TrueNAS release has exact upstream acceptance coverage, the bridge
+move can be represented atomically, and a manually created VM imports to a
+reviewed no-op plan. Until then, create the bridge and VM through a reviewed
+TrueNAS staged-change procedure and keep them out of OpenTofu state.
+
 ## Version baseline
 
 Pin exact stable versions. The verified initial values are:
 
-| Component                  | Version   |
-| -------------------------- | --------- |
-| OpenTofu                   | `1.12.5`  |
-| Sidero Labs Talos provider | `0.11.0`  |
-| Talos Linux                | `v1.13.8` |
-| Kubernetes                 | `v1.36.3` |
+| Component                  | Version                        |
+| -------------------------- | ------------------------------ |
+| OpenTofu                   | `1.12.5`                       |
+| Sidero Labs Talos provider | `0.11.0`                       |
+| PjSalty TrueNAS provider   | `v2.4.1` assessed, not adopted |
+| Talos Linux                | `v1.13.8`                      |
+| Kubernetes                 | `v1.36.3`                      |
 
 Talos `v1.13.8` was verified as the current stable release on 2026-08-14. Use
 the stable provider rather than `0.12.0-alpha.5`.
@@ -262,10 +284,8 @@ is ready for review.
 
 3. Resolve the home VM identity and TrueNAS ownership.
    - Ask for the VM/node hostname.
-   - Inspect the pinned `PjSalty/truenas` provider against TrueNAS 26.0 before
-     declaring a VM or bridge.
-   - If its plan cannot model the beta API exactly and safely, keep the bridge
-     and VM manual rather than forcing provider ownership.
+   - Keep the bridge and initial VM manual under the recorded provider adoption
+     decision; do not add `PjSalty/truenas` to this root or state yet.
    - Exact VM target: 12 vCPU, 32 GiB RAM, 160 GiB boot zvol on
      `truenas-nvme`, UEFI, virtio NIC on `br4`, autostart, and a fixed MAC.
 
