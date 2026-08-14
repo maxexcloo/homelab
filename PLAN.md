@@ -111,6 +111,26 @@ Do not restore these patterns:
 - shell commands and workflow dispatches hidden behind `terraform_data`; or
 - inventory-only OpenTofu resources that do not own real infrastructure.
 
+Reintroduce retained legacy infrastructure only through direct resources under
+the current state and ownership boundaries:
+
+| Legacy area               | Decision                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OCI Sydney network and VM | Rewrite the useful VCN, subnet, internet gateway, NSG, boot volume, and instance resources directly in the future `au-oci` state root after the home success gate. Preserve stable external identities through an address inventory, old-state backup, import procedure, saved plan, and rollback notes. Do not restore the server catalogue or generated cloud-init. |
+| UniFi                     | Add only the fixed-MAC DHCP reservation and network policy that OpenTofu actually owns. Do not restore inventory-only client lookups.                                                                                                                                                                                                                                 |
+| Cloudflare                | Add cluster tunnels, credentials, and shared recovery access foundations directly. App routes, Access policies, WAF, and rate limits remain Crossplane resources in `kubelab`; do not restore their catalogue-driven generation here.                                                                                                                                 |
+| Tailscale                 | Rebuild global grants and tag owners in `foundations`, then add separate least-privilege operator OAuth and Talos bootstrap identities to each cluster root. Do not restore reusable per-server or per-service auth keys.                                                                                                                                             |
+| 1Password                 | Store reviewed cluster bootstrap and recovery material without restoring the generic reconciliation modules. Never expose generated credentials through ordinary outputs or human-readable plan artefacts.                                                                                                                                                            |
+| GitHub                    | Retain validation and Flux bootstrap ownership only where required. Do not restore generated repository variables, workflow dispatches, or destroy-time `local-exec` operations.                                                                                                                                                                                      |
+| TrueNAS                   | Keep the initial bridge and `taco` VM manual. Do not add the provider until exact release acceptance, atomic bridge modelling, and a drift-free imported VM plan prove adoption safe.                                                                                                                                                                                 |
+| HAOS, Bazzite, and Hotdog | Treat these as retained appliances. Document their recovery and integration contracts; do not create inventory-only resources for them.                                                                                                                                                                                                                               |
+
+The archived OCI configuration is design evidence, not code to copy. It used
+an Ubuntu image, generated bootstrap metadata, broad public SSH ingress, and
+catalogue-derived identity. The future `syd` root instead uses a pinned Talos
+image, explicit network rules, the host identity `hsp.syd.excloo.net`, and no
+dependency on the archived model pipeline.
+
 Use this ownership test: `kubelab` owns workloads and their app-scoped
 integrations; this repository owns everything required to rebuild, recover, or
 reach a cluster while Kubernetes is unavailable.
