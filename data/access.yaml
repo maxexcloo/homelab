@@ -11,6 +11,15 @@ tailscale:
   admin_identities:
     - max@excloo.com
     - maxexcloo@passkey
+  additional_tags:
+    - cicd
+    - ephemeral
+    - server
+    - vm
+  exit_node_approver_tags:
+    - tag:router
+    - tag:server
+    - tag:vm
   key_expiry_seconds: 7776000
   operator:
     scopes:
@@ -18,7 +27,97 @@ tailscale:
       - devices:core
     tag: kubernetesoperator
   route_approver_tag: talos
+  route_approvers:
+    "0.0.0.0/0":
+      - tag:router
+      - tag:server
+      - tag:vm
+    "::/0":
+      - tag:router
+      - tag:server
+      - tag:vm
   rules:
+    - action: accept
+      sources:
+        - tag:ephemeral
+      destinations:
+        - "tag:appliance:*"
+        - "tag:router:*"
+        - "tag:server:*"
+        - "tag:vm:*"
+      protocol: icmp
+    - action: accept
+      sources:
+        - tag:ephemeral
+      destinations:
+        - tag:appliance:80
+        - tag:appliance:443
+    - action: accept
+      sources:
+        - tag:ephemeral
+      destinations:
+        - "tag:router:*"
+    - action: accept
+      sources:
+        - tag:ephemeral
+      destinations:
+        - tag:server:80
+        - tag:server:443
+    - action: accept
+      sources:
+        - tag:ephemeral
+      destinations:
+        - tag:vm:80
+        - tag:vm:443
+    - action: accept
+      sources:
+        - tag:appliance
+      destinations:
+        - tag:server:443
+    - action: accept
+      sources:
+        - tag:vm
+      destinations:
+        - tag:appliance:80
+        - tag:appliance:443
+    - action: accept
+      sources:
+        - tag:vm
+      destinations:
+        - tag:server:80
+        - tag:server:443
+    - action: accept
+      sources:
+        - tag:vm
+      destinations:
+        - tag:vm:80
+        - tag:vm:443
+    - action: accept
+      sources:
+        - tag:server
+      destinations:
+        - tag:router:80
+        - tag:router:443
+    - action: accept
+      sources:
+        - tag:server
+      destinations:
+        - "tag:appliance:*"
+    - action: accept
+      sources:
+        - tag:server
+      destinations:
+        - "tag:server:*"
+    - action: accept
+      sources:
+        - tag:server
+      destinations:
+        - "tag:vm:*"
+    - action: accept
+      sources:
+        - tag:router
+      destinations:
+        - "*:*"
     - action: accept
       sources:
         - group:admin

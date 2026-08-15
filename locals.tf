@@ -159,7 +159,10 @@ locals {
   tailscale_admin_identities = local.access.tailscale.admin_identities
   tailscale_key_expiry       = local.access.tailscale.key_expiry_seconds
   tailscale_operator_tag     = local.access.tailscale.operator.tag
-  tailscale_host_tags        = toset([for machine in values(local.machines) : "tag:${machine.tailscale_tag}"])
+  tailscale_host_tags = toset(concat(
+    [for machine in values(local.machines) : "tag:${machine.tailscale_tag}"],
+    [for tag in local.access.tailscale.additional_tags : "tag:${tag}"],
+  ))
   tailscale_routes = toset(flatten([
     for cluster in values(local.clusters) : flatten([
       for node in values(cluster.nodes) : try(node.tailscale_routes, [])

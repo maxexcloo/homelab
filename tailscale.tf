@@ -14,16 +14,23 @@ locals {
     )
 
     autoApprovers = {
-      routes = {
-        for route in local.tailscale_routes : route => ["tag:${local.access.tailscale.route_approver_tag}"]
-      }
+      exitNode = local.access.tailscale.exit_node_approver_tags
+      routes = merge(
+        local.access.tailscale.route_approvers,
+        {
+          for route in local.tailscale_routes : route => ["tag:${local.access.tailscale.route_approver_tag}"]
+        },
+      )
     }
 
-    acls = [for rule in local.access.tailscale.rules : {
-      action = rule.action
-      src    = rule.sources
-      dst    = rule.destinations
-    }]
+    acls = [for rule in local.access.tailscale.rules : merge(
+      {
+        action = rule.action
+        src    = rule.sources
+        dst    = rule.destinations
+      },
+      try(rule.protocol, null) == null ? {} : { proto = rule.protocol },
+    )]
 
     tests = [for test in local.access.tailscale.tests : {
       src    = test.source
@@ -36,15 +43,6 @@ resource "tailscale_acl" "default" {
   acl                        = jsonencode(local.tailscale_policy)
   overwrite_existing_content = false
   reset_acl_on_destroy       = false
-
-  # Adoption gate only: remove after the import in migrations.tf is recorded.
-  lifecycle {
-    ignore_changes = [
-      acl,
-      overwrite_existing_content,
-      reset_acl_on_destroy,
-    ]
-  }
 }
 
 resource "tailscale_tailnet_key" "server" {
