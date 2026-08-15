@@ -3,8 +3,8 @@
 OpenTofu owns the Kubernetes dataset and NFS share declared under the `kimbap`
 target in `data/storage.yaml`. The target must resolve to the TrueNAS compute
 host for this root. The share is restricted to the Meadowbank Services subnet.
-It also adopts the two existing `truenas-nvme` snapshot schedules through the
-temporary import blocks in `migrations.tf`.
+The two existing `truenas-nvme` snapshot schedules were adopted as task IDs 3
+and 5 during the completed storage migration.
 
 The following existing jobs remain manually owned in TrueNAS:
 
@@ -22,9 +22,9 @@ name-based pool lookup. Managing those resources would risk clearing live
 settings or hard-code appliance database IDs, so their manual ownership is
 deliberate rather than an adoption backlog.
 
-Before the first storage apply, review a saved plan that imports task IDs 3 and
-5 as the NVMe snapshot schedules. The new dataset and NFS share must appear as
-creates; no existing task may appear as a replacement or deletion.
+Remote state now owns the NVMe snapshot schedules, dataset, and NFS share. Any
+future storage plan must preserve those resource addresses and must not replace
+or delete an existing task without a separately reviewed migration.
 
 TrueNAS currently owns its `cloudflare` ACME authenticator, `truenas`
 certificate, SMTP configuration, and UPS configuration manually. Their native

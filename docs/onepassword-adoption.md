@@ -9,9 +9,10 @@ usable without hard-coding a vault UUID.
 Before changing the logical mapping to a dedicated `Kubernetes` vault,
 inventory the existing item UUIDs and titles. Grant the 1Password Connect
 account access to that vault, move existing cluster items manually where
-required, then import or reconcile their exact resource addresses through
-`migrations.tf`. Do not let `prevent_destroy` be bypassed to replace a recovery
-item, and do not create a duplicate item merely to avoid adoption.
+required, then use isolated temporary migration blocks to import or reconcile
+their exact resource addresses. Remove those blocks only after remote state and
+a reviewed saved plan confirm the transition. Do not bypass `prevent_destroy`
+to replace a recovery item or create a duplicate merely to avoid adoption.
 
 The 1Password Connect account must have only the vault permissions required by
 these resources. The separate Kubernetes service-account roots used by

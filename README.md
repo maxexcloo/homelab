@@ -4,9 +4,9 @@ This repository manages homelab infrastructure and Talos cluster substrate
 with OpenTofu. Kubernetes API resources and Flux reconciliation live in the
 separate `kubelab` repository.
 
-The migration begins with `mbk`, a single Talos control-plane VM on TrueNAS.
-The independent OCI Sydney cluster, `syd`, follows only after the home
-cluster passes the recovery and workload success gate in [PLAN.md](PLAN.md).
+`mbk` is the active single-node Talos substrate on TrueNAS. The independent
+OCI Sydney cluster, `syd`, follows only after the external home success gate is
+recorded in `kubelab/PLAN.md`, as described in [PLAN.md](PLAN.md).
 
 CI validates configuration and never receives infrastructure or cluster
 credentials. Plans and applies run locally from a trusted workstation after
@@ -31,7 +31,7 @@ The main commands are:
 
 Initialisation during setup uses `-backend=false`. Initialise a real backend
 only through the reviewed procedure in
-[docs/backend-migration.md](docs/backend-migration.md). Never migrate the legacy
+[docs/backend-state.md](docs/backend-state.md). Never migrate the legacy
 `states/core` state into this root.
 
 The committed `.terraform.lock.hcl` records provider checksums for Apple
@@ -78,16 +78,17 @@ keys, not Cloudflare object IDs.
 
 Machine and cluster API records are derived separately from the infrastructure
 inventories. Do not duplicate a derived record in the manual files. Existing
-Cloudflare records must be adopted through reviewed import blocks in
-`migrations.tf` before any apply.
+Cloudflare records must be adopted through isolated, reviewed import blocks
+before any apply. Remove those blocks only after remote state records the
+adoption and a saved plan confirms the transition.
 
-The initial configuration creates a content-addressed Talos Image Factory
-schematic and declares the adopted `enp3s0` and `br4` TrueNAS network end state.
+The configuration owns a content-addressed Talos Image Factory schematic and
+the adopted `enp3s0` and `br4` TrueNAS network end state.
 The schematic includes only the official QEMU guest agent and Tailscale system
 extensions and derives the metal/amd64 ISO and installer image for Talos Linux
-`v1.13.8`. The first bridge adoption requires the staged procedure in
-`PLAN.md`; network resources must never be changed without its exact reviewed
-procedure, console recovery access, and explicit approval.
+`v1.13.8`. The bridge is already adopted; network resources must never be
+changed without a reviewed saved plan, console recovery access, and explicit
+approval.
 
 ## Licence
 

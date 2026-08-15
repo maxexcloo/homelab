@@ -104,9 +104,9 @@ keys, OAuth credentials, tunnel credentials, Talos machine secrets, and other
 generated values are intentionally state-sensitive even where providers expose
 write-only arguments.
 
-Keep every temporary `moved`, `removed`, or import block in `migrations.tf`.
-Delete that file only after a reviewed saved plan confirms every transition is
-recorded in remote state and no block remains necessary.
+Keep temporary `moved`, `removed`, and import blocks isolated from ordinary
+resource definitions. Remove them only after a reviewed saved plan confirms
+every transition is recorded in remote state.
 
 ## Configuration model
 
@@ -362,7 +362,6 @@ real resources demonstrate a stable reusable interface.
 ├── dns.tf
 ├── image.tf
 ├── locals.tf
-├── migrations.tf
 ├── oci.tf
 ├── onepassword.tf
 ├── outputs.tf
