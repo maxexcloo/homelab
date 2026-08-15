@@ -7,6 +7,11 @@ locals {
   networks    = yamldecode(file("${path.module}/data/networks.yaml")).networks
   storage     = yamldecode(file("${path.module}/data/storage.yaml"))
 
+  talos_clusters = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled
+  }
+
   machine_fqdns = {
     for name, machine in local.machines :
     name => "${name}.${machine.location}.${local.domains.domains.infrastructure}"
@@ -63,11 +68,15 @@ locals {
     for name, network in local.networks : name => network.oci
     if try(network.oci, null) != null
   }
-  oci_nodes = {
+  oci_deployments = {
     for name, deployment in local.deployments : name => merge(deployment, {
       cluster = local.machines[name].cluster
     })
     if deployment.provider == "oci"
+  }
+  oci_nodes = {
+    for name, deployment in local.oci_deployments : name => deployment
+    if local.clusters[deployment.cluster].talos_enabled
   }
   oci_node_egress_rules = merge([
     for name, node in local.oci_nodes : {
@@ -80,9 +89,10 @@ locals {
       }
     }
   ]...)
-  oci_cluster     = local.clusters[one(values(local.oci_nodes)).cluster]
-  oci_image       = local.oci_cluster.image
-  oci_object_name = "talos-${local.oci_cluster.talos_version}-${local.oci_image.platform}-${local.oci_image.architecture}.oci"
+  oci_cluster_name = one(values(local.oci_deployments)).cluster
+  oci_cluster      = local.clusters[local.oci_cluster_name]
+  oci_image        = local.oci_cluster.image
+  oci_object_name  = "talos-${local.oci_cluster.talos_version}-${local.oci_image.platform}-${local.oci_image.architecture}.oci"
 
   cloudflare_account_name = local.domains.cloudflare.account_name
   cloudflare_acme_consumers = {
@@ -170,7 +180,7 @@ locals {
   ]))
 
   talos_nodes = merge([
-    for cluster_name, cluster in local.clusters : {
+    for cluster_name, cluster in local.talos_clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
         address = local.machines[node_name].address
         cluster = cluster_name
@@ -200,20 +210,20 @@ locals {
     if node.configuration_delivery == "api"
   }
   talos_recovery_clusters = {
-    for cluster_name, cluster in local.clusters : cluster_name => cluster
+    for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
     if anytrue([
       for node in values(cluster.nodes) :
       node.machine_type == "controlplane" && try(node.bootstrap, false)
     ])
   }
   talos_control_plane_endpoints = {
-    for cluster_name, cluster in local.clusters : cluster_name => [
+    for cluster_name, cluster in local.talos_clusters : cluster_name => [
       for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
       if node.machine_type == "controlplane"
     ]
   }
   talos_worker_endpoints = {
-    for cluster_name, cluster in local.clusters : cluster_name => [
+    for cluster_name, cluster in local.talos_clusters : cluster_name => [
       for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
       if node.machine_type == "worker"
     ]

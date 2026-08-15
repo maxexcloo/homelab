@@ -4,6 +4,7 @@ clusters:
     kubernetes_version: v1.36.3
     pod_subnet: 10.100.0.0/22
     service_subnet: 10.100.4.0/22
+    talos_enabled: true
     talos_version: v1.13.8
     image:
       architecture: amd64
@@ -24,6 +25,7 @@ clusters:
     kubernetes_version: v1.36.3
     pod_subnet: 10.100.8.0/22
     service_subnet: 10.100.12.0/22
+    talos_enabled: false
     talos_version: v1.13.8
     image:
       architecture: arm64

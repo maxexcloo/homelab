@@ -1,5 +1,5 @@
 resource "talos_image_factory_schematic" "cluster" {
-  for_each = local.clusters
+  for_each = local.talos_clusters
 
   schematic = yamlencode({
     customization = {
@@ -11,7 +11,7 @@ resource "talos_image_factory_schematic" "cluster" {
 }
 
 data "talos_image_factory_urls" "cluster" {
-  for_each = local.clusters
+  for_each = local.talos_clusters
 
   architecture  = each.value.image.architecture
   platform      = each.value.image.platform

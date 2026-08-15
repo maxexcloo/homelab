@@ -157,6 +157,12 @@ tunnels, reservations, and credentials from those sources. Do not add
 per-machine files, schemas, inheritance, generated models, service definitions,
 or rendering stages.
 
+Every cluster declares `talos_enabled` explicitly. This is the rollout gate for
+its Talos image, secrets, configuration, recovery resources, and any compute
+node that requires Talos configuration as metadata. A disabled cluster keeps
+its durable identity, DNS, tunnel, and access foundations but cannot enter a
+Talos lifecycle plan. Enable `syd` only after the home success gate passes.
+
 Use the same deployment shape across providers where the concepts match:
 `compute` owns CPU and `memory_mib`, while `boot` owns `size_mib`. Keep
 provider-only values in a provider-named child object and convert MiB only at a
@@ -564,6 +570,10 @@ resources have demonstrated a stable reusable interface.
    - Bootstrap etcd exactly once. The provider has had timing issues between
      configuration apply and bootstrap; use explicit dependencies and expect
      a reviewed second apply rather than adding sleep scripts.
+   - Scope lifecycle dependencies to the matching node or cluster so a
+     narrowly targeted recovery operation cannot pull the other location into
+     its plan. Reapply machine configuration with `staged_if_needing_reboot` so
+     a reboot-requiring change is staged rather than restarting a node.
    - Retrieve kubeconfig, verify health and reboot recovery, then hand the
      healthy Kubernetes API to `kubelab`.
 

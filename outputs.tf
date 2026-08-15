@@ -42,7 +42,7 @@ output "nfs_exports" {
 
 output "oci_disk_image_url" {
   description = "Image Factory disk image used to prepare the OCI image archive."
-  value       = data.talos_image_factory_urls.cluster[one(values(local.oci_nodes)).cluster].urls.disk_image
+  value       = try(data.talos_image_factory_urls.cluster[local.oci_cluster_name].urls.disk_image, null)
 }
 
 output "oci_public_addresses" {

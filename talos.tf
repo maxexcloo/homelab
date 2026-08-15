@@ -1,5 +1,5 @@
 resource "talos_machine_secrets" "cluster" {
-  for_each = local.clusters
+  for_each = local.talos_clusters
 
   talos_version = each.value.talos_version
 
@@ -9,7 +9,7 @@ resource "talos_machine_secrets" "cluster" {
 }
 
 resource "onepassword_item" "talos_recovery" {
-  for_each = local.clusters
+  for_each = local.talos_clusters
 
   vault = data.onepassword_vault.default["servers"].uuid
 
@@ -100,7 +100,7 @@ data "talos_machine_configuration" "node" {
 resource "talos_machine_configuration_apply" "node" {
   for_each = local.talos_configuration_apply_nodes
 
-  apply_mode = "auto"
+  apply_mode = "staged_if_needing_reboot"
   client_configuration_wo = {
     ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
     client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
@@ -121,7 +121,12 @@ resource "talos_machine_configuration_apply" "node" {
     update = "10m"
   }
 
-  depends_on = [onepassword_item.talos_recovery]
+  lifecycle {
+    precondition {
+      condition     = onepassword_item.talos_recovery[each.value.cluster].uuid != ""
+      error_message = "Store this cluster's Talos recovery material before applying node configuration."
+    }
+  }
 }
 
 resource "talos_machine_bootstrap" "control_plane" {
@@ -139,7 +144,12 @@ resource "talos_machine_bootstrap" "control_plane" {
     create = "10m"
   }
 
-  depends_on = [talos_machine_configuration_apply.node]
+  lifecycle {
+    precondition {
+      condition     = talos_machine_configuration_apply.node[each.key].id != ""
+      error_message = "Apply this node's Talos configuration before bootstrapping it."
+    }
+  }
 }
 
 data "talos_cluster_health" "cluster" {
@@ -159,7 +169,12 @@ data "talos_cluster_health" "cluster" {
     read = "10m"
   }
 
-  depends_on = [talos_machine_bootstrap.control_plane]
+  lifecycle {
+    precondition {
+      condition     = talos_machine_bootstrap.control_plane[each.value.api_node].id != ""
+      error_message = "Bootstrap this cluster's API node before checking cluster health."
+    }
+  }
 }
 
 resource "talos_cluster_kubeconfig" "cluster" {
@@ -178,7 +193,12 @@ resource "talos_cluster_kubeconfig" "cluster" {
     update = "10m"
   }
 
-  depends_on = [data.talos_cluster_health.cluster]
+  lifecycle {
+    precondition {
+      condition     = data.talos_cluster_health.cluster[each.key].id != ""
+      error_message = "Verify this cluster's health before retrieving its kubeconfig."
+    }
+  }
 }
 
 resource "onepassword_item" "kubeconfig" {
