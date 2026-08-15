@@ -57,5 +57,7 @@ virtual_machines:
       cores: 12
       sockets: 1
       threads: 1
-    mac_address: "02:74:61:63:6f:01"
     memory_mib: 32768
+    network:
+      interface: services
+      mac_address: "02:74:61:63:6f:01"

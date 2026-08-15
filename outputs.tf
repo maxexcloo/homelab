@@ -12,12 +12,16 @@ output "schematic_id" {
   value       = talos_image_factory_schematic.home.id
 }
 
-output "taco_iso_path" {
-  description = "TrueNAS path for the Talos ISO attached to taco."
-  value       = local.taco.boot.iso_path
+output "virtual_machine_iso_paths" {
+  description = "TrueNAS ISO paths attached to managed virtual machines."
+  value = {
+    for name, virtual_machine in local.virtual_machines : name => virtual_machine.boot.iso_path
+  }
 }
 
-output "taco_mac_address" {
-  description = "Fixed MAC address for taco's UniFi DHCP reservation."
-  value       = local.taco.mac_address
+output "virtual_machine_mac_addresses" {
+  description = "Fixed MAC addresses for managed virtual-machine DHCP reservations."
+  value = {
+    for name, virtual_machine in local.virtual_machines : name => virtual_machine.network.mac_address
+  }
 }
