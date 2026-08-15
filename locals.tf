@@ -6,6 +6,10 @@ locals {
     for name, node in local.infrastructure.clusters.mbk.nodes :
     name => coalesce(var.talos_apply_endpoint, node.address)
   }
+  talos_control_plane_nodes = {
+    for name, node in local.infrastructure.clusters.mbk.nodes :
+    name => node if node.machine_type == "controlplane"
+  }
   talos_nodes         = local.home_cluster.nodes
   truenas_service_nic = local.home_network.interfaces.services
   virtual_machines    = local.infrastructure.virtual_machines

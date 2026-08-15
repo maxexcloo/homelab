@@ -103,3 +103,21 @@ resource "talos_machine_configuration_apply" "node" {
 
   depends_on = [onepassword_item.talos_recovery]
 }
+
+resource "talos_machine_bootstrap" "control_plane" {
+  for_each = local.talos_control_plane_nodes
+
+  client_configuration_wo = {
+    ca_certificate     = talos_machine_secrets.cluster.client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster.client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster.client_configuration.client_key
+  }
+  endpoint = local.talos_connection_endpoints[each.key]
+  node     = local.talos_connection_endpoints[each.key]
+
+  timeouts = {
+    create = "10m"
+  }
+
+  depends_on = [talos_machine_configuration_apply.node]
+}

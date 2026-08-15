@@ -452,7 +452,9 @@ is ready for review.
      disk `/dev/vda`, serial `2AxMXe9R`, reported as 69 GB decimal for the
      configured 64 GiB zvol. Authenticated verification found `STATE` on
      `/dev/vda3`, `EPHEMERAL` on `/dev/vda4`, and static hostname `taco`. The
-     node is intentionally waiting for the separately reviewed etcd bootstrap.
+     separately reviewed etcd bootstrap completed on 2026-08-15. Etcd, kubelet,
+     the Talos API, and the container runtime are healthy; Kubernetes Node
+     readiness is intentionally waiting for Cilium.
 
 4. Review the live home network and VM plan.
    - Preview the ordered TrueNAS bridge changes through the unchanged primary
