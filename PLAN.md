@@ -428,8 +428,13 @@ is ready for review.
      zvol path because it resolves to `/dev/zd0`, which the installed AppArmor
      policy explicitly denies. Taco remained stopped and created no DHCP lease.
      Do not weaken AppArmor or replace the stable zvol path with `/dev/zd0`.
-     Resume after an upstream TrueNAS fix or a separately reviewed storage
-     design change.
+     Until TrueNAS fixes the policy, the approved temporary exception is to use
+     TrueNAS's exact generated domain XML with only
+     `<seclabel type='none' model='apparmor'/>` added for taco. Start it through
+     the private TrueNAS libvirt socket after initialising guest-memory
+     accounting. Never disable AppArmor globally or apply this exception to
+     another VM. On manual shutdown, release guest-memory accounting; after an
+     upstream fix, let a normal TrueNAS start replace the temporary definition.
 
 4. Review the live home network and VM plan.
    - Preview the ordered TrueNAS bridge changes through the unchanged primary
