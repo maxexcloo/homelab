@@ -435,6 +435,11 @@ is ready for review.
      accounting. Never disable AppArmor globally or apply this exception to
      another VM. On manual shutdown, release guest-memory accounting; after an
      upstream fix, let a normal TrueNAS start replace the temporary definition.
+   - The temporary launch completed on 2026-08-15. Taco is running in Talos
+     maintenance mode at reserved address `10.4.0.4`; pinned client and server
+     both report `v1.13.8`. The verified installation target is writable virtio
+     disk `/dev/vda`, serial `2AxMXe9R`, reported as 69 GB decimal for the
+     configured 64 GiB zvol. No Talos installation has been performed.
 
 4. Review the live home network and VM plan.
    - Preview the ordered TrueNAS bridge changes through the unchanged primary
