@@ -314,7 +314,10 @@ Adopt the provider through this sequence:
 
 ## Version baseline
 
-Pin exact stable versions. The verified initial values are:
+Use the latest compatible stable versions. Declare compatibility ranges where
+the tool supports them and let lock files record exact provider selections.
+Image and cluster APIs require concrete release identifiers, so record the
+latest working values selected during each reviewed upgrade:
 
 | Component                  | Version                                   |
 | -------------------------- | ----------------------------------------- |
@@ -327,12 +330,12 @@ Pin exact stable versions. The verified initial values are:
 Talos `v1.13.8` was verified as the current stable release on 2026-08-14. Use
 the stable provider rather than `0.12.0-alpha.5`.
 
-Kubernetes `v1.36.3` is a target, not yet an approved machine-configuration
-input. Cilium `v1.19.6` lists compatibility only through Kubernetes 1.34.
-Before applying Talos machine configuration, select an upstream-tested
-Kubernetes and Cilium pair and update both repositories in one reviewed
-decision. A successful installation of an unlisted combination is not
-compatibility proof.
+Kubernetes `v1.36.3` and Cilium `v1.20.0` were approved together on 2026-08-15.
+Cilium's stable compatibility matrix lists Kubernetes 1.36 as e2e-tested, and
+the Cilium release uses Gateway API `v1.6.1`. Prefer the newest stable
+upstream-tested combination rather than retaining an older candidate. Record
+the resolved versions for reproducible deployment and let Renovate propose the
+next compatible update for review.
 
 The home Image Factory schematic should contain only:
 
@@ -390,14 +393,15 @@ is ready for review.
 1. Finish the clean baseline on `main`.
    - Preserve `LICENSE` and `.mise.local.toml`.
    - Remove empty legacy directories.
-   - Add lean repository guidance, ignores, pinned Mise tools, Prek hooks,
+   - Add lean repository guidance, ignores, compatible Mise tool ranges, Prek hooks,
      Renovate, and validation-only GitHub Actions.
    - Never put cloud or cluster credentials in GitHub Actions.
 
 2. Add the non-live root `au` image configuration.
    - Configure GCS prefix `states/homelab-kubernetes/au` without state
      migration.
-   - Pin `siderolabs/talos` to `0.11.0`.
+   - Require `siderolabs/talos` `>= 0.11.0, < 0.12.0` and commit the resolved
+     provider in the lock file.
    - Commit `.terraform.lock.hcl` with `darwin_arm64` and `linux_amd64`
      provider checksums.
    - Declare the two official extensions directly with

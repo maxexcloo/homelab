@@ -1,9 +1,9 @@
 [tools]
 actionlint = "1.7.12"
-opentofu = "1.12.5"
+opentofu = "1.12"
 prek = "0.4.13"
 prettier = "3.9.6"
-talosctl = "1.13.8"
+talosctl = "1.13"
 tflint = "0.59.1"
 trivy = "0.73.0"
 

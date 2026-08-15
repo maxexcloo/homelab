@@ -3,7 +3,7 @@
 
 provider "registry.opentofu.org/pjsalty/truenas" {
   version     = "2.4.1"
-  constraints = "2.4.1"
+  constraints = ">= 2.4.1, < 3.0.0"
   hashes = [
     "h1:7cIFmqh87YvHAhL4H/OC71XELEZHc+40LpLYyIkMMBQ=",
     "h1:9LZlYzcuH17XB1XJ0LZ0ZBDEFrajtRUWR0xmSki534Q=",
@@ -25,7 +25,7 @@ provider "registry.opentofu.org/pjsalty/truenas" {
 
 provider "registry.opentofu.org/siderolabs/talos" {
   version     = "0.11.0"
-  constraints = "0.11.0"
+  constraints = ">= 0.11.0, < 0.12.0"
   hashes = [
     "h1:+GV1DE/FFtHa6McattWMjn0SimQoan/mignkB+xUfm4=",
     "h1:1NC84ojUrL+G3aSLMl4Khh83HnJYuxsYNKK7zg2C/dI=",

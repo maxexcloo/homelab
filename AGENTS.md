@@ -15,8 +15,9 @@ Flux.
   ownership.
 - Use Australian English in project-owned prose and identifiers.
 - Use `.yaml`, not `.yml`, for project-owned YAML.
-- Pin tools and providers to exact stable versions. Let Renovate propose
-  upgrades for manual review.
+- Declare the compatible stable version range for tools and providers, and let
+  lock files record the exact resolved versions. Prefer the latest release that
+  passes validation; let Renovate propose later compatible updates for review.
 - Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
 - Never change live infrastructure without an explicit approval and a reviewed,
