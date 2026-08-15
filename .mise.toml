@@ -1,20 +1,25 @@
 [tools]
 actionlint = "1.7.12"
-opentofu = "1.12"
+opentofu = "1.12.5"
 prek = "0.4.13"
 prettier = "3.9.6"
-talosctl = "1.13"
+talosctl = "1.13.8"
 tflint = "0.59.1"
 trivy = "0.73.0"
+yq = "4.53.3"
 
 # Setup
 [tasks.setup]
 description = "Install tools, initialise providers, and install Git hooks"
 run = """
 mise install
-tofu init -backend=false -input=false
+mise run init
 prek install
 """
+
+[tasks.init]
+description = "Initialise providers without connecting the backend"
+run = "tofu init -backend=false -input=false"
 
 # Development
 [tasks.check]
@@ -38,3 +43,16 @@ tofu fmt -recursive
 [tasks.prek]
 description = "Run all repository hooks"
 run = "prek run --all-files"
+
+[tasks.ssh-config]
+description = "Render the non-secret homelab SSH include"
+run = "scripts/render_ssh_config.sh"
+
+[tasks.ssh-config-install]
+description = "Install the non-secret homelab SSH include"
+run = """
+ssh_config_directory="${HOME}/.ssh/config.d"
+mkdir -p "${ssh_config_directory}"
+scripts/render_ssh_config.sh > "${ssh_config_directory}/homelab"
+chmod 600 "${ssh_config_directory}/homelab"
+"""

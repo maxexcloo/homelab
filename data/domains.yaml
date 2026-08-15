@@ -1,0 +1,18 @@
+cloudflare:
+  account_name: excloo
+  acme_consumers:
+    hass:
+      machine: hass
+    kimbap:
+      machine: kimbap
+    mbk:
+      cluster: mbk
+    ramen:
+      machine: ramen
+    syd:
+      cluster: syd
+
+domains:
+  acme: 043847.xyz
+  infrastructure: excloo.net
+  services: excloo.dev

@@ -1,0 +1,44 @@
+targets:
+  kimbap:
+    datasets:
+      kubernetes:
+        atime: "OFF"
+        compression: LZ4
+        pool: truenas-nvme
+        record_size: 128K
+
+    nfs_shares:
+      kubernetes:
+        dataset: kubernetes
+
+        networks:
+          - location: mbk
+            network: services
+
+    snapshot_tasks:
+      truenas-nvme-daily:
+        dataset: truenas-nvme
+        naming_schema: autosnap_%Y-%m-%d_%H:%M:%S_daily
+
+        lifetime:
+          unit: MONTH
+          value: 1
+        schedule:
+          day_of_month: "*"
+          day_of_week: "*"
+          hour: "0"
+          minute: "0"
+          month: "*"
+      truenas-nvme-monthly:
+        dataset: truenas-nvme
+        naming_schema: autosnap_%Y-%m-%d_%H:%M:%S_monthly
+
+        lifetime:
+          unit: YEAR
+          value: 1
+        schedule:
+          day_of_month: "1"
+          day_of_week: "*"
+          hour: "0"
+          minute: "0"
+          month: "*"

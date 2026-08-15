@@ -1,0 +1,42 @@
+onepassword:
+  vaults:
+    kubernetes: Services
+    servers: Servers
+
+ssh:
+  identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
+
+tailscale:
+  admin_group: admin
+  admin_identities:
+    - max@excloo.com
+    - maxexcloo@passkey
+  key_expiry_seconds: 7776000
+  operator:
+    scopes:
+      - auth_keys
+      - devices:core
+    tag: kubernetesoperator
+  route_approver_tag: talos
+  rules:
+    - action: accept
+      sources:
+        - group:admin
+      destinations:
+        - "*:*"
+    - action: accept
+      sources:
+        - tag:talos
+        - tag:kubernetesoperator
+      destinations:
+        - "tag:talos:*"
+    - action: accept
+      sources:
+        - tag:backup
+      destinations:
+        - "tag:storage:*"
+  tests:
+    - source: max@excloo.com
+      accept:
+        - tag:talos:50000
+        - tag:storage:22

@@ -1,0 +1,64 @@
+machines:
+  hass:
+    address: 10.0.0.2
+    location: mbk
+    mac_address: "84:47:09:67:c8:33"
+    management_port: 443
+    network: default
+    platform: haos
+    tailscale_tag: appliance
+  hotdog:
+    location: fre
+    platform: linux
+    public_ipv4: 199.127.129.143
+    public_ipv6: 2602:f831::4665:8aff:fee1:40ed
+    ssh:
+      port: 22
+      user: max.schaefer
+    tailscale_tag: backup
+  hsp:
+    address: 10.20.0.4
+    cluster: syd
+    location: syd
+    management_port: 50000
+    platform: talos
+    tailscale_tag: talos
+  kimbap:
+    address: 10.0.0.3
+    location: mbk
+    mac_address: "c8:ff:bf:01:52:e0"
+    management_port: 8443
+    network: default
+    platform: truenas
+    ssh:
+      port: 22
+      user: root
+    tailscale_tag: storage
+  mandu:
+    address: 10.0.0.5
+    location: mbk
+    mac_address: "c8:ff:bf:0f:9f:d0"
+    network: default
+    platform: bazzite
+    ssh:
+      port: 22
+      user: max.schaefer
+    tailscale_tag: workstation
+  ramen:
+    address: 10.0.0.1
+    location: mbk
+    management_port: 443
+    platform: unifi
+    ssh:
+      port: 22
+      user: root
+    tailscale_tag: router
+  taco:
+    address: 10.4.0.4
+    cluster: mbk
+    location: mbk
+    mac_address: "02:74:61:63:6f:01"
+    management_port: 50000
+    network: services
+    platform: talos
+    tailscale_tag: talos

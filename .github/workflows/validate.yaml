@@ -28,6 +28,6 @@ jobs:
         with:
           version: 2026.8.4
       - name: Initialise providers
-        run: tofu init -backend=false -input=false
+        run: mise run init
       - name: Run hooks
         run: mise run prek

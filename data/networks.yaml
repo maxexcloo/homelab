@@ -1,0 +1,34 @@
+locations:
+  fre: Fremont
+  mbk: Meadowbank
+  syd: Sydney
+
+networks:
+  mbk:
+    interfaces:
+      management:
+        address: 10.0.0.3
+        name: eno1
+        prefix_length: 22
+      services:
+        address: 10.4.0.3
+        bridge: br4
+        name: enp3s0
+        prefix_length: 22
+    unifi:
+      networks:
+        default:
+          name: Default
+          subnet: 10.0.0.1/22
+        services:
+          name: Services
+          subnet: 10.4.0.1/22
+          vlan: 4
+  syd:
+    oci:
+      cidr: 10.20.0.0/16
+      dns_label: excloo
+      display_name: syd.excloo.net
+      ipv6_enabled: true
+      region: ap-sydney-1
+      subnet_cidr: 10.20.0.0/24

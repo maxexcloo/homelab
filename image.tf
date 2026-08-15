@@ -1,18 +1,20 @@
-resource "talos_image_factory_schematic" "home" {
+resource "talos_image_factory_schematic" "cluster" {
+  for_each = local.clusters
+
   schematic = yamlencode({
     customization = {
       systemExtensions = {
-        officialExtensions = [
-          "siderolabs/qemu-guest-agent",
-          "siderolabs/tailscale",
-        ]
+        officialExtensions = each.value.image.extensions
       }
     }
   })
 }
-data "talos_image_factory_urls" "home" {
-  architecture  = "amd64"
-  platform      = "metal"
-  schematic_id  = talos_image_factory_schematic.home.id
-  talos_version = "v1.13.8"
+
+data "talos_image_factory_urls" "cluster" {
+  for_each = local.clusters
+
+  architecture  = each.value.image.architecture
+  platform      = each.value.image.platform
+  schematic_id  = local.talos_schematic_ids[each.key]
+  talos_version = each.value.talos_version
 }

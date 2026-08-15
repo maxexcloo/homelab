@@ -10,8 +10,8 @@ conflict at that boundary, correct this scoped plan to match `kubelab/PLAN.md`.
 
 This repository owns infrastructure and cluster substrate:
 
-- GCS OpenTofu state foundations;
-- TrueNAS, OCI, UniFi, Tailscale, Cloudflare, GitHub, and 1Password substrate
+- one GCS-backed OpenTofu state for retained substrate;
+- TrueNAS, OCI, UniFi, Tailscale, Cloudflare, and 1Password substrate
   where explicitly retained;
 - Talos Image Factory schematics, machine secrets, configuration, installation,
   bootstrap, health, upgrades, and recovery material; and
@@ -73,15 +73,15 @@ The Kubernetes cluster and API identities are:
 | `mbk`   | `api.mbk.excloo.dev` | `taco.mbk.excloo.net` |
 | `syd`   | `api.syd.excloo.dev` | `hsp.syd.excloo.net`  |
 
-The existing `au` and `au-oci` state-root names and GCS prefixes are separate
-infrastructure identities. Renaming them, and the corresponding paths in
-`kubelab`, requires a separately reviewed backend and cross-repository change.
+The existing `au` root remains the repository's single state identity. Its GCS
+prefix is shortened from `states/homelab-kubernetes/au` to `homelab` through a
+separately reviewed backend-only migration. The proposed `foundations` and
+`au-oci` roots were never applied and were removed before they acquired state.
 
 Keep this repository lean and direct. Do not recreate the previous YAML
 catalogue, JSON schemas, model/runtime pipeline, configuration generators,
 deployment templates, or repository scripts. Use ordinary, explicit OpenTofu
-roots and upstream providers. Keep each state root small enough to review in
-one plan.
+resources and upstream providers. Keep the single root direct and reviewable.
 
 ## Archive review decisions
 
@@ -115,28 +115,61 @@ Do not restore these patterns:
 Reintroduce retained legacy infrastructure only through direct resources under
 the current state and ownership boundaries:
 
-| Legacy area               | Decision                                                                                                                                                                                                                                                                                                                                                              |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| OCI Sydney network and VM | Rewrite the useful VCN, subnet, internet gateway, NSG, boot volume, and instance resources directly in the future `au-oci` state root after the home success gate. Preserve stable external identities through an address inventory, old-state backup, import procedure, saved plan, and rollback notes. Do not restore the server catalogue or generated cloud-init. |
-| UniFi                     | Add only the fixed-MAC DHCP reservation and network policy that OpenTofu actually owns. Do not restore inventory-only client lookups.                                                                                                                                                                                                                                 |
-| Cloudflare                | Add cluster tunnels, credentials, and shared recovery access foundations directly. App routes, Access policies, WAF, and rate limits remain Crossplane resources in `kubelab`; do not restore their catalogue-driven generation here.                                                                                                                                 |
-| Tailscale                 | Rebuild global grants and tag owners in `foundations`, then add separate least-privilege operator OAuth and Talos bootstrap identities to each cluster root. Do not restore reusable per-server or per-service auth keys.                                                                                                                                             |
-| 1Password                 | Store reviewed cluster bootstrap and recovery material without restoring the generic reconciliation modules. Never expose generated credentials through ordinary outputs or human-readable plan artefacts.                                                                                                                                                            |
-| GitHub                    | Retain validation and Flux bootstrap ownership only where required. Do not restore generated repository variables, workflow dispatches, or destroy-time `local-exec` operations.                                                                                                                                                                                      |
-| TrueNAS                   | Manage adopted `enp3s0` and `br4` resources through the unchanged `eno1` management path. Use a staged, rollback-enabled API transaction for network changes because provider v2.4.1 cannot safely perform them. Add the protected `taco` zvol, VM, and devices after the bridge succeeds.                                                                            |
-| HAOS, Bazzite, and Hotdog | Treat these as retained appliances. Document their recovery and integration contracts; do not create inventory-only resources for them.                                                                                                                                                                                                                               |
+| Legacy area               | Decision                                                                                                                                                                                                                                                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OCI Sydney network and VM | Rebuild the substrate from scratch in root HCL. Use non-overlapping `10.20.0.0/16` addressing and expose the node subnet privately through Tailscale. Do not restore the old `10.0.0.0/16` network, Ubuntu instance, server catalogue, or generated cloud-init. The archived state remains historical evidence only.    |
+| UniFi                     | Add only the fixed-MAC DHCP reservation and network policy that OpenTofu actually owns. Do not restore inventory-only client lookups.                                                                                                                                                                                   |
+| Cloudflare                | Add cluster tunnels, credentials, and shared recovery access foundations directly. App routes, Access policies, WAF, and rate limits remain Crossplane resources in `kubelab`; do not restore their catalogue-driven generation here.                                                                                   |
+| Tailscale                 | Rebuild global grants and tag owners in root HCL, create one reusable pre-authorised key for each retained server, and add separate least-privilege operator OAuth clients for each Kubernetes cluster. Store server keys in 1Password and treat the state as secret-bearing. Do not restore reusable per-service keys. |
+| 1Password                 | Store reviewed cluster bootstrap and recovery material without restoring the generic reconciliation modules. Never expose generated credentials through ordinary outputs or human-readable plan artefacts.                                                                                                              |
+| GitHub                    | Keep validation-only Actions. The public `kubelab` Git source requires no deploy key, so do not restore a GitHub provider, generated repository variables, workflow dispatches, or destroy-time `local-exec` operations.                                                                                                |
+| TrueNAS                   | Manage adopted `enp3s0` and `br4` resources through the unchanged `eno1` management path. Use a staged, rollback-enabled API transaction for network changes because provider v2.4.1 cannot safely perform them. Add the protected `taco` zvol, VM, and devices after the bridge succeeds.                              |
+| HAOS, Bazzite, and Hotdog | Treat these as retained appliances. Document their recovery and integration contracts; do not create inventory-only resources for them.                                                                                                                                                                                 |
+
+Keep every temporary OpenTofu state transition (`moved`, `removed`, or import
+blocks) together in root `migrations.tf`, never beside ordinary resources.
+Delete that file only after a reviewed saved plan confirms every transition
+has been recorded in remote state and no block is still required.
 
 The archived OCI configuration is design evidence, not code to copy. It used
 an Ubuntu image, generated bootstrap metadata, broad public SSH ingress, and
-catalogue-derived identity. The future `syd` root instead uses a pinned Talos
+catalogue-derived identity. The `syd` resources instead use a pinned Talos
 image, explicit network rules, the host identity `hsp.syd.excloo.net`, and no
 dependency on the archived model pipeline.
 
-Keep stable, non-secret infrastructure facts in one flat
-`data/infrastructure.yaml` file and consume them directly from HCL. This file
-may contain location codes, canonical host identities, and network values used
-by real resources. Do not add per-host files, schemas, inheritance, feature
-flags, generated models, service definitions, or rendering stages.
+On 2026-08-15 the legacy `au-hsp` instance was explicitly confirmed disposable
+and deleted outside OpenTofu at the operator's request. Its 160 GB boot volume,
+subnet, NSG, route rules, internet gateway, VCN, derived IPs, resolver, private
+DNS zones, and view were deleted. Direct verification found no remaining active
+compute, block storage, custom image, VCN, or Object Storage resources. The
+untouched `states/core` object is now stale historical state and must never be
+applied; it owns no live OCI substrate.
+
+Keep stable, non-secret infrastructure facts in a few focused YAML inventories
+under `data/` and consume them directly from HCL. `machines.yaml` owns durable
+machine identity and access facts; `deployments.yaml` owns provider-managed
+placement and sizing; `networks.yaml` owns UniFi and OCI network facts;
+`clusters.yaml` owns only Talos/Kubernetes membership, lifecycle, and versions;
+`domains.yaml` owns Cloudflare and domain facts; `dns/<zone>.yaml` owns manually
+curated long-lived DNS records; and `access.yaml` owns shared 1Password,
+SSH-agent, and Tailscale policy. Derive machine FQDNs, cluster API records,
+tunnels, reservations, and credentials from those sources. Do not add
+per-machine files, schemas, inheritance, generated models, service definitions,
+or rendering stages.
+
+Use the same deployment shape across providers where the concepts match:
+`compute` owns CPU and `memory_mib`, while `boot` owns `size_mib`. Keep
+provider-only values in a provider-named child object and convert MiB only at a
+provider boundary that requires another unit. Write-only secret revisions
+default to `1` in HCL; add and retain an optional `secret_revision` beside the
+specific owning configuration only when a secret must be rewritten.
+
+OpenTofu manages only the explicitly declared DNS foundations and new records.
+Existing application and retained-host records marked `Legacy` in Cloudflare
+remain intentionally outside OpenTofu until they are retired; do not import or
+redeclare them. Never declare the same record here and in `kubelab`; each
+ownership transfer requires an address inventory, import or state removal
+procedure, reviewed plan, and rollback notes.
 
 Use this ownership test: `kubelab` owns workloads and their app-scoped
 integrations; this repository owns everything required to rebuild, recover, or
@@ -148,6 +181,7 @@ reach a cluster while Kubernetes is unavailable.
 | App-scoped B2, Cloudflare, Control D, Pocket ID, and Resend resources             | Crossplane resources in `kubelab`                                                |
 | Cluster Cloudflare tunnels and credentials                                        | This repository                                                                  |
 | Global Tailscale policy, tag owners, and grants                                   | This repository                                                                  |
+| Reusable retained-server Tailscale keys                                           | This repository, stored in restricted state and delivered to 1Password           |
 | Per-cluster Tailscale OAuth clients and Talos bootstrap identities                | This repository                                                                  |
 | Tailscale Kubernetes operator and its Kubernetes resources                        | `kubelab`                                                                        |
 | Retained appliance Tailscale clients                                              | Their appliance owner; shared policy remains in this repository                  |
@@ -182,13 +216,16 @@ server catalogue solely for inventory, dashboards, or monitoring.
 
 The existing GCS bucket is `homelab-opentofu`. Leave the legacy
 `states/core` prefix and all existing objects untouched during the migration.
-Do not run `tofu init -migrate-state` for the new roots.
+The root prefix changes from `states/homelab-kubernetes/au` to `homelab` only
+through the procedure in `docs/backend-migration.md`. Do not initialise the new
+prefix before backing up and inventorying the old state, and do not combine the
+backend migration with resource changes.
 
 The bucket is an externally bootstrapped prerequisite. No root backed by this
 bucket may manage the bucket's lifecycle. Before storing sensitive new state,
 verify versioning, uniform access, retention, and least-privilege IAM through a
-read-only review. The foundations root may manage shared IAM and access
-resources, but not the bucket it consumes. Managing the bucket later requires
+read-only review. The root may manage shared IAM and access resources, but not
+the bucket it consumes. Managing the bucket later requires
 a separately backed bootstrap root and an independently reviewed migration.
 
 The 2026-08-15 read-only review confirmed versioning, uniform bucket-level
@@ -198,32 +235,42 @@ legacy bucket/object IAM roles for the initial Talos installation. Treat these
 as recorded risks rather than installation blockers; review them separately
 before broadening state readership or adding another operator.
 
-Use fresh prefixes:
-
-| Stack                                                       | GCS prefix                              |
-| ----------------------------------------------------------- | --------------------------------------- |
-| Access and shared foundations                               | `states/homelab-kubernetes/foundations` |
-| Home cluster substrate                                      | `states/homelab-kubernetes/au`          |
-| OCI Sydney cluster substrate                                | `states/homelab-kubernetes/au-oci`      |
-| TrueNAS resources, only if provider adoption is proven safe | `states/homelab-kubernetes/truenas`     |
-
-State ownership is exclusive:
-
-| State root    | Owned resources                                                                                                                                                                                                                             |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `foundations` | Global Tailscale ACLs/grants and tag owners, shared Cloudflare identity/access foundations, and shared IAM; never the GCS backend bucket                                                                                                    |
-| `au`          | Home Talos VM when provider adoption is safe, its UniFi DHCP reservation, cluster Cloudflare tunnel and credential, cluster-scoped Tailscale operator OAuth client and Talos-node bootstrap identity, and the complete home Talos lifecycle |
-| `au-oci`      | OCI network, image, VM, cluster Cloudflare tunnel and credential, cluster-scoped Tailscale operator OAuth client and Talos-node bootstrap identity, and the complete OCI Talos lifecycle                                                    |
-| `truenas`     | Appliance-wide datasets, shares, snapshots, and the `br4` bridge only after safe provider adoption; otherwise these remain documented manual TrueNAS configuration                                                                          |
+The single root uses `homelab`. It owns TrueNAS and OCI
+compute, UniFi reservations and local DNS, Cloudflare infrastructure/API DNS
+and cluster tunnels, global Tailscale policy and identities, native 1Password
+delivery, and both Talos lifecycles. It never manages the GCS backend bucket.
+This larger shared blast radius is an accepted consequence of keeping all HCL
+in one root; saved plans must remain narrowly reviewed.
 
 The Kubernetes Tailscale operator is not OpenTofu state: Flux owns its
 deployment in `kubelab`. OpenTofu owns global policy and tag owners in
-`foundations`; each cluster state owns a separate least-privilege operator OAuth
-client and delivers its secret through 1Password and External Secrets. Each
-Talos node's host-level extension is part of its image, while its bootstrap
-identity also belongs to that cluster's state. Existing Tailscale clients on
-retained appliances remain with those appliances; do not retire them when
-legacy per-service auth keys or the old service deployments are removed.
+the root, including a separate least-privilege operator OAuth client for each
+cluster, and delivers its secrets through 1Password and External Secrets. Each
+Talos node's host-level extension is part of its image. The root owns one
+reusable, pre-authorised, tagged key per retained server, including
+Talos bootstrap identities, and writes each key to the Servers vault through a
+write-only 1Password field. These keys are intentionally present in restricted
+OpenTofu state and must be rotated if that state is exposed. Existing Tailscale
+clients on retained appliances remain valid; their managed keys are recovery
+and reprovisioning material rather than a reason to re-enrol healthy devices.
+Do not restore reusable per-service keys.
+
+## Operator access
+
+Use the 1Password SSH agent as the workstation source of SSH private keys.
+OpenTofu must not create private SSH keys, store them in state, or write files
+under an operator's home directory. Keep non-secret SSH connection facts such
+as aliases, hostnames, users, ports, and jump-host relationships in
+`data/machines.yaml`. A repository Mise task may render those facts to a
+temporary file and explicitly install them as `~/.ssh/config.d/homelab` when an
+operator requests it. The generated include must use the 1Password SSH agent,
+remain reproducible, and never contain credentials.
+
+Talos nodes do not run SSH. Access `taco` and `hsp` with `talosctl`; include
+only retained SSH-capable appliances such as `kimbap`, `mandu`, and `hotdog` in
+the generated SSH configuration. Store server usernames and related recovery
+metadata in 1Password as well as the non-secret inventory where required for
+rendering.
 
 Every ownership transfer from `states/core` requires its own old-state backup,
 address inventory, import or state-move procedure, saved plan, rollback notes,
@@ -321,8 +368,8 @@ Adopt the provider through this sequence:
 
 ## Version baseline
 
-Use the latest compatible stable versions. Declare compatibility ranges where
-the tool supports them and let lock files record exact provider selections.
+Pin the latest verified stable versions exactly and let Renovate propose
+updates for manual review.
 Image and cluster APIs require concrete release identifiers, so record the
 latest working values selected during each reviewed upgrade:
 
@@ -344,20 +391,25 @@ upstream-tested combination rather than retaining an older candidate. Record
 the resolved versions for reproducible deployment and let Renovate propose the
 next compatible update for review.
 
-The home Image Factory schematic should contain only:
+Every Talos Image Factory schematic contains `siderolabs/tailscale` for
+host-level Talos API recovery access. The home schematic additionally contains
+`siderolabs/qemu-guest-agent` for the TrueNAS/KVM guest lifecycle. The provider
+creates both content-addressed schematics; do not check their generated IDs
+into configuration.
 
-- `siderolabs/tailscale` for host-level Talos API recovery access; and
-- `siderolabs/qemu-guest-agent` for the TrueNAS/KVM guest lifecycle.
+The images otherwise differ because Taco runs the `metal/amd64` platform on
+TrueNAS while HSP runs the `oracle/arm64` platform on OCI. Platform and
+architecture are machine constraints, not behavioural differences.
 
 Cloudflared does not belong in Talos. Static NFS requires no system extension.
 Add `siderolabs/iscsi-tools` only in a later, isolated iSCSI trial.
 
-An earlier Tailscale-only schematic resolved to
-`4a0d65c669d46663f377e7161e50cfd570c401f26fd9e7bda34a0216b6f1922b`.
-Do not reuse it after adding the QEMU guest agent; let the provider create and
-record the new content-addressed schematic. The applied home schematic with
-both required extensions resolved to
-`7d4c31cbd96db9f90c874990697c523482b2bae27fb4631d5583dcd9c281b1ff`.
+Use names for discoverable provider objects instead of checking in opaque
+external IDs. Cloudflare zones and the account, the 1Password vault, and UniFi
+networks are looked up by stable names. Keep literal IDs only where the provider
+requires an authentication or adoption identity that cannot be discovered
+safely. Logical DNS record `id` values are stable OpenTofu keys, not external
+provider IDs.
 
 ## Target repository shape
 
@@ -375,25 +427,45 @@ Create only directories that immediately contain real files:
 ├── AGENTS.md
 ├── backend.tf
 ├── data/
-│   └── infrastructure.yaml
+│   ├── dns/
+│   │   └── <zone>.yaml
+│   ├── access.yaml
+│   ├── clusters.yaml
+│   ├── deployments.yaml
+│   ├── domains.yaml
+│   ├── machines.yaml
+│   ├── networks.yaml
+│   └── storage.yaml
+├── docs/
+│   ├── appliance-recovery.md
+│   ├── backend-migration.md
+│   ├── onepassword-adoption.md
+│   └── truenas-ownership.md
+├── cloudflare.tf
+├── dns.tf
 ├── image.tf
 ├── LICENSE
 ├── locals.tf
+├── migrations.tf
+├── onepassword.tf
 ├── outputs.tf
+├── oci.tf
 ├── PLAN.md
 ├── providers.tf
 ├── README.md
 ├── renovate.json
+├── scripts/
+│   └── render_ssh_config.sh
+├── tailscale.tf
+├── talos.tf
 ├── terraform.tf
-└── truenas.tf
+├── unifi.tf
+├── truenas.tf
+└── variables.tf
 ```
 
-Do not create empty `foundations`, `au-oci`, or `truenas` roots as placeholders.
-Add a root only with its first reviewed resource.
-
-The repository root is the `au` state root. A later state boundary cannot share
-this root configuration; choose its separate directory when its first resource
-is ready for review.
+The repository root is the only OpenTofu root. Add a module only when repeated
+resources have demonstrated a stable reusable interface.
 
 ## Implementation sequence
 
@@ -405,8 +477,8 @@ is ready for review.
    - Never put cloud or cluster credentials in GitHub Actions.
 
 2. Add the non-live root `au` image configuration.
-   - Configure GCS prefix `states/homelab-kubernetes/au` without state
-     migration.
+   - Configure GCS prefix `homelab` only after the separately reviewed
+     migration from `states/homelab-kubernetes/au`.
    - Require `siderolabs/talos` `>= 0.11.0, < 0.12.0` and commit the resolved
      provider in the lock file.
    - Commit `.terraform.lock.hcl` with `darwin_arm64` and `linux_amd64`
@@ -503,11 +575,11 @@ is ready for review.
      cloudflared, External Secrets, Crossplane, static NFS, and the disposable
      OpenSpeedTest workload in dependency order.
 
-8. Stop at the home success gate before `au-oci`.
+8. Stop at the home success gate before applying the OCI resources.
    - Prove node reboot, Talos and Kubernetes health, Flux recovery, private and
      public HTTP, TLS, secrets, static NFS persistence, and OpenSpeedTest.
-   - Do not reset `hsp` until this gate passes and its lack of valued state is
-     confirmed again.
+   - The disposable legacy `au-hsp` stack was deleted on 2026-08-15. Create the
+     replacement `hsp` stack only after this gate passes.
 
 ## Apply and recovery rules
 
@@ -522,4 +594,4 @@ is ready for review.
   workstation.
 - Record one coherent outcome per commit. Git history is the work log.
 - The archive branch and untouched `states/core` prefix are the rollback path
-  while the new roots are being established.
+  while the retained resources are being adopted.

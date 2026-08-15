@@ -1,0 +1,33 @@
+name: excloo.com
+records:
+  - type: CNAME
+    name: fm1._domainkey
+    content: fm1.excloo.com.dkim.fmhosted.com
+  - type: CNAME
+    name: fm2._domainkey
+    content: fm2.excloo.com.dkim.fmhosted.com
+  - type: CNAME
+    name: fm3._domainkey
+    content: fm3.excloo.com.dkim.fmhosted.com
+  - type: CNAME
+    name: github-readme-stats
+    content: 2deabc39cdacdb79.vercel-dns-017.com
+  - type: CNAME
+    name: mesmtp._domainkey
+    content: mesmtp.excloo.com.dkim.fmhosted.com
+  - type: MX
+    name: "@"
+    content: in1-smtp.messagingengine.com
+    priority: 10
+  - type: MX
+    name: "@"
+    content: in2-smtp.messagingengine.com
+    priority: 20
+  - type: TXT
+    name: "@"
+    id: txt-apex-dmarc
+    content: '"v=DMARC1; p=none;"'
+  - type: TXT
+    name: "@"
+    id: txt-apex-spf
+    content: '"v=spf1 include:spf.messagingengine.com ?all"'

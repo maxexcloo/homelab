@@ -1,5 +1,7 @@
 resource "talos_machine_secrets" "cluster" {
-  talos_version = local.home_cluster.talos_version
+  for_each = local.clusters
+
+  talos_version = each.value.talos_version
 
   lifecycle {
     prevent_destroy = true
@@ -7,57 +9,68 @@ resource "talos_machine_secrets" "cluster" {
 }
 
 resource "onepassword_item" "talos_recovery" {
-  vault = data.onepassword_vault.talos_recovery.uuid
+  for_each = local.clusters
+
+  vault = data.onepassword_vault.default["servers"].uuid
 
   category = "secure_note"
   note_value_wo = jsonencode({
-    client_configuration = talos_machine_secrets.cluster.client_configuration
-    cluster_name         = "mbk"
-    machine_secrets      = talos_machine_secrets.cluster.machine_secrets
-    talos_version        = local.home_cluster.talos_version
+    client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
+    cluster_name         = each.key
+    machine_secrets      = talos_machine_secrets.cluster[each.key].machine_secrets
+    talos_version        = each.value.talos_version
   })
-  note_value_wo_version = local.home_cluster.recovery_version
+  note_value_wo_version = try(each.value.secret_revision, 1)
   tags                  = ["Homelab", "Talos", "Recovery"]
-  title                 = "mbk Talos recovery"
+  title                 = "${each.key} Talos recovery"
 
   lifecycle {
     prevent_destroy = true
   }
 }
 
-ephemeral "talos_machine_configuration" "node" {
+data "talos_machine_configuration" "node" {
   for_each = local.talos_nodes
 
-  cluster_endpoint   = local.home_cluster.endpoint
-  cluster_name       = "mbk"
-  kubernetes_version = local.home_cluster.kubernetes_version
-  machine_secrets    = talos_machine_secrets.cluster.machine_secrets
+  cluster_endpoint   = local.cluster_endpoints[each.value.cluster]
+  cluster_name       = each.value.cluster
+  kubernetes_version = local.clusters[each.value.cluster].kubernetes_version
+  machine_secrets    = talos_machine_secrets.cluster[each.value.cluster].machine_secrets
   machine_type       = each.value.machine_type
-  talos_version      = local.home_cluster.talos_version
+  talos_version      = local.clusters[each.value.cluster].talos_version
 
   config_patches = [
     yamlencode({
-      machine = {
-        features = {
-          hostDNS = {
-            enabled              = true
-            forwardKubeDNSToHost = true
-            resolveMemberNames   = true
+      machine = merge(
+        {
+          features = {
+            hostDNS = {
+              enabled              = true
+              forwardKubeDNSToHost = true
+              resolveMemberNames   = true
+            }
           }
-        }
-        install = {
-          disk  = each.value.install_disk
-          image = data.talos_image_factory_urls.home.urls.installer
-        }
-      }
+        },
+        try(each.value.install_disk, null) != null ? {
+          install = {
+            disk  = each.value.install_disk
+            image = data.talos_image_factory_urls.cluster[each.value.cluster].urls.installer
+          }
+        } : {},
+        try(length(each.value.time_servers), 0) > 0 ? {
+          time = {
+            servers = each.value.time_servers
+          }
+        } : {},
+      )
       cluster = {
         allowSchedulingOnControlPlanes = true
         network = {
           cni = {
             name = "none"
           }
-          podSubnets     = [local.home_cluster.pod_subnet]
-          serviceSubnets = [local.home_cluster.service_subnet]
+          podSubnets     = [local.clusters[each.value.cluster].pod_subnet]
+          serviceSubnets = [local.clusters[each.value.cluster].service_subnet]
         }
       }
     }),
@@ -67,20 +80,34 @@ ephemeral "talos_machine_configuration" "node" {
       auto       = "off"
       hostname   = each.key
     }),
+    yamlencode({
+      apiVersion = "v1alpha1"
+      kind       = "ExtensionServiceConfig"
+      name       = "tailscale"
+      environment = concat(
+        [
+          "TS_AUTHKEY=${tailscale_tailnet_key.server[each.key].key}",
+          "TS_HOSTNAME=${each.key}",
+        ],
+        try(length(each.value.tailscale_routes), 0) > 0 ? [
+          "TS_ROUTES=${join(",", each.value.tailscale_routes)}",
+        ] : [],
+      )
+    }),
   ]
 }
 
 resource "talos_machine_configuration_apply" "node" {
-  for_each = local.talos_nodes
+  for_each = local.talos_configuration_apply_nodes
 
   apply_mode = "auto"
   client_configuration_wo = {
-    ca_certificate     = talos_machine_secrets.cluster.client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster.client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster.client_configuration.client_key
+    ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
   }
   endpoint                       = local.talos_connection_endpoints[each.key]
-  machine_configuration_input_wo = ephemeral.talos_machine_configuration.node[each.key].machine_configuration
+  machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = local.talos_connection_endpoints[each.key]
 
   on_destroy = {
@@ -98,12 +125,12 @@ resource "talos_machine_configuration_apply" "node" {
 }
 
 resource "talos_machine_bootstrap" "control_plane" {
-  for_each = local.talos_control_plane_nodes
+  for_each = local.talos_bootstrap_nodes
 
   client_configuration_wo = {
-    ca_certificate     = talos_machine_secrets.cluster.client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster.client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster.client_configuration.client_key
+    ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
   }
   endpoint = local.talos_connection_endpoints[each.key]
   node     = local.talos_connection_endpoints[each.key]
@@ -113,4 +140,59 @@ resource "talos_machine_bootstrap" "control_plane" {
   }
 
   depends_on = [talos_machine_configuration_apply.node]
+}
+
+data "talos_cluster_health" "cluster" {
+  for_each = local.talos_recovery_clusters
+
+  client_configuration = {
+    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
+  }
+  control_plane_nodes    = local.talos_control_plane_endpoints[each.key]
+  endpoints              = local.talos_control_plane_endpoints[each.key]
+  skip_kubernetes_checks = true
+  worker_nodes           = local.talos_worker_endpoints[each.key]
+
+  timeouts = {
+    read = "10m"
+  }
+
+  depends_on = [talos_machine_bootstrap.control_plane]
+}
+
+resource "talos_cluster_kubeconfig" "cluster" {
+  for_each = local.talos_recovery_clusters
+
+  client_configuration = {
+    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
+  }
+  endpoint = one(local.talos_control_plane_endpoints[each.key])
+  node     = one(local.talos_control_plane_endpoints[each.key])
+
+  timeouts = {
+    create = "10m"
+    update = "10m"
+  }
+
+  depends_on = [data.talos_cluster_health.cluster]
+}
+
+resource "onepassword_item" "kubeconfig" {
+  for_each = local.talos_recovery_clusters
+
+  vault = data.onepassword_vault.default["kubernetes"].uuid
+
+  category              = "secure_note"
+  note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
+  note_value_wo_version = try(each.value.kubeconfig_secret_revision, 1)
+  tags                  = ["Homelab", "Kubernetes", "Recovery"]
+  title                 = "${each.key} administrator kubeconfig"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }

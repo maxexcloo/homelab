@@ -2,6 +2,24 @@ data "truenas_network_interface" "services_physical" {
   id = local.truenas_service_nic.name
 }
 
+resource "terraform_data" "truenas_storage_target" {
+  for_each = local.truenas_storage_targets
+
+  input = each.key
+
+  lifecycle {
+    precondition {
+      condition     = each.key == local.truenas_host
+      error_message = "The storage target must match the TrueNAS compute host configured for this root."
+    }
+
+    precondition {
+      condition     = try(local.machines[each.key].platform, null) == "truenas"
+      error_message = "The storage target must reference a TrueNAS machine."
+    }
+  }
+}
+
 resource "truenas_network_interface" "services_physical" {
   aliases   = []
   ipv4_dhcp = false
@@ -56,12 +74,12 @@ resource "truenas_network_interface" "services_bridge" {
 resource "truenas_zvol" "virtual_machine_boot" {
   for_each = local.virtual_machines
 
-  comments     = "${title(local.infrastructure.hosts[each.key].platform)} boot disk for ${local.infrastructure.hosts[each.key].fqdn}"
+  comments     = "${title(local.machines[each.key].platform)} boot disk for ${local.machine_fqdns[each.key]}"
   compression  = "LZ4"
-  name         = each.value.boot.zvol
+  name         = "virtual-machines/${each.key}"
   pool         = each.value.boot.pool
   volblocksize = "16K"
-  volsize      = each.value.boot.size_gib * 1024 * 1024 * 1024
+  volsize      = each.value.boot.size_mib * 1024 * 1024
 
   lifecycle {
     prevent_destroy = true
@@ -73,18 +91,28 @@ resource "truenas_vm" "virtual_machine" {
 
   autostart             = true
   bootloader            = "UEFI"
-  cores                 = each.value.cpu.cores
+  cores                 = each.value.compute.cores
   cpu_mode              = "HOST-PASSTHROUGH"
-  description           = "${title(local.infrastructure.hosts[each.key].platform)} node ${local.infrastructure.hosts[each.key].fqdn}"
+  description           = "${title(local.machines[each.key].platform)} node ${local.machine_fqdns[each.key]}"
   ensure_display_device = false
-  memory                = each.value.memory_mib
+  memory                = each.value.compute.memory_mib
   name                  = each.key
-  threads               = each.value.cpu.threads
+  threads               = each.value.compute.threads
   time                  = "UTC"
-  vcpus                 = each.value.cpu.sockets
+  vcpus                 = each.value.compute.sockets
 
   lifecycle {
     prevent_destroy = true
+
+    precondition {
+      condition     = try(local.machines[local.truenas_host].platform == "truenas", false)
+      error_message = "The configured TrueNAS compute host must reference a TrueNAS server."
+    }
+
+    precondition {
+      condition     = contains(keys(local.machines), each.key)
+      error_message = "Every TrueNAS virtual machine must reference a server with the same key."
+    }
   }
 }
 
@@ -97,27 +125,65 @@ resource "truenas_vm_device" "virtual_machine" {
   vm         = tonumber(truenas_vm.virtual_machine[each.value.virtual_machine].id)
 }
 
-moved {
-  from = truenas_zvol.taco_boot
-  to   = truenas_zvol.virtual_machine_boot["taco"]
+resource "truenas_dataset" "managed" {
+  for_each = local.truenas_datasets
+
+  atime         = each.value.atime
+  comments      = "Kubernetes persistent storage managed by OpenTofu"
+  compression   = each.value.compression
+  deduplication = "OFF"
+  name          = each.value.name
+  pool          = each.value.pool
+  readonly      = "OFF"
+  record_size   = each.value.record_size
+  share_type    = "GENERIC"
+  sync          = "STANDARD"
+
+  depends_on = [terraform_data.truenas_storage_target]
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-moved {
-  from = truenas_vm.taco
-  to   = truenas_vm.virtual_machine["taco"]
+resource "truenas_share_nfs" "managed" {
+  for_each = local.truenas_nfs_shares
+
+  comment       = "Kubernetes persistent storage managed by OpenTofu"
+  enabled       = true
+  maproot_group = "wheel"
+  maproot_user  = "root"
+  networks      = each.value.networks
+  path          = truenas_dataset.managed[each.value.dataset_key].mount_point
+  readonly      = false
+  security      = ["SYS"]
+
+  depends_on = [terraform_data.truenas_storage_target]
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-moved {
-  from = truenas_vm_device.taco["boot"]
-  to   = truenas_vm_device.virtual_machine["taco/boot"]
-}
+resource "truenas_snapshot_task" "managed" {
+  for_each = local.truenas_snapshot_tasks
 
-moved {
-  from = truenas_vm_device.taco["cdrom"]
-  to   = truenas_vm_device.virtual_machine["taco/cdrom"]
-}
+  allow_empty     = true
+  dataset         = each.value.dataset
+  enabled         = true
+  lifetime_unit   = each.value.lifetime.unit
+  lifetime_value  = each.value.lifetime.value
+  naming_schema   = each.value.naming_schema
+  recursive       = true
+  schedule_dom    = each.value.schedule.day_of_month
+  schedule_dow    = each.value.schedule.day_of_week
+  schedule_hour   = each.value.schedule.hour
+  schedule_minute = each.value.schedule.minute
+  schedule_month  = each.value.schedule.month
 
-moved {
-  from = truenas_vm_device.taco["network"]
-  to   = truenas_vm_device.virtual_machine["taco/network"]
+  depends_on = [terraform_data.truenas_storage_target]
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
