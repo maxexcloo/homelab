@@ -63,16 +63,5 @@ resource "unifi_client" "host" {
   note                   = "Managed by OpenTofu"
   skip_forget_on_destroy = true
 
-  # Adoption gate only: remove after the imports in migrations.tf are recorded.
-  lifecycle {
-    ignore_changes = [
-      local_dns_record,
-      name,
-      network_id,
-      note,
-      skip_forget_on_destroy,
-    ]
-  }
-
   depends_on = [terraform_data.unifi_network_validation]
 }
