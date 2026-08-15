@@ -59,9 +59,13 @@ resource "unifi_client" "host" {
   local_dns_record       = each.value.local_dns_record
   mac                    = each.value.mac
   name                   = each.key
-  network_id             = data.unifi_network.default[each.value.network_key].id
+  network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.default[each.value.network_key].id : null
   note                   = "Managed by OpenTofu"
-  skip_forget_on_destroy = true
+  skip_forget_on_destroy = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
 
   depends_on = [terraform_data.unifi_network_validation]
 }
