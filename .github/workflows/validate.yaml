@@ -26,7 +26,7 @@ jobs:
       - name: Set up tools
         uses: jdx/mise-action@v4
         with:
-          version: 2026.8.4
+          version: 2026.8.6
       - name: Initialise providers
         run: tofu init -backend=false -input=false
       - name: Run hooks
