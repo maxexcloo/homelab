@@ -423,6 +423,13 @@ is ready for review.
      stopped. The uploaded Talos ISO is `479539200` bytes with SHA-256
      `b1a1b8223c9dfe70a8f575ab3ef97eb9071f9de3a7db311898fc7e25b9d65ebe`;
      the final provider-read-only plan reported no changes.
+   - The first start attempt on 2026-08-15 failed before QEMU launched. On
+     `26.0.0-BETA.2`, the confined `virt-aa-helper` cannot read the supported
+     zvol path because it resolves to `/dev/zd0`, which the installed AppArmor
+     policy explicitly denies. Taco remained stopped and created no DHCP lease.
+     Do not weaken AppArmor or replace the stable zvol path with `/dev/zd0`.
+     Resume after an upstream TrueNAS fix or a separately reviewed storage
+     design change.
 
 4. Review the live home network and VM plan.
    - Preview the ordered TrueNAS bridge changes through the unchanged primary
