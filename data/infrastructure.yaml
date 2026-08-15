@@ -45,3 +45,17 @@ networks:
         bridge: br4
         name: enp3s0
         prefix_length: 22
+
+virtual_machines:
+  taco:
+    boot:
+      iso_path: /mnt/truenas-nvme/virtual-machines/talos-7d4c31cbd96db9f90c874990697c523482b2bae27fb4631d5583dcd9c281b1ff-v1.13.8.iso
+      pool: truenas-nvme
+      size_gib: 64
+      zvol: virtual-machines/taco
+    cpu:
+      cores: 12
+      sockets: 1
+      threads: 1
+    mac_address: "02:74:61:63:6f:01"
+    memory_mib: 32768

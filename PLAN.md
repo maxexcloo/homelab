@@ -305,7 +305,7 @@ Adopt the provider through this sequence:
 3. Apply that exact procedure only after explicit approval, import both
    interfaces into their declared resources, and require a no-op plan before
    continuing.
-4. Add the 64 GiB zvol, `taco` VM, and its disk, CD-ROM, display, and fixed-MAC
+4. Add the 64 GiB zvol, headless `taco` VM, and its disk, CD-ROM, and fixed-MAC
    virtio NIC as direct resources in the `au` root, pinned to `v2.4.1`.
 5. Keep provider `destroy_protection`, add resource-level `prevent_destroy`
    to the zvol and VM, and review a saved plan before the first apply.
@@ -412,7 +412,17 @@ is ready for review.
    - Manage `enp3s0` and `br4` through the pinned TrueNAS provider, then add the
      guarded zvol and VM resources after the bridge succeeds.
    - Exact VM target: 12 vCPU, 32 GiB RAM, 64 GiB boot zvol on
-     `truenas-nvme`, UEFI, virtio NIC on `br4`, autostart, and a fixed MAC.
+     `truenas-nvme/virtual-machines`, UEFI, virtio NIC on `br4`, autostart, and
+     fixed MAC `02:74:61:63:6f:01`.
+   - Keep the Talos VM headless. The installed TrueNAS beta requires a display
+     password and explicit distinct SPICE and web ports, while Talos maintenance
+     and recovery use its network API. Do not put a display password in OpenTofu
+     state solely to provide a console that the normal lifecycle does not use.
+   - The substrate apply completed on 2026-08-14 with VM ID `10`, boot disk
+     device `34`, network device `35`, and CD-ROM device `36`. The VM remains
+     stopped. The uploaded Talos ISO is `479539200` bytes with SHA-256
+     `b1a1b8223c9dfe70a8f575ab3ef97eb9071f9de3a7db311898fc7e25b9d65ebe`;
+     the final provider-read-only plan reported no changes.
 
 4. Review the live home network and VM plan.
    - Preview the ordered TrueNAS bridge changes through the unchanged primary
