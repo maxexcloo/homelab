@@ -4,7 +4,7 @@ opentofu = "1.12.5"
 prek = "0.4.13"
 prettier = "3.9.6"
 talosctl = "1.13.8"
-tflint = "0.59.1"
+tflint = "0.64.0"
 trivy = "0.73.0"
 yq = "4.53.3"
 
