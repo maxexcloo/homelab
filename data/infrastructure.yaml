@@ -33,6 +33,21 @@ hosts:
     location: mbk
     platform: talos
 
+clusters:
+  mbk:
+    endpoint: https://10.4.0.4:6443
+    kubernetes_version: v1.36.3
+    pod_subnet: 10.100.0.0/22
+    recovery_version: 1
+    recovery_vault: Servers
+    service_subnet: 10.100.4.0/22
+    talos_version: v1.13.8
+    nodes:
+      taco:
+        address: 10.4.0.4
+        install_disk: /dev/vda
+        machine_type: controlplane
+
 networks:
   mbk:
     interfaces:

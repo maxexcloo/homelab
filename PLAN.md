@@ -191,6 +191,13 @@ read-only review. The foundations root may manage shared IAM and access
 resources, but not the bucket it consumes. Managing the bucket later requires
 a separately backed bootstrap root and an independently reviewed migration.
 
+The 2026-08-15 read-only review confirmed versioning, uniform bucket-level
+access, and enforced public-access prevention. The owner explicitly accepted
+the current lack of retention and soft-delete protection and the existing
+legacy bucket/object IAM roles for the initial Talos installation. Treat these
+as recorded risks rather than installation blockers; review them separately
+before broadening state readership or adding another operator.
+
 Use fresh prefixes:
 
 | Stack                                                       | GCS prefix                              |
@@ -441,9 +448,11 @@ is ready for review.
      upstream fix, let a normal TrueNAS start replace the temporary definition.
    - The temporary launch completed on 2026-08-15. Taco is running in Talos
      maintenance mode at reserved address `10.4.0.4`; pinned client and server
-     both report `v1.13.8`. The verified installation target is writable virtio
+     both report `v1.13.8`. Talos was installed on 2026-08-15 to writable virtio
      disk `/dev/vda`, serial `2AxMXe9R`, reported as 69 GB decimal for the
-     configured 64 GiB zvol. No Talos installation has been performed.
+     configured 64 GiB zvol. Authenticated verification found `STATE` on
+     `/dev/vda3`, `EPHEMERAL` on `/dev/vda4`, and static hostname `taco`. The
+     node is intentionally waiting for the separately reviewed etcd bootstrap.
 
 4. Review the live home network and VM plan.
    - Preview the ordered TrueNAS bridge changes through the unchanged primary

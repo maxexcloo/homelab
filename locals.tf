@@ -1,6 +1,12 @@
 locals {
-  infrastructure      = yamldecode(file("${path.module}/data/infrastructure.yaml"))
-  home_network        = local.infrastructure.networks.mbk
+  infrastructure = yamldecode(file("${path.module}/data/infrastructure.yaml"))
+  home_cluster   = local.infrastructure.clusters.mbk
+  home_network   = local.infrastructure.networks.mbk
+  talos_connection_endpoints = {
+    for name, node in local.infrastructure.clusters.mbk.nodes :
+    name => coalesce(var.talos_apply_endpoint, node.address)
+  }
+  talos_nodes         = local.home_cluster.nodes
   truenas_service_nic = local.home_network.interfaces.services
   virtual_machines    = local.infrastructure.virtual_machines
 
