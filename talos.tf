@@ -1,10 +1,3 @@
-variable "talos_apply_endpoint" {
-  description = "Optional Talos API connection endpoint, such as a local SSH forward."
-  type        = string
-  default     = null
-  nullable    = true
-}
-
 resource "talos_machine_secrets" "cluster" {
   talos_version = local.home_cluster.talos_version
 
