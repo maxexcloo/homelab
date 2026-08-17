@@ -287,6 +287,14 @@ The Meadowbank lifecycle completed on 2026-08-15:
 The local workstation kubeconfig is an operator concern and is not managed by
 OpenTofu.
 
+Cluster credentials consumed by `kubelab` — the Tailscale operator OAuth
+clients, cluster Cloudflare tunnel tokens, ACME DNS tokens, administrator
+kubeconfigs, and the manually maintained External Secrets service-account
+token — live in a dedicated 1Password vault per cluster, `Kubernetes: mbk` and
+`Kubernetes: syd`. Each vault is the service-account permission boundary for
+its cluster. The service-account bootstrap commands are documented in
+`docs/kubernetes-secrets.md`.
+
 ## Sydney rollout gate
 
 `syd` remains declared with `talos_enabled: false`. Do not create its OCI

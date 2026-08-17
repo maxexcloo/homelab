@@ -98,12 +98,17 @@ locals {
   cloudflare_acme_consumers = {
     for name, consumer in local.domains.cloudflare.acme_consumers : name => merge(consumer, {
       challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.domains.services}"
+      credential_scope   = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
       target_hostname    = "${name}.${local.domains.domains.acme}"
-      vault              = try(consumer.machine, null) != null ? "servers" : "kubernetes"
+      vault              = try(consumer.machine, null) != null ? "homelab" : "kubernetes/${name}"
     })
   }
   cloudflare_tunnels = {
-    for name in keys(local.clusters) : name => {}
+    for name, consumer in local.domains.cloudflare.tunnel_consumers : name => merge(consumer, {
+      credential_scope = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
+      tags             = try(consumer.machine, null) != null ? toset(["Homelab", "Cloudflare", "Tunnel"]) : toset(["Homelab", "Cloudflare", "Kubernetes"])
+      vault            = try(consumer.machine, null) != null ? "homelab" : "kubernetes/${name}"
+    })
   }
   cloudflare_zones = toset(concat(
     values(local.domains.domains),
@@ -165,14 +170,21 @@ locals {
     },
   )
 
-  onepassword_vaults         = local.access.onepassword.vaults
+  onepassword_vaults = merge(
+    local.access.onepassword.vaults,
+    {
+      for name in keys(local.clusters) : "kubernetes/${name}" => "Kubernetes: ${name}"
+    },
+  )
   tailscale_admin_identities = local.access.tailscale.admin_identities
   tailscale_key_expiry       = local.access.tailscale.key_expiry_seconds
-  tailscale_operator_tag     = local.access.tailscale.operator.tag
   tailscale_host_tags = toset(concat(
     [for machine in values(local.machines) : "tag:${machine.tailscale_tag}"],
     [for tag in local.access.tailscale.additional_tags : "tag:${tag}"],
   ))
+  tailscale_operator_tags = {
+    for name in keys(local.clusters) : name => "${name}-operator"
+  }
   tailscale_routes = toset(flatten([
     for cluster in values(local.clusters) : flatten([
       for node in values(cluster.nodes) : try(node.tailscale_routes, [])

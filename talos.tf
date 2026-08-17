@@ -11,7 +11,7 @@ resource "talos_machine_secrets" "cluster" {
 resource "onepassword_item" "talos_recovery" {
   for_each = local.talos_clusters
 
-  vault = data.onepassword_vault.default["servers"].uuid
+  vault = data.onepassword_vault.default["homelab"].uuid
 
   category = "secure_note"
   note_value_wo = jsonencode({
@@ -22,7 +22,7 @@ resource "onepassword_item" "talos_recovery" {
   })
   note_value_wo_version = try(each.value.secret_revision, 1)
   tags                  = ["Homelab", "Talos", "Recovery"]
-  title                 = "${each.key} Talos recovery"
+  title                 = "Talos Recovery: ${each.key}"
 
   lifecycle {
     prevent_destroy = true
@@ -204,15 +204,14 @@ resource "talos_cluster_kubeconfig" "cluster" {
 resource "onepassword_item" "kubeconfig" {
   for_each = local.talos_recovery_clusters
 
-  vault = data.onepassword_vault.default["kubernetes"].uuid
+  vault = data.onepassword_vault.default["kubernetes/${each.key}"].uuid
 
   category              = "secure_note"
   note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
   note_value_wo_version = try(each.value.kubeconfig_secret_revision, 1)
   tags                  = ["Homelab", "Kubernetes", "Recovery"]
-  title                 = "${each.key} administrator kubeconfig"
+  title                 = "Kubeconfig: ${each.key}"
 
-  lifecycle {
-    prevent_destroy = true
-  }
+  # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
+  # restore it once the reviewed migration apply has completed.
 }

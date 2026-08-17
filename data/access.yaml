@@ -1,7 +1,6 @@
 onepassword:
   vaults:
-    kubernetes: Services
-    servers: Servers
+    homelab: Homelab
 
 ssh:
   identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
@@ -22,10 +21,9 @@ tailscale:
     - tag:vm
   key_expiry_seconds: 7776000
   operator:
+    secret_revision: 2
     scopes:
-      - auth_keys
       - devices:core
-    tag: kubernetesoperator
   route_approver_tag: talos
   route_approvers:
     "0.0.0.0/0":
@@ -126,7 +124,6 @@ tailscale:
     - action: accept
       sources:
         - tag:talos
-        - tag:kubernetesoperator
       destinations:
         - "tag:talos:*"
     - action: accept
@@ -139,3 +136,6 @@ tailscale:
       accept:
         - tag:talos:50000
         - tag:storage:22
+    - source: tag:mbk-operator
+      accept:
+        - tag:server:443

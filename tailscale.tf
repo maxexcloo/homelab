@@ -9,7 +9,7 @@ locals {
         for tag in local.tailscale_host_tags : tag => ["group:${local.access.tailscale.admin_group}"]
       },
       {
-        "tag:${local.tailscale_operator_tag}" = ["group:${local.access.tailscale.admin_group}"]
+        for tag in values(local.tailscale_operator_tags) : "tag:${tag}" => ["group:${local.access.tailscale.admin_group}"]
       },
     )
 
@@ -23,14 +23,23 @@ locals {
       )
     }
 
-    acls = [for rule in local.access.tailscale.rules : merge(
-      {
-        action = rule.action
-        src    = rule.sources
-        dst    = rule.destinations
-      },
-      try(rule.protocol, null) == null ? {} : { proto = rule.protocol },
-    )]
+    acls = concat(
+      [for rule in local.access.tailscale.rules : merge(
+        {
+          action = rule.action
+          src    = rule.sources
+          dst    = rule.destinations
+        },
+        try(rule.protocol, null) == null ? {} : { proto = rule.protocol },
+      )],
+      [
+        for tag in values(local.tailscale_operator_tags) : {
+          action = "accept"
+          src    = ["tag:${tag}"]
+          dst    = ["*:*"]
+        }
+      ],
+    )
 
     tests = [for test in local.access.tailscale.tests : {
       src    = test.source
@@ -63,7 +72,7 @@ resource "tailscale_oauth_client" "kubernetes_operator" {
 
   description = "${each.key} Kubernetes operator"
   scopes      = local.access.tailscale.operator.scopes
-  tags        = ["tag:${local.tailscale_operator_tag}"]
+  tags        = ["tag:${local.tailscale_operator_tags[each.key]}"]
 
   depends_on = [tailscale_acl.default]
 }

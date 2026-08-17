@@ -11,6 +11,11 @@ cloudflare:
       machine: ramen
     syd:
       cluster: syd
+  tunnel_consumers:
+    mbk:
+      cluster: mbk
+    syd:
+      cluster: syd
 
 domains:
   acme: 043847.xyz
