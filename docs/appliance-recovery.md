@@ -11,7 +11,7 @@ encryption material and emergency administrator access in 1Password. UniFi owns
 the fixed `10.0.0.2` reservation and this repository owns its public DNS and
 least-privilege ACME token. Rebuild the appliance first, restore a tested HAOS
 backup, then re-enrol Tailscale using the recovery key stored under
-`Tailscale Recovery Key: hass.mbk.excloo.net` in the Homelab vault.
+`Tailscale Auth Key: hass.mbk.excloo.net` in the Homelab vault.
 
 ## Hotdog
 
@@ -35,7 +35,7 @@ the recovery path if the Services bridge fails.
 Bazzite owns the gaming workstation operating system and application data.
 Keep disk-encryption recovery material and platform account recovery in
 1Password. Restore Bazzite, SSH access through the 1Password agent, and then its
-existing Tailscale client; the managed key under `Tailscale Recovery Key: mandu.mbk.excloo.net` is for
+existing Tailscale client; the managed key under `Tailscale Auth Key: mandu.mbk.excloo.net` is for
 re-enrolment rather than routine login.
 
 ## Ramen
@@ -45,7 +45,7 @@ backup. Store exported controller backups and owner-account recovery outside
 Git. This repository validates the Default and Services network contracts but
 does not currently create or reorder firewall rules. Restore the controller
 before relying on DHCP reservations or VLAN 4, then re-enrol Tailscale with the
-recovery key under `Tailscale Recovery Key: ramen.mbk.excloo.net` if the gateway installation uses it.
+recovery key under `Tailscale Auth Key: ramen.mbk.excloo.net` if the gateway installation uses it.
 
 ## Shared rules
 

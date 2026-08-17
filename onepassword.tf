@@ -12,7 +12,6 @@ resource "onepassword_item" "cloudflare_acme" {
   password_wo_version = try(each.value.secret_revision, 1)
   tags                = ["Homelab", "Cloudflare", "ACME"]
   title               = each.value.title
-  url                 = "https://dash.cloudflare.com"
   username            = each.value.credential_scope
   vault               = data.onepassword_vault.default[each.value.vault].uuid
 
@@ -44,8 +43,7 @@ resource "onepassword_item" "machine_access" {
   password_wo         = tailscale_tailnet_key.server[each.key].key
   password_wo_version = try(local.access.tailscale.server_secret_revision, 1)
   tags                = ["Homelab", "Tailscale", "Bootstrap"]
-  title               = "Tailscale Recovery Key: ${local.machine_fqdns[each.key]}"
-  url                 = local.machine_access[each.key].url
+  title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
   username            = local.machine_access[each.key].username
   vault               = data.onepassword_vault.default["homelab"].uuid
 
