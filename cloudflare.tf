@@ -11,19 +11,19 @@ data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
+data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
+  for_each = local.cloudflare_tunnels
+
+  account_id = data.cloudflare_account.default.id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
+}
+
 data "cloudflare_zone" "default" {
   for_each = local.cloudflare_zones
 
   filter = {
     name = each.value
   }
-}
-
-data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
-  for_each = local.cloudflare_tunnels
-
-  account_id = data.cloudflare_account.default.id
-  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
 }
 
 resource "cloudflare_account_token" "acme" {

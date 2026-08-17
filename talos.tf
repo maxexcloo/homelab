@@ -127,6 +127,30 @@ resource "onepassword_item" "talos_recovery" {
   }
 }
 
+resource "talos_cluster_kubeconfig" "cluster" {
+  for_each = local.talos_recovery_clusters
+
+  client_configuration = {
+    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
+  }
+  endpoint = one(local.talos_control_plane_endpoints[each.key])
+  node     = one(local.talos_control_plane_endpoints[each.key])
+
+  timeouts = {
+    create = "10m"
+    update = "10m"
+  }
+
+  lifecycle {
+    precondition {
+      condition     = data.talos_cluster_health.cluster[each.key].id != ""
+      error_message = "Verify this cluster's health before retrieving its kubeconfig."
+    }
+  }
+}
+
 resource "talos_machine_bootstrap" "control_plane" {
   for_each = local.talos_bootstrap_nodes
 
@@ -182,29 +206,6 @@ resource "talos_machine_configuration_apply" "node" {
   }
 }
 
-resource "talos_cluster_kubeconfig" "cluster" {
-  for_each = local.talos_recovery_clusters
-
-  client_configuration = {
-    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
-  }
-  endpoint = one(local.talos_control_plane_endpoints[each.key])
-  node     = one(local.talos_control_plane_endpoints[each.key])
-
-  timeouts = {
-    create = "10m"
-    update = "10m"
-  }
-
-  lifecycle {
-    precondition {
-      condition     = data.talos_cluster_health.cluster[each.key].id != ""
-      error_message = "Verify this cluster's health before retrieving its kubeconfig."
-    }
-  }
-}
 
 resource "talos_machine_secrets" "cluster" {
   for_each = local.talos_clusters
