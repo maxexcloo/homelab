@@ -114,13 +114,6 @@ data "talos_machine_configuration" "node" {
 }
 
 locals {
-  talos_cluster_endpoints = {
-    for name, cluster in local.clusters : name => try(
-      cluster.endpoint,
-      "https://${local.machines[cluster.api_node].address}:6443",
-    )
-  }
-
   talos_bootstrap_nodes = {
     for name, node in local.talos_nodes : name => node
     if node.machine_type == "controlplane" && try(node.bootstrap, false)
@@ -131,6 +124,13 @@ locals {
       node.address,
       try(local.tailscale_device_ipv4[name], null),
     ])
+  }
+
+  talos_cluster_endpoints = {
+    for name, cluster in local.clusters : name => try(
+      cluster.endpoint,
+      "https://${local.machines[cluster.api_node].address}:6443",
+    )
   }
 
   talos_clusters = {
@@ -200,21 +200,6 @@ resource "onepassword_item" "kubeconfig" {
   }
 }
 
-resource "onepassword_item" "talosconfig" {
-  for_each = local.talos_recovery_clusters
-
-  category              = "secure_note"
-  note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
-  note_value_wo_version = try(each.value.talosconfig_secret_revision, 1)
-  tags                  = ["Homelab", "Talos"]
-  title                 = "talosconfig"
-  vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "onepassword_item" "talos_recovery" {
   for_each = local.talos_clusters
 
@@ -230,6 +215,21 @@ resource "onepassword_item" "talos_recovery" {
     machine_secrets      = talos_machine_secrets.cluster[each.key].machine_secrets
     talos_version        = each.value.talos_version
   })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "onepassword_item" "talosconfig" {
+  for_each = local.talos_recovery_clusters
+
+  category              = "secure_note"
+  note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
+  note_value_wo_version = try(each.value.talosconfig_secret_revision, 1)
+  tags                  = ["Homelab", "Talos"]
+  title                 = "talosconfig"
+  vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
     prevent_destroy = true
