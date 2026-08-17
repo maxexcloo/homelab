@@ -101,6 +101,7 @@ locals {
       challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.domains.services}"
       credential_scope   = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
       target_hostname    = "${name}.${local.domains.domains.acme}"
+      title              = try(consumer.machine, null) != null ? "Cloudflare ACME DNS: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-acme-${name}"
       vault              = try(consumer.machine, null) != null ? "homelab" : "kubernetes/${name}"
     })
   }
@@ -108,6 +109,7 @@ locals {
     for name, consumer in local.domains.cloudflare.tunnel_consumers : name => merge(consumer, {
       credential_scope = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
       tags             = try(consumer.machine, null) != null ? toset(["Homelab", "Cloudflare", "Tunnel"]) : toset(["Homelab", "Cloudflare", "Kubernetes"])
+      title            = try(consumer.machine, null) != null ? "Cloudflare Tunnel: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-tunnel-${name}"
       vault            = try(consumer.machine, null) != null ? "homelab" : "kubernetes/${name}"
     })
   }

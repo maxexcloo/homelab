@@ -31,7 +31,7 @@ resource "onepassword_item" "tailscale_operator" {
   password_wo         = tailscale_oauth_client.kubernetes_operator[each.key].key
   password_wo_version = try(local.access.tailscale.operator.secret_revision, 1)
   tags                = ["Homelab", "Tailscale", "Kubernetes"]
-  title               = "Tailscale Operator: ${each.key}"
+  title               = "tailscale-operator-${each.key}"
   username            = tailscale_oauth_client.kubernetes_operator[each.key].id
 
   # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
@@ -47,7 +47,7 @@ resource "onepassword_item" "cloudflare_tunnel" {
   password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
   password_wo_version = try(local.domains.cloudflare.tunnel_secret_revision, 1)
   tags                = each.value.tags
-  title               = "Cloudflare Tunnel: ${each.value.credential_scope}"
+  title               = each.value.title
   username            = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
 
   # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
@@ -63,7 +63,7 @@ resource "onepassword_item" "cloudflare_acme" {
   password_wo         = cloudflare_account_token.acme[each.key].value
   password_wo_version = try(each.value.secret_revision, 1)
   tags                = ["Homelab", "Cloudflare", "ACME"]
-  title               = "Cloudflare ACME DNS: ${each.value.credential_scope}"
+  title               = each.value.title
   url                 = "https://dash.cloudflare.com"
   username            = each.value.credential_scope
 

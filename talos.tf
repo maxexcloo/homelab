@@ -210,7 +210,7 @@ resource "onepassword_item" "kubeconfig" {
   note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
   note_value_wo_version = try(each.value.kubeconfig_secret_revision, 1)
   tags                  = ["Homelab", "Kubernetes", "Recovery"]
-  title                 = "Kubeconfig: ${each.key}"
+  title                 = "kubeconfig-${each.key}"
 
   # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
   # restore it once the reviewed migration apply has completed.

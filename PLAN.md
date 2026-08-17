@@ -294,7 +294,11 @@ kubeconfigs, and the manually maintained External Secrets service-account
 token — live in a dedicated 1Password vault per cluster, `Kubernetes: mbk` and
 `Kubernetes: syd`. Each vault is the service-account permission boundary for
 its cluster. The service-account bootstrap commands are documented in
-`docs/kubernetes-secrets.md`.
+`docs/kubernetes-secrets.md`. Items inside these vaults use hyphenated,
+cluster-suffixed titles (`<service>-<cluster>`) because the External Secrets
+1Password SDK reference syntax permits only `[a-zA-Z0-9._-]` in item titles;
+operator-facing items in the Homelab vault keep the `<Credential type>:
+<scope>` style.
 
 ## Sydney rollout gate
 

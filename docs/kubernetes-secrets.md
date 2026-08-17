@@ -9,23 +9,40 @@ kubeconfigs into these vaults. The External Secrets bootstrap credential is
 maintained manually and is the cluster's secret root of trust: every other
 workload secret is reconciled from it.
 
-Item names follow one convention: `<Credential type>: <scope>`, with the type
-in Title Case and the scope a lowercase cluster key or FQDN.
+## Item naming
+
+The External Secrets `onepasswordSDK` provider prepends `op://<vault>/` to
+each `remoteRef.key`, so every key must read `<item-title>/<field>`, and the
+SDK reference syntax allows only `[a-zA-Z0-9._-]` in item titles. Items in the
+Kubernetes vaults therefore use hyphenated, cluster-suffixed titles:
+
+```text
+<service>-<cluster>
+```
+
+For example `cloudflare-acme-mbk` or `pocket-id-mbk`, addressable as
+`op://Kubernetes: mbk/<service>-<cluster>/<field>`. OpenTofu owns the
+delivered titles; rename them through configuration, never in 1Password, or
+the next apply reverts the manual edit. Operator-facing items in the Homelab
+vault keep the `<Credential type>: <scope>` style because External Secrets
+never references them.
 
 ## Items
 
-| Item                                    | Owner    | Contents                         |
-| --------------------------------------- | -------- | -------------------------------- |
-| `External Secrets Service Account: mbk` | Manual   | 1Password service-account token  |
-| `Tailscale Operator: mbk`               | OpenTofu | OAuth client ID and secret       |
-| `Cloudflare Tunnel: mbk`                | OpenTofu | Tunnel ID and token              |
-| `Cloudflare ACME DNS: mbk`              | OpenTofu | Cloudflare DNS API token         |
-| `Kubeconfig: mbk`                       | OpenTofu | Cluster administrator kubeconfig |
+| Item                                  | Owner    | Contents                         |
+| ------------------------------------- | -------- | -------------------------------- |
+| `cloudflare-acme-mbk`                 | OpenTofu | Cloudflare DNS API token         |
+| `cloudflare-tunnel-mbk`               | OpenTofu | Tunnel ID and token              |
+| `kubeconfig-mbk`                      | OpenTofu | Cluster administrator kubeconfig |
+| `tailscale-operator-mbk`              | OpenTofu | OAuth client ID and secret       |
+| `Service Account Auth Token: mbk-eso` | Manual   | 1Password service-account token  |
+
+The manual item predates this convention. Rename it to a hyphenated,
+cluster-suffixed title before External Secrets references it by key.
 
 Create the manual item as an API Credential so the token is addressable as
-`op://Kubernetes: mbk/External Secrets Service Account: mbk/credential`.
-Scope the service account to the `Kubernetes: mbk` vault with read and write
-access.
+`op://Kubernetes: mbk/<item-title>/credential`. Scope the service account to
+the `Kubernetes: mbk` vault with read and write access.
 
 ## Bootstrap injection
 
@@ -34,7 +51,7 @@ before the External Secrets controller first starts:
 
 ```sh
 kubectl -n external-secrets create secret generic onepassword-bootstrap \
-  --from-literal=token="$(op read 'op://Kubernetes: mbk/External Secrets Service Account: mbk/credential')" \
+  --from-literal=token="$(op read 'op://Kubernetes: mbk/Service Account Auth Token: mbk-eso/credential')" \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
