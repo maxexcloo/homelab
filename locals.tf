@@ -1,101 +1,62 @@
 locals {
-  access      = yamldecode(file("${path.module}/data/access.yaml"))
-  clusters    = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
-  deployments = yamldecode(file("${path.module}/data/deployments.yaml")).deployments
-  domains     = yamldecode(file("${path.module}/data/domains.yaml"))
-  machines    = yamldecode(file("${path.module}/data/machines.yaml")).machines
-  networks    = yamldecode(file("${path.module}/data/networks.yaml")).networks
-  storage     = yamldecode(file("${path.module}/data/storage.yaml"))
-
-  talos_clusters = {
-    for name, cluster in local.clusters : name => cluster
-    if cluster.talos_enabled
-  }
-
-  machine_fqdns = {
-    for name, machine in local.machines :
-    name => "${name}.${machine.location}.${local.domains.domains.infrastructure}"
-  }
-  cluster_api_fqdns = {
-    for name in keys(local.clusters) :
-    name => "api.${name}.${local.domains.domains.services}"
-  }
-
-  truenas_deployments = {
-    for name, deployment in local.deployments : name => deployment
-    if deployment.provider == "truenas"
-  }
-  home_network         = local.networks[local.truenas_host_machine.location]
-  truenas_host         = one(distinct([for deployment in values(local.truenas_deployments) : deployment.host]))
-  truenas_host_machine = local.machines[local.truenas_host]
-  truenas_service_nic  = local.home_network.interfaces.services
-  virtual_machines     = local.truenas_deployments
-  truenas_datasets = merge([
-    for target, storage in local.storage.targets : {
-      for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
-        name   = name
-        target = target
-      })
-    }
-  ]...)
-  truenas_nfs_shares = merge([
-    for target, storage in local.storage.targets : {
-      for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
-        dataset_key = "${target}/${share.dataset}"
-        name        = name
-        networks = [
-          for network in share.networks : cidrsubnet(
-            local.networks[network.location].unifi.networks[network.network].subnet,
-            0,
-            0,
-          )
-        ]
-        target = target
-      })
-    }
-  ]...)
-  truenas_snapshot_tasks = merge([
-    for target, storage in local.storage.targets : {
-      for name, task in storage.snapshot_tasks : "${target}/${name}" => merge(task, {
-        name   = name
-        target = target
-      })
-    }
-  ]...)
-  truenas_storage_targets = local.storage.targets
-
-  oci_networks = {
-    for name, network in local.networks : name => network.oci
-    if try(network.oci, null) != null
-  }
-  oci_deployments = {
-    for name, deployment in local.deployments : name => merge(deployment, {
-      cluster = local.machines[name].cluster
-    })
-    if deployment.provider == "oci"
-  }
-  oci_nodes = {
-    for name, deployment in local.oci_deployments : name => deployment
-    if local.clusters[deployment.cluster].talos_enabled
-  }
-  oci_node_egress_rules = merge([
-    for name, node in local.oci_nodes : {
-      for family, destination in merge(
-        { ipv4 = "0.0.0.0/0" },
-        local.oci_networks[node.network].ipv6_enabled ? { ipv6 = "::/0" } : {},
-        ) : "${name}/${family}" => {
-        destination = destination
-        node        = name
-      }
-    }
-  ]...)
-  oci_cluster_name = one(values(local.oci_deployments)).cluster
-  oci_talos_images = {
-    for name, cluster in local.clusters : name => cluster
-    if cluster.talos_enabled && cluster.image.platform == "oracle"
-  }
+  access = yamldecode(file("${path.module}/data/access.yaml"))
 
   cloudflare_account_name = local.domains.cloudflare.account_name
+
+  cloudflare_zones = toset(concat(
+    values(local.domains.domains),
+    [for source_file in local.dns_source_files : source_file.zone.name],
+  ))
+
+  clusters = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
+
+  deployments = yamldecode(file("${path.module}/data/deployments.yaml")).deployments
+
+  domains = yamldecode(file("${path.module}/data/domains.yaml"))
+
+  home_network = local.networks[local.truenas_host_machine.location]
+
+  machines = yamldecode(file("${path.module}/data/machines.yaml")).machines
+
+  networks = yamldecode(file("${path.module}/data/networks.yaml")).networks
+
+  oci_cluster_name = one(values(local.oci_deployments)).cluster
+
+  storage = yamldecode(file("${path.module}/data/storage.yaml"))
+
+  tailscale_admin_identities = local.access.tailscale.admin_identities
+
+  tailscale_cluster_tags = toset([
+    for name in keys(local.clusters) : "tag:${name}"
+  ])
+
+  tailscale_host_tags = toset(concat(
+    [for machine in values(local.machines) : "tag:${machine.tailscale_tag}"],
+    [for tag in local.access.tailscale.additional_tags : "tag:${tag}"],
+  ))
+
+  tailscale_key_expiry = local.access.tailscale.key_expiry_seconds
+
+  tailscale_operator_device_tag = "tag:${local.access.tailscale.operator.device_tag}"
+
+  tailscale_operator_proxy_tag = "tag:${local.access.tailscale.operator.proxy_tag}"
+
+  tailscale_routes = toset(flatten([
+    for cluster in values(local.clusters) : flatten([
+      for node in values(cluster.nodes) : try(node.tailscale_routes, [])
+    ])
+  ]))
+
+  truenas_host = one(distinct([for deployment in values(local.truenas_deployments) : deployment.host]))
+
+  truenas_host_machine = local.machines[local.truenas_host]
+
+  truenas_service_nic = local.home_network.interfaces.services
+
+  truenas_storage_targets = local.storage.targets
+
+  virtual_machines = local.truenas_deployments
+
   cloudflare_acme_consumers = {
     for name, consumer in local.domains.cloudflare.acme_consumers : name => merge(consumer, {
       challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.domains.services}"
@@ -105,6 +66,7 @@ locals {
       vault              = try(consumer.machine, null) != null ? "homelab" : "kubernetes/${name}"
     })
   }
+
   cloudflare_tunnels = {
     for name, consumer in local.domains.cloudflare.tunnel_consumers : name => merge(consumer, {
       credential_scope = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
@@ -113,10 +75,19 @@ locals {
       vault            = try(consumer.machine, null) != null ? "homelab" : "kubernetes/${name}"
     })
   }
-  cloudflare_zones = toset(concat(
-    values(local.domains.domains),
-    [for source_file in local.dns_source_files : source_file.zone.name],
-  ))
+
+  cluster_api_fqdns = {
+    for name in keys(local.clusters) :
+    name => "api.${name}.${local.domains.domains.services}"
+  }
+
+  cluster_endpoints = {
+    for name, cluster in local.clusters : name => try(
+      cluster.endpoint,
+      "https://${local.machines[cluster.api_node].address}:6443",
+    )
+  }
+
   dns_derived_records = merge(
     {
       for name, machine in local.machines : "machine/${name}/a" => {
@@ -173,82 +144,6 @@ locals {
     },
   )
 
-  onepassword_vaults = merge(
-    local.access.onepassword.vaults,
-    {
-      for name in keys(local.clusters) : "kubernetes/${name}" => "Kubernetes: ${name}"
-    },
-  )
-  tailscale_admin_identities    = local.access.tailscale.admin_identities
-  tailscale_key_expiry          = local.access.tailscale.key_expiry_seconds
-  tailscale_operator_device_tag = "tag:${local.access.tailscale.operator.device_tag}"
-  tailscale_operator_proxy_tag  = "tag:${local.access.tailscale.operator.proxy_tag}"
-  tailscale_cluster_tags = toset([
-    for name in keys(local.clusters) : "tag:${name}"
-  ])
-  tailscale_host_tags = toset(concat(
-    [for machine in values(local.machines) : "tag:${machine.tailscale_tag}"],
-    [for tag in local.access.tailscale.additional_tags : "tag:${tag}"],
-  ))
-  tailscale_operator_client_tags = {
-    for name in keys(local.clusters) : name => [local.tailscale_operator_device_tag, "tag:${name}"]
-  }
-  tailscale_routes = toset(flatten([
-    for cluster in values(local.clusters) : flatten([
-      for node in values(cluster.nodes) : try(node.tailscale_routes, [])
-    ])
-  ]))
-
-  talos_nodes = merge([
-    for cluster_name, cluster in local.talos_clusters : {
-      for node_name, node in cluster.nodes : node_name => merge(node, {
-        address = local.machines[node_name].address
-        cluster = cluster_name
-      })
-    }
-  ]...)
-  talos_schematic_ids = {
-    for name, schematic in talos_image_factory_schematic.cluster :
-    name => schematic.id
-  }
-  cluster_endpoints = {
-    for name, cluster in local.clusters : name => try(
-      cluster.endpoint,
-      "https://${local.machines[cluster.api_node].address}:6443",
-    )
-  }
-  talos_connection_endpoints = {
-    for name, node in local.talos_nodes :
-    name => lookup(var.talos_connection_endpoints, name, node.address)
-  }
-  talos_bootstrap_nodes = {
-    for name, node in local.talos_nodes : name => node
-    if node.machine_type == "controlplane" && try(node.bootstrap, false)
-  }
-  talos_configuration_apply_nodes = {
-    for name, node in local.talos_nodes : name => node
-    if node.configuration_delivery == "api"
-  }
-  talos_recovery_clusters = {
-    for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
-    if anytrue([
-      for node in values(cluster.nodes) :
-      node.machine_type == "controlplane" && try(node.bootstrap, false)
-    ])
-  }
-  talos_control_plane_endpoints = {
-    for cluster_name, cluster in local.talos_clusters : cluster_name => [
-      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
-      if node.machine_type == "controlplane"
-    ]
-  }
-  talos_worker_endpoints = {
-    for cluster_name, cluster in local.talos_clusters : cluster_name => [
-      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
-      if node.machine_type == "worker"
-    ]
-  }
-
   machine_access = {
     for name, machine in local.machines : name => {
       url = try(machine.management_port, null) != null ? "https://${local.machine_fqdns[name]}:${machine.management_port}" : try(machine.ssh.port, null) != null ? "ssh://${local.machine_fqdns[name]}:${machine.ssh.port}" : "https://${local.machine_fqdns[name]}"
@@ -258,6 +153,152 @@ locals {
       )
     }
   }
+
+  machine_fqdns = {
+    for name, machine in local.machines :
+    name => "${name}.${machine.location}.${local.domains.domains.infrastructure}"
+  }
+
+  oci_deployments = {
+    for name, deployment in local.deployments : name => merge(deployment, {
+      cluster = local.machines[name].cluster
+    })
+    if deployment.provider == "oci"
+  }
+
+  oci_networks = {
+    for name, network in local.networks : name => network.oci
+    if try(network.oci, null) != null
+  }
+
+  oci_node_egress_rules = merge([
+    for name, node in local.oci_nodes : {
+      for family, destination in merge(
+        { ipv4 = "0.0.0.0/0" },
+        local.oci_networks[node.network].ipv6_enabled ? { ipv6 = "::/0" } : {},
+        ) : "${name}/${family}" => {
+        destination = destination
+        node        = name
+      }
+    }
+  ]...)
+
+  oci_nodes = {
+    for name, deployment in local.oci_deployments : name => deployment
+    if local.clusters[deployment.cluster].talos_enabled
+  }
+
+  oci_talos_images = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled && cluster.image.platform == "oracle"
+  }
+
+  onepassword_vaults = merge(
+    local.access.onepassword.vaults,
+    {
+      for name in keys(local.clusters) : "kubernetes/${name}" => "Kubernetes: ${name}"
+    },
+  )
+
+  tailscale_operator_client_tags = {
+    for name in keys(local.clusters) : name => [local.tailscale_operator_device_tag, "tag:${name}"]
+  }
+
+  talos_bootstrap_nodes = {
+    for name, node in local.talos_nodes : name => node
+    if node.machine_type == "controlplane" && try(node.bootstrap, false)
+  }
+
+  talos_clusters = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled
+  }
+
+  talos_configuration_apply_nodes = {
+    for name, node in local.talos_nodes : name => node
+    if node.configuration_delivery == "api"
+  }
+
+  talos_connection_endpoints = {
+    for name, node in local.talos_nodes :
+    name => lookup(var.talos_connection_endpoints, name, node.address)
+  }
+
+  talos_control_plane_endpoints = {
+    for cluster_name, cluster in local.talos_clusters : cluster_name => [
+      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
+      if node.machine_type == "controlplane"
+    ]
+  }
+
+  talos_nodes = merge([
+    for cluster_name, cluster in local.talos_clusters : {
+      for node_name, node in cluster.nodes : node_name => merge(node, {
+        address = local.machines[node_name].address
+        cluster = cluster_name
+      })
+    }
+  ]...)
+
+  talos_recovery_clusters = {
+    for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
+    if anytrue([
+      for node in values(cluster.nodes) :
+      node.machine_type == "controlplane" && try(node.bootstrap, false)
+    ])
+  }
+
+  talos_schematic_ids = {
+    for name, schematic in talos_image_factory_schematic.cluster :
+    name => schematic.id
+  }
+
+  talos_worker_endpoints = {
+    for cluster_name, cluster in local.talos_clusters : cluster_name => [
+      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
+      if node.machine_type == "worker"
+    ]
+  }
+
+  truenas_datasets = merge([
+    for target, storage in local.storage.targets : {
+      for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
+        name   = name
+        target = target
+      })
+    }
+  ]...)
+
+  truenas_deployments = {
+    for name, deployment in local.deployments : name => deployment
+    if deployment.provider == "truenas"
+  }
+
+  truenas_nfs_shares = merge([
+    for target, storage in local.storage.targets : {
+      for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
+        dataset_key = "${target}/${share.dataset}"
+        name        = name
+        networks = [
+          for network in share.networks : cidrsubnet(
+            local.networks[network.location].unifi.networks[network.network].subnet,
+            0,
+            0,
+          )
+        ]
+        target = target
+      })
+    }
+  ]...)
+
+  truenas_snapshot_tasks = merge([
+    for target, storage in local.storage.targets : {
+      for name, task in storage.snapshot_tasks : "${target}/${name}" => merge(task, {
+        name   = name
+        target = target
+      })
+    }
+  ]...)
 
   virtual_machine_devices = merge([
     for virtual_machine_name, virtual_machine in local.virtual_machines : {

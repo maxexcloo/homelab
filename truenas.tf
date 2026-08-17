@@ -20,6 +20,47 @@ resource "terraform_data" "truenas_storage_target" {
   }
 }
 
+resource "truenas_dataset" "managed" {
+  for_each = local.truenas_datasets
+
+  atime         = each.value.atime
+  comments      = "Kubernetes persistent storage managed by OpenTofu"
+  compression   = each.value.compression
+  deduplication = "OFF"
+  name          = each.value.name
+  pool          = each.value.pool
+  readonly      = "OFF"
+  record_size   = each.value.record_size
+  share_type    = "GENERIC"
+  sync          = "STANDARD"
+
+  depends_on = [terraform_data.truenas_storage_target]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "truenas_network_interface" "services_bridge" {
+  aliases = [
+    {
+      address = local.truenas_service_nic.address
+      netmask = local.truenas_service_nic.prefix_length
+      type    = "INET"
+    },
+  ]
+  bridge_members = [truenas_network_interface.services_physical.name]
+  ipv4_dhcp      = false
+  ipv6_auto      = false
+  name           = local.truenas_service_nic.bridge
+  rollback       = true
+  type           = "BRIDGE"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "truenas_network_interface" "services_physical" {
   aliases   = []
   ipv4_dhcp = false
@@ -51,35 +92,42 @@ resource "truenas_network_interface" "services_physical" {
   }
 }
 
-resource "truenas_network_interface" "services_bridge" {
-  aliases = [
-    {
-      address = local.truenas_service_nic.address
-      netmask = local.truenas_service_nic.prefix_length
-      type    = "INET"
-    },
-  ]
-  bridge_members = [truenas_network_interface.services_physical.name]
-  ipv4_dhcp      = false
-  ipv6_auto      = false
-  name           = local.truenas_service_nic.bridge
-  rollback       = true
-  type           = "BRIDGE"
+resource "truenas_share_nfs" "managed" {
+  for_each = local.truenas_nfs_shares
+
+  comment       = "Kubernetes persistent storage managed by OpenTofu"
+  enabled       = true
+  maproot_group = "wheel"
+  maproot_user  = "root"
+  networks      = each.value.networks
+  path          = truenas_dataset.managed[each.value.dataset_key].mount_point
+  readonly      = false
+  security      = ["SYS"]
+
+  depends_on = [terraform_data.truenas_storage_target]
 
   lifecycle {
     prevent_destroy = true
   }
 }
 
-resource "truenas_zvol" "virtual_machine_boot" {
-  for_each = local.virtual_machines
+resource "truenas_snapshot_task" "managed" {
+  for_each = local.truenas_snapshot_tasks
 
-  comments     = "${title(local.machines[each.key].platform)} boot disk for ${local.machine_fqdns[each.key]}"
-  compression  = "LZ4"
-  name         = "virtual-machines/${each.key}"
-  pool         = each.value.boot.pool
-  volblocksize = "16K"
-  volsize      = each.value.boot.size_mib * 1024 * 1024
+  allow_empty     = true
+  dataset         = each.value.dataset
+  enabled         = true
+  lifetime_unit   = each.value.lifetime.unit
+  lifetime_value  = each.value.lifetime.value
+  naming_schema   = each.value.naming_schema
+  recursive       = true
+  schedule_dom    = each.value.schedule.day_of_month
+  schedule_dow    = each.value.schedule.day_of_week
+  schedule_hour   = each.value.schedule.hour
+  schedule_minute = each.value.schedule.minute
+  schedule_month  = each.value.schedule.month
+
+  depends_on = [terraform_data.truenas_storage_target]
 
   lifecycle {
     prevent_destroy = true
@@ -125,63 +173,15 @@ resource "truenas_vm_device" "virtual_machine" {
   vm         = tonumber(truenas_vm.virtual_machine[each.value.virtual_machine].id)
 }
 
-resource "truenas_dataset" "managed" {
-  for_each = local.truenas_datasets
+resource "truenas_zvol" "virtual_machine_boot" {
+  for_each = local.virtual_machines
 
-  atime         = each.value.atime
-  comments      = "Kubernetes persistent storage managed by OpenTofu"
-  compression   = each.value.compression
-  deduplication = "OFF"
-  name          = each.value.name
-  pool          = each.value.pool
-  readonly      = "OFF"
-  record_size   = each.value.record_size
-  share_type    = "GENERIC"
-  sync          = "STANDARD"
-
-  depends_on = [terraform_data.truenas_storage_target]
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "truenas_share_nfs" "managed" {
-  for_each = local.truenas_nfs_shares
-
-  comment       = "Kubernetes persistent storage managed by OpenTofu"
-  enabled       = true
-  maproot_group = "wheel"
-  maproot_user  = "root"
-  networks      = each.value.networks
-  path          = truenas_dataset.managed[each.value.dataset_key].mount_point
-  readonly      = false
-  security      = ["SYS"]
-
-  depends_on = [terraform_data.truenas_storage_target]
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "truenas_snapshot_task" "managed" {
-  for_each = local.truenas_snapshot_tasks
-
-  allow_empty     = true
-  dataset         = each.value.dataset
-  enabled         = true
-  lifetime_unit   = each.value.lifetime.unit
-  lifetime_value  = each.value.lifetime.value
-  naming_schema   = each.value.naming_schema
-  recursive       = true
-  schedule_dom    = each.value.schedule.day_of_month
-  schedule_dow    = each.value.schedule.day_of_week
-  schedule_hour   = each.value.schedule.hour
-  schedule_minute = each.value.schedule.minute
-  schedule_month  = each.value.schedule.month
-
-  depends_on = [terraform_data.truenas_storage_target]
+  comments     = "${title(local.machines[each.key].platform)} boot disk for ${local.machine_fqdns[each.key]}"
+  compression  = "LZ4"
+  name         = "virtual-machines/${each.key}"
+  pool         = each.value.boot.pool
+  volblocksize = "16K"
+  volsize      = each.value.boot.size_mib * 1024 * 1024
 
   lifecycle {
     prevent_destroy = true

@@ -4,6 +4,13 @@ data "cloudflare_account" "default" {
   }
 }
 
+data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
+  account_id = data.cloudflare_account.default.id
+  max_items  = 1
+  name       = "DNS%20Write"
+  scope      = "com.cloudflare.api.account.zone"
+}
+
 data "cloudflare_zone" "default" {
   for_each = local.cloudflare_zones
 
@@ -12,33 +19,11 @@ data "cloudflare_zone" "default" {
   }
 }
 
-data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
+data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
+  for_each = local.cloudflare_tunnels
+
   account_id = data.cloudflare_account.default.id
-  max_items  = 1
-  name       = "DNS%20Write"
-  scope      = "com.cloudflare.api.account.zone"
-}
-
-resource "terraform_data" "acme_validation" {
-  input = sort(keys(local.cloudflare_acme_consumers))
-
-  lifecycle {
-    precondition {
-      condition = alltrue([
-        for consumer in values(local.domains.cloudflare.acme_consumers) :
-        (try(consumer.machine, null) != null) != (try(consumer.cluster, null) != null)
-      ])
-      error_message = "Each ACME consumer must reference exactly one machine or cluster."
-    }
-
-    precondition {
-      condition = alltrue([
-        for consumer in values(local.domains.cloudflare.acme_consumers) :
-        try(consumer.machine, null) != null ? contains(keys(local.machines), consumer.machine) : contains(keys(local.clusters), consumer.cluster)
-      ])
-      error_message = "Every ACME consumer must reference an existing machine or cluster."
-    }
-  }
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
 }
 
 resource "cloudflare_account_token" "acme" {
@@ -81,6 +66,38 @@ resource "cloudflare_dns_record" "all" {
   depends_on = [terraform_data.dns_validation]
 }
 
+resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
+  for_each = local.cloudflare_tunnels
+
+  account_id = data.cloudflare_account.default.id
+  config_src = "cloudflare"
+  name       = each.key
+
+  depends_on = [terraform_data.tunnel_validation]
+}
+
+resource "terraform_data" "acme_validation" {
+  input = sort(keys(local.cloudflare_acme_consumers))
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for consumer in values(local.domains.cloudflare.acme_consumers) :
+        (try(consumer.machine, null) != null) != (try(consumer.cluster, null) != null)
+      ])
+      error_message = "Each ACME consumer must reference exactly one machine or cluster."
+    }
+
+    precondition {
+      condition = alltrue([
+        for consumer in values(local.domains.cloudflare.acme_consumers) :
+        try(consumer.machine, null) != null ? contains(keys(local.machines), consumer.machine) : contains(keys(local.clusters), consumer.cluster)
+      ])
+      error_message = "Every ACME consumer must reference an existing machine or cluster."
+    }
+  }
+}
+
 resource "terraform_data" "tunnel_validation" {
   input = sort(keys(local.cloudflare_tunnels))
 
@@ -101,21 +118,4 @@ resource "terraform_data" "tunnel_validation" {
       error_message = "Every tunnel consumer must reference an existing machine or cluster."
     }
   }
-}
-
-resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
-  for_each = local.cloudflare_tunnels
-
-  account_id = data.cloudflare_account.default.id
-  config_src = "cloudflare"
-  name       = each.key
-
-  depends_on = [terraform_data.tunnel_validation]
-}
-
-data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
-  for_each = local.cloudflare_tunnels
-
-  account_id = data.cloudflare_account.default.id
-  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
 }

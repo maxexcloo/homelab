@@ -1,3 +1,12 @@
+data "talos_image_factory_urls" "cluster" {
+  for_each = local.talos_clusters
+
+  architecture  = each.value.image.architecture
+  platform      = each.value.image.platform
+  schematic_id  = local.talos_schematic_ids[each.key]
+  talos_version = each.value.talos_version
+}
+
 resource "talos_image_factory_schematic" "cluster" {
   for_each = local.talos_clusters
 
@@ -8,13 +17,4 @@ resource "talos_image_factory_schematic" "cluster" {
       }
     }
   })
-}
-
-data "talos_image_factory_urls" "cluster" {
-  for_each = local.talos_clusters
-
-  architecture  = each.value.image.architecture
-  platform      = each.value.image.platform
-  schematic_id  = local.talos_schematic_ids[each.key]
-  talos_version = each.value.talos_version
 }

@@ -64,6 +64,16 @@ resource "tailscale_acl" "default" {
   reset_acl_on_destroy       = false
 }
 
+resource "tailscale_oauth_client" "kubernetes_operator" {
+  for_each = local.clusters
+
+  description = "${each.key} Kubernetes operator"
+  scopes      = local.access.tailscale.operator.scopes
+  tags        = local.tailscale_operator_client_tags[each.key]
+
+  depends_on = [tailscale_acl.default]
+}
+
 resource "tailscale_tailnet_key" "server" {
   for_each = local.machines
 
@@ -73,16 +83,6 @@ resource "tailscale_tailnet_key" "server" {
   recreate_if_invalid = "always"
   reusable            = true
   tags                = ["tag:${each.value.tailscale_tag}"]
-
-  depends_on = [tailscale_acl.default]
-}
-
-resource "tailscale_oauth_client" "kubernetes_operator" {
-  for_each = local.clusters
-
-  description = "${each.key} Kubernetes operator"
-  scopes      = local.access.tailscale.operator.scopes
-  tags        = local.tailscale_operator_client_tags[each.key]
 
   depends_on = [tailscale_acl.default]
 }

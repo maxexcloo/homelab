@@ -1,31 +1,25 @@
-resource "talos_machine_secrets" "cluster" {
-  for_each = local.talos_clusters
+data "talos_cluster_health" "cluster" {
+  for_each = local.talos_recovery_clusters
 
-  talos_version = each.value.talos_version
-
-  lifecycle {
-    prevent_destroy = true
+  client_configuration = {
+    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
   }
-}
+  control_plane_nodes    = local.talos_control_plane_endpoints[each.key]
+  endpoints              = local.talos_control_plane_endpoints[each.key]
+  skip_kubernetes_checks = true
+  worker_nodes           = local.talos_worker_endpoints[each.key]
 
-resource "onepassword_item" "talos_recovery" {
-  for_each = local.talos_clusters
-
-  vault = data.onepassword_vault.default["homelab"].uuid
-
-  category = "secure_note"
-  note_value_wo = jsonencode({
-    client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
-    cluster_name         = each.key
-    machine_secrets      = talos_machine_secrets.cluster[each.key].machine_secrets
-    talos_version        = each.value.talos_version
-  })
-  note_value_wo_version = try(each.value.secret_revision, 1)
-  tags                  = ["Homelab", "Talos", "Recovery"]
-  title                 = "Talos Recovery: ${each.key}"
+  timeouts = {
+    read = "10m"
+  }
 
   lifecycle {
-    prevent_destroy = true
+    precondition {
+      condition     = talos_machine_bootstrap.control_plane[each.value.api_node].id != ""
+      error_message = "Bootstrap this cluster's API node before checking cluster health."
+    }
   }
 }
 
@@ -97,6 +91,65 @@ data "talos_machine_configuration" "node" {
   ]
 }
 
+resource "onepassword_item" "kubeconfig" {
+  for_each = local.talos_recovery_clusters
+
+  vault = data.onepassword_vault.default["kubernetes/${each.key}"].uuid
+
+  category              = "secure_note"
+  note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
+  note_value_wo_version = try(each.value.kubeconfig_secret_revision, 1)
+  tags                  = ["Homelab", "Kubernetes", "Recovery"]
+  title                 = "kubeconfig-${each.key}"
+
+  # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
+  # restore it once the reviewed migration apply has completed.
+}
+
+resource "onepassword_item" "talos_recovery" {
+  for_each = local.talos_clusters
+
+  vault = data.onepassword_vault.default["homelab"].uuid
+
+  category = "secure_note"
+  note_value_wo = jsonencode({
+    client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
+    cluster_name         = each.key
+    machine_secrets      = talos_machine_secrets.cluster[each.key].machine_secrets
+    talos_version        = each.value.talos_version
+  })
+  note_value_wo_version = try(each.value.secret_revision, 1)
+  tags                  = ["Homelab", "Talos", "Recovery"]
+  title                 = "Talos Recovery: ${each.key}"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "talos_machine_bootstrap" "control_plane" {
+  for_each = local.talos_bootstrap_nodes
+
+  client_configuration_wo = {
+    ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
+  }
+  endpoint = local.talos_connection_endpoints[each.key]
+  node     = local.talos_connection_endpoints[each.key]
+
+  timeouts = {
+    create = "10m"
+  }
+
+  lifecycle {
+    precondition {
+      condition     = talos_machine_configuration_apply.node[each.key].id != ""
+      error_message = "Apply this node's Talos configuration before bootstrapping it."
+    }
+  }
+}
+
 resource "talos_machine_configuration_apply" "node" {
   for_each = local.talos_configuration_apply_nodes
 
@@ -129,54 +182,6 @@ resource "talos_machine_configuration_apply" "node" {
   }
 }
 
-resource "talos_machine_bootstrap" "control_plane" {
-  for_each = local.talos_bootstrap_nodes
-
-  client_configuration_wo = {
-    ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
-  }
-  endpoint = local.talos_connection_endpoints[each.key]
-  node     = local.talos_connection_endpoints[each.key]
-
-  timeouts = {
-    create = "10m"
-  }
-
-  lifecycle {
-    precondition {
-      condition     = talos_machine_configuration_apply.node[each.key].id != ""
-      error_message = "Apply this node's Talos configuration before bootstrapping it."
-    }
-  }
-}
-
-data "talos_cluster_health" "cluster" {
-  for_each = local.talos_recovery_clusters
-
-  client_configuration = {
-    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
-  }
-  control_plane_nodes    = local.talos_control_plane_endpoints[each.key]
-  endpoints              = local.talos_control_plane_endpoints[each.key]
-  skip_kubernetes_checks = true
-  worker_nodes           = local.talos_worker_endpoints[each.key]
-
-  timeouts = {
-    read = "10m"
-  }
-
-  lifecycle {
-    precondition {
-      condition     = talos_machine_bootstrap.control_plane[each.value.api_node].id != ""
-      error_message = "Bootstrap this cluster's API node before checking cluster health."
-    }
-  }
-}
-
 resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.talos_recovery_clusters
 
@@ -201,17 +206,12 @@ resource "talos_cluster_kubeconfig" "cluster" {
   }
 }
 
-resource "onepassword_item" "kubeconfig" {
-  for_each = local.talos_recovery_clusters
+resource "talos_machine_secrets" "cluster" {
+  for_each = local.talos_clusters
 
-  vault = data.onepassword_vault.default["kubernetes/${each.key}"].uuid
+  talos_version = each.value.talos_version
 
-  category              = "secure_note"
-  note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
-  note_value_wo_version = try(each.value.kubeconfig_secret_revision, 1)
-  tags                  = ["Homelab", "Kubernetes", "Recovery"]
-  title                 = "kubeconfig-${each.key}"
-
-  # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
-  # restore it once the reviewed migration apply has completed.
+  lifecycle {
+    prevent_destroy = true
+  }
 }

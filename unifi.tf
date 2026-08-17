@@ -1,4 +1,20 @@
+data "unifi_network" "default" {
+  for_each = local.unifi_networks
+
+  name = each.value.name
+}
+
 locals {
+  unifi_clients = {
+    for name, machine in local.machines : name => {
+      fixed_ip         = machine.address
+      local_dns_record = local.machine_fqdns[name]
+      mac              = machine.mac_address
+      network_key      = "${machine.location}/${machine.network}"
+    }
+    if try(machine.mac_address, null) != null && try(machine.address, null) != null
+  }
+
   unifi_networks = merge([
     for location, network in local.networks : {
       for network_key, network_config in try(network.unifi.networks, {}) :
@@ -10,22 +26,6 @@ locals {
       }
     }
   ]...)
-
-  unifi_clients = {
-    for name, machine in local.machines : name => {
-      fixed_ip         = machine.address
-      local_dns_record = local.machine_fqdns[name]
-      mac              = machine.mac_address
-      network_key      = "${machine.location}/${machine.network}"
-    }
-    if try(machine.mac_address, null) != null && try(machine.address, null) != null
-  }
-}
-
-data "unifi_network" "default" {
-  for_each = local.unifi_networks
-
-  name = each.value.name
 }
 
 resource "terraform_data" "unifi_network_validation" {

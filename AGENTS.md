@@ -98,6 +98,8 @@ meaningful order.
 ## Style
 
 - Prefer plain, direct HCL over abstractions and generic pipelines.
+- In mixed HCL files, order data sources, then locals, then resources; sort
+  each group alphabetically by address.
 - Keep comments local and specific; put architectural and operational
   explanations in `PLAN.md` or `docs/`.
 - Keep check orchestration single-layered so the same validator is not run both

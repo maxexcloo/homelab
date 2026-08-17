@@ -1,14 +1,22 @@
 locals {
-  dns_source_files = [
-    for file_path in fileset(path.module, "data/dns/*.yaml") : {
-      file_name = trimsuffix(basename(file_path), ".yaml")
-      zone      = yamldecode(file("${path.module}/${file_path}"))
-    }
+  dns_all_records = merge(local.dns_derived_records, local.dns_manual_records)
+  dns_conflicting_cnames = [
+    for record_set, records in local.dns_record_sets : record_set
+    if contains([for record in records : record.type], "CNAME") && length(records) > 1
   ]
-
-  dns_source_files_by_zone = {
-    for source_file in local.dns_source_files : source_file.zone.name => source_file...
-  }
+  dns_duplicate_record_keys = [
+    for record_key, entries in local.dns_manual_entries_by_key : record_key
+    if length(entries) > 1
+  ]
+  dns_duplicate_zones = [
+    for zone_name, source_files in local.dns_source_files_by_zone : zone_name
+    if length(source_files) > 1
+  ]
+  dns_file_name_mismatches = [
+    for source_file in local.dns_source_files :
+    "${source_file.file_name} -> ${source_file.zone.name}"
+    if source_file.file_name != source_file.zone.name
+  ]
 
   dns_manual_entries = flatten([
     for source_file in local.dns_source_files : [
@@ -45,33 +53,21 @@ locals {
     }
   }
 
-  dns_all_records = merge(local.dns_derived_records, local.dns_manual_records)
-
   dns_record_sets = {
     for record in values(local.dns_all_records) :
     "${record.zone}/${record.name}" => record...
   }
 
-  dns_duplicate_record_keys = [
-    for record_key, entries in local.dns_manual_entries_by_key : record_key
-    if length(entries) > 1
+  dns_source_files = [
+    for file_path in fileset(path.module, "data/dns/*.yaml") : {
+      file_name = trimsuffix(basename(file_path), ".yaml")
+      zone      = yamldecode(file("${path.module}/${file_path}"))
+    }
   ]
 
-  dns_duplicate_zones = [
-    for zone_name, source_files in local.dns_source_files_by_zone : zone_name
-    if length(source_files) > 1
-  ]
-
-  dns_file_name_mismatches = [
-    for source_file in local.dns_source_files :
-    "${source_file.file_name} -> ${source_file.zone.name}"
-    if source_file.file_name != source_file.zone.name
-  ]
-
-  dns_conflicting_cnames = [
-    for record_set, records in local.dns_record_sets : record_set
-    if contains([for record in records : record.type], "CNAME") && length(records) > 1
-  ]
+  dns_source_files_by_zone = {
+    for source_file in local.dns_source_files : source_file.zone.name => source_file...
+  }
 }
 
 resource "terraform_data" "dns_validation" {

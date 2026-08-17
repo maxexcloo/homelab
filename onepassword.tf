@@ -4,6 +4,40 @@ data "onepassword_vault" "default" {
   name = each.value
 }
 
+resource "onepassword_item" "cloudflare_acme" {
+  for_each = local.cloudflare_acme_consumers
+
+  vault = data.onepassword_vault.default[each.value.vault].uuid
+
+  category            = "login"
+  password_wo         = cloudflare_account_token.acme[each.key].value
+  password_wo_version = try(each.value.secret_revision, 1)
+  tags                = ["Homelab", "Cloudflare", "ACME"]
+  title               = each.value.title
+  url                 = "https://dash.cloudflare.com"
+  username            = each.value.credential_scope
+
+  # prevent_destroy is lifted for the one-time move of cluster consumers into
+  # the per-cluster vaults; restore it once the reviewed migration apply has
+  # completed.
+}
+
+resource "onepassword_item" "cloudflare_tunnel" {
+  for_each = local.cloudflare_tunnels
+
+  vault = data.onepassword_vault.default["kubernetes/${each.key}"].uuid
+
+  category            = "login"
+  password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
+  password_wo_version = try(local.domains.cloudflare.tunnel_secret_revision, 1)
+  tags                = each.value.tags
+  title               = each.value.title
+  username            = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
+
+  # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
+  # restore it once the reviewed migration apply has completed.
+}
+
 resource "onepassword_item" "machine_access" {
   for_each = local.machines
 
@@ -36,38 +70,4 @@ resource "onepassword_item" "tailscale_operator" {
 
   # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
   # restore it once the reviewed migration apply has completed.
-}
-
-resource "onepassword_item" "cloudflare_tunnel" {
-  for_each = local.cloudflare_tunnels
-
-  vault = data.onepassword_vault.default["kubernetes/${each.key}"].uuid
-
-  category            = "login"
-  password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
-  password_wo_version = try(local.domains.cloudflare.tunnel_secret_revision, 1)
-  tags                = each.value.tags
-  title               = each.value.title
-  username            = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
-
-  # prevent_destroy is lifted for the one-time move into the Kubernetes vault;
-  # restore it once the reviewed migration apply has completed.
-}
-
-resource "onepassword_item" "cloudflare_acme" {
-  for_each = local.cloudflare_acme_consumers
-
-  vault = data.onepassword_vault.default[each.value.vault].uuid
-
-  category            = "login"
-  password_wo         = cloudflare_account_token.acme[each.key].value
-  password_wo_version = try(each.value.secret_revision, 1)
-  tags                = ["Homelab", "Cloudflare", "ACME"]
-  title               = each.value.title
-  url                 = "https://dash.cloudflare.com"
-  username            = each.value.credential_scope
-
-  # prevent_destroy is lifted for the one-time move of cluster consumers into
-  # the per-cluster vaults; restore it once the reviewed migration apply has
-  # completed.
 }
