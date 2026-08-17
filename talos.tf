@@ -1,15 +1,16 @@
 data "talos_cluster_health" "cluster" {
   for_each = local.talos_recovery_clusters
 
+  control_plane_nodes    = local.talos_control_plane_endpoints[each.key]
+  endpoints              = local.talos_control_plane_endpoints[each.key]
+  skip_kubernetes_checks = true
+  worker_nodes           = local.talos_worker_endpoints[each.key]
+
   client_configuration = {
     ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
     client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
     client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
   }
-  control_plane_nodes    = local.talos_control_plane_endpoints[each.key]
-  endpoints              = local.talos_control_plane_endpoints[each.key]
-  skip_kubernetes_checks = true
-  worker_nodes           = local.talos_worker_endpoints[each.key]
 
   timeouts = {
     read = "10m"
@@ -111,16 +112,17 @@ resource "onepassword_item" "talos_recovery" {
 
   vault = data.onepassword_vault.default["homelab"].uuid
 
-  category = "secure_note"
+  category              = "secure_note"
+  note_value_wo_version = try(each.value.secret_revision, 1)
+  tags                  = ["Homelab", "Talos", "Recovery"]
+  title                 = "Talos Recovery: ${each.key}"
+
   note_value_wo = jsonencode({
     client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
     cluster_name         = each.key
     machine_secrets      = talos_machine_secrets.cluster[each.key].machine_secrets
     talos_version        = each.value.talos_version
   })
-  note_value_wo_version = try(each.value.secret_revision, 1)
-  tags                  = ["Homelab", "Talos", "Recovery"]
-  title                 = "Talos Recovery: ${each.key}"
 
   lifecycle {
     prevent_destroy = true
@@ -130,13 +132,14 @@ resource "onepassword_item" "talos_recovery" {
 resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.talos_recovery_clusters
 
+  endpoint = one(local.talos_control_plane_endpoints[each.key])
+  node     = one(local.talos_control_plane_endpoints[each.key])
+
   client_configuration = {
     ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
     client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
     client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
   }
-  endpoint = one(local.talos_control_plane_endpoints[each.key])
-  node     = one(local.talos_control_plane_endpoints[each.key])
 
   timeouts = {
     create = "10m"
@@ -154,13 +157,14 @@ resource "talos_cluster_kubeconfig" "cluster" {
 resource "talos_machine_bootstrap" "control_plane" {
   for_each = local.talos_bootstrap_nodes
 
+  endpoint = local.talos_connection_endpoints[each.key]
+  node     = local.talos_connection_endpoints[each.key]
+
   client_configuration_wo = {
     ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
     client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
     client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
   }
-  endpoint = local.talos_connection_endpoints[each.key]
-  node     = local.talos_connection_endpoints[each.key]
 
   timeouts = {
     create = "10m"
@@ -177,15 +181,16 @@ resource "talos_machine_bootstrap" "control_plane" {
 resource "talos_machine_configuration_apply" "node" {
   for_each = local.talos_configuration_apply_nodes
 
-  apply_mode = "staged_if_needing_reboot"
+  apply_mode                     = "staged_if_needing_reboot"
+  endpoint                       = local.talos_connection_endpoints[each.key]
+  machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
+  node                           = local.talos_connection_endpoints[each.key]
+
   client_configuration_wo = {
     ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
     client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
     client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
   }
-  endpoint                       = local.talos_connection_endpoints[each.key]
-  machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
-  node                           = local.talos_connection_endpoints[each.key]
 
   on_destroy = {
     graceful = false

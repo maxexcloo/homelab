@@ -42,6 +42,13 @@ resource "truenas_dataset" "managed" {
 }
 
 resource "truenas_network_interface" "services_bridge" {
+  bridge_members = [truenas_network_interface.services_physical.name]
+  ipv4_dhcp      = false
+  ipv6_auto      = false
+  name           = local.truenas_service_nic.bridge
+  rollback       = true
+  type           = "BRIDGE"
+
   aliases = [
     {
       address = local.truenas_service_nic.address
@@ -49,12 +56,6 @@ resource "truenas_network_interface" "services_bridge" {
       type    = "INET"
     },
   ]
-  bridge_members = [truenas_network_interface.services_physical.name]
-  ipv4_dhcp      = false
-  ipv6_auto      = false
-  name           = local.truenas_service_nic.bridge
-  rollback       = true
-  type           = "BRIDGE"
 
   lifecycle {
     prevent_destroy = true
