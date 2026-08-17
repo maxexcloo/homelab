@@ -291,14 +291,14 @@ OpenTofu.
 Cluster credentials consumed by `kubelab` — the Tailscale operator OAuth
 clients, cluster Cloudflare tunnel tokens, ACME DNS tokens, administrator
 kubeconfigs, and the manually maintained External Secrets service-account
-token — live in a dedicated 1Password vault per cluster, `Kubernetes: mbk` and
-`Kubernetes: syd`. Each vault is the service-account permission boundary for
+token — live in a dedicated 1Password vault per cluster, `Cluster: mbk` and
+`Cluster: syd`. Each vault is the service-account permission boundary for
 its cluster. The service-account bootstrap commands are documented in
-`docs/kubernetes-secrets.md`. Items inside these vaults use hyphenated,
-cluster-suffixed titles (`<service>-<cluster>`) because the External Secrets
-1Password SDK reference syntax permits only `[a-zA-Z0-9._-]` in item titles;
-operator-facing items in the Homelab vault keep the `<Credential type>:
-<scope>` style.
+`docs/kubernetes-secrets.md`. Items inside these vaults use plain hyphenated
+titles (`<service>`) because each vault already scopes them to a single
+cluster; the External Secrets 1Password SDK reference syntax permits only
+`[a-zA-Z0-9._-]` in item titles. Operator-facing items in the Homelab vault
+keep the `<Credential type>: <scope>` style.
 
 ## Tailscale tag taxonomy
 
