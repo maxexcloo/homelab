@@ -45,14 +45,5 @@ description = "Run all repository hooks"
 run = "prek run --all-files"
 
 [tasks.ssh-config]
-description = "Render the non-secret homelab SSH include"
-run = "scripts/render_ssh_config.sh"
-
-[tasks.ssh-config-install]
 description = "Install the non-secret homelab SSH include"
-run = """
-ssh_config_directory="${HOME}/.ssh/config.d"
-mkdir -p "${ssh_config_directory}"
-scripts/render_ssh_config.sh > "${ssh_config_directory}/homelab"
-chmod 600 "${ssh_config_directory}/homelab"
-"""
+run = "scripts/render_ssh_config.sh ${HOME}/.ssh/config.d/homelab"

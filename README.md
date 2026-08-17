@@ -26,8 +26,8 @@ The main commands are:
 - `mise run fmt`: format project files.
 - `mise run init`: initialise providers without connecting the backend.
 - `mise run prek`: run the complete local equivalent of CI.
-- `mise run ssh-config`: preview the non-secret SSH include.
-- `mise run ssh-config-install`: install it under `~/.ssh/config.d/homelab`.
+- `mise run ssh-config`: install the non-secret SSH include under
+  `~/.ssh/config.d/homelab`.
 
 Initialisation during setup uses `-backend=false`. Initialise a real backend
 only through the reviewed procedure in
