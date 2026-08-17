@@ -10,17 +10,13 @@ locals {
 
   clusters = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
 
-  deployments = yamldecode(file("${path.module}/data/deployments.yaml")).deployments
-
   domains = yamldecode(file("${path.module}/data/domains.yaml"))
 
-  home_network = local.networks[local.truenas_host_machine.location]
+  home_network = local.networks[local.truenas_host_machine.network]
 
   machines = yamldecode(file("${path.module}/data/machines.yaml")).machines
 
   networks = yamldecode(file("${path.module}/data/networks.yaml")).networks
-
-  oci_cluster_name = one(values(local.oci_deployments)).cluster
 
   storage = yamldecode(file("${path.module}/data/storage.yaml"))
 
@@ -37,25 +33,19 @@ locals {
 
   tailscale_key_expiry = local.access.tailscale.key_expiry_seconds
 
-  tailscale_operator_device_tag = "tag:${local.access.tailscale.operator.device_tag}"
-
-  tailscale_operator_proxy_tag = "tag:${local.access.tailscale.operator.proxy_tag}"
-
   tailscale_routes = toset(flatten([
     for cluster in values(local.clusters) : flatten([
       for node in values(cluster.nodes) : try(node.tailscale_routes, [])
     ])
   ]))
 
-  truenas_host = one(distinct([for deployment in values(local.truenas_deployments) : deployment.host]))
+  truenas_host = one(distinct([for virtual_machine in values(local.virtual_machines) : virtual_machine.host]))
 
   truenas_host_machine = local.machines[local.truenas_host]
 
   truenas_service_nic = local.home_network.interfaces.services
 
   truenas_storage_targets = local.storage.targets
-
-  virtual_machines = local.truenas_deployments
 
   cloudflare_acme_consumers = {
     for name, consumer in local.domains.cloudflare.acme_consumers : name => merge(consumer, {
@@ -142,27 +132,15 @@ locals {
     },
   )
 
-  machine_access = {
-    for name, machine in local.machines : name => {
-      url = try(machine.management_port, null) != null ? "https://${local.machine_fqdns[name]}:${machine.management_port}" : try(machine.ssh.port, null) != null ? "ssh://${local.machine_fqdns[name]}:${machine.ssh.port}" : "https://${local.machine_fqdns[name]}"
-      username = try(
-        machine.ssh.user,
-        machine.platform == "talos" ? "talosctl" : name,
-      )
-    }
-  }
-
   machine_fqdns = {
     for name, machine in local.machines :
-    name => "${name}.${machine.location}.${local.domains.domains.infrastructure}"
+    name => "${name}.${machine.network}.${local.domains.domains.infrastructure}"
   }
 
-  oci_deployments = {
-    for name, deployment in local.deployments : name => merge(deployment, {
-      cluster = local.machines[name].cluster
-    })
-    if deployment.provider == "oci"
-  }
+  oci_cluster_name = one([
+    for name, cluster in local.clusters : name
+    if cluster.image.platform == "oracle"
+  ])
 
   oci_networks = {
     for name, network in local.networks : name => network.oci
@@ -182,8 +160,8 @@ locals {
   ]...)
 
   oci_nodes = {
-    for name, deployment in local.oci_deployments : name => deployment
-    if local.clusters[deployment.cluster].talos_enabled
+    for name, machine in local.machines : name => machine
+    if try(machine.provider, null) == "oci" && local.clusters[machine.cluster].talos_enabled
   }
 
   oci_talos_images = {
@@ -199,7 +177,7 @@ locals {
   )
 
   tailscale_operator_client_tags = {
-    for name in keys(local.clusters) : name => [local.tailscale_operator_device_tag, "tag:${name}"]
+    for name in keys(local.clusters) : name => ["tag:${name}"]
   }
 
   talos_bootstrap_nodes = {
@@ -267,19 +245,14 @@ locals {
     }
   ]...)
 
-  truenas_deployments = {
-    for name, deployment in local.deployments : name => deployment
-    if deployment.provider == "truenas"
-  }
-
   truenas_nfs_shares = merge([
     for target, storage in local.storage.targets : {
       for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
         dataset_key = "${target}/${share.dataset}"
         name        = name
         networks = [
-          for network in share.networks : cidrsubnet(
-            local.networks[network.location].unifi.networks[network.network].subnet,
+          for share_network in share.networks : cidrsubnet(
+            local.networks[share_network.network].unifi.networks[share_network.vlan].subnet,
             0,
             0,
           )
@@ -324,8 +297,8 @@ locals {
         attributes = {
           mac = local.machines[virtual_machine_name].mac_address
           nic_attach = local.networks[
-            local.machines[virtual_machine_name].location
-          ].interfaces[local.machines[virtual_machine_name].network].bridge
+            local.machines[virtual_machine_name].network
+          ].interfaces[local.machines[virtual_machine_name].vlan].bridge
           type = "VIRTIO"
         }
         dtype           = "NIC"
@@ -334,4 +307,9 @@ locals {
       }
     }
   ]...)
+
+  virtual_machines = {
+    for name, machine in local.machines : name => machine
+    if try(machine.provider, null) == "truenas"
+  }
 }

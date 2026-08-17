@@ -1,10 +1,8 @@
-locations:
-  fre: Fremont
-  mbk: Meadowbank
-  syd: Sydney
-
 networks:
+  fre:
+    name: Fremont
   mbk:
+    name: Meadowbank
     interfaces:
       management:
         address: 10.0.0.3
@@ -25,6 +23,7 @@ networks:
           subnet: 10.4.0.1/22
           vlan: 4
   syd:
+    name: Sydney
     oci:
       cidr: 10.20.0.0/16
       dns_label: excloo

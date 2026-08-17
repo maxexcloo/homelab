@@ -38,27 +38,27 @@ without redefining their platform rationale.
 
 ## Naming and DNS
 
-Use short, location-led infrastructure names with memorable food hostnames:
+Use short, network-led infrastructure names with memorable food hostnames:
 
 ```text
-<food>.<location>.excloo.net
+<food>.<network>.excloo.net
 ```
 
 Infrastructure-managed API records use:
 
 ```text
-api.<location>.excloo.dev
+api.<network>.excloo.dev
 ```
 
-The location labels are:
+The network labels are:
 
-| Label | Location            |
+| Label | Network             |
 | ----- | ------------------- |
 | `mbk` | Meadowbank, Sydney  |
 | `syd` | Sydney              |
 | `fre` | Fremont, California |
 
-Names describe location rather than provider. Do not add intermediate `infra`
+Names describe network rather than provider. Do not add intermediate `infra`
 or `k8s` labels, and do not use hyphens in new host or API labels.
 
 | Machine  | Canonical FQDN          | Infrastructure role |
@@ -117,16 +117,15 @@ or generic reconciliation modules.
 
 Stable non-secret facts live in focused YAML inventories:
 
-| File                    | Ownership                                                               |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `data/machines.yaml`    | Durable machine identity and access facts                               |
-| `data/deployments.yaml` | Provider placement and sizing                                           |
-| `data/networks.yaml`    | UniFi and OCI network facts                                             |
-| `data/clusters.yaml`    | Talos membership, versions, lifecycle, and machine configuration inputs |
-| `data/domains.yaml`     | Cloudflare account and domain facts                                     |
-| `data/dns/*.yaml`       | Manually curated infrastructure DNS records                             |
-| `data/access.yaml`      | 1Password, SSH-agent, and Tailscale policy facts                        |
-| `data/storage.yaml`     | Storage resources with an explicit target                               |
+| File                 | Ownership                                                               |
+| -------------------- | ----------------------------------------------------------------------- |
+| `data/machines.yaml` | Durable machine identity, access, and placement facts                   |
+| `data/networks.yaml` | UniFi and OCI network facts                                             |
+| `data/clusters.yaml` | Talos membership, versions, lifecycle, and machine configuration inputs |
+| `data/domains.yaml`  | Cloudflare account and domain facts                                     |
+| `data/dns/*.yaml`    | Manually curated infrastructure DNS records                             |
+| `data/access.yaml`   | 1Password, SSH-agent, and Tailscale policy facts                        |
+| `data/storage.yaml`  | Storage resources with an explicit target                               |
 
 Do not add per-machine files, schemas, generated models, or application
 definitions. Derive FQDNs, API records, tunnels, reservations, and credentials
@@ -307,18 +306,19 @@ Tailnet tags come in three families, one per inventory level:
 - machine role tags from `data/machines.yaml`, such as `tag:talos` and
   `tag:server`;
 - one cluster tag per key in `data/clusters.yaml`, such as `tag:mbk`, carried
-  by that cluster's Tailscale operator OAuth client; and
-- deployment tags from Tailscale's Kubernetes operator convention:
-  `tag:k8s-operator` for operator devices and `tag:k8s` for the proxy devices
-  they spawn.
+  by that cluster's Tailscale operator OAuth client and its proxy devices; and
+- one operator device tag per cluster derived from its cluster tag, such as
+  `tag:mbk-operator`.
 
-`tagOwners` grants machine and cluster tags to the admin group, the operator
-device tag to the admin group, and the proxy tag to the operator device tag so
-each operator can mint its proxies' auth keys. Operator OAuth clients require
-the `auth_keys` and `devices:core` scopes. The OAuth client API has no update
-path, so changing a client's scopes or tags recreates it and rotates its
-secret; bump `operator.secret_revision` in `data/access.yaml` with any such
-change so the delivered credential is rewritten.
+`tagOwners` grants machine tags to the admin group, each cluster tag to itself
+and the admin group, and each operator device tag to its cluster tag. The
+operator OAuth client therefore carries only its cluster tag and can mint both
+its operator device and its proxies. Proxy devices carry the cluster tag and may
+reach every tailnet destination. Operator OAuth clients require the `auth_keys`
+and `devices:core` scopes. The OAuth client API has no update path, so changing
+a client's scopes or tags recreates it and rotates its secret; bump
+`operator.secret_revision` in `data/access.yaml` with any such change so the
+delivered credential is rewritten.
 
 ## Sydney rollout gate
 
@@ -397,7 +397,6 @@ real resources demonstrate a stable reusable interface.
 ├── data/
 │   ├── access.yaml
 │   ├── clusters.yaml
-│   ├── deployments.yaml
 │   ├── dns/
 │   ├── domains.yaml
 │   ├── machines.yaml

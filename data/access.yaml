@@ -22,9 +22,7 @@ tailscale:
     - tag:vm
   key_expiry_seconds: 7776000
   operator:
-    device_tag: k8s-operator
-    proxy_tag: k8s
-    secret_revision: 3
+    secret_revision: 4
     scopes:
       - auth_keys
       - devices:core
@@ -140,6 +138,9 @@ tailscale:
       accept:
         - tag:talos:50000
         - tag:storage:22
-    - source: tag:k8s
+    - source: tag:mbk
+      accept:
+        - tag:server:443
+    - source: tag:syd
       accept:
         - tag:server:443

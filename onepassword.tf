@@ -44,8 +44,12 @@ resource "onepassword_item" "machine_access" {
   password_wo_version = try(local.access.tailscale.server_secret_revision, 1)
   tags                = ["Homelab", "Tailscale", "Bootstrap"]
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
-  username            = local.machine_access[each.key].username
   vault               = data.onepassword_vault.default["homelab"].uuid
+
+  username = try(
+    each.value.ssh.user,
+    each.value.platform == "talos" ? "talosctl" : each.key,
+  )
 
   lifecycle {
     prevent_destroy = true

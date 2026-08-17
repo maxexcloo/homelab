@@ -1,14 +1,14 @@
 machines:
   hass:
     address: 10.0.0.2
-    location: mbk
     mac_address: "84:47:09:67:c8:33"
     management_port: 443
-    network: default
+    network: mbk
     platform: haos
     tailscale_tag: appliance
+    vlan: default
   hotdog:
-    location: fre
+    network: fre
     platform: linux
     public_ipv4: 199.127.129.143
     public_ipv6: 2602:f831::4665:8aff:fee1:40ed
@@ -18,36 +18,45 @@ machines:
     tailscale_tag: backup
   hsp:
     address: 10.20.0.4
+    boot:
+      size_mib: 131072
     cluster: syd
-    location: syd
+    compute:
+      cores: 2
+      memory_mib: 12288
     management_port: 50000
+    network: syd
+    oci:
+      assign_public_ip: true
+      shape: VM.Standard.A1.Flex
     platform: talos
+    provider: oci
     tailscale_tag: talos
   kimbap:
     address: 10.0.0.3
-    location: mbk
     mac_address: "c8:ff:bf:01:52:e0"
     management_port: 8443
-    network: default
+    network: mbk
     platform: truenas
     ssh:
       port: 22
       user: root
     tailscale_tag: storage
+    vlan: default
   mandu:
     address: 10.0.0.5
-    location: mbk
     mac_address: "c8:ff:bf:0f:9f:d0"
-    network: default
+    network: mbk
     platform: bazzite
     ssh:
       port: 22
       user: max.schaefer
     tailscale_tag: workstation
+    vlan: default
   ramen:
     address: 10.0.0.1
-    location: mbk
     management_port: 443
+    network: mbk
     platform: unifi
     ssh:
       port: 22
@@ -55,10 +64,21 @@ machines:
     tailscale_tag: router
   taco:
     address: 10.4.0.4
+    boot:
+      iso_directory: /mnt/truenas-nvme/virtual-machines
+      pool: truenas-nvme
+      size_mib: 65536
     cluster: mbk
-    location: mbk
+    compute:
+      cores: 12
+      memory_mib: 32768
+      sockets: 1
+      threads: 1
+    host: kimbap
     mac_address: "02:74:61:63:6f:01"
     management_port: 50000
-    network: services
+    network: mbk
     platform: talos
+    provider: truenas
     tailscale_tag: talos
+    vlan: services

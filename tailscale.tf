@@ -6,13 +6,13 @@ locals {
 
     tagOwners = merge(
       {
-        for tag in setunion(local.tailscale_host_tags, local.tailscale_cluster_tags) : tag => ["group:${local.access.tailscale.admin_group}"]
+        for tag in local.tailscale_host_tags : tag => ["group:${local.access.tailscale.admin_group}"]
       },
       {
-        (local.tailscale_operator_device_tag) = ["group:${local.access.tailscale.admin_group}"]
+        for tag in local.tailscale_cluster_tags : tag => [tag, "group:${local.access.tailscale.admin_group}"]
       },
       {
-        (local.tailscale_operator_proxy_tag) = [local.tailscale_operator_device_tag, "group:${local.access.tailscale.admin_group}"]
+        for tag in local.tailscale_cluster_tags : "${tag}-operator" => [tag]
       },
     )
 
@@ -39,13 +39,6 @@ locals {
         for tag in local.tailscale_cluster_tags : {
           action = "accept"
           src    = [tag]
-          dst    = ["${tag}:*"]
-        }
-      ],
-      [
-        {
-          action = "accept"
-          src    = [local.tailscale_operator_proxy_tag]
           dst    = ["*:*"]
         }
       ],

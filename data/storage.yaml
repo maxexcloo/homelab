@@ -12,8 +12,8 @@ targets:
         dataset: kubernetes
 
         networks:
-          - location: mbk
-            network: services
+          - network: mbk
+            vlan: services
 
     snapshot_tasks:
       truenas-nvme-daily:

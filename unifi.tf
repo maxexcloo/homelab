@@ -10,19 +10,18 @@ locals {
       fixed_ip         = machine.address
       local_dns_record = local.machine_fqdns[name]
       mac              = machine.mac_address
-      network_key      = "${machine.location}/${machine.network}"
+      network_key      = "${machine.network}/${machine.vlan}"
     }
     if try(machine.mac_address, null) != null && try(machine.address, null) != null
   }
 
   unifi_networks = merge([
-    for location, network in local.networks : {
-      for network_key, network_config in try(network.unifi.networks, {}) :
-      "${location}/${network_key}" => {
-        location = location
-        name     = network_config.name
-        subnet   = network_config.subnet
-        vlan     = try(network_config.vlan, null)
+    for network, site in local.networks : {
+      for network_key, network_config in try(site.unifi.networks, {}) :
+      "${network}/${network_key}" => {
+        name   = network_config.name
+        subnet = network_config.subnet
+        vlan   = try(network_config.vlan, null)
       }
     }
   ]...)
