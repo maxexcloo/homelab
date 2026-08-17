@@ -320,7 +320,7 @@ Pin exact stable versions and let Renovate propose upgrades for manual review.
 | OpenTofu                        | `1.12.5`  |
 | 1Password provider              | `3.3.1`   |
 | Cloudflare provider             | `5.23.0`  |
-| OCI provider                    | `8.26.0`  |
+| OCI provider                    | `8.27.0`  |
 | TrueNAS provider                | `2.4.1`   |
 | Talos provider                  | `0.11.0`  |
 | Tailscale provider              | `0.29.2`  |
