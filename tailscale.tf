@@ -6,10 +6,13 @@ locals {
 
     tagOwners = merge(
       {
-        for tag in local.tailscale_host_tags : tag => ["group:${local.access.tailscale.admin_group}"]
+        for tag in setunion(local.tailscale_host_tags, local.tailscale_cluster_tags) : tag => ["group:${local.access.tailscale.admin_group}"]
       },
       {
-        for tag in values(local.tailscale_operator_tags) : "tag:${tag}" => ["group:${local.access.tailscale.admin_group}"]
+        (local.tailscale_operator_device_tag) = ["group:${local.access.tailscale.admin_group}"]
+      },
+      {
+        (local.tailscale_operator_proxy_tag) = [local.tailscale_operator_device_tag, "group:${local.access.tailscale.admin_group}"]
       },
     )
 
@@ -33,9 +36,16 @@ locals {
         try(rule.protocol, null) == null ? {} : { proto = rule.protocol },
       )],
       [
-        for tag in values(local.tailscale_operator_tags) : {
+        for tag in local.tailscale_cluster_tags : {
           action = "accept"
-          src    = ["tag:${tag}"]
+          src    = [tag]
+          dst    = ["${tag}:*"]
+        }
+      ],
+      [
+        {
+          action = "accept"
+          src    = [local.tailscale_operator_proxy_tag]
           dst    = ["*:*"]
         }
       ],
@@ -72,7 +82,7 @@ resource "tailscale_oauth_client" "kubernetes_operator" {
 
   description = "${each.key} Kubernetes operator"
   scopes      = local.access.tailscale.operator.scopes
-  tags        = ["tag:${local.tailscale_operator_tags[each.key]}"]
+  tags        = local.tailscale_operator_client_tags[each.key]
 
   depends_on = [tailscale_acl.default]
 }

@@ -300,6 +300,26 @@ cluster-suffixed titles (`<service>-<cluster>`) because the External Secrets
 operator-facing items in the Homelab vault keep the `<Credential type>:
 <scope>` style.
 
+## Tailscale tag taxonomy
+
+Tailnet tags come in three families, one per inventory level:
+
+- machine role tags from `data/machines.yaml`, such as `tag:talos` and
+  `tag:server`;
+- one cluster tag per key in `data/clusters.yaml`, such as `tag:mbk`, carried
+  by that cluster's Tailscale operator OAuth client; and
+- deployment tags from Tailscale's Kubernetes operator convention:
+  `tag:k8s-operator` for operator devices and `tag:k8s` for the proxy devices
+  they spawn.
+
+`tagOwners` grants machine and cluster tags to the admin group, the operator
+device tag to the admin group, and the proxy tag to the operator device tag so
+each operator can mint its proxies' auth keys. Operator OAuth clients require
+the `auth_keys` and `devices:core` scopes. The OAuth client API has no update
+path, so changing a client's scopes or tags recreates it and rotates its
+secret; bump `operator.secret_revision` in `data/access.yaml` with any such
+change so the delivered credential is rewritten.
+
 ## Sydney rollout gate
 
 `syd` remains declared with `talos_enabled: false`. Do not create its OCI

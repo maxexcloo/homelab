@@ -179,14 +179,19 @@ locals {
       for name in keys(local.clusters) : "kubernetes/${name}" => "Kubernetes: ${name}"
     },
   )
-  tailscale_admin_identities = local.access.tailscale.admin_identities
-  tailscale_key_expiry       = local.access.tailscale.key_expiry_seconds
+  tailscale_admin_identities    = local.access.tailscale.admin_identities
+  tailscale_key_expiry          = local.access.tailscale.key_expiry_seconds
+  tailscale_operator_device_tag = "tag:${local.access.tailscale.operator.device_tag}"
+  tailscale_operator_proxy_tag  = "tag:${local.access.tailscale.operator.proxy_tag}"
+  tailscale_cluster_tags = toset([
+    for name in keys(local.clusters) : "tag:${name}"
+  ])
   tailscale_host_tags = toset(concat(
     [for machine in values(local.machines) : "tag:${machine.tailscale_tag}"],
     [for tag in local.access.tailscale.additional_tags : "tag:${tag}"],
   ))
-  tailscale_operator_tags = {
-    for name in keys(local.clusters) : name => "${name}-operator"
+  tailscale_operator_client_tags = {
+    for name in keys(local.clusters) : name => [local.tailscale_operator_device_tag, "tag:${name}"]
   }
   tailscale_routes = toset(flatten([
     for cluster in values(local.clusters) : flatten([
