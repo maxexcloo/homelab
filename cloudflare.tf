@@ -11,6 +11,13 @@ data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
+data "cloudflare_account_api_token_permission_groups_list" "zone_read" {
+  account_id = data.cloudflare_account.default.id
+  max_items  = 1
+  name       = "Zone%20Read"
+  scope      = "com.cloudflare.api.account.zone"
+}
+
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
   for_each = local.cloudflare_tunnels
 
@@ -40,10 +47,26 @@ resource "cloudflare_account_token" "acme" {
         {
           id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
         },
+        {
+          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+        },
       ]
 
       resources = jsonencode({
         "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[local.domains.domains.acme].zone_id}" = "*"
+      })
+    },
+    {
+      effect = "allow"
+
+      permission_groups = [
+        {
+          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+        },
+      ]
+
+      resources = jsonencode({
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[each.value.challenge_zone].zone_id}" = "*"
       })
     },
   ]

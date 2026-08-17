@@ -60,8 +60,9 @@ locals {
   cloudflare_acme_consumers = {
     for name, consumer in local.domains.cloudflare.acme_consumers : name => merge(consumer, {
       challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.domains.services}"
+      challenge_zone     = try(consumer.machine, null) != null ? local.domains.domains.infrastructure : local.domains.domains.services
       credential_scope   = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
-      target_hostname    = "${name}.${local.domains.domains.acme}"
+      target_hostname    = try(consumer.machine, null) != null ? "${name}.${local.domains.domains.acme}" : "_acme-challenge.${consumer.cluster}.${local.domains.domains.services}.${local.domains.domains.acme}"
       title              = try(consumer.machine, null) != null ? "Cloudflare ACME DNS: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-acme"
       vault              = try(consumer.machine, null) != null ? "homelab" : "cluster/${name}"
     })
@@ -136,10 +137,7 @@ locals {
         proxied  = false
         ttl      = 300
         type     = "CNAME"
-        zone = one([
-          for zone in values(local.domains.domains) : zone
-          if consumer.challenge_hostname == zone || endswith(consumer.challenge_hostname, ".${zone}")
-        ])
+        zone     = consumer.challenge_zone
       }
     },
   )
