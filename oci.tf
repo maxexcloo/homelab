@@ -46,30 +46,6 @@ resource "oci_core_default_route_table" "default" {
   }
 }
 
-resource "oci_core_default_security_list" "default" {
-  for_each = local.oci_networks
-
-  compartment_id             = var.oci_tenancy_ocid
-  display_name               = each.value.display_name
-  manage_default_resource_id = oci_core_vcn.default[each.key].default_security_list_id
-
-  egress_security_rules {
-    destination = "0.0.0.0/0"
-    protocol    = "all"
-    stateless   = false
-  }
-
-  dynamic "egress_security_rules" {
-    for_each = each.value.ipv6_enabled ? [1] : []
-
-    content {
-      destination = "::/0"
-      protocol    = "all"
-      stateless   = false
-    }
-  }
-}
-
 resource "oci_core_internet_gateway" "default" {
   for_each = local.oci_networks
 
@@ -85,7 +61,7 @@ resource "oci_core_subnet" "default" {
   compartment_id = var.oci_tenancy_ocid
   display_name   = each.value.display_name
   dns_label      = each.key
-  ipv6cidr_block = each.value.ipv6_enabled ? replace(one(oci_core_vcn.default[each.key].ipv6cidr_blocks), "/56", "/64") : null
+  ipv6cidr_block = each.value.ipv6_enabled ? cidrsubnet(one(oci_core_vcn.default[each.key].ipv6cidr_blocks), 8, 0) : null
   vcn_id         = oci_core_vcn.default[each.key].id
 }
 
@@ -124,14 +100,18 @@ resource "oci_core_network_security_group_security_rule" "node_egress" {
 }
 
 data "oci_objectstorage_namespace" "default" {
+  for_each = local.oci_talos_images
+
   compartment_id = var.oci_tenancy_ocid
 }
 
 resource "oci_objectstorage_bucket" "talos_images" {
+  for_each = local.oci_talos_images
+
   access_type    = "NoPublicAccess"
   compartment_id = var.oci_tenancy_ocid
-  name           = local.oci_image.bucket_name
-  namespace      = data.oci_objectstorage_namespace.default.namespace
+  name           = each.value.image.bucket_name
+  namespace      = data.oci_objectstorage_namespace.default[each.key].namespace
   storage_tier   = "Standard"
   versioning     = "Enabled"
 
@@ -141,10 +121,12 @@ resource "oci_objectstorage_bucket" "talos_images" {
 }
 
 resource "oci_objectstorage_object" "talos_image" {
-  bucket       = oci_objectstorage_bucket.talos_images.name
-  content_type = "application/gzip"
-  namespace    = data.oci_objectstorage_namespace.default.namespace
-  object       = local.oci_object_name
+  for_each = local.oci_talos_images
+
+  bucket       = oci_objectstorage_bucket.talos_images[each.key].name
+  content_type = "application/octet-stream"
+  namespace    = data.oci_objectstorage_namespace.default[each.key].namespace
+  object       = "talos-${each.value.talos_version}-${each.value.image.platform}-${each.value.image.architecture}.qcow2"
   source       = var.oci_talos_image_path
 
   lifecycle {
@@ -153,15 +135,18 @@ resource "oci_objectstorage_object" "talos_image" {
 }
 
 resource "oci_core_image" "talos" {
+  for_each = local.oci_talos_images
+
   compartment_id = var.oci_tenancy_ocid
-  display_name   = "Talos ${local.oci_cluster.talos_version} ${local.oci_image.platform} ${local.oci_image.architecture}"
+  display_name   = "Talos ${each.value.talos_version} ${each.value.image.platform} ${each.value.image.architecture}"
 
   image_source_details {
-    bucket_name              = oci_objectstorage_object.talos_image.bucket
-    namespace_name           = oci_objectstorage_object.talos_image.namespace
-    object_name              = oci_objectstorage_object.talos_image.object
-    operating_system         = local.oci_image.operating_system
-    operating_system_version = trimprefix(local.oci_cluster.talos_version, "v")
+    bucket_name              = oci_objectstorage_bucket.talos_images[each.key].name
+    namespace_name           = data.oci_objectstorage_namespace.default[each.key].namespace
+    object_name              = oci_objectstorage_object.talos_image[each.key].object
+    operating_system         = each.value.image.operating_system
+    operating_system_version = trimprefix(each.value.talos_version, "v")
+    source_image_type        = "QCOW2"
     source_type              = "objectStorageTuple"
   }
 
@@ -205,7 +190,7 @@ resource "oci_core_instance" "node" {
 
   source_details {
     boot_volume_size_in_gbs = each.value.boot.size_mib / 1024
-    source_id               = oci_core_image.talos.id
+    source_id               = oci_core_image.talos[each.value.cluster].id
     source_type             = "image"
   }
 
@@ -220,6 +205,15 @@ resource "oci_core_instance" "node" {
     precondition {
       condition     = each.value.boot.size_mib % 1024 == 0
       error_message = "OCI boot size_mib must be a whole multiple of 1024 MiB."
+    }
+
+    precondition {
+      condition = (
+        sum(concat([0], [for node in values(local.oci_nodes) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.cores : 0])) <= 2 &&
+        sum(concat([0], [for node in values(local.oci_nodes) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.memory_mib : 0])) <= 12288 &&
+        sum(concat([0], [for node in values(local.oci_nodes) : node.oci.shape == "VM.Standard.A1.Flex" ? node.boot.size_mib : 0])) <= 204800
+      )
+      error_message = "OCI Ampere A1 deployments must stay within the Always Free envelope of 2 OCPUs, 12288 MiB memory, and 204800 MiB of boot storage."
     }
   }
 

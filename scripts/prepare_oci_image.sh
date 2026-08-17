@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/homelab"
+image_url="${1:-$(tofu output -json 2>/dev/null | jq -r '.oci_disk_image_url.value // empty')}"
+
+
+if [[ -z "${image_url}" ]] || [[ "${image_url}" == "null" ]]; then
+  echo "error: oci_disk_image_url is empty." >&2
+  echo "Enable the syd cluster and apply the schematic stage first," >&2
+  echo "or pass the Image Factory disk image URL as the first argument." >&2
+  exit 1
+fi
+
+if ! command -v qemu-img >/dev/null 2>&1; then
+  echo "error: qemu-img is required but was not found in PATH (brew install qemu)." >&2
+  exit 1
+fi
+
+mkdir -p "${cache_dir}"
+archive_name="$(basename "${image_url}")"
+image_name="${archive_name%.*}.qcow2"
+archive_path="${cache_dir}/${archive_name}"
+raw_path="${cache_dir}/${archive_name%.*}"
+image_path="${cache_dir}/${image_name}"
+
+echo "Downloading ${image_url}"
+curl -fL --retry 3 -o "${archive_path}" "${image_url}"
+
+echo "Decompressing ${archive_name}"
+gzip -dc "${archive_path}" >"${raw_path}"
+
+echo "Converting to ${image_name}"
+qemu-img convert -f raw -O qcow2 "${raw_path}" "${image_path}"
+rm "${raw_path}"
+
+echo
+echo "Prepared ${image_path}"
+echo "Export the path before planning the upload stage:"
+echo "  export TF_VAR_oci_talos_image_path=\"${image_path}\""

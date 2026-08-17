@@ -90,9 +90,10 @@ locals {
     }
   ]...)
   oci_cluster_name = one(values(local.oci_deployments)).cluster
-  oci_cluster      = local.clusters[local.oci_cluster_name]
-  oci_image        = local.oci_cluster.image
-  oci_object_name  = "talos-${local.oci_cluster.talos_version}-${local.oci_image.platform}-${local.oci_image.architecture}.oci"
+  oci_talos_images = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled && cluster.image.platform == "oracle"
+  }
 
   cloudflare_account_name = local.domains.cloudflare.account_name
   cloudflare_acme_consumers = {

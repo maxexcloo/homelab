@@ -3,7 +3,7 @@ deployments:
     network: syd
     provider: oci
     boot:
-      size_mib: 65536
+      size_mib: 131072
     compute:
       cores: 2
       memory_mib: 12288

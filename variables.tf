@@ -19,11 +19,12 @@ variable "oci_private_key_base64" {
 }
 
 variable "oci_talos_image_path" {
+  default     = null
   description = "Absolute path to the prepared Talos Oracle image archive."
   type        = string
 
   validation {
-    condition     = startswith(var.oci_talos_image_path, "/")
+    condition     = var.oci_talos_image_path == null || startswith(var.oci_talos_image_path, "/")
     error_message = "The Talos Oracle image path must be absolute."
   }
 }

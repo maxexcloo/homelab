@@ -44,6 +44,10 @@ tofu fmt -recursive
 description = "Run all repository hooks"
 run = "prek run --all-files"
 
+[tasks.prepare-oci-image]
+description = "Download and convert the Talos Oracle image archive"
+run = "scripts/prepare_oci_image.sh"
+
 [tasks.ssh-config]
 description = "Install the non-secret homelab SSH include"
 run = "scripts/render_ssh_config.sh ${HOME}/.ssh/config.d/homelab"

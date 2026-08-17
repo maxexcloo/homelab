@@ -143,9 +143,10 @@ secret revisions default to `1` in HCL; add an optional revision only beside
 the resource whose secret must be rewritten.
 
 Every cluster declares `talos_enabled` explicitly. It gates Talos schematics,
-secrets, configuration, recovery resources, and compute that requires Talos
-metadata. A disabled cluster may retain infrastructure identities and access
-foundations, but cannot enter the Talos lifecycle graph.
+secrets, configuration, recovery resources, the OCI Talos image pipeline, and
+compute that requires Talos metadata. A disabled cluster may retain
+infrastructure identities and access foundations, but cannot enter the Talos
+lifecycle graph.
 
 ## Provider ownership
 
@@ -310,14 +311,25 @@ Before OCI work resumes, fix local DNS for
 prevents the OCI provider from reaching Object Storage. Do not use the previous
 temporary localhost CONNECT proxy for an apply.
 
+Prepare the upload artifact with `mise run prepare-oci-image`. It downloads the
+schematic's Image Factory disk image, converts it to qcow2 with `qemu-img`
+(installed outside Mise, for example with Homebrew), caches it under
+`~/.cache/homelab`, and prints the `TF_VAR_oci_talos_image_path` export for the
+upload stage. The image object is imported with `source_image_type: QCOW2`.
+
 After the external gate passes:
 
 1. enable `syd` in `data/clusters.yaml` as its own reviewed change;
 2. review the OCI network and security plan;
 3. upload the pinned local Talos OCI image and create the custom image;
-4. create the protected 64 GiB `hsp` instance from declared data;
+4. create the protected 128 GB `hsp` instance from declared data;
 5. apply Talos configuration and bootstrap in separately reviewed stages; and
 6. store and verify Sydney recovery material before handoff to `kubelab`.
+
+The `hsp` node deliberately consumes the tenency's full Ampere A1 Always Free
+allowance: 2 OCPUs, 12 GiB memory, and a 128 GB boot volume inside the 200 GB
+free block-storage quota. An instance precondition keeps the declared aggregate
+within that envelope.
 
 ## Version baseline
 
