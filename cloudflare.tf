@@ -1,6 +1,6 @@
 data "cloudflare_account" "default" {
   filter = {
-    name = local.cloudflare_account_name
+    name = local.domains.cloudflare.account_name
   }
 }
 
@@ -30,6 +30,33 @@ data "cloudflare_zone" "default" {
 
   filter = {
     name = each.value
+  }
+}
+
+locals {
+  cloudflare_zones = toset(concat(
+    values(local.domains.domains),
+    [for source_file in local.dns_source_files : source_file.zone.name],
+  ))
+
+  cloudflare_acme_consumers = {
+    for name, consumer in local.domains.cloudflare.acme_consumers : name => merge(consumer, {
+      challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.domains.services}"
+      challenge_zone     = try(consumer.machine, null) != null ? local.domains.domains.infrastructure : local.domains.domains.services
+      credential_scope   = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
+      target_hostname    = try(consumer.machine, null) != null ? "${name}.${local.domains.domains.acme}" : "_acme-challenge.${consumer.cluster}.${local.domains.domains.services}.${local.domains.domains.acme}"
+      title              = try(consumer.machine, null) != null ? "Cloudflare ACME DNS: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-acme"
+      vault              = try(consumer.machine, null) != null ? "homelab" : "cluster/${name}"
+    })
+  }
+
+  cloudflare_tunnels = {
+    for name, consumer in local.domains.cloudflare.tunnel_consumers : name => merge(consumer, {
+      credential_scope = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
+      tags             = try(consumer.machine, null) != null ? toset(["Homelab", "Cloudflare", "Tunnel"]) : toset(["Homelab", "Cloudflare", "Kubernetes"])
+      title            = try(consumer.machine, null) != null ? "Cloudflare Tunnel: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-tunnel"
+      vault            = try(consumer.machine, null) != null ? "homelab" : "cluster/${name}"
+    })
   }
 }
 

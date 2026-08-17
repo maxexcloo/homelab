@@ -21,7 +21,7 @@ output "schematic_ids" {
 output "virtual_machine_iso_paths" {
   description = "TrueNAS ISO paths attached to managed virtual machines."
   value = {
-    for key, device in local.virtual_machine_devices : device.virtual_machine => device.attributes.path
+    for key, device in local.truenas_virtual_machine_devices : device.virtual_machine => device.attributes.path
     if endswith(key, "/cdrom")
   }
 }
@@ -29,7 +29,7 @@ output "virtual_machine_iso_paths" {
 output "virtual_machine_mac_addresses" {
   description = "Fixed MAC addresses for managed virtual-machine DHCP reservations."
   value = {
-    for name in keys(local.virtual_machines) : name => local.machines[name].mac_address
+    for name in keys(local.truenas_virtual_machines) : name => local.machines[name].mac_address
   }
 }
 

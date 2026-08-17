@@ -1,22 +1,105 @@
 locals {
   dns_all_records = merge(local.dns_derived_records, local.dns_manual_records)
+
   dns_conflicting_cnames = [
     for record_set, records in local.dns_record_sets : record_set
     if contains([for record in records : record.type], "CNAME") && length(records) > 1
   ]
+
   dns_duplicate_record_keys = [
     for record_key, entries in local.dns_manual_entries_by_key : record_key
     if length(entries) > 1
   ]
+
   dns_duplicate_zones = [
     for zone_name, source_files in local.dns_source_files_by_zone : zone_name
     if length(source_files) > 1
   ]
+
   dns_file_name_mismatches = [
     for source_file in local.dns_source_files :
     "${source_file.file_name} -> ${source_file.zone.name}"
     if source_file.file_name != source_file.zone.name
   ]
+
+  dns_derived_records = merge(
+    {
+      for name, machine in local.machines : "machine/${name}/a" => {
+        comment  = "Managed by OpenTofu"
+        content  = try(machine.public_ipv4, machine.address)
+        name     = local.machine_fqdns[name]
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "A"
+        zone     = local.domains.domains.infrastructure
+      }
+      if try(machine.public_ipv4, null) != null || try(machine.address, null) != null
+    },
+    {
+      for name, machine in local.machines : "machine/${name}/aaaa" => {
+        comment  = "Managed by OpenTofu"
+        content  = machine.public_ipv6
+        name     = local.machine_fqdns[name]
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "AAAA"
+        zone     = local.domains.domains.infrastructure
+      }
+      if try(machine.public_ipv6, null) != null
+    },
+    {
+      for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/api" => {
+        comment  = "Managed by OpenTofu"
+        content  = local.machines[cluster.api_node].address
+        name     = "api.${cluster_name}.${local.domains.domains.services}"
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "A"
+        zone     = local.domains.domains.services
+      }
+    },
+    {
+      for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/tailscale" => {
+        comment  = "Managed by OpenTofu"
+        content  = local.tailscale_device_ipv4[cluster_name]
+        name     = "*.${cluster_name}.${local.domains.domains.services}"
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "A"
+        zone     = local.domains.domains.services
+      }
+      if try(local.tailscale_device_ipv4[cluster_name], null) != null
+    },
+    {
+      for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/tailscale-aaaa" => {
+        comment  = "Managed by OpenTofu"
+        content  = local.tailscale_device_ipv6[cluster_name]
+        name     = "*.${cluster_name}.${local.domains.domains.services}"
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "AAAA"
+        zone     = local.domains.domains.services
+      }
+      if try(local.tailscale_device_ipv6[cluster_name], null) != null
+    },
+    {
+      for name, consumer in local.cloudflare_acme_consumers : "acme/${name}" => {
+        comment  = "Managed by OpenTofu"
+        content  = consumer.target_hostname
+        name     = "_acme-challenge.${consumer.challenge_hostname}"
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "CNAME"
+        zone     = consumer.challenge_zone
+      }
+    },
+  )
 
   dns_manual_entries = flatten([
     for source_file in local.dns_source_files : [

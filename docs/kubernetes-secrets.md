@@ -30,13 +30,14 @@ them.
 
 ## Items
 
-| Item                                  | Owner    | Contents                         |
-| ------------------------------------- | -------- | -------------------------------- |
-| `cloudflare-acme`                     | OpenTofu | Cloudflare DNS API token         |
-| `cloudflare-tunnel`                   | OpenTofu | Tunnel ID and token              |
-| `kubeconfig`                          | OpenTofu | Cluster administrator kubeconfig |
-| `tailscale-operator`                  | OpenTofu | OAuth client ID and secret       |
-| `Service Account Auth Token: mbk-eso` | Manual   | 1Password service-account token  |
+| Item                                  | Owner    | Contents                                            |
+| ------------------------------------- | -------- | --------------------------------------------------- |
+| `cloudflare-acme`                     | OpenTofu | Cloudflare DNS API token                            |
+| `cloudflare-tunnel`                   | OpenTofu | Tunnel ID and token                                 |
+| `kubeconfig`                          | OpenTofu | Cluster administrator kubeconfig                    |
+| `tailscale-operator`                  | OpenTofu | OAuth client ID and secret                          |
+| `talosconfig`                         | OpenTofu | `talosctl` config, Tailscale and internal endpoints |
+| `Service Account Auth Token: mbk-eso` | Manual   | 1Password service-account token                     |
 
 The manual item predates this convention. Rename it to a hyphenated title
 before External Secrets references it by key.

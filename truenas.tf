@@ -2,8 +2,95 @@ data "truenas_network_interface" "services_physical" {
   id = local.truenas_service_nic.name
 }
 
+locals {
+  truenas_home_network = local.networks[local.truenas_host_machine.network]
+
+  truenas_host = one(distinct([for virtual_machine in values(local.truenas_virtual_machines) : virtual_machine.host]))
+
+  truenas_host_machine = local.machines[local.truenas_host]
+
+  truenas_service_nic = local.truenas_home_network.interfaces.services
+
+  truenas_datasets = merge([
+    for target, storage in local.storage.targets : {
+      for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
+        name   = name
+        target = target
+      })
+    }
+  ]...)
+
+  truenas_nfs_shares = merge([
+    for target, storage in local.storage.targets : {
+      for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
+        dataset_key = "${target}/${share.dataset}"
+        name        = name
+        networks = [
+          for share_network in share.networks : cidrsubnet(
+            local.networks[share_network.network].unifi.networks[share_network.vlan].subnet,
+            0,
+            0,
+          )
+        ]
+        target = target
+      })
+    }
+  ]...)
+
+  truenas_snapshot_tasks = merge([
+    for target, storage in local.storage.targets : {
+      for name, task in storage.snapshot_tasks : "${target}/${name}" => merge(task, {
+        name   = name
+        target = target
+      })
+    }
+  ]...)
+
+  truenas_virtual_machine_devices = merge([
+    for virtual_machine_name, virtual_machine in local.truenas_virtual_machines : {
+      "${virtual_machine_name}/boot" = {
+        attributes = {
+          path = "/dev/zvol/${truenas_zvol.virtual_machine_boot[virtual_machine_name].id}"
+          type = "VIRTIO"
+        }
+        dtype           = "DISK"
+        order           = 1000
+        virtual_machine = virtual_machine_name
+      }
+      "${virtual_machine_name}/cdrom" = {
+        attributes = {
+          path = join("/", [
+            trimsuffix(virtual_machine.boot.iso_directory, "/"),
+            "talos-${local.talos_schematic_ids[local.machines[virtual_machine_name].cluster]}-${local.clusters[local.machines[virtual_machine_name].cluster].talos_version}.iso",
+          ])
+        }
+        dtype           = "CDROM"
+        order           = 1001
+        virtual_machine = virtual_machine_name
+      }
+      "${virtual_machine_name}/network" = {
+        attributes = {
+          mac = local.machines[virtual_machine_name].mac_address
+          nic_attach = local.networks[
+            local.machines[virtual_machine_name].network
+          ].interfaces[local.machines[virtual_machine_name].vlan].bridge
+          type = "VIRTIO"
+        }
+        dtype           = "NIC"
+        order           = 1002
+        virtual_machine = virtual_machine_name
+      }
+    }
+  ]...)
+
+  truenas_virtual_machines = {
+    for name, machine in local.machines : name => machine
+    if try(machine.provider, null) == "truenas"
+  }
+}
+
 resource "terraform_data" "truenas_storage_target" {
-  for_each = local.truenas_storage_targets
+  for_each = local.storage.targets
 
   input = each.key
 
@@ -136,7 +223,7 @@ resource "truenas_snapshot_task" "managed" {
 }
 
 resource "truenas_vm" "virtual_machine" {
-  for_each = local.virtual_machines
+  for_each = local.truenas_virtual_machines
 
   autostart             = true
   bootloader            = "UEFI"
@@ -166,7 +253,7 @@ resource "truenas_vm" "virtual_machine" {
 }
 
 resource "truenas_vm_device" "virtual_machine" {
-  for_each = local.virtual_machine_devices
+  for_each = local.truenas_virtual_machine_devices
 
   attributes = each.value.attributes
   dtype      = each.value.dtype
@@ -175,7 +262,7 @@ resource "truenas_vm_device" "virtual_machine" {
 }
 
 resource "truenas_zvol" "virtual_machine_boot" {
-  for_each = local.virtual_machines
+  for_each = local.truenas_virtual_machines
 
   comments     = "${title(local.machines[each.key].platform)} boot disk for ${local.machine_fqdns[each.key]}"
   compression  = "LZ4"

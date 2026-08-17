@@ -1,3 +1,24 @@
+data "talos_client_configuration" "cluster" {
+  for_each = local.talos_recovery_clusters
+
+  cluster_name = each.key
+
+  client_configuration = {
+    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
+    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
+    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
+  }
+
+  endpoints = flatten([
+    for node_name, node in each.value.nodes : local.talos_client_endpoints[node_name]
+    if node.machine_type == "controlplane"
+  ])
+
+  nodes = flatten([
+    for node_name, node in each.value.nodes : local.talos_client_endpoints[node_name]
+  ])
+}
+
 data "talos_cluster_health" "cluster" {
   for_each = local.talos_recovery_clusters
 
@@ -27,7 +48,7 @@ data "talos_cluster_health" "cluster" {
 data "talos_machine_configuration" "node" {
   for_each = local.talos_nodes
 
-  cluster_endpoint   = local.cluster_endpoints[each.value.cluster]
+  cluster_endpoint   = local.talos_cluster_endpoints[each.value.cluster]
   cluster_name       = each.value.cluster
   kubernetes_version = local.clusters[each.value.cluster].kubernetes_version
   machine_secrets    = talos_machine_secrets.cluster[each.value.cluster].machine_secrets
@@ -92,6 +113,78 @@ data "talos_machine_configuration" "node" {
   ]
 }
 
+locals {
+  talos_cluster_endpoints = {
+    for name, cluster in local.clusters : name => try(
+      cluster.endpoint,
+      "https://${local.machines[cluster.api_node].address}:6443",
+    )
+  }
+
+  talos_bootstrap_nodes = {
+    for name, node in local.talos_nodes : name => node
+    if node.machine_type == "controlplane" && try(node.bootstrap, false)
+  }
+
+  talos_client_endpoints = {
+    for name, node in local.talos_nodes : name => compact([
+      node.address,
+      try(local.tailscale_device_ipv4[name], null),
+    ])
+  }
+
+  talos_clusters = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled
+  }
+
+  talos_configuration_apply_nodes = {
+    for name, node in local.talos_nodes : name => node
+    if node.configuration_delivery == "api"
+  }
+
+  talos_connection_endpoints = {
+    for name, node in local.talos_nodes :
+    name => lookup(var.talos_connection_endpoints, name, node.address)
+  }
+
+  talos_control_plane_endpoints = {
+    for cluster_name, cluster in local.talos_clusters : cluster_name => [
+      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
+      if node.machine_type == "controlplane"
+    ]
+  }
+
+  talos_nodes = merge([
+    for cluster_name, cluster in local.talos_clusters : {
+      for node_name, node in cluster.nodes : node_name => merge(node, {
+        address = local.machines[node_name].address
+        cluster = cluster_name
+      })
+    }
+  ]...)
+
+  talos_recovery_clusters = {
+    for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
+    if anytrue([
+      for node in values(cluster.nodes) :
+      node.machine_type == "controlplane" && try(node.bootstrap, false)
+    ])
+  }
+
+  talos_schematic_ids = {
+    for name, schematic in talos_image_factory_schematic.cluster :
+    name => schematic.id
+  }
+
+  talos_worker_endpoints = {
+    for cluster_name, cluster in local.talos_clusters : cluster_name => [
+      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
+      if node.machine_type == "worker"
+    ]
+  }
+}
+
 resource "onepassword_item" "kubeconfig" {
   for_each = local.talos_recovery_clusters
 
@@ -100,6 +193,21 @@ resource "onepassword_item" "kubeconfig" {
   note_value_wo_version = try(each.value.kubeconfig_secret_revision, 1)
   tags                  = ["Homelab", "Kubernetes", "Recovery"]
   title                 = "kubeconfig"
+  vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "onepassword_item" "talosconfig" {
+  for_each = local.talos_recovery_clusters
+
+  category              = "secure_note"
+  note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
+  note_value_wo_version = try(each.value.talosconfig_secret_revision, 1)
+  tags                  = ["Homelab", "Talos"]
+  title                 = "talosconfig"
   vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {

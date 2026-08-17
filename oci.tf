@@ -11,6 +11,40 @@ data "oci_objectstorage_namespace" "default" {
   compartment_id = var.oci_tenancy_ocid
 }
 
+locals {
+  oci_cluster_name = one([
+    for name, cluster in local.clusters : name
+    if cluster.image.platform == "oracle"
+  ])
+
+  oci_networks = {
+    for name, network in local.networks : name => network.oci
+    if try(network.oci, null) != null
+  }
+
+  oci_node_egress_rules = merge([
+    for name, node in local.oci_nodes : {
+      for family, destination in merge(
+        { ipv4 = "0.0.0.0/0" },
+        local.oci_networks[node.network].ipv6_enabled ? { ipv6 = "::/0" } : {},
+        ) : "${name}/${family}" => {
+        destination = destination
+        node        = name
+      }
+    }
+  ]...)
+
+  oci_nodes = {
+    for name, machine in local.machines : name => machine
+    if try(machine.provider, null) == "oci" && local.clusters[machine.cluster].talos_enabled
+  }
+
+  oci_talos_images = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled && cluster.image.platform == "oracle"
+  }
+}
+
 resource "oci_core_default_dhcp_options" "default" {
   for_each = local.oci_networks
 

@@ -4,6 +4,15 @@ data "onepassword_vault" "default" {
   name = each.value
 }
 
+locals {
+  onepassword_vaults = merge(
+    local.access.onepassword.vaults,
+    {
+      for name in keys(local.clusters) : "cluster/${name}" => "${local.access.onepassword.cluster_vault_prefix}${name}"
+    },
+  )
+}
+
 resource "onepassword_item" "cloudflare_acme" {
   for_each = local.cloudflare_acme_consumers
 
@@ -36,7 +45,7 @@ resource "onepassword_item" "cloudflare_tunnel" {
   }
 }
 
-resource "onepassword_item" "machine_access" {
+resource "onepassword_item" "tailscale_auth_key" {
   for_each = local.machines
 
   category            = "login"

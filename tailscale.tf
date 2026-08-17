@@ -1,7 +1,44 @@
+data "tailscale_devices" "all" {}
+
 locals {
+  tailscale_cluster_tags = toset([
+    for name in keys(local.clusters) : "tag:${name}"
+  ])
+
+  tailscale_host_tags = toset(concat(
+    [for machine in values(local.machines) : "tag:${machine.tailscale_tag}"],
+    [for tag in local.access.tailscale.additional_tags : "tag:${tag}"],
+  ))
+
+  tailscale_routes = toset(flatten([
+    for cluster in values(local.clusters) : flatten([
+      for node in values(cluster.nodes) : try(node.tailscale_routes, [])
+    ])
+  ]))
+
+  tailscale_device_ipv4 = {
+    for device in data.tailscale_devices.all.devices :
+    regex("^[^.]+", device.name) => try(
+      one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]),
+      null,
+    )
+  }
+
+  tailscale_device_ipv6 = {
+    for device in data.tailscale_devices.all.devices :
+    regex("^[^.]+", device.name) => try(
+      one([for address in device.addresses : address if startswith(address, "fd7a:")]),
+      null,
+    )
+  }
+
+  tailscale_operator_client_tags = {
+    for name in keys(local.clusters) : name => ["tag:${name}-operator"]
+  }
+
   tailscale_policy = {
     groups = {
-      "group:${local.access.tailscale.admin_group}" = local.tailscale_admin_identities
+      "group:${local.access.tailscale.admin_group}" = local.access.tailscale.admin_identities
     }
 
     tagOwners = merge(
@@ -71,7 +108,7 @@ resource "tailscale_tailnet_key" "server" {
   for_each = local.machines
 
   description         = "${each.key} recovery bootstrap"
-  expiry              = local.tailscale_key_expiry
+  expiry              = local.access.tailscale.key_expiry_seconds
   preauthorized       = true
   recreate_if_invalid = "always"
   reusable            = true
