@@ -12,27 +12,33 @@ if [[ -z "${image_url}" ]] || [[ "${image_url}" == "null" ]]; then
   exit 1
 fi
 
-if ! command -v qemu-img >/dev/null 2>&1; then
-  echo "error: qemu-img is required but was not found in PATH (brew install qemu)." >&2
-  exit 1
-fi
-
 mkdir -p "${cache_dir}"
 archive_name="$(basename "${image_url}")"
 image_name="${archive_name%.*}.qcow2"
-archive_path="${cache_dir}/${archive_name}"
-raw_path="${cache_dir}/${archive_name%.*}"
 image_path="${cache_dir}/${image_name}"
 
-echo "Downloading ${image_url}"
-curl -fL --retry 3 -o "${archive_path}" "${image_url}"
+if [[ "${archive_name}" == *.qcow2 ]]; then
+  echo "Downloading ${archive_name}"
+  curl -fL --retry 3 -o "${image_path}" "${image_url}"
+else
+  if ! command -v qemu-img >/dev/null 2>&1; then
+    echo "error: qemu-img is required but was not found in PATH (brew install qemu)." >&2
+    exit 1
+  fi
 
-echo "Decompressing ${archive_name}"
-gzip -dc "${archive_path}" >"${raw_path}"
+  archive_path="${cache_dir}/${archive_name}"
+  raw_path="${cache_dir}/${archive_name%.*}"
 
-echo "Converting to ${image_name}"
-qemu-img convert -f raw -O qcow2 "${raw_path}" "${image_path}"
-rm "${raw_path}"
+  echo "Downloading ${archive_name}"
+  curl -fL --retry 3 -o "${archive_path}" "${image_url}"
+
+  echo "Decompressing ${archive_name}"
+  gzip -dc "${archive_path}" >"${raw_path}"
+
+  echo "Converting to ${image_name}"
+  qemu-img convert -f raw -O qcow2 "${raw_path}" "${image_path}"
+  rm "${raw_path}" "${archive_path}"
+fi
 
 echo
 echo "Prepared ${image_path}"
