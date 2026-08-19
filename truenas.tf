@@ -2,7 +2,7 @@ data "truenas_network_interface" "services_physical" {
   for_each = local.truenas_hosts
 
   id       = local.networks[each.value.network].interfaces.services.name
-  provider = truenas[each.key]
+  provider = truenas.hosts[each.key]
 }
 
 locals {
@@ -106,7 +106,7 @@ resource "truenas_dataset" "managed" {
   deduplication = "OFF"
   name          = each.value.name
   pool          = each.value.pool
-  provider      = truenas[each.value.target]
+  provider      = truenas.hosts[each.value.target]
   readonly      = "OFF"
   record_size   = each.value.record_size
   share_type    = "GENERIC"
@@ -126,7 +126,7 @@ resource "truenas_network_interface" "services_bridge" {
   ipv4_dhcp      = false
   ipv6_auto      = false
   name           = local.networks[each.value.network].interfaces.services.bridge
-  provider       = truenas[each.key]
+  provider       = truenas.hosts[each.key]
   rollback       = true
   type           = "BRIDGE"
 
@@ -150,7 +150,7 @@ resource "truenas_network_interface" "services_physical" {
   ipv4_dhcp = false
   ipv6_auto = false
   name      = local.networks[each.value.network].interfaces.services.name
-  provider  = truenas[each.key]
+  provider  = truenas.hosts[each.key]
   rollback  = true
   type      = "PHYSICAL"
 
@@ -186,7 +186,7 @@ resource "truenas_share_nfs" "managed" {
   maproot_user  = "root"
   networks      = each.value.networks
   path          = truenas_dataset.managed[each.value.dataset_key].mount_point
-  provider      = truenas[each.value.target]
+  provider      = truenas.hosts[each.value.target]
   readonly      = false
   security      = ["SYS"]
 
@@ -206,7 +206,7 @@ resource "truenas_snapshot_task" "managed" {
   lifetime_unit   = each.value.lifetime.unit
   lifetime_value  = each.value.lifetime.value
   naming_schema   = each.value.naming_schema
-  provider        = truenas[each.value.target]
+  provider        = truenas.hosts[each.value.target]
   recursive       = true
   schedule_dom    = each.value.schedule.day_of_month
   schedule_dow    = each.value.schedule.day_of_week
@@ -232,7 +232,7 @@ resource "truenas_vm" "virtual_machine" {
   ensure_display_device = false
   memory                = each.value.compute.memory_mib
   name                  = each.key
-  provider              = truenas[each.value.host]
+  provider              = truenas.hosts[each.value.host]
   threads               = each.value.compute.threads
   time                  = "UTC"
   vcpus                 = each.value.compute.sockets
@@ -257,7 +257,7 @@ resource "truenas_vm_device" "virtual_machine" {
 
   dtype      = each.value.dtype
   order      = each.value.order
-  provider   = truenas[local.truenas_virtual_machines[each.value.virtual_machine].host]
+  provider   = truenas.hosts[local.truenas_virtual_machines[each.value.virtual_machine].host]
   vm         = tonumber(truenas_vm.virtual_machine[each.value.virtual_machine].id)
   attributes = each.value.attributes
 }
@@ -269,7 +269,7 @@ resource "truenas_zvol" "virtual_machine_boot" {
   compression  = "LZ4"
   name         = "virtual-machines/${each.key}"
   pool         = each.value.boot.pool
-  provider     = truenas[each.value.host]
+  provider     = truenas.hosts[each.value.host]
   volblocksize = "16K"
   volsize      = each.value.boot.size_mib * 1024 * 1024
 
