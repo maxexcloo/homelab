@@ -32,7 +32,7 @@ locals {
         proxied  = false
         ttl      = 300
         type     = "A"
-        zone     = local.domains.domains.infrastructure
+        zone     = local.domains.infrastructure
       }
       if try(machine.public_ipv4, null) != null || try(machine.address, null) != null
     },
@@ -45,7 +45,7 @@ locals {
         proxied  = false
         ttl      = 300
         type     = "AAAA"
-        zone     = local.domains.domains.infrastructure
+        zone     = local.domains.infrastructure
       }
       if try(machine.public_ipv6, null) != null
     },
@@ -53,24 +53,24 @@ locals {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/api" => {
         comment  = "Managed by OpenTofu"
         content  = local.machines[cluster.api_node].address
-        name     = "api.${cluster_name}.${local.domains.domains.services}"
+        name     = "api.${cluster_name}.${local.domains.services}"
         priority = null
         proxied  = false
         ttl      = 300
         type     = "A"
-        zone     = local.domains.domains.services
+        zone     = local.domains.services
       }
     },
     {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/tailscale" => {
         comment  = "Managed by OpenTofu"
         content  = local.tailscale_device_ipv4[cluster_name]
-        name     = "*.${cluster_name}.${local.domains.domains.services}"
+        name     = "*.${cluster_name}.${local.domains.services}"
         priority = null
         proxied  = false
         ttl      = 300
         type     = "A"
-        zone     = local.domains.domains.services
+        zone     = local.domains.services
       }
       if try(local.tailscale_device_ipv4[cluster_name], null) != null
     },
@@ -78,12 +78,12 @@ locals {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/tailscale-aaaa" => {
         comment  = "Managed by OpenTofu"
         content  = local.tailscale_device_ipv6[cluster_name]
-        name     = "*.${cluster_name}.${local.domains.domains.services}"
+        name     = "*.${cluster_name}.${local.domains.services}"
         priority = null
         proxied  = false
         ttl      = 300
         type     = "AAAA"
-        zone     = local.domains.domains.services
+        zone     = local.domains.services
       }
       if try(local.tailscale_device_ipv6[cluster_name], null) != null
     },

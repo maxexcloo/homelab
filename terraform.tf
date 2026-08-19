@@ -7,24 +7,24 @@ terraform {
       version = "5.23.0"
     }
 
-    onepassword = {
-      source  = "1Password/onepassword"
-      version = "3.3.1"
-    }
-
     oci = {
       source  = "oracle/oci"
       version = "8.27.0"
     }
 
-    talos = {
-      source  = "siderolabs/talos"
-      version = "0.11.0"
+    onepassword = {
+      source  = "1Password/onepassword"
+      version = "3.3.1"
     }
 
     tailscale = {
       source  = "tailscale/tailscale"
       version = "0.29.2"
+    }
+
+    talos = {
+      source  = "siderolabs/talos"
+      version = "0.11.0"
     }
 
     truenas = {

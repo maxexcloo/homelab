@@ -8,5 +8,7 @@ provider "oci" {
 provider "onepassword" {}
 
 provider "truenas" {
+  for_each = local.truenas_hosts
+
   destroy_protection = true
 }

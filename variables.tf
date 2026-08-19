@@ -1,13 +1,7 @@
-variable "talos_connection_endpoints" {
-  default     = {}
-  description = "Optional per-node Talos API endpoints, such as Tailscale addresses or local forwards."
-  type        = map(string)
-}
-
 variable "oci_private_key_base64" {
   description = "OCI private key encoded as base64."
-  type        = string
   sensitive   = true
+  type        = string
 
   validation {
     condition = (
@@ -31,8 +25,8 @@ variable "oci_talos_image_path" {
 
 variable "oci_tenancy_ocid" {
   description = "OCI tenancy OCID."
-  type        = string
   sensitive   = true
+  type        = string
 
   validation {
     condition     = can(regex("^ocid1\\.tenancy\\.", nonsensitive(var.oci_tenancy_ocid)))

@@ -1,6 +1,6 @@
 data "cloudflare_account" "default" {
   filter = {
-    name = local.domains.cloudflare.account_name
+    name = local.cloudflare.account_name
   }
 }
 
@@ -35,23 +35,23 @@ data "cloudflare_zone" "default" {
 
 locals {
   cloudflare_zones = toset(concat(
-    values(local.domains.domains),
+    values(local.domains),
     [for source_file in local.dns_source_files : source_file.zone.name],
   ))
 
   cloudflare_acme_consumers = {
-    for name, consumer in local.domains.cloudflare.acme_consumers : name => merge(consumer, {
-      challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.domains.services}"
-      challenge_zone     = try(consumer.machine, null) != null ? local.domains.domains.infrastructure : local.domains.domains.services
+    for name, consumer in local.cloudflare.acme_consumers : name => merge(consumer, {
+      challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.services}"
+      challenge_zone     = try(consumer.machine, null) != null ? local.domains.infrastructure : local.domains.services
       credential_scope   = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
-      target_hostname    = try(consumer.machine, null) != null ? "${name}.${local.domains.domains.acme}" : "_acme-challenge.${consumer.cluster}.${local.domains.domains.services}.${local.domains.domains.acme}"
+      target_hostname    = try(consumer.machine, null) != null ? "${name}.${local.domains.acme}" : "_acme-challenge.${consumer.cluster}.${local.domains.services}.${local.domains.acme}"
       title              = try(consumer.machine, null) != null ? "Cloudflare ACME DNS: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-acme"
       vault              = try(consumer.machine, null) != null ? "homelab" : "cluster/${name}"
     })
   }
 
   cloudflare_tunnels = {
-    for name, consumer in local.domains.cloudflare.tunnel_consumers : name => merge(consumer, {
+    for name, consumer in local.cloudflare.tunnel_consumers : name => merge(consumer, {
       credential_scope = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
       tags             = try(consumer.machine, null) != null ? toset(["Homelab", "Cloudflare", "Tunnel"]) : toset(["Homelab", "Cloudflare", "Kubernetes"])
       title            = try(consumer.machine, null) != null ? "Cloudflare Tunnel: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-tunnel"
@@ -80,7 +80,7 @@ resource "cloudflare_account_token" "acme" {
       ]
 
       resources = jsonencode({
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[local.domains.domains.acme].zone_id}" = "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[local.domains.acme].zone_id}" = "*"
       })
     },
     {
@@ -132,7 +132,7 @@ resource "terraform_data" "acme_validation" {
   lifecycle {
     precondition {
       condition = alltrue([
-        for consumer in values(local.domains.cloudflare.acme_consumers) :
+        for consumer in values(local.cloudflare.acme_consumers) :
         (try(consumer.machine, null) != null) != (try(consumer.cluster, null) != null)
       ])
       error_message = "Each ACME consumer must reference exactly one machine or cluster."
@@ -140,7 +140,7 @@ resource "terraform_data" "acme_validation" {
 
     precondition {
       condition = alltrue([
-        for consumer in values(local.domains.cloudflare.acme_consumers) :
+        for consumer in values(local.cloudflare.acme_consumers) :
         try(consumer.machine, null) != null ? contains(keys(local.machines), consumer.machine) : contains(keys(local.clusters), consumer.cluster)
       ])
       error_message = "Every ACME consumer must reference an existing machine or cluster."
@@ -154,7 +154,7 @@ resource "terraform_data" "tunnel_validation" {
   lifecycle {
     precondition {
       condition = alltrue([
-        for consumer in values(local.domains.cloudflare.tunnel_consumers) :
+        for consumer in values(local.cloudflare.tunnel_consumers) :
         (try(consumer.machine, null) != null) != (try(consumer.cluster, null) != null)
       ])
       error_message = "Each tunnel consumer must reference exactly one machine or cluster."
@@ -162,7 +162,7 @@ resource "terraform_data" "tunnel_validation" {
 
     precondition {
       condition = alltrue([
-        for consumer in values(local.domains.cloudflare.tunnel_consumers) :
+        for consumer in values(local.cloudflare.tunnel_consumers) :
         try(consumer.machine, null) != null ? contains(keys(local.machines), consumer.machine) : contains(keys(local.clusters), consumer.cluster)
       ])
       error_message = "Every tunnel consumer must reference an existing machine or cluster."

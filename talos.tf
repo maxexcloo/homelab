@@ -143,26 +143,12 @@ locals {
     if node.configuration_delivery == "api"
   }
 
-  talos_connection_endpoints = {
-    for name, node in local.talos_nodes :
-    name => lookup(var.talos_connection_endpoints, name, node.address)
-  }
-
   talos_control_plane_endpoints = {
     for cluster_name, cluster in local.talos_clusters : cluster_name => [
-      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
+      for node_name, node in cluster.nodes : local.machines[node_name].address
       if node.machine_type == "controlplane"
     ]
   }
-
-  talos_nodes = merge([
-    for cluster_name, cluster in local.talos_clusters : {
-      for node_name, node in cluster.nodes : node_name => merge(node, {
-        address = local.machines[node_name].address
-        cluster = cluster_name
-      })
-    }
-  ]...)
 
   talos_recovery_clusters = {
     for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
@@ -179,10 +165,19 @@ locals {
 
   talos_worker_endpoints = {
     for cluster_name, cluster in local.talos_clusters : cluster_name => [
-      for node_name, node in cluster.nodes : local.talos_connection_endpoints[node_name]
+      for node_name, node in cluster.nodes : local.machines[node_name].address
       if node.machine_type == "worker"
     ]
   }
+
+  talos_nodes = merge([
+    for cluster_name, cluster in local.talos_clusters : {
+      for node_name, node in cluster.nodes : node_name => merge(node, {
+        address = local.machines[node_name].address
+        cluster = cluster_name
+      })
+    }
+  ]...)
 }
 
 resource "onepassword_item" "kubeconfig" {
@@ -264,8 +259,8 @@ resource "talos_cluster_kubeconfig" "cluster" {
 resource "talos_machine_bootstrap" "control_plane" {
   for_each = local.talos_bootstrap_nodes
 
-  endpoint = local.talos_connection_endpoints[each.key]
-  node     = local.talos_connection_endpoints[each.key]
+  endpoint = each.value.address
+  node     = each.value.address
 
   client_configuration_wo = {
     ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
@@ -293,9 +288,9 @@ resource "talos_machine_configuration_apply" "node" {
   for_each = local.talos_configuration_apply_nodes
 
   apply_mode                     = "staged_if_needing_reboot"
-  endpoint                       = local.talos_connection_endpoints[each.key]
+  endpoint                       = each.value.address
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
-  node                           = local.talos_connection_endpoints[each.key]
+  node                           = each.value.address
 
   client_configuration_wo = {
     ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
