@@ -2,12 +2,19 @@
 set -euo pipefail
 
 cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/homelab"
-image_url="${1:-$(tofu output -json 2>/dev/null | jq -r '.clusters.value.syd.disk_image_url // empty')}"
+target="${1:-}"
+
+if [[ "${target}" =~ ^https?:// ]]; then
+  image_url="${target}"
+elif [[ -n "${target}" ]]; then
+  image_url="$(tofu output -json 2>/dev/null | jq -r --arg cluster "${target}" '.clusters.value[$cluster].disk_image_url // empty')"
+else
+  image_url="$(tofu output -json 2>/dev/null | jq -r '[.clusters.value[].disk_image_url // empty][0] // empty')"
+fi
 
 if [[ -z "${image_url}" ]] || [[ "${image_url}" == "null" ]]; then
-  echo "error: syd cluster disk_image_url is empty." >&2
-  echo "Enable the syd cluster and apply the schematic stage first," >&2
-  echo "or pass the Image Factory disk image URL as the first argument." >&2
+  echo "error: no disk_image_url found in cluster outputs." >&2
+  echo "Apply the schematic stage first, or pass the disk image URL as an argument." >&2
   exit 1
 fi
 
