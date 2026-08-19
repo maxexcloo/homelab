@@ -7,140 +7,163 @@ ssh:
   identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
 
 tailscale:
-  admin_group: admin
-  admin_identities:
-    - max@excloo.com
-    - maxexcloo@passkey
-  additional_tags:
-    - cicd
-    - ephemeral
-    - server
-    - vm
-  exit_node_approver_tags:
-    - tag:router
-    - tag:server
-    - tag:vm
   key_expiry_seconds: 7776000
+
+  acls:
+    - action: accept
+      proto: icmp
+      dst:
+        - "tag:appliance:*"
+        - "tag:router:*"
+        - "tag:server:*"
+        - "tag:vm:*"
+      src:
+        - tag:ephemeral
+    - action: accept
+      dst:
+        - tag:appliance:80
+        - tag:appliance:443
+      src:
+        - tag:ephemeral
+    - action: accept
+      dst:
+        - "tag:router:*"
+      src:
+        - tag:ephemeral
+    - action: accept
+      dst:
+        - tag:server:80
+        - tag:server:443
+      src:
+        - tag:ephemeral
+    - action: accept
+      dst:
+        - tag:vm:80
+        - tag:vm:443
+      src:
+        - tag:ephemeral
+    - action: accept
+      dst:
+        - tag:server:443
+      src:
+        - tag:appliance
+    - action: accept
+      dst:
+        - tag:appliance:80
+        - tag:appliance:443
+      src:
+        - tag:vm
+    - action: accept
+      dst:
+        - tag:server:80
+        - tag:server:443
+      src:
+        - tag:vm
+    - action: accept
+      dst:
+        - tag:vm:80
+        - tag:vm:443
+      src:
+        - tag:vm
+    - action: accept
+      dst:
+        - tag:router:80
+        - tag:router:443
+      src:
+        - tag:server
+    - action: accept
+      dst:
+        - "tag:appliance:*"
+      src:
+        - tag:server
+    - action: accept
+      dst:
+        - "tag:server:*"
+      src:
+        - tag:server
+    - action: accept
+      dst:
+        - "tag:vm:*"
+      src:
+        - tag:server
+    - action: accept
+      dst:
+        - "*:*"
+      src:
+        - tag:router
+    - action: accept
+      dst:
+        - "*:*"
+      src:
+        - group:admin
+    - action: accept
+      dst:
+        - "tag:talos:*"
+      src:
+        - tag:talos
+    - action: accept
+      dst:
+        - "tag:storage:*"
+      src:
+        - tag:backup
+
+  auto_approvers:
+    exit_node:
+      - tag:router
+      - tag:server
+      - tag:vm
+
+    routes:
+      "0.0.0.0/0":
+        - tag:router
+        - tag:server
+        - tag:vm
+      "::/0":
+        - tag:router
+        - tag:server
+        - tag:vm
+
+  groups:
+    group:admin:
+      - max@excloo.com
+      - maxexcloo@passkey
+
   operator:
-    secret_revision: 4
     scopes:
       - auth_keys
       - devices:core
-  route_approver_tag: talos
-  route_approvers:
-    "0.0.0.0/0":
-      - tag:router
-      - tag:server
-      - tag:vm
-    "::/0":
-      - tag:router
-      - tag:server
-      - tag:vm
-  rules:
-    - action: accept
-      sources:
-        - tag:ephemeral
-      destinations:
-        - "tag:appliance:*"
-        - "tag:router:*"
-        - "tag:server:*"
-        - "tag:vm:*"
-      protocol: icmp
-    - action: accept
-      sources:
-        - tag:ephemeral
-      destinations:
-        - tag:appliance:80
-        - tag:appliance:443
-    - action: accept
-      sources:
-        - tag:ephemeral
-      destinations:
-        - "tag:router:*"
-    - action: accept
-      sources:
-        - tag:ephemeral
-      destinations:
-        - tag:server:80
-        - tag:server:443
-    - action: accept
-      sources:
-        - tag:ephemeral
-      destinations:
-        - tag:vm:80
-        - tag:vm:443
-    - action: accept
-      sources:
-        - tag:appliance
-      destinations:
-        - tag:server:443
-    - action: accept
-      sources:
-        - tag:vm
-      destinations:
-        - tag:appliance:80
-        - tag:appliance:443
-    - action: accept
-      sources:
-        - tag:vm
-      destinations:
-        - tag:server:80
-        - tag:server:443
-    - action: accept
-      sources:
-        - tag:vm
-      destinations:
-        - tag:vm:80
-        - tag:vm:443
-    - action: accept
-      sources:
-        - tag:server
-      destinations:
-        - tag:router:80
-        - tag:router:443
-    - action: accept
-      sources:
-        - tag:server
-      destinations:
-        - "tag:appliance:*"
-    - action: accept
-      sources:
-        - tag:server
-      destinations:
-        - "tag:server:*"
-    - action: accept
-      sources:
-        - tag:server
-      destinations:
-        - "tag:vm:*"
-    - action: accept
-      sources:
-        - tag:router
-      destinations:
-        - "*:*"
-    - action: accept
-      sources:
-        - group:admin
-      destinations:
-        - "*:*"
-    - action: accept
-      sources:
-        - tag:talos
-      destinations:
-        - "tag:talos:*"
-    - action: accept
-      sources:
-        - tag:backup
-      destinations:
-        - "tag:storage:*"
+    secret_revision: 4
+
+  tag_owners:
+    tag:appliance:
+      - group:admin
+    tag:backup:
+      - group:admin
+    tag:cicd:
+      - group:admin
+    tag:ephemeral:
+      - group:admin
+    tag:router:
+      - group:admin
+    tag:server:
+      - group:admin
+    tag:storage:
+      - group:admin
+    tag:talos:
+      - group:admin
+    tag:vm:
+      - group:admin
+    tag:workstation:
+      - group:admin
+
   tests:
-    - source: max@excloo.com
-      accept:
+    - accept:
         - tag:talos:50000
         - tag:storage:22
-    - source: tag:mbk
-      accept:
+      src: max@excloo.com
+    - accept:
         - tag:server:443
-    - source: tag:syd
-      accept:
+      src: tag:mbk
+    - accept:
         - tag:server:443
+      src: tag:syd

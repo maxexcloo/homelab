@@ -1,9 +1,11 @@
 locals {
   access = yamldecode(file("${path.module}/data/access.yaml"))
 
+  cloudflare = yamldecode(file("${path.module}/data/domains.yaml")).cloudflare
+
   clusters = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
 
-  domains = yamldecode(file("${path.module}/data/domains.yaml"))
+  domains = yamldecode(file("${path.module}/data/domains.yaml")).domains
 
   machines = yamldecode(file("${path.module}/data/machines.yaml")).machines
 
@@ -13,6 +15,11 @@ locals {
 
   machine_fqdns = {
     for name, machine in local.machines :
-    name => "${name}.${machine.network}.${local.domains.domains.infrastructure}"
+    name => "${name}.${machine.network}.${local.domains.infrastructure}"
+  }
+
+  truenas_hosts = {
+    for name, machine in local.machines : name => machine
+    if machine.platform == "truenas"
   }
 }

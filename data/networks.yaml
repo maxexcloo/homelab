@@ -26,8 +26,8 @@ networks:
     name: Sydney
     oci:
       cidr: 10.20.0.0/16
-      dns_label: excloo
       display_name: syd.excloo.net
+      dns_label: excloo
       ipv6_enabled: true
       region: ap-sydney-1
       subnet_cidr: 10.20.0.0/24

@@ -12,68 +12,64 @@ machines:
     platform: linux
     public_ipv4: 199.127.129.143
     public_ipv6: 2602:f831::4665:8aff:fee1:40ed
+    tailscale_tag: backup
+
     ssh:
       port: 22
       user: max.schaefer
-    tailscale_tag: backup
   hsp:
     address: 10.20.0.4
-    boot:
-      size_mib: 131072
     cluster: syd
-    compute:
-      cores: 2
-      memory_mib: 12288
     management_port: 50000
     network: syd
-    oci:
-      assign_public_ip: true
-      shape: VM.Standard.A1.Flex
     platform: talos
     provider: oci
     tailscale_tag: talos
+
+    boot:
+      size_mib: 131072
+    compute:
+      cores: 2
+      memory_mib: 12288
+    oci:
+      assign_public_ip: true
+      shape: VM.Standard.A1.Flex
   kimbap:
     address: 10.0.0.3
     mac_address: "c8:ff:bf:01:52:e0"
     management_port: 8443
     network: mbk
     platform: truenas
+    tailscale_tag: storage
+    vlan: default
+
     ssh:
       port: 22
       user: root
-    tailscale_tag: storage
-    vlan: default
   mandu:
     address: 10.0.0.5
     mac_address: "c8:ff:bf:0f:9f:d0"
     network: mbk
     platform: bazzite
+    tailscale_tag: workstation
+    vlan: default
+
     ssh:
       port: 22
       user: max.schaefer
-    tailscale_tag: workstation
-    vlan: default
   ramen:
     address: 10.0.0.1
     management_port: 443
     network: mbk
     platform: unifi
+    tailscale_tag: router
+
     ssh:
       port: 22
       user: root
-    tailscale_tag: router
   taco:
     address: 10.4.0.4
-    boot:
-      iso_directory: /mnt/truenas-nvme/virtual-machines
-      pool: truenas-nvme
-      size_mib: 65536
     cluster: mbk
-    compute:
-      cores: 12
-      memory_mib: 32768
-      sockets: 1
-      threads: 1
     host: kimbap
     mac_address: "02:74:61:63:6f:01"
     management_port: 50000
@@ -82,3 +78,13 @@ machines:
     provider: truenas
     tailscale_tag: talos
     vlan: services
+
+    boot:
+      iso_directory: /mnt/truenas-nvme/virtual-machines
+      pool: truenas-nvme
+      size_mib: 65536
+    compute:
+      cores: 12
+      memory_mib: 32768
+      sockets: 1
+      threads: 1

@@ -5,17 +5,6 @@ locals {
     for name in keys(local.clusters) : "tag:${name}"
   ])
 
-  tailscale_host_tags = toset(concat(
-    [for machine in values(local.machines) : "tag:${machine.tailscale_tag}"],
-    [for tag in local.access.tailscale.additional_tags : "tag:${tag}"],
-  ))
-
-  tailscale_routes = toset(flatten([
-    for cluster in values(local.clusters) : flatten([
-      for node in values(cluster.nodes) : try(node.tailscale_routes, [])
-    ])
-  ]))
-
   tailscale_device_ipv4 = {
     for device in data.tailscale_devices.all.devices :
     regex("^[^.]+", device.name) => try(
@@ -36,55 +25,47 @@ locals {
     for name in keys(local.clusters) : name => ["tag:${name}-operator"]
   }
 
+  tailscale_routes = toset(flatten([
+    for cluster in values(local.clusters) : flatten([
+      for node in values(cluster.nodes) : try(node.tailscale_routes, [])
+    ])
+  ]))
+
   tailscale_policy = {
-    groups = {
-      "group:${local.access.tailscale.admin_group}" = local.access.tailscale.admin_identities
+    acls = concat(
+      local.access.tailscale.acls,
+      [
+        for tag in local.tailscale_cluster_tags : {
+          action = "accept"
+          dst    = ["*:*"]
+          src    = [tag]
+        }
+      ],
+    )
+
+    autoApprovers = {
+      exitNode = local.access.tailscale.auto_approvers.exit_node
+      routes = merge(
+        local.access.tailscale.auto_approvers.routes,
+        {
+          for route in local.tailscale_routes : route => ["tag:talos"]
+        },
+      )
     }
 
+    groups = local.access.tailscale.groups
+
     tagOwners = merge(
+      local.access.tailscale.tag_owners,
       {
-        for tag in local.tailscale_host_tags : tag => ["group:${local.access.tailscale.admin_group}"]
-      },
-      {
-        for tag in local.tailscale_cluster_tags : tag => [tag, "group:${local.access.tailscale.admin_group}"]
+        for tag in local.tailscale_cluster_tags : tag => [tag, "group:admin"]
       },
       {
         for tag in local.tailscale_cluster_tags : "${tag}-operator" => [tag]
       },
     )
 
-    autoApprovers = {
-      exitNode = local.access.tailscale.exit_node_approver_tags
-      routes = merge(
-        local.access.tailscale.route_approvers,
-        {
-          for route in local.tailscale_routes : route => ["tag:${local.access.tailscale.route_approver_tag}"]
-        },
-      )
-    }
-
-    acls = concat(
-      [for rule in local.access.tailscale.rules : merge(
-        {
-          action = rule.action
-          src    = rule.sources
-          dst    = rule.destinations
-        },
-        try(rule.protocol, null) == null ? {} : { proto = rule.protocol },
-      )],
-      [
-        for tag in local.tailscale_cluster_tags : {
-          action = "accept"
-          src    = [tag]
-          dst    = ["*:*"]
-        }
-      ],
-    )
-
-    tests = [for test in local.access.tailscale.tests : {
-      src    = test.source
-      accept = test.accept
-    }]
+    tests = local.access.tailscale.tests
   }
 }
 
