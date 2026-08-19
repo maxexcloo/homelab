@@ -8,11 +8,9 @@ Flux.
 
 ## Conventions
 
-- Read `PLAN.md` before changing architecture, ownership, deletion behaviour,
-  networking, storage, secrets, state, or migration order.
-- Treat `PLAN.md` as authoritative for this repository's substrate details and
-  `kubelab/PLAN.md` as authoritative for cross-repository ordering and workload
-  ownership.
+- Treat this repository as authoritative for substrate details and
+  `kubelab` as authoritative for Kubernetes resources and platform
+  integrations.
 - Use Australian English in project-owned prose and identifiers.
 - Use `.yaml`, not `.yml`, for project-owned YAML.
 - Pin tools and providers to exact stable versions. Let Renovate propose
@@ -37,7 +35,7 @@ requirements, and variables. Put direct provider resources and their exclusive
 data sources in the corresponding domain file. Do not combine unrelated
 domains merely to deduplicate lookups.
 
-Keep root Markdown limited to `AGENTS.md`, `PLAN.md`, and `README.md`. Put later
+Keep root Markdown limited to `AGENTS.md` and `README.md`. Put later
 operational documentation under `docs/`.
 
 ## OpenTofu Safety
@@ -100,8 +98,8 @@ meaningful order.
 - Prefer plain, direct HCL over abstractions and generic pipelines.
 - In mixed HCL files, order data sources, then locals, then resources; sort
   each group alphabetically by address.
-- Keep comments local and specific; put architectural and operational
-  explanations in `PLAN.md` or `docs/`.
+- Keep comments local and specific; put operational explanations in
+  `docs/`.
 - Keep check orchestration single-layered so the same validator is not run both
   directly and through a nested task in one path.
 

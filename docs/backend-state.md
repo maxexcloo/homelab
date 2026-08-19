@@ -18,7 +18,7 @@ tofu state list
 
 The expected workspace is `default`. Do not use `tofu init -migrate-state` for
 this root and do not accept a plan that proposes recreating imported resources.
-Plans and applies require the separate review and approval rules in `PLAN.md`.
+Plans and applies require explicit review and approval.
 
 GCS object versioning is the state rollback mechanism. Before a state operation,
 securely capture the current state and address inventory outside the repository.

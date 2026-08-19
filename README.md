@@ -4,9 +4,8 @@ This repository manages homelab infrastructure and Talos cluster substrate
 with OpenTofu. Kubernetes API resources and Flux reconciliation live in the
 separate `kubelab` repository.
 
-`mbk` is the active single-node Talos substrate on TrueNAS. The independent
-OCI Sydney cluster, `syd`, follows only after the external home success gate is
-recorded in `kubelab/PLAN.md`, as described in [PLAN.md](PLAN.md).
+`mbk` is the active single-node Talos substrate on TrueNAS. `syd` is the
+independent OCI Sydney cluster on Ampere A1.
 
 CI validates configuration and never receives infrastructure or cluster
 credentials. Plans and applies run locally from a trusted workstation after
@@ -70,7 +69,6 @@ Recovery ownership for HAOS, Hotdog, Kimbap, Mandu, and Ramen is recorded in
   Cloudflare DNS and tunnels, Tailscale policy and credentials, native
   1Password delivery, and both Talos cluster substrates.
 - `kubelab`: Kubernetes and Flux resources after the API is healthy.
-- `PLAN.md`: architecture, migration gates, and recovery rules.
 
 ## DNS
 
