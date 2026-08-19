@@ -1,75 +1,37 @@
-output "cloudflare_tunnel_ids" {
-  description = "Cloudflare Tunnel IDs by cluster."
+output "clusters" {
+  description = "Talos Kubernetes cluster substrate configuration and endpoints."
   value = {
-    for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id
+    for name, cluster in local.talos_clusters : name => merge(
+      {
+        endpoint        = local.talos_cluster_endpoints[name]
+        installer_image = data.talos_image_factory_urls.cluster[name].urls.installer
+        schematic_id    = local.talos_schematic_ids[name]
+        tunnel_id       = cloudflare_zero_trust_tunnel_cloudflared.cluster[name].id
+      },
+      data.talos_image_factory_urls.cluster[name].urls.iso != "" ? {
+        iso_url = data.talos_image_factory_urls.cluster[name].urls.iso
+      } : {},
+      try(data.talos_image_factory_urls.cluster[name].urls.disk_image, "") != "" ? {
+        disk_image_url = data.talos_image_factory_urls.cluster[name].urls.disk_image
+      } : {},
+    )
   }
 }
 
-output "machine_fqdns" {
-  description = "Fully qualified domain names by machine."
-  value       = local.machine_fqdns
-}
-
-output "oci_disk_image_url" {
-  description = "Image Factory disk image used to prepare the OCI image archive."
-  value       = try(data.talos_image_factory_urls.cluster[local.oci_cluster_name].urls.disk_image, null)
-}
-
-output "oci_public_addresses" {
-  description = "Public IP addresses assigned to OCI Talos nodes."
+output "machines" {
+  description = "Managed machine network identities and addresses."
   value = {
-    for name, node in oci_core_instance.node : name => node.public_ip
+    for name, machine in local.machines : name => {
+      address      = try(machine.address, machine.public_ipv4)
+      fqdn         = local.machine_fqdns[name]
+      tailscale_ip = try(local.tailscale_device_ipv4[name], null)
+    }
   }
 }
 
-output "tailscale_ipv4_addresses" {
-  description = "Tailscale IPv4 addresses by machine."
-  value       = local.tailscale_device_ipv4
-}
-
-output "talos_cluster_endpoints" {
-  description = "Kubernetes API endpoints by cluster."
-  value       = local.talos_cluster_endpoints
-}
-
-output "talos_installer_images" {
-  description = "Talos installer images by cluster."
-  value = {
-    for name, image in data.talos_image_factory_urls.cluster : name => image.urls.installer
-  }
-}
-
-output "talos_iso_urls" {
-  description = "Talos ISO URLs by cluster."
-  value = {
-    for name, image in data.talos_image_factory_urls.cluster : name => image.urls.iso
-    if image.urls.iso != ""
-  }
-}
-
-output "talos_schematic_ids" {
-  description = "Content-addressed Talos Image Factory schematic IDs by cluster."
-  value       = local.talos_schematic_ids
-}
-
-output "truenas_nfs_exports" {
-  description = "TrueNAS NFS export paths managed for Kubernetes."
+output "storage" {
+  description = "TrueNAS persistent storage NFS exports managed for Kubernetes."
   value = {
     for name, share in truenas_share_nfs.managed : name => share.path
-  }
-}
-
-output "truenas_virtual_machine_iso_paths" {
-  description = "TrueNAS ISO paths attached to managed virtual machines."
-  value = {
-    for key, device in local.truenas_virtual_machine_devices : device.virtual_machine => device.attributes.path
-    if endswith(key, "/cdrom")
-  }
-}
-
-output "truenas_virtual_machine_mac_addresses" {
-  description = "Fixed MAC addresses for managed virtual-machine DHCP reservations."
-  value = {
-    for name in keys(local.truenas_virtual_machines) : name => local.machines[name].mac_address
   }
 }
