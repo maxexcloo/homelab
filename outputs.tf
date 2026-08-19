@@ -1,23 +1,13 @@
-output "installer_images" {
-  description = "Talos installer images by cluster."
+output "cloudflare_tunnel_ids" {
+  description = "Cloudflare Tunnel IDs by cluster."
   value = {
-    for name, image in data.talos_image_factory_urls.cluster : name => image.urls.installer
+    for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id
   }
 }
 
-output "iso_urls" {
-  description = "Talos ISO URLs by cluster."
-  value = {
-    for name, image in data.talos_image_factory_urls.cluster : name => image.urls.iso
-    if image.urls.iso != ""
-  }
-}
-
-output "nfs_exports" {
-  description = "TrueNAS NFS export paths managed for Kubernetes."
-  value = {
-    for name, share in truenas_share_nfs.managed : name => share.path
-  }
+output "machine_fqdns" {
+  description = "Fully qualified domain names by machine."
+  value       = local.machine_fqdns
 }
 
 output "oci_disk_image_url" {
@@ -32,12 +22,44 @@ output "oci_public_addresses" {
   }
 }
 
-output "schematic_ids" {
+output "tailscale_ipv4_addresses" {
+  description = "Tailscale IPv4 addresses by machine."
+  value       = local.tailscale_device_ipv4
+}
+
+output "talos_cluster_endpoints" {
+  description = "Kubernetes API endpoints by cluster."
+  value       = local.talos_cluster_endpoints
+}
+
+output "talos_installer_images" {
+  description = "Talos installer images by cluster."
+  value = {
+    for name, image in data.talos_image_factory_urls.cluster : name => image.urls.installer
+  }
+}
+
+output "talos_iso_urls" {
+  description = "Talos ISO URLs by cluster."
+  value = {
+    for name, image in data.talos_image_factory_urls.cluster : name => image.urls.iso
+    if image.urls.iso != ""
+  }
+}
+
+output "talos_schematic_ids" {
   description = "Content-addressed Talos Image Factory schematic IDs by cluster."
   value       = local.talos_schematic_ids
 }
 
-output "virtual_machine_iso_paths" {
+output "truenas_nfs_exports" {
+  description = "TrueNAS NFS export paths managed for Kubernetes."
+  value = {
+    for name, share in truenas_share_nfs.managed : name => share.path
+  }
+}
+
+output "truenas_virtual_machine_iso_paths" {
   description = "TrueNAS ISO paths attached to managed virtual machines."
   value = {
     for key, device in local.truenas_virtual_machine_devices : device.virtual_machine => device.attributes.path
@@ -45,7 +67,7 @@ output "virtual_machine_iso_paths" {
   }
 }
 
-output "virtual_machine_mac_addresses" {
+output "truenas_virtual_machine_mac_addresses" {
   description = "Fixed MAC addresses for managed virtual-machine DHCP reservations."
   value = {
     for name in keys(local.truenas_virtual_machines) : name => local.machines[name].mac_address
