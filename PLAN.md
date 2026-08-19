@@ -429,13 +429,8 @@ The implementation order is:
 6. wait for the external home success gate; and
 7. enable and apply Sydney OCI and Talos resources in narrow stages.
 
-Steps 1–5 are complete for Meadowbank. Step 6 is owned and evaluated in
-`kubelab`. Step 7 has not started; pending Sydney resources are intentionally
-absent from state.
-
-The root is not expected to have a full no-op plan while the declared but
-gated Sydney infrastructure remains pending. Use narrow saved plans and verify
-the intended boundary explicitly.
+Steps 1–7 are complete for both Meadowbank and Sydney. The root state is fully
+reconciled and produces a clean no-op plan.
 
 ## OpenTofu safety rules
 
