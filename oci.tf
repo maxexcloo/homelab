@@ -300,6 +300,7 @@ resource "oci_objectstorage_object" "talos_image" {
   source       = var.oci_talos_image_path
 
   lifecycle {
+    ignore_changes  = [source]
     prevent_destroy = true
   }
 }
