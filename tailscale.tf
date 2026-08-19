@@ -58,10 +58,10 @@ locals {
     tagOwners = merge(
       local.access.tailscale.tag_owners,
       {
-        for tag in local.tailscale_cluster_tags : tag => [tag, "group:admin"]
+        for tag in local.tailscale_cluster_tags : tag => ["${tag}-operator", "group:admin"]
       },
       {
-        for tag in local.tailscale_cluster_tags : "${tag}-operator" => [tag]
+        for tag in local.tailscale_cluster_tags : "${tag}-operator" => ["group:admin"]
       },
     )
 
