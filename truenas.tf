@@ -1,5 +1,5 @@
 data "truenas_network_interface" "services_physical" {
-  for_each = local.truenas_hosts
+  for_each = local.truenas_services_hosts
 
   id       = local.networks[each.value.network].interfaces.services.name
   provider = truenas.hosts[each.key]
@@ -31,6 +31,11 @@ locals {
       })
     }
   ]...)
+
+  truenas_services_hosts = {
+    for name, machine in local.truenas_hosts : name => machine
+    if try(local.networks[machine.network].interfaces.services, null) != null
+  }
 
   truenas_snapshot_tasks = merge([
     for target, storage in local.storage.targets : {
@@ -120,7 +125,7 @@ resource "truenas_dataset" "managed" {
 }
 
 resource "truenas_network_interface" "services_bridge" {
-  for_each = local.truenas_hosts
+  for_each = local.truenas_services_hosts
 
   bridge_members = [truenas_network_interface.services_physical[each.key].name]
   ipv4_dhcp      = false
@@ -144,7 +149,7 @@ resource "truenas_network_interface" "services_bridge" {
 }
 
 resource "truenas_network_interface" "services_physical" {
-  for_each = local.truenas_hosts
+  for_each = local.truenas_services_hosts
 
   aliases   = []
   ipv4_dhcp = false
