@@ -1,7 +1,7 @@
 [tools]
 actionlint = "1.7.12"
 opentofu = "1.12.5"
-prek = "0.4.13"
+prek = "0.4.14"
 prettier = "3.9.6"
 python = "latest"
 talosctl = "1.13.8"
