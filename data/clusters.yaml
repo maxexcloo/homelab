@@ -36,6 +36,7 @@ clusters:
       platform: oracle
     nodes:
       hsp:
+        bootstrap: true
         configuration_delivery: metadata
         machine_type: controlplane
         tailscale_routes:

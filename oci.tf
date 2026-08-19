@@ -1,3 +1,13 @@
+data "oci_core_compute_global_image_capability_schemas" "default" {
+  for_each = local.oci_talos_images
+}
+
+data "oci_core_compute_global_image_capability_schemas_versions" "default" {
+  for_each = local.oci_talos_images
+
+  compute_global_image_capability_schema_id = data.oci_core_compute_global_image_capability_schemas.default[each.key].compute_global_image_capability_schemas[0].id
+}
+
 data "oci_identity_availability_domain" "default" {
   for_each = local.oci_networks
 
@@ -16,6 +26,15 @@ locals {
     for name, cluster in local.clusters : name
     if cluster.image.platform == "oracle"
   ])
+
+  oci_image_shapes = merge([
+    for name, node in local.oci_nodes : {
+      "${node.cluster}/${node.oci.shape}" = {
+        cluster = node.cluster
+        shape   = node.oci.shape
+      }
+    }
+  ]...)
 
   oci_networks = {
     for name, network in local.networks : name => network.oci
@@ -42,6 +61,24 @@ locals {
   oci_talos_images = {
     for name, cluster in local.clusters : name => cluster
     if cluster.talos_enabled && cluster.image.platform == "oracle"
+  }
+}
+
+resource "oci_core_compute_image_capability_schema" "talos" {
+  for_each = local.oci_talos_images
+
+  compartment_id                                      = var.oci_tenancy_ocid
+  compute_global_image_capability_schema_version_name = data.oci_core_compute_global_image_capability_schemas_versions.default[each.key].compute_global_image_capability_schema_versions[0].name
+  display_name                                        = "talos-${each.key}"
+  image_id                                            = oci_core_image.talos[each.key].id
+
+  schema_data = {
+    "Compute.Firmware" = jsonencode({
+      defaultValue   = "UEFI_64"
+      descriptorType = "enumstring"
+      source         = "IMAGE"
+      values         = ["UEFI_64"]
+    })
   }
 }
 
@@ -91,6 +128,7 @@ resource "oci_core_image" "talos" {
 
   compartment_id = var.oci_tenancy_ocid
   display_name   = "Talos ${each.value.talos_version} ${each.value.image.platform} ${each.value.image.architecture}"
+  launch_mode    = "PARAVIRTUALIZED"
 
   image_source_details {
     bucket_name              = oci_objectstorage_bucket.talos_images[each.key].name
@@ -169,7 +207,11 @@ resource "oci_core_instance" "node" {
     }
   }
 
-  depends_on = [onepassword_item.talos_recovery]
+  depends_on = [
+    oci_core_compute_image_capability_schema.talos,
+    oci_core_shape_management.talos,
+    onepassword_item.talos_recovery,
+  ]
 }
 
 resource "oci_core_internet_gateway" "default" {
@@ -202,6 +244,14 @@ resource "oci_core_network_security_group_security_rule" "node_egress" {
   network_security_group_id = oci_core_network_security_group.node[each.value.node].id
   protocol                  = "all"
   stateless                 = false
+}
+
+resource "oci_core_shape_management" "talos" {
+  for_each = local.oci_image_shapes
+
+  compartment_id = var.oci_tenancy_ocid
+  image_id       = oci_core_image.talos[each.value.cluster].id
+  shape_name     = each.value.shape
 }
 
 resource "oci_core_subnet" "default" {

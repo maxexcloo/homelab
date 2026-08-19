@@ -3,6 +3,7 @@ actionlint = "1.7.12"
 opentofu = "1.12.5"
 prek = "0.4.13"
 prettier = "3.9.6"
+python = "latest"
 talosctl = "1.13.8"
 tflint = "0.64.0"
 trivy = "0.74.0"
@@ -32,6 +33,10 @@ tofu validate
 tflint
 trivy config --exit-code 1 --severity HIGH,CRITICAL .
 """
+
+[tasks.client-configs]
+description = "Sync workstation kubeconfig and talosconfig from 1Password"
+run = "scripts/sync_client_configs.sh"
 
 [tasks.fmt]
 description = "Format project files"

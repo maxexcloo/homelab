@@ -23,6 +23,8 @@ mise run check
 The main commands are:
 
 - `mise run check`: check formatting, OpenTofu, workflows, and security.
+- `mise run client-configs`: sync workstation kubeconfig and talosconfig from
+  1Password.
 - `mise run fmt`: format project files.
 - `mise run init`: initialise providers without connecting the backend.
 - `mise run prek`: run the complete local equivalent of CI.

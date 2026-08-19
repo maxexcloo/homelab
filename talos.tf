@@ -279,8 +279,12 @@ resource "talos_machine_bootstrap" "control_plane" {
 
   lifecycle {
     precondition {
-      condition     = talos_machine_configuration_apply.node[each.key].id != ""
-      error_message = "Apply this node's Talos configuration before bootstrapping it."
+      condition = (
+        each.value.configuration_delivery == "api" ?
+        try(talos_machine_configuration_apply.node[each.key].id, "") != "" :
+        try(oci_core_instance.node[each.key].id, "") != ""
+      )
+      error_message = "Deliver this node's Talos configuration before bootstrapping it."
     }
   }
 }
