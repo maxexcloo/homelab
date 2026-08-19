@@ -22,6 +22,8 @@ mise run check
 
 The main commands are:
 
+- `mise run bootstrap-secrets`: inject the 1Password SDK bootstrap secret into a
+  cluster.
 - `mise run check`: check formatting, OpenTofu, workflows, and security.
 - `mise run client-configs`: sync workstation kubeconfig and talosconfig from
   1Password.

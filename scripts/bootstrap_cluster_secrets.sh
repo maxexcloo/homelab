@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <cluster>" >&2
+  exit 1
+fi
+
+cluster="$1"
+
+for tool in op kubectl; do
+  if ! command -v "${tool}" >/dev/null 2>&1; then
+    echo "error: ${tool} is required but not found in PATH." >&2
+    exit 1
+  fi
+done
+
+echo "Injecting 1Password SDK bootstrap secret for cluster '${cluster}'..."
+
+token="$(op item get --vault "Homelab" "Service Account Auth Token: ${cluster}-eso" --fields credential)"
+
+kubectl --context "${cluster}" create namespace external-secrets --dry-run=client -o yaml | kubectl --context "${cluster}" apply -f -
+
+kubectl --context "${cluster}" -n external-secrets create secret generic onepassword-sdk \
+  --from-literal=token="${token}" \
+  --dry-run=client -o yaml | kubectl --context "${cluster}" apply -f -
+
+echo "Successfully injected onepassword-sdk secret into cluster '${cluster}'."

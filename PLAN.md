@@ -320,40 +320,24 @@ a client's scopes or tags recreates it and rotates its secret; bump
 `operator.secret_revision` in `data/access.yaml` with any such change so the
 delivered credential is rewritten.
 
-## Sydney rollout gate
+## Sydney rollout
 
-`syd` remains declared with `talos_enabled: false`. Do not create its OCI
-instance or Talos lifecycle until `kubelab/PLAN.md` records that the home
-success gate has passed.
+The Sydney lifecycle completed on 2026-08-19:
 
-Infrastructure that may be reviewed before the gate must still be applied in
-narrow stages. Do not let a Meadowbank recovery plan pull pending Sydney
-schematics, secrets, compute, or recovery items into its graph.
+- OCI network (VCN, subnet, internet gateway, NSG) provisioned;
+- Talos `v1.13.8` OCI custom image imported with `UEFI_64` capability schema and
+  `VM.Standard.A1.Flex` shape compatibility;
+- `hsp` instance launched with 2 OCPUs, 12 GiB memory, and 128 GB boot volume;
+- `siderolabs/tailscale` extension connected to tailnet;
+- etcd bootstrapped once;
+- provider health check passed at `10.20.0.4`;
+- administrator kubeconfig and `talosconfig` stored in `Cluster: syd` vault; and
+- substrate handoff to `kubelab` completed.
 
-Before OCI work resumes, fix local DNS for
-`objectstorage.ap-sydney-1.oraclecloud.com`. The current filtered response
-prevents the OCI provider from reaching Object Storage. Do not use the previous
-temporary localhost CONNECT proxy for an apply.
-
-Prepare the upload artifact with `mise run prepare-oci-image`. It downloads the
-schematic's Image Factory disk image, converts it to qcow2 with `qemu-img`
-(installed outside Mise, for example with Homebrew), caches it under
-`~/.cache/homelab`, and prints the `TF_VAR_oci_talos_image_path` export for the
-upload stage. The image object is imported with `source_image_type: QCOW2`.
-
-After the external gate passes:
-
-1. enable `syd` in `data/clusters.yaml` as its own reviewed change;
-2. review the OCI network and security plan;
-3. upload the pinned local Talos OCI image and create the custom image;
-4. create the protected 128 GB `hsp` instance from declared data;
-5. apply Talos configuration and bootstrap in separately reviewed stages; and
-6. store and verify Sydney recovery material before handoff to `kubelab`.
-
-The `hsp` node deliberately consumes the tenency's full Ampere A1 Always Free
-allowance: 2 OCPUs, 12 GiB memory, and a 128 GB boot volume inside the 200 GB
-free block-storage quota. An instance precondition keeps the declared aggregate
-within that envelope.
+The `hsp` node consumes the tenancy's Ampere A1 Always Free allowance: 2 OCPUs,
+12 GiB memory, and a 128 GB boot volume inside the 200 GB free block-storage
+quota. An instance precondition keeps the declared aggregate within that
+envelope.
 
 ## Version baseline
 

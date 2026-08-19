@@ -30,21 +30,17 @@ them.
 
 ## Items
 
-| Item                                  | Owner    | Contents                                            |
-| ------------------------------------- | -------- | --------------------------------------------------- |
-| `cloudflare-acme`                     | OpenTofu | Cloudflare DNS API token                            |
-| `cloudflare-tunnel`                   | OpenTofu | Tunnel ID and token                                 |
-| `kubeconfig`                          | OpenTofu | Cluster administrator kubeconfig                    |
-| `tailscale-operator`                  | OpenTofu | OAuth client ID and secret                          |
-| `talosconfig`                         | OpenTofu | `talosctl` config, Tailscale and internal endpoints |
-| `Service Account Auth Token: mbk-eso` | Manual   | 1Password service-account token                     |
+| Item                                        | Owner    | Contents                                             |
+| ------------------------------------------- | -------- | ---------------------------------------------------- |
+| `cloudflare-acme`                           | OpenTofu | Cloudflare DNS API token                             |
+| `cloudflare-tunnel`                         | OpenTofu | Tunnel ID and token                                  |
+| `kubeconfig`                                | OpenTofu | Cluster administrator kubeconfig                     |
+| `tailscale-operator`                        | OpenTofu | OAuth client ID and secret                           |
+| `talosconfig`                               | OpenTofu | `talosctl` config, Tailscale and internal endpoints  |
+| `Service Account Auth Token: <cluster>-eso` | Manual   | 1Password service-account token (in `Homelab` vault) |
 
-The manual item predates this convention. Rename it to a hyphenated title
-before External Secrets references it by key.
-
-Create the manual item as an API Credential so the token is addressable as
-`op://Cluster: mbk/<item-title>/credential`. Scope the service account to
-the `Cluster: mbk` vault with read and write access.
+Create the manual item in the `Homelab` vault as an API Credential. Scope the
+service account to its matching cluster vault (`Cluster: mbk` or `Cluster: syd`).
 
 ## Bootstrap injection
 
@@ -52,14 +48,15 @@ Inject the service-account token into the cluster as a Kubernetes Secret
 before the External Secrets controller first starts:
 
 ```sh
-kubectl -n external-secrets create secret generic onepassword-bootstrap \
-  --from-literal=token="$(op read 'op://Cluster: mbk/Service Account Auth Token: mbk-eso/credential')" \
-  --dry-run=client -o yaml | kubectl apply -f -
+kubectl --context <cluster> create namespace external-secrets --dry-run=client -o yaml | kubectl --context <cluster> apply -f -
+
+kubectl --context <cluster> -n external-secrets create secret generic onepassword-sdk \
+  --from-literal=token="$(op item get --vault "Homelab" "Service Account Auth Token: <cluster>-eso" --fields credential)" \
+  --dry-run=client -o yaml | kubectl --context <cluster> apply -f -
 ```
 
 The namespace, secret name, and key are the contract that the `kubelab`
-ClusterSecretStore references. `kubelab` owns the binding, not this
-repository.
+ClusterSecretStore references (`external-secrets/onepassword-sdk`, key `token`).
 
 ## Re-injection
 
