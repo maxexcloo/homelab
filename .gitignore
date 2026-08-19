@@ -1,11 +1,4 @@
+*.tfplan
+*.tfstate*
 .mise.local.toml
 .terraform/
-*.kubeconfig
-*.plan
-*.tfplan
-*.tfstate
-*.tfstate.*
-*.tfvars
-*.tfvars.json
-crash.log
-talosconfig

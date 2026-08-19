@@ -1,46 +1,37 @@
 [tools]
 actionlint = "1.7.12"
 opentofu = "1.12.5"
-prek = "0.4.14"
+prek = "0.4.13"
 prettier = "3.9.6"
-python = "latest"
 talosctl = "1.13.8"
 tflint = "0.64.0"
 trivy = "0.74.0"
 yq = "4.53.3"
 
 # Setup
-[tasks.setup]
-description = "Install tools, initialise providers, and install Git hooks"
-run = """
-mise install
-mise run init
-prek install
-"""
-
 [tasks.init]
 description = "Initialise providers without connecting the backend"
 run = "tofu init -backend=false -input=false"
+
+[tasks.setup]
+depends = ["init"]
+description = "Install tools, initialise providers, and install Git hooks"
+run = """
+mise install
+prek install
+"""
 
 # Development
 [tasks.check]
 description = "Check formatting and infrastructure configuration"
 run = """
-prettier --check .
 actionlint .github/workflows/*.yaml
+prettier --check .
+tflint
 tofu fmt -check -recursive
 tofu validate
-tflint
 trivy config --exit-code 1 --severity HIGH,CRITICAL .
 """
-
-[tasks.bootstrap-secrets]
-description = "Inject the 1Password SDK bootstrap secret into a cluster"
-run = "scripts/bootstrap_cluster_secrets.sh"
-
-[tasks.client-configs]
-description = "Sync workstation kubeconfig and talosconfig from 1Password"
-run = "scripts/sync_client_configs.sh"
 
 [tasks.fmt]
 description = "Format project files"
@@ -52,6 +43,25 @@ tofu fmt -recursive
 [tasks.prek]
 description = "Run all repository hooks"
 run = "prek run --all-files"
+
+# Plan
+[tasks.plan]
+description = "Plan all changes"
+run = "tofu plan"
+
+# Deploy
+[tasks.apply]
+description = "Apply all changes"
+run = "tofu apply"
+
+# Scripts
+[tasks.bootstrap-secrets]
+description = "Inject the 1Password SDK bootstrap secret into a cluster"
+run = "scripts/bootstrap_cluster_secrets.sh"
+
+[tasks.client-configs]
+description = "Sync workstation kubeconfig and talosconfig from 1Password"
+run = "scripts/sync_client_configs.sh"
 
 [tasks.prepare-oci-image]
 description = "Download and convert the Talos Oracle image archive"
