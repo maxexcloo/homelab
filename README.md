@@ -1,17 +1,19 @@
 # Homelab
 
-This repository manages homelab infrastructure and Talos cluster substrate
-with OpenTofu. Kubernetes API resources and Flux reconciliation live in the
-separate `kubelab` repository.
+Homelab infrastructure and Talos Kubernetes cluster substrate managed with OpenTofu.
+In-cluster Kubernetes resources and platform workloads live in the separate `kubelab`
+repository reconciled by Flux.
 
-`mbk` is the active single-node Talos substrate on TrueNAS. `syd` is the
-independent OCI Sydney cluster on Ampere A1.
+## Clusters
 
-CI validates configuration and never receives infrastructure or cluster
-credentials. Plans and applies run locally from a trusted workstation after
-review and explicit approval.
+- **`mbk`**: Single-node Talos Kubernetes substrate running as a virtual machine on
+  TrueNAS (`kimbap`) with NVMe-backed NFS storage.
+- **`syd`**: Independent cloud Talos Kubernetes node running on Oracle Cloud
+  Infrastructure (OCI) Ampere A1.
 
-## First Setup
+## Quick Start
+
+Tooling is pinned and managed through [Mise](https://mise.jdx.dev/):
 
 ```shell
 mise trust
@@ -19,78 +21,33 @@ mise run setup
 mise run check
 ```
 
-The main commands are:
+### Common Tasks
 
-- `mise run bootstrap-secrets`: inject the 1Password SDK bootstrap secret into a
-  cluster.
-- `mise run check`: check formatting, OpenTofu, workflows, and security.
-- `mise run client-configs`: sync workstation kubeconfig and talosconfig from
-  1Password.
-- `mise run fmt`: format project files.
-- `mise run init`: initialise providers without connecting the backend.
-- `mise run prek`: run the complete local equivalent of CI.
-- `mise run ssh-config`: install the non-secret SSH include under
-  `~/.ssh/config.d/homelab`.
+| Task                         | Description                                                          |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `mise run bootstrap-secrets` | Inject the 1Password SDK bootstrap secret into a cluster             |
+| `mise run check`             | Run validation suite (OpenTofu, formatters, linters, security scans) |
+| `mise run client-configs`    | Sync local `kubeconfig` and `talosconfig` from 1Password             |
+| `mise run fmt`               | Format repository files (OpenTofu and Prettier)                      |
+| `mise run init`              | Initialise providers locally without connecting the remote backend   |
+| `mise run plan`              | Plan OpenTofu changes                                                |
+| `mise run prek`              | Run all Git pre-commit hooks across the repository                   |
+| `mise run ssh-config`        | Render and install SSH host aliases to `~/.ssh/config.d/homelab`     |
 
-Initialisation during setup uses `-backend=false`. Initialise a real backend
-only through the reviewed procedure in
-[docs/backend-state.md](docs/backend-state.md). Never migrate the legacy
-`states/core` state into this root.
+## Substrate
 
-The committed `.terraform.lock.hcl` records provider checksums for Apple
-Silicon development and Linux CI. Review lockfile changes with provider
-updates.
+- **Compute & Virtualisation**: TrueNAS VM (`taco`) on `kimbap` and OCI compute instance (`hsp`) on Ampere A1.
+- **Storage**: TrueNAS NVMe datasets, NFS shares, and automated snapshot tasks for Kubernetes persistent storage.
+- **Networking**: UniFi VLANs and static DHCP reservations for retained appliances and VMs.
+- **DNS & Ingress**: Cloudflare DNS records across owned zones, ACME DNS challenge tokens, and Cloudflare Tunnels.
+- **Mesh & Access**: Tailscale ACL policies, host recovery keys, and Kubernetes operator OAuth clients.
+- **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).
 
-SSH private keys remain in the 1Password SSH agent. The repository stores only
-connection facts and renders aliases for SSH-capable hosts; Talos nodes use
-`talosctl` and are deliberately omitted. Ensure the main SSH configuration has
-an `Include ~/.ssh/config.d/*` line before installing the generated include.
+## Operations & Safety
 
-TrueNAS plans use the provider's native environment variables for connection
-settings and credentials:
-
-```shell
-export TRUENAS_URL=https://kimbap.mbk.excloo.net:8443
-export TRUENAS_API_KEY='retrieve from the configured secret store'
-```
-
-The provider always enables destroy protection. Set its native
-`TRUENAS_READ_ONLY=true` environment variable for read-only checks, and disable
-that environment guard only for the exact reviewed saved plan and its
-explicitly approved apply. Never put the API key in a checked-in variable file.
-Storage adoption boundaries and the existing manually owned replication jobs
-are recorded in [docs/truenas-ownership.md](docs/truenas-ownership.md).
-Recovery ownership for HAOS, Hotdog, Kimbap, Mandu, and Ramen is recorded in
-[docs/appliance-recovery.md](docs/appliance-recovery.md).
-
-## Repository Boundaries
-
-- Root OpenTofu configuration: TrueNAS and OCI compute, UniFi reservations,
-  Cloudflare DNS and tunnels, Tailscale policy and credentials, native
-  1Password delivery, and both Talos cluster substrates.
-- `kubelab`: Kubernetes and Flux resources after the API is healthy.
-
-## DNS
-
-Put manually curated Cloudflare records in `data/dns/<zone>.yaml`. The filename
-must match the zone name. Record identity is derived from zone, type, name, and
-priority; add a logical `id` only when multiple records would otherwise have
-the same identity, such as several apex TXT records. These IDs are OpenTofu
-keys, not Cloudflare object IDs.
-
-Machine and cluster API records are derived separately from the infrastructure
-inventories. Do not duplicate a derived record in the manual files. Existing
-Cloudflare records must be adopted through isolated, reviewed import blocks
-before any apply. Remove those blocks only after remote state records the
-adoption and a saved plan confirms the transition.
-
-The configuration owns a content-addressed Talos Image Factory schematic and
-the adopted `enp3s0` and `br4` TrueNAS network end state.
-The schematic includes only the official QEMU guest agent and Tailscale system
-extensions and derives the metal/amd64 ISO and installer image for Talos Linux
-`v1.13.8`. The bridge is already adopted; network resources must never be
-changed without a reviewed saved plan, console recovery access, and explicit
-approval.
+- **Local Execution**: CI validates syntax and security; all plans and applies run locally from trusted workstations.
+- **Safe State**: State is stored in Google Cloud Storage with object versioning.
+- **Destruction Guards**: Storage datasets and recovery items enforce `prevent_destroy` to safeguard live substrate.
 
 ## Licence
 
