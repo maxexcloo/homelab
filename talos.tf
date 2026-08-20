@@ -158,11 +158,6 @@ locals {
     if node.machine_type == "controlplane" && try(node.bootstrap, false)
   }
 
-  talos_machine_configuration_apply_nodes = {
-    for name, node in local.talos_nodes : name => node
-    if node.configuration_delivery == "api"
-  }
-
   talos_nodes = merge([
     for cluster_name, cluster in local.talos_clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
@@ -275,21 +270,17 @@ resource "talos_machine_bootstrap" "control_plane" {
 
   lifecycle {
     precondition {
-      condition = (
-        each.value.configuration_delivery == "api" ?
-        try(talos_machine_configuration_apply.node[each.key].id, "") != "" :
-        try(oci_core_instance.node[each.key].id, "") != ""
-      )
+      condition     = try(talos_machine_configuration_apply.node[each.key].id, "") != ""
       error_message = "Deliver this node's Talos configuration before bootstrapping it."
     }
   }
 }
 
 resource "talos_machine_configuration_apply" "node" {
-  for_each = local.talos_machine_configuration_apply_nodes
+  for_each = local.talos_nodes
 
   apply_mode                     = "staged_if_needing_reboot"
-  endpoint                       = each.value.address
+  endpoint                       = each.value.configuration_delivery == "metadata" ? oci_core_instance.node[each.key].private_ip : each.value.address
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
 

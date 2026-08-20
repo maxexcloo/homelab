@@ -210,6 +210,8 @@ resource "oci_core_instance" "node" {
   }
 
   lifecycle {
+    # Talos metadata is bootstrap-only; live configuration is reconciled over its API.
+    ignore_changes  = [metadata]
     prevent_destroy = true
 
     precondition {
