@@ -11,6 +11,9 @@ cloudflare:
       machine: ramen
     syd:
       cluster: syd
+  crossplane_consumers:
+    mbk:
+      zone: excloo.dev
   tunnel_consumers:
     mbk:
       cluster: mbk

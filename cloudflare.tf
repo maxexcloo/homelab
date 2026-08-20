@@ -45,6 +45,13 @@ locals {
     })
   }
 
+  cloudflare_consumers_crossplane = {
+    for name, consumer in local.cloudflare.crossplane_consumers : name => merge(consumer, {
+      title = "cloudflare-crossplane"
+      vault = "cluster/${name}"
+    })
+  }
+
   cloudflare_consumers_tunnel = {
     for name, consumer in local.cloudflare.tunnel_consumers : name => merge(consumer, {
       credential_scope = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
@@ -99,6 +106,36 @@ resource "cloudflare_account_token" "acme" {
   ]
 
   depends_on = [terraform_data.acme_validation]
+}
+
+resource "cloudflare_account_token" "crossplane" {
+  for_each = local.cloudflare_consumers_crossplane
+
+  account_id = data.cloudflare_account.default.id
+  name       = "Cloudflare Crossplane: ${each.key}"
+
+  policies = [
+    {
+      effect = "allow"
+
+      permission_groups = [
+        {
+          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
+        },
+        {
+          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+        },
+      ]
+
+      resources = jsonencode({
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[each.value.zone].zone_id}" = "*"
+      })
+    },
+  ]
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "cloudflare_dns_record" "all" {

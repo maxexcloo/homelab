@@ -29,6 +29,22 @@ resource "onepassword_item" "cloudflare_acme" {
   }
 }
 
+resource "onepassword_item" "cloudflare_crossplane" {
+  for_each = local.cloudflare_consumers_crossplane
+
+  category            = "login"
+  password_wo         = cloudflare_account_token.crossplane[each.key].value
+  password_wo_version = try(each.value.secret_revision, 1)
+  tags                = ["Homelab", "Cloudflare", "Crossplane"]
+  title               = each.value.title
+  username            = data.cloudflare_zone.default[each.value.zone].zone_id
+  vault               = data.onepassword_vault.default[each.value.vault].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "onepassword_item" "cloudflare_tunnel" {
   for_each = local.cloudflare_consumers_tunnel
 
