@@ -78,13 +78,13 @@ Sort unordered assignments in this order:
 1. Single-line values, alphabetically by key.
 2. Multi-line values, alphabetically by key.
 
-Do not add a blank line between the groups. Underscore-prefixed names sort before
-other names. Non-empty YAML mappings and sequences are multi-line; empty
-containers are single-line. A scalar-only JSON array is single-line even when
-formatting wraps it, while an array containing an object or array is multi-line.
-Apply this recursively to project-owned YAML, TOML, JSON, environment blocks,
-and template argument objects. Let `tofu fmt` determine HCL layout and retain
-readable grouping there.
+Underscore-prefixed names sort before other names. Non-empty YAML mappings and
+sequences are multi-line; empty containers are single-line. A scalar-only JSON
+array is single-line even when formatting wraps it, while an array containing an
+object or array is multi-line. Apply this recursively to unordered project-owned
+YAML, TOML, JSON, environment blocks, and template argument objects. Do not add
+blank lines based only on value shape. Let `tofu fmt` determine HCL layout and
+retain readable grouping there.
 
 List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
 use `id`, then `name`; sort remaining fields normally.
@@ -96,8 +96,8 @@ global configuration and `jobs`. Preserve dependency order within workflow
 steps.
 
 Sort unordered peer headings, lists, and table rows alphabetically. Preserve
-procedural, dependency, routing, interface, priority, chronological, and other
-meaningful order.
+API, schema, interface, procedural, dependency, routing, priority,
+chronological, and other meaningful order.
 
 ## Style
 
