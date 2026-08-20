@@ -7,7 +7,7 @@ opentofu = "1.12.6"
 prek = "0.4.14"
 prettier = "3.9.6"
 talosctl = "1.13.9"
-yq = "4.53.3"
+yq = "4.53.6"
 
 # Setup
 [tasks.init]
