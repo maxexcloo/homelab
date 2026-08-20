@@ -9,7 +9,7 @@ Flux.
 ## Conventions
 
 - Treat this repository as authoritative for substrate details and
-  `kubelab` as authoritative for Kubernetes resources and platform
+  `kubelab` as authoritative for Kubernetes resources and app-scoped
   integrations.
 - Use Australian English in project-owned prose and identifiers.
 - Use `.yaml`, not `.yml`, for project-owned YAML.
@@ -17,18 +17,18 @@ Flux.
   upgrades for manual review.
 - Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
-- Never change live infrastructure without an explicit approval and a reviewed,
-  saved OpenTofu plan.
+- Never change live infrastructure without explicit approval and review of the
+  OpenTofu plan presented for that apply.
 
 ## File Organisation
 
 - `.github/workflows/`: validation only; infrastructure applies are local.
-- Root HCL: the `au` cluster substrate.
+- Root HCL: the homelab cluster substrate.
 
 Use ordinary provider resources directly and keep the root small enough to
 review in one plan. Do not recreate the archived catalogue, schema, model,
 generator, or deployment pipeline. Add another state root only with its first
-reviewed resource and keep it outside the root `au` configuration.
+reviewed resource and keep it outside the root substrate configuration.
 
 Keep conventional root files for backend, locals, outputs, providers,
 requirements, and variables. Put direct provider resources and their exclusive
@@ -50,6 +50,8 @@ operational documentation under `docs/`.
   membership and `try(map[key], null)` for optional related values.
 - Keep one GCS prefix per state root and never manage a backend from the root
   that consumes it.
+- Keep a retiring TrueNAS host in `truenas.retired_hosts` until removal of its
+  last managed resource has been applied, then remove it in a later change.
 - Commit `.terraform.lock.hcl` for every root and include checksums for every
   platform used to validate or plan it.
 - Keep every temporary `moved`, `removed`, and `import` block in
@@ -57,7 +59,7 @@ operational documentation under `docs/`.
 - Never migrate, import, move, or remove state as part of an unrelated resource
   change.
 - Never migrate a backend except through its separately reviewed procedure.
-- Never run `tofu apply` without reviewing the exact saved plan first.
+- Never confirm `tofu apply` without reviewing the exact plan it presents.
 - Do not make routine destroy operations reset Talos nodes or retained
   substrate.
 - Read only the secret fields a provider consumer needs, prefer write-only
@@ -66,19 +68,18 @@ operational documentation under `docs/`.
 
 ## Sorting Convention
 
-Sort object assignments in this order:
+Sort unordered assignments in this order:
 
 1. Single-line values, alphabetically by key.
 2. Multi-line values, alphabetically by key.
 
-Underscore-prefixed names sort before other names. Apply this recursively to
-HCL objects and argument blocks, YAML mappings, environment blocks, and
-template argument objects. A non-empty object is multi-line. A scalar-only
-array is a single-line value even when formatting wraps it; an array containing
-an object or array is multi-line. Apply the same rule inside each local's object
-value. Separate every multi-line assignment from adjacent assignments with a
-blank line, except where the formatter removes the separator. Keep assignments
-contiguous inside YAML list-item mappings.
+Do not add a blank line between the groups. Underscore-prefixed names sort before
+other names. Non-empty YAML mappings and sequences are multi-line; empty
+containers are single-line. A scalar-only JSON array is single-line even when
+formatting wraps it, while an array containing an object or array is multi-line.
+Apply this recursively to project-owned YAML, TOML, JSON, environment blocks,
+and template argument objects. Let `tofu fmt` determine HCL layout and retain
+readable grouping there.
 
 List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
 use `id`, then `name`; sort remaining fields normally.
@@ -96,10 +97,10 @@ meaningful order.
 ## Style
 
 - Prefer plain, direct HCL over abstractions and generic pipelines.
+- Put `for_each` first in every HCL block that uses it, followed by a blank line.
 - In mixed HCL files, order data sources, then locals, then resources; sort
   each group alphabetically by address.
-- Keep comments local and specific; put operational explanations in
-  `docs/`.
+- Keep comments local and specific.
 - Keep check orchestration single-layered so the same validator is not run both
   directly and through a nested task in one path.
 

@@ -2,13 +2,10 @@ onepassword:
   cluster_vault_prefix: "Cluster: "
   vaults:
     homelab: Homelab
-
 ssh:
   identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
-
 tailscale:
   key_expiry_seconds: 7776000
-
   acls:
     - action: accept
       proto: icmp
@@ -106,13 +103,11 @@ tailscale:
         - "tag:storage:*"
       src:
         - tag:backup
-
   auto_approvers:
     exit_node:
       - tag:router
       - tag:server
       - tag:vm
-
     routes:
       "0.0.0.0/0":
         - tag:router
@@ -122,18 +117,15 @@ tailscale:
         - tag:router
         - tag:server
         - tag:vm
-
   groups:
     group:admin:
       - max@excloo.com
       - maxexcloo@passkey
-
   operator:
+    secret_revision: 4
     scopes:
       - auth_keys
       - devices:core
-    secret_revision: 4
-
   tag_owners:
     tag:appliance:
       - group:admin
@@ -155,15 +147,16 @@ tailscale:
       - group:admin
     tag:workstation:
       - group:admin
-
   tests:
-    - accept:
+    - src: max@excloo.com
+      accept:
         - tag:talos:50000
         - tag:storage:22
-      src: max@excloo.com
-    - accept:
+    - src: tag:mbk
+      accept:
         - tag:server:443
-      src: tag:mbk
-    - accept:
+    - src: tag:syd
+      accept:
         - tag:server:443
-      src: tag:syd
+truenas:
+  retired_hosts: []

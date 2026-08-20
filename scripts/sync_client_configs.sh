@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
-clusters_path="data/clusters.yaml"
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+clusters_path="${repo_dir}/data/clusters.yaml"
 kubeconfig_dest="${HOME}/.kube/config"
 talosconfig_dest="${HOME}/.talos/config"
 
@@ -13,39 +15,37 @@ for tool in op jq kubectl talosctl yq; do
 done
 
 tmpdir="$(mktemp -d)"
-trap 'rm -rf "${tmpdir}"' EXIT
+trap 'rm -rf -- "${tmpdir}"' EXIT
 
 mkdir -p "${HOME}/.kube" "${HOME}/.talos"
+chmod 700 "${HOME}/.kube" "${HOME}/.talos"
 
-if [[ -f "${kubeconfig_dest}" ]]; then
-  cp "${kubeconfig_dest}" "${kubeconfig_dest}.bak"
-fi
+install_config() {
+  local source="$1"
+  local destination="$2"
 
-if [[ -f "${talosconfig_dest}" ]]; then
-  cp "${talosconfig_dest}" "${talosconfig_dest}.bak"
-fi
-
-get_note() {
-  local vault="$1"
-  local item="$2"
-  local dest="$3"
-
-  local content
-  if content="$(op item get --vault "${vault}" "${item}" --format json 2>/dev/null | jq -re '.fields[] | select(.id == "notesPlain") | .value // empty')"; then
-    if [[ -n "${content}" ]]; then
-      printf '%s\n' "${content}" >"${dest}"
-      return 0
-    fi
+  if [[ -f "${destination}" ]]; then
+    install -m 600 "${destination}" "${destination}.bak"
   fi
-  return 1
+  install -m 600 "${source}" "${destination}"
 }
 
+get_note() {
+  op item get --vault "$1" "$2" --format json 2>/dev/null |
+    jq -er 'first(.fields[] | select(.id == "notesPlain")) | .value | select(length > 0)' >"$3"
+}
+
+clusters=()
 kubeconfig_paths=()
-first_talos=true
+talosconfig_path=""
+
+while IFS= read -r cluster; do
+  clusters+=("${cluster}")
+done < <(yq -r '.clusters | to_entries | sort_by(.key) | .[] | select(.value.talos_enabled == true) | .key' "${clusters_path}")
 
 echo "Fetching credentials from 1Password..."
 
-while IFS= read -r cluster; do
+for cluster in "${clusters[@]}"; do
   vault="Cluster: ${cluster}"
   kube_file="${tmpdir}/${cluster}.kubeconfig"
   talos_file="${tmpdir}/${cluster}.talosconfig"
@@ -53,45 +53,47 @@ while IFS= read -r cluster; do
   echo "  - Fetching ${cluster} from vault '${vault}'..."
 
   if get_note "${vault}" kubeconfig "${kube_file}"; then
+    context="$(kubectl --kubeconfig "${kube_file}" config current-context)"
+    if [[ "${context}" != "${cluster}" ]]; then
+      kubectl --kubeconfig "${kube_file}" config rename-context "${context}" "${cluster}" >/dev/null
+    fi
     kubeconfig_paths+=("${kube_file}")
   else
     echo "    (warning: no kubeconfig found for cluster ${cluster})" >&2
   fi
 
   if get_note "${vault}" talosconfig "${talos_file}"; then
-    if [[ "${first_talos}" == true ]]; then
-      cp "${talos_file}" "${talosconfig_dest}"
-      first_talos=false
+    if [[ -z "${talosconfig_path}" ]]; then
+      talosconfig_path="${tmpdir}/talosconfig"
+      cp "${talos_file}" "${talosconfig_path}"
     else
-      talosctl --talosconfig "${talosconfig_dest}" config merge "${talos_file}"
+      talosctl --talosconfig "${talosconfig_path}" config merge "${talos_file}"
     fi
   else
     echo "    (warning: no talosconfig found for cluster ${cluster})" >&2
   fi
-done < <(yq -r '.clusters | to_entries | .[] | select(.value.talos_enabled == true) | .key' "${clusters_path}")
+done
 
 if [[ ${#kubeconfig_paths[@]} -gt 0 ]]; then
-  KUBECONFIG="$(IFS=:; echo "${kubeconfig_paths[*]}")" kubectl config view --flatten >"${kubeconfig_dest}"
-  chmod 600 "${kubeconfig_dest}"
-
-  for ctx in $(kubectl config get-contexts -o name); do
-    for cluster in $(yq -r '.clusters | keys | .[]' "${clusters_path}"); do
-      if [[ "${ctx}" == *"${cluster}"* ]] && [[ "${ctx}" != "${cluster}" ]]; then
-        kubectl config rename-context "${ctx}" "${cluster}" >/dev/null 2>&1 || true
-      fi
-    done
-  done
+  kubeconfig_path="${tmpdir}/kubeconfig"
+  KUBECONFIG="$(IFS=:; printf '%s' "${kubeconfig_paths[*]}")" kubectl config view --flatten >"${kubeconfig_path}"
+  install_config "${kubeconfig_path}" "${kubeconfig_dest}"
   echo "Updated ${kubeconfig_dest}"
 fi
 
-if [[ "${first_talos}" == false ]]; then
-  chmod 600 "${talosconfig_dest}"
+if [[ -n "${talosconfig_path}" ]]; then
+  install_config "${talosconfig_path}" "${talosconfig_dest}"
   echo "Updated ${talosconfig_dest}"
 fi
 
-echo
-echo "Available kubectl contexts:"
-kubectl config get-contexts -o name
-echo
-echo "Available talosctl contexts:"
-talosctl config contexts
+if [[ -f "${kubeconfig_dest}" ]]; then
+  echo
+  echo "Available kubectl contexts:"
+  kubectl --kubeconfig "${kubeconfig_dest}" config get-contexts -o name
+fi
+
+if [[ -f "${talosconfig_dest}" ]]; then
+  echo
+  echo "Available talosctl contexts:"
+  talosctl --talosconfig "${talosconfig_dest}" config contexts
+fi

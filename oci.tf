@@ -36,6 +36,19 @@ locals {
     }
   ]...)
 
+  oci_ingress_modes = toset(["cloudflared", "public", "tailscale"])
+
+  oci_invalid_ingress_rules = flatten([
+    for network_name, network in local.oci_networks : [
+      for ingress_name, ingress in try(network.tcp_ingress, {}) : "${network_name}/${ingress_name}"
+      if(
+        !contains(local.oci_ingress_modes, try(ingress.mode, "")) ||
+        try(length(ingress.ports), 0) == 0 ||
+        (try(ingress.mode, "") == "public") != (try(length(ingress.sources), 0) > 0)
+      )
+    ]
+  ])
+
   oci_networks = {
     for name, network in local.networks : name => network.oci
     if try(network.oci, null) != null
@@ -52,6 +65,23 @@ locals {
       }
     }
   ]...)
+
+  oci_node_ingress_rules = {
+    for rule in flatten([
+      for node_name, node in local.oci_nodes : [
+        for ingress_name, ingress in try(local.oci_networks[node.network].tcp_ingress, {}) : [
+          for source_name, source in try(ingress.sources, {}) : [
+            for port in try(ingress.ports, []) : {
+              key    = "${node_name}/${ingress_name}/${source_name}/${port}"
+              node   = node_name
+              port   = port
+              source = source
+            }
+          ]
+        ] if try(ingress.mode, "") == "public"
+      ]
+    ]) : rule.key => rule
+  }
 
   oci_nodes = {
     for name, machine in local.machines : name => machine
@@ -246,6 +276,25 @@ resource "oci_core_network_security_group_security_rule" "node_egress" {
   stateless                 = false
 }
 
+resource "oci_core_network_security_group_security_rule" "node_ingress" {
+  for_each = local.oci_node_ingress_rules
+
+  description               = "Allow ${each.key} inbound traffic"
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.node[each.value.node].id
+  protocol                  = "6"
+  source                    = each.value.source
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+
+  tcp_options {
+    destination_port_range {
+      max = each.value.port
+      min = each.value.port
+    }
+  }
+}
+
 resource "oci_core_shape_management" "talos" {
   for_each = local.oci_image_shapes
 
@@ -302,5 +351,16 @@ resource "oci_objectstorage_object" "talos_image" {
   lifecycle {
     ignore_changes  = [source]
     prevent_destroy = true
+  }
+}
+
+resource "terraform_data" "oci_ingress_validation" {
+  input = local.oci_invalid_ingress_rules
+
+  lifecycle {
+    precondition {
+      condition     = length(local.oci_invalid_ingress_rules) == 0
+      error_message = "OCI TCP ingress rules must declare ports, use tailscale, cloudflared, or public mode, and declare sources only in public mode."
+    }
   }
 }

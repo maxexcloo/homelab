@@ -31,3 +31,10 @@ networks:
       ipv6_enabled: true
       region: ap-sydney-1
       subnet_cidr: 10.20.0.0/24
+      tcp_ingress:
+        web:
+          mode: public
+          ports: [80, 443]
+          sources:
+            ipv4: 0.0.0.0/0
+            ipv6: ::/0

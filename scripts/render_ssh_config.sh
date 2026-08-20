@@ -2,16 +2,23 @@
 set -euo pipefail
 
 output_path="${1:-}"
-machines_path="data/machines.yaml"
-access_path="data/access.yaml"
-domains_path="data/domains.yaml"
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+access_path="${repo_dir}/data/access.yaml"
+domains_path="${repo_dir}/data/domains.yaml"
+machines_path="${repo_dir}/data/machines.yaml"
+
+if ! command -v yq >/dev/null 2>&1; then
+  echo "error: yq is required but not found in PATH." >&2
+  exit 1
+fi
+
 identity_agent="$(yq -r '.ssh.identity_agent' "${access_path}")"
 infrastructure_domain="$(yq -r '.domains.infrastructure' "${domains_path}")"
 
 render() {
-  while IFS=$'\t' read -r alias network address user port; do
-    fqdn="${alias}.${network}.${infrastructure_domain}"
-    printf 'Host %s %s\n' "${alias}" "${fqdn}"
+  while IFS=$'\t' read -r host_name network address user port; do
+    fqdn="${host_name}.${network}.${infrastructure_domain}"
+    printf 'Host %s %s\n' "${host_name}" "${fqdn}"
     printf '  HostName %s\n' "${address}"
     printf '  User %s\n' "${user}"
     printf '  Port %s\n' "${port}"

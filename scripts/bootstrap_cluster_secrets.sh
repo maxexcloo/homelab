@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
-if [[ $# -lt 1 ]]; then
+if [[ $# -ne 1 ]]; then
   echo "Usage: $0 <cluster>" >&2
   exit 1
 fi
@@ -17,12 +18,18 @@ done
 
 echo "Injecting 1Password SDK bootstrap secret for cluster '${cluster}'..."
 
-token="$(op item get --vault "Homelab" "Service Account Auth Token: ${cluster}-eso" --format json | jq -re '.fields[] | select(.id == "credential" or .label == "credential" or .type == "CONCEALED") | .value // empty')"
+token="$(
+  op item get --vault "Homelab" "Service Account Auth Token: ${cluster}-eso" --format json |
+    jq -er 'first(.fields[] | select(.id == "credential" or .label == "credential" or .type == "CONCEALED")) | .value // empty'
+)"
 
 kubectl --context "${cluster}" create namespace external-secrets --dry-run=client -o yaml | kubectl --context "${cluster}" apply -f -
 
-kubectl --context "${cluster}" -n external-secrets create secret generic onepassword-sdk \
-  --from-literal=token="${token}" \
-  --dry-run=client -o yaml | kubectl --context "${cluster}" apply -f -
+printf '%s' "${token}" |
+  kubectl --context "${cluster}" -n external-secrets create secret generic onepassword-sdk \
+    --from-file=token=/dev/stdin \
+    --dry-run=client -o yaml |
+  kubectl --context "${cluster}" apply -f -
+unset token
 
 echo "Successfully injected onepassword-sdk secret into cluster '${cluster}'."

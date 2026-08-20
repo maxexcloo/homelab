@@ -16,7 +16,6 @@ cloudflare:
       cluster: mbk
     syd:
       cluster: syd
-
 domains:
   acme: 043847.xyz
   infrastructure: excloo.net

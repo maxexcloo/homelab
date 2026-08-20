@@ -8,10 +8,10 @@ clusters:
     talos_version: v1.13.8
     image:
       architecture: amd64
+      platform: metal
       extensions:
         - siderolabs/qemu-guest-agent
         - siderolabs/tailscale
-      platform: metal
     nodes:
       taco:
         bootstrap: true
@@ -31,10 +31,10 @@ clusters:
     image:
       architecture: arm64
       bucket_name: homelab-talos-images
-      extensions:
-        - siderolabs/tailscale
       operating_system: Talos
       platform: oracle
+      extensions:
+        - siderolabs/tailscale
     nodes:
       hsp:
         bootstrap: true

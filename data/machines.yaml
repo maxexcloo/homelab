@@ -13,7 +13,6 @@ machines:
     public_ipv4: 199.127.129.143
     public_ipv6: 2602:f831::4665:8aff:fee1:40ed
     tailscale_tag: backup
-
     ssh:
       port: 22
       user: max.schaefer
@@ -25,7 +24,6 @@ machines:
     platform: talos
     provider: oci
     tailscale_tag: talos
-
     boot:
       size_mib: 131072
     compute:
@@ -42,7 +40,6 @@ machines:
     platform: truenas
     tailscale_tag: storage
     vlan: default
-
     ssh:
       port: 22
       user: root
@@ -53,7 +50,6 @@ machines:
     platform: bazzite
     tailscale_tag: workstation
     vlan: default
-
     ssh:
       port: 22
       user: max.schaefer
@@ -63,7 +59,6 @@ machines:
     network: mbk
     platform: unifi
     tailscale_tag: router
-
     ssh:
       port: 22
       user: root
@@ -78,7 +73,6 @@ machines:
     provider: truenas
     tailscale_tag: talos
     vlan: services
-
     boot:
       iso_directory: /mnt/truenas-nvme/virtual-machines
       pool: truenas-nvme

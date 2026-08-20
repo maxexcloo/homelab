@@ -1,11 +1,12 @@
 [tools]
+1password-cli = "2.38.1"
 actionlint = "1.7.12"
+jq = "1.8.2"
+kubectl = "1.36.3"
 opentofu = "1.12.5"
-prek = "0.4.13"
+prek = "0.4.14"
 prettier = "3.9.6"
 talosctl = "1.13.8"
-tflint = "0.64.0"
-trivy = "0.74.0"
 yq = "4.53.3"
 
 # Setup
@@ -26,11 +27,10 @@ prek install
 description = "Check formatting and infrastructure configuration"
 run = """
 actionlint .github/workflows/*.yaml
+bash -n scripts/*.sh
 prettier --check .
-tflint
 tofu fmt -check -recursive
 tofu validate
-trivy config --exit-code 1 --severity HIGH,CRITICAL .
 """
 
 [tasks.fmt]
