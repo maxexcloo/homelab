@@ -5,8 +5,6 @@ provider "oci" {
   tenancy_ocid                                     = var.oci_tenancy_ocid
 }
 
-provider "onepassword" {}
-
 provider "truenas" {
   for_each = local.truenas_hosts_provider
 
