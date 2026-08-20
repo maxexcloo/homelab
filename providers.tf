@@ -8,7 +8,7 @@ provider "oci" {
 provider "onepassword" {}
 
 provider "truenas" {
-  for_each = local.truenas_provider_hosts
+  for_each = local.truenas_hosts_provider
 
   alias              = "hosts"
   destroy_protection = true

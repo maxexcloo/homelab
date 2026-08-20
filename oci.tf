@@ -1,9 +1,9 @@
 data "oci_core_compute_global_image_capability_schemas" "default" {
-  for_each = local.oci_talos_images
+  for_each = local.oci_images_talos
 }
 
 data "oci_core_compute_global_image_capability_schemas_versions" "default" {
-  for_each = local.oci_talos_images
+  for_each = local.oci_images_talos
 
   compute_global_image_capability_schema_id = data.oci_core_compute_global_image_capability_schemas.default[each.key].compute_global_image_capability_schemas[0].id
 }
@@ -16,19 +16,16 @@ data "oci_identity_availability_domain" "default" {
 }
 
 data "oci_objectstorage_namespace" "default" {
-  for_each = local.oci_talos_images
+  for_each = local.oci_images_talos
 
   compartment_id = var.oci_tenancy_ocid
 }
 
 locals {
-  oci_cluster_name = one([
-    for name, cluster in local.clusters : name
-    if cluster.image.platform == "oracle"
-  ])
+  oci_ingress_modes = toset(["cloudflared", "public", "tailscale"])
 
   oci_image_shapes = merge([
-    for name, node in local.oci_nodes : {
+    for name, node in local.oci_instances : {
       "${node.cluster}/${node.oci.shape}" = {
         cluster = node.cluster
         shape   = node.oci.shape
@@ -36,9 +33,12 @@ locals {
     }
   ]...)
 
-  oci_ingress_modes = toset(["cloudflared", "public", "tailscale"])
+  oci_images_talos = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled && cluster.image.platform == "oracle"
+  }
 
-  oci_invalid_ingress_rules = flatten([
+  oci_ingress_rules_invalid = flatten([
     for network_name, network in local.oci_networks : [
       for ingress_name, ingress in try(network.tcp_ingress, {}) : "${network_name}/${ingress_name}"
       if(
@@ -49,13 +49,13 @@ locals {
     ]
   ])
 
-  oci_networks = {
-    for name, network in local.networks : name => network.oci
-    if try(network.oci, null) != null
+  oci_instances = {
+    for name, machine in local.machines : name => machine
+    if try(machine.provider, null) == "oci" && local.clusters[machine.cluster].talos_enabled
   }
 
-  oci_node_egress_rules = merge([
-    for name, node in local.oci_nodes : {
+  oci_network_security_group_rules_egress = merge([
+    for name, node in local.oci_instances : {
       for family, destination in merge(
         { ipv4 = "0.0.0.0/0" },
         local.oci_networks[node.network].ipv6_enabled ? { ipv6 = "::/0" } : {},
@@ -66,9 +66,9 @@ locals {
     }
   ]...)
 
-  oci_node_ingress_rules = {
+  oci_network_security_group_rules_ingress = {
     for rule in flatten([
-      for node_name, node in local.oci_nodes : [
+      for node_name, node in local.oci_instances : [
         for ingress_name, ingress in try(local.oci_networks[node.network].tcp_ingress, {}) : [
           for source_name, source in try(ingress.sources, {}) : [
             for port in try(ingress.ports, []) : {
@@ -83,19 +83,14 @@ locals {
     ]) : rule.key => rule
   }
 
-  oci_nodes = {
-    for name, machine in local.machines : name => machine
-    if try(machine.provider, null) == "oci" && local.clusters[machine.cluster].talos_enabled
-  }
-
-  oci_talos_images = {
-    for name, cluster in local.clusters : name => cluster
-    if cluster.talos_enabled && cluster.image.platform == "oracle"
+  oci_networks = {
+    for name, network in local.networks : name => network.oci
+    if try(network.oci, null) != null
   }
 }
 
 resource "oci_core_compute_image_capability_schema" "talos" {
-  for_each = local.oci_talos_images
+  for_each = local.oci_images_talos
 
   compartment_id                                      = var.oci_tenancy_ocid
   compute_global_image_capability_schema_version_name = data.oci_core_compute_global_image_capability_schemas_versions.default[each.key].compute_global_image_capability_schema_versions[0].name
@@ -154,7 +149,7 @@ resource "oci_core_default_route_table" "default" {
 }
 
 resource "oci_core_image" "talos" {
-  for_each = local.oci_talos_images
+  for_each = local.oci_images_talos
 
   compartment_id = var.oci_tenancy_ocid
   display_name   = "Talos ${each.value.talos_version} ${each.value.image.platform} ${each.value.image.architecture}"
@@ -176,7 +171,7 @@ resource "oci_core_image" "talos" {
 }
 
 resource "oci_core_instance" "node" {
-  for_each = local.oci_nodes
+  for_each = local.oci_instances
 
   availability_domain  = data.oci_identity_availability_domain.default[each.value.network].name
   compartment_id       = var.oci_tenancy_ocid
@@ -229,9 +224,9 @@ resource "oci_core_instance" "node" {
 
     precondition {
       condition = (
-        sum(concat([0], [for node in values(local.oci_nodes) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.cores : 0])) <= 2 &&
-        sum(concat([0], [for node in values(local.oci_nodes) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.memory_mib : 0])) <= 12288 &&
-        sum(concat([0], [for node in values(local.oci_nodes) : node.oci.shape == "VM.Standard.A1.Flex" ? node.boot.size_mib : 0])) <= 204800
+        sum(concat([0], [for node in values(local.oci_instances) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.cores : 0])) <= 2 &&
+        sum(concat([0], [for node in values(local.oci_instances) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.memory_mib : 0])) <= 12288 &&
+        sum(concat([0], [for node in values(local.oci_instances) : node.oci.shape == "VM.Standard.A1.Flex" ? node.boot.size_mib : 0])) <= 204800
       )
       error_message = "OCI Ampere A1 deployments must stay within the Always Free envelope of 2 OCPUs, 12288 MiB memory, and 204800 MiB of boot storage."
     }
@@ -253,7 +248,7 @@ resource "oci_core_internet_gateway" "default" {
 }
 
 resource "oci_core_network_security_group" "node" {
-  for_each = local.oci_nodes
+  for_each = local.oci_instances
 
   compartment_id = var.oci_tenancy_ocid
   display_name   = each.key
@@ -265,7 +260,7 @@ resource "oci_core_network_security_group" "node" {
 }
 
 resource "oci_core_network_security_group_security_rule" "node_egress" {
-  for_each = local.oci_node_egress_rules
+  for_each = local.oci_network_security_group_rules_egress
 
   description               = "Allow ${each.key} outbound traffic"
   destination               = each.value.destination
@@ -277,7 +272,7 @@ resource "oci_core_network_security_group_security_rule" "node_egress" {
 }
 
 resource "oci_core_network_security_group_security_rule" "node_ingress" {
-  for_each = local.oci_node_ingress_rules
+  for_each = local.oci_network_security_group_rules_ingress
 
   description               = "Allow ${each.key} inbound traffic"
   direction                 = "INGRESS"
@@ -325,7 +320,7 @@ resource "oci_core_vcn" "default" {
 }
 
 resource "oci_objectstorage_bucket" "talos_images" {
-  for_each = local.oci_talos_images
+  for_each = local.oci_images_talos
 
   access_type    = "NoPublicAccess"
   compartment_id = var.oci_tenancy_ocid
@@ -340,7 +335,7 @@ resource "oci_objectstorage_bucket" "talos_images" {
 }
 
 resource "oci_objectstorage_object" "talos_image" {
-  for_each = local.oci_talos_images
+  for_each = local.oci_images_talos
 
   bucket       = oci_objectstorage_bucket.talos_images[each.key].name
   content_type = "application/octet-stream"
@@ -355,11 +350,11 @@ resource "oci_objectstorage_object" "talos_image" {
 }
 
 resource "terraform_data" "oci_ingress_validation" {
-  input = local.oci_invalid_ingress_rules
+  input = local.oci_ingress_rules_invalid
 
   lifecycle {
     precondition {
-      condition     = length(local.oci_invalid_ingress_rules) == 0
+      condition     = length(local.oci_ingress_rules_invalid) == 0
       error_message = "OCI TCP ingress rules must declare ports, use tailscale, cloudflared, or public mode, and declare sources only in public mode."
     }
   }

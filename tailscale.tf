@@ -1,10 +1,6 @@
 data "tailscale_devices" "all" {}
 
 locals {
-  tailscale_cluster_tags = toset([
-    for name in keys(local.clusters) : "tag:${name}"
-  ])
-
   tailscale_device_ipv4 = {
     for device in data.tailscale_devices.all.devices :
     regex("^[^.]+", device.name) => try(
@@ -21,21 +17,21 @@ locals {
     )
   }
 
-  tailscale_operator_client_tags = {
-    for name in keys(local.clusters) : name => ["tag:${name}-operator"]
-  }
-
   tailscale_routes = toset(flatten([
     for cluster in values(local.clusters) : flatten([
       for node in values(cluster.nodes) : try(node.tailscale_routes, [])
     ])
   ]))
 
+  tailscale_tags_cluster = toset([
+    for name in keys(local.clusters) : "tag:${name}"
+  ])
+
   tailscale_policy = {
     acls = concat(
       local.access.tailscale.acls,
       [
-        for tag in local.tailscale_cluster_tags : {
+        for tag in local.tailscale_tags_cluster : {
           action = "accept"
           dst    = ["*:*"]
           src    = [tag]
@@ -58,10 +54,10 @@ locals {
     tagOwners = merge(
       local.access.tailscale.tag_owners,
       {
-        for tag in local.tailscale_cluster_tags : tag => ["${tag}-operator", "group:admin"]
+        for tag in local.tailscale_tags_cluster : tag => ["${tag}-operator", "group:admin"]
       },
       {
-        for tag in local.tailscale_cluster_tags : "${tag}-operator" => ["group:admin"]
+        for tag in local.tailscale_tags_cluster : "${tag}-operator" => ["group:admin"]
       },
     )
 
@@ -80,7 +76,7 @@ resource "tailscale_oauth_client" "kubernetes_operator" {
 
   description = "${each.key} Kubernetes operator"
   scopes      = local.access.tailscale.operator.scopes
-  tags        = local.tailscale_operator_client_tags[each.key]
+  tags        = ["tag:${each.key}-operator"]
 
   depends_on = [tailscale_acl.default]
 }

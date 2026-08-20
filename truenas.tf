@@ -1,5 +1,5 @@
 data "truenas_network_interface" "services_physical" {
-  for_each = local.truenas_services_hosts
+  for_each = local.truenas_hosts_services
 
   id       = local.networks[each.value.network].interfaces.services.name
   provider = truenas.hosts[each.key]
@@ -15,7 +15,22 @@ locals {
     }
   ]...)
 
-  truenas_nfs_shares = merge([
+  truenas_hosts = {
+    for name, machine in local.machines : name => machine
+    if machine.platform == "truenas"
+  }
+
+  truenas_hosts_provider = setunion(
+    toset(keys(local.truenas_hosts)),
+    toset(local.access.truenas.retired_hosts),
+  )
+
+  truenas_hosts_services = {
+    for name, machine in local.truenas_hosts : name => machine
+    if try(local.networks[machine.network].interfaces.services, null) != null
+  }
+
+  truenas_shares_nfs = merge([
     for target, storage in local.storage.targets : {
       for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
         dataset_key = "${target}/${share.dataset}"
@@ -31,11 +46,6 @@ locals {
       })
     }
   ]...)
-
-  truenas_services_hosts = {
-    for name, machine in local.truenas_hosts : name => machine
-    if try(local.networks[machine.network].interfaces.services, null) != null
-  }
 
   truenas_snapshot_tasks = merge([
     for target, storage in local.storage.targets : {
@@ -61,7 +71,7 @@ locals {
         attributes = {
           path = join("/", [
             trimsuffix(virtual_machine.boot.iso_directory, "/"),
-            "talos-${local.talos_schematic_ids[local.machines[virtual_machine_name].cluster]}-${local.clusters[local.machines[virtual_machine_name].cluster].talos_version}.iso",
+            "talos-${local.talos_image_factory_schematic_ids[local.machines[virtual_machine_name].cluster]}-${local.clusters[local.machines[virtual_machine_name].cluster].talos_version}.iso",
           ])
         }
         dtype           = "CDROM"
@@ -125,7 +135,7 @@ resource "truenas_dataset" "managed" {
 }
 
 resource "truenas_network_interface" "services_bridge" {
-  for_each = local.truenas_services_hosts
+  for_each = local.truenas_hosts_services
 
   bridge_members = [truenas_network_interface.services_physical[each.key].name]
   ipv4_dhcp      = false
@@ -149,7 +159,7 @@ resource "truenas_network_interface" "services_bridge" {
 }
 
 resource "truenas_network_interface" "services_physical" {
-  for_each = local.truenas_services_hosts
+  for_each = local.truenas_hosts_services
 
   aliases   = []
   ipv4_dhcp = false
@@ -183,7 +193,7 @@ resource "truenas_network_interface" "services_physical" {
 }
 
 resource "truenas_share_nfs" "managed" {
-  for_each = local.truenas_nfs_shares
+  for_each = local.truenas_shares_nfs
 
   comment       = "Kubernetes persistent storage managed by OpenTofu"
   enabled       = true

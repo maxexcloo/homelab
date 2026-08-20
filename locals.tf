@@ -17,14 +17,4 @@ locals {
     for name, machine in local.machines :
     name => "${name}.${machine.network}.${local.domains.infrastructure}"
   }
-
-  truenas_hosts = {
-    for name, machine in local.machines : name => machine
-    if machine.platform == "truenas"
-  }
-
-  truenas_provider_hosts = setunion(
-    toset(keys(local.truenas_hosts)),
-    toset(local.access.truenas.retired_hosts),
-  )
 }

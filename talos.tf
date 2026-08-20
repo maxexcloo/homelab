@@ -22,10 +22,10 @@ data "talos_client_configuration" "cluster" {
 data "talos_cluster_health" "cluster" {
   for_each = local.talos_recovery_clusters
 
-  control_plane_nodes    = local.talos_control_plane_endpoints[each.key]
-  endpoints              = local.talos_control_plane_endpoints[each.key]
+  control_plane_nodes    = local.talos_cluster_endpoints_control_plane[each.key]
+  endpoints              = local.talos_cluster_endpoints_control_plane[each.key]
   skip_kubernetes_checks = true
-  worker_nodes           = local.talos_worker_endpoints[each.key]
+  worker_nodes           = local.talos_cluster_endpoints_worker[each.key]
 
   client_configuration = {
     ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
@@ -114,11 +114,6 @@ data "talos_machine_configuration" "node" {
 }
 
 locals {
-  talos_bootstrap_nodes = {
-    for name, node in local.talos_nodes : name => node
-    if node.machine_type == "controlplane" && try(node.bootstrap, false)
-  }
-
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
       node.address,
@@ -133,41 +128,33 @@ locals {
     )
   }
 
-  talos_clusters = {
-    for name, cluster in local.clusters : name => cluster
-    if cluster.talos_enabled
-  }
-
-  talos_configuration_apply_nodes = {
-    for name, node in local.talos_nodes : name => node
-    if node.configuration_delivery == "api"
-  }
-
-  talos_control_plane_endpoints = {
+  talos_cluster_endpoints_control_plane = {
     for cluster_name, cluster in local.talos_clusters : cluster_name => [
       for node_name, node in cluster.nodes : local.machines[node_name].address
       if node.machine_type == "controlplane"
     ]
   }
 
-  talos_recovery_clusters = {
-    for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
-    if anytrue([
-      for node in values(cluster.nodes) :
-      node.machine_type == "controlplane" && try(node.bootstrap, false)
-    ])
-  }
-
-  talos_schematic_ids = {
-    for name, schematic in talos_image_factory_schematic.cluster :
-    name => schematic.id
-  }
-
-  talos_worker_endpoints = {
+  talos_cluster_endpoints_worker = {
     for cluster_name, cluster in local.talos_clusters : cluster_name => [
       for node_name, node in cluster.nodes : local.machines[node_name].address
       if node.machine_type == "worker"
     ]
+  }
+
+  talos_clusters = {
+    for name, cluster in local.clusters : name => cluster
+    if cluster.talos_enabled
+  }
+
+  talos_machine_bootstrap_nodes = {
+    for name, node in local.talos_nodes : name => node
+    if node.machine_type == "controlplane" && try(node.bootstrap, false)
+  }
+
+  talos_machine_configuration_apply_nodes = {
+    for name, node in local.talos_nodes : name => node
+    if node.configuration_delivery == "api"
   }
 
   talos_nodes = merge([
@@ -178,6 +165,14 @@ locals {
       })
     }
   ]...)
+
+  talos_recovery_clusters = {
+    for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
+    if anytrue([
+      for node in values(cluster.nodes) :
+      node.machine_type == "controlplane" && try(node.bootstrap, false)
+    ])
+  }
 }
 
 resource "onepassword_item" "kubeconfig" {
@@ -234,8 +229,8 @@ resource "onepassword_item" "talosconfig" {
 resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.talos_recovery_clusters
 
-  endpoint = one(local.talos_control_plane_endpoints[each.key])
-  node     = one(local.talos_control_plane_endpoints[each.key])
+  endpoint = one(local.talos_cluster_endpoints_control_plane[each.key])
+  node     = one(local.talos_cluster_endpoints_control_plane[each.key])
 
   client_configuration = {
     ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
@@ -257,7 +252,7 @@ resource "talos_cluster_kubeconfig" "cluster" {
 }
 
 resource "talos_machine_bootstrap" "control_plane" {
-  for_each = local.talos_bootstrap_nodes
+  for_each = local.talos_machine_bootstrap_nodes
 
   endpoint = each.value.address
   node     = each.value.address
@@ -285,7 +280,7 @@ resource "talos_machine_bootstrap" "control_plane" {
 }
 
 resource "talos_machine_configuration_apply" "node" {
-  for_each = local.talos_configuration_apply_nodes
+  for_each = local.talos_machine_configuration_apply_nodes
 
   apply_mode                     = "staged_if_needing_reboot"
   endpoint                       = each.value.address

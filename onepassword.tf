@@ -14,7 +14,7 @@ locals {
 }
 
 resource "onepassword_item" "cloudflare_acme" {
-  for_each = local.cloudflare_acme_consumers
+  for_each = local.cloudflare_consumers_acme
 
   category            = "login"
   password_wo         = cloudflare_account_token.acme[each.key].value
@@ -30,7 +30,7 @@ resource "onepassword_item" "cloudflare_acme" {
 }
 
 resource "onepassword_item" "cloudflare_tunnel" {
-  for_each = local.cloudflare_tunnels
+  for_each = local.cloudflare_consumers_tunnel
 
   category            = "login"
   password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token

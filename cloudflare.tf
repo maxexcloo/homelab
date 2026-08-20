@@ -19,7 +19,7 @@ data "cloudflare_account_api_token_permission_groups_list" "zone_read" {
 }
 
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
-  for_each = local.cloudflare_tunnels
+  for_each = local.cloudflare_consumers_tunnel
 
   account_id = data.cloudflare_account.default.id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
@@ -34,12 +34,7 @@ data "cloudflare_zone" "default" {
 }
 
 locals {
-  cloudflare_zones = toset(concat(
-    values(local.domains),
-    [for source_file in local.dns_source_files : source_file.zone.name],
-  ))
-
-  cloudflare_acme_consumers = {
+  cloudflare_consumers_acme = {
     for name, consumer in local.cloudflare.acme_consumers : name => merge(consumer, {
       challenge_hostname = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.services}"
       challenge_zone     = try(consumer.machine, null) != null ? local.domains.infrastructure : local.domains.services
@@ -50,7 +45,7 @@ locals {
     })
   }
 
-  cloudflare_tunnels = {
+  cloudflare_consumers_tunnel = {
     for name, consumer in local.cloudflare.tunnel_consumers : name => merge(consumer, {
       credential_scope = try(consumer.machine, null) != null ? local.machine_fqdns[consumer.machine] : name
       tags             = try(consumer.machine, null) != null ? toset(["Homelab", "Cloudflare", "Tunnel"]) : toset(["Homelab", "Cloudflare", "Kubernetes"])
@@ -58,10 +53,15 @@ locals {
       vault            = try(consumer.machine, null) != null ? "homelab" : "cluster/${name}"
     })
   }
+
+  cloudflare_zones = toset(concat(
+    values(local.domains),
+    [for source_file in local.dns_zone_files : source_file.zone.name],
+  ))
 }
 
 resource "cloudflare_account_token" "acme" {
-  for_each = local.cloudflare_acme_consumers
+  for_each = local.cloudflare_consumers_acme
 
   account_id = data.cloudflare_account.default.id
   name       = "Cloudflare ACME DNS: ${each.value.credential_scope}"
@@ -102,7 +102,7 @@ resource "cloudflare_account_token" "acme" {
 }
 
 resource "cloudflare_dns_record" "all" {
-  for_each = local.dns_all_records
+  for_each = local.dns_records
 
   comment  = each.value.comment
   content  = each.value.content
@@ -117,7 +117,7 @@ resource "cloudflare_dns_record" "all" {
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
-  for_each = local.cloudflare_tunnels
+  for_each = local.cloudflare_consumers_tunnel
 
   account_id = data.cloudflare_account.default.id
   config_src = "cloudflare"
@@ -127,7 +127,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
 }
 
 resource "terraform_data" "acme_validation" {
-  input = sort(keys(local.cloudflare_acme_consumers))
+  input = sort(keys(local.cloudflare_consumers_acme))
 
   lifecycle {
     precondition {
@@ -149,7 +149,7 @@ resource "terraform_data" "acme_validation" {
 }
 
 resource "terraform_data" "tunnel_validation" {
-  input = sort(keys(local.cloudflare_tunnels))
+  input = sort(keys(local.cloudflare_consumers_tunnel))
 
   lifecycle {
     precondition {

@@ -35,6 +35,11 @@ requirements, and variables. Put direct provider resources and their exclusive
 data sources in the corresponding domain file. Do not combine unrelated
 domains merely to deduplicate lookups.
 
+Keep decoded shared inputs and genuinely cross-domain derived values in
+`locals.tf`. Put provider-scoped derived locals in the corresponding domain
+file, and name them from largest scope to smallest as
+`provider_resource_qualifier`.
+
 Keep root Markdown limited to `AGENTS.md` and `README.md`. Put later
 operational documentation under `docs/`.
 

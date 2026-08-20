@@ -3,8 +3,15 @@ data "talos_image_factory_urls" "cluster" {
 
   architecture  = each.value.image.architecture
   platform      = each.value.image.platform
-  schematic_id  = local.talos_schematic_ids[each.key]
+  schematic_id  = local.talos_image_factory_schematic_ids[each.key]
   talos_version = each.value.talos_version
+}
+
+locals {
+  talos_image_factory_schematic_ids = {
+    for name, schematic in talos_image_factory_schematic.cluster :
+    name => schematic.id
+  }
 }
 
 resource "talos_image_factory_schematic" "cluster" {
