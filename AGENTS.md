@@ -13,8 +13,9 @@ Flux.
   integrations.
 - Use Australian English in project-owned prose and identifiers.
 - Use `.yaml`, not `.yml`, for project-owned YAML.
-- Pin tools and providers to exact stable versions. Let Renovate propose
-  upgrades for manual review.
+- Pin tools and providers to stable release versions. Use readable major tags
+  such as `v7` for GitHub Actions, not commit SHAs. Let Renovate propose upgrades
+  for manual review.
 - Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
 - Never change live infrastructure without explicit approval and review of the
