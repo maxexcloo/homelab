@@ -51,7 +51,7 @@ and `xz` from the workstation operating system.
 - **Compute & Virtualisation**: TrueNAS VM (`taco`) on `kimbap` and OCI compute instance (`hsp`) on Ampere A1.
 - **Storage**: TrueNAS NVMe datasets, NFS shares, and automated snapshot tasks for Kubernetes persistent storage.
 - **Networking**: UniFi VLANs and static DHCP reservations for retained appliances and VMs.
-- **DNS & Ingress**: Cloudflare DNS records across owned zones, ACME DNS challenge tokens, and Cloudflare Tunnels.
+- **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, and Cloudflare Tunnels; application DNS remains workload-owned in `kubelab`.
 - **Mesh & Access**: Tailscale ACL policies, host recovery keys, and Kubernetes operator OAuth clients.
 - **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).
 

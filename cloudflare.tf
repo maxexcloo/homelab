@@ -45,9 +45,9 @@ locals {
     })
   }
 
-  cloudflare_consumers_crossplane = {
-    for name, consumer in local.cloudflare.crossplane_consumers : name => merge(consumer, {
-      title = "cloudflare-crossplane"
+  cloudflare_consumers_external_dns = {
+    for name, consumer in local.cloudflare.external_dns_consumers : name => merge(consumer, {
+      title = "cloudflare-external-dns"
       vault = "cluster/${name}"
     })
   }
@@ -108,11 +108,11 @@ resource "cloudflare_account_token" "acme" {
   depends_on = [terraform_data.acme_validation]
 }
 
-resource "cloudflare_account_token" "crossplane" {
-  for_each = local.cloudflare_consumers_crossplane
+resource "cloudflare_account_token" "external_dns" {
+  for_each = local.cloudflare_consumers_external_dns
 
   account_id = data.cloudflare_account.default.id
-  name       = "Cloudflare Crossplane: ${each.key}"
+  name       = "Cloudflare ExternalDNS: ${each.key}"
 
   policies = [
     {
@@ -161,6 +161,24 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   name       = each.key
 
   depends_on = [terraform_data.tunnel_validation]
+}
+
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
+  for_each = {
+    for name, consumer in local.cloudflare_consumers_tunnel : name => consumer
+    if try(consumer.cluster, null) != null
+  }
+
+  account_id = data.cloudflare_account.default.id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
+
+  config = {
+    ingress = [
+      {
+        service = "http://traefik-tunnel.networking.svc.cluster.local:80"
+      },
+    ]
+  }
 }
 
 resource "terraform_data" "acme_validation" {

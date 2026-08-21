@@ -11,8 +11,10 @@ cloudflare:
       machine: ramen
     syd:
       cluster: syd
-  crossplane_consumers:
+  external_dns_consumers:
     mbk:
+      zone: excloo.dev
+    syd:
       zone: excloo.dev
   tunnel_consumers:
     mbk:

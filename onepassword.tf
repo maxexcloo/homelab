@@ -29,13 +29,13 @@ resource "onepassword_item" "cloudflare_acme" {
   }
 }
 
-resource "onepassword_item" "cloudflare_crossplane" {
-  for_each = local.cloudflare_consumers_crossplane
+resource "onepassword_item" "cloudflare_external_dns" {
+  for_each = local.cloudflare_consumers_external_dns
 
   category            = "login"
-  password_wo         = cloudflare_account_token.crossplane[each.key].value
+  password_wo         = cloudflare_account_token.external_dns[each.key].value
   password_wo_version = try(each.value.secret_revision, 1)
-  tags                = ["Homelab", "Cloudflare", "Crossplane"]
+  tags                = ["Homelab", "Cloudflare", "ExternalDNS"]
   title               = each.value.title
   username            = data.cloudflare_zone.default[each.value.zone].zone_id
   vault               = data.onepassword_vault.default[each.value.vault].uuid

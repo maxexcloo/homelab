@@ -78,6 +78,19 @@ locals {
       }
     },
     {
+      for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/public" => {
+        comment  = "Managed by OpenTofu"
+        content  = oci_core_instance.node[cluster.api_node].public_ip
+        name     = "public.${cluster_name}.${local.domains.services}"
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "A"
+        zone     = local.domains.services
+      }
+      if try(local.machines[cluster.api_node].oci.assign_public_ip, false)
+    },
+    {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/tailscale" => {
         comment  = "Managed by OpenTofu"
         content  = local.tailscale_device_ipv4[cluster_name]
@@ -102,6 +115,19 @@ locals {
         zone     = local.domains.services
       }
       if try(local.tailscale_device_ipv6[cluster_name], null) != null
+    },
+    {
+      for cluster_name, consumer in local.cloudflare_consumers_tunnel : "cluster/${cluster_name}/tunnel" => {
+        comment  = "Managed by OpenTofu"
+        content  = "${cloudflare_zero_trust_tunnel_cloudflared.cluster[cluster_name].id}.cfargotunnel.com"
+        name     = "tunnel.${cluster_name}.${local.domains.services}"
+        priority = null
+        proxied  = false
+        ttl      = 300
+        type     = "CNAME"
+        zone     = local.domains.services
+      }
+      if try(consumer.cluster, null) != null
     },
     {
       for name, consumer in local.cloudflare_consumers_acme : "acme/${name}" => {
