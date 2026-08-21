@@ -212,6 +212,23 @@ resource "truenas_share_nfs" "managed" {
   }
 }
 
+resource "truenas_service" "nfs" {
+  for_each = {
+    for target, storage in local.storage.targets : target => storage
+    if length(try(storage.nfs_shares, {})) > 0
+  }
+
+  enable   = true
+  provider = truenas.hosts[each.key]
+  service  = "nfs"
+
+  depends_on = [truenas_share_nfs.managed]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "truenas_snapshot_task" "managed" {
   for_each = local.truenas_snapshot_tasks
 
