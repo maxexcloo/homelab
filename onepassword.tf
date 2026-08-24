@@ -61,26 +61,6 @@ resource "onepassword_item" "cloudflare_tunnel" {
   }
 }
 
-resource "onepassword_item" "generated" {
-  for_each = local.access.onepassword.generated_items
-
-  category = "login"
-  tags     = each.value.tags
-  title    = each.key
-  username = each.value.username
-  vault    = data.onepassword_vault.default["cluster/${each.value.cluster}"].uuid
-
-  password_recipe {
-    digits  = each.value.password_recipe.digits
-    length  = each.value.password_recipe.length
-    symbols = each.value.password_recipe.symbols
-  }
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "onepassword_item" "tailscale_auth_key" {
   for_each = local.machines
 

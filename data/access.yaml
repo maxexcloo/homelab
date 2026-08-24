@@ -1,14 +1,5 @@
 onepassword:
   cluster_vault_prefix: "Cluster: "
-  generated_items:
-    database-windmill:
-      cluster: mbk
-      tags: [Homelab, Database, Windmill]
-      username: windmill
-      password_recipe:
-        digits: true
-        length: 48
-        symbols: true
   vaults:
     homelab: Homelab
 ssh:
