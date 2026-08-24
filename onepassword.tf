@@ -66,7 +66,7 @@ resource "onepassword_item" "tailscale_auth_key" {
 
   category            = "login"
   password_wo         = tailscale_tailnet_key.server[each.key].key
-  password_wo_version = try(local.access.tailscale.server_secret_revision, 1)
+  password_wo_version = try(each.value.tailscale_auth_key_secret_revision, 1)
   tags                = ["Homelab", "Tailscale", "Bootstrap"]
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
   vault               = data.onepassword_vault.default["homelab"].uuid

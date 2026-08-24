@@ -87,17 +87,7 @@ tailscale:
       dst:
         - "*:*"
       src:
-        - tag:router
-    - action: accept
-      dst:
-        - "*:*"
-      src:
         - group:admin
-    - action: accept
-      dst:
-        - "tag:talos:*"
-      src:
-        - tag:talos
     - action: accept
       dst:
         - "tag:storage:*"
@@ -106,17 +96,11 @@ tailscale:
   auto_approvers:
     exit_node:
       - tag:router
-      - tag:server
-      - tag:vm
     routes:
       "0.0.0.0/0":
         - tag:router
-        - tag:server
-        - tag:vm
       "::/0":
         - tag:router
-        - tag:server
-        - tag:vm
   groups:
     group:admin:
       - max@excloo.com
@@ -131,17 +115,15 @@ tailscale:
       - group:admin
     tag:backup:
       - group:admin
-    tag:cicd:
-      - group:admin
     tag:ephemeral:
+      - group:admin
+    tag:kubernetes:
       - group:admin
     tag:router:
       - group:admin
     tag:server:
       - group:admin
     tag:storage:
-      - group:admin
-    tag:talos:
       - group:admin
     tag:vm:
       - group:admin
@@ -150,11 +132,11 @@ tailscale:
   tests:
     - src: max@excloo.com
       accept:
-        - tag:talos:50000
+        - tag:kubernetes:50000
         - tag:storage:22
     - src: tag:mbk
-      accept:
+      deny:
         - tag:server:443
     - src: tag:syd
-      accept:
+      deny:
         - tag:server:443

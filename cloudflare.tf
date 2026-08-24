@@ -128,7 +128,7 @@ resource "cloudflare_account_token" "external_dns" {
       ]
 
       resources = jsonencode({
-        for zone in local.cloudflare_zones :
+        for zone in each.value.zones :
         "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[zone].zone_id}" => "*"
       })
     },

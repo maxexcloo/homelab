@@ -23,7 +23,8 @@ machines:
     network: syd
     platform: talos
     provider: oci
-    tailscale_tag: talos
+    tailscale_auth_key_secret_revision: 2
+    tailscale_tag: kubernetes
     boot:
       size_mib: 131072
     compute:
@@ -71,7 +72,8 @@ machines:
     network: mbk
     platform: talos
     provider: truenas
-    tailscale_tag: talos
+    tailscale_auth_key_secret_revision: 2
+    tailscale_tag: kubernetes
     vlan: services
     boot:
       iso_directory: /mnt/truenas-nvme/virtual-machines

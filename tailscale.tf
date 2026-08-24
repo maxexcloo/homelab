@@ -28,23 +28,14 @@ locals {
   ])
 
   tailscale_policy = {
-    acls = concat(
-      local.access.tailscale.acls,
-      [
-        for tag in local.tailscale_tags_cluster : {
-          action = "accept"
-          dst    = ["*:*"]
-          src    = [tag]
-        }
-      ],
-    )
+    acls = local.access.tailscale.acls
 
     autoApprovers = {
       exitNode = local.access.tailscale.auto_approvers.exit_node
       routes = merge(
         local.access.tailscale.auto_approvers.routes,
         {
-          for route in local.tailscale_routes : route => ["tag:talos"]
+          for route in local.tailscale_routes : route => ["tag:kubernetes"]
         },
       )
     }
