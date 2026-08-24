@@ -73,37 +73,42 @@ resource "cloudflare_account_token" "acme" {
   account_id = data.cloudflare_account.default.id
   name       = "Cloudflare ACME DNS: ${each.value.credential_scope}"
 
-  policies = [
-    {
-      effect = "allow"
+  policies = concat(
+    [
+      {
+        effect = "allow"
 
-      permission_groups = [
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
-        },
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
-        },
-      ]
+        permission_groups = [
+          {
+            id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
+          },
+          {
+            id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+          },
+        ]
 
-      resources = jsonencode({
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[local.domains.acme].zone_id}" = "*"
-      })
-    },
-    {
-      effect = "allow"
+        resources = jsonencode({
+          "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[local.domains.acme].zone_id}" = "*"
+        })
+      },
+    ],
+    [
+      for zone in local.cloudflare_zones : {
+        effect = "allow"
 
-      permission_groups = [
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
-        },
-      ]
+        permission_groups = [
+          {
+            id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+          },
+        ]
 
-      resources = jsonencode({
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[each.value.challenge_zone].zone_id}" = "*"
-      })
-    },
-  ]
+        resources = jsonencode({
+          "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[zone].zone_id}" = "*"
+        })
+      }
+      if zone != local.domains.acme
+    ],
+  )
 
   depends_on = [terraform_data.acme_validation]
 }
