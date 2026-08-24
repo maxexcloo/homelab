@@ -1,6 +1,9 @@
 name: excloo.com
 records:
   - type: CNAME
+    name: _acme-challenge
+    content: _acme-challenge.excloo.com.043847.xyz
+  - type: CNAME
     name: fm1._domainkey
     content: fm1.excloo.com.dkim.fmhosted.com
   - type: CNAME
