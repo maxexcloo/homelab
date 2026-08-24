@@ -20,6 +20,8 @@ clusters:
         machine_type: controlplane
         tailscale_routes:
           - 10.4.0.0/22
+        sysctls:
+          user.max_user_namespaces: "1024"
   syd:
     api_node: hsp
     kubernetes_version: v1.36.3

@@ -6,7 +6,7 @@ provider "oci" {
 }
 
 provider "truenas" {
-  for_each = local.truenas_hosts_provider
+  for_each = local.truenas_hosts
 
   alias              = "hosts"
   destroy_protection = true

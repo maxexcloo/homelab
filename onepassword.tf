@@ -37,7 +37,7 @@ resource "onepassword_item" "cloudflare_external_dns" {
   password_wo_version = try(each.value.secret_revision, 1)
   tags                = ["Homelab", "Cloudflare", "ExternalDNS"]
   title               = each.value.title
-  username            = data.cloudflare_zone.default[each.value.zone].zone_id
+  username            = each.key
   vault               = data.onepassword_vault.default[each.value.vault].uuid
 
   lifecycle {

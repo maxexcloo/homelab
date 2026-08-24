@@ -56,66 +56,7 @@ data "talos_machine_configuration" "node" {
   talos_version      = local.clusters[each.value.cluster].talos_version
 
   config_patches = [
-    yamlencode({
-      machine = merge(
-        {
-          features = {
-            hostDNS = {
-              enabled              = true
-              forwardKubeDNSToHost = true
-              resolveMemberNames   = true
-            }
-          }
-        },
-        try(each.value.install_disk, null) != null ? {
-          install = {
-            disk  = each.value.install_disk
-            image = data.talos_image_factory_urls.cluster[each.value.cluster].urls.installer
-          }
-        } : {},
-        try(length(each.value.time_servers), 0) > 0 ? {
-          time = {
-            servers = each.value.time_servers
-          }
-        } : {},
-      )
-      cluster = {
-        allowSchedulingOnControlPlanes = true
-        network = {
-          cni = {
-            name = "none"
-          }
-          podSubnets     = [local.clusters[each.value.cluster].pod_subnet]
-          serviceSubnets = [local.clusters[each.value.cluster].service_subnet]
-        }
-      }
-    }),
-    yamlencode({
-      apiVersion = "v1alpha1"
-      kind       = "HostnameConfig"
-      auto       = "off"
-      hostname   = each.key
-    }),
-    yamlencode({
-      apiVersion = "v1alpha1"
-      kind       = "ExtensionServiceConfig"
-      name       = "tailscale"
-      environment = concat(
-        [
-          "TS_AUTHKEY=${tailscale_tailnet_key.server[each.key].key}",
-          "TS_HOSTNAME=${each.key}",
-        ],
-        try(length(each.value.tailscale_routes), 0) > 0 ? [
-          "TS_ROUTES=${join(",", each.value.tailscale_routes)}",
-        ] : [],
-      )
-    }),
-    yamlencode({
-      apiVersion = "v1alpha1"
-      kind       = "UserVolumeConfig"
-      name       = "local-path-provisioner"
-      volumeType = "directory"
-    }),
+    for document in local.talos_machine_configuration_documents[each.key] : yamlencode(document)
   ]
 }
 
@@ -158,11 +99,85 @@ locals {
     if node.machine_type == "controlplane" && try(node.bootstrap, false)
   }
 
+  talos_machine_configuration_documents = {
+    for name, node in local.talos_nodes : name => [
+      provider::deepmerge::mergo(
+        {
+          cluster = {
+            allowSchedulingOnControlPlanes = true
+            network = {
+              cni = {
+                name = "none"
+              }
+              podSubnets     = [local.clusters[node.cluster].pod_subnet]
+              serviceSubnets = [local.clusters[node.cluster].service_subnet]
+            }
+          }
+          machine = {
+            features = {
+              hostDNS = {
+                enabled              = true
+                forwardKubeDNSToHost = true
+                resolveMemberNames   = true
+              }
+            }
+          }
+        },
+        node.install_disk != null ? {
+          machine = {
+            install = {
+              disk  = node.install_disk
+              image = data.talos_image_factory_urls.cluster[node.cluster].urls.installer
+            }
+          }
+        } : {},
+        length(node.sysctls) > 0 ? {
+          machine = {
+            sysctls = node.sysctls
+          }
+        } : {},
+        length(node.time_servers) > 0 ? {
+          machine = {
+            time = {
+              servers = node.time_servers
+            }
+          }
+        } : {},
+      ),
+      {
+        apiVersion = "v1alpha1"
+        kind       = "HostnameConfig"
+        auto       = "off"
+        hostname   = name
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "ExtensionServiceConfig"
+        name       = "tailscale"
+        environment = compact([
+          "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
+          "TS_HOSTNAME=${name}",
+          length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
+        ])
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "UserVolumeConfig"
+        name       = "local-path-provisioner"
+        volumeType = "directory"
+      },
+    ]
+  }
+
   talos_nodes = merge([
     for cluster_name, cluster in local.talos_clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
-        address = local.machines[node_name].address
-        cluster = cluster_name
+        address          = local.machines[node_name].address
+        cluster          = cluster_name
+        install_disk     = try(node.install_disk, null)
+        sysctls          = try(node.sysctls, {})
+        tailscale_routes = try(node.tailscale_routes, [])
+        time_servers     = try(node.time_servers, [])
       })
     }
   ]...)

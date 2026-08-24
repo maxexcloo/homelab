@@ -1,25 +1,36 @@
 locals {
-  dns_records = merge(local.dns_records_derived, local.dns_records_manual)
-
-  dns_record_entries_manual = flatten([
-    for source_file in local.dns_zone_files : [
-      for record in try(source_file.zone.records, []) : {
-        key = try(
-          record.id,
-          join("-", compact([
-            record.type,
-            replace(record.name, "@", "apex"),
-            tostring(try(record.priority, null)),
-          ])),
-        )
-        record = record
-        zone   = source_file.zone.name
-      }
-    ]
-  ])
+  dns_records = merge(
+    {
+      for record_key, record in local.dns_records_derived_specs : record_key => merge(
+        {
+          comment  = "Managed by OpenTofu"
+          priority = null
+          proxied  = false
+          ttl      = 300
+        },
+        record,
+      )
+    },
+    local.dns_records_manual,
+  )
 
   dns_record_entries_manual_by_key = {
-    for entry in local.dns_record_entries_manual :
+    for entry in flatten([
+      for source_file in local.dns_zone_files : [
+        for record in try(source_file.zone.records, []) : {
+          key = try(
+            record.id,
+            join("-", compact([
+              record.type,
+              replace(record.name, "@", "apex"),
+              tostring(try(record.priority, null)),
+            ])),
+          )
+          record = record
+          zone   = source_file.zone.name
+        }
+      ]
+    ]) :
     "${entry.zone}-manual-${entry.key}" => entry...
   }
 
@@ -38,108 +49,76 @@ locals {
     if contains([for record in records : record.type], "CNAME") && length(records) > 1
   ]
 
-  dns_records_derived = merge(
+  dns_records_derived_specs = merge(
     {
-      for name, machine in local.machines : "machine/${name}/a" => {
-        comment  = "Managed by OpenTofu"
-        content  = try(machine.public_ipv4, machine.address)
-        name     = local.machine_fqdns[name]
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "A"
-        zone     = local.domains.infrastructure
+      for name, consumer in local.cloudflare_consumers_acme : "acme/${name}" => {
+        content = consumer.target_hostname
+        name    = "_acme-challenge.${consumer.challenge_hostname}"
+        type    = "CNAME"
+        zone    = consumer.challenge_zone
       }
-      if try(machine.public_ipv4, null) != null || try(machine.address, null) != null
-    },
-    {
-      for name, machine in local.machines : "machine/${name}/aaaa" => {
-        comment  = "Managed by OpenTofu"
-        content  = machine.public_ipv6
-        name     = local.machine_fqdns[name]
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "AAAA"
-        zone     = local.domains.infrastructure
-      }
-      if try(machine.public_ipv6, null) != null
     },
     {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/api" => {
-        comment  = "Managed by OpenTofu"
-        content  = local.machines[cluster.api_node].address
-        name     = "api.${cluster_name}.${local.domains.services}"
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "A"
-        zone     = local.domains.services
+        content = local.machines[cluster.api_node].address
+        name    = "api.${cluster_name}.${local.domains.services}"
+        type    = "A"
+        zone    = local.domains.services
       }
     },
     {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/public" => {
-        comment  = "Managed by OpenTofu"
-        content  = oci_core_instance.node[cluster.api_node].public_ip
-        name     = "public.${cluster_name}.${local.domains.services}"
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "A"
-        zone     = local.domains.services
+        content = oci_core_instance.node[cluster.api_node].public_ip
+        name    = "public.${cluster_name}.${local.domains.services}"
+        type    = "A"
+        zone    = local.domains.services
       }
       if try(local.machines[cluster.api_node].oci.assign_public_ip, false)
     },
     {
-      for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/tailscale" => {
-        comment  = "Managed by OpenTofu"
-        content  = local.tailscale_device_ipv4[cluster_name]
-        name     = "*.${cluster_name}.${local.domains.services}"
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "A"
-        zone     = local.domains.services
+      for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale" => {
+        content = local.tailscale_device_ipv4[cluster_name]
+        name    = "*.${cluster_name}.${local.domains.services}"
+        type    = "A"
+        zone    = local.domains.services
       }
       if try(local.tailscale_device_ipv4[cluster_name], null) != null
     },
     {
-      for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/tailscale-aaaa" => {
-        comment  = "Managed by OpenTofu"
-        content  = local.tailscale_device_ipv6[cluster_name]
-        name     = "*.${cluster_name}.${local.domains.services}"
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "AAAA"
-        zone     = local.domains.services
+      for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale-aaaa" => {
+        content = local.tailscale_device_ipv6[cluster_name]
+        name    = "*.${cluster_name}.${local.domains.services}"
+        type    = "AAAA"
+        zone    = local.domains.services
       }
       if try(local.tailscale_device_ipv6[cluster_name], null) != null
     },
     {
       for cluster_name, consumer in local.cloudflare_consumers_tunnel : "cluster/${cluster_name}/tunnel" => {
-        comment  = "Managed by OpenTofu"
-        content  = "${cloudflare_zero_trust_tunnel_cloudflared.cluster[cluster_name].id}.cfargotunnel.com"
-        name     = "tunnel.${cluster_name}.${local.domains.services}"
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "CNAME"
-        zone     = local.domains.services
+        content = "${cloudflare_zero_trust_tunnel_cloudflared.cluster[cluster_name].id}.cfargotunnel.com"
+        name    = "tunnel.${cluster_name}.${local.domains.services}"
+        type    = "CNAME"
+        zone    = local.domains.services
       }
-      if try(consumer.cluster, null) != null
+      if can(consumer.cluster)
     },
     {
-      for name, consumer in local.cloudflare_consumers_acme : "acme/${name}" => {
-        comment  = "Managed by OpenTofu"
-        content  = consumer.target_hostname
-        name     = "_acme-challenge.${consumer.challenge_hostname}"
-        priority = null
-        proxied  = false
-        ttl      = 300
-        type     = "CNAME"
-        zone     = consumer.challenge_zone
+      for name, machine in local.machines : "machine/${name}/a" => {
+        content = try(machine.public_ipv4, machine.address)
+        name    = local.machine_fqdns[name]
+        type    = "A"
+        zone    = local.domains.infrastructure
       }
+      if try(machine.public_ipv4, null) != null || try(machine.address, null) != null
+    },
+    {
+      for name, machine in local.machines : "machine/${name}/aaaa" => {
+        content = machine.public_ipv6
+        name    = local.machine_fqdns[name]
+        type    = "AAAA"
+        zone    = local.domains.infrastructure
+      }
+      if try(machine.public_ipv6, null) != null
     },
   )
 
