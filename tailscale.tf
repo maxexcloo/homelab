@@ -18,9 +18,9 @@ locals {
   }
 
   tailscale_routes = toset(flatten([
-    for cluster in values(local.clusters) : flatten([
+    for cluster in values(local.clusters) : [
       for node in values(cluster.nodes) : try(node.tailscale_routes, [])
-    ])
+    ]
   ]))
 
   tailscale_tags_cluster = toset([

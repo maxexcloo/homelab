@@ -22,10 +22,8 @@ data "oci_objectstorage_namespace" "default" {
 }
 
 locals {
-  oci_ingress_modes = toset(["cloudflared", "public", "tailscale"])
-
   oci_image_shapes = merge([
-    for name, node in local.oci_instances : {
+    for node in values(local.oci_instances) : {
       "${node.cluster}/${node.oci.shape}" = {
         cluster = node.cluster
         shape   = node.oci.shape
@@ -42,7 +40,7 @@ locals {
     for network_name, network in local.oci_networks : [
       for ingress_name, ingress in try(network.tcp_ingress, {}) : "${network_name}/${ingress_name}"
       if(
-        !contains(local.oci_ingress_modes, try(ingress.mode, "")) ||
+        !contains(["cloudflared", "public", "tailscale"], try(ingress.mode, "")) ||
         try(length(ingress.ports), 0) == 0 ||
         (try(ingress.mode, "") == "public") != (try(length(ingress.sources), 0) > 0)
       )
@@ -54,17 +52,21 @@ locals {
     if try(machine.provider, null) == "oci" && local.clusters[machine.cluster].talos_enabled
   }
 
-  oci_network_security_group_rules_egress = merge([
-    for name, node in local.oci_instances : {
-      for family, destination in merge(
-        { ipv4 = "0.0.0.0/0" },
-        local.oci_networks[node.network].ipv6_enabled ? { ipv6 = "::/0" } : {},
-        ) : "${name}/${family}" => {
-        destination = destination
+  oci_network_security_group_rules_egress = merge(
+    {
+      for name in keys(local.oci_instances) : "${name}/ipv4" => {
+        destination = "0.0.0.0/0"
         node        = name
       }
-    }
-  ]...)
+    },
+    {
+      for name, node in local.oci_instances : "${name}/ipv6" => {
+        destination = "::/0"
+        node        = name
+      }
+      if local.oci_networks[node.network].ipv6_enabled
+    },
+  )
 
   oci_network_security_group_rules_ingress = {
     for rule in flatten([

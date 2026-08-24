@@ -42,9 +42,10 @@ before planning or applying infrastructure changes.
 
 ### Prerequisites
 
-Mise installs 1Password CLI (`op`), `jq`, `kubectl`, OpenTofu, Prek, Talosctl,
-and yq. The OCI image preparation task also expects `curl`, `gzip`, `qemu-img`,
-and `xz` from the workstation operating system.
+Mise installs 1Password CLI (`op`), Actionlint, `jq`, `kubectl`, OpenTofu, Prek,
+Prettier, ShellCheck, Talosctl, and yq. The OCI image preparation task also
+expects `curl`, `gzip`, `qemu-img`, and `xz` from the workstation operating
+system.
 
 ## Substrate
 

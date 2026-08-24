@@ -6,6 +6,7 @@ kubectl = "1.36.4"
 opentofu = "1.12.6"
 prek = "0.4.14"
 prettier = "3.9.6"
+shellcheck = "0.11.0"
 talosctl = "1.13.9"
 yq = "4.53.6"
 
@@ -27,8 +28,8 @@ prek install
 description = "Check formatting and infrastructure configuration"
 run = """
 actionlint .github/workflows/*.yaml
-bash -n scripts/*.sh
 prettier --check .
+shellcheck scripts/*.sh
 tofu fmt -check -recursive
 tofu validate
 """

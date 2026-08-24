@@ -1,10 +1,19 @@
-terraform {
-  required_version = "1.12.5"
+language {
+  compatible_with {
+    opentofu = ">= 1.12"
+  }
+}
 
+terraform {
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "5.23.0"
+    }
+
+    deepmerge = {
+      source  = "isometry/deepmerge"
+      version = "1.3.0"
     }
 
     oci = {
