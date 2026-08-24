@@ -73,6 +73,9 @@ data "talos_machine_configuration" "node" {
             image = data.talos_image_factory_urls.cluster[each.value.cluster].urls.installer
           }
         } : {},
+        try(length(each.value.sysctls), 0) > 0 ? {
+          sysctls = each.value.sysctls
+        } : {},
         try(length(each.value.time_servers), 0) > 0 ? {
           time = {
             servers = each.value.time_servers
