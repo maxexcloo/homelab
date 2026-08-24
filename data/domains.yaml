@@ -12,10 +12,8 @@ cloudflare:
     syd:
       cluster: syd
   external_dns_consumers:
-    mbk:
-      zone: excloo.dev
-    syd:
-      zone: excloo.dev
+    mbk: {}
+    syd: {}
   tunnel_consumers:
     mbk:
       cluster: mbk
