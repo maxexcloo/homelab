@@ -62,15 +62,6 @@ locals {
     }
   ]...)
 
-  truenas_snapshot_tasks = merge([
-    for target, storage in local.storage.targets : {
-      for name, task in storage.snapshot_tasks : "${target}/${name}" => merge(task, {
-        name   = name
-        target = target
-      })
-    }
-  ]...)
-
   truenas_virtual_machine_devices = merge([
     for virtual_machine_name, virtual_machine in local.truenas_virtual_machines : {
       "${virtual_machine_name}/boot" = {
@@ -259,30 +250,6 @@ resource "truenas_share_nfs" "managed" {
   provider      = truenas.hosts[each.value.target]
   readonly      = false
   security      = ["SYS"]
-
-  depends_on = [terraform_data.truenas_storage_target]
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "truenas_snapshot_task" "managed" {
-  for_each = local.truenas_snapshot_tasks
-
-  allow_empty     = true
-  dataset         = each.value.dataset
-  enabled         = true
-  lifetime_unit   = each.value.lifetime.unit
-  lifetime_value  = each.value.lifetime.value
-  naming_schema   = each.value.naming_schema
-  provider        = truenas.hosts[each.value.target]
-  recursive       = true
-  schedule_dom    = each.value.schedule.day_of_month
-  schedule_dow    = each.value.schedule.day_of_week
-  schedule_hour   = each.value.schedule.hour
-  schedule_minute = each.value.schedule.minute
-  schedule_month  = each.value.schedule.month
 
   depends_on = [terraform_data.truenas_storage_target]
 
