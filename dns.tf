@@ -51,6 +51,15 @@ locals {
 
   dns_records_derived_specs = merge(
     {
+      for zone in local.cloudflare_zones : "acme-delegation/${zone}" => {
+        content = "_acme-challenge.${zone}.${local.domains.acme}"
+        name    = "_acme-challenge.${zone}"
+        type    = "CNAME"
+        zone    = zone
+      }
+      if zone != local.domains.acme
+    },
+    {
       for name, consumer in local.cloudflare_consumers_acme : "acme/${name}" => {
         content = consumer.target_hostname
         name    = "_acme-challenge.${consumer.challenge_hostname}"
