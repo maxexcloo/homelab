@@ -6,24 +6,39 @@ data "truenas_network_interface" "services_physical" {
 }
 
 locals {
+  truenas_dataset_mount_points = merge(
+    {
+      for key, dataset in truenas_dataset.child : key => dataset.mount_point
+    },
+    {
+      for key, dataset in truenas_dataset.managed : key => dataset.mount_point
+    },
+  )
+
   truenas_datasets = merge([
     for target, storage in local.storage.targets : {
       for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
-        name   = name
-        target = target
+        name               = name
+        parent_dataset_key = try(dataset.parent_dataset, null) == null ? null : "${target}/${dataset.parent_dataset}"
+        target             = target
       })
     }
   ]...)
+
+  truenas_datasets_child = {
+    for key, dataset in local.truenas_datasets : key => dataset
+    if dataset.parent_dataset_key != null
+  }
+
+  truenas_datasets_root = {
+    for key, dataset in local.truenas_datasets : key => dataset
+    if dataset.parent_dataset_key == null
+  }
 
   truenas_hosts = {
     for name, machine in local.machines : name => machine
     if machine.platform == "truenas"
   }
-
-  truenas_hosts_provider = setunion(
-    toset(keys(local.truenas_hosts)),
-    toset(local.access.truenas.retired_hosts),
-  )
 
   truenas_hosts_services = {
     for name, machine in local.truenas_hosts : name => machine
@@ -112,8 +127,31 @@ resource "terraform_data" "truenas_storage_target" {
   }
 }
 
+resource "truenas_dataset" "child" {
+  for_each = local.truenas_datasets_child
+
+  atime          = each.value.atime
+  comments       = "Kubernetes persistent storage managed by OpenTofu"
+  compression    = each.value.compression
+  deduplication  = "OFF"
+  name           = each.value.name
+  parent_dataset = truenas_dataset.managed[each.value.parent_dataset_key].name
+  pool           = each.value.pool
+  provider       = truenas.hosts[each.value.target]
+  readonly       = "OFF"
+  record_size    = each.value.record_size
+  share_type     = "GENERIC"
+  sync           = "STANDARD"
+
+  depends_on = [terraform_data.truenas_storage_target]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "truenas_dataset" "managed" {
-  for_each = local.truenas_datasets
+  for_each = local.truenas_datasets_root
 
   atime         = each.value.atime
   comments      = "Kubernetes persistent storage managed by OpenTofu"
@@ -200,7 +238,7 @@ resource "truenas_share_nfs" "managed" {
   maproot_group = "wheel"
   maproot_user  = "root"
   networks      = each.value.networks
-  path          = truenas_dataset.managed[each.value.dataset_key].mount_point
+  path          = local.truenas_dataset_mount_points[each.value.dataset_key]
   provider      = truenas.hosts[each.value.target]
   readonly      = false
   security      = ["SYS"]

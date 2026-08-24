@@ -167,5 +167,3 @@ tailscale:
     - src: tag:syd
       accept:
         - tag:server:443
-truenas:
-  retired_hosts: []

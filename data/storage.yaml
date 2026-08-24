@@ -1,12 +1,28 @@
 targets:
   kimbap:
     datasets:
+      clusters:
+        atime: "OFF"
+        compression: LZ4
+        pool: truenas-nvme
+        record_size: 128K
       kubernetes:
         atime: "OFF"
         compression: LZ4
         pool: truenas-nvme
         record_size: 128K
+      mbk:
+        atime: "OFF"
+        compression: LZ4
+        parent_dataset: clusters
+        pool: truenas-nvme
+        record_size: 128K
     nfs_shares:
+      clusters-mbk:
+        dataset: mbk
+        networks:
+          - network: mbk
+            vlan: services
       kubernetes:
         dataset: kubernetes
         networks:

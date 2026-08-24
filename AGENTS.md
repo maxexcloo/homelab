@@ -56,8 +56,6 @@ operational documentation under `docs/`.
   membership and `try(map[key], null)` for optional related values.
 - Keep one GCS prefix per state root and never manage a backend from the root
   that consumes it.
-- Keep a retiring TrueNAS host in `truenas.retired_hosts` until removal of its
-  last managed resource has been applied, then remove it in a later change.
 - Commit `.terraform.lock.hcl` for every root and include checksums for every
   platform used to validate or plan it.
 - Keep every temporary `moved`, `removed`, and `import` block in
