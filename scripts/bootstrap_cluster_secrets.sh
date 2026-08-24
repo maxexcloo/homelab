@@ -31,7 +31,7 @@ kubectl --context "${cluster}" create namespace external-secrets --dry-run=clien
 
 env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN \
   op item get --vault "${bootstrap_vault}" "Connect Token: ${cluster}" --format json |
-  jq -er 'first(.fields[] | select(.id == "credential")) | .value // empty' |
+  jq -ejr 'first(.fields[] | select(.id == "credential")) | .value // empty' |
   kubectl --context "${cluster}" -n external-secrets create secret generic onepassword-connect \
     --from-file=1password-credentials.json="${credentials_file}" \
     --from-file=token=/dev/stdin \
