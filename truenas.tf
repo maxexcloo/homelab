@@ -121,7 +121,7 @@ resource "terraform_data" "truenas_storage_target" {
 
   lifecycle {
     precondition {
-      condition     = contains(keys(local.truenas_hosts), each.key)
+      condition     = can(local.truenas_hosts[each.key])
       error_message = "Every storage target must reference an existing TrueNAS host."
     }
   }
@@ -230,6 +230,23 @@ resource "truenas_network_interface" "services_physical" {
   }
 }
 
+resource "truenas_service" "nfs" {
+  for_each = {
+    for target, storage in local.storage.targets : target => storage
+    if length(try(storage.nfs_shares, {})) > 0
+  }
+
+  enable   = true
+  provider = truenas.hosts[each.key]
+  service  = "nfs"
+
+  depends_on = [truenas_share_nfs.managed]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "truenas_share_nfs" "managed" {
   for_each = local.truenas_shares_nfs
 
@@ -244,23 +261,6 @@ resource "truenas_share_nfs" "managed" {
   security      = ["SYS"]
 
   depends_on = [terraform_data.truenas_storage_target]
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "truenas_service" "nfs" {
-  for_each = {
-    for target, storage in local.storage.targets : target => storage
-    if length(try(storage.nfs_shares, {})) > 0
-  }
-
-  enable   = true
-  provider = truenas.hosts[each.key]
-  service  = "nfs"
-
-  depends_on = [truenas_share_nfs.managed]
 
   lifecycle {
     prevent_destroy = true
@@ -313,11 +313,6 @@ resource "truenas_vm" "virtual_machine" {
     precondition {
       condition     = try(local.machines[each.value.host].platform == "truenas", false)
       error_message = "The configured TrueNAS compute host must reference a TrueNAS server."
-    }
-
-    precondition {
-      condition     = contains(keys(local.machines), each.key)
-      error_message = "Every TrueNAS virtual machine must reference a server with the same key."
     }
   }
 }
