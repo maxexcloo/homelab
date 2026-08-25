@@ -13,6 +13,11 @@ targets:
         pool: truenas-nvme
         record_size: 128K
     nfs_shares:
+      bichon:
+        path: /mnt/truenas-nvme/bichon
+        networks:
+          - network: mbk
+            vlan: services
       bookorbit:
         path: /mnt/truenas-nvme/bookorbit
         networks:
@@ -25,6 +30,11 @@ targets:
             vlan: services
       immich:
         path: /mnt/truenas-nvme/immich
+        networks:
+          - network: mbk
+            vlan: services
+      papra:
+        path: /mnt/truenas-nvme/papra
         networks:
           - network: mbk
             vlan: services
