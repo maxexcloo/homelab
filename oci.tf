@@ -177,6 +177,8 @@ resource "oci_core_image" "talos" {
   }
 
   lifecycle {
+    # Custom images bootstrap instances only; live Talos upgrades use machine configuration.
+    ignore_changes  = [display_name, image_source_details]
     prevent_destroy = true
   }
 }
@@ -389,7 +391,8 @@ resource "oci_objectstorage_object" "talos_image" {
   source       = var.oci_talos_image_path
 
   lifecycle {
-    ignore_changes  = [source]
+    # Retain the uploaded bootstrap artifact across live Talos upgrades.
+    ignore_changes  = [object, source]
     prevent_destroy = true
   }
 }
