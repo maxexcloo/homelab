@@ -62,6 +62,20 @@ locals {
     }
   ]...)
 
+  truenas_virtual_machine_cdrom_devices = {
+    for virtual_machine_name, virtual_machine in local.truenas_virtual_machines : "${virtual_machine_name}/cdrom" => {
+      attributes = {
+        path = join("/", [
+          trimsuffix(virtual_machine.boot.iso_directory, "/"),
+          "talos-${local.talos_image_factory_schematic_ids[local.machines[virtual_machine_name].cluster]}-${local.clusters[local.machines[virtual_machine_name].cluster].talos_version}.iso",
+        ])
+      }
+      dtype           = "CDROM"
+      order           = 1001
+      virtual_machine = virtual_machine_name
+    }
+  }
+
   truenas_virtual_machine_devices = merge([
     for virtual_machine_name, virtual_machine in local.truenas_virtual_machines : {
       "${virtual_machine_name}/boot" = {
@@ -71,17 +85,6 @@ locals {
         }
         dtype           = "DISK"
         order           = 1000
-        virtual_machine = virtual_machine_name
-      }
-      "${virtual_machine_name}/cdrom" = {
-        attributes = {
-          path = join("/", [
-            trimsuffix(virtual_machine.boot.iso_directory, "/"),
-            "talos-${local.talos_image_factory_schematic_ids[local.machines[virtual_machine_name].cluster]}-${local.clusters[local.machines[virtual_machine_name].cluster].talos_version}.iso",
-          ])
-        }
-        dtype           = "CDROM"
-        order           = 1001
         virtual_machine = virtual_machine_name
       }
       "${virtual_machine_name}/network" = {
@@ -286,6 +289,21 @@ resource "truenas_vm" "virtual_machine" {
       condition     = try(local.machines[each.value.host].platform == "truenas", false)
       error_message = "The configured TrueNAS compute host must reference a TrueNAS server."
     }
+  }
+}
+
+resource "truenas_vm_device" "cdrom" {
+  for_each = local.truenas_virtual_machine_cdrom_devices
+
+  attributes = each.value.attributes
+  dtype      = each.value.dtype
+  order      = each.value.order
+  provider   = truenas.hosts[local.truenas_virtual_machines[each.value.virtual_machine].host]
+  vm         = tonumber(truenas_vm.virtual_machine[each.value.virtual_machine].id)
+
+  lifecycle {
+    # Installation media is bootstrap-only; live Talos upgrades use machine configuration.
+    ignore_changes = [attributes]
   }
 }
 
