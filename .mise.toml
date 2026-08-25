@@ -10,18 +10,14 @@ shellcheck = "0.11.0"
 talosctl = "1.13.9"
 yq = "4.53.6"
 
-# Setup
-[tasks.init]
-description = "Initialise providers without connecting the backend"
-run = "tofu init -backend=false -input=false"
+# Deploy
+[tasks.apply]
+description = "Apply all changes"
+run = "tofu apply"
 
-[tasks.setup]
-depends = ["init"]
-description = "Install tools, initialise providers, and install Git hooks"
-run = """
-mise install
-prek install
-"""
+[tasks.plan]
+description = "Plan all changes"
+run = "tofu plan"
 
 # Development
 [tasks.check]
@@ -45,16 +41,6 @@ tofu fmt -recursive
 description = "Run all repository hooks"
 run = "prek run --all-files"
 
-# Plan
-[tasks.plan]
-description = "Plan all changes"
-run = "tofu plan"
-
-# Deploy
-[tasks.apply]
-description = "Apply all changes"
-run = "tofu apply"
-
 # Scripts
 [tasks.client-configs]
 description = "Sync workstation kubeconfig and talosconfig from 1Password"
@@ -67,3 +53,16 @@ run = "scripts/prepare_oci_image.sh"
 [tasks.ssh-config]
 description = "Install the non-secret homelab SSH include"
 run = "scripts/render_ssh_config.sh ${HOME}/.ssh/config.d/homelab"
+
+# Setup
+[tasks.init]
+description = "Initialise providers without connecting the backend"
+run = "tofu init -backend=false -input=false"
+
+[tasks.setup]
+depends = ["init"]
+description = "Install tools, initialise providers, and install Git hooks"
+run = """
+mise install
+prek install
+"""
