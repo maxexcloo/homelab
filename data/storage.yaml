@@ -13,8 +13,23 @@ targets:
         pool: truenas-nvme
         record_size: 128K
     nfs_shares:
+      bookorbit:
+        path: /mnt/truenas-nvme/bookorbit
+        networks:
+          - network: mbk
+            vlan: services
       clusters-mbk:
         dataset: mbk
+        networks:
+          - network: mbk
+            vlan: services
+      immich:
+        path: /mnt/truenas-nvme/immich
+        networks:
+          - network: mbk
+            vlan: services
+      romm:
+        path: /mnt/truenas-nvme/romm
         networks:
           - network: mbk
             vlan: services

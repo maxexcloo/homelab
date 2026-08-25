@@ -48,7 +48,7 @@ locals {
   truenas_shares_nfs = merge([
     for target, storage in local.storage.targets : {
       for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
-        dataset_key = "${target}/${share.dataset}"
+        dataset_key = try(share.dataset, null) == null ? null : "${target}/${share.dataset}"
         name        = name
         networks = [
           for share_network in share.networks : cidrsubnet(
@@ -246,7 +246,7 @@ resource "truenas_share_nfs" "managed" {
   maproot_group = "wheel"
   maproot_user  = "root"
   networks      = each.value.networks
-  path          = local.truenas_dataset_mount_points[each.value.dataset_key]
+  path          = each.value.dataset_key == null ? each.value.path : local.truenas_dataset_mount_points[each.value.dataset_key]
   provider      = truenas.hosts[each.value.target]
   readonly      = false
   security      = ["SYS"]
@@ -255,6 +255,11 @@ resource "truenas_share_nfs" "managed" {
 
   lifecycle {
     prevent_destroy = true
+
+    precondition {
+      condition     = (try(each.value.dataset, null) == null) != (try(each.value.path, null) == null)
+      error_message = "Every NFS share must reference exactly one managed dataset or existing path."
+    }
   }
 }
 
