@@ -50,11 +50,11 @@ resource "onepassword_item" "cloudflare_tunnel" {
 
   category            = "login"
   password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
-  password_wo_version = try(local.domains.cloudflare.tunnel_secret_revision, 1)
+  password_wo_version = try(each.value.secret_revision, 1)
   tags                = each.value.tags
   title               = each.value.title
   username            = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
-  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
+  vault               = data.onepassword_vault.default[each.value.vault].uuid
 
   lifecycle {
     prevent_destroy = true

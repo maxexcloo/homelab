@@ -19,32 +19,6 @@ data "talos_client_configuration" "cluster" {
   ])
 }
 
-data "talos_cluster_health" "cluster" {
-  for_each = local.talos_recovery_clusters
-
-  control_plane_nodes    = local.talos_cluster_endpoints_control_plane[each.key]
-  endpoints              = local.talos_cluster_endpoints_control_plane[each.key]
-  skip_kubernetes_checks = true
-  worker_nodes           = local.talos_cluster_endpoints_worker[each.key]
-
-  client_configuration = {
-    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
-  }
-
-  timeouts = {
-    read = "10m"
-  }
-
-  lifecycle {
-    precondition {
-      condition     = talos_machine_bootstrap.control_plane[each.value.api_node].id != ""
-      error_message = "Bootstrap this cluster's API node before checking cluster health."
-    }
-  }
-}
-
 data "talos_machine_configuration" "node" {
   for_each = local.talos_nodes
 
@@ -73,20 +47,6 @@ locals {
       cluster.endpoint,
       "https://${local.machines[cluster.api_node].address}:6443",
     )
-  }
-
-  talos_cluster_endpoints_control_plane = {
-    for cluster_name, cluster in local.talos_clusters : cluster_name => [
-      for node_name, node in cluster.nodes : local.machines[node_name].address
-      if node.machine_type == "controlplane"
-    ]
-  }
-
-  talos_cluster_endpoints_worker = {
-    for cluster_name, cluster in local.talos_clusters : cluster_name => [
-      for node_name, node in cluster.nodes : local.machines[node_name].address
-      if node.machine_type == "worker"
-    ]
   }
 
   talos_clusters = {
@@ -265,8 +225,8 @@ resource "onepassword_item" "talosconfig" {
 resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.talos_recovery_clusters
 
-  endpoint = one(local.talos_cluster_endpoints_control_plane[each.key])
-  node     = one(local.talos_cluster_endpoints_control_plane[each.key])
+  endpoint = local.machines[each.value.api_node].address
+  node     = local.machines[each.value.api_node].address
 
   client_configuration = {
     ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
@@ -277,13 +237,6 @@ resource "talos_cluster_kubeconfig" "cluster" {
   timeouts = {
     create = "10m"
     update = "10m"
-  }
-
-  lifecycle {
-    precondition {
-      condition     = data.talos_cluster_health.cluster[each.key].id != ""
-      error_message = "Verify this cluster's health before retrieving its kubeconfig."
-    }
   }
 }
 
@@ -318,8 +271,6 @@ resource "talos_machine_configuration_apply" "node" {
   endpoint                       = each.value.configuration_delivery == "metadata" ? oci_core_instance.node[each.key].private_ip : each.value.address
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
-
-  depends_on = [oci_core_volume_attachment.node]
 
   client_configuration_wo = {
     ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
