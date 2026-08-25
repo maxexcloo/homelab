@@ -28,6 +28,12 @@ targets:
         networks:
           - network: mbk
             vlan: services
+      icloud-photos:
+        path: /mnt/truenas/icloud-photos
+        readonly: true
+        networks:
+          - network: mbk
+            vlan: services
       immich:
         path: /mnt/truenas-nvme/immich
         networks:

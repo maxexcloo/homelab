@@ -248,7 +248,7 @@ resource "truenas_share_nfs" "managed" {
   networks      = each.value.networks
   path          = each.value.dataset_key == null ? each.value.path : local.truenas_dataset_mount_points[each.value.dataset_key]
   provider      = truenas.hosts[each.value.target]
-  readonly      = false
+  readonly      = try(each.value.readonly, false)
   security      = ["SYS"]
 
   depends_on = [terraform_data.truenas_storage_target]
