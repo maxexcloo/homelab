@@ -106,7 +106,6 @@ tailscale:
       - max@excloo.com
       - maxexcloo@passkey
   operator:
-    secret_revision: 4
     scopes:
       - auth_keys
       - devices:core

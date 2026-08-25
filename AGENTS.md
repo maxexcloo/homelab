@@ -69,6 +69,8 @@ operational documentation under `docs/`.
 - Read only the secret fields a provider consumer needs, prefer write-only
   arguments where supported, and mark every credential-bearing output
   sensitive.
+- Derive write-only version arguments for generated secrets from non-secret
+  content fingerprints; never require manual revision counters.
 
 ## Sorting Convention
 
@@ -97,6 +99,9 @@ steps.
 Sort unordered peer headings, lists, and table rows alphabetically. Preserve
 API, schema, interface, procedural, dependency, routing, priority,
 chronological, and other meaningful order.
+
+Sort unordered tags alphabetically and keep them limited to useful scope,
+system, and purpose labels.
 
 ## Style
 
