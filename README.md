@@ -29,7 +29,6 @@ before planning or applying infrastructure changes.
 | Task                         | Description                                                        |
 | ---------------------------- | ------------------------------------------------------------------ |
 | `mise run apply`             | Apply OpenTofu changes after reviewing the presented plan          |
-| `mise run bootstrap-secrets` | Inject the 1Password Connect bootstrap secret into a cluster       |
 | `mise run check`             | Run formatting and configuration validation                        |
 | `mise run client-configs`    | Sync local `kubeconfig` and `talosconfig` from 1Password           |
 | `mise run fmt`               | Format repository files (OpenTofu and Prettier)                    |

@@ -56,10 +56,6 @@ description = "Apply all changes"
 run = "tofu apply"
 
 # Scripts
-[tasks.bootstrap-secrets]
-description = "Inject the 1Password Connect bootstrap secret into a cluster"
-run = "scripts/bootstrap_cluster_secrets.sh"
-
 [tasks.client-configs]
 description = "Sync workstation kubeconfig and talosconfig from 1Password"
 run = "scripts/sync_client_configs.sh"
