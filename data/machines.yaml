@@ -26,13 +26,16 @@ machines:
     tailscale_auth_key_secret_revision: 2
     tailscale_tag: kubernetes
     boot:
-      size_mib: 131072
+      size_mib: 51200
     compute:
       cores: 2
       memory_mib: 12288
     oci:
       assign_public_ip: true
       shape: VM.Standard.A1.Flex
+      volumes:
+        data:
+          size_mib: 51200
   kimbap:
     address: 10.0.0.3
     mac_address: "c8:ff:bf:01:52:e0"

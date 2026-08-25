@@ -50,7 +50,7 @@ system.
 ## Substrate
 
 - **Compute & Virtualisation**: TrueNAS VM (`taco`) on `kimbap` and OCI compute instance (`hsp`) on Ampere A1.
-- **Storage**: TrueNAS NVMe datasets, NFS shares, and automated snapshot tasks for Kubernetes persistent storage.
+- **Storage**: TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 - **Networking**: UniFi VLANs and static DHCP reservations for retained appliances and VMs.
 - **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, and Cloudflare Tunnels; application DNS remains workload-owned in `kubelab`.
 - **Mesh & Access**: Tailscale ACL policies, host recovery keys, and Kubernetes operator OAuth clients.

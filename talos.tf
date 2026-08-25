@@ -160,12 +160,11 @@ locals {
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },
-      {
-        apiVersion = "v1alpha1"
-        kind       = "UserVolumeConfig"
-        name       = "local-path-provisioner"
-        volumeType = "directory"
-      },
+      yamldecode(
+        can(local.machines[name].oci.volumes.data) ?
+        yamlencode(local.talos_user_volume_local_path_partition) :
+        yamlencode(local.talos_user_volume_local_path_directory)
+      ),
     ]
   }
 
@@ -188,6 +187,27 @@ locals {
       for node in values(cluster.nodes) :
       node.machine_type == "controlplane" && try(node.bootstrap, false)
     ])
+  }
+
+  talos_user_volume_local_path_directory = {
+    apiVersion = "v1alpha1"
+    kind       = "UserVolumeConfig"
+    name       = "local-path-provisioner"
+    volumeType = "directory"
+  }
+
+  talos_user_volume_local_path_partition = {
+    apiVersion = "v1alpha1"
+    kind       = "UserVolumeConfig"
+    name       = "local-path-provisioner"
+    volumeType = "partition"
+    provisioning = {
+      grow    = true
+      minSize = "1GiB"
+      diskSelector = {
+        match = "!system_disk"
+      }
+    }
   }
 }
 
@@ -298,6 +318,8 @@ resource "talos_machine_configuration_apply" "node" {
   endpoint                       = each.value.configuration_delivery == "metadata" ? oci_core_instance.node[each.key].private_ip : each.value.address
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
+
+  depends_on = [oci_core_volume_attachment.node]
 
   client_configuration_wo = {
     ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate

@@ -89,6 +89,15 @@ locals {
     for name, network in local.networks : name => network.oci
     if try(network.oci, null) != null
   }
+
+  oci_volumes = merge([
+    for node_name, node in local.oci_instances : {
+      for volume_name, volume in try(node.oci.volumes, {}) : "${node_name}/${volume_name}" => merge(volume, {
+        name = volume_name
+        node = node_name
+      })
+    }
+  ]...)
 }
 
 resource "oci_core_compute_image_capability_schema" "talos" {
@@ -178,7 +187,7 @@ resource "oci_core_instance" "node" {
   availability_domain  = data.oci_identity_availability_domain.default[each.value.network].name
   compartment_id       = var.oci_tenancy_ocid
   display_name         = each.key
-  preserve_boot_volume = true
+  preserve_boot_volume = false
   shape                = each.value.oci.shape
 
   create_vnic_details {
@@ -230,9 +239,13 @@ resource "oci_core_instance" "node" {
       condition = (
         sum(concat([0], [for node in values(local.oci_instances) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.cores : 0])) <= 2 &&
         sum(concat([0], [for node in values(local.oci_instances) : node.oci.shape == "VM.Standard.A1.Flex" ? node.compute.memory_mib : 0])) <= 12288 &&
-        sum(concat([0], [for node in values(local.oci_instances) : node.oci.shape == "VM.Standard.A1.Flex" ? node.boot.size_mib : 0])) <= 204800
+        sum(concat(
+          [0],
+          [for node in values(local.oci_instances) : node.boot.size_mib],
+          [for volume in values(local.oci_volumes) : volume.size_mib],
+        )) <= 204800
       )
-      error_message = "OCI Ampere A1 deployments must stay within the Always Free envelope of 2 OCPUs, 12288 MiB memory, and 204800 MiB of boot storage."
+      error_message = "OCI deployments must stay within the Always Free envelope of 2 Ampere A1 OCPUs, 12288 MiB of Ampere A1 memory, and 204800 MiB of combined boot and block storage."
     }
   }
 
@@ -321,6 +334,34 @@ resource "oci_core_vcn" "default" {
   display_name   = each.value.display_name
   dns_label      = each.value.dns_label
   is_ipv6enabled = each.value.ipv6_enabled
+}
+
+resource "oci_core_volume" "node" {
+  for_each = local.oci_volumes
+
+  availability_domain = data.oci_identity_availability_domain.default[local.oci_instances[each.value.node].network].name
+  compartment_id      = var.oci_tenancy_ocid
+  display_name        = "${each.value.node}-${each.value.name}"
+  size_in_gbs         = each.value.size_mib / 1024
+
+  lifecycle {
+    prevent_destroy = true
+
+    precondition {
+      condition     = each.value.size_mib >= 51200 && each.value.size_mib % 1024 == 0
+      error_message = "OCI block volume size_mib must be at least 51200 MiB and a whole multiple of 1024 MiB."
+    }
+  }
+}
+
+resource "oci_core_volume_attachment" "node" {
+  for_each = local.oci_volumes
+
+  attachment_type                     = "paravirtualized"
+  display_name                        = "${each.value.node}-${each.value.name}"
+  instance_id                         = oci_core_instance.node[each.value.node].id
+  is_pv_encryption_in_transit_enabled = false
+  volume_id                           = oci_core_volume.node[each.key].id
 }
 
 resource "oci_objectstorage_bucket" "talos_images" {
