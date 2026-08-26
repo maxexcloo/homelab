@@ -22,6 +22,12 @@ if [[ -z "${OP_CONNECT_TOKEN:-}" || "${OP_CONNECT_TOKEN}" == "REPLACE_ME" ]]; th
 fi
 
 connect_host="${OP_CONNECT_HOST%/}"
+
+connect() {
+  curl -fsS -H @/dev/fd/3 "$@" \
+    3<<<"Authorization: Bearer ${OP_CONNECT_TOKEN}"
+}
+
 required_fields_json="$(
   yq -p=toml -o=json '
     [.env[]
@@ -38,9 +44,7 @@ if [[ "$(jq 'length' <<<"${required_fields_json}")" -eq 0 ]]; then
 fi
 
 read -r vault_count vault_id < <(
-  curl -fsS \
-    -H "Authorization: Bearer ${OP_CONNECT_TOKEN}" \
-    "${connect_host}/v1/vaults" |
+  connect "${connect_host}/v1/vaults" |
     jq -r '[.[] | select(.name == "Homelab")] | "\(length) \(.[0].id // "")"'
 )
 
@@ -50,9 +54,7 @@ if [[ "${vault_count}" -ne 1 ]]; then
 fi
 
 read -r item_count item_id < <(
-  curl -fsS \
-    -H "Authorization: Bearer ${OP_CONNECT_TOKEN}" \
-    "${connect_host}/v1/vaults/${vault_id}/items" |
+  connect "${connect_host}/v1/vaults/${vault_id}/items" |
     jq -r '[.[] | select(.title == "OpenTofu")] | "\(length) \(.[0].id // "")"'
 )
 
@@ -62,17 +64,12 @@ if [[ "${item_count}" -gt 1 ]]; then
 fi
 
 if [[ "${item_count}" -eq 1 ]]; then
-  actual_fields_json="$(
-    curl -fsS \
-      -H "Authorization: Bearer ${OP_CONNECT_TOKEN}" \
-      "${connect_host}/v1/vaults/${vault_id}/items/${item_id}" |
-      jq '[.fields[] | select(.id != "notesPlain") | .label] | unique | sort'
-  )"
   missing_fields="$(
-    jq -nr \
-      --argjson actual "${actual_fields_json}" \
-      --argjson required "${required_fields_json}" \
-      '$required - $actual | .[]'
+    connect "${connect_host}/v1/vaults/${vault_id}/items/${item_id}" |
+      jq -r --argjson required "${required_fields_json}" '
+        $required - ([.fields[] | select(.id != "notesPlain") | .label] | unique)
+        | .[]
+      '
   )"
 
   if [[ -n "${missing_fields}" ]]; then
@@ -87,16 +84,9 @@ if [[ "${item_count}" -eq 1 ]]; then
   exit 0
 fi
 
-fields_json="$(
-  jq -cn --argjson labels "${required_fields_json}" '
-    $labels
-    | map({id: ascii_downcase, label: ., type: "CONCEALED", value: ""})
-  '
-)"
-
 jq -cn \
   --arg vault_id "${vault_id}" \
-  --argjson fields "${fields_json}" '
+  --argjson labels "${required_fields_json}" '
     {
       category: "API_CREDENTIAL",
       title: "OpenTofu",
@@ -106,13 +96,12 @@ jq -cn \
         purpose: "NOTES",
         type: "STRING",
         value: "Provider environment for the homelab OpenTofu root."
-      }] + $fields),
+      }] + ($labels | map({id: ascii_downcase, label: ., type: "CONCEALED", value: ""}))),
       vault: {id: $vault_id}
     }
   ' |
-  curl -fsS \
+  connect \
     -X POST \
-    -H "Authorization: Bearer ${OP_CONNECT_TOKEN}" \
     -H "Content-Type: application/json" \
     --data-binary @- \
     "${connect_host}/v1/vaults/${vault_id}/items" \

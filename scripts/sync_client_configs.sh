@@ -7,7 +7,7 @@ clusters_path="${repo_dir}/data/clusters.yaml"
 kubeconfig_dest="${HOME}/.kube/config"
 talosconfig_dest="${HOME}/.talos/config"
 
-for tool in op jq kubectl talosctl yq; do
+for tool in jq kubectl op talosctl yq; do
   if ! command -v "${tool}" >/dev/null 2>&1; then
     echo "error: ${tool} is required but not found in PATH." >&2
     exit 1
