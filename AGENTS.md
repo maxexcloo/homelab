@@ -41,8 +41,8 @@ Keep decoded shared inputs and genuinely cross-domain derived values in
 file, and name them from largest scope to smallest as
 `provider_resource_qualifier`.
 
-Keep root Markdown limited to `AGENTS.md` and `README.md`. Put later
-operational documentation under `docs/`.
+Keep all maintained documentation in the root `AGENTS.md` and `README.md`.
+Do not create a documentation directory or additional Markdown files.
 
 ## OpenTofu Safety
 

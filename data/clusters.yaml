@@ -18,10 +18,10 @@ clusters:
         configuration_delivery: api
         install_disk: /dev/vda
         machine_type: controlplane
-        tailscale_routes:
-          - 10.4.0.0/22
         sysctls:
           user.max_user_namespaces: "1024"
+        tailscale_routes:
+          - 10.4.0.0/22
   syd:
     api_node: hsp
     kubernetes_version: v1.36.4

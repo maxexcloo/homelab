@@ -290,7 +290,6 @@ resource "talos_machine_configuration_apply" "node" {
   }
 }
 
-
 resource "talos_machine_secrets" "cluster" {
   for_each = local.talos_clusters
 

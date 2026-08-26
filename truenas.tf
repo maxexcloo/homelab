@@ -50,6 +50,7 @@ locals {
       for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
         dataset_key = try(share.dataset, null) == null ? null : "${target}/${share.dataset}"
         name        = name
+        target      = target
         networks = [
           for share_network in share.networks : cidrsubnet(
             local.networks[share_network.network].unifi.networks[share_network.vlan].subnet,
@@ -57,37 +58,39 @@ locals {
             0,
           )
         ]
-        target = target
       })
     }
   ]...)
 
   truenas_virtual_machine_cdrom_devices = {
     for virtual_machine_name, virtual_machine in local.truenas_virtual_machines : "${virtual_machine_name}/cdrom" => {
+      dtype           = "CDROM"
+      order           = 1001
+      virtual_machine = virtual_machine_name
       attributes = {
         path = join("/", [
           trimsuffix(virtual_machine.boot.iso_directory, "/"),
           "talos-${local.talos_image_factory_schematic_ids[local.machines[virtual_machine_name].cluster]}-${local.clusters[local.machines[virtual_machine_name].cluster].talos_version}.iso",
         ])
       }
-      dtype           = "CDROM"
-      order           = 1001
-      virtual_machine = virtual_machine_name
     }
   }
 
   truenas_virtual_machine_devices = merge([
     for virtual_machine_name, virtual_machine in local.truenas_virtual_machines : {
       "${virtual_machine_name}/boot" = {
+        dtype           = "DISK"
+        order           = 1000
+        virtual_machine = virtual_machine_name
         attributes = {
           path = "/dev/zvol/${truenas_zvol.virtual_machine_boot[virtual_machine_name].id}"
           type = "VIRTIO"
         }
-        dtype           = "DISK"
-        order           = 1000
-        virtual_machine = virtual_machine_name
       }
       "${virtual_machine_name}/network" = {
+        dtype           = "NIC"
+        order           = 1002
+        virtual_machine = virtual_machine_name
         attributes = {
           mac = local.machines[virtual_machine_name].mac_address
           nic_attach = local.networks[
@@ -95,9 +98,6 @@ locals {
           ].interfaces[local.machines[virtual_machine_name].vlan].bridge
           type = "VIRTIO"
         }
-        dtype           = "NIC"
-        order           = 1002
-        virtual_machine = virtual_machine_name
       }
     }
   ]...)
@@ -310,11 +310,11 @@ resource "truenas_vm_device" "cdrom" {
 resource "truenas_vm_device" "virtual_machine" {
   for_each = local.truenas_virtual_machine_devices
 
+  attributes = each.value.attributes
   dtype      = each.value.dtype
   order      = each.value.order
   provider   = truenas.hosts[local.truenas_virtual_machines[each.value.virtual_machine].host]
   vm         = tonumber(truenas_vm.virtual_machine[each.value.virtual_machine].id)
-  attributes = each.value.attributes
 }
 
 resource "truenas_zvol" "virtual_machine_boot" {
