@@ -161,7 +161,7 @@ resource "onepassword_item" "tailscale_operator" {
   password_wo         = tailscale_oauth_client.kubernetes_operator[each.key].key
   password_wo_version = local.onepassword_tailscale_operator_password_versions[each.key]
   tags                = ["Homelab"]
-  title               = "tailscale-operator"
+  title               = "Tailscale Kubernetes Operator"
   username            = tailscale_oauth_client.kubernetes_operator[each.key].id
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 

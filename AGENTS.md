@@ -78,8 +78,9 @@ Do not create a documentation directory or additional Markdown files.
   content fingerprints; never require manual revision counters.
 - Let the 1Password vault carry scope. Omit tags from items in the `Homelab`
   vault and tag Homelab-created items in cluster vaults only with `Homelab`.
-  Omit cluster names from titles inside cluster vaults and qualify titles in the
-  `Homelab` vault only when needed to distinguish their scope.
+  Use human-readable display names for titles, omit cluster names from titles
+  inside cluster vaults, and qualify titles in the `Homelab` vault only when
+  needed to distinguish their scope.
 
 ## Sorting Convention
 

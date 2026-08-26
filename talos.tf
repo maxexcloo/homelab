@@ -178,7 +178,7 @@ resource "onepassword_item" "kubeconfig" {
   note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
   note_value_wo_version = local.onepassword_kubeconfig_note_versions[each.key]
   tags                  = ["Homelab"]
-  title                 = "kubeconfig"
+  title                 = "Kubernetes Client Configuration"
   vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
@@ -207,7 +207,7 @@ resource "onepassword_item" "talosconfig" {
   note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
   note_value_wo_version = local.onepassword_talosconfig_note_versions[each.key]
   tags                  = ["Homelab"]
-  title                 = "talosconfig"
+  title                 = "Talos Client Configuration"
   vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {

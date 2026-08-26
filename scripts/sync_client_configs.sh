@@ -52,7 +52,7 @@ for cluster in "${clusters[@]}"; do
 
   echo "  - Fetching ${cluster} from vault '${vault}'..."
 
-  if get_note "${vault}" kubeconfig "${kube_file}"; then
+  if get_note "${vault}" "Kubernetes Client Configuration" "${kube_file}"; then
     context="$(kubectl --kubeconfig "${kube_file}" config current-context)"
     if [[ "${context}" != "${cluster}" ]]; then
       kubectl --kubeconfig "${kube_file}" config rename-context "${context}" "${cluster}" >/dev/null
@@ -62,7 +62,7 @@ for cluster in "${clusters[@]}"; do
     echo "    (warning: no kubeconfig found for cluster ${cluster})" >&2
   fi
 
-  if get_note "${vault}" talosconfig "${talos_file}"; then
+  if get_note "${vault}" "Talos Client Configuration" "${talos_file}"; then
     if [[ -z "${talosconfig_path}" ]]; then
       talosconfig_path="${tmpdir}/talosconfig"
       cp "${talos_file}" "${talosconfig_path}"

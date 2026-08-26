@@ -40,14 +40,14 @@ locals {
       challenge_zone     = can(consumer.machine) ? local.domains.infrastructure : local.domains.services
       credential_scope   = can(consumer.machine) ? local.machine_fqdns[consumer.machine] : name
       target_hostname    = can(consumer.machine) ? "${name}.${local.domains.acme}" : "_acme-challenge.${consumer.cluster}.${local.domains.services}.${local.domains.acme}"
-      title              = can(consumer.machine) ? "Cloudflare ACME DNS: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-acme"
+      title              = can(consumer.machine) ? "Cloudflare ACME DNS: ${local.machine_fqdns[consumer.machine]}" : "Cloudflare ACME DNS"
       vault              = can(consumer.machine) ? "homelab" : "cluster/${name}"
     })
   }
 
   cloudflare_consumers_external_dns = {
     for name, consumer in local.cloudflare.external_dns_consumers : name => merge(consumer, {
-      title = "cloudflare-external-dns"
+      title = "Cloudflare ExternalDNS"
       vault = "cluster/${name}"
     })
   }
@@ -55,7 +55,7 @@ locals {
   cloudflare_consumers_tunnel = {
     for name, consumer in local.cloudflare.tunnel_consumers : name => merge(consumer, {
       credential_scope = can(consumer.machine) ? local.machine_fqdns[consumer.machine] : name
-      title            = can(consumer.machine) ? "Cloudflare Tunnel: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-tunnel"
+      title            = can(consumer.machine) ? "Cloudflare Tunnel: ${local.machine_fqdns[consumer.machine]}" : "Cloudflare Tunnel"
       vault            = can(consumer.machine) ? "homelab" : "cluster/${name}"
     })
   }
