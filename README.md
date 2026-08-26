@@ -15,16 +15,19 @@ repository reconciled by Flux.
 
 Tooling is pinned and managed through [Mise](https://mise.jdx.dev/):
 
+Copy `.mise.local.toml.default` to `.mise.local.toml` and set its 1Password
+Connect bootstrap values, then run:
+
 ```shell
 mise trust
 mise run setup
 mise run check
 ```
 
-Copy `.mise.local.toml.default` to `.mise.local.toml` and replace its 1Password
-Connect bootstrap placeholders before planning or applying infrastructure
-changes. Credential-consuming tasks resolve the complete provider environment
-from the manually managed `OpenTofu` item in the `Homelab` vault.
+Setup creates the `OpenTofu` item schema in the `Homelab` vault when it is
+missing and leaves an existing item untouched. If it creates the item, populate
+every field and rerun setup before planning or applying. Credential-consuming
+tasks resolve the complete provider environment from that item.
 
 ### Common Tasks
 
@@ -35,6 +38,7 @@ from the manually managed `OpenTofu` item in the `Homelab` vault.
 | `mise run client-configs`    | Sync local `kubeconfig` and `talosconfig` from 1Password           |
 | `mise run fmt`               | Format repository files (OpenTofu and Prettier)                    |
 | `mise run init`              | Initialise providers locally without connecting the remote backend |
+| `mise run opentofu-item`     | Create the OpenTofu 1Password item if missing                      |
 | `mise run plan`              | Plan OpenTofu changes                                              |
 | `mise run prek`              | Run all Git pre-commit hooks across the repository                 |
 | `mise run prepare-oci-image` | Download and convert a Talos OCI image                             |

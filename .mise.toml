@@ -74,12 +74,23 @@ run = "scripts/render_ssh_config.sh ${HOME}/.ssh/config.d/homelab"
 # Setup
 [tasks.init]
 description = "Initialise providers without connecting the backend"
-run = "tofu init -backend=false -input=false"
+run = """
+if [ -n "${OP_CONNECT_HOST:-}" ] && [ -n "${OP_CONNECT_TOKEN:-}" ]; then
+  op run -- tofu init -backend=false -input=false
+else
+  env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false
+fi
+"""
+
+[tasks.opentofu-item]
+description = "Create the OpenTofu 1Password item if missing"
+run = "scripts/create_opentofu_item.sh"
 
 [tasks.setup]
-depends = ["init"]
-description = "Install tools, initialise providers, and install Git hooks"
+description = "Install tools, create the 1Password item, initialise providers, and install Git hooks"
 run = """
 mise install
+mise run opentofu-item
+mise run init
 prek install
 """
