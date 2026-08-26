@@ -30,6 +30,20 @@ resource "terraform_data" "configuration_validation" {
 
     precondition {
       condition = alltrue([
+        for hostname in values(local.machine_hostnames) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", hostname))
+      ])
+      error_message = "Machine hostnames must be valid lowercase DNS labels."
+    }
+
+    precondition {
+      condition = length(distinct([
+        for name, machine in local.machines : "${machine.network}/${local.machine_hostnames[name]}"
+      ])) == length(local.machines)
+      error_message = "Machine hostnames must be unique within each network."
+    }
+
+    precondition {
+      condition = alltrue([
         for machine_name, machine in local.machines : can(machine.cluster) ? can(local.clusters[machine.cluster].nodes[machine_name]) : true
       ])
       error_message = "Every clustered machine must belong to its referenced cluster."

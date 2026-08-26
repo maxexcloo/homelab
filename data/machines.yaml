@@ -1,4 +1,14 @@
 machines:
+  gateway-mbk:
+    address: 10.0.0.1
+    hostname: gateway
+    management_port: 443
+    network: mbk
+    platform: unifi
+    tailscale_tag: router
+    ssh:
+      port: 22
+      user: root
   hass:
     address: 10.0.0.2
     mac_address: "84:47:09:67:c8:33"
@@ -56,15 +66,6 @@ machines:
     ssh:
       port: 22
       user: max.schaefer
-  ramen:
-    address: 10.0.0.1
-    management_port: 443
-    network: mbk
-    platform: unifi
-    tailscale_tag: router
-    ssh:
-      port: 22
-      user: root
   taco:
     address: 10.4.0.4
     cluster: mbk

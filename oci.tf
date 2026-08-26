@@ -197,7 +197,7 @@ resource "oci_core_instance" "node" {
     assign_private_dns_record = true
     assign_public_ip          = each.value.oci.assign_public_ip
     display_name              = each.key
-    hostname_label            = each.key
+    hostname_label            = local.machine_hostnames[each.key]
     nsg_ids                   = [oci_core_network_security_group.node[each.key].id]
     private_ip                = local.machines[each.key].address
     subnet_id                 = oci_core_subnet.default[each.value.network].id

@@ -38,7 +38,7 @@ locals {
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
       node.address,
-      try(local.tailscale_device_ipv4[name], null),
+      try(local.tailscale_device_ipv4[local.machine_hostnames[name]], null),
     ])
   }
 
@@ -108,7 +108,7 @@ locals {
         apiVersion = "v1alpha1"
         kind       = "HostnameConfig"
         auto       = "off"
-        hostname   = name
+        hostname   = local.machine_hostnames[name]
       },
       {
         apiVersion = "v1alpha1"
@@ -116,7 +116,7 @@ locals {
         name       = "tailscale"
         environment = compact([
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
-          "TS_HOSTNAME=${name}",
+          "TS_HOSTNAME=${local.machine_hostnames[name]}",
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },

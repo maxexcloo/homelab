@@ -13,8 +13,13 @@ locals {
 
   storage = yamldecode(file("${path.module}/data/storage.yaml"))
 
+  machine_hostnames = {
+    for name, machine in local.machines :
+    name => try(machine.hostname, name)
+  }
+
   machine_fqdns = {
     for name, machine in local.machines :
-    name => "${name}.${machine.network}.${local.domains.infrastructure}"
+    name => "${local.machine_hostnames[name]}.${machine.network}.${local.domains.infrastructure}"
   }
 }

@@ -26,7 +26,8 @@ output "machines" {
     for name, machine in local.machines : name => {
       address      = try(machine.address, machine.public_ipv4)
       fqdn         = local.machine_fqdns[name]
-      tailscale_ip = try(local.tailscale_device_ipv4[name], null)
+      hostname     = local.machine_hostnames[name]
+      tailscale_ip = try(local.tailscale_device_ipv4[local.machine_hostnames[name]], null)
     }
   }
 }

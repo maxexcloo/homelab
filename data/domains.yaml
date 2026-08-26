@@ -1,14 +1,14 @@
 cloudflare:
   account_name: excloo
   acme_consumers:
+    gateway-mbk:
+      machine: gateway-mbk
     hass:
       machine: hass
     kimbap:
       machine: kimbap
     mbk:
       cluster: mbk
-    ramen:
-      machine: ramen
     syd:
       cluster: syd
   external_dns_consumers:
