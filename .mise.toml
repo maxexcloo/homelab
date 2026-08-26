@@ -11,6 +11,8 @@ talosctl = "1.13.9"
 yq = "4.53.6"
 
 [env]
+_OP_CONNECT_HOST = "op://Homelab/OpenTofu/OP_CONNECT_HOST"
+_OP_CONNECT_TOKEN = "op://Homelab/OpenTofu/OP_CONNECT_TOKEN"
 CLOUDFLARE_API_KEY = "op://Homelab/OpenTofu/CLOUDFLARE_API_KEY"
 CLOUDFLARE_EMAIL = "op://Homelab/OpenTofu/CLOUDFLARE_EMAIL"
 GOOGLE_CREDENTIALS = "op://Homelab/OpenTofu/GOOGLE_CREDENTIALS"
@@ -30,11 +32,11 @@ UNIFI_API_KEY = "op://Homelab/OpenTofu/UNIFI_API_KEY"
 # Deploy
 [tasks.apply]
 description = "Apply all changes"
-run = "op run -- tofu apply"
+run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu apply'"
 
 [tasks.plan]
 description = "Plan all changes"
-run = "op run -- tofu plan"
+run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu plan'"
 
 # Development
 [tasks.check]
@@ -43,6 +45,7 @@ run = """
 actionlint .github/workflows/*.yaml
 prettier --check .
 shellcheck scripts/*.sh
+yq -p=toml -o=json -r '.tasks.opentofu-item.run' .mise.toml | shellcheck -s sh -
 tofu fmt -check -recursive
 tofu validate
 """
@@ -61,11 +64,11 @@ run = "prek run --all-files"
 # Scripts
 [tasks.client-configs]
 description = "Sync workstation kubeconfig and talosconfig from 1Password"
-run = "scripts/sync_client_configs.sh"
+run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
 
 [tasks.prepare-oci-image]
 description = "Download and convert the Talos Oracle image archive"
-run = "op run -- scripts/prepare_oci_image.sh"
+run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- scripts/prepare_oci_image.sh"
 
 [tasks.ssh-config]
 description = "Install the non-secret homelab SSH include"
@@ -74,17 +77,105 @@ run = "scripts/render_ssh_config.sh ${HOME}/.ssh/config.d/homelab"
 # Setup
 [tasks.init]
 description = "Initialise providers without connecting the backend"
-run = """
-if [ -n "${OP_CONNECT_HOST:-}" ] && [ -n "${OP_CONNECT_TOKEN:-}" ]; then
-  op run -- tofu init -backend=false -input=false
-else
-  env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false
-fi
-"""
+run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false"
 
 [tasks.opentofu-item]
 description = "Create the OpenTofu 1Password item if missing"
-run = "scripts/create_opentofu_item.sh"
+run = '''
+set -eu
+
+unset OP_CONNECT_HOST OP_CONNECT_TOKEN
+
+for tool in jq op yq; do
+  if ! command -v "${tool}" >/dev/null 2>&1; then
+    echo "error: ${tool} is required but not found in PATH." >&2
+    exit 1
+  fi
+done
+
+required_fields_json="$(
+  yq -p=toml -o=json '
+    [.env[]
+      | select(test("^op://Homelab/OpenTofu/"))
+      | sub("^op://Homelab/OpenTofu/"; "")]
+    | unique
+    | sort
+  ' .mise.toml
+)"
+
+if [ "$(printf '%s\n' "${required_fields_json}" | jq 'length')" -eq 0 ]; then
+  echo "error: no Homelab/OpenTofu references found in .mise.toml." >&2
+  exit 1
+fi
+
+vaults_json="$(op vault list --format json)"
+vault_count="$(
+  printf '%s\n' "${vaults_json}" |
+    jq '[.[] | select(.name == "Homelab")] | length'
+)"
+vault_id="$(
+  printf '%s\n' "${vaults_json}" |
+    jq -r '[.[] | select(.name == "Homelab")][0].id // ""'
+)"
+
+if [ "${vault_count}" -ne 1 ]; then
+  echo "error: expected exactly one accessible Homelab vault; found ${vault_count}." >&2
+  exit 1
+fi
+
+items_json="$(op item list --vault "${vault_id}" --format json)"
+item_count="$(
+  printf '%s\n' "${items_json}" |
+    jq '[.[] | select(.title == "OpenTofu")] | length'
+)"
+item_id="$(
+  printf '%s\n' "${items_json}" |
+    jq -r '[.[] | select(.title == "OpenTofu")][0].id // ""'
+)"
+
+if [ "${item_count}" -gt 1 ]; then
+  echo "error: found multiple OpenTofu items in the Homelab vault." >&2
+  exit 1
+fi
+
+if [ "${item_count}" -eq 1 ]; then
+  item_json="$(op item get "${item_id}" --vault "${vault_id}" --format json)"
+  missing_fields="$(
+    printf '%s\n' "${item_json}" |
+      jq -r --argjson required "${required_fields_json}" '
+        $required - ([.fields[] | select(.id != "notesPlain") | .label] | unique)
+        | .[]
+      '
+  )"
+
+  if [ -n "${missing_fields}" ]; then
+    echo "error: the Homelab/OpenTofu item is missing these fields:" >&2
+    printf '%s\n' "${missing_fields}" | while IFS= read -r field; do
+      echo "  - ${field}" >&2
+    done
+    exit 1
+  fi
+
+  echo "The Homelab/OpenTofu item already exists."
+  exit 0
+fi
+
+set -- "notesPlain=Provider environment for the homelab OpenTofu root."
+while IFS= read -r field; do
+  set -- "$@" "${field}[password]="
+done <<EOF
+$(printf '%s\n' "${required_fields_json}" | jq -r '.[]')
+EOF
+
+op item create \
+  --category "API Credential" \
+  --title "OpenTofu" \
+  --vault "${vault_id}" \
+  "$@" \
+  >/dev/null
+
+echo "Created Homelab/OpenTofu. Populate every concealed field before planning or applying."
+'''
 
 [tasks.setup]
 description = "Install tools, create the 1Password item, initialise providers, and install Git hooks"

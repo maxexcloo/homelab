@@ -20,8 +20,9 @@ Flux.
 - Keep the complete provider environment in the `OpenTofu` item in the
   `Homelab` vault. Let local setup create its schema when missing, but never
   manage it with OpenTofu. Resolve its tracked `op://` references only through
-  credential-consuming Mise tasks. Keep `OP_CONNECT_HOST` and
-  `OP_CONNECT_TOKEN` local because they bootstrap that access.
+  credential-consuming Mise tasks authenticated by the 1Password desktop app.
+  Keep the Connect host and token out of the parent environment and expose them
+  as `OP_CONNECT_HOST` and `OP_CONNECT_TOKEN` only to the OpenTofu subprocess.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
 - Never change live infrastructure without explicit approval and review of the
   OpenTofu plan presented for that apply.

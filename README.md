@@ -15,8 +15,8 @@ repository reconciled by Flux.
 
 Tooling is pinned and managed through [Mise](https://mise.jdx.dev/):
 
-Copy `.mise.local.toml.default` to `.mise.local.toml` and set its 1Password
-Connect bootstrap values, then run:
+In the 1Password desktop app, enable **Settings > Developer > Integrate with
+1Password CLI** and enable Touch ID under **Settings > Security**. Then run:
 
 ```shell
 mise trust
@@ -27,7 +27,9 @@ mise run check
 Setup creates the `OpenTofu` item schema in the `Homelab` vault when it is
 missing and leaves an existing item untouched. If it creates the item, populate
 every field and rerun setup before planning or applying. Credential-consuming
-tasks resolve the complete provider environment from that item.
+tasks request desktop authorisation and resolve the complete provider
+environment from that item. The Connect credentials are exposed only to the
+OpenTofu subprocess.
 
 ### Common Tasks
 
@@ -48,8 +50,9 @@ tasks resolve the complete provider environment from that item.
 ### Prerequisites
 
 Mise installs 1Password CLI (`op`), Actionlint, `jq`, `kubectl`, OpenTofu, Prek,
-Prettier, ShellCheck, Talosctl, and yq. The OCI image preparation task also
-expects `curl`, `gzip`, `qemu-img`, and `xz` from the workstation operating
+Prettier, ShellCheck, Talosctl, and yq. The workstation must also have the
+1Password desktop app with CLI integration enabled. The OCI image preparation
+task expects `curl`, `gzip`, `qemu-img`, and `xz` from the workstation operating
 system.
 
 ## Substrate
@@ -71,7 +74,7 @@ the corresponding application route and DNS record remain owned by `kubelab`.
 - **Destruction Guards**: Storage datasets and recovery items enforce `prevent_destroy` to safeguard live substrate.
 - **Local Execution**: CI validates formatting and configuration; all plans and applies run locally from trusted workstations.
 - **Safe State**: State is stored in versioned Google Cloud Storage outside the root that consumes it.
-- **Secret Loading**: Credential-consuming Mise tasks resolve tracked 1Password references only for their subprocess.
+- **Secret Loading**: Credential-consuming Mise tasks authenticate through the 1Password desktop app and resolve tracked references only for their subprocess.
 
 ### Backend State & Recovery
 
