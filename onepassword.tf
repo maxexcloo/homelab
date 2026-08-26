@@ -77,7 +77,7 @@ resource "onepassword_item" "cloudflare_acme" {
   category            = "login"
   password_wo         = cloudflare_account_token.acme[each.key].value
   password_wo_version = local.onepassword_cloudflare_acme_password_versions[each.key]
-  tags                = ["ACME", "Cloudflare", "Homelab"]
+  tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
   username            = each.value.credential_scope
   vault               = data.onepassword_vault.default[each.value.vault].uuid
@@ -93,7 +93,7 @@ resource "onepassword_item" "cloudflare_external_dns" {
   category            = "login"
   password_wo         = cloudflare_account_token.external_dns[each.key].value
   password_wo_version = local.onepassword_cloudflare_external_dns_password_versions[each.key]
-  tags                = ["Cloudflare", "ExternalDNS", "Homelab"]
+  tags                = ["Homelab"]
   title               = each.value.title
   username            = each.key
   vault               = data.onepassword_vault.default[each.value.vault].uuid
@@ -109,10 +109,26 @@ resource "onepassword_item" "cloudflare_tunnel" {
   category            = "login"
   password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
   password_wo_version = local.onepassword_cloudflare_tunnel_password_versions[each.key]
-  tags                = each.value.tags
+  tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
   username            = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
   vault               = data.onepassword_vault.default[each.value.vault].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "onepassword_item" "resend" {
+  for_each = local.clusters
+
+  # Keep version zero unchanged so a manually populated password is preserved.
+  category            = "login"
+  password_wo         = ""
+  password_wo_version = 0
+  title               = "Resend: ${each.key}"
+  username            = "cluster-${each.key}-controller"
+  vault               = data.onepassword_vault.default["homelab"].uuid
 
   lifecycle {
     prevent_destroy = true
@@ -125,7 +141,6 @@ resource "onepassword_item" "tailscale_auth_key" {
   category            = "login"
   password_wo         = tailscale_tailnet_key.server[each.key].key
   password_wo_version = local.onepassword_tailscale_auth_key_password_versions[each.key]
-  tags                = ["Bootstrap", "Homelab", "Recovery", "Tailscale"]
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
   vault               = data.onepassword_vault.default["homelab"].uuid
 
@@ -145,7 +160,7 @@ resource "onepassword_item" "tailscale_operator" {
   category            = "login"
   password_wo         = tailscale_oauth_client.kubernetes_operator[each.key].key
   password_wo_version = local.onepassword_tailscale_operator_password_versions[each.key]
-  tags                = ["Homelab", "Kubernetes", "Operator", "Tailscale"]
+  tags                = ["Homelab"]
   title               = "tailscale-operator"
   username            = tailscale_oauth_client.kubernetes_operator[each.key].id
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid

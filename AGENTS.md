@@ -71,6 +71,10 @@ operational documentation under `docs/`.
   sensitive.
 - Derive write-only version arguments for generated secrets from non-secret
   content fingerprints; never require manual revision counters.
+- Let the 1Password vault carry scope. Omit tags from items in the `Homelab`
+  vault and tag Homelab-created items in cluster vaults only with `Homelab`.
+  Omit cluster names from titles inside cluster vaults and qualify titles in the
+  `Homelab` vault only when needed to distinguish their scope.
 
 ## Sorting Convention
 

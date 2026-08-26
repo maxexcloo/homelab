@@ -55,7 +55,6 @@ locals {
   cloudflare_consumers_tunnel = {
     for name, consumer in local.cloudflare.tunnel_consumers : name => merge(consumer, {
       credential_scope = can(consumer.machine) ? local.machine_fqdns[consumer.machine] : name
-      tags             = can(consumer.machine) ? toset(["Cloudflare", "Homelab", "Tunnel"]) : toset(["Cloudflare", "Homelab", "Kubernetes", "Tunnel"])
       title            = can(consumer.machine) ? "Cloudflare Tunnel: ${local.machine_fqdns[consumer.machine]}" : "cloudflare-tunnel"
       vault            = can(consumer.machine) ? "homelab" : "cluster/${name}"
     })
