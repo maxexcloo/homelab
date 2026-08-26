@@ -17,6 +17,10 @@ Flux.
   such as `v7` for GitHub Actions, not commit SHAs. Let Renovate propose upgrades
   for manual review.
 - Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
+- Keep the complete provider environment in the manually managed `OpenTofu`
+  item in the `Homelab` vault. Resolve its tracked `op://` references only
+  through credential-consuming Mise tasks. Keep `OP_CONNECT_HOST` and
+  `OP_CONNECT_TOKEN` local because they bootstrap that access.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
 - Never change live infrastructure without explicit approval and review of the
   OpenTofu plan presented for that apply.

@@ -21,8 +21,10 @@ mise run setup
 mise run check
 ```
 
-Copy `.mise.local.toml.default` to `.mise.local.toml` and replace its placeholders
-before planning or applying infrastructure changes.
+Copy `.mise.local.toml.default` to `.mise.local.toml` and replace its 1Password
+Connect bootstrap placeholders before planning or applying infrastructure
+changes. Credential-consuming tasks resolve the complete provider environment
+from the manually managed `OpenTofu` item in the `Homelab` vault.
 
 ### Common Tasks
 
@@ -65,6 +67,7 @@ the corresponding application route and DNS record remain owned by `kubelab`.
 - **Destruction Guards**: Storage datasets and recovery items enforce `prevent_destroy` to safeguard live substrate.
 - **Local Execution**: CI validates formatting and configuration; all plans and applies run locally from trusted workstations.
 - **Safe State**: State is stored in versioned Google Cloud Storage outside the root that consumes it.
+- **Secret Loading**: Credential-consuming Mise tasks resolve tracked 1Password references only for their subprocess.
 
 ### Backend State & Recovery
 

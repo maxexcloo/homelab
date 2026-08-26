@@ -10,14 +10,31 @@ shellcheck = "0.11.0"
 talosctl = "1.13.9"
 yq = "4.53.6"
 
+[env]
+CLOUDFLARE_API_KEY = "op://Homelab/OpenTofu/CLOUDFLARE_API_KEY"
+CLOUDFLARE_EMAIL = "op://Homelab/OpenTofu/CLOUDFLARE_EMAIL"
+GOOGLE_CREDENTIALS = "op://Homelab/OpenTofu/GOOGLE_CREDENTIALS"
+OCI_FINGERPRINT = "op://Homelab/OpenTofu/OCI_FINGERPRINT"
+OCI_REGION = "op://Homelab/OpenTofu/OCI_REGION"
+OCI_USER_OCID = "op://Homelab/OpenTofu/OCI_USER_OCID"
+TAILSCALE_OAUTH_CLIENT_ID = "op://Homelab/OpenTofu/TAILSCALE_OAUTH_CLIENT_ID"
+TAILSCALE_OAUTH_CLIENT_SECRET = "op://Homelab/OpenTofu/TAILSCALE_OAUTH_CLIENT_SECRET"
+TAILSCALE_TAILNET = "op://Homelab/OpenTofu/TAILSCALE_TAILNET"
+TF_VAR_oci_private_key_base64 = "op://Homelab/OpenTofu/OCI_PRIVATE_KEY_BASE64"
+TF_VAR_oci_tenancy_ocid = "op://Homelab/OpenTofu/OCI_TENANCY_OCID"
+TRUENAS_API_KEY = "op://Homelab/OpenTofu/TRUENAS_API_KEY"
+TRUENAS_URL = "op://Homelab/OpenTofu/TRUENAS_URL"
+UNIFI_API = "op://Homelab/OpenTofu/UNIFI_API"
+UNIFI_API_KEY = "op://Homelab/OpenTofu/UNIFI_API_KEY"
+
 # Deploy
 [tasks.apply]
 description = "Apply all changes"
-run = "tofu apply"
+run = "op run -- tofu apply"
 
 [tasks.plan]
 description = "Plan all changes"
-run = "tofu plan"
+run = "op run -- tofu plan"
 
 # Development
 [tasks.check]
@@ -48,7 +65,7 @@ run = "scripts/sync_client_configs.sh"
 
 [tasks.prepare-oci-image]
 description = "Download and convert the Talos Oracle image archive"
-run = "scripts/prepare_oci_image.sh"
+run = "op run -- scripts/prepare_oci_image.sh"
 
 [tasks.ssh-config]
 description = "Install the non-secret homelab SSH include"
