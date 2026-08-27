@@ -32,8 +32,9 @@ locals {
 
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
-      username = machine.username
+      title    = "${title(machine.tag)}: ${local.machine_fqdns[name]}"
       url      = try(machine.management_port, null) != null ? "https://${local.machine_fqdns[name]}${machine.management_port == 443 ? "" : ":${machine.management_port}"}" : "ssh://${machine.username}@${local.machine_fqdns[name]}"
+      username = machine.username
     }
     if machine.platform != "talos"
   }
@@ -108,7 +109,6 @@ resource "onepassword_item" "cloudflare_acme" {
   password_wo_version = local.onepassword_cloudflare_acme_password_versions[each.key]
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
-  username            = each.value.credential_scope
   vault               = data.onepassword_vault.default[each.value.vault].uuid
 
   lifecycle {
@@ -124,7 +124,6 @@ resource "onepassword_item" "cloudflare_external_dns" {
   password_wo_version = local.onepassword_cloudflare_external_dns_password_versions[each.key]
   tags                = ["Homelab"]
   title               = each.value.title
-  username            = each.key
   vault               = data.onepassword_vault.default[each.value.vault].uuid
 
   lifecycle {
@@ -140,7 +139,6 @@ resource "onepassword_item" "cloudflare_tunnel" {
   password_wo_version = local.onepassword_cloudflare_tunnel_password_versions[each.key]
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
-  username            = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
   vault               = data.onepassword_vault.default[each.value.vault].uuid
 
   lifecycle {
@@ -154,7 +152,7 @@ resource "onepassword_item" "machine_access" {
   category            = "login"
   password_wo         = ephemeral.random_password.machine_access[each.key].result
   password_wo_version = local.onepassword_machine_access_password_versions[each.key]
-  title               = "Server: ${local.machine_fqdns[each.key]}"
+  title               = each.value.title
   url                 = each.value.url
   username            = each.value.username
   vault               = data.onepassword_vault.default["homelab"].uuid
@@ -172,7 +170,6 @@ resource "onepassword_item" "resend" {
   password_wo         = ""
   password_wo_version = 0
   title               = "Resend: ${each.key}"
-  username            = "cluster-${each.key}-controller"
   vault               = data.onepassword_vault.default["homelab"].uuid
 
   lifecycle {
@@ -188,11 +185,6 @@ resource "onepassword_item" "tailscale_auth_key" {
   password_wo_version = local.onepassword_tailscale_auth_key_password_versions[each.key]
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
   vault               = data.onepassword_vault.default["homelab"].uuid
-
-  username = try(
-    each.value.username,
-    each.value.platform == "talos" ? "talosctl" : each.key,
-  )
 
   lifecycle {
     prevent_destroy = true
