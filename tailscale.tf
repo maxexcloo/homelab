@@ -1,20 +1,60 @@
 data "tailscale_devices" "all" {}
 
 locals {
-  tailscale_device_ipv4 = {
-    for device in data.tailscale_devices.all.devices :
-    regex("^[^.]+", device.name) => try(
-      one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]),
-      null,
-    )
+  tailscale_device_current = {
+    for hostname, devices in local.tailscale_devices_by_hostname :
+    hostname => one([
+      for device in devices : device
+      if "${device.last_seen}|${device.id}" == element(
+        sort([for candidate in devices : "${candidate.last_seen}|${candidate.id}"]),
+        length(devices) - 1,
+      )
+    ])
   }
 
-  tailscale_device_ipv6 = {
-    for device in data.tailscale_devices.all.devices :
-    regex("^[^.]+", device.name) => try(
-      one([for address in device.addresses : address if startswith(address, "fd7a:")]),
-      null,
-    )
+  tailscale_device_ipv4 = merge(
+    {
+      for device in data.tailscale_devices.all.devices :
+      regex("^[^.]+", device.name) => try(
+        one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]),
+        null,
+      )
+    },
+    {
+      for hostname, device in local.tailscale_device_current :
+      hostname => try(
+        one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]),
+        null,
+      )
+    },
+  )
+
+  tailscale_device_ipv6 = merge(
+    {
+      for device in data.tailscale_devices.all.devices :
+      regex("^[^.]+", device.name) => try(
+        one([for address in device.addresses : address if startswith(address, "fd7a:")]),
+        null,
+      )
+    },
+    {
+      for hostname, device in local.tailscale_device_current :
+      hostname => try(
+        one([for address in device.addresses : address if startswith(address, "fd7a:")]),
+        null,
+      )
+    },
+  )
+
+  tailscale_devices_by_hostname = {
+    for hostname in toset([
+      for device in data.tailscale_devices.all.devices : device.hostname
+      if contains(keys(local.clusters), device.hostname)
+    ]) :
+    hostname => [
+      for device in data.tailscale_devices.all.devices : device
+      if device.hostname == hostname
+    ]
   }
 
   tailscale_routes = toset(flatten([
