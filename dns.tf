@@ -112,22 +112,20 @@ locals {
       if can(consumer.cluster)
     },
     {
-      for name, machine in local.machines : "machine/${name}/a" => {
-        content = try(machine.public_ipv4, machine.address)
+      for name in keys(local.machines) : "machine/${name}/a" => {
+        content = local.tailscale_device_ipv4[name]
         name    = local.machine_fqdns[name]
         type    = "A"
         zone    = local.domains.infrastructure
       }
-      if try(machine.public_ipv4, null) != null || try(machine.address, null) != null
     },
     {
-      for name, machine in local.machines : "machine/${name}/aaaa" => {
-        content = machine.public_ipv6
+      for name in keys(local.machines) : "machine/${name}/aaaa" => {
+        content = local.tailscale_device_ipv6[name]
         name    = local.machine_fqdns[name]
         type    = "AAAA"
         zone    = local.domains.infrastructure
       }
-      if try(machine.public_ipv6, null) != null
     },
   )
 

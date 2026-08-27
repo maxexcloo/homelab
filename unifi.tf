@@ -7,10 +7,9 @@ data "unifi_network" "default" {
 locals {
   unifi_clients = {
     for name, machine in local.machines : name => {
-      fixed_ip         = machine.address
-      local_dns_record = local.machine_fqdns[name]
-      mac              = machine.mac_address
-      network_key      = "${machine.network}/${machine.vlan}"
+      fixed_ip    = machine.address
+      mac         = machine.mac_address
+      network_key = "${machine.network}/${machine.vlan}"
     }
     if try(machine.mac_address, null) != null && try(machine.address, null) != null
   }
@@ -55,7 +54,6 @@ resource "unifi_client" "host" {
 
   allow_existing         = true
   fixed_ip               = each.value.fixed_ip
-  local_dns_record       = each.value.local_dns_record
   mac                    = each.value.mac
   name                   = each.key
   network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.default[each.value.network_key].id : null

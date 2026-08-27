@@ -36,6 +36,13 @@ resource "terraform_data" "configuration_validation" {
     }
 
     precondition {
+      condition = alltrue([
+        for name in keys(local.machines) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", name))
+      ])
+      error_message = "Machine names must be valid lowercase DNS labels."
+    }
+
+    precondition {
       condition = length(distinct([
         for name, machine in local.machines : "${machine.network}/${local.machine_hostnames[name]}"
       ])) == length(local.machines)
