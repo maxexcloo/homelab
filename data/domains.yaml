@@ -5,6 +5,8 @@ cloudflare:
       machine: gateway-mbk
     hass:
       machine: hass
+    hotdog:
+      machine: hotdog
     kimbap:
       machine: kimbap
     mbk:
