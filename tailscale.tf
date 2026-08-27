@@ -67,6 +67,15 @@ locals {
     for name in keys(local.clusters) : "tag:${name}"
   ])
 
+  tailscale_tags_cluster_all = flatten([
+    for tag in local.tailscale_tags_cluster : [tag, "${tag}-operator"]
+  ])
+
+  tailscale_tags_cluster_conflicting = setintersection(
+    toset(local.tailscale_tags_cluster_all),
+    toset(keys(local.access.tailscale.tag_owners)),
+  )
+
   tailscale_policy = {
     acls = local.access.tailscale.acls
 
@@ -100,6 +109,8 @@ resource "tailscale_acl" "default" {
   acl                        = jsonencode(local.tailscale_policy)
   overwrite_existing_content = false
   reset_acl_on_destroy       = false
+
+  depends_on = [terraform_data.tailscale_tag_validation]
 }
 
 resource "tailscale_oauth_client" "kubernetes_operator" {
@@ -120,7 +131,23 @@ resource "tailscale_tailnet_key" "server" {
   preauthorized       = true
   recreate_if_invalid = "always"
   reusable            = true
-  tags                = ["tag:${each.value.tailscale_tag}"]
+  tags                = ["tag:${each.value.tag}"]
 
   depends_on = [tailscale_acl.default]
+}
+
+resource "terraform_data" "tailscale_tag_validation" {
+  input = sort(local.tailscale_tags_cluster_all)
+
+  lifecycle {
+    precondition {
+      condition     = length(distinct(local.tailscale_tags_cluster_all)) == length(local.tailscale_tags_cluster_all)
+      error_message = "Cluster and Kubernetes operator Tailscale tags must be unique."
+    }
+
+    precondition {
+      condition     = length(local.tailscale_tags_cluster_conflicting) == 0
+      error_message = "Generated cluster Tailscale tags must not overlap configured tag owners: ${join(", ", sort(tolist(local.tailscale_tags_cluster_conflicting)))}"
+    }
+  }
 }

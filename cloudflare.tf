@@ -35,29 +35,31 @@ data "cloudflare_zone" "default" {
 
 locals {
   cloudflare_consumers_acme = {
-    for name, consumer in local.cloudflare.acme_consumers : name => merge(consumer, {
-      challenge_hostname = can(consumer.machine) ? local.machine_fqdns[consumer.machine] : "${consumer.cluster}.${local.domains.services}"
-      challenge_zone     = can(consumer.machine) ? local.domains.infrastructure : local.domains.services
-      credential_scope   = can(consumer.machine) ? local.machine_fqdns[consumer.machine] : name
-      target_hostname    = can(consumer.machine) ? "${name}.${local.domains.acme}" : "_acme-challenge.${consumer.cluster}.${local.domains.services}.${local.domains.acme}"
-      title              = can(consumer.machine) ? "Cloudflare ACME DNS: ${local.machine_fqdns[consumer.machine]}" : "Cloudflare ACME DNS"
-      vault              = can(consumer.machine) ? "homelab" : "cluster/${name}"
-    })
+    for name, challenge_mode in local.cloudflare.acme_consumers : name => {
+      challenge_hostname = can(local.machines[name]) ? local.machine_fqdns[name] : "${name}.${local.domains.services}"
+      challenge_mode     = challenge_mode
+      challenge_zone     = can(local.machines[name]) ? local.domains.infrastructure : local.domains.services
+      credential_scope   = can(local.machines[name]) ? local.machine_fqdns[name] : name
+      dns_write_zone     = challenge_mode == "direct" ? (can(local.machines[name]) ? local.domains.infrastructure : local.domains.services) : local.domains.acme
+      target_hostname    = can(local.machines[name]) ? "${name}.${local.domains.acme}" : "_acme-challenge.${name}.${local.domains.services}.${local.domains.acme}"
+      title              = can(local.machines[name]) ? "Cloudflare ACME DNS: ${local.machine_fqdns[name]}" : "Cloudflare ACME DNS"
+      vault              = can(local.machines[name]) ? "homelab" : "cluster/${name}"
+    }
   }
 
   cloudflare_consumers_external_dns = {
-    for name, consumer in local.cloudflare.external_dns_consumers : name => merge(consumer, {
+    for name, zones in local.cloudflare.external_dns_consumers : name => {
       title = "Cloudflare ExternalDNS"
       vault = "cluster/${name}"
-    })
+      zones = zones
+    }
   }
 
   cloudflare_consumers_tunnel = {
-    for name, consumer in local.cloudflare.tunnel_consumers : name => merge(consumer, {
-      credential_scope = can(consumer.machine) ? local.machine_fqdns[consumer.machine] : name
-      title            = can(consumer.machine) ? "Cloudflare Tunnel: ${local.machine_fqdns[consumer.machine]}" : "Cloudflare Tunnel"
-      vault            = can(consumer.machine) ? "homelab" : "cluster/${name}"
-    })
+    for name in toset(local.cloudflare.tunnel_consumers) : name => {
+      title = "Cloudflare Tunnel"
+      vault = "cluster/${name}"
+    }
   }
 
   cloudflare_zones = toset(concat(
@@ -87,7 +89,7 @@ resource "cloudflare_account_token" "acme" {
         ]
 
         resources = jsonencode({
-          "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[local.domains.acme].zone_id}" = "*"
+          "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[each.value.dns_write_zone].zone_id}" = "*"
         })
       },
     ],
@@ -105,7 +107,7 @@ resource "cloudflare_account_token" "acme" {
           "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[zone].zone_id}" = "*"
         })
       }
-      if zone != local.domains.acme
+      if zone != each.value.dns_write_zone
     ],
   )
 
@@ -138,6 +140,8 @@ resource "cloudflare_account_token" "external_dns" {
     },
   ]
 
+  depends_on = [terraform_data.external_dns_validation]
+
   lifecycle {
     prevent_destroy = true
   }
@@ -169,10 +173,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
-  for_each = {
-    for name, consumer in local.cloudflare_consumers_tunnel : name => consumer
-    if can(consumer.cluster)
-  }
+  for_each = local.cloudflare_consumers_tunnel
 
   account_id = data.cloudflare_account.default.id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
@@ -192,18 +193,47 @@ resource "terraform_data" "acme_validation" {
   lifecycle {
     precondition {
       condition = alltrue([
-        for consumer in values(local.cloudflare.acme_consumers) :
-        can(consumer.machine) != can(consumer.cluster)
+        for name in keys(local.cloudflare.acme_consumers) :
+        can(local.machines[name]) != can(local.clusters[name])
       ])
-      error_message = "Each ACME consumer must reference exactly one machine or cluster."
+      error_message = "Each ACME consumer must name exactly one existing machine or cluster."
     }
 
     precondition {
       condition = alltrue([
-        for consumer in values(local.cloudflare.acme_consumers) :
-        can(consumer.machine) ? can(local.machines[consumer.machine]) : can(local.clusters[consumer.cluster])
+        for challenge_mode in values(local.cloudflare.acme_consumers) :
+        contains(["delegated", "direct"], challenge_mode)
       ])
-      error_message = "Every ACME consumer must reference an existing machine or cluster."
+      error_message = "Every ACME consumer challenge mode must be delegated or direct."
+    }
+  }
+}
+
+resource "terraform_data" "external_dns_validation" {
+  input = sort(keys(local.cloudflare_consumers_external_dns))
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for name in keys(local.cloudflare.external_dns_consumers) : can(local.clusters[name])
+      ])
+      error_message = "Every ExternalDNS consumer must name an existing cluster."
+    }
+
+    precondition {
+      condition = alltrue([
+        for zones in values(local.cloudflare.external_dns_consumers) : length(distinct(zones)) == length(zones)
+      ])
+      error_message = "ExternalDNS consumer zones must be unique."
+    }
+
+    precondition {
+      condition = alltrue(flatten([
+        for zones in values(local.cloudflare.external_dns_consumers) : [
+          for zone in zones : contains(local.cloudflare_zones, zone)
+        ]
+      ]))
+      error_message = "Every ExternalDNS consumer zone must have a DNS data file or a configured domain role."
     }
   }
 }
@@ -213,19 +243,15 @@ resource "terraform_data" "tunnel_validation" {
 
   lifecycle {
     precondition {
-      condition = alltrue([
-        for consumer in values(local.cloudflare.tunnel_consumers) :
-        can(consumer.machine) != can(consumer.cluster)
-      ])
-      error_message = "Each tunnel consumer must reference exactly one machine or cluster."
+      condition     = length(distinct(local.cloudflare.tunnel_consumers)) == length(local.cloudflare.tunnel_consumers)
+      error_message = "Cloudflare Tunnel consumers must be unique."
     }
 
     precondition {
       condition = alltrue([
-        for consumer in values(local.cloudflare.tunnel_consumers) :
-        can(consumer.machine) ? can(local.machines[consumer.machine]) : can(local.clusters[consumer.cluster])
+        for name in local.cloudflare.tunnel_consumers : can(local.clusters[name])
       ])
-      error_message = "Every tunnel consumer must reference an existing machine or cluster."
+      error_message = "Every Cloudflare Tunnel consumer must name an existing cluster."
     }
   }
 }

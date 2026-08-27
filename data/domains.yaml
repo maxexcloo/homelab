@@ -1,32 +1,22 @@
 cloudflare:
   account_name: excloo
   acme_consumers:
-    gateway-mbk:
-      machine: gateway-mbk
-    hass:
-      machine: hass
-    hotdog:
-      machine: hotdog
-    kimbap:
-      machine: kimbap
-    mbk:
-      cluster: mbk
-    syd:
-      cluster: syd
+    gateway-mbk: delegated
+    hass: delegated
+    hotdog: delegated
+    kimbap: direct
+    mbk: delegated
+    syd: delegated
   external_dns_consumers:
     mbk:
-      zones:
-        - excloo.com
-        - excloo.dev
+      - excloo.com
+      - excloo.dev
     syd:
-      zones:
-        - excloo.com
-        - excloo.dev
+      - excloo.com
+      - excloo.dev
   tunnel_consumers:
-    mbk:
-      cluster: mbk
-    syd:
-      cluster: syd
+    - mbk
+    - syd
 domains:
   acme: 043847.xyz
   infrastructure: excloo.net

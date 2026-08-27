@@ -13,13 +13,18 @@ locals {
 
   storage = yamldecode(file("${path.module}/data/storage.yaml"))
 
-  machine_hostnames = {
-    for name, machine in local.machines :
-    name => try(machine.hostname, name)
-  }
+  machine_cluster_names_duplicate = setintersection(
+    toset(keys(local.machines)),
+    toset(keys(local.clusters)),
+  )
 
   machine_fqdns = {
     for name, machine in local.machines :
     name => "${local.machine_hostnames[name]}.${machine.network}.${local.domains.infrastructure}"
+  }
+
+  machine_hostnames = {
+    for name, machine in local.machines :
+    name => try(machine.hostname, name)
   }
 }

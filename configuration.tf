@@ -13,6 +13,13 @@ resource "terraform_data" "configuration_validation" {
     }
 
     precondition {
+      condition = alltrue([
+        for cluster in values(local.clusters) : try(cluster.nodes[cluster.api_node].machine_type == "controlplane", false)
+      ])
+      error_message = "Every cluster API node must be a control plane."
+    }
+
+    precondition {
       condition = alltrue(flatten([
         for cluster_name, cluster in local.clusters : [
           for node_name in keys(cluster.nodes) : try(local.machines[node_name].cluster == cluster_name, false)
@@ -22,10 +29,36 @@ resource "terraform_data" "configuration_validation" {
     }
 
     precondition {
+      condition = alltrue(flatten([
+        for cluster in values(local.clusters) : [
+          for node_name in keys(cluster.nodes) : try(local.machines[node_name].platform == "talos", false)
+        ]
+      ]))
+      error_message = "Every cluster node machine must use the Talos platform."
+    }
+
+    precondition {
+      condition = alltrue([
+        for cluster in values(local.clusters) : !cluster.talos_enabled || length([
+          for node in values(cluster.nodes) : node
+          if node.machine_type == "controlplane" && try(node.bootstrap, false)
+        ]) == 1
+      ])
+      error_message = "Every enabled Talos cluster must have exactly one bootstrap control plane."
+    }
+
+    precondition {
       condition = alltrue([
         for machine in values(local.machines) : can(local.networks[machine.network])
       ])
       error_message = "Every machine must reference an existing network."
+    }
+
+    precondition {
+      condition = alltrue([
+        for name in keys(local.clusters) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", name))
+      ])
+      error_message = "Cluster names must be valid lowercase DNS labels."
     }
 
     precondition {
@@ -40,6 +73,32 @@ resource "terraform_data" "configuration_validation" {
         for name in keys(local.machines) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", name))
       ])
       error_message = "Machine names must be valid lowercase DNS labels."
+    }
+
+    precondition {
+      condition     = length(local.machine_cluster_names_duplicate) == 0
+      error_message = "Machine and cluster names must not overlap: ${join(", ", sort(tolist(local.machine_cluster_names_duplicate)))}"
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : try(machine.management_port, null) == null || try(machine.management_port >= 1 && machine.management_port <= 65535, false)
+      ])
+      error_message = "Machine management ports must be integers from 1 to 65535."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", machine.tag))
+      ])
+      error_message = "Machine tags must be valid lowercase labels."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : machine.platform == "talos" || try(trimspace(machine.username) != "", false)
+      ])
+      error_message = "Every non-Talos machine must declare a username."
     }
 
     precondition {
@@ -65,9 +124,16 @@ resource "terraform_data" "configuration_validation" {
 
     precondition {
       condition = alltrue([
-        for machine in values(local.machines) : can(local.access.tailscale.tag_owners["tag:${machine.tailscale_tag}"])
+        for name in keys(local.networks) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", name))
       ])
-      error_message = "Every machine Tailscale tag must have an owner."
+      error_message = "Network names must be valid lowercase DNS labels."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : can(local.access.tailscale.tag_owners["tag:${machine.tag}"])
+      ])
+      error_message = "Every machine tag must have a Tailscale owner."
     }
   }
 }

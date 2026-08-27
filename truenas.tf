@@ -50,6 +50,7 @@ locals {
       for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
         dataset_key = try(share.dataset, null) == null ? null : "${target}/${share.dataset}"
         name        = name
+        path        = try(share.path, null)
         target      = target
         networks = [
           for share_network in share.networks : cidrsubnet(
@@ -117,6 +118,48 @@ resource "terraform_data" "truenas_storage_target" {
     precondition {
       condition     = can(local.truenas_hosts[each.key])
       error_message = "Every storage target must reference an existing TrueNAS host."
+    }
+
+    precondition {
+      condition = alltrue([
+        for dataset in values(each.value.datasets) : try(dataset.parent_dataset, null) == null || try(
+          can(each.value.datasets[dataset.parent_dataset]) &&
+          try(each.value.datasets[dataset.parent_dataset].parent_dataset, null) == null &&
+          each.value.datasets[dataset.parent_dataset].pool == dataset.pool,
+          false,
+        )
+      ])
+      error_message = "Every child dataset must reference an existing root dataset in the same pool."
+    }
+
+    precondition {
+      condition = alltrue([
+        for share in values(each.value.nfs_shares) : (try(share.dataset, null) == null) != (try(share.path, null) == null)
+      ])
+      error_message = "Every NFS share must reference exactly one managed dataset or existing path."
+    }
+
+    precondition {
+      condition = alltrue([
+        for share in values(each.value.nfs_shares) : try(share.dataset, null) == null || can(each.value.datasets[share.dataset])
+      ])
+      error_message = "Every NFS share dataset must exist on the same storage target."
+    }
+
+    precondition {
+      condition = alltrue([
+        for share in values(each.value.nfs_shares) : length(try(share.networks, [])) > 0
+      ])
+      error_message = "Every NFS share must declare at least one network."
+    }
+
+    precondition {
+      condition = alltrue(flatten([
+        for share in values(each.value.nfs_shares) : [
+          for share_network in try(share.networks, []) : can(local.networks[share_network.network].unifi.networks[share_network.vlan])
+        ]
+      ]))
+      error_message = "Every NFS share network must reference an existing UniFi network."
     }
   }
 }
@@ -249,7 +292,7 @@ resource "truenas_share_nfs" "managed" {
   maproot_group = "wheel"
   maproot_user  = "root"
   networks      = each.value.networks
-  path          = each.value.dataset_key == null ? each.value.path : local.truenas_dataset_mount_points[each.value.dataset_key]
+  path          = each.value.dataset_key == null ? each.value.path : try(local.truenas_dataset_mount_points[each.value.dataset_key], null)
   provider      = truenas.hosts[each.value.target]
   readonly      = try(each.value.readonly, false)
   security      = ["SYS"]
@@ -258,11 +301,6 @@ resource "truenas_share_nfs" "managed" {
 
   lifecycle {
     prevent_destroy = true
-
-    precondition {
-      condition     = (try(each.value.dataset, null) == null) != (try(each.value.path, null) == null)
-      error_message = "Every NFS share must reference exactly one managed dataset or existing path."
-    }
   }
 }
 

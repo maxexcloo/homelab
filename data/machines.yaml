@@ -5,7 +5,7 @@ machines:
     management_port: 443
     network: mbk
     platform: unifi
-    tailscale_tag: router
+    tag: router
     username: root
   hass:
     address: 10.0.0.2
@@ -13,7 +13,7 @@ machines:
     management_port: 443
     network: mbk
     platform: haos
-    tailscale_tag: appliance
+    tag: appliance
     username: root
     vlan: default
   hotdog:
@@ -22,8 +22,8 @@ machines:
     platform: linux
     public_ipv4: 199.127.129.143
     public_ipv6: 2602:f831::4665:8aff:fee1:40ed
-    tailscale_tag: backup
-    username: max.schaefer
+    tag: backup
+    username: core
   hsp:
     address: 10.20.0.4
     cluster: syd
@@ -31,7 +31,7 @@ machines:
     network: syd
     platform: talos
     provider: oci
-    tailscale_tag: kubernetes
+    tag: kubernetes
     boot:
       size_mib: 51200
     compute:
@@ -49,7 +49,7 @@ machines:
     management_port: 8443
     network: mbk
     platform: truenas
-    tailscale_tag: storage
+    tag: storage
     username: root
     vlan: default
   mandu:
@@ -57,7 +57,7 @@ machines:
     mac_address: "c8:ff:bf:0f:9f:d0"
     network: mbk
     platform: bazzite
-    tailscale_tag: workstation
+    tag: workstation
     username: max.schaefer
     vlan: default
   taco:
@@ -69,7 +69,7 @@ machines:
     network: mbk
     platform: talos
     provider: truenas
-    tailscale_tag: kubernetes
+    tag: kubernetes
     vlan: services
     boot:
       iso_directory: /mnt/truenas-nvme/virtual-machines
