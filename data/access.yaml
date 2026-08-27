@@ -10,35 +10,20 @@ tailscale:
     - action: accept
       proto: icmp
       dst:
-        - "tag:appliance:*"
-        - "tag:router:*"
-        - "tag:server:*"
-        - "tag:vm:*"
+        - "autogroup:tagged:*"
       src:
         - tag:ephemeral
     - action: accept
       dst:
-        - tag:appliance:80
+        - autogroup:tagged:80
+        - autogroup:tagged:443
+      src:
+        - tag:ephemeral
+    - action: accept
+      dst:
         - tag:appliance:443
       src:
-        - tag:ephemeral
-    - action: accept
-      dst:
-        - "tag:router:*"
-      src:
-        - tag:ephemeral
-    - action: accept
-      dst:
-        - tag:server:80
-        - tag:server:443
-      src:
-        - tag:ephemeral
-    - action: accept
-      dst:
-        - tag:vm:80
-        - tag:vm:443
-      src:
-        - tag:ephemeral
+        - tag:appliance
     - action: accept
       dst:
         - tag:server:443
@@ -90,9 +75,9 @@ tailscale:
         - group:admin
     - action: accept
       dst:
-        - "tag:storage:*"
+        - "tag:backup:*"
       src:
-        - tag:backup
+        - tag:storage
   auto_approvers:
     exit_node:
       - tag:router
@@ -133,9 +118,37 @@ tailscale:
       accept:
         - tag:kubernetes:50000
         - tag:storage:22
+    - src: tag:appliance
+      accept:
+        - tag:appliance:443
+    - src: tag:backup
+      deny:
+        - tag:storage:22
+        - tag:storage:443
+        - tag:storage:8443
+    - proto: icmp
+      src: tag:backup
+      deny:
+        - tag:storage:0
+    - src: tag:ephemeral
+      accept:
+        - tag:backup:80
+        - tag:kubernetes:443
+        - tag:storage:80
+        - tag:workstation:443
+    - proto: icmp
+      src: tag:ephemeral
+      accept:
+        - tag:backup:0
+        - tag:kubernetes:0
+        - tag:storage:0
+        - tag:workstation:0
     - src: tag:mbk
       deny:
         - tag:server:443
+    - src: tag:storage
+      accept:
+        - tag:backup:9090
     - src: tag:syd
       deny:
         - tag:server:443
