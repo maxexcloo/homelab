@@ -5,13 +5,13 @@ data "onepassword_vault" "default" {
 }
 
 locals {
-  # Content fingerprints update write-only values without manual revision counters.
+  # Persist plan timestamps per non-secret key fingerprint, above the previous 60-bit version range.
   onepassword_backblaze_password_versions = {
-    for name, application_key in b2_application_key.host : name => nonsensitive(
-      parseint(substr(sha256(application_key.application_key), 0, 15), 16)
-    )
+    for name, version in terraform_data.onepassword_backblaze_password_version : name =>
+    pow(2, 61) + parseint(formatdate("YYYYMMDDhhmmss", version.output), 10)
   }
 
+  # Content fingerprints update write-only values without manual revision counters.
   onepassword_cloudflare_acme_password_versions = {
     for name, token in cloudflare_account_token.acme : name => nonsensitive(
       parseint(substr(sha256(token.value), 0, 15), 16)
@@ -236,5 +236,16 @@ resource "onepassword_item" "tailscale_operator" {
 
   lifecycle {
     prevent_destroy = true
+  }
+}
+
+resource "terraform_data" "onepassword_backblaze_password_version" {
+  for_each = local.b2_hosts
+
+  input            = plantimestamp()
+  triggers_replace = sha256(b2_application_key.host[each.key].application_key_id)
+
+  lifecycle {
+    ignore_changes = [input]
   }
 }
