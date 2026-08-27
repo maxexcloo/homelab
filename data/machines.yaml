@@ -6,9 +6,7 @@ machines:
     network: mbk
     platform: unifi
     tailscale_tag: router
-    ssh:
-      port: 22
-      user: root
+    username: root
   hass:
     address: 10.0.0.2
     mac_address: "84:47:09:67:c8:33"
@@ -16,16 +14,16 @@ machines:
     network: mbk
     platform: haos
     tailscale_tag: appliance
+    username: root
     vlan: default
   hotdog:
+    management_port: 9090
     network: fre
     platform: linux
     public_ipv4: 199.127.129.143
     public_ipv6: 2602:f831::4665:8aff:fee1:40ed
     tailscale_tag: backup
-    ssh:
-      port: 22
-      user: max.schaefer
+    username: max.schaefer
   hsp:
     address: 10.20.0.4
     cluster: syd
@@ -52,20 +50,16 @@ machines:
     network: mbk
     platform: truenas
     tailscale_tag: storage
+    username: root
     vlan: default
-    ssh:
-      port: 22
-      user: root
   mandu:
     address: 10.0.0.5
     mac_address: "c8:ff:bf:0f:9f:d0"
     network: mbk
     platform: bazzite
     tailscale_tag: workstation
+    username: max.schaefer
     vlan: default
-    ssh:
-      port: 22
-      user: max.schaefer
   taco:
     address: 10.4.0.4
     cluster: mbk

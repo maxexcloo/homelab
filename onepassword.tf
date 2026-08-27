@@ -30,6 +30,28 @@ locals {
     )
   }
 
+  onepassword_machine_access = {
+    for name, machine in local.machines : name => {
+      username = machine.username
+      url      = try(machine.management_port, null) != null ? "https://${local.machine_fqdns[name]}${machine.management_port == 443 ? "" : ":${machine.management_port}"}" : "ssh://${machine.username}@${local.machine_fqdns[name]}"
+    }
+    if machine.platform != "talos"
+  }
+
+  onepassword_machine_access_password_policy = {
+    length  = 32
+    special = false
+  }
+
+  onepassword_machine_access_password_versions = {
+    for name in keys(local.onepassword_machine_access) : name => nonsensitive(
+      parseint(substr(sha256(jsonencode({
+        machine = name
+        policy  = local.onepassword_machine_access_password_policy
+      })), 0, 15), 16)
+    )
+  }
+
   onepassword_tailscale_auth_key_password_versions = {
     for name, auth_key in tailscale_tailnet_key.server : name => nonsensitive(
       parseint(substr(sha256(auth_key.key), 0, 15), 16)
@@ -69,6 +91,13 @@ locals {
       for name in keys(local.clusters) : "cluster/${name}" => "${local.access.onepassword.cluster_vault_prefix}${name}"
     },
   )
+}
+
+ephemeral "random_password" "machine_access" {
+  for_each = local.onepassword_machine_access
+
+  length  = local.onepassword_machine_access_password_policy.length
+  special = local.onepassword_machine_access_password_policy.special
 }
 
 resource "onepassword_item" "cloudflare_acme" {
@@ -119,6 +148,22 @@ resource "onepassword_item" "cloudflare_tunnel" {
   }
 }
 
+resource "onepassword_item" "machine_access" {
+  for_each = local.onepassword_machine_access
+
+  category            = "login"
+  password_wo         = ephemeral.random_password.machine_access[each.key].result
+  password_wo_version = local.onepassword_machine_access_password_versions[each.key]
+  title               = "Server: ${local.machine_fqdns[each.key]}"
+  url                 = each.value.url
+  username            = each.value.username
+  vault               = data.onepassword_vault.default["homelab"].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "onepassword_item" "resend" {
   for_each = local.clusters
 
@@ -145,7 +190,7 @@ resource "onepassword_item" "tailscale_auth_key" {
   vault               = data.onepassword_vault.default["homelab"].uuid
 
   username = try(
-    each.value.ssh.user,
+    each.value.username,
     each.value.platform == "talos" ? "talosctl" : each.key,
   )
 

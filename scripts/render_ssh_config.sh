@@ -16,12 +16,11 @@ identity_agent="$(yq -r '.ssh.identity_agent' "${access_path}")"
 infrastructure_domain="$(yq -r '.domains.infrastructure' "${domains_path}")"
 
 render() {
-  while IFS=$'\t' read -r machine_name hostname network user port; do
+  while IFS=$'\t' read -r machine_name hostname network user; do
     fqdn="${hostname}.${network}.${infrastructure_domain}"
     printf 'Host %s %s\n' "${machine_name}" "${fqdn}"
     printf '  HostName %s\n' "${fqdn}"
     printf '  User %s\n' "${user}"
-    printf '  Port %s\n' "${port}"
     printf '  IdentityAgent "%s"\n\n' "${identity_agent}"
   done < <(
     yq -r '
@@ -29,8 +28,8 @@ render() {
       | to_entries
       | sort_by(.key)
       | .[]
-      | select(.value.ssh != null)
-      | [.key, (.value.hostname // .key), .value.network, .value.ssh.user, .value.ssh.port]
+      | select(.value.username != null)
+      | [.key, (.value.hostname // .key), .value.network, .value.username]
       | @tsv
     ' "${machines_path}"
   )
