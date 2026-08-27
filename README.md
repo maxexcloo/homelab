@@ -33,19 +33,19 @@ OpenTofu subprocess.
 
 ### Common Tasks
 
-| Task                         | Description                                                        |
-| ---------------------------- | ------------------------------------------------------------------ |
-| `mise run apply`             | Apply OpenTofu changes after reviewing the presented plan          |
-| `mise run check`             | Run formatting and configuration validation                        |
-| `mise run client-configs`    | Sync local `kubeconfig` and `talosconfig` from 1Password           |
-| `mise run fmt`               | Format repository files (OpenTofu and Prettier)                    |
-| `mise run init`              | Initialise providers locally without connecting the remote backend |
-| `mise run opentofu-item`     | Create the OpenTofu 1Password item if missing                      |
-| `mise run plan`              | Plan OpenTofu changes                                              |
-| `mise run prek`              | Run all Git pre-commit hooks across the repository                 |
-| `mise run prepare-oci-image` | Download and convert a Talos OCI image                             |
-| `mise run setup`             | Install pinned tools, providers, and Git hooks                     |
-| `mise run ssh-config`        | Render and install SSH host aliases to `~/.ssh/config.d/homelab`   |
+| Task                         | Description                                                      |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `mise run apply`             | Apply OpenTofu changes after reviewing the presented plan        |
+| `mise run check`             | Run formatting and configuration validation                      |
+| `mise run client-configs`    | Sync local `kubeconfig` and `talosconfig` from 1Password         |
+| `mise run fmt`               | Format repository files (OpenTofu and Prettier)                  |
+| `mise run init`              | Initialise providers and the remote backend                      |
+| `mise run opentofu-item`     | Create the OpenTofu 1Password item if missing                    |
+| `mise run plan`              | Plan OpenTofu changes                                            |
+| `mise run prek`              | Run all Git pre-commit hooks across the repository               |
+| `mise run prepare-oci-image` | Download and convert a Talos OCI image                           |
+| `mise run setup`             | Install pinned tools, providers, and Git hooks                   |
+| `mise run ssh-config`        | Render and install SSH host aliases to `~/.ssh/config.d/homelab` |
 
 ### Prerequisites
 
@@ -62,7 +62,7 @@ system.
 - **Mesh & Access**: Server login items with management or SSH URLs, Tailscale ACL policies and host recovery keys, and Kubernetes operator OAuth clients.
 - **Networking**: UniFi VLANs and static DHCP reservations for retained appliances and VMs.
 - **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).
-- **Storage**: TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
+- **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
 OCI TCP ingress rules declare a `mode` in `data/networks.yaml`. `tailscale` and
 `cloudflared` keep the OCI firewall closed and delegate ingress to their private

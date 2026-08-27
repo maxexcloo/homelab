@@ -28,6 +28,6 @@ jobs:
         with:
           version: 2026.8.12
       - name: Initialise providers
-        run: mise run init
+        run: mise run init-ci
       - name: Run hooks
         run: mise run prek

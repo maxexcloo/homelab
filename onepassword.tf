@@ -6,6 +6,12 @@ data "onepassword_vault" "default" {
 
 locals {
   # Content fingerprints update write-only values without manual revision counters.
+  onepassword_backblaze_password_versions = {
+    for name, application_key in b2_application_key.host : name => nonsensitive(
+      parseint(substr(sha256(application_key.application_key), 0, 15), 16)
+    )
+  }
+
   onepassword_cloudflare_acme_password_versions = {
     for name, token in cloudflare_account_token.acme : name => nonsensitive(
       parseint(substr(sha256(token.value), 0, 15), 16)
@@ -99,6 +105,32 @@ ephemeral "random_password" "machine_access" {
 
   length  = local.onepassword_machine_access_password_policy.length
   special = local.onepassword_machine_access_password_policy.special
+}
+
+resource "onepassword_item" "backblaze" {
+  for_each = local.b2_hosts
+
+  category            = "login"
+  password_wo         = b2_application_key.host[each.key].application_key
+  password_wo_version = local.onepassword_backblaze_password_versions[each.key]
+  title               = "Backblaze B2: ${try(local.machine_fqdns[each.key], each.key)}"
+  url                 = local.b2_endpoint
+  username            = b2_application_key.host[each.key].application_key_id
+  vault               = data.onepassword_vault.default["homelab"].uuid
+
+  section_map = {
+    storage = {
+      field_map = {
+        bucket = {
+          value = b2_bucket.host[each.key].bucket_name
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "onepassword_item" "cloudflare_acme" {

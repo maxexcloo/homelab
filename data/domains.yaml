@@ -16,6 +16,7 @@ cloudflare:
       - excloo.dev
   tunnel_consumers:
     - hass
+    - hotdog
     - kimbap
     - mandu
     - mbk

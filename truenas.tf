@@ -16,7 +16,7 @@ locals {
   )
 
   truenas_datasets = merge([
-    for target, storage in local.storage.targets : {
+    for target, storage in local.storage.truenas : {
       for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
         name               = name
         parent_dataset_key = try(dataset.parent_dataset, null) == null ? null : "${target}/${dataset.parent_dataset}"
@@ -46,7 +46,7 @@ locals {
   }
 
   truenas_shares_nfs = merge([
-    for target, storage in local.storage.targets : {
+    for target, storage in local.storage.truenas : {
       for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
         dataset_key = try(share.dataset, null) == null ? null : "${target}/${share.dataset}"
         name        = name
@@ -110,14 +110,14 @@ locals {
 }
 
 resource "terraform_data" "truenas_storage_target" {
-  for_each = local.storage.targets
+  for_each = local.storage.truenas
 
   input = each.key
 
   lifecycle {
     precondition {
       condition     = can(local.truenas_hosts[each.key])
-      error_message = "Every storage target must reference an existing TrueNAS host."
+      error_message = "Every TrueNAS storage configuration must reference an existing TrueNAS host."
     }
 
     precondition {
@@ -143,7 +143,7 @@ resource "terraform_data" "truenas_storage_target" {
       condition = alltrue([
         for share in values(each.value.nfs_shares) : try(share.dataset, null) == null || can(each.value.datasets[share.dataset])
       ])
-      error_message = "Every NFS share dataset must exist on the same storage target."
+      error_message = "Every NFS share dataset must exist on the same TrueNAS host."
     }
 
     precondition {
@@ -269,7 +269,7 @@ resource "truenas_network_interface" "services_physical" {
 
 resource "truenas_service" "nfs" {
   for_each = {
-    for target, storage in local.storage.targets : target => storage
+    for target, storage in local.storage.truenas : target => storage
     if length(try(storage.nfs_shares, {})) > 0
   }
 

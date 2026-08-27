@@ -1,4 +1,11 @@
-targets:
+backblaze:
+  endpoint: https://s3.us-east-005.backblazeb2.com
+  hosts:
+    hass:
+      bucket_name: au-haos-rt81yb
+    kimbap:
+      bucket_name: au-truenas-494jkq
+truenas:
   kimbap:
     datasets:
       clusters:
