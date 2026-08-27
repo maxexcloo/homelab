@@ -104,12 +104,13 @@ locals {
       if try(local.tailscale_device_ipv6[cluster_name], null) != null
     },
     {
-      for cluster_name in keys(local.cloudflare_consumers_tunnel) : "cluster/${cluster_name}/tunnel" => {
+      for cluster_name, consumer in local.cloudflare_consumers_tunnel : "cluster/${cluster_name}/tunnel" => {
         content = "${cloudflare_zero_trust_tunnel_cloudflared.cluster[cluster_name].id}.cfargotunnel.com"
         name    = "tunnel.${cluster_name}.${local.domains.services}"
         type    = "CNAME"
         zone    = local.domains.services
       }
+      if consumer.is_cluster
     },
     {
       for name in keys(local.machines) : "machine/${name}/a" => {

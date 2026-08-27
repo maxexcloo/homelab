@@ -57,8 +57,10 @@ locals {
 
   cloudflare_consumers_tunnel = {
     for name in toset(local.cloudflare.tunnel_consumers) : name => {
-      title = "Cloudflare Tunnel"
-      vault = "cluster/${name}"
+      is_cluster      = can(local.clusters[name])
+      ingress_service = can(local.clusters[name]) ? "http://traefik-tunnel.networking.svc.cluster.local:80" : "http_status:503"
+      title           = can(local.machines[name]) ? "Cloudflare Tunnel: ${local.machine_fqdns[name]}" : "Cloudflare Tunnel"
+      vault           = can(local.machines[name]) ? "homelab" : "cluster/${name}"
     }
   }
 
@@ -170,6 +172,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   name       = each.key
 
   depends_on = [terraform_data.tunnel_validation]
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
@@ -181,7 +187,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   config = {
     ingress = [
       {
-        service = "http://traefik-tunnel.networking.svc.cluster.local:80"
+        service = each.value.ingress_service
       },
     ]
   }
@@ -249,9 +255,10 @@ resource "terraform_data" "tunnel_validation" {
 
     precondition {
       condition = alltrue([
-        for name in local.cloudflare.tunnel_consumers : can(local.clusters[name])
+        for name in local.cloudflare.tunnel_consumers :
+        can(local.machines[name]) != can(local.clusters[name])
       ])
-      error_message = "Every Cloudflare Tunnel consumer must name an existing cluster."
+      error_message = "Every Cloudflare Tunnel consumer must name exactly one existing machine or cluster."
     }
   }
 }
