@@ -17,6 +17,7 @@ cloudflare:
   tunnel_consumers:
     - hass
     - kimbap
+    - mandu
     - mbk
     - syd
 domains:
