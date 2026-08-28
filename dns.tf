@@ -41,7 +41,7 @@ locals {
           comment  = "Homelab OpenTofu Managed"
           priority = null
           proxied  = false
-          ttl      = 300
+          ttl      = 1
         },
         record,
       )
