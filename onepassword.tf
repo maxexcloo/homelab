@@ -70,6 +70,12 @@ locals {
     )
   }
 
+  onepassword_resend_password_versions = {
+    for name, token in resend_api_key.cluster : name => nonsensitive(
+      parseint(substr(sha256(token.id), 0, 15), 16)
+    )
+  }
+
   onepassword_tailscale_auth_key_password_versions = {
     for name, auth_key in tailscale_tailnet_key.server : name => nonsensitive(
       parseint(substr(sha256(auth_key.key), 0, 15), 16)
@@ -138,10 +144,6 @@ resource "onepassword_item" "backblaze" {
       }
     }
   }
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "onepassword_item" "backblaze_cluster" {
@@ -157,7 +159,7 @@ resource "onepassword_item" "backblaze_cluster" {
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = true
   }
 }
 
@@ -170,10 +172,6 @@ resource "onepassword_item" "cloudflare_acme" {
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
   vault               = data.onepassword_vault.default[each.value.vault].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "onepassword_item" "cloudflare_external_dns" {
@@ -185,10 +183,6 @@ resource "onepassword_item" "cloudflare_external_dns" {
   tags                = ["Homelab"]
   title               = each.value.title
   vault               = data.onepassword_vault.default[each.value.vault].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "onepassword_item" "cloudflare_tunnel" {
@@ -200,10 +194,6 @@ resource "onepassword_item" "cloudflare_tunnel" {
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
   vault               = data.onepassword_vault.default[each.value.vault].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "onepassword_item" "cloudflare_waf" {
@@ -217,7 +207,7 @@ resource "onepassword_item" "cloudflare_waf" {
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = true
   }
 }
 
@@ -233,7 +223,7 @@ resource "onepassword_item" "control_d" {
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = true
   }
 }
 
@@ -247,25 +237,22 @@ resource "onepassword_item" "machine_access" {
   url                 = each.value.url
   username            = each.value.username
   vault               = data.onepassword_vault.default["homelab"].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "onepassword_item" "resend" {
   for_each = local.clusters
 
-  # Keep version zero unchanged so a manually populated password is preserved.
   category            = "login"
-  password_wo         = ""
-  password_wo_version = 0
+  password_wo         = resend_api_key.cluster[each.key].token
+  password_wo_version = local.onepassword_resend_password_versions[each.key]
   tags                = ["Homelab"]
   title               = "Resend"
+  url                 = "https://resend.com/api-keys"
+  username            = resend_api_key.cluster[each.key].id
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = true
   }
 }
 
@@ -277,10 +264,6 @@ resource "onepassword_item" "tailscale_auth_key" {
   password_wo_version = local.onepassword_tailscale_auth_key_password_versions[each.key]
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
   vault               = data.onepassword_vault.default["homelab"].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "onepassword_item" "tailscale_operator" {
@@ -293,10 +276,6 @@ resource "onepassword_item" "tailscale_operator" {
   title               = "Tailscale Kubernetes Operator"
   username            = tailscale_oauth_client.kubernetes_operator[each.key].id
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "terraform_data" "onepassword_backblaze_cluster_password_version" {

@@ -36,6 +36,11 @@ terraform {
       version = "3.9.0"
     }
 
+    resend = {
+      source  = "y0n0zawa/resend"
+      version = "1.0.1"
+    }
+
     tailscale = {
       source  = "tailscale/tailscale"
       version = "0.29.2"

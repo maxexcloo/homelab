@@ -180,10 +180,6 @@ resource "onepassword_item" "kubeconfig" {
   tags                  = ["Homelab"]
   title                 = "Kubernetes Client Configuration"
   vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "onepassword_item" "talos_recovery" {
@@ -209,10 +205,6 @@ resource "onepassword_item" "talosconfig" {
   tags                  = ["Homelab"]
   title                 = "Talos Client Configuration"
   vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "talos_cluster_kubeconfig" "cluster" {

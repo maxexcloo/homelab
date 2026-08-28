@@ -29,7 +29,10 @@ missing and leaves an existing item untouched. If it creates the item, populate
 every field and rerun setup before planning or applying. Credential-consuming
 tasks request desktop authorisation and resolve the complete provider
 environment from that item. The Connect credentials are exposed only to the
-OpenTofu subprocess.
+OpenTofu subprocess. The initial item and the declared 1Password vaults are the
+only bootstrap. OpenTofu creates the scoped service credentials and empty
+Control D items stored in those vaults; populate the Control D passwords in the
+cluster vaults when ready.
 
 ### Common Tasks
 
@@ -64,19 +67,17 @@ system.
 - **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
-The root creates a B2 control credential for each configured cluster and a
-scoped Cloudflare WAF credential for each cluster ACME consumer and configured
-WAF zone. It stores these as unqualified, `Homelab`-tagged items in the
-corresponding cluster vault alongside the per-cluster Control D and Resend item
-shells. External Secrets can therefore materialise every cluster credential
-after the one-time 1Password Connect bootstrap. B2 cluster credentials can
-manage buckets and application keys but cannot access object data or delete
-buckets directly. Backblaze nevertheless treats `writeKeys` as
-full-account-equivalent because it can mint broader application keys. Control D
-and Resend use write-only version zero passwords, so manually populated API
-tokens remain unchanged by later plans. Application login items and
-application-scoped credentials remain owned by `kubelab` in the same cluster
-vault.
+The root creates B2, Cloudflare WAF, and Resend control credentials for each
+configured cluster and an empty Control D login item in each cluster vault. The
+operator populates the Control D password manually. The root stores every
+credential as an unqualified, `Homelab`-tagged item in the corresponding cluster
+vault, so External Secrets can materialise them after the one-time 1Password
+Connect bootstrap. B2 cluster credentials can manage buckets and application
+keys but cannot access object data or delete buckets directly. Backblaze
+nevertheless treats `writeKeys` as full-account-equivalent because it can mint
+broader application keys. Resend credentials have full access because `kubelab`
+uses them to create application-scoped credentials. Those application resources
+and credentials remain owned by `kubelab` in the same cluster vault.
 
 OCI TCP ingress rules declare a `mode` in `data/networks.yaml`. `tailscale` and
 `cloudflared` keep the OCI firewall closed and delegate ingress to their private
@@ -106,10 +107,10 @@ The archived `states/core` prefix is stale historical evidence. Never migrate
 it into `homelab`, apply the archived branch against it, or delete its objects as
 part of a routine substrate change.
 
-Treat every state reader as a secret reader. State contains generated Talos,
-Tailscale, Cloudflare, and other credentials even when plan output is redacted.
-Keep state, plans, backups, and recovery material outside Git and restrict them
-to the operator performing the recovery.
+Treat every state reader as a secret reader. State contains generated Backblaze
+B2, Cloudflare, Resend, Talos, Tailscale, and other credentials even when plan
+output is redacted. Keep state, plans, backups, and recovery material outside
+Git and restrict them to the operator performing the recovery.
 
 To recover state:
 

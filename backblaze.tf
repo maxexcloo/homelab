@@ -36,10 +36,6 @@ resource "b2_application_key" "cluster" {
   key_name     = "kubelab-${each.key}"
 
   depends_on = [terraform_data.b2_validation]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "b2_application_key" "host" {
@@ -50,10 +46,6 @@ resource "b2_application_key" "host" {
   key_name     = each.key
 
   depends_on = [terraform_data.b2_validation]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "b2_bucket" "host" {

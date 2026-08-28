@@ -157,10 +157,6 @@ resource "cloudflare_account_token" "external_dns" {
   ]
 
   depends_on = [terraform_data.external_dns_validation]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "cloudflare_account_token" "waf" {
@@ -190,10 +186,6 @@ resource "cloudflare_account_token" "waf" {
   ]
 
   depends_on = [terraform_data.waf_validation]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "cloudflare_dns_record" "all" {
@@ -219,10 +211,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   name       = each.key
 
   depends_on = [terraform_data.tunnel_validation]
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
