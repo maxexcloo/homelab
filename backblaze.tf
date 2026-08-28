@@ -41,7 +41,8 @@ resource "b2_application_key" "cluster" {
 resource "b2_application_key" "host" {
   for_each = local.b2_hosts
 
-  bucket_ids   = [b2_bucket.host[each.key].id]
+  # HAOS and TrueNAS require the legacy single-bucket application key format.
+  bucket_id    = b2_bucket.host[each.key].id
   capabilities = local.b2_application_key_capabilities_host
   key_name     = "host-${each.key}"
 
