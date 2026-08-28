@@ -38,7 +38,7 @@ locals {
     {
       for record_key, record in local.dns_records_derived_specs : record_key => merge(
         {
-          comment  = "Managed by OpenTofu"
+          comment  = "Homelab OpenTofu Managed"
           priority = null
           proxied  = false
           ttl      = 300
@@ -132,7 +132,7 @@ locals {
 
   dns_records_manual = {
     for record_key, entries in local.dns_record_entries_manual_by_key : record_key => {
-      comment  = try(entries[0].record.comment, "OpenTofu Managed")
+      comment  = "Homelab OpenTofu Managed"
       content  = entries[0].record.content
       name     = entries[0].record.name == "@" ? entries[0].zone : "${entries[0].record.name}.${entries[0].zone}"
       priority = try(entries[0].record.priority, null)

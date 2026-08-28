@@ -57,7 +57,7 @@ resource "unifi_client" "host" {
   mac                    = each.value.mac
   name                   = each.key
   network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
-  note                   = "Managed by OpenTofu"
+  note                   = "Homelab OpenTofu Managed"
   skip_forget_on_destroy = false
 
   lifecycle {

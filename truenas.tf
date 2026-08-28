@@ -168,7 +168,7 @@ resource "truenas_dataset" "child" {
   for_each = local.truenas_datasets_child
 
   atime          = each.value.atime
-  comments       = "Kubernetes persistent storage managed by OpenTofu"
+  comments       = "Homelab OpenTofu Managed"
   compression    = each.value.compression
   deduplication  = "OFF"
   name           = each.value.name
@@ -191,7 +191,7 @@ resource "truenas_dataset" "root" {
   for_each = local.truenas_datasets_root
 
   atime         = each.value.atime
-  comments      = "Kubernetes persistent storage managed by OpenTofu"
+  comments      = "Homelab OpenTofu Managed"
   compression   = each.value.compression
   deduplication = "OFF"
   name          = each.value.name
@@ -287,7 +287,7 @@ resource "truenas_service" "nfs" {
 resource "truenas_share_nfs" "managed" {
   for_each = local.truenas_shares_nfs
 
-  comment       = "Kubernetes persistent storage managed by OpenTofu"
+  comment       = "Homelab OpenTofu Managed"
   enabled       = true
   maproot_group = "wheel"
   maproot_user  = "root"
