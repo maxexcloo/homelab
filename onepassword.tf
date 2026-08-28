@@ -57,10 +57,6 @@ resource "onepassword_item" "backblaze_cluster" {
   url                 = local.b2_endpoint
   username            = b2_application_key.cluster[each.key].application_key_id
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "onepassword_item" "backblaze_host" {
@@ -127,10 +123,6 @@ resource "onepassword_item" "cloudflare_waf" {
   tags                = ["Homelab"]
   title               = "Cloudflare WAF"
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "onepassword_item" "control_d" {
@@ -143,10 +135,6 @@ resource "onepassword_item" "control_d" {
   tags                = ["Homelab"]
   title               = "Control D"
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "onepassword_item" "kubeconfig" {
@@ -187,10 +175,6 @@ resource "onepassword_item" "resend" {
   url                 = "https://resend.com/api-keys"
   username            = resend_api_key.cluster[each.key].id
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 resource "onepassword_item" "tailscale_auth_key" {
