@@ -41,7 +41,7 @@ resource "b2_application_key" "cluster" {
 resource "b2_application_key" "host" {
   for_each = local.b2_hosts
 
-  bucket_id    = b2_bucket.host[each.key].id
+  bucket_ids   = [b2_bucket.host[each.key].id]
   capabilities = local.b2_application_key_capabilities
   key_name     = each.key
 

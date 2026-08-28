@@ -1,3 +1,7 @@
+locals {
+  configuration_dns_label_pattern = "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+}
+
 resource "terraform_data" "configuration_validation" {
   input = {
     clusters = sort(keys(local.clusters))
@@ -56,21 +60,21 @@ resource "terraform_data" "configuration_validation" {
 
     precondition {
       condition = alltrue([
-        for name in keys(local.clusters) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", name))
+        for name in keys(local.clusters) : can(regex(local.configuration_dns_label_pattern, name))
       ])
       error_message = "Cluster names must be valid lowercase DNS labels."
     }
 
     precondition {
       condition = alltrue([
-        for hostname in values(local.machine_hostnames) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", hostname))
+        for hostname in values(local.machine_hostnames) : can(regex(local.configuration_dns_label_pattern, hostname))
       ])
       error_message = "Machine hostnames must be valid lowercase DNS labels."
     }
 
     precondition {
       condition = alltrue([
-        for name in keys(local.machines) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", name))
+        for name in keys(local.machines) : can(regex(local.configuration_dns_label_pattern, name))
       ])
       error_message = "Machine names must be valid lowercase DNS labels."
     }
@@ -89,7 +93,7 @@ resource "terraform_data" "configuration_validation" {
 
     precondition {
       condition = alltrue([
-        for machine in values(local.machines) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", machine.tag))
+        for machine in values(local.machines) : can(regex(local.configuration_dns_label_pattern, machine.tag))
       ])
       error_message = "Machine tags must be valid lowercase labels."
     }
@@ -124,7 +128,7 @@ resource "terraform_data" "configuration_validation" {
 
     precondition {
       condition = alltrue([
-        for name in keys(local.networks) : can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$", name))
+        for name in keys(local.networks) : can(regex(local.configuration_dns_label_pattern, name))
       ])
       error_message = "Network names must be valid lowercase DNS labels."
     }

@@ -176,7 +176,7 @@ resource "onepassword_item" "kubeconfig" {
 
   category              = "secure_note"
   note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
-  note_value_wo_version = local.onepassword_kubeconfig_note_versions[each.key]
+  note_value_wo_version = nonsensitive(parseint(substr(sha256(talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw), 0, 15), 16))
   tags                  = ["Homelab"]
   title                 = "Kubernetes Client Configuration"
   vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
@@ -187,7 +187,7 @@ resource "onepassword_item" "talos_recovery" {
 
   category              = "secure_note"
   note_value_wo         = local.onepassword_talos_recovery_note_values[each.key]
-  note_value_wo_version = local.onepassword_talos_recovery_note_versions[each.key]
+  note_value_wo_version = nonsensitive(parseint(substr(sha256(local.onepassword_talos_recovery_note_values[each.key]), 0, 15), 16))
   title                 = "Talos Recovery: ${each.key}"
   vault                 = data.onepassword_vault.default["homelab"].uuid
 
@@ -201,7 +201,7 @@ resource "onepassword_item" "talosconfig" {
 
   category              = "secure_note"
   note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
-  note_value_wo_version = local.onepassword_talosconfig_note_versions[each.key]
+  note_value_wo_version = nonsensitive(parseint(substr(sha256(data.talos_client_configuration.cluster[each.key].talos_config), 0, 15), 16))
   tags                  = ["Homelab"]
   title                 = "Talos Client Configuration"
   vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid

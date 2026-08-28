@@ -5,48 +5,6 @@ data "onepassword_vault" "default" {
 }
 
 locals {
-  # Persist plan timestamps per non-secret key fingerprint, above the previous 60-bit version range.
-  onepassword_backblaze_cluster_password_versions = {
-    for name, version in terraform_data.onepassword_backblaze_cluster_password_version : name =>
-    pow(2, 61) + parseint(formatdate("YYYYMMDDhhmmss", version.output), 10)
-  }
-
-  onepassword_backblaze_password_versions = {
-    for name, version in terraform_data.onepassword_backblaze_password_version : name =>
-    pow(2, 61) + parseint(formatdate("YYYYMMDDhhmmss", version.output), 10)
-  }
-
-  # Content fingerprints update write-only values without manual revision counters.
-  onepassword_cloudflare_acme_password_versions = {
-    for name, token in cloudflare_account_token.acme : name => nonsensitive(
-      parseint(substr(sha256(token.value), 0, 15), 16)
-    )
-  }
-
-  onepassword_cloudflare_external_dns_password_versions = {
-    for name, token in cloudflare_account_token.external_dns : name => nonsensitive(
-      parseint(substr(sha256(token.value), 0, 15), 16)
-    )
-  }
-
-  onepassword_cloudflare_tunnel_password_versions = {
-    for name, tunnel in data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster : name => nonsensitive(
-      parseint(substr(sha256(tunnel.token), 0, 15), 16)
-    )
-  }
-
-  onepassword_cloudflare_waf_password_versions = {
-    for name, token in cloudflare_account_token.waf : name => nonsensitive(
-      parseint(substr(sha256(token.value), 0, 15), 16)
-    )
-  }
-
-  onepassword_kubeconfig_note_versions = {
-    for name, kubeconfig in talos_cluster_kubeconfig.cluster : name => nonsensitive(
-      parseint(substr(sha256(kubeconfig.kubeconfig_raw), 0, 15), 16)
-    )
-  }
-
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
       title    = "${title(machine.tag)}: ${local.machine_fqdns[name]}"
@@ -61,33 +19,6 @@ locals {
     special = false
   }
 
-  onepassword_machine_access_password_versions = {
-    for name in keys(local.onepassword_machine_access) : name => nonsensitive(
-      parseint(substr(sha256(jsonencode({
-        machine = name
-        policy  = local.onepassword_machine_access_password_policy
-      })), 0, 15), 16)
-    )
-  }
-
-  onepassword_resend_password_versions = {
-    for name, token in resend_api_key.cluster : name => nonsensitive(
-      parseint(substr(sha256(token.id), 0, 15), 16)
-    )
-  }
-
-  onepassword_tailscale_auth_key_password_versions = {
-    for name, auth_key in tailscale_tailnet_key.server : name => nonsensitive(
-      parseint(substr(sha256(auth_key.key), 0, 15), 16)
-    )
-  }
-
-  onepassword_tailscale_operator_password_versions = {
-    for name, oauth_client in tailscale_oauth_client.kubernetes_operator : name => nonsensitive(
-      parseint(substr(sha256(oauth_client.key), 0, 15), 16)
-    )
-  }
-
   onepassword_talos_recovery_note_values = {
     for name, cluster in local.talos_clusters : name => jsonencode({
       client_configuration = talos_machine_secrets.cluster[name].client_configuration
@@ -97,17 +28,8 @@ locals {
     })
   }
 
-  onepassword_talos_recovery_note_versions = {
-    for name, recovery in local.onepassword_talos_recovery_note_values : name => nonsensitive(
-      parseint(substr(sha256(recovery), 0, 15), 16)
-    )
-  }
-
-  onepassword_talosconfig_note_versions = {
-    for name, talosconfig in data.talos_client_configuration.cluster : name => nonsensitive(
-      parseint(substr(sha256(talosconfig.talos_config), 0, 15), 16)
-    )
-  }
+  # Keep timestamp-derived versions above the 60-bit content fingerprints used elsewhere.
+  onepassword_timestamp_version_offset = pow(2, 61)
 
   onepassword_vaults = merge(
     local.access.onepassword.vaults,
@@ -129,7 +51,7 @@ resource "onepassword_item" "backblaze" {
 
   category            = "login"
   password_wo         = b2_application_key.host[each.key].application_key
-  password_wo_version = local.onepassword_backblaze_password_versions[each.key]
+  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_backblaze_password_version[each.key].output), 10)
   title               = "Backblaze B2: ${try(local.machine_fqdns[each.key], each.key)}"
   url                 = local.b2_endpoint
   username            = b2_application_key.host[each.key].application_key_id
@@ -151,7 +73,7 @@ resource "onepassword_item" "backblaze_cluster" {
 
   category            = "login"
   password_wo         = b2_application_key.cluster[each.key].application_key
-  password_wo_version = local.onepassword_backblaze_cluster_password_versions[each.key]
+  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_backblaze_cluster_password_version[each.key].output), 10)
   tags                = ["Homelab"]
   title               = "Backblaze B2"
   url                 = local.b2_endpoint
@@ -168,7 +90,7 @@ resource "onepassword_item" "cloudflare_acme" {
 
   category            = "login"
   password_wo         = cloudflare_account_token.acme[each.key].value
-  password_wo_version = local.onepassword_cloudflare_acme_password_versions[each.key]
+  password_wo_version = nonsensitive(parseint(substr(sha256(cloudflare_account_token.acme[each.key].value), 0, 15), 16))
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
   vault               = data.onepassword_vault.default[each.value.vault].uuid
@@ -179,7 +101,7 @@ resource "onepassword_item" "cloudflare_external_dns" {
 
   category            = "login"
   password_wo         = cloudflare_account_token.external_dns[each.key].value
-  password_wo_version = local.onepassword_cloudflare_external_dns_password_versions[each.key]
+  password_wo_version = nonsensitive(parseint(substr(sha256(cloudflare_account_token.external_dns[each.key].value), 0, 15), 16))
   tags                = ["Homelab"]
   title               = each.value.title
   vault               = data.onepassword_vault.default[each.value.vault].uuid
@@ -190,7 +112,7 @@ resource "onepassword_item" "cloudflare_tunnel" {
 
   category            = "login"
   password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
-  password_wo_version = local.onepassword_cloudflare_tunnel_password_versions[each.key]
+  password_wo_version = nonsensitive(parseint(substr(sha256(data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token), 0, 15), 16))
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
   vault               = data.onepassword_vault.default[each.value.vault].uuid
@@ -201,7 +123,7 @@ resource "onepassword_item" "cloudflare_waf" {
 
   category            = "login"
   password_wo         = cloudflare_account_token.waf[each.key].value
-  password_wo_version = local.onepassword_cloudflare_waf_password_versions[each.key]
+  password_wo_version = nonsensitive(parseint(substr(sha256(cloudflare_account_token.waf[each.key].value), 0, 15), 16))
   tags                = ["Homelab"]
   title               = "Cloudflare WAF"
   vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
@@ -230,13 +152,16 @@ resource "onepassword_item" "control_d" {
 resource "onepassword_item" "machine_access" {
   for_each = local.onepassword_machine_access
 
-  category            = "login"
-  password_wo         = ephemeral.random_password.machine_access[each.key].result
-  password_wo_version = local.onepassword_machine_access_password_versions[each.key]
-  title               = each.value.title
-  url                 = each.value.url
-  username            = each.value.username
-  vault               = data.onepassword_vault.default["homelab"].uuid
+  category    = "login"
+  password_wo = ephemeral.random_password.machine_access[each.key].result
+  password_wo_version = nonsensitive(parseint(substr(sha256(jsonencode({
+    machine = each.key
+    policy  = local.onepassword_machine_access_password_policy
+  })), 0, 15), 16))
+  title    = each.value.title
+  url      = each.value.url
+  username = each.value.username
+  vault    = data.onepassword_vault.default["homelab"].uuid
 }
 
 resource "onepassword_item" "resend" {
@@ -244,7 +169,7 @@ resource "onepassword_item" "resend" {
 
   category            = "login"
   password_wo         = resend_api_key.cluster[each.key].token
-  password_wo_version = local.onepassword_resend_password_versions[each.key]
+  password_wo_version = nonsensitive(parseint(substr(sha256(resend_api_key.cluster[each.key].id), 0, 15), 16))
   tags                = ["Homelab"]
   title               = "Resend"
   url                 = "https://resend.com/api-keys"
@@ -261,7 +186,7 @@ resource "onepassword_item" "tailscale_auth_key" {
 
   category            = "login"
   password_wo         = tailscale_tailnet_key.server[each.key].key
-  password_wo_version = local.onepassword_tailscale_auth_key_password_versions[each.key]
+  password_wo_version = nonsensitive(parseint(substr(sha256(tailscale_tailnet_key.server[each.key].key), 0, 15), 16))
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
   vault               = data.onepassword_vault.default["homelab"].uuid
 }
@@ -271,7 +196,7 @@ resource "onepassword_item" "tailscale_operator" {
 
   category            = "login"
   password_wo         = tailscale_oauth_client.kubernetes_operator[each.key].key
-  password_wo_version = local.onepassword_tailscale_operator_password_versions[each.key]
+  password_wo_version = nonsensitive(parseint(substr(sha256(tailscale_oauth_client.kubernetes_operator[each.key].key), 0, 15), 16))
   tags                = ["Homelab"]
   title               = "Tailscale Kubernetes Operator"
   username            = tailscale_oauth_client.kubernetes_operator[each.key].id
