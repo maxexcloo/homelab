@@ -1,6 +1,9 @@
 name: excloo.com
 records:
   - type: CNAME
+    name: _acme-challenge.www.reddit
+    content: _acme-challenge.www.reddit.excloo.com.043847.xyz
+  - type: CNAME
     name: fm1._domainkey
     content: fm1.excloo.com.dkim.fmhosted.com
   - type: CNAME
@@ -15,6 +18,9 @@ records:
   - type: CNAME
     name: mesmtp._domainkey
     content: mesmtp.excloo.com.dkim.fmhosted.com
+  - type: CNAME
+    name: status
+    content: excloo-gatus.fly.dev
   - type: MX
     name: "@"
     content: in1-smtp.messagingengine.com
