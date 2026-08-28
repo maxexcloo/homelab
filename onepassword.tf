@@ -6,6 +6,11 @@ data "onepassword_vault" "default" {
 
 locals {
   # Persist plan timestamps per non-secret key fingerprint, above the previous 60-bit version range.
+  onepassword_backblaze_cluster_password_versions = {
+    for name, version in terraform_data.onepassword_backblaze_cluster_password_version : name =>
+    pow(2, 61) + parseint(formatdate("YYYYMMDDhhmmss", version.output), 10)
+  }
+
   onepassword_backblaze_password_versions = {
     for name, version in terraform_data.onepassword_backblaze_password_version : name =>
     pow(2, 61) + parseint(formatdate("YYYYMMDDhhmmss", version.output), 10)
@@ -27,6 +32,12 @@ locals {
   onepassword_cloudflare_tunnel_password_versions = {
     for name, tunnel in data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster : name => nonsensitive(
       parseint(substr(sha256(tunnel.token), 0, 15), 16)
+    )
+  }
+
+  onepassword_cloudflare_waf_password_versions = {
+    for name, token in cloudflare_account_token.waf : name => nonsensitive(
+      parseint(substr(sha256(token.value), 0, 15), 16)
     )
   }
 
@@ -133,6 +144,22 @@ resource "onepassword_item" "backblaze" {
   }
 }
 
+resource "onepassword_item" "backblaze_cluster" {
+  for_each = local.b2_clusters
+
+  category            = "login"
+  password_wo         = b2_application_key.cluster[each.key].application_key
+  password_wo_version = local.onepassword_backblaze_cluster_password_versions[each.key]
+  title               = "Backblaze B2: ${each.key}"
+  url                 = local.b2_endpoint
+  username            = b2_application_key.cluster[each.key].application_key_id
+  vault               = data.onepassword_vault.default["homelab"].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "onepassword_item" "cloudflare_acme" {
   for_each = local.cloudflare_consumers_acme
 
@@ -172,6 +199,35 @@ resource "onepassword_item" "cloudflare_tunnel" {
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
   vault               = data.onepassword_vault.default[each.value.vault].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "onepassword_item" "cloudflare_waf" {
+  for_each = local.cloudflare_consumers_waf
+
+  category            = "login"
+  password_wo         = cloudflare_account_token.waf[each.key].value
+  password_wo_version = local.onepassword_cloudflare_waf_password_versions[each.key]
+  title               = each.value.title
+  vault               = data.onepassword_vault.default["homelab"].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "onepassword_item" "control_d" {
+  for_each = local.clusters
+
+  # Keep version zero unchanged so a manually populated password is preserved.
+  category            = "login"
+  password_wo         = ""
+  password_wo_version = 0
+  title               = "Control D: ${each.key}"
+  vault               = data.onepassword_vault.default["homelab"].uuid
 
   lifecycle {
     prevent_destroy = true
@@ -236,6 +292,17 @@ resource "onepassword_item" "tailscale_operator" {
 
   lifecycle {
     prevent_destroy = true
+  }
+}
+
+resource "terraform_data" "onepassword_backblaze_cluster_password_version" {
+  for_each = local.b2_clusters
+
+  input            = plantimestamp()
+  triggers_replace = sha256(b2_application_key.cluster[each.key].application_key_id)
+
+  lifecycle {
+    ignore_changes = [input]
   }
 }
 

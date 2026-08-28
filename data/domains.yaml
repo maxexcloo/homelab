@@ -21,6 +21,8 @@ cloudflare:
     - mandu
     - mbk
     - syd
+  waf_zones:
+    - excloo.com
 domains:
   acme: 043847.xyz
   infrastructure: excloo.net

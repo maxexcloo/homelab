@@ -18,6 +18,13 @@ data "cloudflare_account_api_token_permission_groups_list" "zone_read" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
+data "cloudflare_account_api_token_permission_groups_list" "zone_waf_write" {
+  account_id = data.cloudflare_account.default.id
+  max_items  = 1
+  name       = "Zone%20WAF%20Write"
+  scope      = "com.cloudflare.api.account.zone"
+}
+
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 
@@ -62,6 +69,13 @@ locals {
       title           = can(local.machines[name]) ? "Cloudflare Tunnel: ${local.machine_fqdns[name]}" : "Cloudflare Tunnel"
       vault           = can(local.machines[name]) ? "homelab" : "cluster/${name}"
     }
+  }
+
+  cloudflare_consumers_waf = {
+    for name in keys(local.cloudflare.acme_consumers) : name => {
+      title = "Cloudflare WAF: ${name}"
+      zones = local.cloudflare.waf_zones
+    } if can(local.clusters[name])
   }
 
   cloudflare_zones = toset(concat(
@@ -143,6 +157,39 @@ resource "cloudflare_account_token" "external_dns" {
   ]
 
   depends_on = [terraform_data.external_dns_validation]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "cloudflare_account_token" "waf" {
+  for_each = local.cloudflare_consumers_waf
+
+  account_id = data.cloudflare_account.default.id
+  name       = each.value.title
+
+  policies = [
+    {
+      effect = "allow"
+
+      permission_groups = [
+        {
+          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+        },
+        {
+          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_waf_write.result).id
+        },
+      ]
+
+      resources = jsonencode({
+        for zone in each.value.zones :
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[zone].zone_id}" => "*"
+      })
+    },
+  ]
+
+  depends_on = [terraform_data.waf_validation]
 
   lifecycle {
     prevent_destroy = true
@@ -259,6 +306,29 @@ resource "terraform_data" "tunnel_validation" {
         can(local.machines[name]) != can(local.clusters[name])
       ])
       error_message = "Every Cloudflare Tunnel consumer must name exactly one existing machine or cluster."
+    }
+  }
+}
+
+resource "terraform_data" "waf_validation" {
+  input = sort(keys(local.cloudflare_consumers_waf))
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for name in keys(local.clusters) : contains(keys(local.cloudflare.acme_consumers), name)
+      ])
+      error_message = "Every cluster must be a Cloudflare ACME consumer before it receives a WAF credential."
+    }
+
+    precondition {
+      condition     = length(local.cloudflare.waf_zones) > 0 && length(distinct(local.cloudflare.waf_zones)) == length(local.cloudflare.waf_zones)
+      error_message = "Cloudflare WAF must have at least one unique zone."
+    }
+
+    precondition {
+      condition     = alltrue([for zone in local.cloudflare.waf_zones : contains(local.cloudflare_zones, zone)])
+      error_message = "Every Cloudflare WAF zone must have a DNS data file or a configured domain role."
     }
   }
 }

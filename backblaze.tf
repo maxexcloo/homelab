@@ -9,12 +9,36 @@ locals {
     "writeFiles",
   ]
 
+  b2_cluster_key_capabilities = [
+    "listBuckets",
+    "listKeys",
+    "readBucketEncryption",
+    "writeBucketEncryption",
+    "writeBuckets",
+    "writeKeys",
+  ]
+
+  b2_clusters = toset(keys(local.clusters))
+
   b2_endpoint = try(local.storage.backblaze.endpoint, null)
 
   b2_hosts = {
     for name, host in try(local.storage.backblaze.hosts, {}) : name => {
       bucket_name = try(trimspace(host.bucket_name), null)
     }
+  }
+}
+
+resource "b2_application_key" "cluster" {
+  for_each = local.b2_clusters
+
+  capabilities = local.b2_cluster_key_capabilities
+  key_name     = "kubelab-${each.key}"
+
+  depends_on = [terraform_data.b2_validation]
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -57,6 +81,7 @@ resource "b2_bucket" "host" {
 
 resource "terraform_data" "b2_validation" {
   input = {
+    clusters = sort(tolist(local.b2_clusters))
     endpoint = local.b2_endpoint
     hosts    = local.b2_hosts
   }

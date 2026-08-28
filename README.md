@@ -64,6 +64,18 @@ system.
 - **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
+The root creates a B2 control credential for each configured cluster and a
+scoped Cloudflare WAF credential for each cluster ACME consumer and configured
+WAF zone, storing them as qualified login items in the `Homelab` vault. B2 cluster
+credentials can manage buckets and application keys but cannot access object
+data or delete buckets directly. Backblaze nevertheless treats `writeKeys` as
+full-account-equivalent because it can mint broader application keys; keep these
+credentials confined to the Homelab vault and the declared Crossplane cluster.
+The root also creates per-cluster Control D and Resend item shells with
+write-only version zero passwords, so manually populated API tokens remain
+unchanged by later plans. Application login items and application-scoped
+credentials remain owned by `kubelab` in the corresponding cluster vault.
+
 OCI TCP ingress rules declare a `mode` in `data/networks.yaml`. `tailscale` and
 `cloudflared` keep the OCI firewall closed and delegate ingress to their private
 overlay or tunnel. `public` creates only the explicitly configured OCI NSG rules;
