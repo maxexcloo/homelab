@@ -2,12 +2,6 @@ data "oci_core_compute_global_image_capability_schemas" "default" {
   for_each = local.oci_images_talos
 }
 
-data "oci_core_compute_global_image_capability_schemas_versions" "default" {
-  for_each = local.oci_images_talos
-
-  compute_global_image_capability_schema_id = data.oci_core_compute_global_image_capability_schemas.default[each.key].compute_global_image_capability_schemas[0].id
-}
-
 data "oci_identity_availability_domain" "default" {
   for_each = local.oci_networks
 
@@ -22,6 +16,11 @@ data "oci_objectstorage_namespace" "default" {
 }
 
 locals {
+  oci_image_capability_schemas_global = {
+    for name, schemas in data.oci_core_compute_global_image_capability_schemas.default :
+    name => one(schemas.compute_global_image_capability_schemas)
+  }
+
   oci_image_shapes = merge([
     for node in values(local.oci_instances) : {
       "${node.cluster}/${node.oci.shape}" = {
@@ -104,7 +103,7 @@ resource "oci_core_compute_image_capability_schema" "talos" {
   for_each = local.oci_images_talos
 
   compartment_id                                      = var.oci_tenancy_ocid
-  compute_global_image_capability_schema_version_name = data.oci_core_compute_global_image_capability_schemas_versions.default[each.key].compute_global_image_capability_schema_versions[0].name
+  compute_global_image_capability_schema_version_name = local.oci_image_capability_schemas_global[each.key].current_version_name
   display_name                                        = "talos-${each.key}"
   image_id                                            = oci_core_image.talos[each.key].id
 
@@ -391,7 +390,7 @@ resource "oci_objectstorage_object" "talos_image" {
   source       = var.oci_talos_image_path
 
   lifecycle {
-    # Retain the uploaded bootstrap artifact across live Talos upgrades.
+    # Retain the uploaded bootstrap artefact across live Talos upgrades.
     ignore_changes  = [object, source]
     prevent_destroy = true
   }
