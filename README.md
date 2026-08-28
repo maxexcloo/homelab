@@ -66,15 +66,17 @@ system.
 
 The root creates a B2 control credential for each configured cluster and a
 scoped Cloudflare WAF credential for each cluster ACME consumer and configured
-WAF zone, storing them as qualified login items in the `Homelab` vault. B2 cluster
-credentials can manage buckets and application keys but cannot access object
-data or delete buckets directly. Backblaze nevertheless treats `writeKeys` as
-full-account-equivalent because it can mint broader application keys; keep these
-credentials confined to the Homelab vault and the declared Crossplane cluster.
-The root also creates per-cluster Control D and Resend item shells with
-write-only version zero passwords, so manually populated API tokens remain
-unchanged by later plans. Application login items and application-scoped
-credentials remain owned by `kubelab` in the corresponding cluster vault.
+WAF zone. It stores these as unqualified, `Homelab`-tagged items in the
+corresponding cluster vault alongside the per-cluster Control D and Resend item
+shells. External Secrets can therefore materialise every cluster credential
+after the one-time 1Password Connect bootstrap. B2 cluster credentials can
+manage buckets and application keys but cannot access object data or delete
+buckets directly. Backblaze nevertheless treats `writeKeys` as
+full-account-equivalent because it can mint broader application keys. Control D
+and Resend use write-only version zero passwords, so manually populated API
+tokens remain unchanged by later plans. Application login items and
+application-scoped credentials remain owned by `kubelab` in the same cluster
+vault.
 
 OCI TCP ingress rules declare a `mode` in `data/networks.yaml`. `tailscale` and
 `cloudflared` keep the OCI firewall closed and delegate ingress to their private

@@ -150,10 +150,11 @@ resource "onepassword_item" "backblaze_cluster" {
   category            = "login"
   password_wo         = b2_application_key.cluster[each.key].application_key
   password_wo_version = local.onepassword_backblaze_cluster_password_versions[each.key]
-  title               = "Backblaze B2: ${each.key}"
+  tags                = ["Homelab"]
+  title               = "Backblaze B2"
   url                 = local.b2_endpoint
   username            = b2_application_key.cluster[each.key].application_key_id
-  vault               = data.onepassword_vault.default["homelab"].uuid
+  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
     prevent_destroy = true
@@ -211,8 +212,9 @@ resource "onepassword_item" "cloudflare_waf" {
   category            = "login"
   password_wo         = cloudflare_account_token.waf[each.key].value
   password_wo_version = local.onepassword_cloudflare_waf_password_versions[each.key]
-  title               = each.value.title
-  vault               = data.onepassword_vault.default["homelab"].uuid
+  tags                = ["Homelab"]
+  title               = "Cloudflare WAF"
+  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
     prevent_destroy = true
@@ -226,8 +228,9 @@ resource "onepassword_item" "control_d" {
   category            = "login"
   password_wo         = ""
   password_wo_version = 0
-  title               = "Control D: ${each.key}"
-  vault               = data.onepassword_vault.default["homelab"].uuid
+  tags                = ["Homelab"]
+  title               = "Control D"
+  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
     prevent_destroy = true
@@ -257,8 +260,9 @@ resource "onepassword_item" "resend" {
   category            = "login"
   password_wo         = ""
   password_wo_version = 0
-  title               = "Resend: ${each.key}"
-  vault               = data.onepassword_vault.default["homelab"].uuid
+  tags                = ["Homelab"]
+  title               = "Resend"
+  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
 
   lifecycle {
     prevent_destroy = true
