@@ -19,6 +19,15 @@ data "talos_client_configuration" "cluster" {
   ])
 }
 
+data "talos_image_factory_urls" "cluster" {
+  for_each = local.talos_clusters
+
+  architecture  = each.value.image.architecture
+  platform      = each.value.image.platform
+  schematic_id  = local.talos_image_factory_schematic_ids[each.key]
+  talos_version = each.value.talos_version
+}
+
 data "talos_machine_configuration" "node" {
   for_each = local.talos_nodes
 
@@ -52,6 +61,11 @@ locals {
   talos_clusters = {
     for name, cluster in local.clusters : name => cluster
     if cluster.talos_enabled
+  }
+
+  talos_image_factory_schematic_ids = {
+    for name, schematic in talos_image_factory_schematic.cluster :
+    name => schematic.id
   }
 
   talos_machine_bootstrap_nodes = {
@@ -171,42 +185,6 @@ locals {
   }
 }
 
-resource "onepassword_item" "kubeconfig" {
-  for_each = local.talos_recovery_clusters
-
-  category              = "secure_note"
-  note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
-  note_value_wo_version = nonsensitive(parseint(substr(sha256(talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw), 0, 15), 16))
-  tags                  = ["Homelab"]
-  title                 = "Kubernetes Client Configuration"
-  vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
-}
-
-resource "onepassword_item" "talos_recovery" {
-  for_each = local.talos_clusters
-
-  category              = "secure_note"
-  note_value_wo         = local.onepassword_talos_recovery_note_values[each.key]
-  note_value_wo_version = nonsensitive(parseint(substr(sha256(local.onepassword_talos_recovery_note_values[each.key]), 0, 15), 16))
-  title                 = "Talos Recovery: ${each.key}"
-  vault                 = data.onepassword_vault.default["homelab"].uuid
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "onepassword_item" "talosconfig" {
-  for_each = local.talos_recovery_clusters
-
-  category              = "secure_note"
-  note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
-  note_value_wo_version = nonsensitive(parseint(substr(sha256(data.talos_client_configuration.cluster[each.key].talos_config), 0, 15), 16))
-  tags                  = ["Homelab"]
-  title                 = "Talos Client Configuration"
-  vault                 = data.onepassword_vault.default["cluster/${each.key}"].uuid
-}
-
 resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.talos_recovery_clusters
 
@@ -223,6 +201,18 @@ resource "talos_cluster_kubeconfig" "cluster" {
     create = "10m"
     update = "10m"
   }
+}
+
+resource "talos_image_factory_schematic" "cluster" {
+  for_each = local.talos_clusters
+
+  schematic = yamlencode({
+    customization = {
+      systemExtensions = {
+        officialExtensions = each.value.image.extensions
+      }
+    }
+  })
 }
 
 resource "talos_machine_bootstrap" "control_plane" {

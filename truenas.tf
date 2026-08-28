@@ -11,7 +11,7 @@ locals {
       for key, dataset in truenas_dataset.child : key => dataset.mount_point
     },
     {
-      for key, dataset in truenas_dataset.managed : key => dataset.mount_point
+      for key, dataset in truenas_dataset.root : key => dataset.mount_point
     },
   )
 
@@ -172,7 +172,7 @@ resource "truenas_dataset" "child" {
   compression    = each.value.compression
   deduplication  = "OFF"
   name           = each.value.name
-  parent_dataset = truenas_dataset.managed[each.value.parent_dataset_key].name
+  parent_dataset = truenas_dataset.root[each.value.parent_dataset_key].name
   pool           = each.value.pool
   provider       = truenas.hosts[each.value.target]
   readonly       = "OFF"
@@ -187,7 +187,7 @@ resource "truenas_dataset" "child" {
   }
 }
 
-resource "truenas_dataset" "managed" {
+resource "truenas_dataset" "root" {
   for_each = local.truenas_datasets_root
 
   atime         = each.value.atime

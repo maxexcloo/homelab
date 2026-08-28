@@ -1,15 +1,9 @@
 locals {
-  b2_application_key_capabilities = [
-    "deleteFiles",
-    "listBuckets",
-    "listFiles",
-    "readBuckets",
-    "readFiles",
-    "shareFiles",
-    "writeFiles",
-  ]
+  b2_clusters = toset(keys(local.clusters))
 
-  b2_cluster_key_capabilities = [
+  b2_endpoint = try(local.storage.backblaze.endpoint, null)
+
+  b2_application_key_capabilities_cluster = [
     "listBuckets",
     "listKeys",
     "readBucketEncryption",
@@ -18,9 +12,15 @@ locals {
     "writeKeys",
   ]
 
-  b2_clusters = toset(keys(local.clusters))
-
-  b2_endpoint = try(local.storage.backblaze.endpoint, null)
+  b2_application_key_capabilities_host = [
+    "deleteFiles",
+    "listBuckets",
+    "listFiles",
+    "readBuckets",
+    "readFiles",
+    "shareFiles",
+    "writeFiles",
+  ]
 
   b2_hosts = {
     for name, host in try(local.storage.backblaze.hosts, {}) : name => {
@@ -32,8 +32,8 @@ locals {
 resource "b2_application_key" "cluster" {
   for_each = local.b2_clusters
 
-  capabilities = local.b2_cluster_key_capabilities
-  key_name     = "kubelab-${each.key}"
+  capabilities = local.b2_application_key_capabilities_cluster
+  key_name     = "cluster-${each.key}"
 
   depends_on = [terraform_data.b2_validation]
 }
@@ -42,8 +42,8 @@ resource "b2_application_key" "host" {
   for_each = local.b2_hosts
 
   bucket_ids   = [b2_bucket.host[each.key].id]
-  capabilities = local.b2_application_key_capabilities
-  key_name     = each.key
+  capabilities = local.b2_application_key_capabilities_host
+  key_name     = "host-${each.key}"
 
   depends_on = [terraform_data.b2_validation]
 }

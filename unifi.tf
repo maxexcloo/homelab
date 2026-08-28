@@ -1,4 +1,4 @@
-data "unifi_network" "default" {
+data "unifi_network" "configured" {
   for_each = local.unifi_networks
 
   name = each.value.name
@@ -29,21 +29,21 @@ locals {
 resource "terraform_data" "unifi_network_validation" {
   for_each = local.unifi_networks
 
-  input = data.unifi_network.default[each.key].id
+  input = data.unifi_network.configured[each.key].id
 
   lifecycle {
     precondition {
-      condition     = data.unifi_network.default[each.key].enabled
+      condition     = data.unifi_network.configured[each.key].enabled
       error_message = "UniFi network ${each.value.name} is disabled."
     }
 
     precondition {
-      condition     = data.unifi_network.default[each.key].subnet == each.value.subnet
+      condition     = data.unifi_network.configured[each.key].subnet == each.value.subnet
       error_message = "UniFi network ${each.value.name} does not use the expected subnet ${each.value.subnet}."
     }
 
     precondition {
-      condition     = each.value.vlan == null ? data.unifi_network.default[each.key].vlan == null : data.unifi_network.default[each.key].vlan == each.value.vlan
+      condition     = each.value.vlan == null ? data.unifi_network.configured[each.key].vlan == null : data.unifi_network.configured[each.key].vlan == each.value.vlan
       error_message = "UniFi network ${each.value.name} does not use the expected VLAN."
     }
   }
@@ -56,7 +56,7 @@ resource "unifi_client" "host" {
   fixed_ip               = each.value.fixed_ip
   mac                    = each.value.mac
   name                   = each.key
-  network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.default[each.value.network_key].id : null
+  network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
   note                   = "Managed by OpenTofu"
   skip_forget_on_destroy = false
 

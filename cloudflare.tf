@@ -32,7 +32,7 @@ data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
 }
 
-data "cloudflare_zone" "default" {
+data "cloudflare_zone" "configured" {
   for_each = local.cloudflare_zones
 
   filter = {
@@ -105,7 +105,7 @@ resource "cloudflare_account_token" "acme" {
         ]
 
         resources = jsonencode({
-          "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[each.value.dns_write_zone].zone_id}" = "*"
+          "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[each.value.dns_write_zone].zone_id}" = "*"
         })
       },
     ],
@@ -120,7 +120,7 @@ resource "cloudflare_account_token" "acme" {
         ]
 
         resources = jsonencode({
-          "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[zone].zone_id}" = "*"
+          "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" = "*"
         })
       }
       if zone != each.value.dns_write_zone
@@ -151,7 +151,7 @@ resource "cloudflare_account_token" "external_dns" {
 
       resources = jsonencode({
         for zone in each.value.zones :
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[zone].zone_id}" => "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" => "*"
       })
     },
   ]
@@ -180,7 +180,7 @@ resource "cloudflare_account_token" "waf" {
 
       resources = jsonencode({
         for zone in each.value.zones :
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.default[zone].zone_id}" => "*"
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" => "*"
       })
     },
   ]
@@ -188,7 +188,7 @@ resource "cloudflare_account_token" "waf" {
   depends_on = [terraform_data.waf_validation]
 }
 
-resource "cloudflare_dns_record" "all" {
+resource "cloudflare_dns_record" "managed" {
   for_each = local.dns_records
 
   comment  = each.value.comment
@@ -198,7 +198,7 @@ resource "cloudflare_dns_record" "all" {
   proxied  = each.value.proxied
   ttl      = each.value.ttl
   type     = each.value.type
-  zone_id  = data.cloudflare_zone.default[each.value.zone].zone_id
+  zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 
   depends_on = [terraform_data.dns_validation]
 }

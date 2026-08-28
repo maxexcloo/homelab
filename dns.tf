@@ -1,19 +1,4 @@
 locals {
-  dns_records = merge(
-    {
-      for record_key, record in local.dns_records_derived_specs : record_key => merge(
-        {
-          comment  = "Managed by OpenTofu"
-          priority = null
-          proxied  = false
-          ttl      = 300
-        },
-        record,
-      )
-    },
-    local.dns_records_manual,
-  )
-
   dns_record_entries_manual_by_key = {
     for entry in flatten([
       for source_file in local.dns_zone_files : [
@@ -48,6 +33,21 @@ locals {
     for record_set, records in local.dns_record_sets : record_set
     if contains([for record in records : record.type], "CNAME") && length(records) > 1
   ]
+
+  dns_records = merge(
+    {
+      for record_key, record in local.dns_records_derived_specs : record_key => merge(
+        {
+          comment  = "Managed by OpenTofu"
+          priority = null
+          proxied  = false
+          ttl      = 300
+        },
+        record,
+      )
+    },
+    local.dns_records_manual,
+  )
 
   dns_records_derived_specs = merge(
     {

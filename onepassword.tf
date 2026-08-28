@@ -1,10 +1,13 @@
-data "onepassword_vault" "default" {
+data "onepassword_vault" "configured" {
   for_each = local.onepassword_vaults
 
   name = each.value
 }
 
 locals {
+  # Keep timestamp-derived versions above the 60-bit content fingerprints used elsewhere.
+  onepassword_timestamp_version_offset = pow(2, 61)
+
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
       title    = "${title(machine.tag)}: ${local.machine_fqdns[name]}"
@@ -28,9 +31,6 @@ locals {
     })
   }
 
-  # Keep timestamp-derived versions above the 60-bit content fingerprints used elsewhere.
-  onepassword_timestamp_version_offset = pow(2, 61)
-
   onepassword_vaults = merge(
     local.access.onepassword.vaults,
     {
@@ -46,16 +46,33 @@ ephemeral "random_password" "machine_access" {
   special = local.onepassword_machine_access_password_policy.special
 }
 
-resource "onepassword_item" "backblaze" {
+resource "onepassword_item" "backblaze_cluster" {
+  for_each = local.b2_clusters
+
+  category            = "login"
+  password_wo         = b2_application_key.cluster[each.key].application_key
+  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_backblaze_cluster_password_version[each.key].output), 10)
+  tags                = ["Homelab"]
+  title               = "Backblaze B2"
+  url                 = local.b2_endpoint
+  username            = b2_application_key.cluster[each.key].application_key_id
+  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "onepassword_item" "backblaze_host" {
   for_each = local.b2_hosts
 
   category            = "login"
   password_wo         = b2_application_key.host[each.key].application_key
-  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_backblaze_password_version[each.key].output), 10)
+  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_backblaze_host_password_version[each.key].output), 10)
   title               = "Backblaze B2: ${try(local.machine_fqdns[each.key], each.key)}"
   url                 = local.b2_endpoint
   username            = b2_application_key.host[each.key].application_key_id
-  vault               = data.onepassword_vault.default["homelab"].uuid
+  vault               = data.onepassword_vault.configured["homelab"].uuid
 
   section_map = {
     storage = {
@@ -68,23 +85,6 @@ resource "onepassword_item" "backblaze" {
   }
 }
 
-resource "onepassword_item" "backblaze_cluster" {
-  for_each = local.b2_clusters
-
-  category            = "login"
-  password_wo         = b2_application_key.cluster[each.key].application_key
-  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_backblaze_cluster_password_version[each.key].output), 10)
-  tags                = ["Homelab"]
-  title               = "Backblaze B2"
-  url                 = local.b2_endpoint
-  username            = b2_application_key.cluster[each.key].application_key_id
-  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 resource "onepassword_item" "cloudflare_acme" {
   for_each = local.cloudflare_consumers_acme
 
@@ -93,7 +93,7 @@ resource "onepassword_item" "cloudflare_acme" {
   password_wo_version = nonsensitive(parseint(substr(sha256(cloudflare_account_token.acme[each.key].value), 0, 15), 16))
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
-  vault               = data.onepassword_vault.default[each.value.vault].uuid
+  vault               = data.onepassword_vault.configured[each.value.vault].uuid
 }
 
 resource "onepassword_item" "cloudflare_external_dns" {
@@ -104,7 +104,7 @@ resource "onepassword_item" "cloudflare_external_dns" {
   password_wo_version = nonsensitive(parseint(substr(sha256(cloudflare_account_token.external_dns[each.key].value), 0, 15), 16))
   tags                = ["Homelab"]
   title               = each.value.title
-  vault               = data.onepassword_vault.default[each.value.vault].uuid
+  vault               = data.onepassword_vault.configured[each.value.vault].uuid
 }
 
 resource "onepassword_item" "cloudflare_tunnel" {
@@ -115,7 +115,7 @@ resource "onepassword_item" "cloudflare_tunnel" {
   password_wo_version = nonsensitive(parseint(substr(sha256(data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token), 0, 15), 16))
   tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
   title               = each.value.title
-  vault               = data.onepassword_vault.default[each.value.vault].uuid
+  vault               = data.onepassword_vault.configured[each.value.vault].uuid
 }
 
 resource "onepassword_item" "cloudflare_waf" {
@@ -126,7 +126,7 @@ resource "onepassword_item" "cloudflare_waf" {
   password_wo_version = nonsensitive(parseint(substr(sha256(cloudflare_account_token.waf[each.key].value), 0, 15), 16))
   tags                = ["Homelab"]
   title               = "Cloudflare WAF"
-  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
+  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 
   lifecycle {
     create_before_destroy = true
@@ -142,11 +142,22 @@ resource "onepassword_item" "control_d" {
   password_wo_version = 0
   tags                = ["Homelab"]
   title               = "Control D"
-  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
+  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "onepassword_item" "kubeconfig" {
+  for_each = local.talos_recovery_clusters
+
+  category              = "secure_note"
+  note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
+  note_value_wo_version = nonsensitive(parseint(substr(sha256(talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw), 0, 15), 16))
+  tags                  = ["Homelab"]
+  title                 = "Kubernetes Client Configuration"
+  vault                 = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
 resource "onepassword_item" "machine_access" {
@@ -154,14 +165,15 @@ resource "onepassword_item" "machine_access" {
 
   category    = "login"
   password_wo = ephemeral.random_password.machine_access[each.key].result
+  title       = each.value.title
+  url         = each.value.url
+  username    = each.value.username
+  vault       = data.onepassword_vault.configured["homelab"].uuid
+
   password_wo_version = nonsensitive(parseint(substr(sha256(jsonencode({
     machine = each.key
     policy  = local.onepassword_machine_access_password_policy
   })), 0, 15), 16))
-  title    = each.value.title
-  url      = each.value.url
-  username = each.value.username
-  vault    = data.onepassword_vault.default["homelab"].uuid
 }
 
 resource "onepassword_item" "resend" {
@@ -174,7 +186,7 @@ resource "onepassword_item" "resend" {
   title               = "Resend"
   url                 = "https://resend.com/api-keys"
   username            = resend_api_key.cluster[each.key].id
-  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
+  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 
   lifecycle {
     create_before_destroy = true
@@ -188,7 +200,7 @@ resource "onepassword_item" "tailscale_auth_key" {
   password_wo         = tailscale_tailnet_key.server[each.key].key
   password_wo_version = nonsensitive(parseint(substr(sha256(tailscale_tailnet_key.server[each.key].key), 0, 15), 16))
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
-  vault               = data.onepassword_vault.default["homelab"].uuid
+  vault               = data.onepassword_vault.configured["homelab"].uuid
 }
 
 resource "onepassword_item" "tailscale_operator" {
@@ -200,7 +212,32 @@ resource "onepassword_item" "tailscale_operator" {
   tags                = ["Homelab"]
   title               = "Tailscale Kubernetes Operator"
   username            = tailscale_oauth_client.kubernetes_operator[each.key].id
-  vault               = data.onepassword_vault.default["cluster/${each.key}"].uuid
+  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
+resource "onepassword_item" "talos_recovery" {
+  for_each = local.talos_clusters
+
+  category              = "secure_note"
+  note_value_wo         = local.onepassword_talos_recovery_note_values[each.key]
+  note_value_wo_version = nonsensitive(parseint(substr(sha256(local.onepassword_talos_recovery_note_values[each.key]), 0, 15), 16))
+  title                 = "Talos Recovery: ${each.key}"
+  vault                 = data.onepassword_vault.configured["homelab"].uuid
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "onepassword_item" "talosconfig" {
+  for_each = local.talos_recovery_clusters
+
+  category              = "secure_note"
+  note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
+  note_value_wo_version = nonsensitive(parseint(substr(sha256(data.talos_client_configuration.cluster[each.key].talos_config), 0, 15), 16))
+  tags                  = ["Homelab"]
+  title                 = "Talos Client Configuration"
+  vault                 = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
 resource "terraform_data" "onepassword_backblaze_cluster_password_version" {
@@ -214,7 +251,7 @@ resource "terraform_data" "onepassword_backblaze_cluster_password_version" {
   }
 }
 
-resource "terraform_data" "onepassword_backblaze_password_version" {
+resource "terraform_data" "onepassword_backblaze_host_password_version" {
   for_each = local.b2_hosts
 
   input            = plantimestamp()

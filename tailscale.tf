@@ -116,7 +116,7 @@ resource "tailscale_acl" "default" {
 resource "tailscale_oauth_client" "kubernetes_operator" {
   for_each = local.clusters
 
-  description = "${each.key} Kubernetes operator"
+  description = "Cluster ${each.key} Kubernetes operator"
   scopes      = local.access.tailscale.operator.scopes
   tags        = ["tag:${each.key}-operator"]
 
@@ -126,7 +126,7 @@ resource "tailscale_oauth_client" "kubernetes_operator" {
 resource "tailscale_tailnet_key" "server" {
   for_each = local.machines
 
-  description         = "${each.key} recovery bootstrap"
+  description         = "Machine ${each.key} recovery bootstrap"
   expiry              = local.access.tailscale.key_expiry_seconds
   preauthorized       = true
   recreate_if_invalid = "always"
