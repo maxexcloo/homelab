@@ -63,11 +63,34 @@ locals {
   }
 
   cloudflare_consumers_tunnel = {
-    for name in toset(local.cloudflare.tunnel_consumers) : name => {
-      is_cluster      = can(local.clusters[name])
-      ingress_service = can(local.clusters[name]) ? "http://traefik-tunnel.networking.svc.cluster.local:80" : "http_status:503"
-      title           = can(local.machines[name]) ? "Cloudflare Tunnel: ${local.machine_fqdns[name]}" : "Cloudflare Tunnel"
-      vault           = can(local.machines[name]) ? "homelab" : "cluster/${name}"
+    for name, consumer in local.cloudflare.tunnel_consumers : name => {
+      is_cluster = can(local.clusters[name])
+      title      = can(local.machines[name]) ? "Cloudflare Tunnel: ${local.machine_fqdns[name]}" : "Cloudflare Tunnel"
+      vault      = can(local.machines[name]) ? "homelab" : "cluster/${name}"
+      ingress = concat(
+        [
+          for route in try(consumer.ingress, []) : merge(
+            {
+              hostname = route.hostname
+              service  = route.service
+            },
+            try(route.path, null) != null ? {
+              path = route.path
+            } : {},
+            try(route.origin_request, null) != null ? {
+              origin_request = route.origin_request
+            } : {},
+          )
+        ],
+        [
+          {
+            service = try(
+              consumer.fallback_service,
+              can(local.clusters[name]) ? "http://traefik-tunnel.networking.svc.cluster.local:80" : "http_status:503",
+            )
+          },
+        ],
+      )
     }
   }
 
@@ -76,6 +99,18 @@ locals {
       title = "Cloudflare WAF: ${name}"
       zones = local.cloudflare.waf_zones
     } if can(local.clusters[name])
+  }
+
+  cloudflare_tunnel_routes = {
+    for route in flatten([
+      for consumer_name, consumer in local.cloudflare.tunnel_consumers : [
+        for ingress in try(consumer.ingress, []) : {
+          consumer = consumer_name
+          hostname = ingress.hostname
+          zone     = ingress.zone
+        }
+      ]
+    ]) : "${route.consumer}/${route.hostname}" => route
   }
 
   cloudflare_zones = toset(concat(
@@ -220,11 +255,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
 
   config = {
-    ingress = [
-      {
-        service = each.value.ingress_service
-      },
-    ]
+    ingress = each.value.ingress
   }
 }
 
@@ -280,20 +311,34 @@ resource "terraform_data" "external_dns_validation" {
 }
 
 resource "terraform_data" "tunnel_validation" {
-  input = sort(keys(local.cloudflare_consumers_tunnel))
+  input = {
+    consumers = sort(keys(local.cloudflare_consumers_tunnel))
+    routes    = sort(keys(local.cloudflare_tunnel_routes))
+  }
 
   lifecycle {
     precondition {
-      condition     = length(distinct(local.cloudflare.tunnel_consumers)) == length(local.cloudflare.tunnel_consumers)
-      error_message = "Cloudflare Tunnel consumers must be unique."
+      condition = alltrue([
+        for name in keys(local.cloudflare.tunnel_consumers) :
+        can(local.machines[name]) != can(local.clusters[name])
+      ])
+      error_message = "Every Cloudflare Tunnel consumer must name exactly one existing machine or cluster."
     }
 
     precondition {
       condition = alltrue([
-        for name in local.cloudflare.tunnel_consumers :
-        can(local.machines[name]) != can(local.clusters[name])
+        for route in values(local.cloudflare_tunnel_routes) :
+        contains(local.cloudflare_zones, route.zone) &&
+        (route.hostname == route.zone || endswith(route.hostname, ".${route.zone}"))
       ])
-      error_message = "Every Cloudflare Tunnel consumer must name exactly one existing machine or cluster."
+      error_message = "Every Cloudflare Tunnel ingress hostname must belong to its configured managed zone."
+    }
+
+    precondition {
+      condition = length(distinct([
+        for route in values(local.cloudflare_tunnel_routes) : route.hostname
+      ])) == length(local.cloudflare_tunnel_routes)
+      error_message = "Cloudflare Tunnel ingress hostnames must be unique."
     }
   }
 }

@@ -61,7 +61,7 @@ system.
 ## Substrate
 
 - **Compute & Virtualisation**: TrueNAS VM (`taco`) on `kimbap` and OCI compute instance (`hsp`) on Ampere A1.
-- **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, and Cloudflare Tunnels; application DNS remains workload-owned in `kubelab`.
+- **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, Cloudflare Tunnels, stable external-service records and the webhook-only HAOS tunnel route; application DNS remains workload-owned in `kubelab`.
 - **Mesh & Access**: Server login items with management or SSH URLs, Tailscale ACL policies and host recovery keys, and Kubernetes operator OAuth clients.
 - **Networking**: UniFi VLANs and static DHCP reservations for retained appliances and VMs.
 - **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).

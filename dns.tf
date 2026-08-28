@@ -113,6 +113,15 @@ locals {
       if consumer.is_cluster
     },
     {
+      for route_key, route in local.cloudflare_tunnel_routes : "tunnel/${route_key}" => {
+        content = "${cloudflare_zero_trust_tunnel_cloudflared.cluster[route.consumer].id}.cfargotunnel.com"
+        name    = route.hostname
+        proxied = true
+        type    = "CNAME"
+        zone    = route.zone
+      }
+    },
+    {
       for name in keys(local.machines) : "machine/${name}/a" => {
         content = local.tailscale_device_ipv4[name]
         name    = local.machine_fqdns[name]
