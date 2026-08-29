@@ -27,7 +27,7 @@ output "machines" {
       address      = try(machine.address, machine.public_ipv4)
       fqdn         = local.machine_fqdns[name]
       hostname     = local.machine_hostnames[name]
-      tailscale_ip = local.tailscale_device_ipv4[name]
+      tailscale_ip = try(local.tailscale_device_ipv4[machine.tailscale_name], null)
     }
   }
 }

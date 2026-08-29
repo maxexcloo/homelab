@@ -6,6 +6,7 @@ machines:
     network: mbk
     platform: unifi
     tag: router
+    tailscale_name: gateway-mbk
     username: root
   hass:
     address: 10.0.0.2
@@ -14,6 +15,7 @@ machines:
     network: mbk
     platform: haos
     tag: appliance
+    tailscale_name: hass
     username: root
     vlan: default
   hotdog:
@@ -23,6 +25,7 @@ machines:
     public_ipv4: 199.127.129.143
     public_ipv6: 2602:f831::4665:8aff:fee1:40ed
     tag: backup
+    tailscale_name: hotdog
     username: core
   hsp:
     address: 10.20.0.4
@@ -32,6 +35,7 @@ machines:
     platform: talos
     provider: oci
     tag: kubernetes
+    tailscale_name: hsp
     boot:
       size_mib: 51200
     compute:
@@ -50,6 +54,7 @@ machines:
     network: mbk
     platform: truenas
     tag: storage
+    tailscale_name: kimbap
     username: root
     vlan: default
   mandu:
@@ -58,6 +63,7 @@ machines:
     network: mbk
     platform: bazzite
     tag: workstation
+    tailscale_name: mandu
     username: max.schaefer
     vlan: default
   taco:
@@ -70,6 +76,7 @@ machines:
     platform: talos
     provider: truenas
     tag: kubernetes
+    tailscale_name: taco
     vlan: services
     boot:
       iso_directory: /mnt/truenas-nvme/virtual-machines

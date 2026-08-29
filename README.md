@@ -84,6 +84,10 @@ OCI TCP ingress rules declare a `mode` in `data/networks.yaml`. `tailscale` and
 overlay or tunnel. `public` creates only the explicitly configured OCI NSG rules;
 the corresponding application route and DNS record remain owned by `kubelab`.
 
+A machine's `tailscale_name` gates its Tailscale-backed infrastructure DNS.
+Omit it for the machine's initial enrolment, then set it to the live Tailscale
+device name and review the follow-up plan that creates its DNS records.
+
 ## Operations & Safety
 
 - **Destruction Guards**: Storage datasets and recovery items enforce `prevent_destroy` to safeguard live substrate.

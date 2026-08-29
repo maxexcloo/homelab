@@ -29,6 +29,22 @@ locals {
     for name, machine in local.machines :
     name => try(machine.hostname, name)
   }
+
+  machine_mac_addresses = compact([
+    for machine in values(local.machines) : try(lower(machine.mac_address), null)
+  ])
+
+  machine_network_addresses = compact([
+    for machine in values(local.machines) : try("${machine.network}/${machine.address}", null)
+  ])
+
+  machine_public_ipv4_addresses = compact([
+    for machine in values(local.machines) : try(machine.public_ipv4, null)
+  ])
+
+  machine_public_ipv6_addresses = compact([
+    for machine in values(local.machines) : try(machine.public_ipv6, null)
+  ])
 }
 
 resource "terraform_data" "configuration_validation" {
@@ -64,6 +80,18 @@ resource "terraform_data" "configuration_validation" {
     precondition {
       condition = alltrue(flatten([
         for cluster in values(local.clusters) : [
+          for node_name, node in cluster.nodes : (
+            contains(["api", "metadata"], try(node.configuration_delivery, "")) &&
+            (try(node.configuration_delivery, "") != "metadata" || try(local.machines[node_name].provider, null) == "oci")
+          )
+        ]
+      ]))
+      error_message = "Every cluster node must use API or OCI metadata configuration delivery."
+    }
+
+    precondition {
+      condition = alltrue(flatten([
+        for cluster in values(local.clusters) : [
           for node_name in keys(cluster.nodes) : try(local.machines[node_name].platform == "talos", false)
         ]
       ]))
@@ -85,6 +113,54 @@ resource "terraform_data" "configuration_validation" {
         for machine in values(local.machines) : can(local.networks[machine.network])
       ])
       error_message = "Every machine must reference an existing network."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : (
+          (try(machine.address, null) == null || can(cidrnetmask("${machine.address}/32"))) &&
+          (try(machine.public_ipv4, null) == null || can(cidrnetmask("${machine.public_ipv4}/32"))) &&
+          (try(machine.public_ipv6, null) == null || try(strcontains(machine.public_ipv6, ":") && can(cidrhost("${machine.public_ipv6}/128", 0)), false))
+        )
+      ])
+      error_message = "Machine addresses must use valid IPv4 or IPv6 syntax."
+    }
+
+    precondition {
+      condition = (
+        length(distinct(local.machine_mac_addresses)) == length(local.machine_mac_addresses) &&
+        length(distinct(local.machine_network_addresses)) == length(local.machine_network_addresses) &&
+        length(distinct(local.machine_public_ipv4_addresses)) == length(local.machine_public_ipv4_addresses) &&
+        length(distinct(local.machine_public_ipv6_addresses)) == length(local.machine_public_ipv6_addresses)
+      )
+      error_message = "Machine MAC addresses and network-scoped private and public IP addresses must be unique."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : try(machine.mac_address, null) == null || can(regex("^([0-9a-f]{2}:){5}[0-9a-f]{2}$", lower(machine.mac_address)))
+      ])
+      error_message = "Machine MAC addresses must use six colon-separated octets."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : try(machine.vlan, null) == null || try(
+          cidrcontains(local.networks[machine.network].unifi.networks[machine.vlan].subnet, machine.address),
+          false,
+        )
+      ])
+      error_message = "Every machine address on a UniFi VLAN must belong to that VLAN's subnet."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : try(machine.provider, null) != "oci" || try(
+          cidrcontains(local.networks[machine.network].oci.subnet_cidr, machine.address),
+          false,
+        )
+      ])
+      error_message = "Every OCI machine address must belong to its configured OCI subnet."
     }
 
     precondition {
@@ -125,6 +201,13 @@ resource "terraform_data" "configuration_validation" {
         for machine in values(local.machines) : can(regex(local.configuration_dns_label_pattern, machine.tag))
       ])
       error_message = "Machine tags must be valid lowercase labels."
+    }
+
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : try(machine.tailscale_name, null) == null || can(regex(local.configuration_dns_label_pattern, machine.tailscale_name))
+      ])
+      error_message = "Tailscale device names must be valid lowercase DNS labels."
     }
 
     precondition {

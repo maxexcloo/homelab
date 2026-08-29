@@ -65,9 +65,14 @@ for cluster in "${clusters[@]}"; do
   if get_note "${vault}" "Talos Client Configuration" "${talos_file}"; then
     if [[ -z "${talosconfig_path}" ]]; then
       talosconfig_path="${tmpdir}/talosconfig"
-      cp "${talos_file}" "${talosconfig_path}"
+      if [[ -f "${talosconfig_dest}" ]]; then
+        cp "${talosconfig_dest}" "${talosconfig_path}"
+        TALOSCONFIG_SOURCE="${talos_file}" yq -i '.contexts *= load(strenv(TALOSCONFIG_SOURCE)).contexts' "${talosconfig_path}"
+      else
+        cp "${talos_file}" "${talosconfig_path}"
+      fi
     else
-      talosctl --talosconfig "${talosconfig_path}" config merge "${talos_file}"
+      TALOSCONFIG_SOURCE="${talos_file}" yq -i '.contexts *= load(strenv(TALOSCONFIG_SOURCE)).contexts' "${talosconfig_path}"
     fi
   else
     echo "    (warning: no talosconfig found for cluster ${cluster})" >&2
@@ -76,7 +81,11 @@ done
 
 if [[ ${#kubeconfig_paths[@]} -gt 0 ]]; then
   kubeconfig_path="${tmpdir}/kubeconfig"
-  KUBECONFIG="$(IFS=:; printf '%s' "${kubeconfig_paths[*]}")" kubectl config view --flatten >"${kubeconfig_path}"
+  kubeconfig_merge_paths=("${kubeconfig_paths[@]}")
+  if [[ -f "${kubeconfig_dest}" ]]; then
+    kubeconfig_merge_paths+=("${kubeconfig_dest}")
+  fi
+  KUBECONFIG="$(IFS=:; printf '%s' "${kubeconfig_merge_paths[*]}")" kubectl config view --flatten >"${kubeconfig_path}"
   install_config "${kubeconfig_path}" "${kubeconfig_dest}"
   echo "Updated ${kubeconfig_dest}"
 fi

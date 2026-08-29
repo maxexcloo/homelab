@@ -101,16 +101,24 @@ locals {
     } if can(local.clusters[name])
   }
 
+  cloudflare_tunnel_route_entries = flatten([
+    for consumer_name, consumer in local.cloudflare.tunnel_consumers : [
+      for ingress in try(consumer.ingress, []) : {
+        consumer = consumer_name
+        hostname = ingress.hostname
+        zone     = ingress.zone
+      }
+    ]
+  ])
+
+  cloudflare_tunnel_route_entries_by_hostname = {
+    for route in local.cloudflare_tunnel_route_entries : route.hostname => route...
+  }
+
   cloudflare_tunnel_routes = {
-    for route in flatten([
-      for consumer_name, consumer in local.cloudflare.tunnel_consumers : [
-        for ingress in try(consumer.ingress, []) : {
-          consumer = consumer_name
-          hostname = ingress.hostname
-          zone     = ingress.zone
-        }
-      ]
-    ]) : "${route.consumer}/${route.hostname}" => route
+    for route_key, routes in {
+      for route in local.cloudflare_tunnel_route_entries : "${route.consumer}/${route.hostname}" => route...
+    } : route_key => routes[0]
   }
 
   cloudflare_zones = toset(concat(
@@ -327,7 +335,7 @@ resource "terraform_data" "tunnel_validation" {
 
     precondition {
       condition = alltrue([
-        for route in values(local.cloudflare_tunnel_routes) :
+        for route in local.cloudflare_tunnel_route_entries :
         contains(local.cloudflare_zones, route.zone) &&
         (route.hostname == route.zone || endswith(route.hostname, ".${route.zone}"))
       ])
@@ -335,10 +343,13 @@ resource "terraform_data" "tunnel_validation" {
     }
 
     precondition {
-      condition = length(distinct([
-        for route in values(local.cloudflare_tunnel_routes) : route.hostname
-      ])) == length(local.cloudflare_tunnel_routes)
-      error_message = "Cloudflare Tunnel ingress hostnames must be unique."
+      condition = alltrue([
+        for routes in values(local.cloudflare_tunnel_route_entries_by_hostname) : (
+          length(distinct([for route in routes : route.consumer])) == 1 &&
+          length(distinct([for route in routes : route.zone])) == 1
+        )
+      ])
+      error_message = "Every Cloudflare Tunnel ingress hostname must belong to one consumer and zone."
     }
   }
 }

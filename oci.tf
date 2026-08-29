@@ -41,7 +41,13 @@ locals {
       if(
         !contains(["cloudflared", "public", "tailscale"], try(ingress.mode, "")) ||
         try(length(ingress.ports), 0) == 0 ||
-        (try(ingress.mode, "") == "public") != (try(length(ingress.sources), 0) > 0)
+        (try(ingress.mode, "") == "public") != (try(length(ingress.sources), 0) > 0) ||
+        !alltrue([
+          for port in try(ingress.ports, []) : try(port >= 1 && port <= 65535 && floor(port) == port, false)
+        ]) ||
+        !alltrue([
+          for source in values(try(ingress.sources, {})) : can(cidrhost(source, 0))
+        ])
       )
     ]
   ])
@@ -50,6 +56,8 @@ locals {
     for name, machine in local.machines : name => machine
     if try(machine.provider, null) == "oci" && local.clusters[machine.cluster].talos_enabled
   }
+
+  oci_network_regions = toset([for network in values(local.oci_networks) : network.region])
 
   oci_network_security_group_rules_egress = merge(
     {
@@ -358,9 +366,10 @@ resource "oci_core_volume" "node" {
 resource "oci_core_volume_attachment" "node" {
   for_each = local.oci_volumes
 
-  attachment_type                     = "paravirtualized"
-  display_name                        = "${each.value.node}-${each.value.name}"
-  instance_id                         = oci_core_instance.node[each.value.node].id
+  attachment_type = "paravirtualized"
+  display_name    = "${each.value.node}-${each.value.name}"
+  instance_id     = oci_core_instance.node[each.value.node].id
+  # The current OCI/Talos deployment fails to attach this volume when encryption in transit is enabled.
   is_pv_encryption_in_transit_enabled = false
   volume_id                           = oci_core_volume.node[each.key].id
 }
@@ -402,7 +411,7 @@ resource "terraform_data" "oci_ingress_validation" {
   lifecycle {
     precondition {
       condition     = length(local.oci_ingress_rules_invalid) == 0
-      error_message = "OCI TCP ingress rules must declare ports, use tailscale, cloudflared, or public mode, and declare sources only in public mode."
+      error_message = "OCI TCP ingress rules must use valid ports and CIDR sources, use tailscale, cloudflared, or public mode, and declare sources only in public mode."
     }
   }
 }

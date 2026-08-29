@@ -122,20 +122,22 @@ locals {
       }
     },
     {
-      for name in keys(local.machines) : "machine/${name}/a" => {
-        content = local.tailscale_device_ipv4[name]
+      for name, machine in local.machines : "machine/${name}/a" => {
+        content = local.tailscale_device_ipv4[machine.tailscale_name]
         name    = local.machine_fqdns[name]
         type    = "A"
         zone    = local.domains.infrastructure
       }
+      if try(machine.tailscale_name, null) != null
     },
     {
-      for name in keys(local.machines) : "machine/${name}/aaaa" => {
-        content = local.tailscale_device_ipv6[name]
+      for name, machine in local.machines : "machine/${name}/aaaa" => {
+        content = local.tailscale_device_ipv6[machine.tailscale_name]
         name    = local.machine_fqdns[name]
         type    = "AAAA"
         zone    = local.domains.infrastructure
       }
+      if try(machine.tailscale_name, null) != null
     },
   )
 

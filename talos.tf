@@ -47,7 +47,7 @@ locals {
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
       node.address,
-      try(local.tailscale_device_ipv4[local.machine_hostnames[name]], null),
+      try(local.tailscale_device_ipv4[local.machines[name].tailscale_name], null),
     ])
   }
 
@@ -145,12 +145,13 @@ locals {
   talos_nodes = merge([
     for cluster_name, cluster in local.talos_clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
-        address          = local.machines[node_name].address
-        cluster          = cluster_name
-        install_disk     = try(node.install_disk, null)
-        sysctls          = try(node.sysctls, {})
-        tailscale_routes = try(node.tailscale_routes, [])
-        time_servers     = try(node.time_servers, [])
+        address                = local.machines[node_name].address
+        cluster                = cluster_name
+        configuration_delivery = try(node.configuration_delivery, null)
+        install_disk           = try(node.install_disk, null)
+        sysctls                = try(node.sysctls, {})
+        tailscale_routes       = try(node.tailscale_routes, [])
+        time_servers           = try(node.time_servers, [])
       })
     }
   ]...)

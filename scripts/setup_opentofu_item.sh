@@ -21,7 +21,6 @@ op item create \
   "notesPlain=Provider environment for the homelab OpenTofu root." \
   "oci_fingerprint[text]=" \
   "oci_private_key_base64[password]=" \
-  "oci_region[text]=" \
   "oci_tenancy_ocid[text]=" \
   "oci_user_ocid[text]=" \
   "op_connect_host[url]=" \

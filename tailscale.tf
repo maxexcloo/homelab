@@ -128,7 +128,7 @@ resource "tailscale_tailnet_key" "server" {
   expiry              = local.access.tailscale.key_expiry_seconds
   preauthorized       = true
   recreate_if_invalid = "always"
-  reusable            = true
+  reusable            = false
   tags                = ["tag:${each.value.tag}"]
 
   depends_on = [tailscale_acl.default]
