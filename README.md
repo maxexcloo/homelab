@@ -62,7 +62,7 @@ system.
 
 - **Compute & Virtualisation**: TrueNAS VM (`taco`) on `kimbap` and OCI compute instance (`hsp`) on Ampere A1.
 - **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, Cloudflare Tunnels, stable external-service records and the webhook-only HAOS tunnel route; application DNS remains workload-owned in `kubelab`.
-- **Mesh & Access**: Server login items with management or SSH URLs, Tailscale ACL policies and host recovery keys, and Kubernetes operator OAuth clients.
+- **Mesh & Access**: Server login items with management or SSH URLs, Tailscale ACL policies and host recovery keys, and Kubernetes operator OAuth clients. Cluster-scoped Tailscale endpoints can reach Kubernetes HTTPS gateways; other lateral access remains tag-specific.
 - **Networking**: UniFi VLANs and static DHCP reservations for retained appliances and VMs.
 - **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.

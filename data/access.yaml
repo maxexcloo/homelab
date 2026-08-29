@@ -143,12 +143,6 @@ tailscale:
         - tag:kubernetes:0
         - tag:storage:0
         - tag:workstation:0
-    - src: tag:mbk
-      deny:
-        - tag:server:443
     - src: tag:storage
       accept:
         - tag:backup:9090
-    - src: tag:syd
-      deny:
-        - tag:server:443
