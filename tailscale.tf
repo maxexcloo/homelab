@@ -77,16 +77,7 @@ locals {
   )
 
   tailscale_policy = {
-    acls = concat(
-      local.access.tailscale.acls,
-      [
-        for cluster_tag in sort(tolist(local.tailscale_tags_cluster)) : {
-          action = "accept"
-          dst    = ["${cluster_tag}:443"]
-          src    = ["tag:kubernetes"]
-        }
-      ],
-    )
+    acls = local.access.tailscale.acls
 
     autoApprovers = {
       exitNode = local.access.tailscale.auto_approvers.exit_node
@@ -108,17 +99,6 @@ locals {
       {
         for tag in local.tailscale_tags_cluster : "${tag}-operator" => ["group:admin"]
       },
-    )
-
-    tests = concat(
-      local.access.tailscale.tests,
-      [
-        for cluster_tag in sort(tolist(local.tailscale_tags_cluster)) : {
-          src    = "tag:kubernetes"
-          accept = ["${cluster_tag}:443"]
-          deny   = ["tag:server:443"]
-        }
-      ],
     )
   }
 }

@@ -8,76 +8,16 @@ tailscale:
   key_expiry_seconds: 7776000
   acls:
     - action: accept
-      proto: icmp
       dst:
         - "autogroup:tagged:*"
       src:
-        - tag:ephemeral
-    - action: accept
-      dst:
-        - autogroup:tagged:80
-        - autogroup:tagged:443
-      src:
-        - tag:ephemeral
-    - action: accept
-      dst:
-        - tag:appliance:443
-      src:
-        - tag:appliance
-    - action: accept
-      dst:
-        - tag:server:443
-      src:
-        - tag:appliance
-    - action: accept
-      dst:
-        - tag:appliance:80
-        - tag:appliance:443
-      src:
-        - tag:vm
-    - action: accept
-      dst:
-        - tag:server:80
-        - tag:server:443
-      src:
-        - tag:vm
-    - action: accept
-      dst:
-        - tag:vm:80
-        - tag:vm:443
-      src:
-        - tag:vm
-    - action: accept
-      dst:
-        - tag:router:80
-        - tag:router:443
-      src:
-        - tag:server
-    - action: accept
-      dst:
-        - "tag:appliance:*"
-      src:
-        - tag:server
-    - action: accept
-      dst:
-        - "tag:server:*"
-      src:
-        - tag:server
-    - action: accept
-      dst:
-        - "tag:vm:*"
-      src:
-        - tag:server
+        - autogroup:tagged
     - action: accept
       dst:
         - "*:*"
+        - "autogroup:internet:*"
       src:
         - group:admin
-    - action: accept
-      dst:
-        - "tag:backup:*"
-      src:
-        - tag:storage
   auto_approvers:
     exit_node:
       - tag:router
@@ -113,36 +53,3 @@ tailscale:
       - group:admin
     tag:workstation:
       - group:admin
-  tests:
-    - src: max@excloo.com
-      accept:
-        - tag:kubernetes:50000
-        - tag:storage:22
-    - src: tag:appliance
-      accept:
-        - tag:appliance:443
-    - src: tag:backup
-      deny:
-        - tag:storage:22
-        - tag:storage:443
-        - tag:storage:8443
-    - proto: icmp
-      src: tag:backup
-      deny:
-        - tag:storage:0
-    - src: tag:ephemeral
-      accept:
-        - tag:backup:80
-        - tag:kubernetes:443
-        - tag:storage:80
-        - tag:workstation:443
-    - proto: icmp
-      src: tag:ephemeral
-      accept:
-        - tag:backup:0
-        - tag:kubernetes:0
-        - tag:storage:0
-        - tag:workstation:0
-    - src: tag:storage
-      accept:
-        - tag:backup:9090
