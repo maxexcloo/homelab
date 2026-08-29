@@ -82,8 +82,8 @@ locals {
       [
         for cluster_tag in sort(tolist(local.tailscale_tags_cluster)) : {
           action = "accept"
-          dst    = ["tag:kubernetes:443"]
-          src    = [cluster_tag]
+          dst    = ["${cluster_tag}:443"]
+          src    = ["tag:kubernetes"]
         }
       ],
     )
@@ -114,8 +114,8 @@ locals {
       local.access.tailscale.tests,
       [
         for cluster_tag in sort(tolist(local.tailscale_tags_cluster)) : {
-          src    = cluster_tag
-          accept = ["tag:kubernetes:443"]
+          src    = "tag:kubernetes"
+          accept = ["${cluster_tag}:443"]
           deny   = ["tag:server:443"]
         }
       ],
