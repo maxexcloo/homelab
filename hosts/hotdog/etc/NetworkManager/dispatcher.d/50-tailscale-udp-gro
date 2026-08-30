@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+set -Eeuo pipefail
+
+readonly interface=enp1s0
+
+if [[ ${1:-} != "${interface}" ]]; then
+  exit 0
+fi
+
+case "${2:-}" in
+  up|dhcp4-change|dhcp6-change)
+    exec /usr/bin/ethtool -K "${interface}" \
+      rx-udp-gro-forwarding on \
+      rx-gro-list off
+    ;;
+esac

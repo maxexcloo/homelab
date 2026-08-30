@@ -48,7 +48,7 @@ locals {
       challenge_zone     = can(local.machines[name]) ? local.domains.infrastructure : local.domains.services
       credential_scope   = can(local.machines[name]) ? local.machine_fqdns[name] : name
       dns_write_zone     = challenge_mode == "direct" ? (can(local.machines[name]) ? local.domains.infrastructure : local.domains.services) : local.domains.acme
-      target_hostname    = can(local.machines[name]) ? "${name}.${local.domains.acme}" : "_acme-challenge.${name}.${local.domains.services}.${local.domains.acme}"
+      target_hostname    = can(local.machines[name]) ? "_acme-challenge.${name}.${local.domains.acme}" : "_acme-challenge.${name}.${local.domains.services}.${local.domains.acme}"
       title              = can(local.machines[name]) ? "Cloudflare ACME DNS: ${local.machine_fqdns[name]}" : "Cloudflare ACME DNS"
       vault              = can(local.machines[name]) ? "homelab" : "cluster/${name}"
     }

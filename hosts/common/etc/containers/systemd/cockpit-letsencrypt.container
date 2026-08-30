@@ -1,0 +1,15 @@
+[Unit]
+Description=Renew the Let's Encrypt certificate used by Cockpit
+
+[Container]
+Image=ghcr.io/acmesh-official/acme.sh:latest
+ContainerName=cockpit-letsencrypt
+Exec=--cron
+Pull=newer
+Volume=/etc/cockpit/ws-certs.d:/cockpit:Z
+Volume=/var/lib/acme-%H:/acme.sh:Z
+
+[Service]
+Type=oneshot
+ExecStartPost=/usr/sbin/restorecon -RF /etc/cockpit/ws-certs.d
+ExecStartPost=/usr/bin/systemctl try-restart cockpit.service

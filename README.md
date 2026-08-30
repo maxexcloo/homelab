@@ -116,6 +116,28 @@ B2, Cloudflare, Resend, Talos, Tailscale, and other credentials even when plan
 output is redacted. Keep state, plans, backups, and recovery material outside
 Git and restrict them to the operator performing the recovery.
 
+Non-secret uCore host configuration lives under `hosts/`. Apply `common/etc/`
+first, then the host's `etc/` overlay. Generated Cloudflare tokens,
+certificates, and other credentials are deliberately excluded and delivered
+from 1Password at deployment time.
+
+The `bento` and `hotdog` Butane files use uCore's two-stage automatic rebase:
+Fedora CoreOS first rebases to the unverified OCI reference, then rebases to
+the signed reference after reboot. Bento targets `ucore-hci:stable`; Hotdog
+targets `ucore:stable`. Compile an installation Ignition file with:
+
+```shell
+butane --pretty --strict --output /tmp/HOST.ign hosts/HOST/HOST.bu
+```
+
+The `hosts/common/etc/` tree contains shared server overrides. Each
+`hosts/HOST/etc/` tree contains only role- or hardware-specific differences.
+Generated identity, certificate, token, application state, SELinux, and ZFS
+cache files are not source configuration and must not be copied into Git.
+Cockpit certificate renewal runs as a shared one-shot `acme.sh` Quadlet. Initial
+issuance and certificate-path registration remain a one-time deployment step
+because they require the host's scoped Cloudflare token.
+
 To recover state:
 
 1. Freeze plans and applies for this root.

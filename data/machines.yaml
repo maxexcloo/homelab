@@ -1,4 +1,12 @@
 machines:
+  bento:
+    address: 10.0.2.124
+    management_port: 9090
+    network: mbk
+    platform: linux
+    tag: server
+    tailscale_name: bento
+    username: core
   gateway-mbk:
     address: 10.0.0.1
     hostname: gateway

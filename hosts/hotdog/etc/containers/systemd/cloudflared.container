@@ -1,0 +1,18 @@
+[Unit]
+Description=Cloudflare Tunnel
+
+[Container]
+Image=docker.io/cloudflare/cloudflared:latest
+ContainerName=cloudflared
+Network=host
+EnvironmentFile=/etc/cloudflared/cloudflared.env
+Exec=tunnel --no-autoupdate run
+AutoUpdate=registry
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
