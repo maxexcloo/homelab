@@ -28,6 +28,11 @@ storage:
       contents:
         inline: |
           hotdog
+  trees:
+    - local: common/etc
+      path: /etc
+    - local: hotdog/etc
+      path: /etc
 
 systemd:
   units:

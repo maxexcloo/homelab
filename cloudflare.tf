@@ -41,6 +41,8 @@ data "cloudflare_zone" "configured" {
 }
 
 locals {
+  cloudflare = yamldecode(file("${path.module}/data/domains.yaml")).cloudflare
+
   cloudflare_consumers_acme = {
     for name, challenge_mode in local.cloudflare.acme_consumers : name => {
       challenge_hostname = can(local.machines[name]) ? local.machine_fqdns[name] : "${name}.${local.domains.services}"

@@ -3,6 +3,7 @@ set -euo pipefail
 umask 077
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+access_path="${repo_dir}/data/access.yaml"
 clusters_path="${repo_dir}/data/clusters.yaml"
 kubeconfig_dest="${HOME}/.kube/config"
 talosconfig_dest="${HOME}/.talos/config"
@@ -13,6 +14,8 @@ for tool in jq kubectl op talosctl yq; do
     exit 1
   fi
 done
+
+cluster_vault_prefix="$(yq -r '.onepassword.cluster_vault_prefix' "${access_path}")"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf -- "${tmpdir}"' EXIT
@@ -41,12 +44,12 @@ talosconfig_path=""
 
 while IFS= read -r cluster; do
   clusters+=("${cluster}")
-done < <(yq -r '.clusters | to_entries | sort_by(.key) | .[] | select(.value.talos_enabled == true) | .key' "${clusters_path}")
+done < <(yq -r '.clusters | keys | .[]' "${clusters_path}")
 
 echo "Fetching credentials from 1Password..."
 
 for cluster in "${clusters[@]}"; do
-  vault="Cluster: ${cluster}"
+  vault="${cluster_vault_prefix}${cluster}"
   kube_file="${tmpdir}/${cluster}.kubeconfig"
   talos_file="${tmpdir}/${cluster}.talosconfig"
 

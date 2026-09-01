@@ -1,7 +1,7 @@
 data "truenas_network_interface" "services_physical" {
   for_each = local.truenas_hosts_services
 
-  id       = local.networks[each.value.network].interfaces.services.name
+  id       = each.value.interface.name
   provider = truenas.hosts[each.key]
 }
 
@@ -16,7 +16,7 @@ locals {
   )
 
   truenas_datasets = merge([
-    for target, storage in local.storage.truenas : {
+    for target, storage in local.truenas_storage : {
       for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
         name               = name
         parent_dataset_key = try(dataset.parent_dataset, null) == null ? null : "${target}/${dataset.parent_dataset}"
@@ -35,18 +35,40 @@ locals {
     if dataset.parent_dataset_key == null
   }
 
+  truenas_host_services_prefix_lengths = {
+    for name, host in local.truenas_hosts_services : name => tonumber(split(
+      "/",
+      local.networks[host.machine.network].subnets[
+        local.truenas_machine_interfaces_by_mac[lower(host.interface.mac_address)].subnet
+      ].cidr,
+    )[1])
+  }
+
   truenas_hosts = {
     for name, machine in local.machines : name => machine
     if machine.platform == "truenas"
   }
 
   truenas_hosts_services = {
-    for name, machine in local.truenas_hosts : name => machine
-    if try(local.networks[machine.network].interfaces.services, null) != null
+    for name, machine in local.truenas_hosts : name => {
+      interface = one([
+        for interface in machine.interfaces : interface
+        if try(interface.bridge, null) != null
+      ])
+      machine = machine
+    }
+    if length([
+      for interface in machine.interfaces : interface
+      if try(interface.bridge, null) != null
+    ]) == 1
+  }
+
+  truenas_machine_interfaces_by_mac = {
+    for interface in local.machine_interface_assignments : interface.mac => interface
   }
 
   truenas_shares_nfs = merge([
-    for target, storage in local.storage.truenas : {
+    for target, storage in local.truenas_storage : {
       for name, share in storage.nfs_shares : "${target}/${name}" => merge(share, {
         dataset_key = try(share.dataset, null) == null ? null : "${target}/${share.dataset}"
         name        = name
@@ -54,7 +76,7 @@ locals {
         target      = target
         networks = [
           for share_network in share.networks : cidrsubnet(
-            local.networks[share_network.network].unifi.networks[share_network.vlan].subnet,
+            local.networks[share_network.network].subnets[share_network.subnet].cidr,
             0,
             0,
           )
@@ -63,6 +85,17 @@ locals {
     }
   ]...)
 
+  truenas_storage = {
+    for target, storage in local.storage.truenas : target => merge(storage, {
+      datasets = {
+        for name, dataset in storage.datasets : name => merge(storage.dataset_defaults, dataset)
+      }
+      nfs_shares = {
+        for name, share in storage.nfs_shares : name => merge(storage.nfs_share_defaults, share)
+      }
+    })
+  }
+
   truenas_virtual_machine_cdrom_devices = {
     for virtual_machine_name, virtual_machine in local.truenas_virtual_machines : "${virtual_machine_name}/cdrom" => {
       dtype           = "CDROM"
@@ -70,7 +103,7 @@ locals {
       virtual_machine = virtual_machine_name
       attributes = {
         path = join("/", [
-          trimsuffix(virtual_machine.boot.iso_directory, "/"),
+          "/mnt/${virtual_machine.boot.pool}/virtual-machines",
           "talos-${local.talos_image_factory_schematic_ids[local.machines[virtual_machine_name].cluster]}-${local.clusters[local.machines[virtual_machine_name].cluster].talos_version}.iso",
         ])
       }
@@ -93,15 +126,23 @@ locals {
         order           = 1002
         virtual_machine = virtual_machine_name
         attributes = {
-          mac = local.machines[virtual_machine_name].mac_address
-          nic_attach = local.networks[
-            local.machines[virtual_machine_name].network
-          ].interfaces[local.machines[virtual_machine_name].vlan].bridge
-          type = "VIRTIO"
+          mac        = virtual_machine.interfaces[0].mac_address
+          nic_attach = local.truenas_virtual_machine_network_interfaces[virtual_machine_name].bridge
+          type       = "VIRTIO"
         }
       }
     }
   ]...)
+
+  truenas_virtual_machine_network_interfaces = {
+    for name, virtual_machine in local.truenas_virtual_machines : name => one([
+      for interface in local.machines[virtual_machine.host].interfaces : interface
+      if try(interface.bridge, null) != null && (
+        local.truenas_machine_interfaces_by_mac[lower(interface.mac_address)].subnet ==
+        local.truenas_machine_interfaces_by_mac[lower(virtual_machine.interfaces[0].mac_address)].subnet
+      )
+    ])
+  }
 
   truenas_virtual_machines = {
     for name, machine in local.machines : name => machine
@@ -110,7 +151,7 @@ locals {
 }
 
 resource "terraform_data" "truenas_storage_target" {
-  for_each = local.storage.truenas
+  for_each = local.truenas_storage
 
   input = each.key
 
@@ -118,6 +159,11 @@ resource "terraform_data" "truenas_storage_target" {
     precondition {
       condition     = can(local.truenas_hosts[each.key])
       error_message = "Every TrueNAS storage configuration must reference an existing TrueNAS host."
+    }
+
+    precondition {
+      condition     = try(trimspace(local.truenas_hosts_services[each.key].interface.name) != "", false)
+      error_message = "Every managed TrueNAS host must declare exactly one named bridged interface."
     }
 
     precondition {
@@ -156,7 +202,7 @@ resource "terraform_data" "truenas_storage_target" {
     precondition {
       condition = alltrue(flatten([
         for share in values(each.value.nfs_shares) : [
-          for share_network in try(share.networks, []) : can(local.networks[share_network.network].unifi.networks[share_network.vlan])
+          for share_network in try(share.networks, []) : can(local.networks[share_network.network].subnets[share_network.subnet])
         ]
       ]))
       error_message = "Every NFS share network must reference an existing UniFi network."
@@ -215,15 +261,15 @@ resource "truenas_network_interface" "services_bridge" {
   bridge_members = [truenas_network_interface.services_physical[each.key].name]
   ipv4_dhcp      = false
   ipv6_auto      = false
-  name           = local.networks[each.value.network].interfaces.services.bridge
+  name           = each.value.interface.bridge
   provider       = truenas.hosts[each.key]
   rollback       = true
   type           = "BRIDGE"
 
   aliases = [
     {
-      address = local.networks[each.value.network].interfaces.services.address
-      netmask = local.networks[each.value.network].interfaces.services.prefix_length
+      address = each.value.interface.address
+      netmask = local.truenas_host_services_prefix_lengths[each.key]
       type    = "INET"
     },
   ]
@@ -239,7 +285,7 @@ resource "truenas_network_interface" "services_physical" {
   aliases   = []
   ipv4_dhcp = false
   ipv6_auto = false
-  name      = local.networks[each.value.network].interfaces.services.name
+  name      = each.value.interface.name
   provider  = truenas.hosts[each.key]
   rollback  = true
   type      = "PHYSICAL"
@@ -256,8 +302,8 @@ resource "truenas_network_interface" "services_physical" {
           try(
             length(data.truenas_network_interface.services_physical[each.key].aliases) == 1 &&
             one(data.truenas_network_interface.services_physical[each.key].aliases).type == "INET" &&
-            one(data.truenas_network_interface.services_physical[each.key].aliases).address == local.networks[each.value.network].interfaces.services.address &&
-            one(data.truenas_network_interface.services_physical[each.key].aliases).netmask == local.networks[each.value.network].interfaces.services.prefix_length,
+            one(data.truenas_network_interface.services_physical[each.key].aliases).address == each.value.interface.address &&
+            one(data.truenas_network_interface.services_physical[each.key].aliases).netmask == local.truenas_host_services_prefix_lengths[each.key],
             false,
           )
         )
@@ -269,7 +315,7 @@ resource "truenas_network_interface" "services_physical" {
 
 resource "truenas_service" "nfs" {
   for_each = {
-    for target, storage in local.storage.truenas : target => storage
+    for target, storage in local.truenas_storage : target => storage
     if length(try(storage.nfs_shares, {})) > 0
   }
 

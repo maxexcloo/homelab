@@ -1,6 +1,7 @@
 [tools]
 1password-cli = "2.38.1"
 actionlint = "1.7.12"
+"aqua:coreos/butane" = "0.29.0"
 jq = "1.8.2"
 kubectl = "1.36.4"
 opentofu = "1.12.6"
@@ -45,8 +46,9 @@ run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CON
 description = "Check formatting and infrastructure configuration"
 run = """
 actionlint .github/workflows/*.yaml
+for file in hosts/*/*.bu; do butane --files-dir hosts --strict "${file}" >/dev/null; done
 prettier --check .
-shellcheck scripts/*.sh
+shellcheck hosts/*/etc/NetworkManager/dispatcher.d/* scripts/*.sh
 tofu fmt -check -recursive
 tofu validate
 """
@@ -66,6 +68,10 @@ run = "prek run --all-files"
 [tasks.client-configs]
 description = "Sync workstation kubeconfig and talosconfig from 1Password"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
+
+[tasks.ignition]
+description = "Render complete uCore Ignition configurations"
+run = "scripts/render_ignition.sh"
 
 [tasks.prepare-oci-image]
 description = "Download and convert the Talos Oracle image archive"

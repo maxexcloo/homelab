@@ -52,11 +52,10 @@ cluster vaults when ready.
 
 ### Prerequisites
 
-Mise installs 1Password CLI (`op`), Actionlint, `jq`, `kubectl`, OpenTofu, Prek,
-Prettier, ShellCheck, Talosctl, and yq. The workstation must also have the
-1Password desktop app with CLI integration enabled. The OCI image preparation
-task expects `curl`, `gzip`, `qemu-img`, and `xz` from the workstation operating
-system.
+Mise installs 1Password CLI (`op`), Actionlint, Butane, `jq`, `kubectl`, OpenTofu,
+Prek, Prettier, ShellCheck, Talosctl, and yq. The workstation must also have the
+1Password desktop app with CLI integration enabled. The OCI image preparation task
+expects `curl`, `gzip`, `qemu-img`, and `xz` from the workstation operating system.
 
 ## Substrate
 
@@ -84,9 +83,9 @@ OCI TCP ingress rules declare a `mode` in `data/networks.yaml`. `tailscale` and
 overlay or tunnel. `public` creates only the explicitly configured OCI NSG rules;
 the corresponding application route and DNS record remain owned by `kubelab`.
 
-A machine's `tailscale_name` gates its Tailscale-backed infrastructure DNS.
-Omit it for the machine's initial enrolment, then set it to the live Tailscale
-device name and review the follow-up plan that creates its DNS records.
+A machine's Tailscale device name is derived as `<network>-<hostname>`.
+Infrastructure DNS records are created when a matching live device supplies
+the corresponding address.
 
 ## Operations & Safety
 
@@ -116,19 +115,23 @@ B2, Cloudflare, Resend, Talos, Tailscale, and other credentials even when plan
 output is redacted. Keep state, plans, backups, and recovery material outside
 Git and restrict them to the operator performing the recovery.
 
-Non-secret uCore host configuration lives under `hosts/`. Apply `common/etc/`
-first, then the host's `etc/` overlay. Generated Cloudflare tokens,
+Non-secret uCore host configuration lives under `hosts/`. Each Butane file
+embeds `common/etc/` and its host's `etc/` overlay. Generated Cloudflare tokens,
 certificates, and other credentials are deliberately excluded and delivered
 from 1Password at deployment time.
 
 The `bento` and `hotdog` Butane files use uCore's two-stage automatic rebase:
 Fedora CoreOS first rebases to the unverified OCI reference, then rebases to
 the signed reference after reboot. Bento targets `ucore-hci:stable`; Hotdog
-targets `ucore:stable`. Compile an installation Ignition file with:
+targets `ucore:stable`. Render complete installation Ignition files with:
 
 ```shell
-butane --pretty --strict --output /tmp/HOST.ign hosts/HOST/HOST.bu
+mise run ignition
 ```
+
+The renderer writes one file per host to
+`${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/`. Pass a directory to
+`scripts/render_ignition.sh` to use a different destination.
 
 The `hosts/common/etc/` tree contains shared server overrides. Each
 `hosts/HOST/etc/` tree contains only role- or hardware-specific differences.

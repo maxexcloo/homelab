@@ -6,21 +6,23 @@ data "unifi_network" "configured" {
 
 locals {
   unifi_clients = {
-    for name, machine in local.machines : name => {
-      fixed_ip    = machine.address
-      mac         = machine.mac_address
-      network_key = "${machine.network}/${machine.vlan}"
+    for interface in local.machine_interface_assignments : interface.mac => {
+      fixed_ip    = interface.bridge == null ? interface.address : null
+      hostname    = interface.primary ? local.machine_fqdns[interface.machine] : null
+      mac         = interface.mac
+      name        = local.machine_hostnames[interface.machine]
+      network_key = "${interface.network}/${interface.subnet}"
     }
-    if try(machine.mac_address, null) != null && try(machine.address, null) != null
+    if interface.address != null
   }
 
   unifi_networks = merge([
     for network, site in local.networks : {
-      for network_key, network_config in try(site.unifi.networks, {}) :
-      "${network}/${network_key}" => {
-        name   = network_config.name
-        subnet = network_config.subnet
-        vlan   = try(network_config.vlan, null)
+      for subnet, subnet_config in try(site.subnets, {}) :
+      "${network}/${subnet}" => {
+        name   = subnet_config.name
+        subnet = subnet_config.cidr
+        vlan   = try(subnet_config.vlan, null)
       }
     }
   ]...)
@@ -54,8 +56,9 @@ resource "unifi_client" "host" {
 
   allow_existing         = true
   fixed_ip               = each.value.fixed_ip
+  local_dns_record       = each.value.hostname
   mac                    = each.value.mac
-  name                   = each.key
+  name                   = each.value.hostname != null ? each.value.name : null
   network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
   note                   = "Homelab OpenTofu Managed"
   skip_forget_on_destroy = false

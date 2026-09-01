@@ -1,7 +1,7 @@
 output "clusters" {
   description = "Talos Kubernetes cluster substrate configuration and endpoints."
   value = {
-    for name, cluster in local.talos_clusters : name => merge(
+    for name, cluster in local.clusters : name => merge(
       {
         endpoint        = local.talos_cluster_endpoints[name]
         installer_image = data.talos_image_factory_urls.cluster[name].urls.installer
@@ -24,10 +24,10 @@ output "machines" {
   description = "Managed machine network identities and addresses."
   value = {
     for name, machine in local.machines : name => {
-      address      = try(machine.address, machine.public_ipv4)
+      address      = try(coalesce(local.machine_private_ipv4_addresses[name], try(machine.public_ipv4, null)), null)
       fqdn         = local.machine_fqdns[name]
       hostname     = local.machine_hostnames[name]
-      tailscale_ip = try(local.tailscale_device_ipv4[machine.tailscale_name], null)
+      tailscale_ip = try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null)
     }
   }
 }

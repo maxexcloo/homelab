@@ -23,13 +23,26 @@ render() {
     printf '  User %s\n' "${user}"
     printf '  IdentityAgent "%s"\n\n' "${identity_agent}"
   done < <(
+    # $network is a yq variable.
+    # shellcheck disable=SC2016
     yq -r '
-      .machines
-      | to_entries
-      | sort_by(.key)
+      [
+        .machines
+        | to_entries[]
+        | .key as $network
+        | .value
+        | to_entries[]
+        | select(.value.username != null)
+        | {
+            "hostname": (.value.hostname // .key),
+            "machine_name": .key,
+            "network": $network,
+            "username": .value.username
+          }
+      ]
+      | sort_by(.machine_name)
       | .[]
-      | select(.value.username != null)
-      | [.key, (.value.hostname // .key), .value.network, .value.username]
+      | [.machine_name, .hostname, .network, .username]
       | @tsv
     ' "${machines_path}"
   )

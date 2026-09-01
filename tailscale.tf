@@ -1,52 +1,7 @@
 data "tailscale_devices" "all" {}
 
 locals {
-  tailscale_device_current = {
-    for hostname, devices in local.tailscale_devices_by_hostname :
-    hostname => one([
-      for device in devices : device
-      if "${device.last_seen}|${device.id}" == element(
-        sort([for candidate in devices : "${candidate.last_seen}|${candidate.id}"]),
-        length(devices) - 1,
-      )
-    ])
-  }
-
-  tailscale_device_ipv4 = merge(
-    {
-      for device in data.tailscale_devices.all.devices :
-      regex("^[^.]+", device.name) => try(
-        one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]),
-        null,
-      )
-    },
-    {
-      for hostname, device in local.tailscale_device_current :
-      hostname => try(
-        one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]),
-        null,
-      )
-    },
-  )
-
-  tailscale_device_ipv6 = merge(
-    {
-      for device in data.tailscale_devices.all.devices :
-      regex("^[^.]+", device.name) => try(
-        one([for address in device.addresses : address if startswith(address, "fd7a:")]),
-        null,
-      )
-    },
-    {
-      for hostname, device in local.tailscale_device_current :
-      hostname => try(
-        one([for address in device.addresses : address if startswith(address, "fd7a:")]),
-        null,
-      )
-    },
-  )
-
-  tailscale_devices_by_hostname = {
+  tailscale_cluster_devices_by_hostname = {
     for hostname in toset([
       for device in data.tailscale_devices.all.devices : device.hostname
       if contains(keys(local.clusters), device.hostname)
@@ -57,24 +12,62 @@ locals {
     ]
   }
 
-  tailscale_routes = toset(flatten([
-    for cluster in values(local.clusters) : [
-      for node in values(cluster.nodes) : try(node.tailscale_routes, [])
-    ]
-  ]))
+  tailscale_device_addresses = {
+    for hostname, device in local.tailscale_devices : hostname => {
+      ipv4 = try(
+        one([for address in device.addresses : address if can(cidrnetmask("${address}/32"))]),
+        null,
+      )
+      ipv6 = try(
+        one([for address in device.addresses : address if startswith(address, "fd7a:")]),
+        null,
+      )
+    }
+  }
 
-  tailscale_tags_cluster = toset([
-    for name in keys(local.clusters) : "tag:${name}"
-  ])
+  tailscale_device_current_by_name = {
+    for name, devices in local.tailscale_devices_by_name :
+    name => one([
+      for device in devices : device
+      if "${device.last_seen}|${device.id}" == element(
+        sort([for candidate in devices : "${candidate.last_seen}|${candidate.id}"]),
+        length(devices) - 1,
+      )
+    ])
+  }
 
-  tailscale_tags_cluster_all = flatten([
-    for tag in local.tailscale_tags_cluster : [tag, "${tag}-operator"]
-  ])
-
-  tailscale_tags_cluster_conflicting = setintersection(
-    toset(local.tailscale_tags_cluster_all),
-    toset(keys(local.access.tailscale.tag_owners)),
+  tailscale_devices = merge(
+    local.tailscale_device_current_by_name,
+    {
+      for hostname, devices in local.tailscale_cluster_devices_by_hostname :
+      hostname => one([
+        for device in devices : device
+        if "${device.last_seen}|${device.id}" == element(
+          sort([for candidate in devices : "${candidate.last_seen}|${candidate.id}"]),
+          length(devices) - 1,
+        )
+      ])
+    },
   )
+
+  tailscale_devices_by_name = {
+    for device in data.tailscale_devices.all.devices :
+    regex("^[^.]+", device.name) => device...
+  }
+
+  tailscale_key_machines = {
+    for name, machine in local.machines : name => machine
+    if can(local.machine_tailscale_names[name]) && try(machine.type, null) != null
+  }
+
+  tailscale_machine_device_names = {
+    for machine_name, desired_name in local.machine_tailscale_names :
+    machine_name => (
+      can(local.tailscale_device_current_by_name[desired_name]) ? desired_name :
+      can(local.tailscale_device_current_by_name[machine_name]) ? machine_name :
+      desired_name
+    )
+  }
 
   tailscale_policy = {
     acls = local.access.tailscale.acls
@@ -83,24 +76,62 @@ locals {
       exitNode = local.access.tailscale.auto_approvers.exit_node
       routes = merge(
         local.access.tailscale.auto_approvers.routes,
-        {
-          for route in local.tailscale_routes : route => ["tag:kubernetes"]
-        },
+        local.tailscale_route_approvers,
       )
     }
 
     groups = local.access.tailscale.groups
 
-    tagOwners = merge(
-      local.access.tailscale.tag_owners,
-      {
-        for tag in local.tailscale_tags_cluster : tag => ["${tag}-operator", "group:admin"]
-      },
-      {
-        for tag in local.tailscale_tags_cluster : "${tag}-operator" => ["group:admin"]
-      },
-    )
+    tagOwners = local.tailscale_tag_owners
   }
+
+  tailscale_route_approvers = {
+    for route in toset(flatten([
+      for node in values(local.talos_nodes) : node.tailscale_routes
+      ])) : route => distinct(compact([
+      for node_name, node in local.talos_nodes :
+      contains(node.tailscale_routes, route) ? try("tag:${local.machines[node_name].type}", null) : null
+    ]))
+  }
+
+  tailscale_tag_owner_tags_missing = setsubtract(
+    toset(flatten([
+      for owners in values(local.tailscale_tag_owners) : [
+        for owner in owners : owner if startswith(owner, "tag:")
+      ]
+    ])),
+    toset(keys(local.tailscale_tag_owners)),
+  )
+
+  tailscale_tag_owners = merge(
+    {
+      for tag in local.access.tailscale.tags : tag => local.access.tailscale.default_tag_owners
+    },
+    {
+      for name in keys(local.clusters) : "tag:${name}" => concat(local.access.tailscale.default_tag_owners, ["tag:${name}-operator"])
+    },
+    {
+      for name in keys(local.clusters) : "tag:${name}-operator" => local.access.tailscale.default_tag_owners
+    },
+  )
+
+  tailscale_tags_cluster_all = flatten([
+    for name in keys(local.clusters) : ["tag:${name}", "tag:${name}-operator"]
+  ])
+
+  tailscale_tags_cluster_conflicting = setintersection(
+    toset(local.access.tailscale.tags),
+    toset(local.tailscale_tags_cluster_all),
+  )
+
+  tailscale_tags_missing = setsubtract(
+    toset(concat(
+      compact([for machine in values(local.machines) : try("tag:${machine.type}", null)]),
+      local.tailscale_tags_cluster_all,
+      flatten(values(local.tailscale_route_approvers)),
+    )),
+    toset(keys(local.tailscale_tag_owners)),
+  )
 }
 
 resource "tailscale_acl" "default" {
@@ -122,30 +153,43 @@ resource "tailscale_oauth_client" "kubernetes_operator" {
 }
 
 resource "tailscale_tailnet_key" "server" {
-  for_each = local.machines
+  for_each = local.tailscale_key_machines
 
   description         = "Machine ${each.key} recovery bootstrap"
   expiry              = local.access.tailscale.key_expiry_seconds
   preauthorized       = true
   recreate_if_invalid = "always"
   reusable            = false
-  tags                = ["tag:${each.value.tag}"]
+  tags                = try(each.value.type, null) != null ? ["tag:${each.value.type}"] : []
 
   depends_on = [tailscale_acl.default]
 }
 
 resource "terraform_data" "tailscale_tag_validation" {
-  input = sort(local.tailscale_tags_cluster_all)
+  input = {
+    route_approvers = local.tailscale_route_approvers
+    tags            = sort(keys(local.tailscale_tag_owners))
+  }
 
   lifecycle {
     precondition {
-      condition     = length(distinct(local.tailscale_tags_cluster_all)) == length(local.tailscale_tags_cluster_all)
-      error_message = "Cluster and Kubernetes operator Tailscale tags must be unique."
+      condition     = length(local.tailscale_tags_missing) == 0
+      error_message = "Every machine, cluster, and route approver Tailscale tag must be declared: ${join(", ", sort(tolist(local.tailscale_tags_missing)))}"
+    }
+
+    precondition {
+      condition     = length(local.tailscale_tag_owner_tags_missing) == 0
+      error_message = "Tailscale tags used as owners must also be declared: ${join(", ", sort(tolist(local.tailscale_tag_owner_tags_missing)))}"
     }
 
     precondition {
       condition     = length(local.tailscale_tags_cluster_conflicting) == 0
-      error_message = "Generated cluster Tailscale tags must not overlap configured tag owners: ${join(", ", sort(tolist(local.tailscale_tags_cluster_conflicting)))}"
+      error_message = "Static Tailscale tags must not duplicate derived cluster tags: ${join(", ", sort(tolist(local.tailscale_tags_cluster_conflicting)))}"
+    }
+
+    precondition {
+      condition     = alltrue([for approvers in values(local.tailscale_route_approvers) : length(approvers) > 0])
+      error_message = "Every advertised Tailscale route must have at least one tagged machine approver."
     }
   }
 }

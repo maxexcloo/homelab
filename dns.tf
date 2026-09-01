@@ -70,7 +70,7 @@ locals {
     },
     {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/api" => {
-        content = local.machines[cluster.api_node].address
+        content = local.machine_private_ipv4_addresses[cluster.api_node]
         name    = "api.${cluster_name}.${local.domains.services}"
         type    = "A"
         zone    = local.domains.services
@@ -87,21 +87,21 @@ locals {
     },
     {
       for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale" => {
-        content = local.tailscale_device_ipv4[cluster_name]
+        content = local.tailscale_device_addresses[cluster_name].ipv4
         name    = "*.${cluster_name}.${local.domains.services}"
         type    = "A"
         zone    = local.domains.services
       }
-      if try(local.tailscale_device_ipv4[cluster_name], null) != null
+      if try(local.tailscale_device_addresses[cluster_name].ipv4, null) != null
     },
     {
       for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale-aaaa" => {
-        content = local.tailscale_device_ipv6[cluster_name]
+        content = local.tailscale_device_addresses[cluster_name].ipv6
         name    = "*.${cluster_name}.${local.domains.services}"
         type    = "AAAA"
         zone    = local.domains.services
       }
-      if try(local.tailscale_device_ipv6[cluster_name], null) != null
+      if try(local.tailscale_device_addresses[cluster_name].ipv6, null) != null
     },
     {
       for cluster_name, consumer in local.cloudflare_consumers_tunnel : "cluster/${cluster_name}/tunnel" => {
@@ -122,22 +122,22 @@ locals {
       }
     },
     {
-      for name, machine in local.machines : "machine/${name}/a" => {
-        content = local.tailscale_device_ipv4[machine.tailscale_name]
+      for name, tailscale_name in local.tailscale_machine_device_names : "machine/${name}/a" => {
+        content = local.tailscale_device_addresses[tailscale_name].ipv4
         name    = local.machine_fqdns[name]
         type    = "A"
         zone    = local.domains.infrastructure
       }
-      if try(machine.tailscale_name, null) != null
+      if try(local.tailscale_device_addresses[tailscale_name].ipv4, null) != null
     },
     {
-      for name, machine in local.machines : "machine/${name}/aaaa" => {
-        content = local.tailscale_device_ipv6[machine.tailscale_name]
+      for name, tailscale_name in local.tailscale_machine_device_names : "machine/${name}/aaaa" => {
+        content = local.tailscale_device_addresses[tailscale_name].ipv6
         name    = local.machine_fqdns[name]
         type    = "AAAA"
         zone    = local.domains.infrastructure
       }
-      if try(machine.tailscale_name, null) != null
+      if try(local.tailscale_device_addresses[tailscale_name].ipv6, null) != null
     },
   )
 

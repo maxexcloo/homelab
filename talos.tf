@@ -1,5 +1,5 @@
 data "talos_client_configuration" "cluster" {
-  for_each = local.talos_recovery_clusters
+  for_each = local.clusters
 
   cluster_name = each.key
 
@@ -20,7 +20,7 @@ data "talos_client_configuration" "cluster" {
 }
 
 data "talos_image_factory_urls" "cluster" {
-  for_each = local.talos_clusters
+  for_each = local.clusters
 
   architecture  = each.value.image.architecture
   platform      = each.value.image.platform
@@ -47,20 +47,15 @@ locals {
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
       node.address,
-      try(local.tailscale_device_ipv4[local.machines[name].tailscale_name], null),
+      try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
     ])
   }
 
   talos_cluster_endpoints = {
     for name, cluster in local.clusters : name => try(
       cluster.endpoint,
-      "https://${local.machines[cluster.api_node].address}:6443",
+      "https://${local.machine_private_ipv4_addresses[cluster.api_node]}:6443",
     )
-  }
-
-  talos_clusters = {
-    for name, cluster in local.clusters : name => cluster
-    if cluster.talos_enabled
   }
 
   talos_image_factory_schematic_ids = {
@@ -130,7 +125,7 @@ locals {
         name       = "tailscale"
         environment = compact([
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
-          "TS_HOSTNAME=${local.machine_hostnames[name]}",
+          "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },
@@ -143,9 +138,9 @@ locals {
   }
 
   talos_nodes = merge([
-    for cluster_name, cluster in local.talos_clusters : {
+    for cluster_name, cluster in local.clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
-        address                = local.machines[node_name].address
+        address                = local.machine_private_ipv4_addresses[node_name]
         cluster                = cluster_name
         configuration_delivery = try(node.configuration_delivery, null)
         install_disk           = try(node.install_disk, null)
@@ -155,14 +150,6 @@ locals {
       })
     }
   ]...)
-
-  talos_recovery_clusters = {
-    for cluster_name, cluster in local.talos_clusters : cluster_name => cluster
-    if anytrue([
-      for node in values(cluster.nodes) :
-      node.machine_type == "controlplane" && try(node.bootstrap, false)
-    ])
-  }
 
   talos_user_volume_local_path_directory = {
     apiVersion = "v1alpha1"
@@ -187,10 +174,10 @@ locals {
 }
 
 resource "talos_cluster_kubeconfig" "cluster" {
-  for_each = local.talos_recovery_clusters
+  for_each = local.clusters
 
-  endpoint = local.machines[each.value.api_node].address
-  node     = local.machines[each.value.api_node].address
+  endpoint = local.machine_private_ipv4_addresses[each.value.api_node]
+  node     = local.machine_private_ipv4_addresses[each.value.api_node]
 
   client_configuration = {
     ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
@@ -205,7 +192,7 @@ resource "talos_cluster_kubeconfig" "cluster" {
 }
 
 resource "talos_image_factory_schematic" "cluster" {
-  for_each = local.talos_clusters
+  for_each = local.clusters
 
   schematic = yamlencode({
     customization = {
@@ -274,7 +261,7 @@ resource "talos_machine_configuration_apply" "node" {
 }
 
 resource "talos_machine_secrets" "cluster" {
-  for_each = local.talos_clusters
+  for_each = local.clusters
 
   talos_version = each.value.talos_version
 

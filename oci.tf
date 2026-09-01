@@ -16,6 +16,8 @@ data "oci_objectstorage_namespace" "default" {
 }
 
 locals {
+  oci_network_regions = toset([for network in values(local.oci_networks) : network.region])
+
   oci_image_capability_schemas_global = {
     for name, schemas in data.oci_core_compute_global_image_capability_schemas.default :
     name => one(schemas.compute_global_image_capability_schemas)
@@ -32,7 +34,7 @@ locals {
 
   oci_images_talos = {
     for name, cluster in local.clusters : name => cluster
-    if cluster.talos_enabled && cluster.image.platform == "oracle"
+    if cluster.image.platform == "oracle"
   }
 
   oci_ingress_rules_invalid = flatten([
@@ -54,10 +56,8 @@ locals {
 
   oci_instances = {
     for name, machine in local.machines : name => machine
-    if try(machine.provider, null) == "oci" && local.clusters[machine.cluster].talos_enabled
+    if try(machine.provider, null) == "oci"
   }
-
-  oci_network_regions = toset([for network in values(local.oci_networks) : network.region])
 
   oci_network_security_group_rules_egress = merge(
     {
@@ -129,7 +129,7 @@ resource "oci_core_default_dhcp_options" "default" {
   for_each = local.oci_networks
 
   compartment_id             = var.oci_tenancy_ocid
-  display_name               = each.value.display_name
+  display_name               = "${each.key}.${local.domains.infrastructure}"
   manage_default_resource_id = oci_core_vcn.default[each.key].default_dhcp_options_id
 
   options {
@@ -146,7 +146,7 @@ resource "oci_core_default_dhcp_options" "default" {
 resource "oci_core_default_route_table" "default" {
   for_each = local.oci_networks
 
-  display_name               = each.value.display_name
+  display_name               = "${each.key}.${local.domains.infrastructure}"
   manage_default_resource_id = oci_core_vcn.default[each.key].default_route_table_id
 
   route_rules {
@@ -177,7 +177,7 @@ resource "oci_core_image" "talos" {
     bucket_name              = oci_objectstorage_bucket.talos_images[each.key].name
     namespace_name           = data.oci_objectstorage_namespace.default[each.key].namespace
     object_name              = oci_objectstorage_object.talos_image[each.key].object
-    operating_system         = each.value.image.operating_system
+    operating_system         = "Talos"
     operating_system_version = trimprefix(each.value.talos_version, "v")
     source_image_type        = "QCOW2"
     source_type              = "objectStorageTuple"
@@ -206,7 +206,7 @@ resource "oci_core_instance" "node" {
     display_name              = each.key
     hostname_label            = local.machine_hostnames[each.key]
     nsg_ids                   = [oci_core_network_security_group.node[each.key].id]
-    private_ip                = local.machines[each.key].address
+    private_ip                = local.machine_private_ipv4_addresses[each.key]
     subnet_id                 = oci_core_subnet.default[each.value.network].id
   }
 
@@ -269,7 +269,7 @@ resource "oci_core_internet_gateway" "default" {
   for_each = local.oci_networks
 
   compartment_id = var.oci_tenancy_ocid
-  display_name   = each.value.display_name
+  display_name   = "${each.key}.${local.domains.infrastructure}"
   vcn_id         = oci_core_vcn.default[each.key].id
 }
 
@@ -329,7 +329,7 @@ resource "oci_core_subnet" "default" {
 
   cidr_block     = each.value.subnet_cidr
   compartment_id = var.oci_tenancy_ocid
-  display_name   = each.value.display_name
+  display_name   = "${each.key}.${local.domains.infrastructure}"
   dns_label      = each.key
   ipv6cidr_block = each.value.ipv6_enabled ? cidrsubnet(one(oci_core_vcn.default[each.key].ipv6cidr_blocks), 8, 0) : null
   vcn_id         = oci_core_vcn.default[each.key].id
@@ -340,7 +340,7 @@ resource "oci_core_vcn" "default" {
 
   cidr_blocks    = [each.value.cidr]
   compartment_id = var.oci_tenancy_ocid
-  display_name   = each.value.display_name
+  display_name   = "${each.key}.${local.domains.infrastructure}"
   dns_label      = each.value.dns_label
   is_ipv6enabled = each.value.ipv6_enabled
 }

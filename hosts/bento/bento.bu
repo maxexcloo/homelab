@@ -18,6 +18,11 @@ storage:
       contents:
         inline: |
           bento
+  trees:
+    - local: common/etc
+      path: /etc
+    - local: bento/etc
+      path: /etc
 
 systemd:
   units:

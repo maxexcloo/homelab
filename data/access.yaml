@@ -26,6 +26,8 @@ tailscale:
         - tag:router
       "::/0":
         - tag:router
+  default_tag_owners:
+    - group:admin
   groups:
     group:admin:
       - max@excloo.com
@@ -34,22 +36,11 @@ tailscale:
     scopes:
       - auth_keys
       - devices:core
-  tag_owners:
-    tag:appliance:
-      - group:admin
-    tag:backup:
-      - group:admin
-    tag:ephemeral:
-      - group:admin
-    tag:kubernetes:
-      - group:admin
-    tag:router:
-      - group:admin
-    tag:server:
-      - group:admin
-    tag:storage:
-      - group:admin
-    tag:vm:
-      - group:admin
-    tag:workstation:
-      - group:admin
+  tags:
+    - tag:appliance
+    - tag:backup
+    - tag:ephemeral
+    - tag:router
+    - tag:server
+    - tag:storage
+    - tag:vm

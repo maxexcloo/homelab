@@ -1,97 +1,120 @@
 machines:
-  bento:
-    address: 10.0.2.124
-    management_port: 9090
-    network: mbk
-    platform: linux
-    tag: server
-    tailscale_name: bento
-    username: core
-  gateway-mbk:
-    address: 10.0.0.1
-    hostname: gateway
-    management_port: 443
-    network: mbk
-    platform: unifi
-    tag: router
-    tailscale_name: gateway-mbk
-    username: root
-  hass:
-    address: 10.0.0.2
-    mac_address: "84:47:09:67:c8:33"
-    management_port: 443
-    network: mbk
-    platform: haos
-    tag: appliance
-    tailscale_name: hass
-    username: root
-    vlan: default
-  hotdog:
-    management_port: 9090
-    network: fre
-    platform: linux
-    public_ipv4: 199.127.129.143
-    public_ipv6: 2602:f831::4665:8aff:fee1:40ed
-    tag: backup
-    tailscale_name: hotdog
-    username: core
-  hsp:
-    address: 10.20.0.4
-    cluster: syd
-    management_port: 50000
-    network: syd
-    platform: talos
-    provider: oci
-    tag: kubernetes
-    tailscale_name: hsp
-    boot:
-      size_mib: 51200
-    compute:
-      cores: 2
-      memory_mib: 12288
-    oci:
-      assign_public_ip: true
-      shape: VM.Standard.A1.Flex
-      volumes:
-        data:
-          size_mib: 51200
-  kimbap:
-    address: 10.0.0.3
-    mac_address: "c8:ff:bf:01:52:e0"
-    management_port: 8443
-    network: mbk
-    platform: truenas
-    tag: storage
-    tailscale_name: kimbap
-    username: root
-    vlan: default
-  mandu:
-    address: 10.0.0.5
-    mac_address: "c8:ff:bf:0f:9f:d0"
-    network: mbk
-    platform: bazzite
-    tag: workstation
-    tailscale_name: mandu
-    username: max.schaefer
-    vlan: default
-  taco:
-    address: 10.4.0.4
-    cluster: mbk
-    host: kimbap
-    mac_address: "02:74:61:63:6f:01"
-    management_port: 50000
-    network: mbk
-    platform: talos
-    provider: truenas
-    tag: kubernetes
-    tailscale_name: taco
-    vlan: services
-    boot:
-      iso_directory: /mnt/truenas-nvme/virtual-machines
-      pool: truenas-nvme
-      size_mib: 65536
-    compute:
-      cores: 12
-      memory_mib: 32768
-      sockets: 1
-      threads: 1
+  fre:
+    hotdog:
+      management_port: 9090
+      platform: ucore
+      public_ipv4: 199.127.129.143
+      public_ipv6: 2602:f831::4665:8aff:fee1:40ed
+      type: backup
+      username: core
+  mbk:
+    bento:
+      management_port: 9090
+      platform: ucore
+      type: server
+      username: core
+      interfaces:
+        - address: 10.0.0.5
+          mac_address: "c8:ff:bf:0f:9f:d0"
+        - address: null
+          mac_address: "c8:ff:bf:0f:9f:d1"
+    gateway-mbk:
+      hostname: gateway
+      management_port: 443
+      platform: unifi
+      private_ipv4: 10.0.0.1
+      type: router
+      username: root
+    hass:
+      management_port: 443
+      platform: haos
+      type: appliance
+      username: root
+      interfaces:
+        - address: 10.0.0.2
+          mac_address: "84:47:09:67:c8:33"
+    kimbap:
+      management_port: 8443
+      platform: truenas
+      type: storage
+      username: root
+      interfaces:
+        - address: 10.0.0.3
+          mac_address: "c8:ff:bf:01:52:e0"
+          name: eno1
+        - address: 10.4.0.3
+          bridge: br4
+          mac_address: "c8:ff:bf:01:52:e1"
+          name: enp3s0
+    macbook-pro:
+      platform: macos
+      username: max.schaefer
+      interfaces:
+        - address: 10.0.0.76
+          mac_address: "b6:7c:bc:fa:01:50"
+    mandu:
+      platform: bazzite
+      username: max.schaefer
+      interfaces:
+        - address: 10.4.2.127
+          mac_address: "84:47:09:5a:6b:bf"
+        - address: 10.0.2.124
+          mac_address: "84:47:09:5a:6b:bc"
+    nanokvm:
+      platform: nanokvm
+      type: appliance
+      username: root
+      interfaces:
+        - address: 10.0.1.213
+          mac_address: "48:da:35:6d:cb:80"
+      tailscale:
+        network_prefix: false
+    slzb-06m:
+      platform: slzb
+      type: appliance
+      interfaces:
+        - address: 10.0.0.6
+          mac_address: "94:54:c5:eb:3f:90"
+      tailscale:
+        enabled: false
+    steam-deck:
+      platform: steamos
+      username: deck
+      interfaces:
+        - address: 10.0.0.14
+          mac_address: "e8:8d:a6:e2:2a:da"
+    taco:
+      cluster: mbk
+      host: kimbap
+      platform: talos
+      provider: truenas
+      type: vm
+      boot:
+        pool: truenas-nvme
+        size_mib: 65536
+      compute:
+        cores: 12
+        memory_mib: 32768
+        sockets: 1
+        threads: 1
+      interfaces:
+        - address: 10.4.0.4
+          mac_address: "02:74:61:63:6f:01"
+  syd:
+    hsp:
+      cluster: syd
+      platform: talos
+      private_ipv4: 10.20.0.4
+      provider: oci
+      type: vm
+      boot:
+        size_mib: 51200
+      compute:
+        cores: 2
+        memory_mib: 12288
+      oci:
+        assign_public_ip: true
+        shape: VM.Standard.A1.Flex
+        volumes:
+          data:
+            size_mib: 51200
