@@ -91,7 +91,7 @@ machines:
       type: vm
       boot:
         pool: truenas-nvme
-        size_mib: 65536
+        size_mib: 131072
       compute:
         cores: 12
         memory_mib: 32768
