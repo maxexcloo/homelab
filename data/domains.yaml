@@ -2,7 +2,7 @@ cloudflare:
   account_name: excloo
   acme_consumers:
     bento: delegated
-    gateway-mbk: delegated
+    gateway: delegated
     hass: delegated
     hotdog: delegated
     kimbap: direct

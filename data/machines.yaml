@@ -18,8 +18,7 @@ machines:
           mac_address: "c8:ff:bf:0f:9f:d0"
         - address: null
           mac_address: "c8:ff:bf:0f:9f:d1"
-    gateway-mbk:
-      hostname: gateway
+    gateway:
       management_port: 443
       platform: unifi
       private_ipv4: 10.0.0.1
@@ -54,6 +53,7 @@ machines:
           mac_address: "b6:7c:bc:fa:01:50"
     mandu:
       platform: bazzite
+      type: server
       username: max.schaefer
       interfaces:
         - address: 10.4.2.127

@@ -108,15 +108,15 @@ locals {
       for tag in local.access.tailscale.tags : tag => local.access.tailscale.default_tag_owners
     },
     {
-      for name in keys(local.clusters) : "tag:${name}" => concat(local.access.tailscale.default_tag_owners, ["tag:${name}-operator"])
+      for name in keys(local.clusters) : "tag:cluster-${name}" => concat(local.access.tailscale.default_tag_owners, ["tag:cluster-${name}-operator"])
     },
     {
-      for name in keys(local.clusters) : "tag:${name}-operator" => local.access.tailscale.default_tag_owners
+      for name in keys(local.clusters) : "tag:cluster-${name}-operator" => local.access.tailscale.default_tag_owners
     },
   )
 
   tailscale_tags_cluster_all = flatten([
-    for name in keys(local.clusters) : ["tag:${name}", "tag:${name}-operator"]
+    for name in keys(local.clusters) : ["tag:cluster-${name}", "tag:cluster-${name}-operator"]
   ])
 
   tailscale_tags_cluster_conflicting = setintersection(
@@ -147,7 +147,7 @@ resource "tailscale_oauth_client" "kubernetes_operator" {
 
   description = "Cluster ${each.key} Kubernetes operator"
   scopes      = local.access.tailscale.operator.scopes
-  tags        = ["tag:${each.key}-operator"]
+  tags        = ["tag:cluster-${each.key}-operator"]
 
   depends_on = [tailscale_acl.default]
 }
