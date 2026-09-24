@@ -34,8 +34,9 @@ install_config() {
 }
 
 get_note() {
-  op item get --vault "$1" "$2" --format json 2>/dev/null |
-    jq -er 'first(.fields[] | select(.id == "notesPlain")) | .value | select(length > 0)' >"$3"
+  # Vault names containing colons cannot be used in op:// references.
+  op item get "$2" --vault "$1" --format json |
+    jq -er '.fields[] | select(.id == "notesPlain") | .value | select(length > 0)' >"$3" && [[ -s "$3" ]]
 }
 
 clusters=()

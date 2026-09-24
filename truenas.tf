@@ -386,7 +386,7 @@ resource "truenas_vm_device" "cdrom" {
   vm         = tonumber(truenas_vm.virtual_machine[each.value.virtual_machine].id)
 
   lifecycle {
-    # Installation media is bootstrap-only; live Talos upgrades use machine configuration.
+    # Installation media is bootstrap-only; upgrade running nodes with talosctl.
     ignore_changes = [attributes]
   }
 }

@@ -8,22 +8,22 @@ terraform {
   required_providers {
     b2 = {
       source  = "backblaze/b2"
-      version = "0.13.2"
+      version = "0.14.0"
     }
 
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.24.0"
+      version = "5.25.0"
     }
 
     deepmerge = {
       source  = "isometry/deepmerge"
-      version = "1.3.0"
+      version = "1.3.1"
     }
 
     oci = {
       source  = "oracle/oci"
-      version = "8.28.0"
+      version = "9.2.0"
     }
 
     onepassword = {
@@ -33,7 +33,7 @@ terraform {
 
     random = {
       source  = "hashicorp/random"
-      version = "3.9.0"
+      version = "3.9.1"
     }
 
     resend = {
@@ -48,12 +48,12 @@ terraform {
 
     talos = {
       source  = "siderolabs/talos"
-      version = "0.11.0"
+      version = "0.12.0"
     }
 
     truenas = {
       source  = "PjSalty/truenas"
-      version = "2.4.1"
+      version = "3.0.0"
     }
 
     unifi = {

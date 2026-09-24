@@ -1,14 +1,14 @@
 [tools]
-1password-cli = "2.38.1"
+1password-cli = "2.39.0"
 actionlint = "1.7.12"
 "aqua:coreos/butane" = "0.29.0"
 jq = "1.8.2"
-kubectl = "1.36.4"
+kubectl = "1.37.0"
 opentofu = "1.12.6"
-prek = "0.4.14"
-prettier = "3.9.6"
+prek = "0.5.3"
+prettier = "3.9.8"
 shellcheck = "0.11.0"
-talosctl = "1.13.9"
+talosctl = "1.14.1"
 yq = "4.53.6"
 
 [env]
@@ -70,16 +70,22 @@ description = "Sync workstation kubeconfig and talosconfig from 1Password"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
 
 [tasks.ignition]
-description = "Render complete uCore Ignition configurations"
-run = "scripts/render_ignition.sh"
+description = "Render all uCore Ignition configurations with Butane"
+run = '''
+output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
+mkdir -p "${output_directory}"
+for config in hosts/*/*.bu; do
+  butane --files-dir hosts --pretty --strict --output "${output_directory}/$(basename "${config}" .bu).ign" "${config}"
+done
+'''
 
 [tasks.prepare-oci-image]
-description = "Download and convert the Talos Oracle image archive"
+description = "Download a Talos QCOW2 image from Image Factory"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- scripts/prepare_oci_image.sh"
 
 [tasks.ssh-config]
 description = "Install the non-secret homelab SSH include"
-run = "scripts/render_ssh_config.sh ${HOME}/.ssh/config.d/homelab"
+run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
 [tasks.init]

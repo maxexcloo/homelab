@@ -22,10 +22,11 @@ data "talos_client_configuration" "cluster" {
 data "talos_image_factory_urls" "cluster" {
   for_each = local.clusters
 
-  architecture  = each.value.image.architecture
-  platform      = each.value.image.platform
-  schematic_id  = local.talos_image_factory_schematic_ids[each.key]
-  talos_version = each.value.talos_version
+  architecture      = each.value.image.architecture
+  disk_image_format = each.value.image.platform == "oracle" ? "qcow2" : null
+  platform          = each.value.image.platform
+  schematic_id      = local.talos_image_factory_schematic_ids[each.key]
+  talos_version     = each.value.talos_version
 }
 
 data "talos_machine_configuration" "node" {
@@ -189,6 +190,8 @@ resource "talos_cluster_kubeconfig" "cluster" {
     create = "10m"
     update = "10m"
   }
+
+  depends_on = [talos_machine_bootstrap.control_plane]
 }
 
 resource "talos_image_factory_schematic" "cluster" {

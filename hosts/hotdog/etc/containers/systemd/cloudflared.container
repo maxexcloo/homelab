@@ -2,12 +2,11 @@
 Description=Cloudflare Tunnel
 
 [Container]
-Image=docker.io/cloudflare/cloudflared:latest
+Image=docker.io/cloudflare/cloudflared:2026.9.1
 ContainerName=cloudflared
 Network=host
 EnvironmentFile=/etc/cloudflared/cloudflared.env
 Exec=tunnel --no-autoupdate run
-AutoUpdate=registry
 
 [Service]
 Restart=always

@@ -117,6 +117,8 @@ system, and purpose labels.
 ## Style
 
 - Prefer plain, direct HCL over abstractions and generic pipelines.
+- Prefer native tool features over custom scripts. Keep scripts only for
+  repository-specific glue, and keep Deepmerge for nested Talos configuration.
 - Put `for_each` first in every HCL block that uses it, followed by a blank line.
 - In mixed HCL files, order data sources, then locals, then resources; sort
   each group alphabetically by address.

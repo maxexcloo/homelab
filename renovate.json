@@ -3,7 +3,33 @@
   "dependencyDashboard": false,
   "extends": ["config:recommended", ":enablePreCommit"],
   "ignoreDeps": ["hashicorp/terraform"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes/kubernetes",
+      "managerFilePatterns": ["/^data/clusters\\.yaml$/"],
+      "matchStrings": ["kubernetes_version: (?<currentValue>v[0-9.]+)"]
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "siderolabs/talos",
+      "managerFilePatterns": ["/^data/clusters\\.yaml$/"],
+      "matchStrings": ["talos_version: (?<currentValue>v[0-9.]+)"]
+    }
+  ],
   "packageRules": [
+    {
+      "description": "Keep Kubernetes CLI and cluster versions together",
+      "groupName": "Kubernetes",
+      "matchPackageNames": ["kubernetes/kubernetes"]
+    },
+    {
+      "description": "Keep Talos CLI and cluster versions together",
+      "groupName": "Talos",
+      "matchPackageNames": ["siderolabs/talos"]
+    },
     {
       "description": "Resolve OpenTofu providers from the OpenTofu registry",
       "matchDatasources": ["terraform-provider"],
