@@ -2,14 +2,8 @@ data "tailscale_devices" "all" {}
 
 locals {
   tailscale_cluster_devices_by_hostname = {
-    for hostname in toset([
-      for device in data.tailscale_devices.all.devices : device.hostname
-      if contains(keys(local.clusters), device.hostname)
-    ]) :
-    hostname => [
-      for device in data.tailscale_devices.all.devices : device
-      if device.hostname == hostname
-    ]
+    for device in data.tailscale_devices.all.devices : device.hostname => device...
+    if can(local.clusters[device.hostname])
   }
 
   tailscale_device_addresses = {
@@ -25,8 +19,8 @@ locals {
     }
   }
 
-  tailscale_device_current_by_name = {
-    for name, devices in local.tailscale_devices_by_name :
+  tailscale_devices = {
+    for name, devices in merge(local.tailscale_devices_by_name, local.tailscale_cluster_devices_by_hostname) :
     name => one([
       for device in devices : device
       if "${device.last_seen}|${device.id}" == element(
@@ -35,20 +29,6 @@ locals {
       )
     ])
   }
-
-  tailscale_devices = merge(
-    local.tailscale_device_current_by_name,
-    {
-      for hostname, devices in local.tailscale_cluster_devices_by_hostname :
-      hostname => one([
-        for device in devices : device
-        if "${device.last_seen}|${device.id}" == element(
-          sort([for candidate in devices : "${candidate.last_seen}|${candidate.id}"]),
-          length(devices) - 1,
-        )
-      ])
-    },
-  )
 
   tailscale_devices_by_name = {
     for device in data.tailscale_devices.all.devices :
@@ -63,8 +43,8 @@ locals {
   tailscale_machine_device_names = {
     for machine_name, desired_name in local.machine_tailscale_names :
     machine_name => (
-      can(local.tailscale_device_current_by_name[desired_name]) ? desired_name :
-      can(local.tailscale_device_current_by_name[machine_name]) ? machine_name :
+      can(local.tailscale_devices_by_name[desired_name]) ? desired_name :
+      can(local.tailscale_devices_by_name[machine_name]) ? machine_name :
       desired_name
     )
   }
@@ -160,7 +140,7 @@ resource "tailscale_tailnet_key" "server" {
   preauthorized       = true
   recreate_if_invalid = "always"
   reusable            = false
-  tags                = try(each.value.type, null) != null ? ["tag:${each.value.type}"] : []
+  tags                = ["tag:${each.value.type}"]
 
   depends_on = [tailscale_acl.default]
 }

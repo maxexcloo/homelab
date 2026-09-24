@@ -163,6 +163,7 @@ resource "onepassword_item" "kubeconfig" {
   vault         = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 
   note_value_wo_version = parseint(substr(sha256(jsonencode({
+    client_certificate = talos_cluster_kubeconfig.cluster[each.key].kubernetes_client_configuration.client_certificate
     endpoint           = local.machine_private_ipv4_addresses[each.value.api_node]
     machine_secrets_id = talos_machine_secrets.cluster[each.key].id
   })), 0, 15), 16)
