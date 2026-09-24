@@ -70,37 +70,9 @@ locals {
   }
 
   talos_machine_configuration_documents = {
-    for name, node in local.talos_nodes : name => [
+    for name, node in local.talos_nodes : name => concat([
       provider::deepmerge::mergo(
-        {
-          cluster = {
-            allowSchedulingOnControlPlanes = true
-            network = {
-              cni = {
-                name = "none"
-              }
-              podSubnets     = [local.clusters[node.cluster].pod_subnet]
-              serviceSubnets = [local.clusters[node.cluster].service_subnet]
-            }
-          }
-          machine = {
-            features = {
-              hostDNS = {
-                enabled              = true
-                forwardKubeDNSToHost = true
-                resolveMemberNames   = true
-              }
-            }
-          }
-        },
-        node.install_disk != null ? {
-          machine = {
-            install = {
-              disk  = node.install_disk
-              image = data.talos_image_factory_urls.cluster[node.cluster].urls.installer
-            }
-          }
-        } : {},
+        {},
         length(node.sysctls) > 0 ? {
           machine = {
             sysctls = node.sysctls
@@ -114,6 +86,33 @@ locals {
           }
         } : {},
       ),
+      {
+        apiVersion = "v1alpha1"
+        kind       = "KubeFlannelCNIConfig"
+        "$patch"   = "delete"
+      },
+      {
+        apiVersion     = "v1alpha1"
+        kind           = "KubeNetworkConfig"
+        podSubnets     = [local.clusters[node.cluster].pod_subnet]
+        serviceSubnets = [local.clusters[node.cluster].service_subnet]
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "KubeNodeConfig"
+        taints = {
+          "$patch" = "delete"
+        }
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "ResolverConfig"
+        hostDNS = {
+          enabled              = true
+          forwardKubeDNSToHost = true
+          resolveMemberNames   = true
+        }
+      },
       {
         apiVersion = "v1alpha1"
         kind       = "HostnameConfig"
@@ -135,7 +134,18 @@ locals {
         yamlencode(local.talos_user_volume_local_path_partition) :
         yamlencode(local.talos_user_volume_local_path_directory)
       ),
-    ]
+      ], node.install_disk != null ? [{
+        apiVersion = "v1alpha1"
+        kind       = "UnattendedInstallConfig"
+        installer = {
+          image = data.talos_image_factory_urls.cluster[node.cluster].urls.installer
+        }
+        provisioning = {
+          diskSelector = {
+            match = "disk.dev_path == ${jsonencode(node.install_disk)}"
+          }
+        }
+    }] : [])
   }
 
   talos_nodes = merge([
@@ -233,7 +243,7 @@ resource "talos_machine_bootstrap" "control_plane" {
 resource "talos_machine_configuration_apply" "node" {
   for_each = local.talos_nodes
 
-  apply_mode                     = "staged_if_needing_reboot"
+  apply_mode                     = "no_reboot"
   endpoint                       = each.value.configuration_delivery == "metadata" ? oci_core_instance.node[each.key].private_ip : each.value.address
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
