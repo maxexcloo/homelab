@@ -30,4 +30,4 @@ jobs:
       - name: Initialise providers
         run: mise run init-ci
       - name: Run hooks
-        run: mise run prek
+        run: mise run check

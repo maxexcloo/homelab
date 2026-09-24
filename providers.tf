@@ -9,5 +9,7 @@ provider "truenas" {
   for_each = local.truenas_hosts
 
   alias              = "hosts"
+  api_key            = var.truenas_connections[each.key].api_key
   destroy_protection = true
+  url                = var.truenas_connections[each.key].url
 }

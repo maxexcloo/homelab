@@ -97,10 +97,10 @@ locals {
   }
 
   cloudflare_consumers_waf = {
-    for name in keys(local.cloudflare.acme_consumers) : name => {
+    for name in keys(local.clusters) : name => {
       title = "Cloudflare WAF: ${name}"
       zones = local.cloudflare.waf_zones
-    } if can(local.clusters[name])
+    }
   }
 
   cloudflare_tunnel_route_entries = flatten([
@@ -360,13 +360,6 @@ resource "terraform_data" "waf_validation" {
   input = sort(keys(local.cloudflare_consumers_waf))
 
   lifecycle {
-    precondition {
-      condition = alltrue([
-        for name in keys(local.clusters) : contains(keys(local.cloudflare.acme_consumers), name)
-      ])
-      error_message = "Every cluster must be a Cloudflare ACME consumer before it receives a WAF credential."
-    }
-
     precondition {
       condition     = length(local.cloudflare.waf_zones) > 0 && length(distinct(local.cloudflare.waf_zones)) == length(local.cloudflare.waf_zones)
       error_message = "Cloudflare WAF must have at least one unique zone."

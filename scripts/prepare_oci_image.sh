@@ -32,8 +32,10 @@ case "${archive_name}" in
   *.raw.xz) image_name="${archive_name%.raw.xz}.qcow2" ;;
   *) echo "error: unsupported image archive: ${archive_name}" >&2; exit 1 ;;
 esac
-image_path="${cache_dir}/${image_name}"
-mkdir -p "${cache_dir}"
+read -r image_hash _ < <(printf '%s' "${image_url}" | shasum -a 256)
+image_directory="${cache_dir}/images/${image_hash}"
+image_path="${image_directory}/${image_name}"
+mkdir -p "${image_directory}"
 work_dir="$(mktemp -d "${cache_dir}/prepare.XXXXXX")"
 trap 'rm -rf -- "${work_dir}"' EXIT
 curl --fail --location --retry 3 --output "${work_dir}/download" "${image_url}"

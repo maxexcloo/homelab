@@ -15,7 +15,7 @@ Both clusters have a single control-plane node. Allow for outages during upgrade
 
 ## Quick Start
 
-Install [Mise](https://mise.jdx.dev/) and the 1Password desktop app; `curl` must
+Install [Mise](https://mise.jdx.dev/) and the 1Password desktop app; `curl` and `shasum` must
 also be available. In 1Password, enable **Settings > Developer > Integrate with
 1Password CLI** and Touch ID under **Settings > Security**.
 
@@ -33,30 +33,52 @@ It creates the `Homelab/OpenTofu` item schema if missing; populate every field
 and rerun setup if it does. Existing items are left untouched.
 
 Credential-consuming tasks resolve that item's complete provider environment
-through desktop authorisation. Connect credentials reach only the OpenTofu
-subprocess. CI validates configuration; plans and applies run locally and require
-review of the exact plan and explicit approval.
+through desktop authorisation. Resolved values are inherited by the task and its
+children, including the image preparation script. Connect credentials use
+underscore-prefixed names until the OpenTofu wrapper exports `OP_CONNECT_HOST`
+and `OP_CONNECT_TOKEN`; they are not resolved in the parent shell.
+CI validates configuration; plans and applies run locally and require review of
+the exact plan and explicit approval.
+
+TrueNAS connections are stored as JSON in the concealed `truenas_connections`
+field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
+
+```json
+{
+  "kimbap": {
+    "api_key": "<API key>",
+    "url": "https://<TrueNAS API endpoint>"
+  }
+}
+```
+
+For an existing OpenTofu item, add this field manually using the existing
+`truenas_api_key` and `truenas_url` values for `kimbap`, then remove the old fields.
+Setup leaves existing items untouched. Add one connection entry per TrueNAS host;
+provider aliases remain keyed by machine name.
 
 ### Common Tasks
 
-| Task                             | Purpose                                                  |
-| -------------------------------- | -------------------------------------------------------- |
-| `mise run apply`                 | Review the presented plan and apply approved changes     |
-| `mise run check`                 | Run all repository checks; `mise run prek` is equivalent |
-| `mise run client-configs`        | Sync Kubernetes and Talos client configurations          |
-| `mise run fmt`                   | Format repository files                                  |
-| `mise run ignition`              | Render uCore installation files                          |
-| `mise run init`                  | Initialise providers and the remote backend              |
-| `mise run plan`                  | Preview infrastructure changes                           |
-| `mise run prepare-oci-image syd` | Download the Talos OCI image                             |
-| `mise run setup`                 | Set up the workstation                                   |
-| `mise run ssh-config`            | Install SSH aliases                                      |
+| Task                             | Purpose                                              |
+| -------------------------------- | ---------------------------------------------------- |
+| `mise run apply`                 | Review the presented plan and apply approved changes |
+| `mise run check`                 | Run all repository checks                            |
+| `mise run client-configs`        | Sync Kubernetes and Talos client configurations      |
+| `mise run fmt`                   | Format repository files                              |
+| `mise run ignition`              | Render uCore installation files                      |
+| `mise run init`                  | Initialise providers and the remote backend          |
+| `mise run plan`                  | Preview infrastructure changes                       |
+| `mise run prepare-oci-image syd` | Download the Talos OCI image                         |
+| `mise run setup`                 | Set up the workstation                               |
+| `mise run ssh-config`            | Install SSH aliases                                  |
 
 For credential-free validation on a fresh checkout, run `mise run init-ci` before
 `mise run check`. Provider updates require reinitialisation with `mise run init`.
 
 Commit hooks check relevant changed files. Full checks and CI run the same hook
-suite, including validation of embedded Butane inputs.
+suite, including validation of embedded Butane inputs. These are offline checks;
+OpenTofu preconditions and live provider compatibility still need a requested
+plan. Passing `check` does not establish that an apply is safe.
 
 ### Workstation Access
 
@@ -90,7 +112,7 @@ file contains its own lookups, derived values and direct provider resources.
 ## Substrate
 
 - **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, Cloudflare Tunnels, stable external-service records and the webhook-only HAOS tunnel route; application DNS remains workload-owned in `kubelab`.
-- **Mesh & Access**: Server login items with management or SSH URLs, Tailscale ACL policies and host recovery keys, and Kubernetes operator OAuth clients. Tagged devices share a full Tailscale mesh, while admin identities can reach the full tailnet and use approved exit nodes.
+- **Mesh & Access**: Server login items with management or SSH URLs, Tailscale grants and host recovery keys, and Kubernetes operator OAuth clients. Tagged devices share a full Tailscale mesh, while admin identities can reach the full tailnet and use approved exit nodes.
 - **Networking**: Validate existing UniFi VLANs and manage static DHCP reservations for retained appliances and VMs.
 - **Secrets**: 1Password items in `Homelab`, `Cluster: mbk` and `Cluster: syd`.
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
@@ -99,6 +121,18 @@ Each cluster vault receives B2, Cloudflare WAF and Resend control credentials,
 plus an empty Control D item whose password must be populated manually. Items
 use unqualified titles and the `Homelab` tag. After Connect bootstrap, External
 Secrets delivers them to `kubelab` for application integrations.
+
+Managed 1Password password and note versions use timestamps captured when their
+non-secret identity or configuration fingerprint changes. The pinned provider
+requires an increasing write-only version; a content hash alone cannot guarantee
+that. The version offset keeps timestamps above the previously used fingerprints.
+Separate tracking resources preserve dependency ordering, including writing Talos
+recovery material before configuring nodes. Retain this tracking across rotations.
+The manually populated Control D password stays at version zero.
+
+The first apply after adopting timestamp tracking republishes the affected values
+and generates new machine-login passwords. Review these item updates in the plan;
+updating a login item does not change the corresponding host's password.
 
 B2 credentials cannot directly access object data or delete buckets, but their
 `writeKeys` capability can mint broader keys and is effectively full-account
@@ -161,6 +195,9 @@ to `mise run prepare-oci-image` instead. Select the architecture, version and
 extensions from `data/clusters.yaml`. Every installation apply needs its own
 reviewed plan; there is no automatic bootstrap apply.
 
+Prepared images are cached under a SHA-256 hash of their URL, keeping different
+versions and schematics separate even when their filenames match.
+
 Image Factory supplies QCOW2 directly. Other raw image URLs require `qemu-img`
 and the appropriate `gzip` or `xz` decompressor for local conversion.
 
@@ -189,10 +226,14 @@ talosctl --context <cluster> --nodes <node-ip> upgrade-k8s --to <kubernetes-vers
 kubectl --context <cluster> get nodes -o wide
 ```
 
-Changing desired versions or `machine.install.image` does not upgrade a running
+Changing desired versions or the installer image does not upgrade a running
 node. Installation media is bootstrap-only, and existing `clusters` outputs may
 still contain the previous installer image. Obtain the desired image from Image
 Factory; do not substitute an ordinary apply for the upgrade sequence.
+
+Machine configuration uses Talos 1.14 documents for DNS, Kubernetes networking
+and node scheduling. Configuration applies use `no_reboot`; changes requiring a
+reboot must be handled separately during an approved maintenance window.
 
 ### Dependency Updates
 

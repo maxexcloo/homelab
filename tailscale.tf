@@ -50,8 +50,6 @@ locals {
   }
 
   tailscale_policy = {
-    acls = local.access.tailscale.acls
-
     autoApprovers = {
       exitNode = local.access.tailscale.auto_approvers.exit_node
       routes = merge(
@@ -60,8 +58,8 @@ locals {
       )
     }
 
-    groups = local.access.tailscale.groups
-
+    grants    = local.access.tailscale.grants
+    groups    = local.access.tailscale.groups
     tagOwners = local.tailscale_tag_owners
   }
 

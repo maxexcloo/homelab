@@ -6,18 +6,6 @@ ssh:
   identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
 tailscale:
   key_expiry_seconds: 7776000
-  acls:
-    - action: accept
-      dst:
-        - "autogroup:tagged:*"
-      src:
-        - autogroup:tagged
-    - action: accept
-      dst:
-        - "*:*"
-        - "autogroup:internet:*"
-      src:
-        - group:admin
   auto_approvers:
     exit_node:
       - tag:router
@@ -28,6 +16,20 @@ tailscale:
         - tag:router
   default_tag_owners:
     - group:admin
+  grants:
+    - dst:
+        - autogroup:tagged
+      ip:
+        - "*"
+      src:
+        - autogroup:tagged
+    - dst:
+        - "*"
+        - autogroup:internet
+      ip:
+        - "*"
+      src:
+        - group:admin
   groups:
     group:admin:
       - max@excloo.com

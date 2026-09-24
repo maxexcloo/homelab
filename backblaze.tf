@@ -1,6 +1,5 @@
 locals {
   b2_clusters = toset(keys(local.clusters))
-
   b2_endpoint = try(local.storage.backblaze.endpoint, null)
 
   b2_application_key_capabilities_cluster = [

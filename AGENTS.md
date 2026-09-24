@@ -8,9 +8,6 @@ Flux.
 
 ## Conventions
 
-- Treat this repository as authoritative for substrate details and
-  `kubelab` as authoritative for Kubernetes resources and app-scoped
-  integrations.
 - Use Australian English in project-owned prose and identifiers.
 - Use `.yaml`, not `.yml`, for project-owned YAML.
 - Pin tools and providers to stable release versions. Use readable major tags
@@ -21,8 +18,9 @@ Flux.
   `Homelab` vault. Let local setup create its schema when missing, but never
   manage it with OpenTofu. Resolve its tracked `op://` references only through
   credential-consuming Mise tasks authenticated by the 1Password desktop app.
-  Keep the Connect host and token out of the parent environment and expose them
-  as `OP_CONNECT_HOST` and `OP_CONNECT_TOKEN` only to the OpenTofu subprocess.
+  Keep resolved credentials out of the parent shell. Credential-consuming task
+  children inherit them; export the standard Connect variable names only in the
+  OpenTofu wrapper.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
 - Never change live infrastructure without explicit approval and review of the
   OpenTofu plan presented for that apply.
@@ -55,7 +53,8 @@ Do not create a documentation directory or additional Markdown files.
 - Use stable resource names and `for_each` keys; never identify resources by
   list position.
 - Derive resource membership and `for_each` keys only from configuration known
-  before apply, never from provider-generated or rendered values.
+  before apply, never from values produced during apply. Infrastructure DNS may
+  use Tailscale device discovery when its results are known during planning.
 - Normalise optional input once, use descriptive comprehension names, and add a
   helper local only when it names a useful concept or removes real duplication.
 - Use `one()` only for a true singleton. Use `can(map[key])` for relationship
@@ -69,14 +68,14 @@ Do not create a documentation directory or additional Markdown files.
 - Never migrate, import, move, or remove state as part of an unrelated resource
   change.
 - Never migrate a backend except through its separately reviewed procedure.
-- Never confirm `tofu apply` without reviewing the exact plan it presents.
 - Do not make routine destroy operations reset Talos nodes or retained
   substrate.
 - Read only the secret fields a provider consumer needs, prefer write-only
   arguments where supported, and mark every credential-bearing output
   sensitive.
-- Derive write-only version arguments for generated secrets from non-secret
-  content fingerprints; never require manual revision counters.
+- Follow the pinned provider's write-only version semantics. The 1Password
+  provider requires strictly increasing versions for updates; use automatic
+  tracking triggered by non-secret identity or content changes, not manual counters.
 - Let the 1Password vault carry scope. Omit tags from items in the `Homelab`
   vault and tag Homelab-created items in cluster vaults only with `Homelab`.
   Use human-readable display names for titles, omit cluster names from titles
@@ -85,34 +84,19 @@ Do not create a documentation directory or additional Markdown files.
 
 ## Sorting Convention
 
-Sort unordered assignments in this order:
+Sort unordered mappings recursively: single-line values first, then multi-line
+values, alphabetically within each group; underscore-prefixed keys come first.
+Non-empty YAML containers are multi-line. Scalar-only JSON arrays are single-line.
+Let `tofu fmt` determine HCL layout.
 
-1. Single-line values, alphabetically by key.
-2. Multi-line values, alphabetically by key.
+List identifiers lead in `type`, `name`, `id` order; Prek hooks use `id`, then
+`name`. Sort Mise tools and lifecycle tasks alphabetically, Renovate rules by
+description, and hooks by ID. Workflow keys start with `name`, `on`, `permissions`,
+`concurrency`, then global configuration and `jobs`.
 
-Underscore-prefixed names sort before other names. Non-empty YAML mappings and
-sequences are multi-line; empty containers are single-line. A scalar-only JSON
-array is single-line even when formatting wraps it, while an array containing an
-object or array is multi-line. Apply this recursively to unordered project-owned
-YAML, TOML, JSON, environment blocks, and template argument objects. Do not add
-blank lines based only on value shape. Let `tofu fmt` determine HCL layout and
-retain readable grouping there.
-
-List-item identifiers come first in `type`, `name`, `id` order. Prek hook items
-use `id`, then `name`; sort remaining fields normally.
-
-Sort Mise tools alphabetically and tasks alphabetically within each lifecycle
-section. Sort Renovate package rules by description and Prek hooks by `id`.
-GitHub workflows use top-level `name`, `on`, `permissions`, `concurrency`, then
-global configuration and `jobs`. Preserve dependency order within workflow
-steps.
-
-Sort unordered peer headings, lists, and table rows alphabetically. Preserve
-API, schema, interface, procedural, dependency, routing, priority,
-chronological, and other meaningful order.
-
-Sort unordered tags alphabetically and keep them limited to useful scope,
-system, and purpose labels.
+Sort unordered prose lists, table rows and tags alphabetically. Preserve meaningful
+procedural, dependency, interface, routing and priority order. Keep tags limited to
+useful scope, system and purpose labels.
 
 ## Style
 
@@ -120,6 +104,8 @@ system, and purpose labels.
 - Prefer native tool features over custom scripts. Keep scripts only for
   repository-specific glue, and keep Deepmerge for nested Talos configuration.
 - Put `for_each` first in every HCL block that uses it, followed by a blank line.
+- Keep `depends_on` in its own group, separated from other arguments and blocks
+  by blank lines.
 - In mixed HCL files, order data sources, then locals, then resources; sort
   each group alphabetically by address.
 - Keep comments local and specific.
@@ -129,7 +115,6 @@ system, and purpose labels.
 ## Verification
 
 - Run `mise run check` before handoff.
-- Run `mise run prek` after changing hooks or workflows.
 - Run plans only when requested or immediately before an explicitly approved
   apply.
 

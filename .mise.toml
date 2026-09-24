@@ -26,8 +26,7 @@ TAILSCALE_OAUTH_CLIENT_SECRET = "op://Homelab/OpenTofu/tailscale_oauth_client_se
 TAILSCALE_TAILNET = "op://Homelab/OpenTofu/tailscale_tailnet"
 TF_VAR_oci_private_key_base64 = "op://Homelab/OpenTofu/oci_private_key_base64"
 TF_VAR_oci_tenancy_ocid = "op://Homelab/OpenTofu/oci_tenancy_ocid"
-TRUENAS_API_KEY = "op://Homelab/OpenTofu/truenas_api_key"
-TRUENAS_URL = "op://Homelab/OpenTofu/truenas_url"
+TF_VAR_truenas_connections = "op://Homelab/OpenTofu/truenas_connections"
 UNIFI_API = "op://Homelab/OpenTofu/unifi_api"
 UNIFI_API_KEY = "op://Homelab/OpenTofu/unifi_api_key"
 
@@ -51,10 +50,6 @@ run = """
 prettier --write .
 tofu fmt -recursive
 """
-
-[tasks.prek]
-description = "Run all repository hooks"
-run = "prek run --all-files"
 
 # Scripts
 [tasks.client-configs]

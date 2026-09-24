@@ -16,6 +16,11 @@ cloudflare:
       - excloo.com
       - excloo.dev
   tunnel_consumers:
+    hotdog: {}
+    kimbap: {}
+    mandu: {}
+    mbk: {}
+    syd: {}
     hass:
       fallback_service: http_status:404
       ingress:
@@ -25,11 +30,6 @@ cloudflare:
           zone: excloo.com
           origin_request:
             no_tls_verify: true
-    hotdog: {}
-    kimbap: {}
-    mandu: {}
-    mbk: {}
-    syd: {}
   waf_zones:
     - excloo.com
 domains:

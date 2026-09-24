@@ -38,13 +38,13 @@ machines:
       type: storage
       username: root
       interfaces:
-        - address: 10.0.0.3
+        - name: eno1
+          address: 10.0.0.3
           mac_address: "c8:ff:bf:01:52:e0"
-          name: eno1
-        - address: 10.4.0.3
+        - name: enp3s0
+          address: 10.4.0.3
           bridge: br4
           mac_address: "c8:ff:bf:01:52:e1"
-          name: enp3s0
     macbook-pro:
       platform: macos
       username: max.schaefer

@@ -30,8 +30,7 @@ op item create \
   "tailscale_oauth_client_id[text]=" \
   "tailscale_oauth_client_secret[password]=" \
   "tailscale_tailnet[text]=" \
-  "truenas_api_key[password]=" \
-  "truenas_url[url]=" \
+  "truenas_connections[password]=" \
   "unifi_api[url]=" \
   "unifi_api_key[password]=" \
   >/dev/null

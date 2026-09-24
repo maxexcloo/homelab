@@ -1,17 +1,11 @@
 locals {
-  access = yamldecode(file("${path.module}/data/access.yaml"))
-
-  clusters = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
-
+  access                          = yamldecode(file("${path.module}/data/access.yaml"))
+  clusters                        = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
   configuration_dns_label_pattern = "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
-
-  domains = yamldecode(file("${path.module}/data/domains.yaml")).domains
-
-  machines_by_network = yamldecode(file("${path.module}/data/machines.yaml")).machines
-
-  networks = yamldecode(file("${path.module}/data/networks.yaml")).networks
-
-  storage = yamldecode(file("${path.module}/data/storage.yaml"))
+  domains                         = yamldecode(file("${path.module}/data/domains.yaml")).domains
+  machines_by_network             = yamldecode(file("${path.module}/data/machines.yaml")).machines
+  networks                        = yamldecode(file("${path.module}/data/networks.yaml")).networks
+  storage                         = yamldecode(file("${path.module}/data/storage.yaml"))
 
   machine_cluster_names_duplicate = setintersection(
     toset(keys(local.machines)),
@@ -253,7 +247,7 @@ resource "terraform_data" "configuration_validation" {
 
     precondition {
       condition = alltrue([
-        for machine in values(local.machines) : try(machine.management_port, null) == null || try(machine.management_port >= 1 && machine.management_port <= 65535, false)
+        for machine in values(local.machines) : try(machine.management_port, null) == null || try(machine.management_port >= 1 && machine.management_port <= 65535 && floor(machine.management_port) == machine.management_port, false)
       ])
       error_message = "Machine management ports must be integers from 1 to 65535."
     }
@@ -292,6 +286,5 @@ resource "terraform_data" "configuration_validation" {
       ])
       error_message = "Network names must be valid lowercase DNS labels."
     }
-
   }
 }

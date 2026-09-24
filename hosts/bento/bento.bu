@@ -9,12 +9,12 @@ passwd:
 
 storage:
   directories:
-    - path: /etc/ucore-autorebase
-      mode: 0754
+    - mode: 0754
+      path: /etc/ucore-autorebase
   files:
-    - path: /etc/hostname
-      mode: 0644
+    - mode: 0644
       overwrite: true
+      path: /etc/hostname
       contents:
         inline: |
           bento
