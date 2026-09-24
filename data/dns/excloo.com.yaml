@@ -30,7 +30,7 @@ records:
     content: in2-smtp.messagingengine.com
     priority: 20
   - type: TXT
-    name: "@"
+    name: _dmarc
     id: txt-apex-dmarc
     content: '"v=DMARC1; p=none;"'
   - type: TXT
