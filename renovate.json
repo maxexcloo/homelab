@@ -21,6 +21,18 @@
   ],
   "packageRules": [
     {
+      "description": "Batch routine development tool updates weekly",
+      "groupName": "development tools",
+      "matchManagers": ["github-actions", "mise", "pre-commit"],
+      "matchPackageNames": [
+        "!kubernetes/kubernetes",
+        "!opentofu/opentofu",
+        "!siderolabs/talos"
+      ],
+      "matchUpdateTypes": ["digest", "minor", "patch", "pin"],
+      "schedule": ["* * * * 1"]
+    },
+    {
       "description": "Keep Kubernetes CLI and cluster versions together",
       "groupName": "Kubernetes",
       "matchPackageNames": ["kubernetes/kubernetes"]

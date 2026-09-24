@@ -19,11 +19,41 @@ repos:
       - id: check-github-workflows
         files: ^\.github/workflows/.*\.yaml$
       - id: check-renovate
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
   - repo: local
     hooks:
-      - id: project-check
-        name: Check project source
-        always_run: true
-        entry: mise run check
+      - id: butane
+        name: Check host configurations
+        entry: mise exec -- sh -c 'for file in hosts/*/*.bu; do butane --files-dir hosts --strict "$file" >/dev/null || exit; done'
+        files: ^hosts/
+        language: system
+        pass_filenames: false
+      - id: prettier
+        name: Check formatting
+        entry: mise exec -- prettier --check --ignore-unknown
+        language: system
+        require_serial: true
+        types:
+          - text
+      - id: shellcheck
+        name: Check shell scripts
+        entry: mise exec -- shellcheck
+        language: system
+        require_serial: true
+        types:
+          - shell
+      - id: tofu-fmt
+        name: Check OpenTofu formatting
+        entry: mise exec -- tofu fmt -check
+        files: \.tf$
+        language: system
+        require_serial: true
+      - id: tofu-validate
+        name: Validate OpenTofu configuration
+        entry: mise exec -- tofu validate
+        files: (\.tf$|^\.terraform\.lock\.hcl$|^data/)
         language: system
         pass_filenames: false

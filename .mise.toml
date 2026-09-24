@@ -1,6 +1,5 @@
 [tools]
 1password-cli = "2.39.0"
-actionlint = "1.7.12"
 "aqua:coreos/butane" = "0.29.0"
 jq = "1.8.2"
 kubectl = "1.37.0"
@@ -43,15 +42,8 @@ run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CON
 
 # Development
 [tasks.check]
-description = "Check formatting and infrastructure configuration"
-run = """
-actionlint .github/workflows/*.yaml
-for file in hosts/*/*.bu; do butane --files-dir hosts --strict "${file}" >/dev/null; done
-prettier --check .
-shellcheck hosts/*/etc/NetworkManager/dispatcher.d/* scripts/*.sh
-tofu fmt -check -recursive
-tofu validate
-"""
+description = "Run all repository checks"
+run = "prek run --all-files"
 
 [tasks.fmt]
 description = "Format project files"

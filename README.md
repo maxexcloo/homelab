@@ -1,22 +1,26 @@
 # Homelab
 
-Homelab infrastructure and Talos Kubernetes cluster substrate managed with OpenTofu.
-In-cluster Kubernetes resources and platform workloads live in the separate `kubelab`
-repository reconciled by Flux.
+OpenTofu manages the infrastructure needed to rebuild and reach the homelab's
+Talos Kubernetes clusters. The separate `kubelab` repository owns Kubernetes
+resources and application integrations, reconciled by Flux.
 
 ## Clusters
 
-- **`mbk`**: Single-node Talos Kubernetes substrate running as a virtual machine on
-  TrueNAS (`kimbap`) with NVMe-backed NFS storage.
-- **`syd`**: Independent cloud Talos Kubernetes node running on Oracle Cloud
-  Infrastructure (OCI) Ampere A1.
+| Cluster | Node   | Host               | Storage                         |
+| ------- | ------ | ------------------ | ------------------------------- |
+| `mbk`   | `taco` | TrueNAS (`kimbap`) | NVMe-backed VM disk and NFS     |
+| `syd`   | `hsp`  | OCI Ampere A1      | Boot and attached block volumes |
+
+Both clusters have a single control-plane node. Allow for outages during upgrades.
 
 ## Quick Start
 
-Tooling is pinned and managed through [Mise](https://mise.jdx.dev/):
+Install [Mise](https://mise.jdx.dev/) and the 1Password desktop app; `curl` must
+also be available. In 1Password, enable **Settings > Developer > Integrate with
+1Password CLI** and Touch ID under **Settings > Security**.
 
-In the 1Password desktop app, enable **Settings > Developer > Integrate with
-1Password CLI** and enable Touch ID under **Settings > Security**. Then run:
+Existing provider accounts, the GCS backend, 1Password Connect, declared vaults,
+TrueNAS pools and UniFi networks are prerequisites. Then run:
 
 ```shell
 mise trust
@@ -24,45 +28,37 @@ mise run setup
 mise run check
 ```
 
-Setup creates the `OpenTofu` item schema in the `Homelab` vault when it is
-missing and leaves an existing item untouched. If it creates the item, populate
-every field and rerun setup before planning or applying. Credential-consuming
-tasks request desktop authorisation and resolve the complete provider
-environment from that item. The Connect credentials are exposed only to the
-OpenTofu subprocess. Existing provider accounts, the GCS backend, 1Password
-Connect, the declared vaults, TrueNAS pools and UniFi networks are prerequisites.
-OpenTofu creates the scoped service credentials and empty
-Control D items stored in those vaults; populate the Control D passwords in the
-cluster vaults when ready.
+Setup installs the pinned tools, initialises providers and installs Git hooks.
+It creates the `Homelab/OpenTofu` item schema if missing; populate every field
+and rerun setup if it does. Existing items are left untouched.
+
+Credential-consuming tasks resolve that item's complete provider environment
+through desktop authorisation. Connect credentials reach only the OpenTofu
+subprocess. CI validates configuration; plans and applies run locally and require
+review of the exact plan and explicit approval.
 
 ### Common Tasks
 
-| Task                         | Description                                                      |
-| ---------------------------- | ---------------------------------------------------------------- |
-| `mise run apply`             | Apply OpenTofu changes after reviewing the presented plan        |
-| `mise run check`             | Run formatting and configuration validation                      |
-| `mise run client-configs`    | Sync local `kubeconfig` and `talosconfig` from 1Password         |
-| `mise run fmt`               | Format repository files (OpenTofu and Prettier)                  |
-| `mise run ignition`          | Render installation Ignition files for every uCore host          |
-| `mise run init`              | Initialise providers and the remote backend                      |
-| `mise run opentofu-item`     | Create the OpenTofu 1Password item if missing                    |
-| `mise run plan`              | Plan OpenTofu changes                                            |
-| `mise run prek`              | Run all Git pre-commit hooks across the repository               |
-| `mise run prepare-oci-image` | Download a Talos OCI QCOW2 image                                 |
-| `mise run setup`             | Install pinned tools, providers, and Git hooks                   |
-| `mise run ssh-config`        | Render and install SSH host aliases to `~/.ssh/config.d/homelab` |
-
-### Prerequisites
-
-Mise installs 1Password CLI (`op`), Actionlint, Butane, `jq`, `kubectl`, OpenTofu,
-Prek, Prettier, ShellCheck, Talosctl, and yq. The workstation must also have the
-1Password desktop app with CLI integration enabled and the operating system's
-`curl`. Image Factory generates QCOW2 images directly. Explicit raw image URLs
-from other sources still support local conversion with `qemu-img` and `gzip` or
-`xz` when those tools are installed.
+| Task                             | Purpose                                                  |
+| -------------------------------- | -------------------------------------------------------- |
+| `mise run apply`                 | Review the presented plan and apply approved changes     |
+| `mise run check`                 | Run all repository checks; `mise run prek` is equivalent |
+| `mise run client-configs`        | Sync Kubernetes and Talos client configurations          |
+| `mise run fmt`                   | Format repository files                                  |
+| `mise run ignition`              | Render uCore installation files                          |
+| `mise run init`                  | Initialise providers and the remote backend              |
+| `mise run plan`                  | Preview infrastructure changes                           |
+| `mise run prepare-oci-image syd` | Download the Talos OCI image                             |
+| `mise run setup`                 | Set up the workstation                                   |
+| `mise run ssh-config`            | Install SSH aliases                                      |
 
 For credential-free validation on a fresh checkout, run `mise run init-ci` before
 `mise run check`. Provider updates require reinitialisation with `mise run init`.
+
+Commit hooks check relevant changed files. Full checks and CI run the same hook
+suite, including validation of embedded Butane inputs.
+
+### Workstation Access
 
 After `mise run ssh-config`, add this near the start of `~/.ssh/config`:
 
@@ -91,33 +87,22 @@ file contains its own lookups, derived values and direct provider resources.
 | `data/storage.yaml`  | Backup buckets, datasets and NFS exports                | `backblaze.tf`, `truenas.tf`                   |
 | `hosts/`             | uCore installation and service configuration            | Butane                                         |
 
-The scripts contain only repository-specific glue: creating the provider item,
-fetching and merging client configurations, rendering SSH aliases, and choosing
-an image download from cluster outputs. Native tools perform secret reads,
-Kubernetes merging, Ignition rendering and image generation. The Talos context
-merge uses yq because `talosctl config merge` renames conflicting contexts instead
-of refreshing them.
-
 ## Substrate
 
-- **Compute & Virtualisation**: TrueNAS VM (`taco`) on `kimbap` and OCI compute instance (`hsp`) on Ampere A1.
 - **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, Cloudflare Tunnels, stable external-service records and the webhook-only HAOS tunnel route; application DNS remains workload-owned in `kubelab`.
 - **Mesh & Access**: Server login items with management or SSH URLs, Tailscale ACL policies and host recovery keys, and Kubernetes operator OAuth clients. Tagged devices share a full Tailscale mesh, while admin identities can reach the full tailnet and use approved exit nodes.
 - **Networking**: Validate existing UniFi VLANs and manage static DHCP reservations for retained appliances and VMs.
-- **Secrets Management**: 1Password native item delivery into scoped vaults (`Homelab`, `Cluster: mbk`, `Cluster: syd`).
+- **Secrets**: 1Password items in `Homelab`, `Cluster: mbk` and `Cluster: syd`.
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
-The root creates B2, Cloudflare WAF, and Resend control credentials for each
-configured cluster and an empty Control D login item in each cluster vault. The
-operator populates the Control D password manually. The root stores every
-credential as an unqualified, `Homelab`-tagged item in the corresponding cluster
-vault, so External Secrets can materialise them after the one-time 1Password
-Connect bootstrap. B2 cluster credentials can manage buckets and application
-keys but cannot access object data or delete buckets directly. Backblaze
-nevertheless treats `writeKeys` as full-account-equivalent because it can mint
-broader application keys. Resend credentials have full access because `kubelab`
-uses them to create application-scoped credentials. Those application resources
-and credentials remain owned by `kubelab` in the same cluster vault.
+Each cluster vault receives B2, Cloudflare WAF and Resend control credentials,
+plus an empty Control D item whose password must be populated manually. Items
+use unqualified titles and the `Homelab` tag. After Connect bootstrap, External
+Secrets delivers them to `kubelab` for application integrations.
+
+B2 credentials cannot directly access object data or delete buckets, but their
+`writeKeys` capability can mint broader keys and is effectively full-account
+access. Resend credentials also have full access to create application keys.
 
 OCI TCP ingress rules declare a `mode` in `data/networks.yaml`. `tailscale` and
 `cloudflared` keep the OCI firewall closed and delegate ingress to their private
@@ -131,18 +116,15 @@ A machine's Tailscale device name is derived as `<network>-<hostname>`.
 Infrastructure DNS records are created when a matching live device supplies
 the corresponding address.
 
-## Operations & Safety
+## Operations
 
-- **Destruction Guards**: Storage datasets and recovery items enforce `prevent_destroy` to safeguard live substrate.
-- **Local Execution**: CI validates formatting and configuration; all plans and applies run locally from trusted workstations.
-- **Safe State**: State is stored in versioned Google Cloud Storage outside the root that consumes it.
-- **Secret Loading**: Credential-consuming Mise tasks authenticate through the 1Password desktop app and resolve tracked references only for their subprocess.
+Storage datasets and recovery items use `prevent_destroy`. Keep credentials,
+state, plans and recovery material outside Git.
 
 ### Backend State & Recovery
 
-The root uses the externally bootstrapped `homelab-opentofu` Google Cloud
-Storage bucket, prefix `homelab`, and default workspace. The root must never
-manage the bucket that stores its active state.
+State lives in the externally managed GCS bucket `homelab-opentofu`, prefix
+`homelab`, default workspace. This root must not manage its backend.
 
 The last read-only backend review on 15 August 2026 confirmed object versioning,
 uniform bucket-level access, and public-access prevention. It also confirmed
@@ -154,28 +136,21 @@ The archived `states/core` prefix is stale historical evidence. Never migrate
 it into `homelab`, apply the archived branch against it, or delete its objects as
 part of a routine substrate change.
 
-Treat every state reader as a secret reader. State contains generated Backblaze
-B2, Cloudflare, Resend, Talos, Tailscale, and other credentials even when plan
-output is redacted. Keep state, plans, backups, and recovery material outside
-Git and restrict them to the operator performing the recovery.
+Treat every state reader as a secret reader: redacted plan output does not
+remove credentials from state. Restrict recovery material to its operator.
 
-To recover state:
-
-1. Freeze plans and applies for this root.
-2. Record the affected GCS object generation, OpenTofu version, workspace, and
-   operator.
-3. Copy the current and selected historical object generations to secure
-   storage outside the repository.
-4. Restore the selected generation in GCS without changing the backend prefix.
-5. Compare `tofu state list` before and after restoration.
-6. Run a refresh-only plan, review every change, and obtain explicit approval
-   before any corrective apply.
+1. Stop plans and applies. Record the operator, OpenTofu version, workspace and
+   affected GCS generation; save the current `tofu state list`.
+2. Securely copy the current and selected historical generations outside Git.
+3. Restore the selected generation at the same location, then compare the
+   resource list with the saved list.
+4. Review a refresh-only plan and obtain explicit approval before corrective apply.
 
 Never use `tofu init -migrate-state` for recovery. Before `tofu force-unlock`,
 verify the lock holder, process, and timestamp and prove that no apply is still
 running.
 
-### Cluster Installation & Upgrades
+### Cluster Installation
 
 For an initial TrueNAS installation, download the cluster's Image Factory ISO to
 the path declared by `truenas_virtual_machine_cdrom_devices`, then boot the VM.
@@ -186,36 +161,45 @@ to `mise run prepare-oci-image` instead. Select the architecture, version and
 extensions from `data/clusters.yaml`. Every installation apply needs its own
 reviewed plan; there is no automatic bootstrap apply.
 
-Versions in `data/clusters.yaml` are desired configuration, not evidence of the
-running versions. Changing `machine.install.image` does not upgrade an installed
-Talos node. Retained OCI images and TrueNAS installation media are bootstrap-only.
+Image Factory supplies QCOW2 directly. Other raw image URLs require `qemu-img`
+and the appropriate `gzip` or `xz` decompressor for local conversion.
+
+### Cluster Upgrades
 
 For an existing cluster, review the [Talos upgrade instructions](https://docs.siderolabs.com/talos/v1.14/configure-your-talos-cluster/lifecycle-management/upgrading-talos)
 and [Kubernetes upgrade instructions](https://docs.siderolabs.com/kubernetes-guides/advanced-guides/upgrading-kubernetes/)
-before changing versions. Upgrade Talos first, then Kubernetes, one cluster at a
-time. Both clusters have one control plane, so allow for an outage and keep an
-etcd snapshot and the 1Password recovery item available outside Git.
+before setting the desired versions in `data/clusters.yaml`. Upgrade one cluster
+at a time:
 
-Use the cluster context, node address and desired Image Factory installer image:
+1. Obtain approval for the upgrade and outage. Verify access to the 1Password
+   recovery item and take an etcd snapshot outside Git.
+2. Upgrade Talos with the Image Factory installer matching the cluster's schematic
+   and desired version. Verify node health before continuing.
+3. Upgrade Kubernetes and verify node health again.
+4. Review and approve the OpenTofu reconciliation plan before applying it.
+
+Commands for steps 1–3:
 
 ```shell
 talosctl --context <cluster> --nodes <node-ip> version
 talosctl --context <cluster> --nodes <node-ip> etcd snapshot <secure-backup-path>
 talosctl --context <cluster> --nodes <node-ip> upgrade --image <installer-image>
+kubectl --context <cluster> get nodes -o wide
 talosctl --context <cluster> --nodes <node-ip> upgrade-k8s --to <kubernetes-version>
 kubectl --context <cluster> get nodes -o wide
 ```
 
-The image must match the cluster's schematic and desired Talos version. Obtain
-it from Image Factory; an existing `clusters` output may still describe the
-previous version until configuration is reconciled. Confirm node health after
-each upgrade, then review and apply the OpenTofu reconciliation plan. Do not use
-a routine configuration apply to bypass Kubernetes' sequenced upgrade procedure.
+Changing desired versions or `machine.install.image` does not upgrade a running
+node. Installation media is bootstrap-only, and existing `clusters` outputs may
+still contain the previous installer image. Obtain the desired image from Image
+Factory; do not substitute an ordinary apply for the upgrade sequence.
 
 ### Dependency Updates
 
 Renovate proposes tool, provider, hook, action and Quadlet image updates for
-manual review. Two narrow rules cover the custom cluster-version YAML fields and
+manual review. Routine development tool, hook and action updates are grouped
+weekly on Mondays (UTC); major updates, OpenTofu and cluster upgrades remain
+separate. Two narrow rules cover the custom cluster-version YAML fields and
 group those changes with their CLIs. Review major provider release notes and
 cluster compatibility before applying updates. Regenerate provider checksums for
 both workstation and CI platforms with:
@@ -230,10 +214,10 @@ pins. No live host or cluster upgrades run from CI.
 
 ### Host Installation
 
-Non-secret uCore host configuration lives under `hosts/`. Each Butane file
-embeds `common/etc/` and its host's `etc/` overlay. Generated Cloudflare tokens,
-certificates, and other credentials are deliberately excluded and delivered
-from 1Password at deployment time.
+Each Butane file under `hosts/` embeds shared `common/etc/` configuration and
+its host's `etc/` overlay. Deliver credentials from 1Password at deployment time;
+keep generated identities, certificates, application state and system caches
+out of Git.
 
 The `bento` and `hotdog` Butane files use uCore's two-stage automatic rebase:
 Fedora CoreOS first rebases to the unverified OCI reference, then rebases to
@@ -253,10 +237,6 @@ host, use Butane directly:
 mise exec -- butane --files-dir hosts --pretty --strict hosts/bento/bento.bu --output /tmp/bento.ign
 ```
 
-The `hosts/common/etc/` tree contains shared server overrides. Each
-`hosts/HOST/etc/` tree contains only role- or hardware-specific differences.
-Generated identity, certificate, token, application state, SELinux, and ZFS
-cache files are not source configuration and must not be copied into Git.
 Cockpit certificate renewal runs as a shared one-shot `acme.sh` Quadlet. Initial
 issuance and certificate-path registration remain a one-time deployment step
 because they require the host's scoped Cloudflare token.
