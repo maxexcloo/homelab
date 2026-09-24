@@ -52,8 +52,6 @@ field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
 }
 ```
 
-For an existing OpenTofu item, add this field manually using the existing
-`truenas_api_key` and `truenas_url` values for `kimbap`, then remove the old fields.
 Setup leaves existing items untouched. Add one connection entry per TrueNAS host;
 provider aliases remain keyed by machine name.
 
@@ -130,9 +128,7 @@ Separate tracking resources preserve dependency ordering, including writing Talo
 recovery material before configuring nodes. Retain this tracking across rotations.
 The manually populated Control D password stays at version zero.
 
-The first apply after adopting timestamp tracking republishes the affected values
-and generates new machine-login passwords. Review these item updates in the plan;
-updating a login item does not change the corresponding host's password.
+Updating a machine-login item does not change the corresponding host's password.
 
 B2 credentials cannot directly access object data or delete buckets, but their
 `writeKeys` capability can mint broader keys and is effectively full-account

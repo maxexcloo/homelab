@@ -65,6 +65,8 @@ Do not create a documentation directory or additional Markdown files.
   platform used to validate or plan it.
 - Keep every temporary `moved`, `removed`, and `import` block in
   `migrations.tf`, separate from ordinary resources.
+  Remove completed blocks after verifying the sole managed state reflects
+  their intended result; remove the file when empty.
 - Never migrate, import, move, or remove state as part of an unrelated resource
   change.
 - Never migrate a backend except through its separately reviewed procedure.
