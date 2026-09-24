@@ -184,7 +184,7 @@ resource "oci_core_image" "talos" {
   }
 
   lifecycle {
-    # Custom images bootstrap instances only; live Talos upgrades use machine configuration.
+    # Custom images bootstrap instances only; upgrade running nodes with talosctl.
     ignore_changes  = [display_name, image_source_details]
     prevent_destroy = true
   }
@@ -316,6 +316,52 @@ resource "oci_core_network_security_group_security_rule" "node_ingress" {
   }
 }
 
+resource "oci_core_network_security_group_security_rule" "node_path_mtu" {
+  for_each = local.oci_instances
+
+  description               = "Allow IPv4 path MTU discovery"
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.node[each.key].id
+  protocol                  = "1"
+  source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+
+  icmp_options {
+    code = 4
+    type = 3
+  }
+}
+
+resource "oci_core_network_security_group_security_rule" "node_path_mtu_ipv6" {
+  for_each = {
+    for name, node in local.oci_instances : name => node
+    if local.oci_networks[node.network].ipv6_enabled
+  }
+
+  description               = "Allow IPv6 path MTU discovery"
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.node[each.key].id
+  protocol                  = "58"
+  source                    = "::/0"
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+
+  icmp_options {
+    type = 2
+  }
+}
+
+resource "oci_core_security_list" "default" {
+  for_each = local.oci_networks
+
+  compartment_id = var.oci_tenancy_ocid
+  display_name   = "${each.key}-nsg-only"
+  vcn_id         = oci_core_vcn.default[each.key].id
+
+  # All traffic permissions are declared by the node NSGs.
+}
+
 resource "oci_core_shape_management" "talos" {
   for_each = local.oci_image_shapes
 
@@ -327,12 +373,13 @@ resource "oci_core_shape_management" "talos" {
 resource "oci_core_subnet" "default" {
   for_each = local.oci_networks
 
-  cidr_block     = each.value.subnet_cidr
-  compartment_id = var.oci_tenancy_ocid
-  display_name   = "${each.key}.${local.domains.infrastructure}"
-  dns_label      = each.key
-  ipv6cidr_block = each.value.ipv6_enabled ? cidrsubnet(one(oci_core_vcn.default[each.key].ipv6cidr_blocks), 8, 0) : null
-  vcn_id         = oci_core_vcn.default[each.key].id
+  cidr_block        = each.value.subnet_cidr
+  compartment_id    = var.oci_tenancy_ocid
+  display_name      = "${each.key}.${local.domains.infrastructure}"
+  dns_label         = each.key
+  ipv6cidr_block    = each.value.ipv6_enabled ? cidrsubnet(one(oci_core_vcn.default[each.key].ipv6cidr_blocks), 8, 0) : null
+  security_list_ids = [oci_core_security_list.default[each.key].id]
+  vcn_id            = oci_core_vcn.default[each.key].id
 }
 
 resource "oci_core_vcn" "default" {
