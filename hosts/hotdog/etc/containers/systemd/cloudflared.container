@@ -2,7 +2,7 @@
 Description=Cloudflare Tunnel
 
 [Container]
-Image=docker.io/cloudflare/cloudflared:2026.9.1
+Image=docker.io/cloudflare/cloudflared:2026.9.3
 ContainerName=cloudflared
 Network=host
 EnvironmentFile=/etc/cloudflared/cloudflared.env
