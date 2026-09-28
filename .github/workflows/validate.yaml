@@ -24,7 +24,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up tools
-        uses: jdx/mise-action@v4
+        uses: jdx/mise-action@v5
         with:
           version: 2026.9.12
       - name: Initialise providers
