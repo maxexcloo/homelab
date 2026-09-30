@@ -7,7 +7,7 @@ opentofu = "1.12.6"
 prek = "0.5.3"
 prettier = "3.9.8"
 shellcheck = "0.11.0"
-talosctl = "1.14.1"
+talosctl = "1.14.2"
 yq = "4.53.6"
 
 [env]
