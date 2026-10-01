@@ -3,7 +3,7 @@
 "aqua:coreos/butane" = "0.29.0"
 jq = "1.8.2"
 kubectl = "1.37.0"
-opentofu = "1.12.6"
+opentofu = "1.13.1"
 prek = "0.5.3"
 prettier = "3.9.8"
 shellcheck = "0.11.0"
