@@ -15,8 +15,8 @@ Both clusters have a single control-plane node. Allow for outages during upgrade
 
 ## Quick Start
 
-Install [Mise](https://mise.jdx.dev/) and the 1Password desktop app; `curl` and `shasum` must
-also be available. In 1Password, enable **Settings > Developer > Integrate with
+Install [Mise](https://mise.jdx.dev/), jq (`brew install jq` on macOS) and the
+1Password desktop app; `curl` and `shasum` must also be available. In 1Password, enable **Settings > Developer > Integrate with
 1Password CLI** and Touch ID under **Settings > Security**.
 
 Existing provider accounts, the GCS backend, 1Password Connect, declared vaults,

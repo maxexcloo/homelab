@@ -1,14 +1,13 @@
 [tools]
-1password-cli = "2.39.0"
+1password-cli = "2.40.0"
 "aqua:coreos/butane" = "0.29.0"
-jq = "1.8.2"
-kubectl = "1.37.0"
-opentofu = "1.12.6"
-prek = "0.5.3"
-prettier = "3.9.8"
+kubectl = "1.37.1"
+opentofu = "1.13.1"
+prek = "0.5.4"
+prettier = "3.9.9"
 shellcheck = "0.11.0"
-talosctl = "1.14.1"
-yq = "4.53.6"
+talosctl = "1.14.2"
+yq = "4.54.1"
 
 [env]
 _OP_CONNECT_HOST = "op://Homelab/OpenTofu/op_connect_host"
