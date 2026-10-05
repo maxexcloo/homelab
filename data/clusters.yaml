@@ -4,7 +4,7 @@ clusters:
     kubernetes_version: v1.37.1
     pod_subnet: 10.100.0.0/22
     service_subnet: 10.100.4.0/22
-    talos_version: v1.14.1
+    talos_version: v1.14.2
     image:
       architecture: amd64
       platform: metal
@@ -26,7 +26,7 @@ clusters:
     kubernetes_version: v1.37.1
     pod_subnet: 10.100.8.0/22
     service_subnet: 10.100.12.0/22
-    talos_version: v1.14.1
+    talos_version: v1.14.2
     image:
       architecture: arm64
       bucket_name: homelab-talos-images
