@@ -43,9 +43,10 @@ clusters=()
 kubeconfig_paths=()
 talosconfig_path=""
 
+yq -r '.clusters | keys | .[]' "${clusters_path}" >"${tmpdir}/clusters"
 while IFS= read -r cluster; do
   clusters+=("${cluster}")
-done < <(yq -r '.clusters | keys | .[]' "${clusters_path}")
+done <"${tmpdir}/clusters"
 
 echo "Fetching credentials from 1Password..."
 

@@ -15,37 +15,39 @@ fi
 identity_agent="$(yq -r '.ssh.identity_agent' "${access_path}")"
 infrastructure_domain="$(yq -r '.domains.infrastructure' "${domains_path}")"
 
+# Read all machine input before opening the installed configuration for writing.
+# $network is a yq variable.
+# shellcheck disable=SC2016
+machine_entries="$(yq -r '
+  [
+    .machines
+    | to_entries[]
+    | .key as $network
+    | .value
+    | to_entries[]
+    | select(.value.username != null)
+    | {
+        "hostname": (.value.hostname // .key),
+        "network": $network,
+        "username": .value.username
+      }
+  ]
+  | sort_by(.network, .hostname)
+  | .[]
+  | [.hostname, .network, .username]
+  | @tsv
+' "${machines_path}")"
+
 render() {
   while IFS=$'\t' read -r hostname network user; do
+    [[ -n "${hostname}" ]] || continue
     fqdn="${hostname}.${network}.${infrastructure_domain}"
     network_hostname="${network}-${hostname}"
     printf 'Host %s %s\n' "${network_hostname}" "${fqdn}"
     printf '  HostName %s\n' "${fqdn}"
     printf '  User %s\n' "${user}"
     printf '  IdentityAgent "%s"\n\n' "${identity_agent}"
-  done < <(
-    # $network is a yq variable.
-    # shellcheck disable=SC2016
-    yq -r '
-      [
-        .machines
-        | to_entries[]
-        | .key as $network
-        | .value
-        | to_entries[]
-        | select(.value.username != null)
-        | {
-            "hostname": (.value.hostname // .key),
-            "network": $network,
-            "username": .value.username
-          }
-      ]
-      | sort_by(.network, .hostname)
-      | .[]
-      | [.hostname, .network, .username]
-      | @tsv
-    ' "${machines_path}"
-  )
+  done <<<"${machine_entries}"
 }
 
 if [[ -n "${output_path}" ]]; then
