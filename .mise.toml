@@ -80,7 +80,7 @@ run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CON
 
 [tasks.init-ci]
 description = "Initialise providers without the remote backend"
-run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false"
+run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -lockfile=readonly"
 
 [tasks.opentofu-item]
 description = "Create the OpenTofu 1Password item if missing"

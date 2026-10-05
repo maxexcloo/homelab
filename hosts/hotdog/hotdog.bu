@@ -36,6 +36,8 @@ storage:
 
 systemd:
   units:
+    - name: cockpit-letsencrypt.timer
+      enabled: true
     - name: ucore-unsigned-autorebase.service
       enabled: true
       contents: |

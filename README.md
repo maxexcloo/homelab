@@ -71,7 +71,8 @@ provider aliases remain keyed by machine name.
 | `mise run ssh-config`            | Install SSH aliases                                  |
 
 For credential-free validation on a fresh checkout, run `mise run init-ci` before
-`mise run check`. Provider updates require reinitialisation with `mise run init`.
+`mise run check`. CI uses the committed provider lockfile without modifying it.
+Provider updates require reinitialisation with `mise run init`.
 
 Commit hooks check relevant changed files. Full checks and CI run the same hook
 suite, including validation of embedded Butane inputs. These are offline checks;
@@ -274,8 +275,9 @@ host, use Butane directly:
 mise exec -- butane --files-dir hosts --pretty --strict hosts/bento/bento.bu --output /tmp/bento.ign
 ```
 
-Cockpit certificate renewal runs as a shared one-shot `acme.sh` Quadlet. Initial
-issuance and certificate-path registration remain a one-time deployment step
+Cockpit certificate renewal runs as a shared one-shot `acme.sh` Quadlet. Both
+host configurations enable its daily timer. Initial issuance and certificate-path
+registration remain a one-time deployment step
 because they require the host's scoped Cloudflare token.
 
 ## Licence
