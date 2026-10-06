@@ -223,8 +223,10 @@ talosctl --context <cluster> --nodes <node-ip> upgrade-k8s --to <kubernetes-vers
 kubectl --context <cluster> get nodes -o wide
 ```
 
-Changing desired versions or the installer image does not upgrade a running
-node. Installation media is bootstrap-only, and existing `clusters` outputs may
+Changing the Talos installer image does not upgrade the running OS. Applying a
+changed Kubernetes version does update component images and can restart running
+components; use the upgrade sequence above before reconciling with OpenTofu.
+Installation media is bootstrap-only, and existing `clusters` outputs may
 still contain the previous installer image. Obtain the desired image from Image
 Factory; do not substitute an ordinary apply for the upgrade sequence.
 
