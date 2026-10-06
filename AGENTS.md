@@ -27,7 +27,8 @@ Flux.
 
 ## File Organisation
 
-- `.github/workflows/`: validation only; infrastructure applies are local.
+- `.github/workflows/`: validation and external-monitoring dispatch only;
+  infrastructure applies are local.
 - Root HCL: the homelab cluster substrate.
 
 Use ordinary provider resources directly and keep the root small enough to

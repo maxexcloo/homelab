@@ -39,6 +39,9 @@ underscore-prefixed names until the OpenTofu wrapper exports `OP_CONNECT_HOST`
 and `OP_CONNECT_TOKEN`; they are not resolved in the parent shell.
 CI validates configuration; plans and applies run locally and require review of
 the exact plan and explicit approval.
+After a validated push to `main`, CI dispatches `homelab-fly` with that commit SHA
+to refresh external monitoring. Configure `FLY_DEPLOY_TOKEN` here with Actions write
+access only to `maxexcloo/homelab-fly`. This dispatch never applies infrastructure.
 
 TrueNAS connections are stored as JSON in the concealed `truenas_connections`
 field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
@@ -212,16 +215,16 @@ at a time:
 3. Upgrade Kubernetes and verify node health again.
 4. Review and approve the OpenTofu reconciliation plan before applying it.
 
-Commands for steps 1–3:
+Single-node upgrades require an outage. If disruption budgets prevent draining,
+use `--drain=false` for the approved Talos upgrade; workloads still stop
+gracefully during reboot.
 
-Both clusters have a single node, so their upgrades require an outage. Use
-`--drain=false` for the Talos upgrade: single-instance database disruption budgets
-prevent eviction, and Talos still stops workloads gracefully during reboot.
+Commands for steps 1–3:
 
 ```shell
 talosctl --context <cluster> --nodes <node-ip> version
 talosctl --context <cluster> --nodes <node-ip> etcd snapshot <secure-backup-path>
-talosctl --context <cluster> --nodes <node-ip> upgrade --image <installer-image> --drain=false
+talosctl --context <cluster> --nodes <node-ip> upgrade --image <installer-image>
 kubectl --context <cluster> get nodes -o wide
 talosctl --context <cluster> --nodes <node-ip> upgrade-k8s --to <kubernetes-version>
 kubectl --context <cluster> get nodes -o wide
@@ -286,11 +289,9 @@ host configurations enable its daily timer. Initial issuance and certificate-pat
 registration remain a one-time deployment step
 because they require the host's scoped Cloudflare token.
 
-Hotdog receives backups under `hotdog/kimbap` with `readonly=on` and
-`mountpoint=none`. Keep replicated datasets unmounted during normal operation;
-automatic child mounts can fail when their directories are absent from a
-read-only parent. Replication must continue excluding source mount and sharing
-properties. For recovery, mount the required snapshot explicitly with
+Keep backup receivers read-only (`readonly=on`) and unmounted
+(`mountpoint=none`). Exclude source mount and sharing properties from replication.
+For recovery, mount the required snapshot explicitly with
 `mount -t zfs -o ro,nosuid,nodev,noexec <dataset>@<snapshot> <recovery-directory>`
 in a root-owned directory with mode `0700`, then unmount it when finished.
 
