@@ -214,10 +214,14 @@ at a time:
 
 Commands for steps 1–3:
 
+Both clusters have a single node, so their upgrades require an outage. Use
+`--drain=false` for the Talos upgrade: single-instance database disruption budgets
+prevent eviction, and Talos still stops workloads gracefully during reboot.
+
 ```shell
 talosctl --context <cluster> --nodes <node-ip> version
 talosctl --context <cluster> --nodes <node-ip> etcd snapshot <secure-backup-path>
-talosctl --context <cluster> --nodes <node-ip> upgrade --image <installer-image>
+talosctl --context <cluster> --nodes <node-ip> upgrade --image <installer-image> --drain=false
 kubectl --context <cluster> get nodes -o wide
 talosctl --context <cluster> --nodes <node-ip> upgrade-k8s --to <kubernetes-version>
 kubectl --context <cluster> get nodes -o wide
