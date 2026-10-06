@@ -43,6 +43,14 @@ After a validated push to `main`, CI dispatches `homelab-fly` with that commit S
 to refresh external monitoring. Configure `FLY_DEPLOY_TOKEN` here with Actions write
 access only to `maxexcloo/homelab-fly`. This dispatch never applies infrastructure.
 
+Homepage and external monitoring derive machine URLs directly from
+`data/machines.yaml` and `data/domains.yaml`; they do not read OpenTofu state.
+`management_port` defines the HTTPS management endpoint. Machine-local HTTP
+services declare `services.<name>.port` and `services.<name>.scheme` alongside the
+machine (for example, Kimbap's Netboot and Syncthing). Change addresses and ports
+here; Kubelab owns their display names, links and monitoring opt-ins. Homepage
+refreshes these public inputs every five minutes without an infrastructure apply.
+
 TrueNAS connections are stored as JSON in the concealed `truenas_connections`
 field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
 

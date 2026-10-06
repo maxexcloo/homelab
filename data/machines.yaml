@@ -33,7 +33,7 @@ machines:
         - address: 10.0.0.2
           mac_address: "84:47:09:67:c8:33"
     kimbap:
-      management_port: 8443
+      management_port: 443
       platform: truenas
       type: storage
       username: root
@@ -45,6 +45,13 @@ machines:
           address: 10.4.0.3
           bridge: br4
           mac_address: "c8:ff:bf:01:52:e1"
+      services:
+        netboot:
+          port: 31010
+          scheme: http
+        syncthing:
+          port: 20910
+          scheme: http
     macbook-pro:
       platform: macos
       username: max.schaefer
