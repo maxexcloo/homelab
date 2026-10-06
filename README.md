@@ -286,6 +286,14 @@ host configurations enable its daily timer. Initial issuance and certificate-pat
 registration remain a one-time deployment step
 because they require the host's scoped Cloudflare token.
 
+Hotdog receives backups under `hotdog/kimbap` with `readonly=on` and
+`mountpoint=none`. Keep replicated datasets unmounted during normal operation;
+automatic child mounts can fail when their directories are absent from a
+read-only parent. Replication must continue excluding source mount and sharing
+properties. For recovery, mount the required snapshot explicitly with
+`mount -t zfs -o ro,nosuid,nodev,noexec <dataset>@<snapshot> <recovery-directory>`
+in a root-owned directory with mode `0700`, then unmount it when finished.
+
 ## Licence
 
 AGPL-3.0 - see [LICENSE](LICENSE).
