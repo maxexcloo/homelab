@@ -291,6 +291,10 @@ because they require the host's scoped Cloudflare token.
 
 Keep backup receivers read-only (`readonly=on`) and unmounted
 (`mountpoint=none`). Exclude source mount and sharing properties from replication.
+Replicate source trees recursively so new child datasets are included. Exclude
+entire receiver trees from destination snapshot jobs and onward replication;
+receiver snapshots must come from the source. Verify matching snapshot GUIDs
+and a subsequent incremental transfer before treating a rebuilt copy as healthy.
 For recovery, mount the required snapshot explicitly with
 `mount -t zfs -o ro,nosuid,nodev,noexec <dataset>@<snapshot> <recovery-directory>`
 in a root-owned directory with mode `0700`, then unmount it when finished.
