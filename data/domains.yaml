@@ -36,3 +36,10 @@ domains:
   acme: 043847.xyz
   infrastructure: excloo.net
   services: excloo.dev
+resend:
+  hosts:
+    - bento
+    - hass
+    - hotdog
+    - kimbap
+    - mandu

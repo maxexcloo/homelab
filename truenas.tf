@@ -75,11 +75,7 @@ locals {
         path        = try(share.path, null)
         target      = target
         networks = [
-          for share_network in share.networks : cidrsubnet(
-            local.networks[share_network.network].subnets[share_network.subnet].cidr,
-            0,
-            0,
-          )
+          for client in share.clients : "${local.machine_private_ipv4_addresses[client]}/32"
         ]
       })
     }
@@ -194,18 +190,18 @@ resource "terraform_data" "truenas_storage_target" {
 
     precondition {
       condition = alltrue([
-        for share in values(each.value.nfs_shares) : length(try(share.networks, [])) > 0
+        for share in values(each.value.nfs_shares) : length(try(share.clients, [])) > 0
       ])
-      error_message = "Every NFS share must declare at least one network."
+      error_message = "Every NFS share must declare at least one client machine."
     }
 
     precondition {
       condition = alltrue(flatten([
         for share in values(each.value.nfs_shares) : [
-          for share_network in try(share.networks, []) : can(local.networks[share_network.network].subnets[share_network.subnet])
+          for client in try(share.clients, []) : try(local.machine_private_ipv4_addresses[client] != null, false)
         ]
       ]))
-      error_message = "Every NFS share network must reference an existing UniFi network."
+      error_message = "Every NFS share client must reference an existing machine with a private IPv4 address."
     }
   }
 }
@@ -253,6 +249,23 @@ resource "truenas_dataset" "root" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+resource "truenas_mail_config" "host" {
+  for_each = {
+    for name, host in local.truenas_hosts : name => host
+    if contains(local.resend_hosts, name)
+  }
+
+  fromemail      = "${each.key}@${local.domains.infrastructure}"
+  fromname       = title(each.key)
+  outgoingserver = "smtp.resend.com"
+  pass           = resend_api_key.host[each.key].token
+  port           = 587
+  provider       = truenas.hosts[each.key]
+  security       = "TLS"
+  smtp           = true
+  user           = "resend"
 }
 
 resource "truenas_network_interface" "services_bridge" {

@@ -174,6 +174,18 @@ resource "onepassword_item" "resend" {
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
+resource "onepassword_item" "resend_host" {
+  for_each = local.resend_hosts
+
+  category            = "login"
+  password_wo         = resend_api_key.host[each.key].token
+  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_resend_host_password_version[each.key].output), 10)
+  title               = "Resend: ${local.machine_fqdns[each.key]}"
+  url                 = "https://resend.com/api-keys"
+  username            = resend_api_key.host[each.key].id
+  vault               = data.onepassword_vault.configured["homelab"].uuid
+}
+
 resource "onepassword_item" "tailscale_auth_key" {
   for_each = local.tailscale_key_machines
 
@@ -322,6 +334,17 @@ resource "terraform_data" "onepassword_machine_access_password_version" {
     machine = each.key
     policy  = local.onepassword_machine_access_password_policy
   }))
+
+  lifecycle {
+    ignore_changes = [input]
+  }
+}
+
+resource "terraform_data" "onepassword_resend_host_password_version" {
+  for_each = local.resend_hosts
+
+  input            = plantimestamp()
+  triggers_replace = sha256(resend_api_key.host[each.key].id)
 
   lifecycle {
     ignore_changes = [input]

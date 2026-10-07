@@ -17,9 +17,8 @@ truenas:
       mbk:
         parent_dataset: clusters
     nfs_share_defaults:
-      networks:
-        - network: mbk
-          subnet: services
+      clients:
+        - taco
     nfs_shares:
       bichon:
         path: /mnt/truenas-nvme/bichon
@@ -27,6 +26,8 @@ truenas:
         path: /mnt/truenas-nvme/bookorbit
       clusters-mbk:
         dataset: mbk
+      games:
+        path: /mnt/truenas/games
       icloud-photos:
         path: /mnt/truenas/icloud-photos
         readonly: true

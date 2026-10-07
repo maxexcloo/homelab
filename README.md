@@ -131,6 +131,16 @@ file contains its own lookups, derived values and direct provider resources.
 - **Secrets**: 1Password items in `Homelab`, `Cluster: mbk` and `Cluster: syd`.
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
+Hosts listed in `data/domains.yaml` under `resend.hosts` receive separate
+sending-only Resend keys, stored as `Resend: <machine FQDN>` login items in the
+`Homelab` vault. The password is the SMTP/API key; SMTP uses the username `resend`.
+OpenTofu configures listed TrueNAS hosts to send from `<machine>@<infrastructure domain>` using
+their own key. Other hosts receive stored credentials only. Talos workloads use
+the existing cluster credentials.
+The infrastructure domain is registered with Resend, with its DKIM, SPF,
+return-path MX and sending CNAME records managed in Cloudflare before
+verification is requested.
+
 Each cluster vault receives B2, Cloudflare WAF and Resend control credentials,
 plus an empty Control D item whose password must be populated manually. Items
 use unqualified titles and the `Homelab` tag. After Connect bootstrap, External

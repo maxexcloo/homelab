@@ -43,6 +43,18 @@ data "cloudflare_zone" "configured" {
 locals {
   cloudflare = yamldecode(file("${path.module}/data/domains.yaml")).cloudflare
 
+  cloudflare_dns_records_resend = {
+    for name, selector in {
+      cname = { record = "SPF", type = "CNAME" }
+      dkim  = { record = "DKIM", type = "TXT" }
+      mx    = { record = "SPF", type = "MX" }
+      spf   = { record = "SPF", type = "TXT" }
+      } : name => one([
+        for record in resend_domain.infrastructure.records : record
+        if record.record == selector.record && record.type == selector.type
+    ])
+  }
+
   cloudflare_consumers_acme = {
     for name, challenge_mode in local.cloudflare.acme_consumers : name => {
       challenge_hostname = can(local.machines[name]) ? local.machine_fqdns[name] : "${name}.${local.domains.services}"
@@ -246,6 +258,19 @@ resource "cloudflare_dns_record" "managed" {
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 
   depends_on = [terraform_data.dns_validation]
+}
+
+resource "cloudflare_dns_record" "resend" {
+  for_each = local.cloudflare_dns_records_resend
+
+  comment  = "Homelab OpenTofu Managed"
+  content  = each.value.value
+  name     = "${each.value.name}.${local.domains.infrastructure}"
+  priority = try(tonumber(each.value.priority), null)
+  proxied  = false
+  ttl      = 1
+  type     = each.value.type
+  zone_id  = data.cloudflare_zone.configured[local.domains.infrastructure].zone_id
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
