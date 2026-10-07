@@ -43,7 +43,7 @@ render() {
     [[ -n "${hostname}" ]] || continue
     fqdn="${hostname}.${network}.${infrastructure_domain}"
     network_hostname="${network}-${hostname}"
-    printf 'Host %s %s\n' "${network_hostname}" "${fqdn}"
+    printf 'Host %s %s %s\n' "${hostname}" "${network_hostname}" "${fqdn}"
     printf '  HostName %s\n' "${fqdn}"
     printf '  User %s\n' "${user}"
     printf '  IdentityAgent "%s"\n\n' "${identity_agent}"

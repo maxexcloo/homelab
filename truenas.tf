@@ -257,8 +257,8 @@ resource "truenas_mail_config" "host" {
     if contains(local.resend_hosts, name)
   }
 
-  fromemail      = "${each.key}@${local.domains.infrastructure}"
-  fromname       = title(each.key)
+  fromemail      = "${each.value.network}-${local.machine_hostnames[each.key]}@${local.domains.infrastructure}"
+  fromname       = "${each.value.network}-${local.machine_hostnames[each.key]}"
   outgoingserver = "smtp.resend.com"
   pass           = resend_api_key.host[each.key].token
   port           = 587

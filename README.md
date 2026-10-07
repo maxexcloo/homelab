@@ -102,7 +102,8 @@ After `mise run ssh-config`, add this near the start of `~/.ssh/config`:
 Include config.d/homelab
 ```
 
-Connect with an alias such as `ssh mbk-bento`. `mise run client-configs` merges
+Both short and network-prefixed SSH aliases work, such as `ssh kimbap` and
+`ssh mbk-kimbap`. `mise run client-configs` merges
 cluster credentials into the existing Kubernetes and Talos configurations,
 preserves unrelated contexts, and backs up each destination as `.bak`.
 
@@ -134,8 +135,8 @@ file contains its own lookups, derived values and direct provider resources.
 Hosts listed in `data/domains.yaml` under `resend.hosts` receive separate
 sending-only Resend keys, stored as `Resend: <machine FQDN>` login items in the
 `Homelab` vault. The password is the SMTP/API key; SMTP uses the username `resend`.
-OpenTofu configures listed TrueNAS hosts to send from `<machine>@<infrastructure domain>` using
-their own key. Other hosts receive stored credentials only. Talos workloads use
+OpenTofu configures listed TrueNAS hosts to send from `<network>-<hostname>@<infrastructure domain>` using
+their own key, with `<network>-<hostname>` as the sender display name. Other hosts receive stored credentials only. Talos workloads use
 the existing cluster credentials.
 The infrastructure domain is registered with Resend, with its DKIM, SPF,
 return-path MX and sending CNAME records managed in Cloudflare before
