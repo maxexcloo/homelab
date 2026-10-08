@@ -58,8 +58,8 @@ resolver addresses for Homepage and Flylab. DNS probes query the infrastructure
 domain. In `data/machines.yaml`, `types` supplies display groups and
 `monitoring: false` opts a machine out of infrastructure probes.
 
-The Flylab vault holds shared Fly credentials. OpenTofu manages the `Flylab`
-item with a sending-only Resend key and a Tailscale OAuth client scoped to
+The Flylab vault holds shared Fly credentials. OpenTofu manages the `Resend`
+and `Tailscale OAuth Client` items with a sending-only key and an OAuth client scoped to
 `tag:flylab`. The separately supplied deployment token lives in `Fly.io`;
 OpenTofu does not manage that item. Flylab resolves these references only in
 GitHub Actions. The service-account recovery copy is stored in

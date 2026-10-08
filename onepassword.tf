@@ -138,28 +138,6 @@ resource "onepassword_item" "control_d" {
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
-resource "onepassword_item" "flylab" {
-  category = "secure_note"
-  tags     = ["Homelab"]
-  title    = "Flylab"
-  vault    = data.onepassword_vault.configured["flylab"].uuid
-
-  section_map = {
-    credentials = {
-      field_map = {
-        resend_api_key = {
-          type  = "CONCEALED"
-          value = resend_api_key.flylab.token
-        }
-        tailscale_oauth_client_secret = {
-          type  = "CONCEALED"
-          value = tailscale_oauth_client.flylab.key
-        }
-      }
-    }
-  }
-}
-
 resource "onepassword_item" "kubeconfig" {
   for_each = local.clusters
 
@@ -196,6 +174,17 @@ resource "onepassword_item" "resend" {
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
+resource "onepassword_item" "resend_flylab" {
+  category            = "login"
+  password_wo         = resend_api_key.flylab.token
+  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_resend_flylab_password_version.output), 10)
+  tags                = ["Homelab"]
+  title               = "Resend"
+  url                 = "https://resend.com/api-keys"
+  username            = resend_api_key.flylab.id
+  vault               = data.onepassword_vault.configured["flylab"].uuid
+}
+
 resource "onepassword_item" "resend_host" {
   for_each = local.resend_hosts
 
@@ -216,6 +205,17 @@ resource "onepassword_item" "tailscale_auth_key" {
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_tailscale_auth_key_password_version[each.key].output), 10)
   title               = "Tailscale Auth Key: ${local.machine_fqdns[each.key]}"
   vault               = data.onepassword_vault.configured["homelab"].uuid
+}
+
+resource "onepassword_item" "tailscale_flylab" {
+  category            = "login"
+  password_wo         = tailscale_oauth_client.flylab.key
+  password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_tailscale_flylab_password_version.output), 10)
+  tags                = ["Homelab"]
+  title               = "Tailscale OAuth Client"
+  url                 = "https://login.tailscale.com/admin/settings/oauth"
+  username            = tailscale_oauth_client.flylab.id
+  vault               = data.onepassword_vault.configured["flylab"].uuid
 }
 
 resource "onepassword_item" "tailscale_operator" {
@@ -362,6 +362,15 @@ resource "terraform_data" "onepassword_machine_access_password_version" {
   }
 }
 
+resource "terraform_data" "onepassword_resend_flylab_password_version" {
+  input            = plantimestamp()
+  triggers_replace = sha256(resend_api_key.flylab.id)
+
+  lifecycle {
+    ignore_changes = [input]
+  }
+}
+
 resource "terraform_data" "onepassword_resend_host_password_version" {
   for_each = local.resend_hosts
 
@@ -389,6 +398,15 @@ resource "terraform_data" "onepassword_tailscale_auth_key_password_version" {
 
   input            = plantimestamp()
   triggers_replace = sha256(tailscale_tailnet_key.server[each.key].id)
+
+  lifecycle {
+    ignore_changes = [input]
+  }
+}
+
+resource "terraform_data" "onepassword_tailscale_flylab_password_version" {
+  input            = plantimestamp()
+  triggers_replace = sha256(tailscale_oauth_client.flylab.id)
 
   lifecycle {
     ignore_changes = [input]
