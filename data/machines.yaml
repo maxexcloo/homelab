@@ -29,6 +29,7 @@ machines:
       username: root
     hass:
       beszel: true
+      display_name: HASS
       management_port: 443
       platform: haos
       type: appliance
