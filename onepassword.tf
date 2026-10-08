@@ -40,7 +40,7 @@ locals {
   onepassword_vaults = merge(
     local.access.onepassword.vaults,
     {
-      for name in keys(local.clusters) : "cluster/${name}" => "${local.access.onepassword.cluster_vault_prefix}${name}"
+      for name in keys(local.clusters) : "cluster/${name}" => "${local.access.onepassword.cluster_vault_prefix}${upper(name)}"
     },
   )
 }

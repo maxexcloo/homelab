@@ -51,7 +51,7 @@ done <"${tmpdir}/clusters"
 echo "Fetching credentials from 1Password..."
 
 for cluster in "${clusters[@]}"; do
-  vault="${cluster_vault_prefix}${cluster}"
+  vault="${cluster_vault_prefix}$(printf '%s' "${cluster}" | tr '[:lower:]' '[:upper:]')"
   kube_file="${tmpdir}/${cluster}.kubeconfig"
   talos_file="${tmpdir}/${cluster}.talosconfig"
 

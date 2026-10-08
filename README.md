@@ -149,7 +149,7 @@ file contains its own lookups, derived values and direct provider resources.
 - **DNS & Ingress**: Cluster DNS targets, ACME DNS challenge tokens, Cloudflare Tunnels, stable external-service records and the webhook-only HAOS tunnel route; application DNS remains workload-owned in `kubelab`.
 - **Mesh & Access**: Server login items with management or SSH URLs, Tailscale grants and host recovery keys, and Kubernetes operator OAuth clients. Tagged devices share a full Tailscale mesh, while admin identities can reach the full tailnet and use approved exit nodes.
 - **Networking**: Validate existing UniFi VLANs and manage static DHCP reservations for retained appliances and VMs.
-- **Secrets**: 1Password items in `Homelab`, `Cluster: mbk` and `Cluster: syd`.
+- **Secrets**: 1Password items in `Homelab`, `Cluster: MBK` and `Cluster: SYD`.
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
 Hosts listed in `data/domains.yaml` under `resend.hosts` receive separate
