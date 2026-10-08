@@ -44,11 +44,11 @@ jobs:
         with:
           export-env: false
         env:
-          GH_WORKFLOW_TOKEN: op://Homelab/GitHub Actions/workflow-token
+          HOMELAB_FLY_DEPLOY_TOKEN: op://Homelab/GitHub Actions/homelab-fly-deploy-token
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
       - name: Deploy the validated inventory
         env:
-          GH_TOKEN: ${{ steps.credential.outputs.GH_WORKFLOW_TOKEN }}
+          GH_TOKEN: ${{ steps.credential.outputs.HOMELAB_FLY_DEPLOY_TOKEN }}
           HOMELAB_REVISION: ${{ github.sha }}
         run: |
           gh workflow run deploy.yaml --repo maxexcloo/homelab-fly --ref main \

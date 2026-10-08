@@ -41,7 +41,7 @@ CI validates configuration; plans and applies run locally and require review of
 the exact plan and explicit approval.
 After a validated push to `main`, CI dispatches `homelab-fly` with that commit SHA
 to refresh external monitoring. The standard 1Password Action loads
-`GH_WORKFLOW_TOKEN` from `op://Homelab/GitHub Actions/workflow-token`, using the
+`HOMELAB_FLY_DEPLOY_TOKEN` from `op://Homelab/GitHub Actions/homelab-fly-deploy-token`, using the
 repository's `OP_SERVICE_ACCOUNT_TOKEN` bootstrap secret. Grant that service
 account read access to the item's vault. The GitHub token needs Actions write
 access only to `maxexcloo/homelab-fly`; rotate it in 1Password, without copying it
