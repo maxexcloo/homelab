@@ -11,7 +11,7 @@ machines:
       management: &cockpit
         name: Cockpit
         description: Server Administration
-        icon: cockpit
+        icon: cockpit-light
   mbk:
     bento:
       beszel: true
