@@ -107,9 +107,9 @@ machines:
           port: 80
           scheme: http
           homepage:
-            name: NanoKVM
             description: Remote Console & Power Control
             icon: sipeed
+            name: NanoKVM
       tailscale:
         network_prefix: false
     slzb-06m:
@@ -123,9 +123,9 @@ machines:
           port: 80
           scheme: http
           homepage:
-            name: SLZB-06M
             description: Zigbee Ethernet Adapter
             icon: zigbee
+            name: SLZB-06M
       tailscale:
         enabled: false
     steam-deck:
