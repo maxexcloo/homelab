@@ -48,10 +48,14 @@ secret when rotating it. This dispatch never applies infrastructure.
 
 Homepage and external monitoring derive machine URLs directly from
 `data/machines.yaml` and `data/domains.yaml`; they do not read OpenTofu state.
-`management_port` defines the HTTPS management endpoint. Machine-local HTTP
+`management_port` defines the HTTPS management endpoint. Optional `management`
+metadata supplies its `name`, `description` and `icon` for dashboard consumers.
+Shared panels reuse standard YAML anchors, as Cockpit does across its hosts;
+URLs still derive from the machine identity, infrastructure domain and port.
+Machine-local HTTP
 services declare `services.<name>.port` and `services.<name>.scheme` alongside the
 machine (for example, Kimbap's Netboot and Syncthing). Change addresses and ports
-here; Kubelab owns their display names, links and monitoring opt-ins. Homepage
+here; Kubelab owns app display names, links and monitoring opt-ins. Homepage
 refreshes these public inputs every five minutes without an infrastructure apply.
 `data/providers.yaml` owns provider names, website URLs, icons and optional DNS
 resolver addresses for Homepage and Flylab. DNS probes query the infrastructure

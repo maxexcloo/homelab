@@ -8,9 +8,14 @@ machines:
       public_ipv6: 2602:f831::4665:8aff:fee1:40ed
       type: backup
       username: core
+      management: &cockpit
+        name: Cockpit
+        description: Server Administration
+        icon: cockpit
   mbk:
     bento:
       beszel: true
+      management_port: 9090
       platform: ucore
       type: server
       username: core
@@ -19,6 +24,7 @@ machines:
           mac_address: "c8:ff:bf:0f:9f:d0"
         - address: null
           mac_address: "c8:ff:bf:0f:9f:d1"
+      management: *cockpit
     gateway:
       beszel: true
       management_port: 443
@@ -65,6 +71,7 @@ machines:
           mac_address: "b6:7c:bc:fa:01:50"
     mandu:
       beszel: true
+      management_port: 9090
       monitoring: false
       platform: bazzite
       type: server
@@ -74,6 +81,7 @@ machines:
           mac_address: "84:47:09:5a:6b:bf"
         - address: 10.0.2.124
           mac_address: "84:47:09:5a:6b:bc"
+      management: *cockpit
     nanokvm:
       platform: nanokvm
       type: appliance
