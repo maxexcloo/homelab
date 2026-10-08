@@ -9,6 +9,11 @@ resource "resend_api_key" "cluster" {
   permission = "full_access"
 }
 
+resource "resend_api_key" "flylab" {
+  name       = "flylab"
+  permission = "sending_access"
+}
+
 resource "resend_api_key" "host" {
   for_each = local.resend_hosts
 

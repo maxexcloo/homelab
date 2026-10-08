@@ -120,6 +120,14 @@ resource "tailscale_acl" "default" {
   depends_on = [terraform_data.tailscale_tag_validation]
 }
 
+resource "tailscale_oauth_client" "flylab" {
+  description = "Flylab"
+  scopes      = ["auth_keys"]
+  tags        = ["tag:flylab"]
+
+  depends_on = [tailscale_acl.default]
+}
+
 resource "tailscale_oauth_client" "kubernetes_operator" {
   for_each = local.clusters
 

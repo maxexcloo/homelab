@@ -138,6 +138,28 @@ resource "onepassword_item" "control_d" {
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
+resource "onepassword_item" "flylab" {
+  category = "secure_note"
+  tags     = ["Homelab"]
+  title    = "Flylab"
+  vault    = data.onepassword_vault.configured["flylab"].uuid
+
+  section_map = {
+    credentials = {
+      field_map = {
+        resend_api_key = {
+          type  = "CONCEALED"
+          value = resend_api_key.flylab.token
+        }
+        tailscale_oauth_client_secret = {
+          type  = "CONCEALED"
+          value = tailscale_oauth_client.flylab.key
+        }
+      }
+    }
+  }
+}
+
 resource "onepassword_item" "kubeconfig" {
   for_each = local.clusters
 
