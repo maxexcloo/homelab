@@ -69,8 +69,11 @@ domain. In `data/machines.yaml`, `types` supplies display groups and
 `monitoring: false` opts a machine out of infrastructure probes.
 
 Each cluster vault receives an `Infrastructure Inventory` secure note containing
-non-secret Cloudflare account/tunnel IDs and Tailscale device IDs, keyed by the
-existing inventory names. The `infrastructure` output exposes the same values.
+non-secret Cloudflare account/tunnel IDs, Tailscale device IDs and preferred HTTP
+hosts, keyed by the existing inventory names. Hosts prefer published machine DNS,
+Tailscale IPv4, the hostname with its UniFi network’s DNS suffix, then the LAN/public IP. HTTPS
+consumers retain the machine’s certificate hostname. This selects declared
+addresses, not the first currently reachable endpoint. The `infrastructure` output exposes the same values.
 OpenTofu refreshes this snapshot on apply; consumers never read state or repeat
 provider discovery. Kubelab mounts it through External Secrets for native
 Homepage widgets. Widget API credentials remain app-owned. `beszel: true` on a

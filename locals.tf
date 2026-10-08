@@ -12,6 +12,18 @@ locals {
       account_id = data.cloudflare_account.default.id
       tunnels    = { for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id }
     }
+    hosts = {
+      for name, machine in local.machines : name => try(coalesce(
+        try(local.dns_records_derived_specs["machine/${name}/a"].name, local.dns_records_derived_specs["machine/${name}/aaaa"].name, null),
+        try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
+        try(join(".", compact([
+          local.machine_hostnames[name],
+          data.unifi_network.configured[local.unifi_clients[lower(machine.interfaces[0].mac_address)].network_key].domain_name,
+        ])), null),
+        local.machine_private_ipv4_addresses[name],
+        try(machine.public_ipv4, null),
+      ), null)
+    }
     tailscale = {
       for name, device_name in local.tailscale_machine_device_names :
       name => local.tailscale_devices[device_name].node_id
