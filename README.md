@@ -59,7 +59,9 @@ services declare `services.<name>.port` and `services.<name>.scheme` alongside t
 machine (for example, Kimbap's Netboot and Syncthing). Change addresses and ports
 here. Set `management.monitoring: true` or `services.<name>.monitoring: true`
 to monitor an HTTP endpoint; its optional `name` supplies the probe label.
-Kubelab owns dashboard links and widgets. Homepage
+Optional `services.<name>.homepage` metadata supplies `name`, `description`,
+`icon` and `group` (default: Servers) for inventory-discovered Homepage cards.
+Kubelab owns dashboard rendering and widgets. Homepage
 refreshes these public inputs every five minutes without an infrastructure apply.
 `data/providers.yaml` owns provider names, website URLs, icons and optional DNS
 resolver addresses for Homepage and Flylab. DNS probes query the infrastructure

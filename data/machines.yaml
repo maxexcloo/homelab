@@ -102,6 +102,14 @@ machines:
       interfaces:
         - address: 10.0.1.213
           mac_address: "48:da:35:6d:cb:80"
+      services:
+        console:
+          port: 80
+          scheme: http
+          homepage:
+            name: NanoKVM
+            description: Remote Console & Power Control
+            icon: sipeed
       tailscale:
         network_prefix: false
     slzb-06m:
@@ -110,6 +118,14 @@ machines:
       interfaces:
         - address: 10.0.0.6
           mac_address: "94:54:c5:eb:3f:90"
+      services:
+        console:
+          port: 80
+          scheme: http
+          homepage:
+            name: SLZB-06M
+            description: Zigbee Ethernet Adapter
+            icon: zigbee
       tailscale:
         enabled: false
     steam-deck:
