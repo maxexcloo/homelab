@@ -24,6 +24,12 @@ locals {
     toset(keys(local.clusters)),
   )
 
+  machine_clusters = merge([
+    for cluster_name, cluster in local.clusters : {
+      for node_name in keys(cluster.nodes) : node_name => cluster_name
+    }
+  ]...)
+
   machine_fqdns = {
     for name, machine in local.machines :
     name => "${local.machine_hostnames[name]}.${machine.network}.${local.domains.infrastructure}"
@@ -93,7 +99,7 @@ locals {
 
   machines = merge([
     for network, machines in local.machines_by_network : {
-      for name, machine in machines : name => merge(machine, { network = network })
+      for name, machine in machines : name => merge(machine, { network = network }, can(local.machine_clusters[name]) ? { cluster = local.machine_clusters[name] } : {})
     }
   ]...)
 }
@@ -122,10 +128,10 @@ resource "terraform_data" "configuration_validation" {
     precondition {
       condition = alltrue(flatten([
         for cluster_name, cluster in local.clusters : [
-          for node_name in keys(cluster.nodes) : try(local.machines[node_name].cluster == cluster_name, false)
+          for node_name in keys(cluster.nodes) : can(local.machines[node_name])
         ]
       ]))
-      error_message = "Every cluster node must reference a machine assigned to the same cluster."
+      error_message = "Every cluster node must reference an existing machine."
     }
 
     precondition {
@@ -286,10 +292,12 @@ resource "terraform_data" "configuration_validation" {
     }
 
     precondition {
-      condition = alltrue([
-        for machine_name, machine in local.machines : can(machine.cluster) ? can(local.clusters[machine.cluster].nodes[machine_name]) : true
-      ])
-      error_message = "Every clustered machine must belong to its referenced cluster."
+      condition = length(flatten([
+        for cluster in values(local.clusters) : keys(cluster.nodes)
+        ])) == length(distinct(flatten([
+          for cluster in values(local.clusters) : keys(cluster.nodes)
+      ])))
+      error_message = "A machine may belong to only one cluster."
     }
 
     precondition {

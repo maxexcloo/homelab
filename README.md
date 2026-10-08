@@ -11,7 +11,9 @@ resources and application integrations, reconciled by Flux.
 | `mbk`   | `taco` | TrueNAS (`kimbap`) | NVMe-backed VM disk and NFS     |
 | `syd`   | `hsp`  | OCI Ampere A1      | Boot and attached block volumes |
 
-Both clusters have a single control-plane node. Allow for outages during upgrades.
+Both clusters currently have a single control-plane node. Allow for outages during upgrades.
+Cluster membership is defined only in `data/clusters.yaml` under `nodes`; adding
+nodes does not require a second assignment in the machine inventory.
 
 ## Quick Start
 
@@ -55,7 +57,9 @@ URLs still derive from the machine identity, infrastructure domain and port.
 Machine-local HTTP
 services declare `services.<name>.port` and `services.<name>.scheme` alongside the
 machine (for example, Kimbap's Netboot and Syncthing). Change addresses and ports
-here; Kubelab owns app display names, links and monitoring opt-ins. Homepage
+here. Set `management.monitoring: true` or `services.<name>.monitoring: true`
+to monitor an HTTP endpoint; its optional `name` supplies the probe label.
+Kubelab owns dashboard links and widgets. Homepage
 refreshes these public inputs every five minutes without an infrastructure apply.
 `data/providers.yaml` owns provider names, website URLs, icons and optional DNS
 resolver addresses for Homepage and Flylab. DNS probes query the infrastructure
