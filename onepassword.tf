@@ -11,11 +11,16 @@ locals {
 
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
-      title    = "${title(coalesce(try(machine.type, null), machine.platform))}: ${local.machine_fqdns[name]}"
+      title    = "${lookup(local.onepassword_machine_access_display_names, coalesce(try(machine.type, null), machine.platform), title(coalesce(try(machine.type, null), machine.platform)))}: ${local.machine_fqdns[name]}"
       url      = try(machine.management_port, null) != null ? "https://${local.machine_fqdns[name]}${machine.management_port == 443 ? "" : ":${machine.management_port}"}" : "ssh://${machine.username}@${local.machine_fqdns[name]}"
       username = machine.username
     }
     if machine.platform != "talos" && try(machine.username, null) != null
+  }
+
+  onepassword_machine_access_display_names = {
+    macos   = "macOS"
+    steamos = "SteamOS"
   }
 
   onepassword_machine_access_password_policy = {
