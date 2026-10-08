@@ -63,7 +63,7 @@ item with a sending-only Resend key and a Tailscale OAuth client scoped to
 `tag:flylab`. The separately supplied deployment token lives in `Fly.io`;
 OpenTofu does not manage that item. Flylab resolves these references only in
 GitHub Actions. The service-account recovery copy is stored in
-`Homelab/GitHub Actions: Flylab`.
+`Homelab/Connect Token: fly`.
 
 TrueNAS connections are stored as JSON in the concealed `truenas_connections`
 field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
