@@ -39,10 +39,10 @@ underscore-prefixed names until the OpenTofu wrapper exports `OP_CONNECT_HOST`
 and `OP_CONNECT_TOKEN`; they are not resolved in the parent shell.
 CI validates configuration; plans and applies run locally and require review of
 the exact plan and explicit approval.
-After a validated push to `main`, CI dispatches `homelab-fly` with that commit SHA
+After a validated push to `main`, CI dispatches `flylab` with that commit SHA
 to refresh external monitoring. Store the GitHub token in the repository Actions
 secret `HOMELAB_FLY_DEPLOY_TOKEN`, with Actions write access only to
-`maxexcloo/homelab-fly`. Keep its reference copy at
+`maxexcloo/flylab`. Keep its reference copy at
 `op://Homelab/GitHub Actions/homelab-fly-deploy-token` and update the repository
 secret when rotating it. This dispatch never applies infrastructure.
 
