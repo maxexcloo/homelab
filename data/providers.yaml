@@ -1,0 +1,43 @@
+providers:
+  1Password:
+    description: Passwords & Secrets
+    icon: si-1password-#ffffff
+    url: https://my.1password.com
+  Backblaze:
+    description: Object Storage
+    icon: si-backblaze-#ffffff
+    url: https://backblaze.com
+  Cloudflare:
+    description: DNS & Zero Trust
+    dns: 1.1.1.1
+    icon: si-cloudflare-#ffffff
+    url: https://dash.cloudflare.com
+  Control D:
+    description: DNS
+    dns: 76.76.2.0
+    icon: sh-control-d-light
+    url: https://controld.com
+  Fly.io:
+    description: App Platform
+    icon: si-flydotio-#ffffff
+    url: https://fly.io/dashboard
+  GitHub:
+    description: Source Control
+    icon: si-github-#ffffff
+    url: https://github.com/maxexcloo
+  Oracle Cloud:
+    description: Cloud VMs
+    icon: si-oracle-#ffffff
+    url: https://cloud.oracle.com
+  Resend:
+    description: Email API
+    icon: si-resend-#ffffff
+    url: https://resend.com/overview
+  Tailscale:
+    description: VPN
+    icon: si-tailscale-#ffffff
+    url: https://login.tailscale.com/admin
+  UniFi:
+    description: Network
+    icon: si-ubiquiti-#ffffff
+    url: https://unifi.ui.com

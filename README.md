@@ -53,6 +53,10 @@ services declare `services.<name>.port` and `services.<name>.scheme` alongside t
 machine (for example, Kimbap's Netboot and Syncthing). Change addresses and ports
 here; Kubelab owns their display names, links and monitoring opt-ins. Homepage
 refreshes these public inputs every five minutes without an infrastructure apply.
+`data/providers.yaml` owns provider names, website URLs, icons and optional DNS
+resolver addresses for Homepage and Flylab. DNS probes query the infrastructure
+domain. In `data/machines.yaml`, `types` supplies display groups and
+`monitoring: false` opts a machine out of infrastructure probes.
 
 TrueNAS connections are stored as JSON in the concealed `truenas_connections`
 field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
@@ -112,16 +116,17 @@ Start with the input for the thing you want to change, then read its domain HCL.
 `locals.tf` decodes shared inputs and derives machine identities; each domain
 file contains its own lookups, derived values and direct provider resources.
 
-| Input                | Purpose                                                 | Main consumers                                 |
-| -------------------- | ------------------------------------------------------- | ---------------------------------------------- |
-| `data/access.yaml`   | Vault names, SSH agent and Tailscale policy             | `onepassword.tf`, `tailscale.tf`, SSH renderer |
-| `data/clusters.yaml` | Cluster membership, desired versions and Talos settings | `talos.tf`, `oci.tf`                           |
-| `data/dns/*.yaml`    | Explicit infrastructure DNS records                     | `dns.tf`, `cloudflare.tf`                      |
-| `data/domains.yaml`  | Domain roles, credentials and tunnel routes             | `cloudflare.tf`, `dns.tf`                      |
-| `data/machines.yaml` | Machine identity, interfaces and compute                | `oci.tf`, `truenas.tf`, `unifi.tf`             |
-| `data/networks.yaml` | Existing UniFi subnets and managed OCI networking       | `oci.tf`, `unifi.tf`                           |
-| `data/storage.yaml`  | Backup buckets, datasets and NFS exports                | `backblaze.tf`, `truenas.tf`                   |
-| `hosts/`             | uCore installation and service configuration            | Butane                                         |
+| Input                 | Purpose                                                 | Main consumers                                 |
+| --------------------- | ------------------------------------------------------- | ---------------------------------------------- |
+| `data/access.yaml`    | Vault names, SSH agent and Tailscale policy             | `onepassword.tf`, `tailscale.tf`, SSH renderer |
+| `data/clusters.yaml`  | Cluster membership, desired versions and Talos settings | `talos.tf`, `oci.tf`                           |
+| `data/dns/*.yaml`     | Explicit infrastructure DNS records                     | `dns.tf`, `cloudflare.tf`                      |
+| `data/domains.yaml`   | Domain roles, credentials and tunnel routes             | `cloudflare.tf`, `dns.tf`                      |
+| `data/machines.yaml`  | Machine identity, interfaces and compute                | `oci.tf`, `truenas.tf`, `unifi.tf`             |
+| `data/networks.yaml`  | Existing UniFi subnets and managed OCI networking       | `oci.tf`, `unifi.tf`                           |
+| `data/providers.yaml` | Provider bookmarks and DNS resolver checks              | Homepage, Flylab                               |
+| `data/storage.yaml`   | Backup buckets, datasets and NFS exports                | `backblaze.tf`, `truenas.tf`                   |
+| `hosts/`              | uCore installation and service configuration            | Butane                                         |
 
 ## Substrate
 

@@ -59,6 +59,7 @@ machines:
         - address: 10.0.0.76
           mac_address: "b6:7c:bc:fa:01:50"
     mandu:
+      monitoring: false
       platform: bazzite
       type: server
       username: max.schaefer
@@ -125,3 +126,10 @@ machines:
         volumes:
           data:
             size_mib: 51200
+types:
+  appliance: Appliances
+  backup: Servers
+  router: Routers
+  server: Servers
+  storage: Servers
+  vm: VMs
