@@ -1,6 +1,7 @@
 machines:
   fre:
     hotdog:
+      beszel: true
       management_port: 9090
       platform: ucore
       public_ipv4: 199.127.129.143
@@ -9,6 +10,7 @@ machines:
       username: core
   mbk:
     bento:
+      beszel: true
       management_port: 9090
       platform: ucore
       type: server
@@ -19,12 +21,14 @@ machines:
         - address: null
           mac_address: "c8:ff:bf:0f:9f:d1"
     gateway:
+      beszel: true
       management_port: 443
       platform: unifi
       private_ipv4: 10.0.0.1
       type: router
       username: root
     hass:
+      beszel: true
       management_port: 443
       platform: haos
       type: appliance
@@ -33,6 +37,7 @@ machines:
         - address: 10.0.0.2
           mac_address: "84:47:09:67:c8:33"
     kimbap:
+      beszel: true
       management_port: 443
       platform: truenas
       type: storage
@@ -59,6 +64,7 @@ machines:
         - address: 10.0.0.76
           mac_address: "b6:7c:bc:fa:01:50"
     mandu:
+      beszel: true
       monitoring: false
       platform: bazzite
       type: server
@@ -92,6 +98,7 @@ machines:
         - address: 10.0.0.14
           mac_address: "e8:8d:a6:e2:2a:da"
     taco:
+      beszel: true
       cluster: mbk
       host: kimbap
       platform: talos
@@ -110,6 +117,7 @@ machines:
           mac_address: "02:74:61:63:6f:01"
   syd:
     hsp:
+      beszel: true
       cluster: syd
       platform: talos
       private_ipv4: 10.20.0.4

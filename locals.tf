@@ -7,6 +7,18 @@ locals {
   networks                        = yamldecode(file("${path.module}/data/networks.yaml")).networks
   storage                         = yamldecode(file("${path.module}/data/storage.yaml"))
 
+  infrastructure_inventory = {
+    cloudflare = {
+      account_id = data.cloudflare_account.default.id
+      tunnels    = { for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id }
+    }
+    tailscale = {
+      for name, device_name in local.tailscale_machine_device_names :
+      name => local.tailscale_devices[device_name].node_id
+      if can(local.tailscale_devices[device_name])
+    }
+  }
+
   machine_cluster_names_duplicate = setintersection(
     toset(keys(local.machines)),
     toset(keys(local.clusters)),

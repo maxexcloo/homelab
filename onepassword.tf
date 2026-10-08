@@ -138,6 +138,17 @@ resource "onepassword_item" "control_d" {
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
+resource "onepassword_item" "infrastructure_inventory" {
+  for_each = local.clusters
+
+  # This snapshot contains only provider identities, never credentials.
+  category   = "secure_note"
+  note_value = jsonencode(local.infrastructure_inventory)
+  tags       = ["Homelab"]
+  title      = "Infrastructure Inventory"
+  vault      = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
 resource "onepassword_item" "kubeconfig" {
   for_each = local.clusters
 

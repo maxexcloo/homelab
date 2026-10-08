@@ -58,6 +58,15 @@ resolver addresses for Homepage and Flylab. DNS probes query the infrastructure
 domain. In `data/machines.yaml`, `types` supplies display groups and
 `monitoring: false` opts a machine out of infrastructure probes.
 
+Each cluster vault receives an `Infrastructure Inventory` secure note containing
+non-secret Cloudflare account/tunnel IDs and Tailscale device IDs, keyed by the
+existing inventory names. The `infrastructure` output exposes the same values.
+OpenTofu refreshes this snapshot on apply; consumers never read state or repeat
+provider discovery. Kubelab mounts it through External Secrets for native
+Homepage widgets. Widget API credentials remain app-owned. `beszel: true` on a
+machine records an installed host agent; Homepage uses Beszel's native system-name
+lookup with `<network>-<hostname>`, without another system-ID inventory.
+
 The Flylab vault holds shared Fly credentials. OpenTofu manages the `Resend`
 and `Tailscale OAuth Client` items with a sending-only key and an OAuth client scoped to
 `tag:flylab`. The separately supplied deployment token lives in `Fly.io`;
