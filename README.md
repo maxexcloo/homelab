@@ -40,12 +40,11 @@ and `OP_CONNECT_TOKEN`; they are not resolved in the parent shell.
 CI validates configuration; plans and applies run locally and require review of
 the exact plan and explicit approval.
 After a validated push to `main`, CI dispatches `homelab-fly` with that commit SHA
-to refresh external monitoring. The standard 1Password Action loads
-`HOMELAB_FLY_DEPLOY_TOKEN` from `op://Homelab/GitHub Actions/homelab-fly-deploy-token`, using the
-repository's `OP_SERVICE_ACCOUNT_TOKEN` bootstrap secret. Grant that service
-account read access to the item's vault. The GitHub token needs Actions write
-access only to `maxexcloo/homelab-fly`; rotate it in 1Password, without copying it
-into repository secrets. This dispatch never applies infrastructure.
+to refresh external monitoring. Store the GitHub token in the repository Actions
+secret `HOMELAB_FLY_DEPLOY_TOKEN`, with Actions write access only to
+`maxexcloo/homelab-fly`. Keep its reference copy at
+`op://Homelab/GitHub Actions/homelab-fly-deploy-token` and update the repository
+secret when rotating it. This dispatch never applies infrastructure.
 
 Homepage and external monitoring derive machine URLs directly from
 `data/machines.yaml` and `data/domains.yaml`; they do not read OpenTofu state.
