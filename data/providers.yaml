@@ -3,41 +3,96 @@ providers:
     description: Passwords & Secrets
     icon: si-1password-#ffffff
     url: https://my.1password.com
+    gatus:
+      - &website
+        alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
   Backblaze:
     description: Object Storage
     icon: si-backblaze-#ffffff
     url: https://backblaze.com
+    gatus:
+      - *website
   Cloudflare:
     description: DNS & Zero Trust
-    dns: 1.1.1.1
     icon: si-cloudflare-#ffffff
     url: https://dash.cloudflare.com
+    gatus:
+      - *website
+      - url: 1.1.1.1
+        alerts:
+          - type: email
+        conditions:
+          - "[CONNECTED] == true"
+          - "[DNS_RCODE] == NOERROR"
+          - "[RESPONSE_TIME] < 5000"
+        dns:
+          query-type: A
+    homepage:
+      description: Cloudflare Tunnel
+      icon: cloudflare
+      name: Cloudflare Tunnel
+      widget:
+        key: "{{HOMEPAGE_FILE_CLOUDFLARE_KEY}}"
+        type: cloudflared
   Control D:
     description: DNS
-    dns: 76.76.2.0
     icon: sh-control-d-light
     url: https://controld.com
+    gatus:
+      - *website
+      - url: 76.76.2.0
+        alerts:
+          - type: email
+        conditions:
+          - "[CONNECTED] == true"
+          - "[DNS_RCODE] == NOERROR"
+          - "[RESPONSE_TIME] < 5000"
+        dns:
+          query-type: A
   Fly.io:
     description: App Platform
     icon: si-flydotio-#ffffff
     url: https://fly.io/dashboard
+    gatus:
+      - *website
   GitHub:
     description: Source Control
     icon: si-github-#ffffff
     url: https://github.com/maxexcloo
+    gatus:
+      - *website
   Oracle Cloud:
     description: Cloud VMs
     icon: si-oracle-#ffffff
     url: https://cloud.oracle.com
+    gatus:
+      - *website
   Resend:
     description: Email API
     icon: si-resend-#ffffff
     url: https://resend.com/overview
+    gatus:
+      - *website
   Tailscale:
     description: VPN
     icon: si-tailscale-#ffffff
     url: https://login.tailscale.com/admin
+    gatus:
+      - *website
+    homepage:
+      description: VPN
+      icon: tailscale
+      name: Tailscale
+      widget:
+        key: "{{HOMEPAGE_FILE_TAILSCALE_KEY}}"
+        type: tailscale
   UniFi:
     description: Network
     icon: si-ubiquiti-#ffffff
     url: https://unifi.ui.com
+    gatus:
+      - *website

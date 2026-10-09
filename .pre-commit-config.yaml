@@ -26,33 +26,33 @@ repos:
   - repo: local
     hooks:
       - id: butane
-        name: Check host configurations
+        name: Check Host Configurations
         entry: mise exec -- sh -c 'for file in hosts/*/*.bu; do butane --files-dir hosts --strict "$file" >/dev/null || exit; done'
         files: ^hosts/
         language: system
         pass_filenames: false
       - id: prettier
-        name: Check formatting
+        name: Check Formatting
         entry: mise exec -- prettier --check --ignore-unknown
         language: system
         require_serial: true
         types:
           - text
       - id: shellcheck
-        name: Check shell scripts
+        name: Check Shell Scripts
         entry: mise exec -- shellcheck
         language: system
         require_serial: true
         types:
           - shell
       - id: tofu-fmt
-        name: Check OpenTofu formatting
+        name: Check OpenTofu Formatting
         entry: mise exec -- tofu fmt -check
         files: \.tf$
         language: system
         require_serial: true
       - id: tofu-validate
-        name: Validate OpenTofu configuration
+        name: Validate OpenTofu Configuration
         entry: mise exec -- tofu validate
         files: (\.tf$|^\.terraform\.lock\.hcl$|^data/)
         language: system

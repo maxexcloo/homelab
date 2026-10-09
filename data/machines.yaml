@@ -9,9 +9,9 @@ machines:
       type: backup
       username: core
       management: &cockpit
-        name: Cockpit
         description: Server Administration
         icon: cockpit-light
+        name: Cockpit
   mbk:
     bento:
       beszel: true
@@ -26,19 +26,16 @@ machines:
           mac_address: "c8:ff:bf:0f:9f:d1"
       management: *cockpit
     gateway:
-      management:
-        name: UniFi
-        monitoring: true
       beszel: true
       management_port: 443
       platform: unifi
       private_ipv4: 10.0.0.1
       type: router
       username: root
-    hass:
       management:
-        name: Home Assistant
         monitoring: true
+        name: UniFi
+    hass:
       beszel: true
       display_name: HASS
       management_port: 443
@@ -48,10 +45,10 @@ machines:
       interfaces:
         - address: 10.0.0.2
           mac_address: "84:47:09:67:c8:33"
-    kimbap:
       management:
-        name: TrueNAS
         monitoring: true
+        name: Home Assistant
+    kimbap:
       beszel: true
       management_port: 443
       platform: truenas
@@ -65,15 +62,18 @@ machines:
           address: 10.4.0.3
           bridge: br4
           mac_address: "c8:ff:bf:01:52:e1"
+      management:
+        monitoring: true
+        name: TrueNAS
       services:
         netboot:
-          name: Netboot
           monitoring: true
+          name: Netboot
           port: 31010
           scheme: http
         syncthing:
-          name: Syncthing
           monitoring: true
+          name: Syncthing
           port: 20910
           scheme: http
     macbook-pro:

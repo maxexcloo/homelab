@@ -11,9 +11,8 @@ resources and application integrations, reconciled by Flux.
 | `mbk`   | `taco` | TrueNAS (`kimbap`) | NVMe-backed VM disk and NFS     |
 | `syd`   | `hsp`  | OCI Ampere A1      | Boot and attached block volumes |
 
-Both clusters currently have a single control-plane node. Allow for outages during upgrades.
-Cluster membership is defined only in `data/clusters.yaml` under `nodes`; adding
-nodes does not require a second assignment in the machine inventory.
+Both clusters have a single control-plane node. Allow for outages during upgrades.
+Define cluster membership in `data/clusters.yaml` under `nodes`.
 
 ## Quick Start
 
@@ -34,58 +33,14 @@ Setup installs the pinned tools, initialises providers and installs Git hooks.
 It creates the `Homelab/OpenTofu` item schema if missing; populate every field
 and rerun setup if it does. Existing items are left untouched.
 
-Credential-consuming tasks resolve that item's complete provider environment
-through desktop authorisation. Resolved values are inherited by the task and its
-children, including the image preparation script. Connect credentials use
-underscore-prefixed names until the OpenTofu wrapper exports `OP_CONNECT_HOST`
-and `OP_CONNECT_TOKEN`; they are not resolved in the parent shell.
-CI validates configuration; plans and applies run locally and require review of
-the exact plan and explicit approval.
-After a validated push to `main`, CI dispatches `flylab` with that commit SHA
-to refresh external monitoring. Store the GitHub token in the repository Actions
-secret `HOMELAB_FLY_DEPLOY_TOKEN`, with Actions write access only to
-`maxexcloo/flylab`. Keep its reference copy at
-`op://Homelab/GitHub Actions/homelab-fly-deploy-token` and update the repository
-secret when rotating it. This dispatch never applies infrastructure.
+Credential-consuming tasks resolve `Homelab/OpenTofu` through the 1Password
+desktop app, keeping credentials out of the parent shell. Plans and applies run
+locally; every apply requires review of its exact plan and explicit approval.
 
-Homepage and external monitoring derive machine URLs directly from
-`data/machines.yaml` and `data/domains.yaml`; they do not read OpenTofu state.
-`management_port` defines the HTTPS management endpoint. Optional `management`
-metadata supplies its `name`, `description` and `icon` for dashboard consumers.
-Shared panels reuse standard YAML anchors, as Cockpit does across its hosts;
-URLs still derive from the machine identity, infrastructure domain and port.
-Machine-local HTTP
-services declare `services.<name>.port` and `services.<name>.scheme` alongside the
-machine (for example, Kimbap's Netboot and Syncthing). Change addresses and ports
-here. Set `management.monitoring: true` or `services.<name>.monitoring: true`
-to monitor an HTTP endpoint; its optional `name` supplies the probe label.
-Optional `services.<name>.homepage` metadata supplies `name`, `description`,
-`icon` and `group` (default: Servers) for inventory-discovered Homepage cards.
-Kubelab owns dashboard rendering and widgets. Homepage
-refreshes these public inputs every five minutes without an infrastructure apply.
-`data/providers.yaml` owns provider names, website URLs, icons and optional DNS
-resolver addresses for Homepage and Flylab. DNS probes query the infrastructure
-domain. In `data/machines.yaml`, `types` supplies display groups and
-`monitoring: false` opts a machine out of infrastructure probes.
-
-Each cluster vault receives an `Infrastructure Inventory` secure note containing
-non-secret Cloudflare account/tunnel IDs, Tailscale device IDs and preferred HTTP
-hosts, keyed by the existing inventory names. Hosts prefer published machine DNS,
-Tailscale IPv4, the hostname with its UniFi network’s DNS suffix, then the LAN/public IP. HTTPS
-consumers retain the machine’s certificate hostname. This selects declared
-addresses, not the first currently reachable endpoint. The `infrastructure` output exposes the same values.
-OpenTofu refreshes this snapshot on apply; consumers never read state or repeat
-provider discovery. Kubelab mounts it through External Secrets for native
-Homepage widgets. Widget API credentials remain app-owned. `beszel: true` on a
-machine records an installed host agent; Homepage uses Beszel's native system-name
-lookup with `<network>-<hostname>`, without another system-ID inventory.
-
-The Flylab vault holds shared Fly credentials. OpenTofu manages the `Resend`
-and `Tailscale OAuth Client` items with a sending-only key and an OAuth client scoped to
-`tag:flylab`. The separately supplied deployment token lives in `Fly.io`;
-OpenTofu does not manage that item. Flylab resolves these references only in
-GitHub Actions. The service-account recovery copy is stored in
-`Homelab/Connect Token: fly`.
+After validating a push to `main`, CI dispatches `flylab` to refresh external
+monitoring at that commit. Set the Actions secret `HOMELAB_FLY_DEPLOY_TOKEN` to
+a token with Actions write access to `maxexcloo/flylab`. Keep its recovery copy at
+`op://Homelab/GitHub Actions/homelab-fly-deploy-token` and update the secret on rotation.
 
 TrueNAS connections are stored as JSON in the concealed `truenas_connections`
 field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
@@ -99,8 +54,7 @@ field of `Homelab/OpenTofu`, keyed by the machine names in `data/machines.yaml`:
 }
 ```
 
-Setup leaves existing items untouched. Add one connection entry per TrueNAS host;
-provider aliases remain keyed by machine name.
+Add one connection entry per TrueNAS host.
 
 ### Common Tasks
 
@@ -121,10 +75,9 @@ For credential-free validation on a fresh checkout, run `mise run init-ci` befor
 `mise run check`. CI uses the committed provider lockfile without modifying it.
 Provider updates require reinitialisation with `mise run init`.
 
-Commit hooks check relevant changed files. Full checks and CI run the same hook
-suite, including validation of embedded Butane inputs. These are offline checks;
-OpenTofu preconditions and live provider compatibility still need a requested
-plan. Passing `check` does not establish that an apply is safe.
+Commit hooks check changed files; `check` and CI run the full suite, including
+Butane validation. These static checks do not verify live provider behaviour or
+OpenTofu preconditions; those require a requested plan.
 
 ### Workstation Access
 
@@ -134,9 +87,8 @@ After `mise run ssh-config`, add this near the start of `~/.ssh/config`:
 Include config.d/homelab
 ```
 
-Both short and network-prefixed SSH aliases work, such as `ssh kimbap` and
-`ssh mbk-kimbap`. `mise run client-configs` merges
-cluster credentials into the existing Kubernetes and Talos configurations,
+Use SSH aliases such as `ssh kimbap` or `ssh mbk-kimbap`.
+`mise run client-configs` merges cluster credentials into existing client configurations,
 preserves unrelated contexts, and backs up each destination as `.bak`.
 
 ## Repository Map
@@ -147,15 +99,36 @@ file contains its own lookups, derived values and direct provider resources.
 
 | Input                 | Purpose                                                 | Main consumers                                 |
 | --------------------- | ------------------------------------------------------- | ---------------------------------------------- |
+| `hosts/`              | uCore installation and service configuration            | Butane                                         |
 | `data/access.yaml`    | Vault names, SSH agent and Tailscale policy             | `onepassword.tf`, `tailscale.tf`, SSH renderer |
 | `data/clusters.yaml`  | Cluster membership, desired versions and Talos settings | `talos.tf`, `oci.tf`                           |
 | `data/dns/*.yaml`     | Explicit infrastructure DNS records                     | `dns.tf`, `cloudflare.tf`                      |
 | `data/domains.yaml`   | Domain roles, credentials and tunnel routes             | `cloudflare.tf`, `dns.tf`                      |
 | `data/machines.yaml`  | Machine identity, interfaces and compute                | `oci.tf`, `truenas.tf`, `unifi.tf`             |
 | `data/networks.yaml`  | Existing UniFi subnets and managed OCI networking       | `oci.tf`, `unifi.tf`                           |
-| `data/providers.yaml` | Provider bookmarks and DNS resolver checks              | Homepage, Flylab                               |
+| `data/providers.yaml` | Provider bookmarks, widgets and Gatus probes            | Homepage, Flylab                               |
 | `data/storage.yaml`   | Backup buckets, datasets and NFS exports                | `backblaze.tf`, `truenas.tf`                   |
-| `hosts/`              | uCore installation and service configuration            | Butane                                         |
+
+Homepage and Flylab read machine endpoints from `data/machines.yaml` and
+`data/domains.yaml`, and provider links and DNS resolvers from `data/providers.yaml`.
+Provider `homepage` entries hold card metadata and native widget settings;
+`gatus` entries hold native probe settings. Website probes default to the provider
+URL; DNS probes default to the infrastructure domain. In the machine inventory:
+
+- `beszel: true` records an installed host agent.
+- `management_port` sets the HTTPS management port; `management` supplies display metadata.
+- `monitoring: false` excludes a machine from infrastructure probes.
+- `services.<name>` declares HTTP services with `port` and `scheme`.
+
+Set `monitoring: true` under `management` or a service to enable its HTTP probe.
+Service `homepage` metadata accepts `description`, `group` (default: Servers),
+`icon` and `name`. The `types` mapping supplies machine display groups.
+
+OpenTofu publishes non-secret Cloudflare and Tailscale IDs and preferred hosts
+in each cluster vault's `Infrastructure Inventory` note and the `infrastructure`
+output. Hosts prefer machine DNS, Tailscale IPv4, UniFi DNS, then LAN/public IP;
+HTTPS consumers retain the certificate hostname. Kubelab reads the note through
+External Secrets; widget credentials remain app-owned.
 
 ## Substrate
 
@@ -165,28 +138,26 @@ file contains its own lookups, derived values and direct provider resources.
 - **Secrets**: 1Password items in `Homelab`, `Cluster: MBK` and `Cluster: SYD`.
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
-Hosts listed in `data/domains.yaml` under `resend.hosts` receive separate
-sending-only Resend keys, stored as `Resend: <machine FQDN>` login items in the
-`Homelab` vault. The password is the SMTP/API key; SMTP uses the username `resend`.
-OpenTofu configures listed TrueNAS hosts to send from `<network>-<hostname>@<infrastructure domain>` using
-their own key, with `<network>-<hostname>` as the sender display name. Other hosts receive stored credentials only. Talos workloads use
-the existing cluster credentials.
-The infrastructure domain is registered with Resend, with its DKIM, SPF,
-return-path MX and sending CNAME records managed in Cloudflare before
-verification is requested.
+List SMTP hosts in `data/domains.yaml` under `resend.hosts`. Each receives a
+sending-only key in `Homelab/Resend: <machine FQDN>`. Use SMTP username `resend`
+and the stored password. Listed TrueNAS hosts are configured automatically with
+sender `<network>-<hostname>@<infrastructure domain>`; configure other hosts manually.
+OpenTofu manages the infrastructure domain's Resend DNS records and verification.
+
+The `Fly` vault holds managed `Resend` and `Tailscale OAuth Client` items,
+with sending-only access and `tag:fly` respectively. Supply its `Fly.io` deployment
+token separately; keep the service-account recovery copy in
+`Homelab/Connect Token: fly`.
 
 Each cluster vault receives B2, Cloudflare WAF and Resend control credentials,
 plus an empty Control D item whose password must be populated manually. Items
 use unqualified titles and the `Homelab` tag. After Connect bootstrap, External
 Secrets delivers them to `kubelab` for application integrations.
 
-Managed 1Password password and note versions use timestamps captured when their
-non-secret identity or configuration fingerprint changes. The pinned provider
-requires an increasing write-only version; a content hash alone cannot guarantee
-that. The version offset keeps timestamps above the previously used fingerprints.
-Separate tracking resources preserve dependency ordering, including writing Talos
-recovery material before configuring nodes. Retain this tracking across rotations.
-The manually populated Control D password stays at version zero.
+Retain the 1Password version-tracking resources: write-only versions must
+increase when credentials or recovery material change. The timestamp offset
+keeps them above older fingerprints. The manually populated Control D password
+stays at version zero.
 
 Updating a machine-login item does not change the corresponding host's password.
 
@@ -240,6 +211,15 @@ Never use `tofu init -migrate-state` for recovery. Before `tofu force-unlock`,
 verify the lock holder, process, and timestamp and prove that no apply is still
 running.
 
+### Backup Recovery
+
+Keep backup receivers read-only (`readonly=on`) and unmounted (`mountpoint=none`).
+Replicate recursively, excluding source mount and sharing properties. Exclude
+receiver trees from destination snapshot jobs and onward replication. Verify
+matching snapshot GUIDs and an incremental transfer after rebuilding a receiver.
+Mount recovery snapshots read-only with `nosuid,nodev,noexec` in a root-owned
+`0700` directory, then unmount them when finished.
+
 ### Cluster Installation
 
 For an initial TrueNAS installation, download the cluster's Image Factory ISO to
@@ -250,9 +230,6 @@ cluster outputs yet, pass the QCOW2 URL from [Image Factory](https://factory.tal
 to `mise run prepare-oci-image` instead. Select the architecture, version and
 extensions from `data/clusters.yaml`. Every installation apply needs its own
 reviewed plan; there is no automatic bootstrap apply.
-
-Prepared images are cached under a SHA-256 hash of their URL, keeping different
-versions and schematics separate even when their filenames match.
 
 Image Factory supplies QCOW2 directly. Other raw image URLs require `qemu-img`
 and the appropriate `gzip` or `xz` decompressor for local conversion.
@@ -299,13 +276,10 @@ reboot must be handled separately during an approved maintenance window.
 
 ### Dependency Updates
 
-Renovate proposes tool, provider, hook, action and Quadlet image updates for
-manual review. Routine development tool, hook and action updates are grouped
-weekly on Mondays (UTC); major updates, OpenTofu and cluster upgrades remain
-separate. Two narrow rules cover the custom cluster-version YAML fields and
-group those changes with their CLIs. Review major provider release notes and
-cluster compatibility before applying updates. Regenerate provider checksums for
-both workstation and CI platforms with:
+Renovate proposes updates for manual review. Routine tool, hook and action
+updates are grouped weekly on Mondays (UTC); major updates, OpenTofu and cluster
+upgrades remain separate. Review provider release notes and cluster compatibility.
+Regenerate provider checksums for workstation and CI platforms with:
 
 ```shell
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
@@ -322,38 +296,19 @@ its host's `etc/` overlay. Deliver credentials from 1Password at deployment time
 keep generated identities, certificates, application state and system caches
 out of Git.
 
-The `bento` and `hotdog` Butane files use uCore's two-stage automatic rebase:
-Fedora CoreOS first rebases to the unverified OCI reference, then rebases to
-the signed reference after reboot. Bento targets `ucore-hci:stable`; Hotdog
-targets `ucore:stable`. Render complete installation Ignition files with:
+Bento uses `ucore-hci:stable`; Hotdog uses `ucore:stable`. Their Butane files
+configure uCore's two-stage rebase from Fedora CoreOS to the signed image.
+Render installation files with:
 
 ```shell
 mise run ignition
 ```
 
-Butane writes one file per host to
-`${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/`. Set
-`IGNITION_OUTPUT_DIRECTORY` to choose another destination. To render a single
-host, use Butane directly:
+Files are written to `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/`.
+Set `IGNITION_OUTPUT_DIRECTORY` to choose another destination.
 
-```shell
-mise exec -- butane --files-dir hosts --pretty --strict hosts/bento/bento.bu --output /tmp/bento.ign
-```
-
-Cockpit certificate renewal runs as a shared one-shot `acme.sh` Quadlet. Both
-host configurations enable its daily timer. Initial issuance and certificate-path
-registration remain a one-time deployment step
-because they require the host's scoped Cloudflare token.
-
-Keep backup receivers read-only (`readonly=on`) and unmounted
-(`mountpoint=none`). Exclude source mount and sharing properties from replication.
-Replicate source trees recursively so new child datasets are included. Exclude
-entire receiver trees from destination snapshot jobs and onward replication;
-receiver snapshots must come from the source. Verify matching snapshot GUIDs
-and a subsequent incremental transfer before treating a rebuilt copy as healthy.
-For recovery, mount the required snapshot explicitly with
-`mount -t zfs -o ro,nosuid,nodev,noexec <dataset>@<snapshot> <recovery-directory>`
-in a root-owned directory with mode `0700`, then unmount it when finished.
+Both hosts enable daily Cockpit certificate renewal through `acme.sh`.
+Initial issuance and certificate registration require the host's scoped Cloudflare token.
 
 ## Licence
 

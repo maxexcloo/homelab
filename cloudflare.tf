@@ -43,18 +43,6 @@ data "cloudflare_zone" "configured" {
 locals {
   cloudflare = yamldecode(file("${path.module}/data/domains.yaml")).cloudflare
 
-  cloudflare_dns_records_resend = {
-    for name, selector in {
-      cname = { record = "SPF", type = "CNAME" }
-      dkim  = { record = "DKIM", type = "TXT" }
-      mx    = { record = "SPF", type = "MX" }
-      spf   = { record = "SPF", type = "TXT" }
-      } : name => one([
-        for record in resend_domain.infrastructure.records : record
-        if record.record == selector.record && record.type == selector.type
-    ])
-  }
-
   cloudflare_consumers_acme = {
     for name, challenge_mode in local.cloudflare.acme_consumers : name => {
       challenge_hostname = can(local.machines[name]) ? local.machine_fqdns[name] : "${name}.${local.domains.services}"
@@ -113,6 +101,18 @@ locals {
       title = "Cloudflare WAF: ${name}"
       zones = local.cloudflare.waf_zones
     }
+  }
+
+  cloudflare_dns_records_resend = {
+    for name, selector in {
+      cname = { record = "SPF", type = "CNAME" }
+      dkim  = { record = "DKIM", type = "TXT" }
+      mx    = { record = "SPF", type = "MX" }
+      spf   = { record = "SPF", type = "TXT" }
+      } : name => one([
+        for record in resend_domain.infrastructure.records : record
+        if record.record == selector.record && record.type == selector.type
+    ])
   }
 
   cloudflare_tunnel_route_entries = flatten([
