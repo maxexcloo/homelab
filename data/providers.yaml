@@ -4,8 +4,7 @@ providers:
     icon: si-1password-#ffffff
     url: https://my.1password.com
     gatus:
-      - &website
-        alerts:
+      - alerts:
           - type: email
         conditions:
           - "[STATUS] == any(200, 401, 403)"
@@ -15,13 +14,21 @@ providers:
     icon: si-backblaze-#ffffff
     url: https://backblaze.com
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
   Cloudflare:
     description: DNS & Zero Trust
     icon: si-cloudflare-#ffffff
     url: https://dash.cloudflare.com
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
       - url: 1.1.1.1
         alerts:
           - type: email
@@ -43,7 +50,11 @@ providers:
     icon: sh-control-d-light
     url: https://controld.com
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
       - url: 76.76.2.0
         alerts:
           - type: email
@@ -58,31 +69,51 @@ providers:
     icon: si-flydotio-#ffffff
     url: https://fly.io/dashboard
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
   GitHub:
     description: Source Control
     icon: si-github-#ffffff
     url: https://github.com/maxexcloo
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
   Oracle Cloud:
     description: Cloud VMs
     icon: si-oracle-#ffffff
     url: https://cloud.oracle.com
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
   Resend:
     description: Email API
     icon: si-resend-#ffffff
     url: https://resend.com/overview
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
   Tailscale:
     description: VPN
     icon: si-tailscale-#ffffff
     url: https://login.tailscale.com/admin
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"
     homepage:
       description: VPN
       icon: tailscale
@@ -95,4 +126,8 @@ providers:
     icon: si-ubiquiti-#ffffff
     url: https://unifi.ui.com
     gatus:
-      - *website
+      - alerts:
+          - type: email
+        conditions:
+          - "[STATUS] == any(200, 401, 403)"
+          - "[RESPONSE_TIME] < 5000"

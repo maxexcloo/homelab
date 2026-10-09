@@ -20,11 +20,6 @@ output "clusters" {
   }
 }
 
-output "infrastructure" {
-  description = "Non-secret provider identities published to cluster vaults for app consumers."
-  value       = local.infrastructure_inventory
-}
-
 output "machines" {
   description = "Managed machine network identities and addresses."
   value = {

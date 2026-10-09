@@ -2,20 +2,23 @@ machines:
   fre:
     hotdog:
       beszel: true
-      management_port: 9090
       platform: ucore
       public_ipv4: 199.127.129.143
       public_ipv6: 2602:f831::4665:8aff:fee1:40ed
       type: backup
       username: core
-      management: &cockpit
-        description: Server Administration
-        icon: cockpit-light
-        name: Cockpit
+      services:
+        management:
+          name: Cockpit
+          port: 9090
+          scheme: https
+          homepage:
+            description: Server Administration
+            icon: cockpit-light
   mbk:
     bento:
       beszel: true
-      management_port: 9090
+      monitoring: false
       platform: ucore
       type: server
       username: core
@@ -24,33 +27,43 @@ machines:
           mac_address: "c8:ff:bf:0f:9f:d0"
         - address: null
           mac_address: "c8:ff:bf:0f:9f:d1"
-      management: *cockpit
+      services:
+        management:
+          name: Cockpit
+          port: 9090
+          scheme: https
+          homepage:
+            description: Server Administration
+            icon: cockpit-light
     gateway:
       beszel: true
-      management_port: 443
       platform: unifi
       private_ipv4: 10.0.0.1
       type: router
       username: root
-      management:
-        monitoring: true
-        name: UniFi
+      services:
+        management:
+          monitoring: true
+          name: UniFi
+          port: 443
+          scheme: https
     hass:
       beszel: true
       display_name: HASS
-      management_port: 443
       platform: haos
       type: appliance
       username: root
       interfaces:
         - address: 10.0.0.2
           mac_address: "84:47:09:67:c8:33"
-      management:
-        monitoring: true
-        name: Home Assistant
+      services:
+        management:
+          monitoring: true
+          name: Home Assistant
+          port: 443
+          scheme: https
     kimbap:
       beszel: true
-      management_port: 443
       platform: truenas
       type: storage
       username: root
@@ -62,10 +75,12 @@ machines:
           address: 10.4.0.3
           bridge: br4
           mac_address: "c8:ff:bf:01:52:e1"
-      management:
-        monitoring: true
-        name: TrueNAS
       services:
+        management:
+          monitoring: true
+          name: TrueNAS
+          port: 443
+          scheme: https
         netboot:
           monitoring: true
           name: Netboot
@@ -84,7 +99,6 @@ machines:
           mac_address: "b6:7c:bc:fa:01:50"
     mandu:
       beszel: true
-      management_port: 9090
       monitoring: false
       platform: bazzite
       type: server
@@ -94,8 +108,16 @@ machines:
           mac_address: "84:47:09:5a:6b:bf"
         - address: 10.0.2.124
           mac_address: "84:47:09:5a:6b:bc"
-      management: *cockpit
+      services:
+        management:
+          name: Cockpit
+          port: 9090
+          scheme: https
+          homepage:
+            description: Server Administration
+            icon: cockpit-light
     nanokvm:
+      monitoring: false
       platform: nanokvm
       type: appliance
       username: root
@@ -104,12 +126,12 @@ machines:
           mac_address: "48:da:35:6d:cb:80"
       services:
         console:
+          name: NanoKVM
           port: 80
           scheme: http
           homepage:
             description: Remote Console & Power Control
             icon: sipeed
-            name: NanoKVM
       tailscale:
         network_prefix: false
     slzb-06m:
@@ -120,12 +142,12 @@ machines:
           mac_address: "94:54:c5:eb:3f:90"
       services:
         console:
+          name: SLZB-06M
           port: 80
           scheme: http
           homepage:
             description: Zigbee Ethernet Adapter
             icon: zigbee
-            name: SLZB-06M
       tailscale:
         enabled: false
     steam-deck:

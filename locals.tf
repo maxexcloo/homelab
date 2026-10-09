@@ -16,10 +16,10 @@ locals {
       for name, machine in local.machines : name => try(coalesce(
         try(local.dns_records_derived_specs["machine/${name}/a"].name, local.dns_records_derived_specs["machine/${name}/aaaa"].name, null),
         try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
-        try(join(".", compact([
+        try(format("%s.%s",
           local.machine_hostnames[name],
           data.unifi_network.configured[local.unifi_clients[lower(machine.interfaces[0].mac_address)].network_key].domain_name,
-        ])), null),
+        ), null),
         local.machine_private_ipv4_addresses[name],
         try(machine.public_ipv4, null),
       ), null)
@@ -139,7 +139,7 @@ resource "terraform_data" "configuration_validation" {
 
     precondition {
       condition = alltrue(flatten([
-        for cluster_name, cluster in local.clusters : [
+        for cluster in values(local.clusters) : [
           for node_name in keys(cluster.nodes) : can(local.machines[node_name])
         ]
       ]))
@@ -276,10 +276,15 @@ resource "terraform_data" "configuration_validation" {
     }
 
     precondition {
-      condition = alltrue([
-        for machine in values(local.machines) : try(machine.management_port, null) == null || try(machine.management_port >= 1 && machine.management_port <= 65535 && floor(machine.management_port) == machine.management_port, false)
-      ])
-      error_message = "Machine management ports must be integers from 1 to 65535."
+      condition = alltrue(flatten([
+        for machine in values(local.machines) : [
+          for service in values(try(machine.services, {})) : try(
+            contains(["http", "https"], service.scheme) && service.port >= 1 && service.port <= 65535 && floor(service.port) == service.port,
+            false,
+          )
+        ]
+      ]))
+      error_message = "Machine services must use HTTP or HTTPS and integer ports from 1 to 65535."
     }
 
     precondition {
@@ -306,9 +311,7 @@ resource "terraform_data" "configuration_validation" {
     precondition {
       condition = length(flatten([
         for cluster in values(local.clusters) : keys(cluster.nodes)
-        ])) == length(distinct(flatten([
-          for cluster in values(local.clusters) : keys(cluster.nodes)
-      ])))
+      ])) == length(local.machine_clusters)
       error_message = "A machine may belong to only one cluster."
     }
 

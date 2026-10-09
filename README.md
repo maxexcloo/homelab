@@ -116,17 +116,18 @@ Provider `homepage` entries hold card metadata and native widget settings;
 URL; DNS probes default to the infrastructure domain. In the machine inventory:
 
 - `beszel: true` records an installed host agent.
-- `management_port` sets the HTTPS management port; `management` supplies display metadata.
 - `monitoring: false` excludes a machine from infrastructure probes.
-- `services.<name>` declares HTTP services with `port` and `scheme`.
+- `services.<name>` declares HTTP endpoints with `name`, `port` and `scheme`;
+  the management console uses `services.management`.
 
-Set `monitoring: true` under `management` or a service to enable its HTTP probe.
-Service `homepage` metadata accepts `description`, `group` (default: Servers),
-`icon` and `name`. The `types` mapping supplies machine display groups.
+Set `monitoring: true` on a service to enable its HTTP probe.
+Optional service `homepage` metadata accepts `description`, `group` (default:
+Servers) and `icon`. The service `name` supplies its display label, and the `types`
+mapping supplies machine display groups.
 
 OpenTofu publishes non-secret Cloudflare and Tailscale IDs and preferred hosts
-in each cluster vault's `Infrastructure Inventory` note and the `infrastructure`
-output. Hosts prefer machine DNS, Tailscale IPv4, UniFi DNS, then LAN/public IP;
+in each cluster vault's `Infrastructure Inventory` note.
+Hosts prefer machine DNS, Tailscale IPv4, UniFi DNS, then LAN/public IP;
 HTTPS consumers retain the certificate hostname. Kubelab reads the note through
 External Secrets; widget credentials remain app-owned.
 
@@ -142,7 +143,10 @@ List SMTP hosts in `data/domains.yaml` under `resend.hosts`. Each receives a
 sending-only key in `Homelab/Resend: <machine FQDN>`. Use SMTP username `resend`
 and the stored password. Listed TrueNAS hosts are configured automatically with
 sender `<network>-<hostname>@<infrastructure domain>`; configure other hosts manually.
-OpenTofu manages the infrastructure domain's Resend DNS records and verification.
+OpenTofu enables Resend sending for every configured DNS zone and manages its
+verification records. Optional `resend.domains` settings override the region and
+sending CNAME requirement. The existing `excloo.dev` setup retains its Tokyo region
+and three-record configuration; ordinary inbound mail records stay in `data/dns/`.
 
 The `Flylab` vault holds managed `Resend` and `Tailscale OAuth Client` items,
 with sending-only access and `tag:fly` respectively. Supply its `Fly.io` deployment
