@@ -1,15 +1,26 @@
 dns:
   fastmail:
-    spf: v=spf1 include:spf.messagingengine.com ?all
-    dkim_selectors:
-      - fm1
-      - fm2
-      - fm3
-    mx:
-      - content: in1-smtp.messagingengine.com
-        priority: 10
-      - content: in2-smtp.messagingengine.com
-        priority: 20
+    - type: CNAME
+      name: fm1._domainkey
+      content: fm1.{domain}.dkim.fmhosted.com
+    - type: CNAME
+      name: fm2._domainkey
+      content: fm2.{domain}.dkim.fmhosted.com
+    - type: CNAME
+      name: fm3._domainkey
+      content: fm3.{domain}.dkim.fmhosted.com
+    - type: MX
+      name: "@"
+      content: in1-smtp.messagingengine.com
+      priority: 10
+    - type: MX
+      name: "@"
+      content: in2-smtp.messagingengine.com
+      priority: 20
+    - type: TXT
+      name: "@"
+      id: txt-apex-spf
+      content: '"v=spf1 include:spf.messagingengine.com ?all"'
   resend:
     cname: true
     region: us-east-1

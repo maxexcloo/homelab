@@ -104,42 +104,26 @@ locals {
   }
 
   cloudflare_dns_records_fastmail = {
-    for source_file in local.dns_zone_files : source_file.zone.name => concat(
-      [
-        for selector in local.provider_dns.fastmail.dkim_selectors : {
-          content = "${selector}.${source_file.zone.name}.dkim.fmhosted.com"
-          name    = "${selector}._domainkey"
-          type    = "CNAME"
-        }
-      ],
-      [
-        for record in local.provider_dns.fastmail.mx : merge(record, {
-          name = "@"
-          type = "MX"
-        })
-      ],
-      [{
-        content = "\"${local.provider_dns.fastmail.spf}\""
-        id      = "txt-apex-spf"
-        name    = "@"
-        type    = "TXT"
-      }],
-    )
+    for source_file in local.dns_zone_files : source_file.zone.name => [
+      for record in local.provider_dns.fastmail : merge(record, {
+        content = replace(record.content, "{domain}", source_file.zone.name)
+      })
+    ]
     if contains(try(source_file.zone.providers, []), "fastmail")
   }
 
   cloudflare_dns_records_resend = merge([
     for domain, settings in local.resend_domains : {
       for name, selector in {
-        cname = { record = "SPF", type = "CNAME" }
-        dkim  = { record = "DKIM", type = "TXT" }
-        mx    = { record = "SPF", type = "MX" }
-        spf   = { record = "SPF", type = "TXT" }
+        cname = "SPF/CNAME"
+        dkim  = "DKIM/TXT"
+        mx    = "SPF/MX"
+        spf   = "SPF/TXT"
         } : "${domain}/${name}" => {
         zone = domain
         record = one([
           for record in resend_domain.configured[domain].records : record
-          if record.record == selector.record && record.type == selector.type
+          if "${record.record}/${record.type}" == selector
         ])
       }
       if name != "cname" || settings.cname
@@ -289,19 +273,6 @@ resource "cloudflare_dns_record" "managed" {
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 
   depends_on = [terraform_data.dns_validation]
-}
-
-resource "cloudflare_dns_record" "resend" {
-  for_each = local.cloudflare_dns_records_resend
-
-  comment  = "Homelab OpenTofu Managed"
-  content  = each.value.record.value
-  name     = "${each.value.record.name}.${each.value.zone}"
-  priority = try(tonumber(each.value.record.priority), null)
-  proxied  = false
-  ttl      = 1
-  type     = each.value.record.type
-  zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {

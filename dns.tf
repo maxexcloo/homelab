@@ -54,6 +54,15 @@ locals {
 
   dns_records_derived_specs = merge(
     {
+      for record_key, entry in local.cloudflare_dns_records_resend : "resend/${record_key}" => {
+        content  = entry.record.value
+        name     = "${entry.record.name}.${entry.zone}"
+        priority = try(tonumber(entry.record.priority), null)
+        type     = entry.record.type
+        zone     = entry.zone
+      }
+    },
+    {
       for zone in local.cloudflare_zones : "acme-delegation/${zone}" => {
         content = "_acme-challenge.${zone}.${local.domains.acme}"
         name    = "_acme-challenge.${zone}"

@@ -44,5 +44,5 @@ resource "resend_domain_verification" "configured" {
 
   domain_id = resend_domain.configured[each.key].id
 
-  depends_on = [cloudflare_dns_record.resend]
+  depends_on = [cloudflare_dns_record.managed]
 }
