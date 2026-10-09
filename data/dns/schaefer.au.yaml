@@ -1,7 +1,6 @@
 name: schaefer.au
 providers:
   - fastmail
-  - resend
 records:
   - type: CNAME
     name: mesmtp._domainkey
