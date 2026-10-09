@@ -1,5 +1,16 @@
 locals {
-  resend_hosts = toset(yamldecode(file("${path.module}/data/domains.yaml")).resend.hosts)
+  resend       = yamldecode(file("${path.module}/data/domains.yaml")).resend
+  resend_hosts = toset(local.resend.hosts)
+
+  resend_domains = {
+    for domain in local.cloudflare_zones : domain => merge(
+      {
+        cname  = true
+        region = "us-east-1"
+      },
+      try(local.resend.domains[domain], {}),
+    )
+  }
 }
 
 resource "resend_api_key" "cluster" {
@@ -28,12 +39,17 @@ resource "resend_api_key" "host" {
   }
 }
 
-resource "resend_domain" "infrastructure" {
-  name = local.domains.infrastructure
+resource "resend_domain" "configured" {
+  for_each = local.resend_domains
+
+  name   = each.key
+  region = each.value.region
 }
 
-resource "resend_domain_verification" "infrastructure" {
-  domain_id = resend_domain.infrastructure.id
+resource "resend_domain_verification" "configured" {
+  for_each = local.resend_domains
+
+  domain_id = resend_domain.configured[each.key].id
 
   depends_on = [cloudflare_dns_record.resend]
 }

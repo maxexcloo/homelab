@@ -103,17 +103,23 @@ locals {
     }
   }
 
-  cloudflare_dns_records_resend = {
-    for name, selector in {
-      cname = { record = "SPF", type = "CNAME" }
-      dkim  = { record = "DKIM", type = "TXT" }
-      mx    = { record = "SPF", type = "MX" }
-      spf   = { record = "SPF", type = "TXT" }
-      } : name => one([
-        for record in resend_domain.infrastructure.records : record
-        if record.record == selector.record && record.type == selector.type
-    ])
-  }
+  cloudflare_dns_records_resend = merge([
+    for domain, settings in local.resend_domains : {
+      for name, selector in {
+        cname = { record = "SPF", type = "CNAME" }
+        dkim  = { record = "DKIM", type = "TXT" }
+        mx    = { record = "SPF", type = "MX" }
+        spf   = { record = "SPF", type = "TXT" }
+        } : "${domain}/${name}" => {
+        zone = domain
+        record = one([
+          for record in resend_domain.configured[domain].records : record
+          if record.record == selector.record && record.type == selector.type
+        ])
+      }
+      if name != "cname" || settings.cname
+    }
+  ]...)
 
   cloudflare_tunnel_route_entries = flatten([
     for consumer_name, consumer in local.cloudflare.tunnel_consumers : [
@@ -264,13 +270,13 @@ resource "cloudflare_dns_record" "resend" {
   for_each = local.cloudflare_dns_records_resend
 
   comment  = "Homelab OpenTofu Managed"
-  content  = each.value.value
-  name     = "${each.value.name}.${local.domains.infrastructure}"
-  priority = try(tonumber(each.value.priority), null)
+  content  = each.value.record.value
+  name     = "${each.value.record.name}.${each.value.zone}"
+  priority = try(tonumber(each.value.record.priority), null)
   proxied  = false
   ttl      = 1
-  type     = each.value.type
-  zone_id  = data.cloudflare_zone.configured[local.domains.infrastructure].zone_id
+  type     = each.value.record.type
+  zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {

@@ -37,6 +37,10 @@ domains:
   infrastructure: excloo.net
   services: excloo.dev
 resend:
+  domains:
+    excloo.dev:
+      cname: false
+      region: ap-northeast-1
   hosts:
     - bento
     - hass
