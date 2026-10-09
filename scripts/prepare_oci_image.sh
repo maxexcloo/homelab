@@ -9,7 +9,7 @@ if [[ "${target}" =~ ^https?:// ]]; then
   image_url="${target}"
 else
   if ! image_url="$(tofu -chdir="${repo_dir}" output -json clusters |
-    jq -er --arg cluster "${target}" '
+    jq --arg cluster "${target}" -er '
       if $cluster == "" then [.[].disk_image_url // empty][0]
       else .[$cluster].disk_image_url end
       | select(. != null and . != "")
@@ -37,8 +37,8 @@ image_directory="${cache_dir}/images/${image_hash}"
 image_path="${image_directory}/${image_name}"
 mkdir -p "${image_directory}"
 work_dir="$(mktemp -d "${cache_dir}/prepare.XXXXXX")"
-trap 'rm -rf -- "${work_dir}"' EXIT
-curl --fail --location --retry 3 --output "${work_dir}/download" "${image_url}"
+trap 'rm -fr -- "${work_dir}"' EXIT
+curl --fail --location --output "${work_dir}/download" --retry 3 "${image_url}"
 case "${archive_name}" in
   *.qcow2) mv "${work_dir}/download" "${work_dir}/image.qcow2" ;;
   *)

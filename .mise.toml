@@ -61,7 +61,7 @@ run = '''
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
 mkdir -p "${output_directory}"
 for config in hosts/*/*.bu; do
-  butane --files-dir hosts --pretty --strict --output "${output_directory}/$(basename "${config}" .bu).ign" "${config}"
+  butane --files-dir hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "${config}"
 done
 '''
 

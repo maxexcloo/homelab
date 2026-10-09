@@ -18,7 +18,7 @@ done
 cluster_vault_prefix="$(yq -r '.onepassword.cluster_vault_prefix' "${access_path}")"
 
 tmpdir="$(mktemp -d)"
-trap 'rm -rf -- "${tmpdir}"' EXIT
+trap 'rm -fr -- "${tmpdir}"' EXIT
 
 mkdir -p "${HOME}/.kube" "${HOME}/.talos"
 chmod 700 "${HOME}/.kube" "${HOME}/.talos"
@@ -35,7 +35,7 @@ install_config() {
 
 get_note() {
   # Vault names containing colons cannot be used in op:// references.
-  op item get "$2" --vault "$1" --format json |
+  op item get "$2" --format json --vault "$1" |
     jq -er '.fields[] | select(.id == "notesPlain") | .value | select(length > 0)' >"$3" && [[ -s "$3" ]]
 }
 
