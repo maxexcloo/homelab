@@ -31,20 +31,20 @@ UNIFI_API_KEY = "op://Homelab/OpenTofu/unifi_api_key"
 
 # Deploy
 [tasks.apply]
-description = "Apply all changes"
+description = "Apply All Changes"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu apply'"
 
 [tasks.plan]
-description = "Plan all changes"
+description = "Plan All Changes"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu plan'"
 
 # Development
 [tasks.check]
-description = "Run all repository checks"
+description = "Run All Repository Checks"
 run = "prek run --all-files"
 
 [tasks.fmt]
-description = "Format project files"
+description = "Format Project Files"
 run = """
 prettier --write .
 tofu fmt -recursive
@@ -52,11 +52,11 @@ tofu fmt -recursive
 
 # Scripts
 [tasks.client-configs]
-description = "Sync workstation kubeconfig and talosconfig from 1Password"
+description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
 
 [tasks.ignition]
-description = "Render all uCore Ignition configurations with Butane"
+description = "Render uCore Ignition Configurations With Butane"
 run = '''
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
 mkdir -p "${output_directory}"
@@ -66,28 +66,28 @@ done
 '''
 
 [tasks.prepare-oci-image]
-description = "Download a Talos QCOW2 image from Image Factory"
+description = "Download Talos QCOW2 Image From Image Factory"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- scripts/prepare_oci_image.sh"
 
 [tasks.ssh-config]
-description = "Install the non-secret homelab SSH include"
+description = "Install Homelab SSH Include"
 run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
 [tasks.init]
-description = "Initialise providers and the remote backend"
+description = "Initialise Providers & Remote Backend"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu init -input=false'"
 
 [tasks.init-ci]
-description = "Initialise providers without the remote backend"
+description = "Initialise Providers Without Remote Backend"
 run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -lockfile=readonly"
 
 [tasks.opentofu-item]
-description = "Create the OpenTofu 1Password item if missing"
+description = "Create Missing OpenTofu 1Password Item"
 run = "scripts/setup_opentofu_item.sh"
 
 [tasks.setup]
-description = "Install tools, create the 1Password item, initialise providers, and install Git hooks"
+description = "Install Tools, Initialise Providers & Set Up Git Hooks"
 run = """
 mise install
 mise run opentofu-item

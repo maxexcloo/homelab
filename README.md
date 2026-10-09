@@ -103,11 +103,11 @@ file contains its own lookups, derived values and direct provider resources.
 | `data/access.yaml`    | Vault names, SSH agent and Tailscale policy             | `onepassword.tf`, `tailscale.tf`, SSH renderer |
 | `data/clusters.yaml`  | Cluster membership, desired versions and Talos settings | `talos.tf`, `oci.tf`                           |
 | `data/dns/*.yaml`     | DNS records and mail provider selection                 | `dns.tf`, `cloudflare.tf`                      |
-| `data/domains.yaml`   | Domain roles, credentials and tunnel routes             | `cloudflare.tf`, `dns.tf`                      |
-| `data/machines.yaml`  | Machine identity, interfaces and compute                | `oci.tf`, `truenas.tf`, `unifi.tf`             |
+| `data/domains.yaml`   | Domain roles                                            | `cloudflare.tf`, `dns.tf`                      |
+| `data/machines.yaml`  | Machine identity, interfaces, compute and integrations  | `oci.tf`, `truenas.tf`, `unifi.tf`             |
 | `data/networks.yaml`  | Existing UniFi subnets and managed OCI networking       | `oci.tf`, `unifi.tf`                           |
 | `data/providers.yaml` | Provider DNS settings, bookmarks, widgets and probes    | OpenTofu, Homepage, Flylab                     |
-| `data/storage.yaml`   | Backup buckets, datasets and NFS exports                | `backblaze.tf`, `truenas.tf`                   |
+| `data/storage.yaml`   | TrueNAS datasets and NFS exports                        | `truenas.tf`                                   |
 
 Homepage and Flylab read machine endpoints from `data/machines.yaml` and
 `data/domains.yaml`, and provider links and DNS resolvers from `data/providers.yaml`.
@@ -121,6 +121,12 @@ query settings and probe conditions. DNS queries default to the infrastructure d
 - `services.<name>` declares HTTP endpoints with `name`, `port` and `scheme`;
   the management console uses `services.management`.
 - `smtp: resend` selects Resend for host email.
+
+Machines select Backblaze buckets with `backblaze.bucket_name`; clusters opt in
+with `backblaze: true`. Shared provider settings live in `data/providers.yaml`.
+Machine and cluster `cloudflare` entries select ACME, tunnels and ExternalDNS.
+Clusters opt in to WAF with `cloudflare.waf: true`; DNS zones select it with
+`waf: true`.
 
 Set `monitoring: true` on a service to enable its HTTP probe.
 Service `description`, `icon` and optional `group` (default: Servers) supply

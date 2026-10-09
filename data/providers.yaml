@@ -37,6 +37,7 @@ providers:
       - "[RESPONSE_TIME] < 5000"
   backblaze:
     description: Object Storage
+    endpoint: https://s3.us-east-005.backblazeb2.com
     icon: si-backblaze-#ffffff
     name: Backblaze
     url: https://backblaze.com
@@ -46,6 +47,7 @@ providers:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
   cloudflare:
+    account_name: excloo
     description: DNS & Zero Trust
     icon: si-cloudflare-#ffffff
     name: Cloudflare

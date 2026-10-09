@@ -1,37 +1,3 @@
-cloudflare:
-  account_name: excloo
-  acme_consumers:
-    bento: delegated
-    gateway: delegated
-    hass: delegated
-    hotdog: delegated
-    kimbap: direct
-    mbk: delegated
-    syd: delegated
-  external_dns_consumers:
-    mbk:
-      - excloo.com
-      - excloo.dev
-    syd:
-      - excloo.com
-      - excloo.dev
-  tunnel_consumers:
-    hotdog: {}
-    kimbap: {}
-    mandu: {}
-    mbk: {}
-    syd: {}
-    hass:
-      fallback_service: http_status:404
-      ingress:
-        - hostname: home-assistant.excloo.com
-          path: ^/api/webhook/.+$
-          service: https://homeassistant
-          zone: excloo.com
-          origin_request:
-            no_tls_verify: true
-  waf_zones:
-    - excloo.com
 domains:
   acme: 043847.xyz
   infrastructure: excloo.net

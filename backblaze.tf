@@ -1,6 +1,6 @@
 locals {
-  b2_clusters = toset(keys(local.clusters))
-  b2_endpoint = try(local.storage.backblaze.endpoint, null)
+  b2_clusters = toset([for name, cluster in local.clusters : name if try(cluster.backblaze, false)])
+  b2_endpoint = try(local.provider_settings.providers.backblaze.endpoint, null)
 
   b2_application_key_capabilities_cluster = [
     "listBuckets",
@@ -22,9 +22,10 @@ locals {
   ]
 
   b2_hosts = {
-    for name, host in try(local.storage.backblaze.hosts, {}) : name => {
-      bucket_name = try(trimspace(host.bucket_name), null)
+    for name, machine in local.machines : name => {
+      bucket_name = try(trimspace(machine.backblaze.bucket_name), null)
     }
+    if can(machine.backblaze)
   }
 }
 
@@ -82,13 +83,6 @@ resource "terraform_data" "b2_validation" {
     precondition {
       condition     = can(regex("^https://s3\\.[a-z0-9-]+\\.backblazeb2\\.com$", local.b2_endpoint))
       error_message = "The Backblaze B2 endpoint must be an HTTPS regional S3 API URL."
-    }
-
-    precondition {
-      condition = alltrue([
-        for name in keys(local.b2_hosts) : can(local.machines[name])
-      ])
-      error_message = "Every Backblaze B2 host must name an existing machine."
     }
 
     precondition {

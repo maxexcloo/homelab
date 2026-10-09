@@ -1,4 +1,5 @@
 name: excloo.com
+waf: true
 providers:
   - fastmail
   - resend

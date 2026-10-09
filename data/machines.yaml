@@ -8,6 +8,9 @@ machines:
       smtp: resend
       type: backup
       username: core
+      cloudflare:
+        acme: delegated
+        tunnel: {}
       services:
         management:
           description: Server Administration
@@ -23,6 +26,8 @@ machines:
       smtp: resend
       type: server
       username: core
+      cloudflare:
+        acme: delegated
       interfaces:
         - address: 10.0.0.5
           mac_address: "c8:ff:bf:0f:9f:d0"
@@ -41,6 +46,8 @@ machines:
       private_ipv4: 10.0.0.1
       type: router
       username: root
+      cloudflare:
+        acme: delegated
       services:
         management:
           monitoring: true
@@ -54,6 +61,19 @@ machines:
       smtp: resend
       type: appliance
       username: root
+      backblaze:
+        bucket_name: au-haos-rt81yb
+      cloudflare:
+        acme: delegated
+        tunnel:
+          fallback_service: http_status:404
+          ingress:
+            - hostname: home-assistant.excloo.com
+              path: ^/api/webhook/.+$
+              service: https://homeassistant
+              zone: excloo.com
+              origin_request:
+                no_tls_verify: true
       interfaces:
         - address: 10.0.0.2
           mac_address: "84:47:09:67:c8:33"
@@ -69,6 +89,11 @@ machines:
       smtp: resend
       type: storage
       username: root
+      backblaze:
+        bucket_name: au-truenas-494jkq
+      cloudflare:
+        acme: direct
+        tunnel: {}
       interfaces:
         - name: eno1
           address: 10.0.0.3
@@ -106,6 +131,8 @@ machines:
       smtp: resend
       type: server
       username: max.schaefer
+      cloudflare:
+        tunnel: {}
       interfaces:
         - address: 10.4.2.127
           mac_address: "84:47:09:5a:6b:bf"

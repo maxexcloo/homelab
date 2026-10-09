@@ -1,10 +1,18 @@
 clusters:
   mbk:
     api_node: taco
+    backblaze: true
     kubernetes_version: v1.37.1
     pod_subnet: 10.100.0.0/22
     service_subnet: 10.100.4.0/22
     talos_version: v1.14.2
+    cloudflare:
+      acme: delegated
+      tunnel: {}
+      waf: true
+      external_dns:
+        - excloo.com
+        - excloo.dev
     image:
       architecture: amd64
       platform: metal
@@ -23,10 +31,18 @@ clusters:
           - 10.4.0.0/22
   syd:
     api_node: hsp
+    backblaze: true
     kubernetes_version: v1.37.1
     pod_subnet: 10.100.8.0/22
     service_subnet: 10.100.12.0/22
     talos_version: v1.14.2
+    cloudflare:
+      acme: delegated
+      tunnel: {}
+      waf: true
+      external_dns:
+        - excloo.com
+        - excloo.dev
     image:
       architecture: arm64
       bucket_name: homelab-talos-images
