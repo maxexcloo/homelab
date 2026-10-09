@@ -76,9 +76,9 @@ machines:
                 no_tls_verify: true
       interfaces:
         - address: 10.0.0.2
-          mac_address: "84:47:09:67:c8:36"
-        - address: 10.4.0.2
           mac_address: "84:47:09:67:c8:33"
+        - address: 10.4.0.2
+          mac_address: "84:47:09:67:c8:36"
       services:
         management:
           monitoring: true
