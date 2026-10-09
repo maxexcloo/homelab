@@ -8,8 +8,6 @@ Flux.
 
 ## Conventions
 
-- Use Australian English in project-owned prose and identifiers.
-- Use `.yaml`, not `.yml`, for project-owned YAML.
 - Pin tools and providers to stable release versions. Use readable major tags
   such as `v7` for GitHub Actions, not commit SHAs. Let Renovate propose upgrades
   for manual review.
@@ -85,21 +83,12 @@ Do not create a documentation directory or additional Markdown files.
   inside cluster vaults, and qualify titles in the `Homelab` vault only when
   needed to distinguish their scope.
 
-## Sorting Convention
+## Sorting Exceptions
 
-Sort unordered mappings recursively: single-line values first, then multi-line
-values, alphabetically within each group; underscore-prefixed keys come first.
-Non-empty YAML containers are multi-line. Scalar-only JSON arrays are single-line.
-Let `tofu fmt` determine HCL layout.
-
-List identifiers lead in `type`, `name`, `id` order; Prek hooks use `id`, then
-`name`. Sort Mise tools and lifecycle tasks alphabetically, Renovate rules by
-description, and hooks by ID. Workflow keys start with `name`, `on`, `permissions`,
-`concurrency`, then global configuration and `jobs`.
-
-Sort unordered prose lists, table rows and tags alphabetically. Preserve meaningful
-procedural, dependency, interface, routing and priority order. Keep tags limited to
-useful scope, system and purpose labels.
+- Put underscore-prefixed keys first within each value-shape group.
+- Treat non-empty YAML containers as multi-line and scalar-only JSON arrays as
+  single-line. Let `tofu fmt` determine HCL layout.
+- Keep tags limited to useful scope, system and purpose labels.
 
 ## Style
 
@@ -109,26 +98,19 @@ useful scope, system and purpose labels.
   wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
   required by a native schema. Define shared provider settings once rather than
   adding per-consumer overrides without a concrete need.
-- Prefer plain, direct HCL over abstractions and generic pipelines.
-- Prefer native tool features over custom scripts. Keep scripts only for
-  repository-specific glue, and keep Deepmerge for nested Talos configuration.
+- Keep Deepmerge for nested Talos configuration.
 - Put `for_each` first in every HCL block that uses it, followed by a blank line.
 - Keep `depends_on` in its own group, separated from other arguments and blocks
   by blank lines.
 - In mixed HCL files, order data sources, then locals, then resources; sort
   each group alphabetically by address.
-- Keep comments local and specific.
-- Keep check orchestration single-layered so the same validator is not run both
-  directly and through a nested task in one path.
 
 ## Verification
 
-- Run `mise run check` before handoff.
 - Run plans only when requested or immediately before an explicitly approved
   apply.
 
 ## Git History
 
-Git history is the work log. Use small, imperative commit subjects and keep one
-coherent outcome per commit. Keep backend changes, ownership transfers, and
-resource changes separate when their risks differ.
+Keep backend changes, ownership transfers, and resource changes in separate
+commits when their risks differ.
