@@ -5,6 +5,3 @@ records:
   - type: TXT
     name: _dmarc
     content: '"v=DMARC1; p=none;"'
-resend:
-  cname: false
-  region: ap-northeast-1
