@@ -1,6 +1,12 @@
 variant: fcos
 version: 1.6.0
 
+kernel_arguments:
+  should_exist:
+    - fbcon=rotate:3
+    - quiet
+    - systemd.show_status=false
+
 passwd:
   users:
     - name: core
@@ -18,6 +24,33 @@ storage:
       contents:
         inline: |
           bento
+    - mode: 0644
+      path: /var/home/core/.config/btop/btop.conf
+      contents:
+        local: bento/btop.conf
+      group:
+        name: core
+      user:
+        name: core
+    - mode: 0644
+      path: /var/home/core/.trcc/trcc.json
+      contents:
+        local: bento/trcc.json
+      group:
+        name: core
+      user:
+        name: core
+    - mode: 0644
+      path: /var/lib/systemd/linger/core
+      contents:
+        inline: ""
+  links:
+    - path: /var/home/core/.config/systemd/user/default.target.wants/trccd.service
+      target: /etc/systemd/user/trccd.service
+      group:
+        name: core
+      user:
+        name: core
   trees:
     - local: common/etc
       path: /etc
@@ -26,8 +59,30 @@ storage:
 
 systemd:
   units:
+    - name: bento-display-packages.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Install Bento Display Packages
+        After=network-online.target rpm-ostreed.service
+        ConditionPathExists=/etc/ucore-autorebase/signed
+        ConditionPathExists=!/etc/ucore-autorebase/displays
+        Wants=network-online.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/rpm-ostree install --allow-inactive --idempotent btop rocm-smi https://github.com/Lexonight1/thermalright-trcc-linux/releases/download/v9.10.6/trcc-linux-9.10.6-1.fc44.noarch.rpm
+        ExecStart=/usr/bin/touch /etc/ucore-autorebase/displays
+        ExecStart=/usr/bin/systemctl reboot
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: btop-display.service
+      enabled: true
     - name: cockpit-letsencrypt.timer
       enabled: true
+    - name: getty@tty1.service
+      enabled: false
     - name: ucore-unsigned-autorebase.service
       enabled: true
       contents: |

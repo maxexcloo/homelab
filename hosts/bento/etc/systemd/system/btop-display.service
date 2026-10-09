@@ -1,0 +1,23 @@
+[Unit]
+Description=Front-Panel System Monitor
+After=systemd-user-sessions.service
+ConditionPathExists=/usr/bin/btop
+Conflicts=getty@tty1.service
+OnFailure=getty@tty1.service
+OnSuccess=getty@tty1.service
+
+[Service]
+Environment=LANG=C.UTF-8 TERM=linux
+ExecStart=/usr/bin/btop --tty
+StandardError=journal
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+Type=exec
+User=core
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+{
+  "schema": 5,
+  "led_devices": {
+    "0416:8001": {
+      "brightness": 50,
+      "color": [255, 255, 255],
+      "mode": 0,
+      "zone_sync": true,
+      "zone_sync_zones": [true, true, true, true]
+    }
+  }
+}

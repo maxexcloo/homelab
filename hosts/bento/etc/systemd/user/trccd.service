@@ -1,0 +1,14 @@
+[Unit]
+Description=CPU & GPU Temperature Display
+ConditionPathExists=/usr/bin/trcc
+Documentation=https://github.com/Lexonight1/thermalright-trcc-linux
+
+[Service]
+Environment=QT_QPA_PLATFORM=offscreen
+ExecStart=/usr/bin/trcc daemon
+Restart=on-failure
+RestartSec=5
+Type=exec
+
+[Install]
+WantedBy=default.target

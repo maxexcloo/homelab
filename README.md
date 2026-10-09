@@ -324,6 +324,21 @@ Set `IGNITION_OUTPUT_DIRECTORY` to choose another destination.
 Both hosts enable daily Cockpit certificate renewal through `acme.sh`.
 Initial issuance and certificate registration require the host's scoped Cloudflare token.
 
+Bento's Ignition also installs `btop`, `rocm-smi` and the pinned TRCC RPM after
+the signed uCore rebase. Its front-panel console rotates 90° anticlockwise and
+starts btop with CPU, memory, both discrete GPUs, network, disk I/O and process panels.
+Routine boot status stays off the console; logs remain available in the journal.
+Press `q` to return to the login prompt, or use Ctrl+Alt+F2 for a separate login
+console and Ctrl+Alt+F1 to return. After logging in, run `btop --tty` to open the
+monitor again. Set the `core` password through the existing credential delivery
+process for local login; Ignition does not embed it.
+
+TRCC starts without a desktop or login and cycles CPU temperature, CPU usage,
+GPU temperature and GPU usage in white at 50% brightness. Its initial settings
+are in `hosts/bento/trcc.json`; running preferences remain application state.
+Renovate proposes TRCC RPM updates for Ignition. Existing hosts require a manual
+RPM replacement through `rpm-ostree`; changing Ignition does not update them.
+
 ## Licence
 
 AGPL-3.0 - see [LICENSE](LICENSE).

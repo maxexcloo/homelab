@@ -14,6 +14,17 @@
     {
       "customType": "regex",
       "datasourceTemplate": "github-releases",
+      "depNameTemplate": "Lexonight1/thermalright-trcc-linux",
+      "extractVersionTemplate": "^v(?<version>[0-9.]+)$",
+      "managerFilePatterns": ["/^hosts/bento/bento\\.bu$/"],
+      "matchStrings": [
+        "https://github\\.com/Lexonight1/thermalright-trcc-linux/releases/download/v(?<currentValue>[0-9.]+)/",
+        "https://github\\.com/Lexonight1/thermalright-trcc-linux/releases/download/v[0-9.]+/trcc-linux-(?<currentValue>[0-9.]+)-"
+      ]
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "github-releases",
       "depNameTemplate": "siderolabs/talos",
       "managerFilePatterns": ["/^data/clusters\\.yaml$/"],
       "matchStrings": ["talos_version: (?<currentValue>v[0-9.]+)"]
