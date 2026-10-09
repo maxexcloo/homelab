@@ -111,6 +111,7 @@ file contains its own lookups, derived values and direct provider resources.
 
 Homepage and Flylab read machine endpoints from `data/machines.yaml` and
 `data/domains.yaml`, and provider links and DNS resolvers from `data/providers.yaml`.
+Provider keys are lowercase identifiers; `name` supplies the display label.
 Provider `homepage` entries hold card metadata and native widget settings;
 `gatus` entries hold native probe settings. Website probes default to the provider
 URL; DNS probes default to the infrastructure domain. In the machine inventory:

@@ -25,9 +25,10 @@ dns:
     cname: true
     region: us-east-1
 providers:
-  1Password:
+  1password:
     description: Passwords & Secrets
     icon: si-1password-#ffffff
+    name: 1Password
     url: https://my.1password.com
     gatus:
       - alerts:
@@ -35,9 +36,10 @@ providers:
         conditions:
           - "[STATUS] == any(200, 401, 403)"
           - "[RESPONSE_TIME] < 5000"
-  Backblaze:
+  backblaze:
     description: Object Storage
     icon: si-backblaze-#ffffff
+    name: Backblaze
     url: https://backblaze.com
     gatus:
       - alerts:
@@ -45,9 +47,10 @@ providers:
         conditions:
           - "[STATUS] == any(200, 401, 403)"
           - "[RESPONSE_TIME] < 5000"
-  Cloudflare:
+  cloudflare:
     description: DNS & Zero Trust
     icon: si-cloudflare-#ffffff
+    name: Cloudflare
     url: https://dash.cloudflare.com
     gatus:
       - alerts:
@@ -71,9 +74,10 @@ providers:
       widget:
         key: "{{HOMEPAGE_FILE_CLOUDFLARE_KEY}}"
         type: cloudflared
-  Control D:
+  control_d:
     description: DNS
     icon: sh-control-d-light
+    name: Control D
     url: https://controld.com
     gatus:
       - alerts:
@@ -90,9 +94,10 @@ providers:
           - "[RESPONSE_TIME] < 5000"
         dns:
           query-type: A
-  Fly.io:
+  fly:
     description: App Platform
     icon: si-flydotio-#ffffff
+    name: Fly.io
     url: https://fly.io/dashboard
     gatus:
       - alerts:
@@ -100,9 +105,10 @@ providers:
         conditions:
           - "[STATUS] == any(200, 401, 403)"
           - "[RESPONSE_TIME] < 5000"
-  GitHub:
+  github:
     description: Source Control
     icon: si-github-#ffffff
+    name: GitHub
     url: https://github.com/maxexcloo
     gatus:
       - alerts:
@@ -110,9 +116,10 @@ providers:
         conditions:
           - "[STATUS] == any(200, 401, 403)"
           - "[RESPONSE_TIME] < 5000"
-  Oracle Cloud:
+  oracle_cloud:
     description: Cloud VMs
     icon: si-oracle-#ffffff
+    name: Oracle Cloud
     url: https://cloud.oracle.com
     gatus:
       - alerts:
@@ -120,9 +127,10 @@ providers:
         conditions:
           - "[STATUS] == any(200, 401, 403)"
           - "[RESPONSE_TIME] < 5000"
-  Resend:
+  resend:
     description: Email API
     icon: si-resend-#ffffff
+    name: Resend
     url: https://resend.com/overview
     gatus:
       - alerts:
@@ -130,9 +138,10 @@ providers:
         conditions:
           - "[STATUS] == any(200, 401, 403)"
           - "[RESPONSE_TIME] < 5000"
-  Tailscale:
+  tailscale:
     description: VPN
     icon: si-tailscale-#ffffff
+    name: Tailscale
     url: https://login.tailscale.com/admin
     gatus:
       - alerts:
@@ -147,9 +156,10 @@ providers:
       widget:
         key: "{{HOMEPAGE_FILE_TAILSCALE_KEY}}"
         type: tailscale
-  UniFi:
+  unifi:
     description: Network
     icon: si-ubiquiti-#ffffff
+    name: UniFi
     url: https://unifi.ui.com
     gatus:
       - alerts:
