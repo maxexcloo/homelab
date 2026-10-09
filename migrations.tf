@@ -1,9 +1,4 @@
 moved {
-  from = data.onepassword_vault.configured["flylab"]
-  to   = data.onepassword_vault.configured["fly"]
-}
-
-moved {
   from = onepassword_item.resend_flylab
   to   = onepassword_item.resend_fly
 }

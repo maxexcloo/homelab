@@ -144,7 +144,7 @@ and the stored password. Listed TrueNAS hosts are configured automatically with
 sender `<network>-<hostname>@<infrastructure domain>`; configure other hosts manually.
 OpenTofu manages the infrastructure domain's Resend DNS records and verification.
 
-The `Fly` vault holds managed `Resend` and `Tailscale OAuth Client` items,
+The `Flylab` vault holds managed `Resend` and `Tailscale OAuth Client` items,
 with sending-only access and `tag:fly` respectively. Supply its `Fly.io` deployment
 token separately; keep the service-account recovery copy in
 `Homelab/Connect Token: fly`.

@@ -198,7 +198,7 @@ resource "onepassword_item" "resend_fly" {
   title               = "Resend"
   url                 = "https://resend.com/api-keys"
   username            = resend_api_key.fly.id
-  vault               = data.onepassword_vault.configured["fly"].uuid
+  vault               = data.onepassword_vault.configured["flylab"].uuid
 }
 
 resource "onepassword_item" "resend_host" {
@@ -231,7 +231,7 @@ resource "onepassword_item" "tailscale_fly" {
   title               = "Tailscale OAuth Client"
   url                 = "https://login.tailscale.com/admin/settings/oauth"
   username            = tailscale_oauth_client.fly.id
-  vault               = data.onepassword_vault.configured["fly"].uuid
+  vault               = data.onepassword_vault.configured["flylab"].uuid
 }
 
 resource "onepassword_item" "tailscale_operator" {

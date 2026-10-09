@@ -1,7 +1,7 @@
 onepassword:
   cluster_vault_prefix: "Cluster: "
   vaults:
-    fly: Fly
+    flylab: Flylab
     homelab: Homelab
 ssh:
   identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
