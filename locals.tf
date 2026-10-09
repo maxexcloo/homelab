@@ -106,7 +106,7 @@ locals {
 
   machine_tailscale_names = {
     for name, machine in local.machines :
-    name => try(machine.tailscale.network_prefix, true) ? "${machine.network}-${local.machine_hostnames[name]}" : local.machine_hostnames[name]
+    name => "${machine.network}-${local.machine_hostnames[name]}"
     if try(machine.tailscale.enabled, true)
   }
 

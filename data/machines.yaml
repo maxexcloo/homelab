@@ -133,8 +133,6 @@ machines:
           name: NanoKVM
           port: 80
           scheme: http
-      tailscale:
-        network_prefix: false
     slzb-06m:
       platform: slzb
       type: appliance
