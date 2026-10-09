@@ -30,9 +30,9 @@ machines:
         acme: delegated
       interfaces:
         - address: 10.0.0.5
-          mac_address: "9c:6b:00:d7:e9:63"
-        - address: null
           mac_address: "9c:6b:00:d7:e9:40"
+        - address: 10.4.0.6
+          mac_address: "9c:6b:00:d7:e9:63"
       services:
         management:
           description: Server Administration
@@ -76,6 +76,8 @@ machines:
                 no_tls_verify: true
       interfaces:
         - address: 10.0.0.2
+          mac_address: "84:47:09:67:c8:36"
+        - address: 10.4.0.2
           mac_address: "84:47:09:67:c8:33"
       services:
         management:
