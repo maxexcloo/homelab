@@ -9,6 +9,23 @@ locals {
   # The offset keeps replacement timestamps above historical 60-bit fingerprints.
   onepassword_timestamp_version_offset = pow(2, 61)
 
+  onepassword_kubeconfig_documents = {
+    for name, configuration in talos_cluster_kubeconfig.cluster :
+    name => yamldecode(configuration.kubeconfig_raw)
+  }
+
+  onepassword_kubeconfig_note_values = {
+    for name, document in local.onepassword_kubeconfig_documents : name => yamlencode(merge(document, {
+      clusters = [
+        for kubeconfig_cluster in document.clusters : merge(kubeconfig_cluster, {
+          cluster = merge(kubeconfig_cluster.cluster, {
+            server = local.talos_cluster_endpoints[name]
+          })
+        })
+      ]
+    }))
+  }
+
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
       title    = "${lookup(local.onepassword_machine_access_display_names, coalesce(try(machine.type, null), machine.platform), title(coalesce(try(machine.type, null), machine.platform)))}: ${local.machine_fqdns[name]}"
@@ -158,7 +175,7 @@ resource "onepassword_item" "kubeconfig" {
   for_each = local.clusters
 
   category              = "secure_note"
-  note_value_wo         = talos_cluster_kubeconfig.cluster[each.key].kubeconfig_raw
+  note_value_wo         = local.onepassword_kubeconfig_note_values[each.key]
   note_value_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_kubeconfig_note_value_version[each.key].output), 10)
   tags                  = ["Homelab"]
   title                 = "Kubernetes Client Configuration"
@@ -355,7 +372,7 @@ resource "terraform_data" "onepassword_kubeconfig_note_value_version" {
   input = plantimestamp()
   triggers_replace = sha256(jsonencode({
     client_certificate = talos_cluster_kubeconfig.cluster[each.key].kubernetes_client_configuration.client_certificate
-    endpoint           = local.machine_private_ipv4_addresses[each.value.api_node]
+    endpoint           = local.talos_cluster_endpoints[each.key]
     machine_secrets_id = talos_machine_secrets.cluster[each.key].id
   }))
 
