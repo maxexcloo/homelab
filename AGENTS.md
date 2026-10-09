@@ -12,9 +12,9 @@ Flux.
   such as `v7` for GitHub Actions, not commit SHAs. Let Renovate propose upgrades
   for manual review.
 - Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
-- Keep the complete provider environment in the `OpenTofu` item in the
-  `Homelab` vault. Let local setup create its schema when missing, but never
-  manage it with OpenTofu. Resolve its tracked `op://` references only through
+- Keep the complete provider environment in the credential item referenced by
+  `.mise.toml`. Let local setup create its schema when missing, but never manage
+  it with OpenTofu. Resolve its tracked `op://` references only through
   credential-consuming Mise tasks authenticated by the 1Password desktop app.
   Keep resolved credentials out of the parent shell. Credential-consuming task
   children inherit them; export the standard Connect variable names only in the
@@ -44,6 +44,11 @@ Keep decoded shared inputs and genuinely cross-domain derived values in
 file, and name them from largest scope to smallest as
 `provider_resource_qualifier`.
 
+Keep `README.md` focused on purpose and actual usage. Keep deployment identities,
+endpoints, versions and settings in their owning configuration; read the live
+system when current behaviour must be verified. Do not maintain a second runtime
+inventory in documentation. Keep project invariants in `AGENTS.md`.
+
 Keep all maintained documentation in the root `AGENTS.md` and `README.md`.
 Do not create a documentation directory or additional Markdown files.
 
@@ -69,6 +74,8 @@ Do not create a documentation directory or additional Markdown files.
 - Never migrate, import, move, or remove state as part of an unrelated resource
   change.
 - Never migrate a backend except through its separately reviewed procedure.
+- Never apply archived branches or migrate archived state into the active backend.
+  Keep historical backend objects outside routine substrate changes.
 - Do not make routine destroy operations reset Talos nodes or retained
   substrate.
 - Read only the secret fields a provider consumer needs, prefer write-only
@@ -77,11 +84,11 @@ Do not create a documentation directory or additional Markdown files.
 - Follow the pinned provider's write-only version semantics. The 1Password
   provider requires strictly increasing versions for updates; use automatic
   tracking triggered by non-secret identity or content changes, not manual counters.
-- Let the 1Password vault carry scope. Omit tags from items in the `Homelab`
-  vault and tag Homelab-created items in cluster vaults only with `Homelab`.
-  Use human-readable display names for titles, omit cluster names from titles
-  inside cluster vaults, and qualify titles in the `Homelab` vault only when
-  needed to distinguish their scope.
+- Let the 1Password vault carry scope. Omit tags from items in the infrastructure
+  vault and use only the configured ownership tag for items managed in cluster
+  vaults. Use human-readable display names for titles, omit cluster names from
+  titles inside cluster vaults, and qualify titles in the infrastructure vault
+  only when needed to distinguish their scope.
 
 ## Sorting Exceptions
 
