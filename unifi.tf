@@ -56,7 +56,7 @@ resource "unifi_client" "host" {
 
   allow_existing         = true
   fixed_ip               = each.value.fixed_ip
-  local_dns_record       = each.value.hostname
+  local_dns_record       = each.value.hostname != null ? each.value.hostname : ""
   mac                    = each.value.mac
   name                   = each.value.hostname != null ? each.value.name : null
   network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
