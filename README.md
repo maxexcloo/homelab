@@ -112,9 +112,9 @@ file contains its own lookups, derived values and direct provider resources.
 Homepage and Flylab read machine endpoints from `data/machines.yaml` and
 `data/domains.yaml`, and provider links and DNS resolvers from `data/providers.yaml`.
 Provider keys are lowercase identifiers; `name` supplies the display label.
-Provider `homepage` entries hold card metadata and native widget settings;
-`gatus` entries hold native probe settings. Website probes default to the provider
-URL; DNS probes default to the infrastructure domain. In the machine inventory:
+Provider `widget`, `alerts` and `conditions` settings sit beside their metadata.
+Website probes use the provider URL; a `dns` object supplies the resolver URL,
+query settings and probe conditions. DNS queries default to the infrastructure domain. In the machine inventory:
 
 - `beszel: true` records an installed host agent.
 - `monitoring: false` excludes a machine from infrastructure probes.
@@ -148,8 +148,9 @@ sender `<network>-<hostname>@<infrastructure domain>`; configure other hosts man
 Each `data/dns/<domain>.yaml` selects mail providers in its `providers` list.
 Shared DNS settings live under `dns` in `data/providers.yaml`. Fastmail supplies
 a record list with `{domain}` substituted in DKIM targets; Resend supplies
-generated verification records. Optional domain `resend` settings override the
-region and sending CNAME requirement. Domain-specific records, including DMARC, remain in `records`.
+generated verification records. Resend uses the shared region and sending CNAME
+settings for every selected domain. Domain-specific records, including DMARC,
+remain in `records`.
 
 The `Flylab` vault holds managed `Resend` and `Tailscale OAuth Client` items,
 with sending-only access and `tag:fly` respectively. Supply its `Fly.io` deployment

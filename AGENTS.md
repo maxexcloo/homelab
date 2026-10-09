@@ -103,6 +103,12 @@ useful scope, system and purpose labels.
 
 ## Style
 
+- Use lowercase identifiers for shared data keys and `name` for human-readable
+  labels. Keep resource identity separate from presentation.
+- Keep consumer settings beside their owner in shared data. Avoid app-name
+  wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
+  required by a native schema. Define shared provider settings once rather than
+  adding per-consumer overrides without a concrete need.
 - Prefer plain, direct HCL over abstractions and generic pipelines.
 - Prefer native tool features over custom scripts. Keep scripts only for
   repository-specific glue, and keep Deepmerge for nested Talos configuration.
