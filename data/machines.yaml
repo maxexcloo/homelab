@@ -5,6 +5,7 @@ machines:
       platform: ucore
       public_ipv4: 199.127.129.143
       public_ipv6: 2602:f831::4665:8aff:fee1:40ed
+      smtp: resend
       type: backup
       username: core
       services:
@@ -20,6 +21,7 @@ machines:
       beszel: true
       monitoring: false
       platform: ucore
+      smtp: resend
       type: server
       username: core
       interfaces:
@@ -51,6 +53,7 @@ machines:
       beszel: true
       display_name: HASS
       platform: haos
+      smtp: resend
       type: appliance
       username: root
       interfaces:
@@ -65,6 +68,7 @@ machines:
     kimbap:
       beszel: true
       platform: truenas
+      smtp: resend
       type: storage
       username: root
       interfaces:
@@ -101,6 +105,7 @@ machines:
       beszel: true
       monitoring: false
       platform: bazzite
+      smtp: resend
       type: server
       username: max.schaefer
       interfaces:

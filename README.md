@@ -102,11 +102,11 @@ file contains its own lookups, derived values and direct provider resources.
 | `hosts/`              | uCore installation and service configuration            | Butane                                         |
 | `data/access.yaml`    | Vault names, SSH agent and Tailscale policy             | `onepassword.tf`, `tailscale.tf`, SSH renderer |
 | `data/clusters.yaml`  | Cluster membership, desired versions and Talos settings | `talos.tf`, `oci.tf`                           |
-| `data/dns/*.yaml`     | Explicit infrastructure DNS records                     | `dns.tf`, `cloudflare.tf`                      |
+| `data/dns/*.yaml`     | DNS records and mail provider selection                 | `dns.tf`, `cloudflare.tf`                      |
 | `data/domains.yaml`   | Domain roles, credentials and tunnel routes             | `cloudflare.tf`, `dns.tf`                      |
 | `data/machines.yaml`  | Machine identity, interfaces and compute                | `oci.tf`, `truenas.tf`, `unifi.tf`             |
 | `data/networks.yaml`  | Existing UniFi subnets and managed OCI networking       | `oci.tf`, `unifi.tf`                           |
-| `data/providers.yaml` | Provider bookmarks, widgets and Gatus probes            | Homepage, Flylab                               |
+| `data/providers.yaml` | Provider DNS settings, bookmarks, widgets and probes    | OpenTofu, Homepage, Flylab                     |
 | `data/storage.yaml`   | Backup buckets, datasets and NFS exports                | `backblaze.tf`, `truenas.tf`                   |
 
 Homepage and Flylab read machine endpoints from `data/machines.yaml` and
@@ -119,6 +119,7 @@ URL; DNS probes default to the infrastructure domain. In the machine inventory:
 - `monitoring: false` excludes a machine from infrastructure probes.
 - `services.<name>` declares HTTP endpoints with `name`, `port` and `scheme`;
   the management console uses `services.management`.
+- `smtp: resend` selects Resend for host email.
 
 Set `monitoring: true` on a service to enable its HTTP probe.
 Optional service `homepage` metadata accepts `description`, `group` (default:
@@ -139,14 +140,15 @@ External Secrets; widget credentials remain app-owned.
 - **Secrets**: 1Password items in `Homelab`, `Cluster: MBK` and `Cluster: SYD`.
 - **Storage**: Backblaze B2 appliance backup buckets, TrueNAS NVMe datasets and NFS shares for retained Kubernetes data, plus attached OCI block storage for replaceable `syd` volumes.
 
-List SMTP hosts in `data/domains.yaml` under `resend.hosts`. Each receives a
+Set `smtp: resend` on a host in `data/machines.yaml`. Each selected host receives a
 sending-only key in `Homelab/Resend: <machine FQDN>`. Use SMTP username `resend`
-and the stored password. Listed TrueNAS hosts are configured automatically with
+and the stored password. Selected TrueNAS hosts are configured automatically with
 sender `<network>-<hostname>@<infrastructure domain>`; configure other hosts manually.
-OpenTofu enables Resend sending for every configured DNS zone and manages its
-verification records. Optional `resend.domains` settings override the region and
-sending CNAME requirement. The existing `excloo.dev` setup retains its Tokyo region
-and three-record configuration; ordinary inbound mail records stay in `data/dns/`.
+Each `data/dns/<domain>.yaml` selects mail providers in its `providers` list.
+Shared DNS settings live under `dns` in `data/providers.yaml`. Fastmail supplies
+MX, SPF and domain-specific DKIM targets; Resend supplies generated verification
+records. Optional domain `resend` settings override the region and sending CNAME
+requirement. Domain-specific records, including DMARC, remain in `records`.
 
 The `Flylab` vault holds managed `Resend` and `Tailscale OAuth Client` items,
 with sending-only access and `tag:fly` respectively. Supply its `Fly.io` deployment

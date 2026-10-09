@@ -1,16 +1,16 @@
 locals {
-  resend       = yamldecode(file("${path.module}/data/domains.yaml")).resend
-  resend_hosts = toset(local.resend.hosts)
-
   resend_domains = {
-    for domain in local.cloudflare_zones : domain => merge(
-      {
-        cname  = true
-        region = "us-east-1"
-      },
-      try(local.resend.domains[domain], {}),
+    for source_file in local.dns_zone_files : source_file.zone.name => merge(
+      local.provider_dns.resend,
+      try(source_file.zone.resend, {}),
     )
+    if contains(try(source_file.zone.providers, []), "resend")
   }
+
+  resend_hosts = toset([
+    for name, machine in local.machines : name
+    if try(machine.smtp, null) == "resend"
+  ])
 }
 
 resource "resend_api_key" "cluster" {
@@ -30,13 +30,6 @@ resource "resend_api_key" "host" {
 
   name       = "host-${each.key}"
   permission = "sending_access"
-
-  lifecycle {
-    precondition {
-      condition     = can(local.machines[each.key])
-      error_message = "Every Resend host must name an existing machine."
-    }
-  }
 }
 
 resource "resend_domain" "configured" {

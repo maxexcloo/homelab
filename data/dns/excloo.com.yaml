@@ -1,17 +1,11 @@
 name: excloo.com
+providers:
+  - fastmail
+  - resend
 records:
   - type: CNAME
     name: _acme-challenge.www.reddit
     content: _acme-challenge.www.reddit.excloo.com.043847.xyz
-  - type: CNAME
-    name: fm1._domainkey
-    content: fm1.excloo.com.dkim.fmhosted.com
-  - type: CNAME
-    name: fm2._domainkey
-    content: fm2.excloo.com.dkim.fmhosted.com
-  - type: CNAME
-    name: fm3._domainkey
-    content: fm3.excloo.com.dkim.fmhosted.com
   - type: CNAME
     name: github-readme-stats
     content: 2deabc39cdacdb79.vercel-dns-017.com
@@ -21,19 +15,7 @@ records:
   - type: CNAME
     name: status
     content: excloo-gatus.fly.dev
-  - type: MX
-    name: "@"
-    content: in1-smtp.messagingengine.com
-    priority: 10
-  - type: MX
-    name: "@"
-    content: in2-smtp.messagingengine.com
-    priority: 20
   - type: TXT
     name: _dmarc
     id: txt-apex-dmarc
     content: '"v=DMARC1; p=none;"'
-  - type: TXT
-    name: "@"
-    id: txt-apex-spf
-    content: '"v=spf1 include:spf.messagingengine.com ?all"'

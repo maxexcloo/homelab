@@ -103,6 +103,31 @@ locals {
     }
   }
 
+  cloudflare_dns_records_fastmail = {
+    for source_file in local.dns_zone_files : source_file.zone.name => concat(
+      [
+        for selector in local.provider_dns.fastmail.dkim_selectors : {
+          content = "${selector}.${source_file.zone.name}.dkim.fmhosted.com"
+          name    = "${selector}._domainkey"
+          type    = "CNAME"
+        }
+      ],
+      [
+        for record in local.provider_dns.fastmail.mx : merge(record, {
+          name = "@"
+          type = "MX"
+        })
+      ],
+      [{
+        content = "\"${local.provider_dns.fastmail.spf}\""
+        id      = "txt-apex-spf"
+        name    = "@"
+        type    = "TXT"
+      }],
+    )
+    if contains(try(source_file.zone.providers, []), "fastmail")
+  }
+
   cloudflare_dns_records_resend = merge([
     for domain, settings in local.resend_domains : {
       for name, selector in {

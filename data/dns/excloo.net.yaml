@@ -1,1 +1,3 @@
 name: excloo.net
+providers:
+  - resend

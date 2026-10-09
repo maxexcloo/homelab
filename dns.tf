@@ -2,7 +2,10 @@ locals {
   dns_record_entries_manual_by_key = {
     for entry in flatten([
       for source_file in local.dns_zone_files : [
-        for record in try(source_file.zone.records, []) : {
+        for record in concat(
+          try(source_file.zone.records, []),
+          try(local.cloudflare_dns_records_fastmail[source_file.zone.name], []),
+          ) : {
           key = try(
             record.id,
             join("-", compact([
@@ -181,6 +184,15 @@ resource "terraform_data" "dns_validation" {
   input = sort(keys(local.dns_zone_files_by_name))
 
   lifecycle {
+    precondition {
+      condition = alltrue(flatten([
+        for source_file in local.dns_zone_files : [
+          for provider in try(source_file.zone.providers, []) : contains(["fastmail", "resend"], provider)
+        ]
+      ]))
+      error_message = "DNS providers must be Fastmail or Resend."
+    }
+
     precondition {
       condition     = length(local.dns_record_keys_duplicate) == 0
       error_message = "Manual DNS record identities must be unique per zone: ${join(", ", local.dns_record_keys_duplicate)}"

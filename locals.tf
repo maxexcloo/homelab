@@ -5,6 +5,7 @@ locals {
   domains                         = yamldecode(file("${path.module}/data/domains.yaml")).domains
   machines_by_network             = yamldecode(file("${path.module}/data/machines.yaml")).machines
   networks                        = yamldecode(file("${path.module}/data/networks.yaml")).networks
+  provider_dns                    = yamldecode(file("${path.module}/data/providers.yaml")).dns
   storage                         = yamldecode(file("${path.module}/data/storage.yaml"))
 
   infrastructure_inventory = {
@@ -123,6 +124,13 @@ resource "terraform_data" "configuration_validation" {
   }
 
   lifecycle {
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : try(machine.smtp, null) == null || try(machine.smtp == "resend", false)
+      ])
+      error_message = "Machine SMTP providers must be Resend."
+    }
+
     precondition {
       condition = alltrue([
         for cluster in values(local.clusters) : can(cluster.nodes[cluster.api_node])

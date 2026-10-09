@@ -1,1 +1,3 @@
 name: maxexcloo.com
+providers:
+  - resend

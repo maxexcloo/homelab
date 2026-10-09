@@ -1,3 +1,18 @@
+dns:
+  fastmail:
+    spf: v=spf1 include:spf.messagingengine.com ?all
+    dkim_selectors:
+      - fm1
+      - fm2
+      - fm3
+    mx:
+      - content: in1-smtp.messagingengine.com
+        priority: 10
+      - content: in2-smtp.messagingengine.com
+        priority: 20
+  resend:
+    cname: true
+    region: us-east-1
 providers:
   1Password:
     description: Passwords & Secrets
