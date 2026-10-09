@@ -30,9 +30,9 @@ machines:
         acme: delegated
       interfaces:
         - address: 10.0.0.5
-          mac_address: "c8:ff:bf:0f:9f:d0"
+          mac_address: "9c:6b:00:d7:e9:63"
         - address: null
-          mac_address: "c8:ff:bf:0f:9f:d1"
+          mac_address: "9c:6b:00:d7:e9:40"
       services:
         management:
           description: Server Administration
@@ -135,9 +135,9 @@ machines:
         tunnel: {}
       interfaces:
         - address: 10.4.2.127
-          mac_address: "84:47:09:5a:6b:bf"
+          mac_address: "c8:ff:bf:0f:9f:d0"
         - address: 10.0.2.124
-          mac_address: "84:47:09:5a:6b:bc"
+          mac_address: "c8:ff:bf:0f:9f:d1"
       services:
         management:
           description: Server Administration
