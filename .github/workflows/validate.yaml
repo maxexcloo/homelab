@@ -26,7 +26,7 @@ jobs:
       - name: Set Up Tools
         uses: jdx/mise-action@v5
         with:
-          version: 2026.10.4
+          version: 2026.10.5
       - name: Initialise Providers
         run: mise run init-ci
       - name: Run Hooks
