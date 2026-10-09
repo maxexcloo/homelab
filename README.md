@@ -122,9 +122,9 @@ URL; DNS probes default to the infrastructure domain. In the machine inventory:
 - `smtp: resend` selects Resend for host email.
 
 Set `monitoring: true` on a service to enable its HTTP probe.
-Optional service `homepage` metadata accepts `description`, `group` (default:
-Servers) and `icon`. The service `name` supplies its display label, and the `types`
-mapping supplies machine display groups.
+Service `description`, `icon` and optional `group` (default: Servers) supply
+Homepage card metadata. The service `name` supplies its display label, and the
+`types` mapping supplies machine display groups.
 
 OpenTofu publishes non-secret Cloudflare and Tailscale IDs and preferred hosts
 in each cluster vault's `Infrastructure Inventory` note.
@@ -146,9 +146,9 @@ and the stored password. Selected TrueNAS hosts are configured automatically wit
 sender `<network>-<hostname>@<infrastructure domain>`; configure other hosts manually.
 Each `data/dns/<domain>.yaml` selects mail providers in its `providers` list.
 Shared DNS settings live under `dns` in `data/providers.yaml`. Fastmail supplies
-MX, SPF and domain-specific DKIM targets; Resend supplies generated verification
-records. Optional domain `resend` settings override the region and sending CNAME
-requirement. Domain-specific records, including DMARC, remain in `records`.
+a record list with `{domain}` substituted in DKIM targets; Resend supplies
+generated verification records. Optional domain `resend` settings override the
+region and sending CNAME requirement. Domain-specific records, including DMARC, remain in `records`.
 
 The `Flylab` vault holds managed `Resend` and `Tailscale OAuth Client` items,
 with sending-only access and `tag:fly` respectively. Supply its `Fly.io` deployment

@@ -10,12 +10,11 @@ machines:
       username: core
       services:
         management:
+          description: Server Administration
+          icon: cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
-          homepage:
-            description: Server Administration
-            icon: cockpit-light
   mbk:
     bento:
       beszel: true
@@ -31,12 +30,11 @@ machines:
           mac_address: "c8:ff:bf:0f:9f:d1"
       services:
         management:
+          description: Server Administration
+          icon: cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
-          homepage:
-            description: Server Administration
-            icon: cockpit-light
     gateway:
       beszel: true
       platform: unifi
@@ -51,7 +49,7 @@ machines:
           scheme: https
     hass:
       beszel: true
-      display_name: HASS
+      name: HASS
       platform: haos
       smtp: resend
       type: appliance
@@ -115,12 +113,11 @@ machines:
           mac_address: "84:47:09:5a:6b:bc"
       services:
         management:
+          description: Server Administration
+          icon: cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
-          homepage:
-            description: Server Administration
-            icon: cockpit-light
     nanokvm:
       monitoring: false
       platform: nanokvm
@@ -131,12 +128,11 @@ machines:
           mac_address: "48:da:35:6d:cb:80"
       services:
         console:
+          description: Remote Console & Power Control
+          icon: sipeed
           name: NanoKVM
           port: 80
           scheme: http
-          homepage:
-            description: Remote Console & Power Control
-            icon: sipeed
       tailscale:
         network_prefix: false
     slzb-06m:
@@ -147,12 +143,11 @@ machines:
           mac_address: "94:54:c5:eb:3f:90"
       services:
         console:
+          description: Zigbee Ethernet Adapter
+          icon: zigbee
           name: SLZB-06M
           port: 80
           scheme: http
-          homepage:
-            description: Zigbee Ethernet Adapter
-            icon: zigbee
       tailscale:
         enabled: false
     steam-deck:
