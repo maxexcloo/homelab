@@ -9,8 +9,8 @@ resource "resend_api_key" "cluster" {
   permission = "full_access"
 }
 
-resource "resend_api_key" "flylab" {
-  name       = "flylab"
+resource "resend_api_key" "fly" {
+  name       = "fly"
   permission = "sending_access"
 }
 

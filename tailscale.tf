@@ -120,10 +120,10 @@ resource "tailscale_acl" "default" {
   depends_on = [terraform_data.tailscale_tag_validation]
 }
 
-resource "tailscale_oauth_client" "flylab" {
-  description = "Flylab"
+resource "tailscale_oauth_client" "fly" {
+  description = "Fly"
   scopes      = ["auth_keys"]
-  tags        = ["tag:flylab"]
+  tags        = ["tag:fly"]
 
   depends_on = [tailscale_acl.default]
 }

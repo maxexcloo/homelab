@@ -1,7 +1,7 @@
 onepassword:
   cluster_vault_prefix: "Cluster: "
   vaults:
-    flylab: Flylab
+    fly: Fly
     homelab: Homelab
 ssh:
   identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
@@ -43,7 +43,7 @@ tailscale:
     - tag:appliance
     - tag:backup
     - tag:ephemeral
-    - tag:flylab
+    - tag:fly
     - tag:router
     - tag:server
     - tag:storage
