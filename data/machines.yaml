@@ -134,9 +134,9 @@ machines:
       cloudflare:
         tunnel: {}
       interfaces:
-        - address: 10.4.2.127
+        - address: 10.4.0.5
           mac_address: "c8:ff:bf:0f:9f:d0"
-        - address: 10.0.2.124
+        - address: 10.0.0.4
           mac_address: "c8:ff:bf:0f:9f:d1"
       services:
         management:
