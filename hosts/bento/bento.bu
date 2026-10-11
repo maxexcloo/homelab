@@ -59,6 +59,8 @@ storage:
 
 systemd:
   units:
+    - name: ai-https.service
+      enabled: true
     - name: bento-display-packages.service
       enabled: true
       contents: |
