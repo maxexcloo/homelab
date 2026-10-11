@@ -71,7 +71,7 @@ systemd:
 
         [Service]
         Type=oneshot
-        ExecStart=/usr/bin/rpm-ostree install --allow-inactive --idempotent btop rocm-smi https://github.com/Lexonight1/thermalright-trcc-linux/releases/download/v9.10.6/trcc-linux-9.10.6-1.fc44.noarch.rpm
+        ExecStart=/usr/bin/rpm-ostree install --allow-inactive --idempotent btop rocm-smi https://github.com/Lexonight1/thermalright-trcc-linux/releases/download/v9.10.8/trcc-linux-9.10.8-1.fc44.noarch.rpm
         ExecStart=/usr/bin/touch /etc/ucore-autorebase/displays
         ExecStart=/usr/bin/systemctl reboot
 
