@@ -28,11 +28,6 @@ machines:
       username: core
       cloudflare:
         acme: delegated
-        tunnel:
-          ingress:
-            - hostname: mcp.excloo.com
-              service: http://127.0.0.1:1338
-              zone: excloo.com
       interfaces:
         - address: 10.0.0.5
           mac_address: "9c:6b:00:d7:e9:40"
@@ -49,7 +44,7 @@ machines:
         comfyui:
           description: Image Workflows
           group: Artificial Intelligence
-          icon: comfyui
+          icon: comfyui-light
           name: ComfyUI Image
           port: 8190
           scheme: http
@@ -57,7 +52,7 @@ machines:
         comfyui-video:
           description: Video Workflows
           group: Artificial Intelligence
-          icon: comfyui
+          icon: comfyui-light
           name: ComfyUI Video
           port: 8191
           scheme: http
@@ -201,7 +196,7 @@ machines:
       services:
         console:
           description: Remote Console & Power Control
-          icon: sipeed
+          icon: sh-sipeed-light
           name: NanoKVM
           port: 80
           scheme: http
@@ -214,7 +209,7 @@ machines:
       services:
         console:
           description: Zigbee Ethernet Adapter
-          icon: zigbee
+          icon: sh-zigbee-light
           name: SLZB-06M
           port: 80
           scheme: http
