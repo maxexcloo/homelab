@@ -36,24 +36,28 @@ machines:
       services:
         ai:
           description: AI Workload Control
-          icon: mdi-brain
+          group: Artificial Intelligence
+          icon: mdi-brain-#ffffff
           name: AI Control
           url: https://mbk-bento.tail5841ed.ts.net
         comfyui:
           description: Image Workflows
+          group: Artificial Intelligence
           icon: comfyui
           name: ComfyUI Image
           port: 8190
           scheme: http
         comfyui-video:
           description: Video Workflows
+          group: Artificial Intelligence
           icon: comfyui
           name: ComfyUI Video
           port: 8191
           scheme: http
         heiss:
           description: Image & Video Studio
-          icon: mdi-image
+          group: Artificial Intelligence
+          icon: mdi-image-#ffffff
           name: HEISS
           url: https://mbk-bento.tail5841ed.ts.net:8443
         management:
@@ -64,7 +68,8 @@ machines:
           scheme: https
         radiance:
           description: Text Models
-          icon: mdi-message-text
+          group: Artificial Intelligence
+          icon: mdi-message-text-#ffffff
           name: Radiance
           port: 8000
           scheme: http
