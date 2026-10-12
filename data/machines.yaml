@@ -192,7 +192,7 @@ machines:
         - address: 10.0.1.213
           mac_address: "48:da:35:6d:cb:80"
       services:
-        console:
+        management:
           description: Remote Console & Power Control
           icon: sh-sipeed-light
           name: NanoKVM
@@ -205,7 +205,7 @@ machines:
         - address: 10.0.0.6
           mac_address: "94:54:c5:eb:3f:90"
       services:
-        console:
+        management:
           description: Zigbee Ethernet Adapter
           icon: sh-zigbee-light
           name: SLZB-06M
