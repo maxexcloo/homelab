@@ -34,12 +34,36 @@ machines:
         - address: 10.4.0.5
           mac_address: "9c:6b:00:d7:e9:63"
       services:
+        ai:
+          description: AI Workload Control
+          icon: mdi-brain
+          name: AI Control
+          port: 1337
+          scheme: http
+        comfyui:
+          description: Image & Video Workflows
+          icon: comfyui
+          name: ComfyUI
+          port: 8190
+          scheme: http
+        heiss:
+          description: Image & Video Studio
+          icon: mdi-image
+          name: HEISS
+          port: 8788
+          scheme: http
         management:
           description: Server Administration
           icon: cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
+        radiance:
+          description: Text Models
+          icon: mdi-message-text
+          name: Radiance
+          port: 8000
+          scheme: http
     gateway:
       beszel: true
       platform: unifi
