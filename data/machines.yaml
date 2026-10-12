@@ -44,6 +44,7 @@ machines:
           group: Artificial Intelligence
           icon: mdi-brain-#ffffff
           name: AI Control
+          siteMonitor: http://100.73.126.15:1337/api/health
           url: https://mbk-bento.tail5841ed.ts.net
         comfyui:
           description: Image Workflows
@@ -52,6 +53,7 @@ machines:
           name: ComfyUI Image
           port: 8190
           scheme: http
+          siteMonitor: http://100.73.126.15:8190/system_stats
         comfyui-video:
           description: Video Workflows
           group: Artificial Intelligence
@@ -59,11 +61,13 @@ machines:
           name: ComfyUI Video
           port: 8191
           scheme: http
+          siteMonitor: http://100.73.126.15:8191/system_stats
         heiss:
           description: Image & Video Studio
           group: Artificial Intelligence
           icon: mdi-image-#ffffff
           name: HEISS
+          siteMonitor: http://100.73.126.15:8788/api/ping
           url: https://mbk-bento.tail5841ed.ts.net:8443
         management:
           description: Server Administration
@@ -78,6 +82,7 @@ machines:
           name: Radiance
           port: 8000
           scheme: http
+          siteMonitor: http://100.73.126.15:8000/health
     gateway:
       beszel: true
       platform: unifi
