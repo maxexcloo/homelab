@@ -28,6 +28,11 @@ machines:
       username: core
       cloudflare:
         acme: delegated
+        tunnel:
+          ingress:
+            - hostname: mcp.excloo.com
+              service: http://127.0.0.1:1338
+              zone: excloo.com
       interfaces:
         - address: 10.0.0.5
           mac_address: "9c:6b:00:d7:e9:40"
