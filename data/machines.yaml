@@ -38,20 +38,24 @@ machines:
           description: AI Workload Control
           icon: mdi-brain
           name: AI Control
-          port: 1337
-          scheme: http
+          url: https://mbk-bento.tail5841ed.ts.net
         comfyui:
           description: Image Workflows
           icon: comfyui
           name: ComfyUI Image
           port: 8190
           scheme: http
+        comfyui-video:
+          description: Video Workflows
+          icon: comfyui
+          name: ComfyUI Video
+          port: 8191
+          scheme: http
         heiss:
           description: Image & Video Studio
           icon: mdi-image
           name: HEISS
-          port: 8788
-          scheme: http
+          url: https://mbk-bento.tail5841ed.ts.net:8443
         management:
           description: Server Administration
           icon: cockpit-light

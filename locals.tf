@@ -286,13 +286,13 @@ resource "terraform_data" "configuration_validation" {
     precondition {
       condition = alltrue(flatten([
         for machine in values(local.machines) : [
-          for service in values(try(machine.services, {})) : try(
+          for service in values(try(machine.services, {})) : try(service.url, null) != null ? can(regex("^https?://[^/?#[:space:]]+([/?#][^[:space:]]*)?$", service.url)) : try(
             contains(["http", "https"], service.scheme) && service.port >= 1 && service.port <= 65535 && floor(service.port) == service.port,
             false,
           )
         ]
       ]))
-      error_message = "Machine services must use HTTP or HTTPS and integer ports from 1 to 65535."
+      error_message = "Machine services must use an absolute HTTP or HTTPS URL, or an HTTP or HTTPS scheme and integer port from 1 to 65535."
     }
 
     precondition {
