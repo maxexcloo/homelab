@@ -130,7 +130,7 @@ providers:
       - "[RESPONSE_TIME] < 5000"
   tailscale:
     description: VPN
-    icon: si-tailscale-#ffffff
+    icon: sh-tailscale-light
     name: Tailscale
     url: https://login.tailscale.com/admin
     alerts:
