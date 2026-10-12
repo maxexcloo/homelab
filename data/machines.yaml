@@ -41,9 +41,9 @@ machines:
           port: 1337
           scheme: http
         comfyui:
-          description: Image & Video Workflows
+          description: Image Workflows
           icon: comfyui
-          name: ComfyUI
+          name: ComfyUI Image
           port: 8190
           scheme: http
         heiss:
