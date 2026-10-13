@@ -14,7 +14,7 @@ machines:
       services:
         management:
           description: Server Administration
-          icon: cockpit-light
+          icon: sh-cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
@@ -44,14 +44,14 @@ machines:
         comfyui:
           description: Image Workflows
           group: Artificial Intelligence
-          icon: comfyui-light
+          icon: sh-comfyui-light
           name: ComfyUI Image
           port: 8190
           scheme: http
         comfyui-video:
           description: Video Workflows
           group: Artificial Intelligence
-          icon: comfyui-light
+          icon: sh-comfyui-light
           name: ComfyUI Video
           port: 8191
           scheme: http
@@ -64,7 +64,7 @@ machines:
           scheme: http
         management:
           description: Server Administration
-          icon: cockpit-light
+          icon: sh-cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
@@ -179,7 +179,7 @@ machines:
       services:
         management:
           description: Server Administration
-          icon: cockpit-light
+          icon: sh-cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
