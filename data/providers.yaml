@@ -71,7 +71,7 @@ providers:
       type: cloudflared
   control_d:
     description: DNS
-    icon: sh-control-d-light
+    icon: sh-control-d
     name: Control D
     url: https://controld.com
     alerts:

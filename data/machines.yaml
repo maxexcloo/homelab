@@ -14,7 +14,7 @@ machines:
       services:
         management:
           description: Server Administration
-          icon: sh-cockpit-light
+          icon: sh-cockpit
           name: Cockpit
           port: 9090
           scheme: https
@@ -44,7 +44,7 @@ machines:
         comfyui:
           description: Image Workflows
           group: Artificial Intelligence
-          icon: sh-comfyui-light
+          icon: sh-comfyui
           name: ComfyUI Image
           port: 8190
           scheme: http
@@ -52,7 +52,7 @@ machines:
         comfyui-video:
           description: Video Workflows
           group: Artificial Intelligence
-          icon: sh-comfyui-light
+          icon: sh-comfyui
           name: ComfyUI Video
           port: 8191
           scheme: http
@@ -67,7 +67,7 @@ machines:
           siteMonitor: ""
         management:
           description: Server Administration
-          icon: sh-cockpit-light
+          icon: sh-cockpit
           name: Cockpit
           port: 9090
           scheme: https
@@ -182,7 +182,7 @@ machines:
       services:
         management:
           description: Server Administration
-          icon: sh-cockpit-light
+          icon: sh-cockpit
           name: Cockpit
           port: 9090
           scheme: https
@@ -197,7 +197,7 @@ machines:
       services:
         management:
           description: Remote Console & Power Control
-          icon: sh-sipeed-light
+          icon: sh-sipeed
           name: NanoKVM
           port: 80
           scheme: http
@@ -210,7 +210,7 @@ machines:
       services:
         management:
           description: Zigbee Ethernet Adapter
-          icon: sh-zigbee-light
+          icon: sh-zigbee
           name: SLZB-06M
           port: 80
           scheme: http
