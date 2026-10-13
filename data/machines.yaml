@@ -37,7 +37,7 @@ machines:
         ai:
           description: AI Workload Control
           group: Artificial Intelligence
-          icon: mdi-brain-#ffffff
+          icon: mdi-brain-#a78bfa
           name: AI Control
           port: 1337
           scheme: http
@@ -61,7 +61,7 @@ machines:
         heiss:
           description: Image & Video Studio
           group: Artificial Intelligence
-          icon: mdi-image-#ffffff
+          icon: mdi-image-#f472b6
           name: HEISS
           port: 8788
           scheme: http
@@ -75,7 +75,7 @@ machines:
         radiance:
           description: Text Models
           group: Artificial Intelligence
-          icon: mdi-message-text-#ffffff
+          icon: mdi-message-text-#fbbf24
           name: Radiance
           port: 8000
           scheme: http
