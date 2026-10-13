@@ -15,7 +15,7 @@ fi
 identity_agent="$(yq -r '.ssh.identity_agent' "${access_path}")"
 infrastructure_domain="$(yq -r '.domains.infrastructure' "${domains_path}")"
 
-# Read all machine input before opening the installed configuration for writing.
+# Read all machine input before rendering the configuration.
 # $network is a yq variable.
 # shellcheck disable=SC2016
 machine_entries="$(yq -r '
@@ -52,8 +52,11 @@ render() {
 
 if [[ -n "${output_path}" ]]; then
   mkdir -p "$(dirname "${output_path}")"
-  render >"${output_path}"
-  chmod 600 "${output_path}"
+  temporary_path="$(mktemp "${output_path}.XXXXXX")"
+  trap 'rm -f -- "${temporary_path}"' EXIT
+  render >"${temporary_path}"
+  chmod 600 "${temporary_path}"
+  mv -f -- "${temporary_path}" "${output_path}"
   echo "Installed ${output_path}"
 else
   render

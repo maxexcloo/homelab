@@ -75,7 +75,7 @@ resource "onepassword_item" "backblaze_cluster" {
   category            = "login"
   password_wo         = b2_application_key.cluster[each.key].application_key
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_backblaze_cluster_password_version[each.key].output), 10)
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = "Backblaze B2"
   url                 = local.b2_endpoint
   username            = b2_application_key.cluster[each.key].application_key_id
@@ -110,7 +110,7 @@ resource "onepassword_item" "cloudflare_acme" {
   category            = "login"
   password_wo         = cloudflare_account_token.acme[each.key].value
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_cloudflare_acme_password_version[each.key].output), 10)
-  tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
+  tags                = each.value.vault == "homelab" ? [] : [local.access.onepassword.ownership_tag]
   title               = each.value.title
   vault               = data.onepassword_vault.configured[each.value.vault].uuid
 }
@@ -121,7 +121,7 @@ resource "onepassword_item" "cloudflare_external_dns" {
   category            = "login"
   password_wo         = cloudflare_account_token.external_dns[each.key].value
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_cloudflare_external_dns_password_version[each.key].output), 10)
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = each.value.title
   vault               = data.onepassword_vault.configured[each.value.vault].uuid
 }
@@ -132,7 +132,7 @@ resource "onepassword_item" "cloudflare_tunnel" {
   category            = "login"
   password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_cloudflare_tunnel_password_version[each.key].output), 10)
-  tags                = each.value.vault == "homelab" ? [] : ["Homelab"]
+  tags                = each.value.vault == "homelab" ? [] : [local.access.onepassword.ownership_tag]
   title               = each.value.title
   vault               = data.onepassword_vault.configured[each.value.vault].uuid
 }
@@ -143,7 +143,7 @@ resource "onepassword_item" "cloudflare_waf" {
   category            = "login"
   password_wo         = cloudflare_account_token.waf[each.key].value
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_cloudflare_waf_password_version[each.key].output), 10)
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = "Cloudflare WAF"
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
@@ -155,7 +155,7 @@ resource "onepassword_item" "control_d" {
   category            = "login"
   password_wo         = ""
   password_wo_version = 0
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = "Control D"
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
@@ -166,7 +166,7 @@ resource "onepassword_item" "infrastructure_inventory" {
   # This snapshot contains only provider identities, never credentials.
   category   = "secure_note"
   note_value = jsonencode(local.infrastructure_inventory)
-  tags       = ["Homelab"]
+  tags       = [local.access.onepassword.ownership_tag]
   title      = "Infrastructure Inventory"
   vault      = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
@@ -177,7 +177,7 @@ resource "onepassword_item" "kubeconfig" {
   category              = "secure_note"
   note_value_wo         = local.onepassword_kubeconfig_note_values[each.key]
   note_value_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_kubeconfig_note_value_version[each.key].output), 10)
-  tags                  = ["Homelab"]
+  tags                  = [local.access.onepassword.ownership_tag]
   title                 = "Kubernetes Client Configuration"
   vault                 = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
@@ -200,7 +200,7 @@ resource "onepassword_item" "resend" {
   category            = "login"
   password_wo         = resend_api_key.cluster[each.key].token
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_resend_password_version[each.key].output), 10)
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = "Resend"
   url                 = "https://resend.com/api-keys"
   username            = resend_api_key.cluster[each.key].id
@@ -211,7 +211,7 @@ resource "onepassword_item" "resend_fly" {
   category            = "login"
   password_wo         = resend_api_key.fly.token
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_resend_fly_password_version.output), 10)
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = "Resend"
   url                 = "https://resend.com/api-keys"
   username            = resend_api_key.fly.id
@@ -244,7 +244,7 @@ resource "onepassword_item" "tailscale_fly" {
   category            = "login"
   password_wo         = tailscale_oauth_client.fly.key
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_tailscale_fly_password_version.output), 10)
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = "Tailscale OAuth Client"
   url                 = "https://login.tailscale.com/admin/settings/oauth"
   username            = tailscale_oauth_client.fly.id
@@ -257,7 +257,7 @@ resource "onepassword_item" "tailscale_operator" {
   category            = "login"
   password_wo         = tailscale_oauth_client.kubernetes_operator[each.key].key
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_tailscale_operator_password_version[each.key].output), 10)
-  tags                = ["Homelab"]
+  tags                = [local.access.onepassword.ownership_tag]
   title               = "Tailscale Kubernetes Operator"
   username            = tailscale_oauth_client.kubernetes_operator[each.key].id
   vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
@@ -283,7 +283,7 @@ resource "onepassword_item" "talosconfig" {
   category              = "secure_note"
   note_value_wo         = data.talos_client_configuration.cluster[each.key].talos_config
   note_value_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_talosconfig_note_value_version[each.key].output), 10)
-  tags                  = ["Homelab"]
+  tags                  = [local.access.onepassword.ownership_tag]
   title                 = "Talos Client Configuration"
   vault                 = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }

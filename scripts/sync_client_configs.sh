@@ -34,9 +34,24 @@ install_config() {
 }
 
 get_note() {
+  local item_id
+
+  if ! item_id="$(jq --arg title "$2" -r '
+    [.[] | select(.title == $title)] |
+    if length > 1 then error("Multiple items have the requested title")
+    else .[0].id // "" end
+  ' <<<"${vault_items}")"; then
+    echo "error: could not identify '$2' in vault '$1'." >&2
+    exit 1
+  fi
+  [[ -n "${item_id}" ]] || return 1
+
   # Vault names containing colons cannot be used in op:// references.
-  op item get "$2" --format json --vault "$1" |
-    jq -er '.fields[] | select(.id == "notesPlain") | .value | select(length > 0)' >"$3" && [[ -s "$3" ]]
+  if ! op item get "${item_id}" --format json --vault "$1" |
+    jq -er '.fields[] | select(.id == "notesPlain") | .value | select(length > 0)' >"$3"; then
+    echo "error: could not read a non-empty configuration from '$2' in vault '$1'." >&2
+    exit 1
+  fi
 }
 
 clusters=()
@@ -56,6 +71,11 @@ for cluster in "${clusters[@]}"; do
   talos_file="${tmpdir}/${cluster}.talosconfig"
 
   echo "  - Fetching ${cluster} from vault '${vault}'..."
+
+  if ! vault_items="$(op item list --format json --vault "${vault}")"; then
+    echo "error: could not list items in vault '${vault}'." >&2
+    exit 1
+  fi
 
   if get_note "${vault}" "Kubernetes Client Configuration" "${kube_file}"; then
     context="$(kubectl --kubeconfig "${kube_file}" config current-context)"

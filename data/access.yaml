@@ -1,5 +1,6 @@
 onepassword:
   cluster_vault_prefix: "Cluster: "
+  ownership_tag: Homelab
   vaults:
     flylab: Flylab
     homelab: Homelab
