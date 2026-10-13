@@ -41,7 +41,6 @@ machines:
           name: AI Control
           port: 1337
           scheme: http
-          siteMonitor: ""
         comfyui:
           description: Image Workflows
           group: Artificial Intelligence
