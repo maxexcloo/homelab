@@ -41,6 +41,7 @@ machines:
           name: AI Control
           port: 1337
           scheme: http
+          siteMonitor: ""
         comfyui:
           description: Image Workflows
           group: Artificial Intelligence
@@ -48,6 +49,7 @@ machines:
           name: ComfyUI Image
           port: 8190
           scheme: http
+          siteMonitor: ""
         comfyui-video:
           description: Video Workflows
           group: Artificial Intelligence
@@ -55,6 +57,7 @@ machines:
           name: ComfyUI Video
           port: 8191
           scheme: http
+          siteMonitor: ""
         heiss:
           description: Image & Video Studio
           group: Artificial Intelligence
@@ -62,6 +65,7 @@ machines:
           name: HEISS
           port: 8788
           scheme: http
+          siteMonitor: ""
         management:
           description: Server Administration
           icon: sh-cockpit-light
@@ -75,7 +79,7 @@ machines:
           name: Radiance
           port: 8000
           scheme: http
-          siteMonitor: homelab://mbk/bento/radiance/health
+          siteMonitor: ""
     gateway:
       beszel: true
       platform: unifi
