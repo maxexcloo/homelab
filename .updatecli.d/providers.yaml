@@ -1,0 +1,264 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update 1Password/onepassword Provider
+pipelineid: update-1password-onepassword-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: onepassword
+      namespace: 1Password
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"1Password/onepassword"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update PjSalty/truenas Provider
+pipelineid: update-pjsalty-truenas-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: truenas
+      namespace: PjSalty
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"PjSalty/truenas"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update backblaze/b2 Provider
+pipelineid: update-backblaze-b2-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: b2
+      namespace: backblaze
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"backblaze/b2"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update cloudflare/cloudflare Provider
+pipelineid: update-cloudflare-cloudflare-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: cloudflare
+      namespace: cloudflare
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"cloudflare/cloudflare"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update hashicorp/random Provider
+pipelineid: update-hashicorp-random-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: random
+      namespace: hashicorp
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"hashicorp/random"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update isometry/deepmerge Provider
+pipelineid: update-isometry-deepmerge-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: deepmerge
+      namespace: isometry
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"isometry/deepmerge"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update oracle/oci Provider
+pipelineid: update-oracle-oci-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: oci
+      namespace: oracle
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"oracle/oci"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update siderolabs/talos Provider
+pipelineid: update-siderolabs-talos-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: talos
+      namespace: siderolabs
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"siderolabs/talos"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update tailscale/tailscale Provider
+pipelineid: update-tailscale-tailscale-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: tailscale
+      namespace: tailscale
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"tailscale/tailscale"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update ubiquiti-community/unifi Provider
+pipelineid: update-ubiquiti-community-unifi-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: unifi
+      namespace: ubiquiti-community
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"ubiquiti\-community/unifi"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}
+---
+name: Update y0n0zawa/resend Provider
+pipelineid: update-y0n0zawa-resend-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      hostname: registry.opentofu.org
+      name: resend
+      namespace: y0n0zawa
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"y0n0zawa/resend"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}

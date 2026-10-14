@@ -1,4 +1,27 @@
 # yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update docker.io/cloudflare/cloudflared Quadlet
+pipelineid: update-docker-io-cloudflare-cloudflared-quadlet
+labels:
+  group: containers
+sources:
+  version:
+    kind: dockerimage
+    spec:
+      image: docker.io/cloudflare/cloudflared
+      tagfilter: ^v?[0-9]+(?:\.[0-9]+){0,2}$
+      versionfilter:
+        kind: regex/semver
+        pattern: "*"
+        regex: ^(v?[0-9]+(?:\.[0-9]+){0,2})$
+targets:
+  image:
+    kind: file
+    sourceid: version
+    spec:
+      file: hosts/hotdog/etc/containers/systemd/cloudflared.container
+      matchpattern: (?m)^(Image=docker\.io/cloudflare/cloudflared:)[^\n]+$
+      replacepattern: ${1}{{ source "version" }}
+---
 name: Update ghcr.io/acmesh-official/acme.sh Quadlet
 pipelineid: update-ghcr-io-acmesh-official-acme-sh-quadlet
 labels:

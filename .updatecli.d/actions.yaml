@@ -5,14 +5,14 @@ autodiscovery:
   crawlers:
     github/action:
       digest: false
+      rootdir: .github
       credentials:
         github.com:
-          token: '{{ env "GITHUB_TOKEN" }}'
           kind: github
+          token: '{{ env "GITHUB_TOKEN" }}'
       versionfilter:
         kind: regex/semver
         pattern: "*"
         regex: ^v?([0-9]+)$
-      rootdir: .github
 labels:
   group: actions
