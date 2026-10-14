@@ -6,6 +6,9 @@ This repository owns homelab infrastructure and Kubernetes cluster substrate.
 The separate `kubelab` repository owns Kubernetes API resources reconciled by
 Flux.
 
+Keep host provisioning focused on OS, hardware and access. Application runtime
+configuration and service units belong to their owning application repository.
+
 ## Conventions
 
 - Pin tools and providers to stable release versions. Use readable major tags
