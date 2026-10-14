@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update backblaze/b2 Provider
+pipelineid: update-backblaze-b2-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      name: b2
+      hostname: registry.opentofu.org
+      namespace: backblaze
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"backblaze/b2"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}

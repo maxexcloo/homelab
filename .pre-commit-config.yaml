@@ -18,7 +18,6 @@ repos:
     hooks:
       - id: check-github-workflows
         files: ^\.github/workflows/.*\.yaml$
-      - id: check-renovate
   - repo: local
     hooks:
       - id: actionlint
@@ -56,5 +55,11 @@ repos:
         name: Validate OpenTofu Configuration
         entry: mise exec -- tofu validate
         files: (\.tf$|^\.terraform\.lock\.hcl$|^data/)
+        language: system
+        pass_filenames: false
+      - id: updatecli
+        name: Validate Local Update Policies
+        entry: mise exec -- updatecli manifest validate --config .updatecli.d --disable-templating --strict
+        files: ^\.updatecli\.d/
         language: system
         pass_filenames: false

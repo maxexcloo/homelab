@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update hashicorp/random Provider
+pipelineid: update-hashicorp-random-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      name: random
+      hostname: registry.opentofu.org
+      namespace: hashicorp
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"hashicorp/random"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}

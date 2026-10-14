@@ -8,6 +8,7 @@ prek = "0.5.5"
 prettier = "3.9.10"
 shellcheck = "0.11.0"
 talosctl = "1.14.2"
+updatecli = "0.122.1"
 yq = "4.54.1"
 
 [env]
@@ -94,4 +95,28 @@ mise install
 mise run opentofu-item
 mise run init
 prek install
+"""
+
+# Dependency Updates
+[tasks."dependencies:check"]
+description = "Preview Local Dependency Updates"
+run = """
+GITHUB_TOKEN="$(gh auth token)"
+export GITHUB_TOKEN
+updatecli pipeline diff --config .updatecli.d --disable-changelog --disable-udash-report --unique-tmp-dir
+"""
+
+[tasks."dependencies:update"]
+description = "Apply Reviewed Local Dependency Updates"
+usage = 'flag "--labels <labels>" help="Select Updatecli groups, such as group:tools"'
+run = """
+GITHUB_TOKEN="$(gh auth token)"
+export GITHUB_TOKEN
+set --
+if [ -n "${usage_labels:-}" ]; then
+  set -- --labels "$usage_labels"
+fi
+updatecli pipeline apply --config .updatecli.d --disable-changelog --disable-udash-report --unique-tmp-dir "$@"
+env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -upgrade
+tofu providers lock -platform=darwin_amd64 -platform=darwin_arm64 -platform=linux_amd64 -platform=linux_arm64
 """

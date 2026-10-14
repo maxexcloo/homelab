@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update Development Tools
+pipelineid: update-development-tools
+labels:
+  group: tools
+sources:
+  1password-cli:
+    kind: http
+    spec:
+      url: https://app-updates.agilebits.com/check/1/0/CLI2/en/2.0.0/N
+    transformers:
+      - jsonmatch:
+          key: .version
+  actionlint:
+    kind: shell
+    spec:
+      command: mise latest actionlint
+  aqua-coreos-butane:
+    kind: shell
+    spec:
+      command: mise latest aqua:coreos/butane
+  opentofu:
+    kind: shell
+    spec:
+      command: mise latest opentofu
+  prek:
+    kind: shell
+    spec:
+      command: mise latest prek
+  prettier:
+    kind: shell
+    spec:
+      command: mise latest prettier
+  shellcheck:
+    kind: shell
+    spec:
+      command: mise latest shellcheck
+  updatecli:
+    kind: shell
+    spec:
+      command: mise latest updatecli
+  yq:
+    kind: shell
+    spec:
+      command: mise latest yq
+targets:
+  1password-cli:
+    kind: file
+    sourceid: 1password-cli
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(1password\-cli = ")[^"]+(")$
+      replacepattern: ${1}{{ source "1password-cli" }}${2}
+  actionlint:
+    kind: file
+    sourceid: actionlint
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(actionlint = ")[^"]+(")$
+      replacepattern: ${1}{{ source "actionlint" }}${2}
+  aqua-coreos-butane:
+    kind: file
+    sourceid: aqua-coreos-butane
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^("aqua:coreos/butane" = ")[^"]+(")$
+      replacepattern: ${1}{{ source "aqua-coreos-butane" }}${2}
+  opentofu:
+    kind: file
+    sourceid: opentofu
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(opentofu = ")[^"]+(")$
+      replacepattern: ${1}{{ source "opentofu" }}${2}
+  prek:
+    kind: file
+    sourceid: prek
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(prek = ")[^"]+(")$
+      replacepattern: ${1}{{ source "prek" }}${2}
+  prettier:
+    kind: file
+    sourceid: prettier
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(prettier = ")[^"]+(")$
+      replacepattern: ${1}{{ source "prettier" }}${2}
+  shellcheck:
+    kind: file
+    sourceid: shellcheck
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(shellcheck = ")[^"]+(")$
+      replacepattern: ${1}{{ source "shellcheck" }}${2}
+  updatecli:
+    kind: file
+    sourceid: updatecli
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(updatecli = ")[^"]+(")$
+      replacepattern: ${1}{{ source "updatecli" }}${2}
+  yq:
+    kind: file
+    sourceid: yq
+    spec:
+      file: .mise.toml
+      matchpattern: (?m)^(yq = ")[^"]+(")$
+      replacepattern: ${1}{{ source "yq" }}${2}

@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update siderolabs/talos Provider
+pipelineid: update-siderolabs-talos-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      name: talos
+      hostname: registry.opentofu.org
+      namespace: siderolabs
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"siderolabs/talos"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}

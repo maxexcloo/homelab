@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update oracle/oci Provider
+pipelineid: update-oracle-oci-provider
+labels:
+  group: providers
+sources:
+  version:
+    kind: terraform/registry
+    spec:
+      name: oci
+      hostname: registry.opentofu.org
+      namespace: oracle
+      type: provider
+      versionfilter:
+        kind: semver
+        pattern: "*"
+targets:
+  pin:
+    kind: file
+    sourceid: version
+    spec:
+      file: requirements.tf
+      matchpattern: (source\s*=\s*"oracle/oci"\s+version\s*=\s*")[^"]+(")
+      replacepattern: ${1}{{ source "version" }}${2}

@@ -12,7 +12,7 @@ configuration and service units belong to their owning application repository.
 ## Conventions
 
 - Pin tools and providers to stable release versions. Use readable major tags
-  such as `v7` for GitHub Actions, not commit SHAs. Let Renovate propose upgrades
+  such as `v7` for GitHub Actions, not commit SHAs. Use local Updatecli previews
   for manual review.
 - Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
 - Keep the complete provider environment in the credential item referenced by
