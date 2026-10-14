@@ -2,8 +2,7 @@
 # Manual edits may be lost in future updates.
 
 provider "registry.opentofu.org/1password/onepassword" {
-  version     = "3.3.1"
-  constraints = "3.3.1"
+  version = "3.3.1"
   hashes = [
     "h1:35PCpSNLVubReT1imwfC+FpIP5gQWx+rvG4njkXkZKM=",
     "h1:GqvBYImDNYNPMi9o3kJTSIJDeEnNO7om46RWA0wjeso=",
@@ -24,8 +23,7 @@ provider "registry.opentofu.org/1password/onepassword" {
 }
 
 provider "registry.opentofu.org/backblaze/b2" {
-  version     = "0.14.0"
-  constraints = "0.14.0"
+  version = "0.14.0"
   hashes = [
     "h1:/DBlyQgzoUA4F9XLQByPgROfIuUMXzFKHoBiFuxWEjI=",
     "h1:46Uwjs9cGzh4SfDdfNYE/b8jGVJK5s9tv3hQuRaSDOA=",
@@ -41,8 +39,7 @@ provider "registry.opentofu.org/backblaze/b2" {
 }
 
 provider "registry.opentofu.org/cloudflare/cloudflare" {
-  version     = "5.28.0"
-  constraints = "5.28.0"
+  version = "5.28.0"
   hashes = [
     "h1:3MScc9whgqTm8wB64P4pb4M3zzm8JHylgpnQGSvPjBE=",
     "h1:BW8S7U601n4f7XW/z2jHln8Fzfq341nIHqi67UxgJ54=",
@@ -65,8 +62,7 @@ provider "registry.opentofu.org/cloudflare/cloudflare" {
 }
 
 provider "registry.opentofu.org/hashicorp/random" {
-  version     = "3.9.1"
-  constraints = "3.9.1"
+  version = "3.9.1"
   hashes = [
     "h1:38E2VQmQDhws/3AL3D/EzBGuCseepyZRIswAOx8CqoQ=",
     "h1:7+qv9kpOpBC9EUPCubnPxh603tu3l9EIMMBkpbt1H1Y=",
@@ -102,8 +98,7 @@ provider "registry.opentofu.org/hashicorp/random" {
 }
 
 provider "registry.opentofu.org/isometry/deepmerge" {
-  version     = "1.3.1"
-  constraints = "1.3.1"
+  version = "1.3.1"
   hashes = [
     "h1:2qlRaGTnpPl4p8WyKYWcU6p4ut+IlWg8a9mlHmDsxLY=",
     "h1:5AnoehSjfyqxv7kdkrgytHf69p0rGgYrye9t9icX0f0=",
@@ -126,8 +121,7 @@ provider "registry.opentofu.org/isometry/deepmerge" {
 }
 
 provider "registry.opentofu.org/oracle/oci" {
-  version     = "9.9.0"
-  constraints = "9.9.0"
+  version = "9.9.0"
   hashes = [
     "h1:/JwdO81SNoI5uay1l3ydvF+wKmltreiXjohx5DiBjzg=",
     "h1:/Tn3czVtM7ucqj4oGJDIAWG8v0juFdRu4zKF58+LbtY=",
@@ -160,8 +154,7 @@ provider "registry.opentofu.org/oracle/oci" {
 }
 
 provider "registry.opentofu.org/pjsalty/truenas" {
-  version     = "3.1.0"
-  constraints = "3.1.0"
+  version = "3.1.0"
   hashes = [
     "h1:DfRCiJbhxVGFG36WC3jxfIcXWpwW2C5GLBIaVENSyPM=",
     "h1:Gd7yG7rKP7JstIdQUea0v7ukCLdjvzRIJsldj3Jq7F4=",
@@ -182,8 +175,7 @@ provider "registry.opentofu.org/pjsalty/truenas" {
 }
 
 provider "registry.opentofu.org/siderolabs/talos" {
-  version     = "0.12.0"
-  constraints = "0.12.0"
+  version = "0.12.0"
   hashes = [
     "h1:5TOAcT0dJ9PUsJfivsym5GNtF8CFhq6NQen1CkMbjI4=",
     "h1:7FSHrDDftj9IcsD/VgYIJTvgVasMW3bKLRvnK/H3Q1M=",
@@ -216,8 +208,7 @@ provider "registry.opentofu.org/siderolabs/talos" {
 }
 
 provider "registry.opentofu.org/tailscale/tailscale" {
-  version     = "0.29.2"
-  constraints = "0.29.2"
+  version = "0.29.2"
   hashes = [
     "h1:7D3VzQoUKr4NYJ7ZMMRdV9iQUK8d6yJBrnBhi0DtBfA=",
     "h1:910l+uQ0y8nSWPo/CsGI0Ni+lM6oc/h6yckucLmivAY=",
@@ -249,8 +240,7 @@ provider "registry.opentofu.org/tailscale/tailscale" {
 }
 
 provider "registry.opentofu.org/ubiquiti-community/unifi" {
-  version     = "0.59.0"
-  constraints = "0.59.0"
+  version = "0.59.0"
   hashes = [
     "h1:9CVQoRgYrZZEuAiKUZN+7a6PwIaqClSBs7QSGJEAgVA=",
     "h1:AR6fxtBRnFwLmcAd9ki4EVXJlRmAtAKX6KOm9pFLcwE=",
@@ -283,8 +273,7 @@ provider "registry.opentofu.org/ubiquiti-community/unifi" {
 }
 
 provider "registry.opentofu.org/y0n0zawa/resend" {
-  version     = "1.0.1"
-  constraints = "1.0.1"
+  version = "1.0.1"
   hashes = [
     "h1:8GC9Zkjdl6YTS0FD8b71acfssKGdiMVh9+do57Pgkhc=",
     "h1:8c4qy2Y9hYPmBWgKUVYgT0o/2EbaUQ38M7Ycm0QoAwc=",

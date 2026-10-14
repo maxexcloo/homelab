@@ -1,4 +1,12 @@
 [tools]
+# 1password-cli = "latest"
+# gh = "latest"
+# kubectl = "latest"
+# opentofu = "latest"
+# prek = "latest"
+# talosctl = "latest"
+# updatecli = "latest"
+# yq = "latest"
 1password-cli = "2.41.0"
 actionlint = "1.7.12"
 "aqua:coreos/butane" = "0.29.0"
@@ -32,7 +40,6 @@ UNIFI_API = "op://Homelab/OpenTofu/unifi_api"
 UNIFI_API_KEY = "op://Homelab/OpenTofu/unifi_api_key"
 
 # Dependency Updates
-
 [tasks."dependencies:check"]
 description = "Preview Local Dependency Updates"
 run = """
@@ -52,12 +59,9 @@ if [ -n "${usage_labels:-}" ]; then
   set -- --labels "$usage_labels"
 fi
 updatecli pipeline apply --config .updatecli.d --disable-changelog --disable-udash-report --unique-tmp-dir "$@"
-env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -upgrade
-tofu providers lock -platform=darwin_amd64 -platform=darwin_arm64 -platform=linux_amd64 -platform=linux_arm64
 """
 
 # Deploy
-
 [tasks.apply]
 description = "Apply All Changes"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu apply'"
@@ -67,7 +71,6 @@ description = "Plan All Changes"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu plan'"
 
 # Development
-
 [tasks.check]
 description = "Run All Repository Checks"
 run = "prek run --all-files"
@@ -80,7 +83,6 @@ tofu fmt -recursive
 """
 
 # Scripts
-
 [tasks.client-configs]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
@@ -104,7 +106,6 @@ description = "Install Homelab SSH Include"
 run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
-
 [tasks.init]
 description = "Initialise Providers & Remote Backend"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu init -input=false'"

@@ -4,7 +4,7 @@ pipelineid: update-kubernetes-cluster-cli
 labels:
   group: platform
 sources:
-  cli:
+  version:
     kind: githubrelease
     spec:
       owner: kubernetes
@@ -15,37 +15,28 @@ sources:
         pattern: "*"
     transformers:
       - trimprefix: v
-  version:
-    kind: githubrelease
-    spec:
-      owner: kubernetes
-      repository: kubernetes
-      token: '{{ env "GITHUB_TOKEN" }}'
-      versionfilter:
-        kind: semver
-        pattern: "*"
 targets:
   cli:
     kind: file
-    sourceid: cli
+    sourceid: version
     spec:
       file: .mise.toml
       matchpattern: (?m)^(kubectl = ")[^"]+("$)
-      replacepattern: ${1}{{ source "cli" }}${2}
+      replacepattern: ${1}{{ source "version" }}${2}
   clusters:
     kind: file
     sourceid: version
     spec:
       file: data/clusters.yaml
       matchpattern: "(?m)(kubernetes_version: )v?[0-9.]+"
-      replacepattern: ${1}{{ source "version" }}
+      replacepattern: ${1}v{{ source "version" }}
 ---
 name: Update Talos Cluster & CLI
 pipelineid: update-talos-cluster-cli
 labels:
   group: platform
 sources:
-  cli:
+  version:
     kind: githubrelease
     spec:
       owner: siderolabs
@@ -56,37 +47,28 @@ sources:
         pattern: "*"
     transformers:
       - trimprefix: v
-  version:
-    kind: githubrelease
-    spec:
-      owner: siderolabs
-      repository: talos
-      token: '{{ env "GITHUB_TOKEN" }}'
-      versionfilter:
-        kind: semver
-        pattern: "*"
 targets:
   cli:
     kind: file
-    sourceid: cli
+    sourceid: version
     spec:
       file: .mise.toml
       matchpattern: (?m)^(talosctl = ")[^"]+("$)
-      replacepattern: ${1}{{ source "cli" }}${2}
+      replacepattern: ${1}{{ source "version" }}${2}
   clusters:
     kind: file
     sourceid: version
     spec:
       file: data/clusters.yaml
       matchpattern: "(?m)(talos_version: )v?[0-9.]+"
-      replacepattern: ${1}{{ source "version" }}
+      replacepattern: ${1}v{{ source "version" }}
 ---
 name: Update Thermalright TRCC
 pipelineid: update-thermalright-trcc
 labels:
   group: platform
 sources:
-  package:
+  version:
     kind: githubrelease
     spec:
       owner: Lexonight1
@@ -97,15 +79,6 @@ sources:
         pattern: "*"
     transformers:
       - trimprefix: v
-  version:
-    kind: githubrelease
-    spec:
-      owner: Lexonight1
-      repository: thermalright-trcc-linux
-      token: '{{ env "GITHUB_TOKEN" }}'
-      versionfilter:
-        kind: semver
-        pattern: "*"
 targets:
   pin:
     kind: file
@@ -113,4 +86,4 @@ targets:
     spec:
       file: hosts/bento/bento.bu
       matchpattern: (https://github.com/Lexonight1/thermalright-trcc-linux/releases/download/)v[0-9.]+/trcc-linux-[0-9.]+-
-      replacepattern: ${1}{{ source "version" }}/trcc-linux-{{ source "package" }}-
+      replacepattern: ${1}v{{ source "version" }}/trcc-linux-{{ source "version" }}-

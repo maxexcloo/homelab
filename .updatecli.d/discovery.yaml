@@ -3,6 +3,7 @@ name: Update Standard Dependencies
 pipelineid: update-standard-dependencies
 autodiscovery:
   crawlers:
+    terraform: {}
     precommit:
       digest: false
 labels:
