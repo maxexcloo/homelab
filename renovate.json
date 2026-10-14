@@ -3,6 +3,12 @@
   "dependencyDashboard": false,
   "extends": ["config:recommended", ":enablePreCommit"],
   "ignoreDeps": ["hashicorp/terraform"],
+  "customDatasources": {
+    "onepassword-cli": {
+      "defaultRegistryUrlTemplate": "https://app-updates.agilebits.com/check/1/0/CLI2/en/2.0.0/N",
+      "transformTemplates": ["{\"releases\":[{\"version\":version}]}"]
+    }
+  },
   "customManagers": [
     {
       "customType": "regex",
@@ -52,6 +58,14 @@
       "description": "Keep Talos CLI and cluster versions together",
       "groupName": "Talos",
       "matchPackageNames": ["siderolabs/talos"]
+    },
+    {
+      "description": "Read 1Password CLI releases from the official update feed",
+      "extractVersion": "^(?<version>\\d+\\.\\d+\\.\\d+)$",
+      "matchDepNames": ["1password-cli"],
+      "matchManagers": ["mise"],
+      "overrideDatasource": "custom.onepassword-cli",
+      "overridePackageName": "1password-cli"
     },
     {
       "description": "Resolve OpenTofu providers from the OpenTofu registry",
