@@ -7,17 +7,14 @@
 # talosctl = "latest"
 # updatecli = "latest"
 # yq = "latest"
-1password-cli = "2.41.0"
 actionlint = "1.7.12"
 "aqua:coreos/butane" = "0.29.0"
+# Match the configured Kubernetes cluster version.
 kubectl = "1.37.1"
-opentofu = "1.13.1"
-prek = "0.5.5"
 prettier = "3.9.10"
 shellcheck = "0.11.0"
+# Match the configured Talos cluster version.
 talosctl = "1.14.2"
-updatecli = "0.122.1"
-yq = "4.54.1"
 
 [env]
 _OP_CONNECT_HOST = "op://Homelab/OpenTofu/op_connect_host"

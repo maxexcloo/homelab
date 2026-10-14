@@ -23,6 +23,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Configure Global Tools
+        run: |
+          mkdir -p "$HOME/.config/mise"
+          sed -n '/^\[tools\]$/p; s/^# \([^ ]* = "latest"\)$/\1/p' .mise.toml > "$HOME/.config/mise/config.toml"
       - name: Set Up Tools
         uses: jdx/mise-action@v5
         with:

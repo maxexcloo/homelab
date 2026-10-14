@@ -18,7 +18,7 @@ mise run setup
 mise run check
 ```
 
-Setup installs pinned tools, initialises providers and installs Git hooks. It
+Setup installs configured tools, initialises providers and installs Git hooks. It
 creates the provider credential item if missing; populate its fields and rerun
 setup. Existing items are left untouched. Credential references live in
 [.mise.toml](.mise.toml); credential-consuming tasks resolve them through the
