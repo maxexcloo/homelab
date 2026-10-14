@@ -19,12 +19,13 @@ repos:
       - id: check-github-workflows
         files: ^\.github/workflows/.*\.yaml$
       - id: check-renovate
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.12
-    hooks:
-      - id: actionlint
   - repo: local
     hooks:
+      - id: actionlint
+        name: Lint GitHub Actions Workflows
+        entry: mise exec -- actionlint
+        files: ^\.github/workflows/.*\.yaml$
+        language: system
       - id: butane
         name: Check Host Configurations
         entry: mise exec -- sh -c 'for file in hosts/*/*.bu; do butane --files-dir hosts --strict "$file" >/dev/null || exit; done'
