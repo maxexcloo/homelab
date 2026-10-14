@@ -20,6 +20,15 @@ output "clusters" {
   }
 }
 
+output "github_identity" {
+  description = "GitHub Actions inputs for the Tailscale identity."
+  sensitive   = true
+  value = {
+    audience  = tailscale_federated_identity.github.audience
+    client_id = tailscale_federated_identity.github.id
+  }
+}
+
 output "machines" {
   description = "Managed machine network identities and addresses."
   value = {

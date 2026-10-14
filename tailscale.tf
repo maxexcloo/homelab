@@ -61,6 +61,12 @@ locals {
     grants    = local.access.tailscale.grants
     groups    = local.access.tailscale.groups
     tagOwners = local.tailscale_tag_owners
+    hosts = merge([
+      for name in keys(local.clusters) : {
+        (name)           = "${local.tailscale_device_addresses[name].ipv4}/32"
+        ("${name}-ipv6") = "${local.tailscale_device_addresses[name].ipv6}/128"
+      }
+    ]...)
   }
 
   tailscale_route_approvers = {
@@ -118,6 +124,16 @@ resource "tailscale_acl" "default" {
   reset_acl_on_destroy       = false
 
   depends_on = [terraform_data.tailscale_tag_validation]
+}
+
+resource "tailscale_federated_identity" "github" {
+  description = "GitHub Actions"
+  issuer      = "https://token.actions.githubusercontent.com"
+  scopes      = ["auth_keys"]
+  subject     = "repo:maxexcloo/signtools-builder:ref:refs/heads/main"
+  tags        = ["tag:ephemeral"]
+
+  depends_on = [tailscale_acl.default]
 }
 
 resource "tailscale_oauth_client" "fly" {
