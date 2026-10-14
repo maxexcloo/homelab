@@ -22,12 +22,29 @@ tailscale:
   default_tag_owners:
     - group:admin
   grants:
-    - dst:
-        - autogroup:tagged
+    # Ephemeral runners do not inherit trusted devices' unrestricted access.
+    - dst: &trusted_tags
+        - tag:appliance
+        - tag:backup
+        - tag:cluster-mbk
+        - tag:cluster-mbk-operator
+        - tag:cluster-syd
+        - tag:cluster-syd-operator
+        - tag:fly
+        - tag:router
+        - tag:server
+        - tag:storage
+        - tag:vm
       ip:
         - "*"
+      src: *trusted_tags
+    - dst:
+        - mbk
+        - mbk-ipv6
+      ip:
+        - tcp:443
       src:
-        - autogroup:tagged
+        - tag:ephemeral
     - dst:
         - "*"
         - autogroup:internet
