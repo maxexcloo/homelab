@@ -34,6 +34,12 @@ def main():
     assert f"--entryPoints.lan.address={inventory['interfaces'][0]['address']}:443" in quadlet
     assert '--entryPoints.tailnet.address=${BENTO_TAILSCALE_IPV4}:443' in quadlet
     assert '--entryPoints.tailnet-v6.address=[${BENTO_TAILSCALE_IPV6}]:443' in quadlet
+    assert '--configFile' not in quadlet, 'Keep all static configuration in one supported source'
+    assert '--providers.file.filename=/etc/bento-proxy/routes.yaml' in quadlet
+    assert '--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json' in quadlet
+    assert '--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare' in quadlet
+    addresses = (ROOT / 'hosts/bento/etc/systemd/system/bento-proxy-addresses.service').read_text()
+    assert 'BENTO_TAILSCALE_IPV4=%%s' in addresses and 'BENTO_TAILSCALE_IPV6=%%s' in addresses, 'Escape systemd specifiers in shell formats'
     assert 'Network=host' in quadlet and 'EnvironmentFile=/run/bento-proxy/addresses.env' in quadlet
     assert 'Environment=CF_DNS_API_TOKEN_FILE=/run/secrets/cloudflare' in quadlet
     unit = (ROOT / 'hosts/bento/etc/systemd/system/ai-https.service').read_text()

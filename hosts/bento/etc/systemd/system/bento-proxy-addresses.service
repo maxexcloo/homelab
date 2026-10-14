@@ -5,7 +5,7 @@ Wants=network-online.target tailscaled.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -ec 'ipv4=$(/usr/bin/tailscale ip --4); ipv6=$(/usr/bin/tailscale ip --6); test -n "$ipv4"; test -n "$ipv6"; umask 077; printf "BENTO_TAILSCALE_IPV4=%s\nBENTO_TAILSCALE_IPV6=%s\n" "$ipv4" "$ipv6" > /run/bento-proxy/addresses.env'
+ExecStart=/bin/sh -ec 'ipv4=$(/usr/bin/tailscale ip --4); ipv6=$(/usr/bin/tailscale ip --6); test -n "$ipv4"; test -n "$ipv6"; umask 077; printf "BENTO_TAILSCALE_IPV4=%%s\nBENTO_TAILSCALE_IPV6=%%s\n" "$ipv4" "$ipv6" > /run/bento-proxy/addresses.env'
 RemainAfterExit=yes
 RuntimeDirectory=bento-proxy
 RuntimeDirectoryMode=0700

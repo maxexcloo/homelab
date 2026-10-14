@@ -8,7 +8,7 @@ Wants=network-online.target
 Image=docker.io/library/traefik:3.7.14
 ContainerName=bento-proxy
 Environment=CF_DNS_API_TOKEN_FILE=/run/secrets/cloudflare
-Exec=--configFile=/etc/bento-proxy/traefik.yaml --entryPoints.lan.address=10.0.0.5:443 --entryPoints.tailnet.address=${BENTO_TAILSCALE_IPV4}:443 --entryPoints.tailnet-v6.address=[${BENTO_TAILSCALE_IPV6}]:443
+Exec=--accesslog=true --accesslog.format=json --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53 --certificatesresolvers.letsencrypt.acme.storage=/data/acme.json --entryPoints.lan.address=10.0.0.5:443 --entryPoints.tailnet.address=${BENTO_TAILSCALE_IPV4}:443 --entryPoints.tailnet-v6.address=[${BENTO_TAILSCALE_IPV6}]:443 --log.format=json --log.level=INFO --providers.file.filename=/etc/bento-proxy/routes.yaml --providers.file.watch=true
 Network=host
 Secret=bento-proxy-cloudflare,target=cloudflare
 Volume=/etc/bento-proxy:/etc/bento-proxy:ro,Z
