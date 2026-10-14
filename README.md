@@ -180,15 +180,6 @@ so its existing Serve listeners and LAN firewall rule are removed; then install
 the host files, restart the unit and start the proxy. Reconcile AI afterwards.
 No GPU allocation change is required.
 
-Preview Normal's home DNS override with `mise run bento-dns <home-profile-id>`.
-Apply it only after reviewing the profile and displayed hostname, using `--apply`
-and `--credential <op-reference>`. Choose the profile used by home Wi-Fi clients;
-the command changes only Normal's exact hostname and suppresses its public
-Tailscale IPv6 answer on that profile. Private studio and control names retain
-their Tailscale DNS targets. Clients using another resolver need the equivalent
-local DNS override. Check access with Tailscale disabled on Wi-Fi, and check the
-private studio both with and without Tailscale while its backend is running.
-
 ### State Recovery
 
 Use the backend location configured in [backend.tf](backend.tf). Stop plans and

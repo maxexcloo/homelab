@@ -52,24 +52,6 @@ tofu fmt -recursive
 """
 
 # Scripts
-[tasks.bento-dns]
-description = "Preview Or Apply The Normal Studio Home DNS Override"
-run = """
-set -- "$usage_profile"
-if [ "${usage_apply:-false}" = true ]; then
-  set -- "$@" --apply
-fi
-if [ -n "${usage_credential:-}" ]; then
-  set -- "$@" --credential "$usage_credential"
-fi
-python3 scripts/bento_dns.py "$@"
-"""
-usage = """
-arg "<profile>" help="Control D home Wi-Fi profile ID"
-flag "--apply" help="Apply The Previewed Override"
-flag "--credential <reference>" help="Control D Token 1Password Reference"
-"""
-
 [tasks.client-configs]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
