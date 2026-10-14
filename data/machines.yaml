@@ -35,7 +35,6 @@ machines:
           mac_address: "9c:6b:00:d7:e9:63"
       services:
         ai:
-          backend_port: 1337
           description: AI Workload Control
           dns_zone: excloo.com
           group: Artificial Intelligence
@@ -45,7 +44,6 @@ machines:
           port: 443
           scheme: https
         comfyui:
-          backend_port: 8190
           description: Image Workflows
           dns_zone: excloo.com
           group: Artificial Intelligence
@@ -56,7 +54,6 @@ machines:
           scheme: https
           siteMonitor: ""
         comfyui-video:
-          backend_port: 8191
           description: Video Workflows
           dns_zone: excloo.com
           group: Artificial Intelligence
@@ -67,29 +64,16 @@ machines:
           scheme: https
           siteMonitor: ""
         comfyui-video-x:
-          backend_port: 8189
-          description: Private Video Workflows
           dns_zone: excloo.com
-          group: Artificial Intelligence
           hostname: comfy-video-x.excloo.com
-          icon: sh-comfyui
-          name: ComfyUI X Video
           port: 443
           scheme: https
-          siteMonitor: ""
         comfyui-x:
-          backend_port: 8188
-          description: Private Image Workflows
           dns_zone: excloo.com
-          group: Artificial Intelligence
           hostname: comfy-x.excloo.com
-          icon: sh-comfyui
-          name: ComfyUI X Image
           port: 443
           scheme: https
-          siteMonitor: ""
         files:
-          backend_port: 8090
           description: Private AI Files
           dns_zone: excloo.com
           group: Artificial Intelligence
@@ -100,7 +84,6 @@ machines:
           scheme: https
           siteMonitor: ""
         heiss:
-          backend_port: 8788
           description: Image & Video Studio
           dns_zone: excloo.com
           group: Artificial Intelligence
@@ -112,16 +95,10 @@ machines:
           scheme: https
           siteMonitor: ""
         heiss-x:
-          backend_port: 8787
-          description: Private Image & Video Studio
           dns_zone: excloo.com
-          group: Artificial Intelligence
           hostname: studio-x.excloo.com
-          icon: mdi-image-#ffffff
-          name: HEISS X
           port: 443
           scheme: https
-          siteMonitor: ""
         management:
           description: Server Administration
           icon: cockpit-light
@@ -129,7 +106,6 @@ machines:
           port: 9090
           scheme: https
         radiance:
-          backend_port: 1337
           description: Text Models
           dns_zone: excloo.com
           group: Artificial Intelligence
