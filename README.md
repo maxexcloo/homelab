@@ -158,28 +158,6 @@ credentials. Installation definitions describe bootstrap behaviour; existing hos
 require a separately approved update through their supported management tools.
 Supported OS channels are update channels rather than immutable release pins.
 
-### Bento AI Routing
-
-Bento's Quadlet proxy uses native Traefik configuration under
-`hosts/bento/etc/bento-proxy/`. Service DNS and Homepage metadata belong to the
-machine inventory; checks keep route names, backend ports and access boundaries
-consistent. Normal permits home LAN and Tailscale HTTPS; the private studio and
-workload control permit Tailscale only. ComfyUI editors and Files also use private
-HTTPS routes; Files retains its existing private HTTPS endpoint for compatibility.
-Radiance has its own hostname backed by workload control authentication; its API
-key stays in the server process. Sign in separately on that hostname using the
-existing Control account. AI reads the installed native routes for canonical service links and
-allowed hosts.
-
-Existing hosts require a reviewed DNS plan and an approved service update.
-Before starting the proxy, provision its rootful Podman secret
-`bento-proxy-cloudflare` from the host's configured Cloudflare ACME credential,
-without displaying its value. The proxy issues its own DNS-validated certificates
-and keeps renewal state outside Git. Stop the old HTTPS unit before replacing it
-so its existing Serve listeners and LAN firewall rule are removed; then install
-the host files, restart the unit and start the proxy. Reconcile AI afterwards.
-No GPU allocation change is required.
-
 ### State Recovery
 
 Use the backend location configured in [backend.tf](backend.tf). Stop plans and

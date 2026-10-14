@@ -26,12 +26,6 @@ repos:
         entry: mise exec -- actionlint
         files: ^\.github/workflows/.*\.yaml$
         language: system
-      - id: bento-proxy
-        name: Check Bento Proxy Boundaries
-        entry: mise exec -- python3 scripts/check_bento_proxy.py
-        files: ^(data/(machines|networks)\.yaml|hosts/bento/|scripts/check_bento_proxy\.py)$
-        language: system
-        pass_filenames: false
       - id: butane
         name: Check Host Configurations
         entry: mise exec -- sh -c 'for file in hosts/*/*.bu; do butane --files-dir hosts --strict "$file" >/dev/null || exit; done'
