@@ -1,4 +1,10 @@
 http:
+  middlewares:
+    files-slash:
+      redirectRegex:
+        permanent: true
+        regex: ^(https?://[^/]+/files)(\?.*)?$
+        replacement: ${1}/${2}
   routers:
     ai:
       rule: Host(`ai.excloo.com`)
@@ -25,6 +31,8 @@ http:
       tls:
         certResolver: letsencrypt
     files:
+      middlewares:
+        - files-slash
       rule: Host(`ai.excloo.com`) && (Path(`/files`) || PathPrefix(`/files/`))
       service: files
       entryPoints:
