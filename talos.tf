@@ -45,6 +45,38 @@ data "talos_machine_configuration" "node" {
 }
 
 locals {
+  # The client ID and identity prefix match Headlamp's Pocket ID client and RBAC in kubelab.
+  talos_cluster_authentication_configuration = {
+    apiVersion = "v1alpha1"
+    kind       = "KubeAuthenticationConfig"
+    configuration = {
+      anonymous = {
+        enabled = true
+        conditions = [
+          { path = "/livez" },
+          { path = "/readyz" },
+          { path = "/healthz" },
+        ]
+      }
+      jwt = [{
+        claimMappings = {
+          groups = {
+            claim  = "groups"
+            prefix = "pocket-id:"
+          }
+          username = {
+            claim  = "sub"
+            prefix = "pocket-id:"
+          }
+        }
+        issuer = {
+          audiences = [local.access.kubernetes.oidc_client_id]
+          url       = local.access.kubernetes.oidc_issuer_url
+        }
+      }]
+    }
+  }
+
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
       node.address,
@@ -134,7 +166,7 @@ locals {
         yamlencode(local.talos_user_volume_local_path_partition) :
         yamlencode(local.talos_user_volume_local_path_directory)
       ),
-      ], node.install_disk != null ? [{
+      ], node.machine_type == "controlplane" ? [local.talos_cluster_authentication_configuration] : [], node.install_disk != null ? [{
         apiVersion = "v1alpha1"
         kind       = "UnattendedInstallConfig"
         installer = {
