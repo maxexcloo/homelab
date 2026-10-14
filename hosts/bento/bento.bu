@@ -17,6 +17,8 @@ storage:
   directories:
     - mode: 0754
       path: /etc/ucore-autorebase
+    - mode: 0700
+      path: /var/lib/bento-proxy
   files:
     - mode: 0644
       overwrite: true

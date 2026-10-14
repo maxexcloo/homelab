@@ -1,20 +1,14 @@
 [Unit]
-Description=Bento AI Tailnet HTTPS & HEISS LAN Access
+Description=Bento AI Files HTTPS & Studio LAN Firewall
 After=firewalld.service network-online.target tailscaled.service
 Wants=firewalld.service network-online.target tailscaled.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/firewall-cmd --add-rich-rule='rule family="ipv4" source address="10.0.0.0/22" port port="8788" protocol="tcp" accept' --zone=FedoraServer
-ExecStart=/usr/bin/tailscale serve --bg --https=443 http://127.0.0.1:1337
-ExecStart=/usr/bin/tailscale serve --bg --https=8443 http://127.0.0.1:8788
+ExecStart=/usr/bin/firewall-cmd --add-rich-rule='rule family="ipv4" source address="10.0.0.0/22" destination address="10.0.0.5" port port="443" protocol="tcp" accept' --zone=FedoraServer
 ExecStart=/usr/bin/tailscale serve --bg --https=8445 http://127.0.0.1:8090
-ExecStart=/usr/bin/tailscale serve --bg --https=9443 http://127.0.0.1:8787
-ExecStop=/usr/bin/firewall-cmd --remove-rich-rule='rule family="ipv4" source address="10.0.0.0/22" port port="8788" protocol="tcp" accept' --zone=FedoraServer
-ExecStop=/usr/bin/tailscale serve --https=443 off
-ExecStop=/usr/bin/tailscale serve --https=8443 off
+ExecStop=/usr/bin/firewall-cmd --remove-rich-rule='rule family="ipv4" source address="10.0.0.0/22" destination address="10.0.0.5" port port="443" protocol="tcp" accept' --zone=FedoraServer
 ExecStop=/usr/bin/tailscale serve --https=8445 off
-ExecStop=/usr/bin/tailscale serve --https=9443 off
 RemainAfterExit=yes
 Restart=on-failure
 RestartSec=5s

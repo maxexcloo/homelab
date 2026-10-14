@@ -1,4 +1,15 @@
 locals {
+  dns_machine_services = merge([
+    for machine_name, machine in local.machines : {
+      for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
+        hostname = service.hostname
+        machine  = machine_name
+        zone     = service.dns_zone
+      }
+      if try(service.hostname, null) != null && try(service.dns_zone, null) != null
+    }
+  ]...)
+
   dns_record_entries_manual_by_key = {
     for entry in flatten([
       for source_file in local.dns_zone_files : [
@@ -134,6 +145,23 @@ locals {
       }
     },
     {
+      for service_key, service in local.dns_machine_services : "service/${service_key}" => {
+        content = local.machine_fqdns[service.machine]
+        name    = service.hostname
+        type    = "CNAME"
+        zone    = service.zone
+      }
+    },
+    {
+      for service_key, service in local.dns_machine_services : "service-acme/${service_key}" => {
+        content = local.cloudflare_consumers_acme[service.machine].target_hostname
+        name    = "_acme-challenge.${service.hostname}"
+        type    = "CNAME"
+        zone    = service.zone
+      }
+      if try(local.cloudflare_consumers_acme[service.machine].challenge_mode, null) == "delegated"
+    },
+    {
       for name, tailscale_name in local.tailscale_machine_device_names : "machine/${name}/a" => {
         content = local.tailscale_device_addresses[tailscale_name].ipv4
         name    = local.machine_fqdns[name]
@@ -193,6 +221,14 @@ resource "terraform_data" "dns_validation" {
   input = sort(keys(local.dns_zone_files_by_name))
 
   lifecycle {
+    precondition {
+      condition = alltrue([
+        for service in values(local.dns_machine_services) :
+        contains(local.cloudflare_zones, service.zone) && endswith(service.hostname, ".${service.zone}")
+      ])
+      error_message = "Service hostnames must belong to their configured Cloudflare DNS zone."
+    }
+
     precondition {
       condition = alltrue(flatten([
         for source_file in local.dns_zone_files : [
