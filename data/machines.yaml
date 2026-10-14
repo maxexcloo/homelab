@@ -63,23 +63,13 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
-        comfyui-video-x:
-          dns_zone: excloo.com
-          hostname: comfy-video-x.excloo.com
-          port: 443
-          scheme: https
-        comfyui-x:
-          dns_zone: excloo.com
-          hostname: comfy-x.excloo.com
-          port: 443
-          scheme: https
         files:
           description: Private AI Files
-          dns_zone: excloo.com
           group: Artificial Intelligence
-          hostname: ai-files.excloo.com
+          hostname: ai.excloo.com
           icon: mdi-folder-#ffffff
           name: Files
+          path: /files/
           port: 443
           scheme: https
           siteMonitor: ""
@@ -94,11 +84,6 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
-        heiss-x:
-          dns_zone: excloo.com
-          hostname: studio-x.excloo.com
-          port: 443
-          scheme: https
         management:
           description: Server Administration
           icon: cockpit-light
@@ -107,11 +92,11 @@ machines:
           scheme: https
         radiance:
           description: Text Models
-          dns_zone: excloo.com
           group: Artificial Intelligence
-          hostname: radiance.excloo.com
+          hostname: ai.excloo.com
           icon: mdi-message-text-#ffffff
           name: Radiance
+          path: /radiance/
           port: 443
           scheme: https
           siteMonitor: ""
