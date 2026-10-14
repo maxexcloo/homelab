@@ -176,22 +176,3 @@ Archived state and branches must never be applied to the active backend.
 ## Licence
 
 AGPL-3.0 - see [LICENSE](LICENSE).
-
-## Dependency Updates
-
-Mise installs the pinned Updatecli CLI. Run `mise run dependencies:check` locally
-to preview updates from `.updatecli.d/`. GitHub authentication uses the existing
-`gh` login; credentials stay in the command process.
-
-Review compatibility and major upgrades separately, then apply a selected group:
-
-```sh
-mise run dependencies:update --labels group:tools
-```
-
-Use the groups declared in the policy, review the Git diff and run the project
-checks before committing or deploying. Updatecli changes local files; it does
-not create issues, pull requests, commits or deployments. Hosted Renovate is disabled.
-
-Provider updates refresh the local OpenTofu lockfile without accessing the remote
-backend. Infrastructure plans and applies retain their separate approval rules.

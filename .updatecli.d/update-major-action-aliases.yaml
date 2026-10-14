@@ -9,10 +9,6 @@ autodiscovery:
         github.com:
           token: '{{ env "GITHUB_TOKEN" }}'
           kind: github
-      only:
-        - actions:
-            actions/checkout: ""
-            jdx/mise-action: ""
       versionfilter:
         kind: regex/semver
         pattern: "*"

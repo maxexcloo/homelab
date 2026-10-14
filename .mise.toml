@@ -31,73 +31,18 @@ TF_VAR_truenas_connections = "op://Homelab/OpenTofu/truenas_connections"
 UNIFI_API = "op://Homelab/OpenTofu/unifi_api"
 UNIFI_API_KEY = "op://Homelab/OpenTofu/unifi_api_key"
 
-# Deploy
 [tasks.apply]
 description = "Apply All Changes"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu apply'"
 
-[tasks.plan]
-description = "Plan All Changes"
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu plan'"
-
-# Development
 [tasks.check]
 description = "Run All Repository Checks"
 run = "prek run --all-files"
 
-[tasks.fmt]
-description = "Format Project Files"
-run = """
-prettier --write .
-tofu fmt -recursive
-"""
-
-# Scripts
 [tasks.client-configs]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
 
-[tasks.ignition]
-description = "Render uCore Ignition Configurations With Butane"
-run = '''
-output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
-mkdir -p "${output_directory}"
-for config in hosts/*/*.bu; do
-  butane --files-dir hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "${config}"
-done
-'''
-
-[tasks.prepare-oci-image]
-description = "Download Talos QCOW2 Image From Image Factory"
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- scripts/prepare_oci_image.sh"
-
-[tasks.ssh-config]
-description = "Install Homelab SSH Include"
-run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
-
-# Setup
-[tasks.init]
-description = "Initialise Providers & Remote Backend"
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu init -input=false'"
-
-[tasks.init-ci]
-description = "Initialise Providers Without Remote Backend"
-run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -lockfile=readonly"
-
-[tasks.opentofu-item]
-description = "Create Missing OpenTofu 1Password Item"
-run = "scripts/setup_opentofu_item.sh"
-
-[tasks.setup]
-description = "Install Tools, Initialise Providers & Set Up Git Hooks"
-run = """
-mise install
-mise run opentofu-item
-mise run init
-prek install
-"""
-
-# Dependency Updates
 [tasks."dependencies:check"]
 description = "Preview Local Dependency Updates"
 run = """
@@ -120,3 +65,55 @@ updatecli pipeline apply --config .updatecli.d --disable-changelog --disable-uda
 env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -upgrade
 tofu providers lock -platform=darwin_amd64 -platform=darwin_arm64 -platform=linux_amd64 -platform=linux_arm64
 """
+
+[tasks.fmt]
+description = "Format Project Files"
+run = """
+prettier --write .
+tofu fmt -recursive
+"""
+
+# Scripts
+
+[tasks.ignition]
+description = "Render uCore Ignition Configurations With Butane"
+run = '''
+output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
+mkdir -p "${output_directory}"
+for config in hosts/*/*.bu; do
+  butane --files-dir hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "${config}"
+done
+'''
+
+[tasks.init]
+description = "Initialise Providers & Remote Backend"
+run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu init -input=false'"
+
+[tasks.init-ci]
+description = "Initialise Providers Without Remote Backend"
+run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -lockfile=readonly"
+
+[tasks.opentofu-item]
+description = "Create Missing OpenTofu 1Password Item"
+run = "scripts/setup_opentofu_item.sh"
+
+[tasks.plan]
+description = "Plan All Changes"
+run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu plan'"
+
+[tasks.prepare-oci-image]
+description = "Download Talos QCOW2 Image From Image Factory"
+run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- scripts/prepare_oci_image.sh"
+
+[tasks.setup]
+description = "Install Tools, Initialise Providers & Set Up Git Hooks"
+run = """
+mise install
+mise run opentofu-item
+mise run init
+prek install
+"""
+
+[tasks.ssh-config]
+description = "Install Homelab SSH Include"
+run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
