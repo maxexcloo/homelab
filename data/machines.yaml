@@ -79,7 +79,6 @@ machines:
           group: Artificial Intelligence
           hostname: studio.excloo.com
           icon: mdi-image-#ffffff
-          lan: true
           name: HEISS
           port: 443
           scheme: https
