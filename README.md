@@ -46,7 +46,8 @@ for that machine, including its actual scheme and port.
 
 Every apply requires explicit approval and review of the exact plan it presents.
 Plans and applies run locally. Merge pull requests into `main` after review. The
-only GitHub workflow refreshes external monitoring after a merge; it does not apply infrastructure. Its
+single GitHub job validates changes, then refreshes external monitoring after a
+merge; it does not apply infrastructure. Its
 cross-repository dispatch token needs Actions write access to the configured
 monitoring repository. The workflow defines the required Actions secret.
 
@@ -60,7 +61,7 @@ mise run init-check
 mise run check
 ```
 
-Local checks are available when needed. Run `prek install` to enable optional
+The same checks are available locally when needed. Run `prek install` to enable optional
 commit hooks; `mise run check` runs the full suite.
 Static checks do not verify live provider behaviour or plan preconditions.
 Provider updates require reinitialisation with `mise run init`. Regenerate
