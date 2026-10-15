@@ -30,7 +30,7 @@ data "talos_image_factory_urls" "cluster" {
 }
 
 data "talos_machine_configuration" "node" {
-  for_each = local.talos_nodes
+  for_each = { for name, node in local.talos_nodes : name => node if node.configuration_delivery != "container" }
 
   cluster_endpoint   = local.talos_cluster_endpoints[each.value.cluster]
   cluster_name       = each.value.cluster
@@ -79,15 +79,16 @@ locals {
 
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
+      try(node.tailscale_address, null),
       node.address,
-      try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
+      try(node.tailscale_address, local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
     ])
   }
 
   talos_cluster_endpoints = {
     for name, cluster in local.clusters : name => try(
       cluster.endpoint,
-      "https://${local.machine_private_ipv4_addresses[cluster.api_node]}:6443",
+      "https://${local.talos_nodes[cluster.api_node].address}:6443",
     )
   }
 
@@ -132,6 +133,7 @@ locals {
       {
         apiVersion = "v1alpha1"
         kind       = "KubeNodeConfig"
+        nodeIP     = { validSubnets = ["100.64.0.0/10"] }
         taints = {
           "$patch" = "delete"
         }
@@ -158,6 +160,7 @@ locals {
         environment = compact([
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
+          "TS_EXTRA_ARGS=--accept-routes=true",
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },
@@ -183,7 +186,7 @@ locals {
   talos_nodes = merge([
     for cluster_name, cluster in local.clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
-        address                = local.machine_private_ipv4_addresses[node_name]
+        address                = try(node.address, local.machine_private_ipv4_addresses[node_name])
         cluster                = cluster_name
         configuration_delivery = try(node.configuration_delivery, null)
         install_disk           = try(node.install_disk, null)
@@ -219,8 +222,8 @@ locals {
 resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.clusters
 
-  endpoint = local.machine_private_ipv4_addresses[each.value.api_node]
-  node     = local.machine_private_ipv4_addresses[each.value.api_node]
+  endpoint = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
+  node     = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
 
   client_configuration = {
     ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
@@ -266,14 +269,14 @@ resource "talos_machine_bootstrap" "control_plane" {
 
   lifecycle {
     precondition {
-      condition     = try(talos_machine_configuration_apply.node[each.key].id, "") != ""
+      condition     = try(each.value.configuration_delivery == "container" ? talos_machine_configuration_apply.container_test.id : talos_machine_configuration_apply.node[each.key].id, "") != ""
       error_message = "Deliver this node's Talos configuration before bootstrapping it."
     }
   }
 }
 
 resource "talos_machine_configuration_apply" "node" {
-  for_each = local.talos_nodes
+  for_each = { for name, node in local.talos_nodes : name => node if node.configuration_delivery != "container" }
 
   apply_mode                     = "no_reboot"
   endpoint                       = each.value.configuration_delivery == "metadata" ? oci_core_instance.node[each.key].private_ip : each.value.address

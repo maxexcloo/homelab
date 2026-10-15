@@ -93,7 +93,7 @@ locals {
     },
     {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/api" => {
-        content = local.machine_private_ipv4_addresses[cluster.api_node]
+        content = try(local.talos_nodes[cluster.api_node].tailscale_address, local.talos_nodes[cluster.api_node].address)
         name    = "api.${cluster_name}.${local.domains.services}"
         type    = "A"
         zone    = local.domains.services
@@ -101,12 +101,12 @@ locals {
     },
     {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/public" => {
-        content = oci_core_instance.node[cluster.api_node].public_ip
+        content = oci_core_instance.node[try(cluster.public_node, cluster.api_node)].public_ip
         name    = "public.${cluster_name}.${local.domains.services}"
         type    = "A"
         zone    = local.domains.services
       }
-      if try(local.machines[cluster.api_node].oci.assign_public_ip, false)
+      if try(local.machines[try(cluster.public_node, cluster.api_node)].oci.assign_public_ip, false)
     },
     {
       for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale" => {

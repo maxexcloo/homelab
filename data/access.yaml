@@ -26,8 +26,6 @@ tailscale:
     - dst: &trusted_tags
         - tag:appliance
         - tag:backup
-        - tag:cluster-mbk
-        - tag:cluster-mbk-operator
         - tag:cluster-syd
         - tag:cluster-syd-operator
         - tag:fly
@@ -39,8 +37,8 @@ tailscale:
         - "*"
       src: *trusted_tags
     - dst:
-        - mbk
-        - mbk-ipv6
+        - syd
+        - syd-ipv6
       ip:
         - tcp:443
       src:

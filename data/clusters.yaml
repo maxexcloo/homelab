@@ -1,40 +1,11 @@
 clusters:
-  mbk:
-    api_node: taco
+  syd:
+    api_node: kimbap
     backblaze: true
     kubernetes_version: v1.37.1
+    public_node: hsp
     pod_subnet: 10.100.0.0/22
     service_subnet: 10.100.4.0/22
-    talos_version: v1.14.2
-    cloudflare:
-      acme: delegated
-      tunnel: {}
-      waf: true
-      external_dns:
-        - excloo.com
-        - excloo.dev
-    image:
-      architecture: amd64
-      platform: metal
-      extensions:
-        - siderolabs/qemu-guest-agent
-        - siderolabs/tailscale
-    nodes:
-      taco:
-        bootstrap: true
-        configuration_delivery: api
-        install_disk: /dev/vda
-        machine_type: controlplane
-        sysctls:
-          user.max_user_namespaces: "1024"
-        tailscale_routes:
-          - 10.4.0.0/22
-  syd:
-    api_node: hsp
-    backblaze: true
-    kubernetes_version: v1.37.1
-    pod_subnet: 10.100.8.0/22
-    service_subnet: 10.100.12.0/22
     talos_version: v1.14.2
     cloudflare:
       acme: delegated
@@ -51,10 +22,19 @@ clusters:
         - siderolabs/tailscale
     nodes:
       hsp:
-        bootstrap: true
         configuration_delivery: metadata
-        machine_type: controlplane
+        machine_type: worker
         tailscale_routes:
           - 10.20.0.0/24
         time_servers:
           - 169.254.169.254
+      kimbap:
+        bootstrap: true
+        address: 10.4.0.7
+        configuration_delivery: container
+        machine_type: controlplane
+        tailscale_address: 100.120.55.119
+        tailscale_routes:
+          - 10.4.0.0/22
+        tailscale_tag: tag:vm
+    endpoint: https://100.120.55.119:6443
