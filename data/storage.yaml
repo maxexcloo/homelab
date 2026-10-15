@@ -7,8 +7,15 @@ truenas:
       record_size: 128K
     datasets:
       clusters: {}
+      clusters-backups:
+        name: clusters
+        pool: truenas
       mbk:
         parent_dataset: clusters
+      mbk-backups:
+        name: mbk
+        parent_dataset: clusters-backups
+        pool: truenas
     nfs_share_defaults:
       clients:
         - taco
@@ -19,6 +26,8 @@ truenas:
         path: /mnt/truenas-nvme/bookorbit
       clusters-mbk:
         dataset: mbk
+      clusters-mbk-backups:
+        dataset: mbk-backups
       games:
         path: /mnt/truenas/games
       icloud-photos:
