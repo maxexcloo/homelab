@@ -29,7 +29,7 @@ configuration and service units belong to their owning application repository.
 
 ## File Organisation
 
-- `.github/workflows/`: validation and external-monitoring dispatch only;
+- `.github/workflows/`: external-monitoring dispatch only;
   infrastructure applies are local.
 - Root HCL: the homelab cluster substrate.
 

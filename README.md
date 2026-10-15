@@ -18,7 +18,7 @@ mise run setup
 mise run check
 ```
 
-Setup installs configured tools, initialises providers and installs Git hooks. It
+Setup installs configured tools and initialises providers. It
 creates the provider credential item if missing; populate its fields and rerun
 setup. Existing items are left untouched. Credential references live in
 [.mise.toml](.mise.toml); credential-consuming tasks resolve them through the
@@ -38,15 +38,15 @@ for that machine, including its actual scheme and port.
 | `mise run fmt`                                      | Format repository files                       |
 | `mise run ignition`                                 | Render host installation files                |
 | `mise run init`                                     | Initialise providers & the remote backend     |
-| `mise run init-ci`                                  | Initialise providers without the backend      |
+| `mise run init-check`                               | Initialise providers without the backend      |
 | `mise run plan`                                     | Preview requested infrastructure changes      |
 | `mise run prepare-oci-image <cluster-or-image-url>` | Download a cluster installation image         |
 | `mise run setup`                                    | Set up the workstation                        |
 | `mise run ssh-config`                               | Install configured SSH aliases                |
 
 Every apply requires explicit approval and review of the exact plan it presents.
-Plans and applies run locally. CI validates source and refreshes external
-monitoring after successful pushes; it does not apply infrastructure. Its
+Plans and applies run locally. Merge pull requests into `main` after review. The
+only GitHub workflow refreshes external monitoring after a merge; it does not apply infrastructure. Its
 cross-repository dispatch token needs Actions write access to the configured
 monitoring repository. The workflow defines the required Actions secret.
 
@@ -56,14 +56,15 @@ For credential-free validation on a fresh checkout:
 
 ```shell
 mise install
-mise run init-ci
+mise run init-check
 mise run check
 ```
 
-Commit hooks check changed files; the check task and CI run the full suite.
+Local checks are available when needed. Run `prek install` to enable optional
+commit hooks; `mise run check` runs the full suite.
 Static checks do not verify live provider behaviour or plan preconditions.
 Provider updates require reinitialisation with `mise run init`. Regenerate
-checksums for supported workstation and CI platforms with:
+checksums for supported workstation and validation platforms with:
 
 ```shell
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
