@@ -63,16 +63,6 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
-        files:
-          description: Private AI Files
-          group: Artificial Intelligence
-          hostname: ai.excloo.com
-          icon: mdi-folder-#ffffff
-          name: Files
-          path: /files/
-          port: 443
-          scheme: https
-          siteMonitor: ""
         heiss:
           description: Image & Video Studio
           dns_zone: excloo.com
