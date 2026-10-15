@@ -18,7 +18,7 @@ locals {
   truenas_datasets = merge([
     for target, storage in local.truenas_storage : {
       for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
-        name               = name
+        name               = try(dataset.name, name)
         parent_dataset_key = try(dataset.parent_dataset, null) == null ? null : "${target}/${dataset.parent_dataset}"
         target             = target
       })
