@@ -85,7 +85,7 @@ run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 description = "Initialise Providers & Remote Backend"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu init -input=false'"
 
-[tasks.init-ci]
+[tasks.init-check]
 description = "Initialise Providers Without Remote Backend"
 run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -lockfile=readonly"
 
@@ -94,10 +94,9 @@ description = "Create Missing OpenTofu 1Password Item"
 run = "scripts/setup_opentofu_item.sh"
 
 [tasks.setup]
-description = "Install Tools, Initialise Providers & Set Up Git Hooks"
+description = "Install Tools & Initialise Providers"
 run = """
 mise install
 mise run opentofu-item
 mise run init
-prek install
 """

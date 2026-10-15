@@ -32,17 +32,12 @@ jobs:
         with:
           version: 2026.10.9
       - name: Initialise Providers
-        run: mise run init-ci
+        run: mise run init-check
       - name: Run Hooks
         run: mise run check
 
-  monitoring:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    name: Refresh External Monitoring
-    needs: validate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy Validated Inventory
+      - name: Refresh External Monitoring
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.HOMELAB_FLY_DEPLOY_TOKEN }}
           HOMELAB_REVISION: ${{ github.sha }}
