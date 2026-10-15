@@ -30,9 +30,9 @@ machines:
         acme: delegated
       interfaces:
         - address: 10.0.0.5
-          mac_address: "9c:6b:00:d7:e9:40"
+          mac_address: 9c:6b:00:d7:e9:40
         - address: 10.4.0.5
-          mac_address: "9c:6b:00:d7:e9:63"
+          mac_address: 9c:6b:00:d7:e9:63
       services:
         ai:
           description: AI Workload Control
@@ -125,9 +125,9 @@ machines:
                 no_tls_verify: true
       interfaces:
         - address: 10.0.0.2
-          mac_address: "84:47:09:67:c8:33"
+          mac_address: 84:47:09:67:c8:33
         - address: 10.4.0.2
-          mac_address: "84:47:09:67:c8:36"
+          mac_address: 84:47:09:67:c8:36
       services:
         management:
           monitoring: true
@@ -148,11 +148,11 @@ machines:
       interfaces:
         - name: eno1
           address: 10.0.0.3
-          mac_address: "c8:ff:bf:01:52:e0"
+          mac_address: c8:ff:bf:01:52:e0
         - name: enp3s0
           address: 10.4.0.3
           bridge: br4
-          mac_address: "c8:ff:bf:01:52:e1"
+          mac_address: c8:ff:bf:01:52:e1
       services:
         management:
           monitoring: true
@@ -174,7 +174,7 @@ machines:
       username: max.schaefer
       interfaces:
         - address: 10.0.0.76
-          mac_address: "b6:7c:bc:fa:01:50"
+          mac_address: b6:7c:bc:fa:01:50
     mandu:
       beszel: true
       monitoring: false
@@ -186,9 +186,9 @@ machines:
         tunnel: {}
       interfaces:
         - address: 10.4.0.4
-          mac_address: "c8:ff:bf:0f:9f:d0"
+          mac_address: c8:ff:bf:0f:9f:d0
         - address: 10.0.0.4
-          mac_address: "c8:ff:bf:0f:9f:d1"
+          mac_address: c8:ff:bf:0f:9f:d1
       services:
         management:
           description: Server Administration
@@ -203,7 +203,7 @@ machines:
       username: root
       interfaces:
         - address: 10.0.1.213
-          mac_address: "48:da:35:6d:cb:80"
+          mac_address: 48:da:35:6d:cb:80
       services:
         management:
           description: Remote Console & Power Control
@@ -216,7 +216,7 @@ machines:
       type: appliance
       interfaces:
         - address: 10.0.0.6
-          mac_address: "94:54:c5:eb:3f:90"
+          mac_address: 94:54:c5:eb:3f:90
       services:
         management:
           description: Zigbee Ethernet Adapter
@@ -231,8 +231,9 @@ machines:
       username: deck
       interfaces:
         - address: 10.0.0.14
-          mac_address: "e8:8d:a6:e2:2a:da"
+          mac_address: e8:8d:a6:e2:2a:da
     taco:
+      autostart: false
       beszel: true
       host: kimbap
       platform: talos
@@ -248,7 +249,8 @@ machines:
         threads: 1
       interfaces:
         - address: 10.4.0.7
-          mac_address: "02:74:61:63:6f:01"
+          mac_address: 02:74:61:63:6f:01
+      cluster: syd
   syd:
     hsp:
       beszel: true

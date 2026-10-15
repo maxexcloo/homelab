@@ -158,21 +158,21 @@ resource "terraform_data" "configuration_validation" {
       condition = alltrue(flatten([
         for cluster in values(local.clusters) : [
           for node_name, node in cluster.nodes : (
-            contains(["api", "metadata"], try(node.configuration_delivery, "")) &&
+            contains(["api", "container", "metadata"], try(node.configuration_delivery, "")) &&
             (try(node.configuration_delivery, "") != "metadata" || try(local.machines[node_name].provider, null) == "oci")
           )
         ]
       ]))
-      error_message = "Every cluster node must use API or OCI metadata configuration delivery."
+      error_message = "Every cluster node must use API, container or OCI metadata configuration delivery."
     }
 
     precondition {
       condition = alltrue(flatten([
         for cluster in values(local.clusters) : [
-          for node_name in keys(cluster.nodes) : try(local.machines[node_name].platform == "talos", false)
+          for node_name, node in cluster.nodes : try(local.machines[node_name].platform == "talos" || (node.configuration_delivery == "container" && local.machines[node_name].platform == "truenas"), false)
         ]
       ]))
-      error_message = "Every cluster node machine must use the Talos platform."
+      error_message = "Every cluster node must use Talos or a Talos container on TrueNAS."
     }
 
     precondition {

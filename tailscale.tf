@@ -74,7 +74,7 @@ locals {
       for node in values(local.talos_nodes) : node.tailscale_routes
       ])) : route => distinct(compact([
       for node_name, node in local.talos_nodes :
-      contains(node.tailscale_routes, route) ? try("tag:${local.machines[node_name].type}", null) : null
+      contains(node.tailscale_routes, route) ? try(node.tailscale_tag, "tag:${local.machines[node_name].type}") : null
     ]))
   }
 

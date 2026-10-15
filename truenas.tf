@@ -366,7 +366,7 @@ resource "truenas_share_nfs" "managed" {
 resource "truenas_vm" "virtual_machine" {
   for_each = local.truenas_virtual_machines
 
-  autostart             = true
+  autostart             = try(each.value.autostart, true)
   bootloader            = "UEFI"
   cores                 = each.value.compute.cores
   cpu_mode              = "HOST-PASSTHROUGH"
