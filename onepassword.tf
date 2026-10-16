@@ -151,13 +151,11 @@ resource "onepassword_item" "cloudflare_waf" {
 resource "onepassword_item" "control_d" {
   for_each = local.clusters
 
-  # Keep version zero unchanged so a manually populated password is preserved.
-  category            = "login"
-  password_wo         = ""
-  password_wo_version = 0
-  tags                = [local.access.onepassword.ownership_tag]
-  title               = "Control D"
-  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+  category = "login"
+  password = var.control_d_api_key
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "Control D"
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
 resource "onepassword_item" "infrastructure_inventory" {

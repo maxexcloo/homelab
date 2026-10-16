@@ -1,3 +1,14 @@
+variable "control_d_api_key" {
+  description = "Control D API key supplied by the OpenTofu 1Password item."
+  sensitive   = true
+  type        = string
+
+  validation {
+    condition     = trimspace(var.control_d_api_key) != ""
+    error_message = "The Control D API key must not be empty."
+  }
+}
+
 variable "oci_private_key_base64" {
   description = "OCI private key encoded as base64."
   sensitive   = true

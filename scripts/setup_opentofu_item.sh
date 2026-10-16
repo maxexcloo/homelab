@@ -18,6 +18,7 @@ op item create \
   "b2_application_key_id[text]=" \
   "cloudflare_api_key[password]=" \
   "cloudflare_email[email]=" \
+  "control_d_api_key[password]=" \
   "google_credentials[password]=" \
   "notesPlain=Provider environment for the homelab OpenTofu root." \
   "oci_fingerprint[text]=" \

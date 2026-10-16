@@ -23,7 +23,10 @@ mise run check
 
 Setup installs configured tools and initialises providers. It
 creates the provider credential item if missing; populate its fields and rerun
-setup. Existing items are left untouched. Credential references live in
+setup. Existing items are left untouched.
+Store the Control D API key in `Homelab/OpenTofu/control_d_api_key`;
+OpenTofu copies it into each cluster's managed `Control D` item.
+Credential references live in
 [.mise.toml](.mise.toml); credential-consuming tasks resolve them through the
 1Password desktop app without exporting resolved values to the parent shell.
 
