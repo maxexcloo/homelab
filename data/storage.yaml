@@ -16,3 +16,5 @@ truenas:
         pool: truenas
       icloud-photos:
         pool: truenas
+      s3:
+        pool: truenas

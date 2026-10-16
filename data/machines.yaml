@@ -164,6 +164,12 @@ machines:
           name: Netboot
           port: 31010
           scheme: http
+        s3:
+          dns_zone: excloo.net
+          hostname: s3.kimbap.mbk.excloo.net
+          name: Object Storage
+          port: 9000
+          scheme: https
         syncthing:
           monitoring: true
           name: Syncthing
