@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   check:
-    name: Check
+    name: Validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

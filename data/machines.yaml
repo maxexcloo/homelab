@@ -181,11 +181,11 @@ machines:
             traefik.enable: "true"
             traefik.http.services.netboot.loadbalancer.server.port: "31010"
         s3:
-          dns_zone: excloo.net
-          hostname: s3.kimbap.mbk.excloo.net
+          bucket: syd-backups
           name: Object Storage
           port: 9000
           scheme: https
+          username: syd-backups
     macbook-pro:
       platform: macos
       username: max.schaefer
