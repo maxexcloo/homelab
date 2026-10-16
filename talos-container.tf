@@ -142,20 +142,21 @@ resource "truenas_app" "talos_container" {
       talos = {
         cgroup = "private"
         # Keep private service DNS on its public Tailscale records rather than UniFi LAN overrides.
-        dns         = ["1.1.1.1", "1.0.0.1"]
-        hostname    = local.truenas_talos_container.name
-        image       = "ghcr.io/siderolabs/talos:${local.clusters["syd"].talos_version}"
-        mac_address = local.truenas_talos_container.mac
-        mem_limit   = "${local.truenas_talos_container.memory_gib}g"
-        privileged  = true
-        read_only   = true
-        restart     = "unless-stopped"
+        dns        = ["1.1.1.1", "1.0.0.1"]
+        hostname   = local.truenas_talos_container.name
+        image      = "ghcr.io/siderolabs/talos:${local.clusters["syd"].talos_version}"
+        mem_limit  = "${local.truenas_talos_container.memory_gib}g"
+        privileged = true
+        read_only  = true
+        restart    = "unless-stopped"
         environment = {
           PLATFORM = "container"
         }
         networks = {
+          local = {}
           services = {
             ipv4_address = local.truenas_talos_container.address
+            mac_address  = local.truenas_talos_container.mac
           }
         }
         security_opt = ["seccomp=unconfined"]
@@ -209,6 +210,11 @@ resource "truenas_app" "talos_container" {
       }
     }
     networks = {
+      # macvlan cannot reach the host; this bridge gives Tailscale a local peer path.
+      local = {
+        driver   = "bridge"
+        internal = true
+      }
       services = {
         driver = "macvlan"
         driver_opts = {
