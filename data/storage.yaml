@@ -6,6 +6,13 @@ truenas:
       pool: truenas-nvme
       record_size: 128K
     datasets:
+      bichon: {}
+      bookorbit: {}
+      immich: {}
+      papra: {}
+      romm: {}
       talos: {}
-    nfs_share_defaults: {}
-    nfs_shares: {}
+      games:
+        pool: truenas
+      icloud-photos:
+        pool: truenas
