@@ -374,3 +374,18 @@ resource "truenas_service" "s3" {
 
   depends_on = [truenas_dataset.root]
 }
+
+resource "truenas_user" "s3" {
+  for_each = {
+    for name, host in local.truenas_hosts : name => host
+    if can(host.services.s3.username)
+  }
+
+  full_name         = "Kubernetes Backups"
+  group_create      = true
+  password_disabled = true
+  provider          = truenas.hosts[each.key]
+  shell             = "/usr/sbin/nologin"
+  smb               = false
+  username          = each.value.services.s3.username
+}
