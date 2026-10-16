@@ -216,3 +216,16 @@ resource "truenas_network_interface" "services_physical" {
     }
   }
 }
+
+resource "truenas_service" "s3" {
+  for_each = {
+    for name, host in local.truenas_hosts : name => host
+    if can(host.services.s3)
+  }
+
+  enable   = true
+  provider = truenas.hosts[each.key]
+  service  = "s3"
+
+  depends_on = [truenas_dataset.root]
+}

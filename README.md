@@ -75,6 +75,14 @@ Updatecli previews updates locally for manual review through [.updatecli.d/](.up
 compatibility before accepting updates. Host and cluster upgrades are deliberate
 operations; changing installation configuration does not update existing hosts.
 
+### Native S3
+
+OpenTofu owns the S3 parent dataset, service enablement and private service DNS.
+Configure HTTPS listeners, bucket ownership and access keys through TrueNAS's
+native S3 settings; the pinned provider does not expose those settings. Reuse the
+UI certificate for HTTPS. TrueNAS creates and retains each bucket's child dataset.
+Keep client credentials in 1Password, outside Git.
+
 ### Workstation Access
 
 After `mise run ssh-config`, add this near the start of `~/.ssh/config`:
