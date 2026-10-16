@@ -84,15 +84,10 @@ locals {
 
 resource "talos_machine_configuration_apply" "container" {
   apply_mode                     = "no_reboot"
+  client_configuration_wo        = talos_machine_secrets.cluster["syd"].client_configuration
   endpoint                       = local.truenas_talos_container.address
   machine_configuration_input_wo = data.talos_machine_configuration.container.machine_configuration
   node                           = local.truenas_talos_container.address
-
-  client_configuration_wo = {
-    ca_certificate     = talos_machine_secrets.cluster["syd"].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster["syd"].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster["syd"].client_configuration.client_key
-  }
 
   on_destroy = {
     graceful = false

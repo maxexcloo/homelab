@@ -18,11 +18,6 @@ data "oci_objectstorage_namespace" "default" {
 locals {
   oci_network_regions = toset([for network in values(local.oci_networks) : network.region])
 
-  oci_image_capability_schemas_global = {
-    for name, schemas in data.oci_core_compute_global_image_capability_schemas.default :
-    name => one(schemas.compute_global_image_capability_schemas)
-  }
-
   oci_image_shapes = merge([
     for node in values(local.oci_instances) : {
       "${node.cluster}/${node.oci.shape}" = {
@@ -111,7 +106,7 @@ resource "oci_core_compute_image_capability_schema" "talos" {
   for_each = local.oci_images_talos
 
   compartment_id                                      = var.oci_tenancy_ocid
-  compute_global_image_capability_schema_version_name = local.oci_image_capability_schemas_global[each.key].current_version_name
+  compute_global_image_capability_schema_version_name = one(data.oci_core_compute_global_image_capability_schemas.default[each.key].compute_global_image_capability_schemas).current_version_name
   display_name                                        = "talos-${each.key}"
   image_id                                            = oci_core_image.talos[each.key].id
 

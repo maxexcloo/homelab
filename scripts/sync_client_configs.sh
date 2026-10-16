@@ -54,18 +54,13 @@ get_note() {
   fi
 }
 
-clusters=()
 kubeconfig_paths=()
 talosconfig_path=""
 
 yq -r '.clusters | keys | .[]' "${clusters_path}" >"${tmpdir}/clusters"
-while IFS= read -r cluster; do
-  clusters+=("${cluster}")
-done <"${tmpdir}/clusters"
-
 echo "Fetching credentials from 1Password..."
 
-for cluster in "${clusters[@]}"; do
+while IFS= read -r cluster; do
   vault="${cluster_vault_prefix}$(printf '%s' "${cluster}" | tr '[:lower:]' '[:upper:]')"
   kube_file="${tmpdir}/${cluster}.kubeconfig"
   talos_file="${tmpdir}/${cluster}.talosconfig"
@@ -102,7 +97,7 @@ for cluster in "${clusters[@]}"; do
   else
     echo "    (warning: no talosconfig found for cluster ${cluster})" >&2
   fi
-done
+done <"${tmpdir}/clusters"
 
 if [[ ${#kubeconfig_paths[@]} -gt 0 ]]; then
   kubeconfig_path="${tmpdir}/kubeconfig"

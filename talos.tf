@@ -1,13 +1,8 @@
 data "talos_client_configuration" "cluster" {
   for_each = local.clusters
 
-  cluster_name = each.key
-
-  client_configuration = {
-    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
-  }
+  client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
+  cluster_name         = each.key
 
   endpoints = flatten([
     for node_name, node in each.value.nodes : local.talos_client_endpoints[node_name]
@@ -25,7 +20,7 @@ data "talos_image_factory_urls" "cluster" {
   architecture      = each.value.image.architecture
   disk_image_format = each.value.image.platform == "oracle" ? "qcow2" : null
   platform          = each.value.image.platform
-  schematic_id      = local.talos_image_factory_schematic_ids[each.key]
+  schematic_id      = talos_image_factory_schematic.cluster[each.key].id
   talos_version     = each.value.talos_version
 }
 
@@ -90,11 +85,6 @@ locals {
       cluster.endpoint,
       "https://${local.talos_nodes[cluster.api_node].address}:6443",
     )
-  }
-
-  talos_image_factory_schematic_ids = {
-    for name, schematic in talos_image_factory_schematic.cluster :
-    name => schematic.id
   }
 
   talos_machine_bootstrap_nodes = {
@@ -222,14 +212,9 @@ locals {
 resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.clusters
 
-  endpoint = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
-  node     = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
-
-  client_configuration = {
-    ca_certificate     = talos_machine_secrets.cluster[each.key].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.key].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.key].client_configuration.client_key
-  }
+  client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
+  endpoint             = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
+  node                 = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
 
   timeouts = {
     create = "10m"
@@ -254,14 +239,9 @@ resource "talos_image_factory_schematic" "cluster" {
 resource "talos_machine_bootstrap" "control_plane" {
   for_each = local.talos_machine_bootstrap_nodes
 
-  endpoint = each.value.address
-  node     = each.value.address
-
-  client_configuration_wo = {
-    ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
-  }
+  client_configuration_wo = talos_machine_secrets.cluster[each.value.cluster].client_configuration
+  endpoint                = each.value.address
+  node                    = each.value.address
 
   timeouts = {
     create = "10m"
@@ -279,15 +259,10 @@ resource "talos_machine_configuration_apply" "node" {
   for_each = { for name, node in local.talos_nodes : name => node if node.configuration_delivery != "container" }
 
   apply_mode                     = "no_reboot"
+  client_configuration_wo        = talos_machine_secrets.cluster[each.value.cluster].client_configuration
   endpoint                       = each.value.configuration_delivery == "metadata" ? oci_core_instance.node[each.key].private_ip : each.value.address
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
-
-  client_configuration_wo = {
-    ca_certificate     = talos_machine_secrets.cluster[each.value.cluster].client_configuration.ca_certificate
-    client_certificate = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_certificate
-    client_key         = talos_machine_secrets.cluster[each.value.cluster].client_configuration.client_key
-  }
 
   on_destroy = {
     graceful = false
