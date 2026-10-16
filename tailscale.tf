@@ -130,7 +130,7 @@ resource "tailscale_federated_identity" "github" {
   description = "GitHub Actions"
   issuer      = "https://token.actions.githubusercontent.com"
   scopes      = ["auth_keys"]
-  subject     = "repo:maxexcloo/signtools-builder:ref:refs/heads/main"
+  subject     = "repo:maxexcloo@927210/signtools-builder@1419923484:ref:refs/heads/main"
   tags        = ["tag:ephemeral"]
 
   depends_on = [tailscale_acl.default]
