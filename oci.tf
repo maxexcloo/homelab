@@ -292,6 +292,25 @@ resource "oci_core_network_security_group_security_rule" "node_egress" {
   stateless                 = false
 }
 
+resource "oci_core_network_security_group_security_rule" "node_echo" {
+  for_each = {
+    for name, node in local.oci_instances : name => node
+    if try(node.monitoring, true) && (try(node.oci.assign_public_ip, false) || try(node.public_ipv4, null) != null)
+  }
+
+  description               = "Allow public IPv4 monitoring echo requests"
+  direction                 = "INGRESS"
+  network_security_group_id = oci_core_network_security_group.node[each.key].id
+  protocol                  = "1"
+  source                    = "0.0.0.0/0"
+  source_type               = "CIDR_BLOCK"
+  stateless                 = false
+
+  icmp_options {
+    type = 8
+  }
+}
+
 resource "oci_core_network_security_group_security_rule" "node_ingress" {
   for_each = local.oci_network_security_group_rules_ingress
 
