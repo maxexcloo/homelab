@@ -55,7 +55,7 @@ data "talos_machine_configuration" "container" {
       apiVersion = "v1alpha1"
       kind       = "KubeNodeConfig"
       nodeIP = {
-        validSubnets = ["100.120.55.119/32"]
+        validSubnets = ["${local.talos_nodes["kimbap"].tailscale_address}/32"]
       }
       taints = {
         "$patch" = "delete"
@@ -74,11 +74,10 @@ data "talos_machine_configuration" "container" {
 
 locals {
   truenas_talos_container = {
-    address = "10.4.0.7"
-    # Match Kimbap's MemTotal; reserve memory outside the container's budget.
-    host_memory_kib = 65253188
-    mac             = "02:74:61:63:6f:01"
-    memory_gib      = 32
+    address         = local.talos_nodes["kimbap"].address
+    host_memory_kib = local.talos_nodes["kimbap"].container.host_memory_kib
+    mac             = local.talos_nodes["kimbap"].container.mac
+    memory_gib      = local.talos_nodes["kimbap"].container.memory_gib
     name            = "kimbap"
   }
 }
@@ -131,7 +130,7 @@ resource "truenas_app" "talos_container" {
           TS_AUTH_ONCE  = "true"
           TS_EXTRA_ARGS = "--accept-dns=false"
           TS_HOSTNAME   = "syd-talos"
-          TS_ROUTES     = "10.4.0.0/22"
+          TS_ROUTES     = join(",", local.talos_nodes["kimbap"].tailscale_routes)
           TS_STATE_DIR  = "/var/lib/tailscale"
           TS_USERSPACE  = "false"
         }
@@ -181,13 +180,15 @@ resource "truenas_app" "talos_container" {
             }
           ],
           [
-            { source = "/mnt/truenas-nvme/bichon", target = "/var/mnt/datasets/truenas-nvme/bichon", type = "bind", read_only = false, bind = { propagation = "rshared" } },
-            { source = "/mnt/truenas-nvme/bookorbit", target = "/var/mnt/datasets/truenas-nvme/bookorbit", type = "bind", read_only = false, bind = { propagation = "rshared" } },
-            { source = "/mnt/truenas-nvme/immich", target = "/var/mnt/datasets/truenas-nvme/immich", type = "bind", read_only = false, bind = { propagation = "rshared" } },
-            { source = "/mnt/truenas-nvme/papra", target = "/var/mnt/datasets/truenas-nvme/papra", type = "bind", read_only = false, bind = { propagation = "rshared" } },
-            { source = "/mnt/truenas-nvme/romm", target = "/var/mnt/datasets/truenas-nvme/romm", type = "bind", read_only = false, bind = { propagation = "rshared" } },
-            { source = "/mnt/truenas/games", target = "/var/mnt/datasets/truenas/games", type = "bind", read_only = false, bind = { propagation = "rshared" } },
-            { source = "/mnt/truenas/icloud-photos", target = "/var/mnt/datasets/truenas/icloud-photos", type = "bind", read_only = true, bind = { propagation = "rshared" } },
+            for dataset in local.talos_nodes["kimbap"].container.datasets : {
+              source    = truenas_dataset.root["kimbap/${dataset.name}"].mount_point
+              target    = "/var/mnt/datasets/${truenas_dataset.root["kimbap/${dataset.name}"].id}"
+              type      = "bind"
+              read_only = try(dataset.read_only, false)
+              bind = {
+                propagation = "rshared"
+              }
+            }
           ],
           [{
             read_only = true

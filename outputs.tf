@@ -42,8 +42,8 @@ output "machines" {
 }
 
 output "storage" {
-  description = "TrueNAS persistent storage NFS exports managed for Kubernetes."
+  description = "TrueNAS persistent dataset mount points."
   value = {
-    for name, share in truenas_share_nfs.managed : name => share.path
+    for name, dataset in merge(truenas_dataset.child, truenas_dataset.root) : name => dataset.mount_point
   }
 }

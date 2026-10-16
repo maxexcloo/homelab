@@ -134,15 +134,19 @@ for the configured versions. Upgrade one cluster at a time:
 
 1. Approve the upgrade and any outage, verify recovery access and take an etcd
    snapshot outside Git.
-2. Upgrade Talos with the Image Factory installer matching the desired version
-   and schematic, then verify node health.
+2. For installed Talos nodes, upgrade with the Image Factory installer matching
+   the desired version and schematic. For a container node, review and apply the
+   container image version change through its TrueNAS app configuration; preserve
+   the dataset bind mounts. The container shares the TrueNAS kernel. Verify node
+   health after either operation.
 3. Upgrade Kubernetes and verify node health again.
 4. Review and approve the OpenTofu reconciliation plan before applying it.
 
 Single-node upgrades require an outage. If disruption budgets prevent draining,
 use `--drain=false` only for an approved Talos upgrade; workloads still stop during
-reboot. Changing the configured installer does not upgrade the running OS, while
-applying a changed Kubernetes version can restart components. Follow the upgrade
+reboot or container replacement. Changing the configured installer does not
+upgrade installed Talos nodes; changing a container image replaces its running
+userspace. Applying a changed Kubernetes version can restart components. Follow the upgrade
 sequence before reconciliation. Existing state outputs can contain an older
 installer; obtain the desired image from Image Factory. Configuration applies use
 `no_reboot`; handle changes requiring reboot in an approved maintenance window.
