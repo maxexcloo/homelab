@@ -25,11 +25,17 @@ locals {
         try(machine.public_ipv4, null),
       ), null)
     }
-    tailscale = {
-      for name, device_name in local.tailscale_machine_device_names :
-      name => local.tailscale_devices[device_name].node_id
-      if can(local.tailscale_devices[device_name])
-    }
+    tailscale = merge(
+      {
+        for name, device_name in local.tailscale_machine_device_names :
+        name => local.tailscale_devices[device_name].node_id
+        if can(local.tailscale_devices[device_name])
+      },
+      {
+        for name in keys(local.clusters) : name => local.tailscale_devices[name].node_id
+        if can(local.tailscale_devices[name])
+      },
+    )
   }
 
   machine_cluster_names_duplicate = setintersection(
