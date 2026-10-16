@@ -186,12 +186,6 @@ machines:
           name: Object Storage
           port: 9000
           scheme: https
-        syncthing:
-          hostname: syncthing.kimbap.mbk.excloo.net
-          monitoring: true
-          name: Syncthing
-          port: 20910
-          scheme: https
     macbook-pro:
       platform: macos
       username: max.schaefer
