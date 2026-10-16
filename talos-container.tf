@@ -1,90 +1,69 @@
 data "talos_machine_configuration" "container" {
-  cluster_endpoint   = local.talos_cluster_endpoints["syd"]
-  cluster_name       = "syd"
-  kubernetes_version = local.clusters["syd"].kubernetes_version
-  machine_secrets    = talos_machine_secrets.cluster["syd"].machine_secrets
-  machine_type       = "controlplane"
-  talos_version      = local.clusters["syd"].talos_version
+  cluster_endpoint   = local.talos_cluster_endpoints[local.truenas_talos_container.cluster]
+  cluster_name       = local.truenas_talos_container.cluster
+  kubernetes_version = local.clusters[local.truenas_talos_container.cluster].kubernetes_version
+  machine_secrets    = talos_machine_secrets.cluster[local.truenas_talos_container.cluster].machine_secrets
+  machine_type       = local.truenas_talos_container.machine_type
+  talos_version      = local.clusters[local.truenas_talos_container.cluster].talos_version
 
-  config_patches = [
-    yamlencode(local.talos_user_volume_local_path_directory),
-    yamlencode(local.talos_cluster_authentication_configuration),
-    # v1.14's standalone KubeletConfig does not expose extraMounts.
-    yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
-    yamlencode({
-      machine = {
-        kubelet = {
-          image = "ghcr.io/siderolabs/kubelet:${local.clusters["syd"].kubernetes_version}"
-          extraMounts = [{
-            destination = "/var/mnt/datasets"
-            options     = ["rbind", "rshared", "rw"]
-            source      = "/var/mnt/datasets"
-            type        = "bind"
-          }]
-          extraConfig = {
-            # The stock kubelet image cannot report capacity for the host ZFS dataset.
-            localStorageCapacityIsolation = false
-            kubeReserved = {
-              memory = "1Gi"
-            }
-            systemReserved = {
-              memory = "${local.truenas_talos_container.host_memory_kib - local.truenas_talos_container.memory_gib * 1024 * 1024}Ki"
+  config_patches = concat(
+    [yamlencode(local.talos_user_volume_local_path_directory)],
+    local.truenas_talos_container.machine_type == "controlplane" ? [yamlencode(local.talos_cluster_authentication_configuration)] : [],
+    [
+      # v1.14's standalone KubeletConfig does not expose extraMounts.
+      yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
+      yamlencode({
+        machine = {
+          kubelet = {
+            image = "ghcr.io/siderolabs/kubelet:${local.clusters[local.truenas_talos_container.cluster].kubernetes_version}"
+            extraMounts = [{
+              destination = "/var/mnt/datasets"
+              options     = ["rbind", "rshared", "rw"]
+              source      = "/var/mnt/datasets"
+              type        = "bind"
+            }]
+            extraConfig = {
+              # The stock kubelet image cannot report capacity for the host ZFS dataset.
+              localStorageCapacityIsolation = false
+              kubeReserved = {
+                memory = "1Gi"
+              }
+              systemReserved = {
+                memory = "${local.truenas_talos_container.host_memory_kib - local.truenas_talos_container.memory_gib * 1024 * 1024}Ki"
+              }
             }
           }
         }
-      }
-    }),
-    yamlencode({
-      apiVersion = "v1alpha1"
-      kind       = "HostnameConfig"
-      auto       = "off"
-      hostname   = local.truenas_talos_container.name
-    }),
-    yamlencode({
-      apiVersion = "v1alpha1"
-      kind       = "KubeFlannelCNIConfig"
-      "$patch"   = "delete"
-    }),
-    yamlencode({
-      apiVersion     = "v1alpha1"
-      kind           = "KubeNetworkConfig"
-      podSubnets     = [local.clusters["syd"].pod_subnet]
-      serviceSubnets = [local.clusters["syd"].service_subnet]
-    }),
-    yamlencode({
-      apiVersion = "v1alpha1"
-      kind       = "KubeNodeConfig"
-      nodeIP = {
-        validSubnets = ["${local.talos_nodes["kimbap"].tailscale_address}/32"]
-      }
-      taints = {
-        "$patch" = "delete"
-      }
-    }),
-    yamlencode({
-      apiVersion = "v1alpha1"
-      kind       = "ResolverConfig"
-      hostDNS = {
-        enabled              = true
-        forwardKubeDNSToHost = true
-      }
-    }),
-  ]
+      }),
+    ],
+    [for document in local.talos_machine_configuration_documents_common[local.truenas_talos_container_host] : yamlencode(document)],
+  )
 }
 
 locals {
-  truenas_talos_container = {
-    address         = local.talos_nodes["kimbap"].address
-    host_memory_kib = local.talos_nodes["kimbap"].container.host_memory_kib
-    mac             = local.talos_nodes["kimbap"].container.mac
-    memory_gib      = local.talos_nodes["kimbap"].container.memory_gib
-    name            = "kimbap"
-  }
+  truenas_talos_container = merge(
+    local.talos_nodes[local.truenas_talos_container_host],
+    local.talos_nodes[local.truenas_talos_container_host].container,
+    { name = local.machine_hostnames[local.truenas_talos_container_host] },
+  )
+
+  truenas_talos_container_host = one([
+    for name, node in local.talos_nodes : name
+    if node.configuration_delivery == "container"
+  ])
+
+  truenas_talos_container_network_key = local.unifi_clients[
+    lower(local.truenas_hosts_services[local.truenas_talos_container_host].interface.mac_address)
+  ].network_key
+
+  truenas_talos_container_storage_path = truenas_dataset.root[
+    "${local.truenas_talos_container_host}/${local.truenas_talos_container.app_name}"
+  ].mount_point
 }
 
 resource "talos_machine_configuration_apply" "container" {
   apply_mode                     = "no_reboot"
-  client_configuration_wo        = talos_machine_secrets.cluster["syd"].client_configuration
+  client_configuration_wo        = talos_machine_secrets.cluster[local.truenas_talos_container.cluster].client_configuration
   endpoint                       = local.truenas_talos_container.address
   machine_configuration_input_wo = data.talos_machine_configuration.container.machine_configuration
   node                           = local.truenas_talos_container.address
@@ -104,12 +83,12 @@ resource "tailscale_tailnet_key" "container" {
   preauthorized       = true
   recreate_if_invalid = "never"
   reusable            = false
-  tags                = ["tag:vm"]
+  tags                = [local.truenas_talos_container.tailscale_tag]
 }
 
 resource "truenas_app" "talos_container" {
-  app_name      = "talos"
-  provider      = truenas.hosts["kimbap"]
+  app_name      = local.truenas_talos_container.app_name
+  provider      = truenas.hosts[local.truenas_talos_container_host]
   remove_images = false
 
   custom_compose = yamlencode({
@@ -124,13 +103,13 @@ resource "truenas_app" "talos_container" {
           TS_AUTHKEY    = tailscale_tailnet_key.container.key
           TS_AUTH_ONCE  = "true"
           TS_EXTRA_ARGS = "--accept-dns=false"
-          TS_HOSTNAME   = "syd-talos"
-          TS_ROUTES     = join(",", local.talos_nodes["kimbap"].tailscale_routes)
+          TS_HOSTNAME   = "${local.truenas_talos_container.cluster}-${local.truenas_talos_container.app_name}"
+          TS_ROUTES     = join(",", local.truenas_talos_container.tailscale_routes)
           TS_STATE_DIR  = "/var/lib/tailscale"
           TS_USERSPACE  = "false"
         }
         volumes = [{
-          source = "/mnt/${truenas_dataset.root["kimbap/talos"].pool}/${truenas_dataset.root["kimbap/talos"].name}/tailscale"
+          source = "${local.truenas_talos_container_storage_path}/tailscale"
           target = "/var/lib/tailscale"
           type   = "bind"
           bind = {
@@ -144,7 +123,7 @@ resource "truenas_app" "talos_container" {
         # Keep private service DNS on its public Tailscale records rather than UniFi LAN overrides.
         dns         = ["1.1.1.1", "1.0.0.1"]
         hostname    = local.truenas_talos_container.name
-        image       = "ghcr.io/siderolabs/talos:${local.clusters["syd"].talos_version}"
+        image       = "ghcr.io/siderolabs/talos:${local.clusters[local.truenas_talos_container.cluster].talos_version}"
         mac_address = local.truenas_talos_container.mac
         mem_limit   = "${local.truenas_talos_container.memory_gib}g"
         privileged  = true
@@ -163,7 +142,7 @@ resource "truenas_app" "talos_container" {
         volumes = concat(
           # Mount parent paths before dataset-specific read-only mounts.
           [
-            for host_path in try(local.talos_nodes["kimbap"].container.host_paths, []) : {
+            for host_path in try(local.truenas_talos_container.host_paths, []) : {
               read_only = try(host_path.read_only, false)
               source    = host_path.source
               target    = host_path.target
@@ -179,7 +158,7 @@ resource "truenas_app" "talos_container" {
               { directory = "controlplane/state", target = "/system/state" },
               { directory = "controlplane/var", target = "/var" },
               ] : {
-              source = "/mnt/${truenas_dataset.root["kimbap/talos"].pool}/${truenas_dataset.root["kimbap/talos"].name}/${volume.directory}"
+              source = "${local.truenas_talos_container_storage_path}/${volume.directory}"
               target = volume.target
               type   = "bind"
               bind = {
@@ -189,9 +168,9 @@ resource "truenas_app" "talos_container" {
             }
           ],
           [
-            for dataset in local.talos_nodes["kimbap"].container.datasets : {
-              source    = truenas_dataset.root["kimbap/${dataset.name}"].mount_point
-              target    = "/var/mnt/datasets/${truenas_dataset.root["kimbap/${dataset.name}"].id}"
+            for dataset in local.truenas_talos_container.datasets : {
+              source    = truenas_dataset.root["${local.truenas_talos_container_host}/${dataset.name}"].mount_point
+              target    = "/var/mnt/datasets/${truenas_dataset.root["${local.truenas_talos_container_host}/${dataset.name}"].id}"
               type      = "bind"
               read_only = try(dataset.read_only, false)
               bind = {
@@ -212,12 +191,12 @@ resource "truenas_app" "talos_container" {
       services = {
         driver = "macvlan"
         driver_opts = {
-          parent = local.truenas_hosts_services["kimbap"].interface.bridge
+          parent = local.truenas_hosts_services[local.truenas_talos_container_host].interface.bridge
         }
         ipam = {
           config = [{
-            gateway = cidrhost(local.networks["mbk"].subnets.services.cidr, 1)
-            subnet  = cidrsubnet(local.networks["mbk"].subnets.services.cidr, 0, 0)
+            gateway = cidrhost(local.unifi_networks[local.truenas_talos_container_network_key].subnet, 1)
+            subnet  = cidrsubnet(local.unifi_networks[local.truenas_talos_container_network_key].subnet, 0, 0)
           }]
         }
       }
@@ -229,9 +208,9 @@ resource "truenas_app" "talos_container" {
 resource "unifi_client" "talos_container" {
   allow_existing   = true
   fixed_ip         = local.truenas_talos_container.address
-  local_dns_record = "talos.mbk.excloo.net"
+  local_dns_record = "${local.truenas_talos_container.app_name}.${local.machines[local.truenas_talos_container_host].network}.${local.domains.infrastructure}"
   mac              = local.truenas_talos_container.mac
-  name             = "talos"
-  network_id       = data.unifi_network.configured["mbk/services"].id
+  name             = local.truenas_talos_container.app_name
+  network_id       = data.unifi_network.configured[local.truenas_talos_container_network_key].id
   note             = "Talos Kubernetes Node"
 }

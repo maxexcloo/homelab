@@ -73,11 +73,11 @@ locals {
   }
 
   talos_client_endpoints = {
-    for name, node in local.talos_nodes : name => compact([
+    for name, node in local.talos_nodes : name => distinct(compact([
       try(node.tailscale_address, null),
       node.address,
       try(node.tailscale_address, local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
-    ])
+    ]))
   }
 
   talos_cluster_endpoints = {
@@ -109,40 +109,7 @@ locals {
           }
         } : {},
       ),
-      {
-        apiVersion = "v1alpha1"
-        kind       = "KubeFlannelCNIConfig"
-        "$patch"   = "delete"
-      },
-      {
-        apiVersion     = "v1alpha1"
-        kind           = "KubeNetworkConfig"
-        podSubnets     = [local.clusters[node.cluster].pod_subnet]
-        serviceSubnets = [local.clusters[node.cluster].service_subnet]
-      },
-      {
-        apiVersion = "v1alpha1"
-        kind       = "KubeNodeConfig"
-        nodeIP     = { validSubnets = ["100.64.0.0/10"] }
-        taints = {
-          "$patch" = "delete"
-        }
-      },
-      {
-        apiVersion = "v1alpha1"
-        kind       = "ResolverConfig"
-        hostDNS = {
-          enabled              = true
-          forwardKubeDNSToHost = true
-          resolveMemberNames   = true
-        }
-      },
-      {
-        apiVersion = "v1alpha1"
-        kind       = "HostnameConfig"
-        auto       = "off"
-        hostname   = local.machine_hostnames[name]
-      },
+      ], local.talos_machine_configuration_documents_common[name], [
       {
         apiVersion = "v1alpha1"
         kind       = "ExtensionServiceConfig"
@@ -171,6 +138,46 @@ locals {
           }
         }
     }] : [])
+  }
+
+  talos_machine_configuration_documents_common = {
+    for name, node in local.talos_nodes : name => [
+      {
+        apiVersion = "v1alpha1"
+        kind       = "KubeFlannelCNIConfig"
+        "$patch"   = "delete"
+      },
+      {
+        apiVersion     = "v1alpha1"
+        kind           = "KubeNetworkConfig"
+        podSubnets     = [local.clusters[node.cluster].pod_subnet]
+        serviceSubnets = [local.clusters[node.cluster].service_subnet]
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "KubeNodeConfig"
+        nodeIP = {
+          validSubnets = node.configuration_delivery == "container" ? ["${node.tailscale_address}/32"] : ["100.64.0.0/10"]
+        }
+        taints = {
+          "$patch" = "delete"
+        }
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "ResolverConfig"
+        hostDNS = merge({
+          enabled              = true
+          forwardKubeDNSToHost = true
+        }, node.configuration_delivery == "container" ? {} : { resolveMemberNames = true })
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "HostnameConfig"
+        auto       = "off"
+        hostname   = local.machine_hostnames[name]
+      },
+    ]
   }
 
   talos_nodes = merge([

@@ -28,10 +28,10 @@ UNIFI_API_KEY = "op://Homelab/OpenTofu/unifi_api_key"
 
 # Deploy
 [tasks.apply]
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu apply \"$@\"' sh"
+run = "scripts/opentofu.sh apply"
 
 [tasks.plan]
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu plan \"$@\"' sh"
+run = "scripts/opentofu.sh plan"
 
 # Development
 [tasks.check]
@@ -63,7 +63,7 @@ run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
 [tasks.init]
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu init -input=false'"
+run = "scripts/opentofu.sh init -input=false"
 
 [tasks."init:check"]
 description = "Initialise Providers Without Remote Backend"
