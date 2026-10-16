@@ -140,7 +140,9 @@ resource "truenas_app" "talos_container" {
         depends_on = ["talos"]
       }
       talos = {
-        cgroup      = "private"
+        cgroup = "private"
+        # Keep private service DNS on its public Tailscale records rather than UniFi LAN overrides.
+        dns         = ["1.1.1.1", "1.0.0.1"]
         hostname    = local.truenas_talos_container.name
         image       = "ghcr.io/siderolabs/talos:${local.clusters["syd"].talos_version}"
         mac_address = local.truenas_talos_container.mac
