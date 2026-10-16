@@ -1,35 +1,8 @@
 # yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
-name: Update Mise In CI
-pipelineid: update-mise-in-ci
+name: Update Mise
+pipelineid: update-mise
 labels:
-  group: tools
-sources:
-  version:
-    kind: githubrelease
-    spec:
-      owner: jdx
-      repository: mise
-      token: '{{ env "GITHUB_TOKEN" }}'
-      versionfilter:
-        kind: semver
-        pattern: "*"
-    transformers:
-      - trimprefix: v
-targets:
-  workflows:
-    kind: yaml
-    sourceid: version
-    spec:
-      engine: yamlpath
-      key: $.jobs.*.steps[?(@.uses =~ /^jdx\/mise-action@/)].with.version
-      searchpattern: true
-      files:
-        - .github/workflows/*.y*ml
----
-name: Update Mise Tools
-pipelineid: update-mise-tools
-labels:
-  group: tools
+  group: mise
 targets:
   tools:
     disablesourceinput: true

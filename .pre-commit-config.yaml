@@ -40,9 +40,9 @@ repos:
           - text
       - id: shellcheck
         name: Check Shell Scripts
-        entry: mise exec -- shellcheck
+        entry: mise run check:shell
         language: system
-        require_serial: true
+        pass_filenames: false
         types:
           - shell
       - id: tofu-fmt

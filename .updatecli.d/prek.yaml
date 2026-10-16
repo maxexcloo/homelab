@@ -1,10 +1,9 @@
 # yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
-name: Update Standard Dependencies
-pipelineid: update-standard-dependencies
+name: Update Prek
+pipelineid: update-prek
 autodiscovery:
   crawlers:
-    terraform: {}
     precommit:
       digest: false
 labels:
-  group: standard
+  group: prek

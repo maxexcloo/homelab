@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
+name: Update OpenTofu
+pipelineid: update-opentofu
+autodiscovery:
+  crawlers:
+    terraform: null
+labels:
+  group: opentofu

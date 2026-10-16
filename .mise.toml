@@ -1,18 +1,7 @@
 [tools]
-# 1password-cli = "latest"
-# gh = "latest"
-# kubectl = "latest"
-# opentofu = "latest"
-# prek = "latest"
-# talosctl = "latest"
-# updatecli = "latest"
-# yq = "latest"
-actionlint = "1.7.12"
 "aqua:coreos/butane" = "0.29.0"
 # Match the configured Kubernetes cluster version.
 kubectl = "1.37.1"
-prettier = "3.9.10"
-shellcheck = "0.11.0"
 # Match the configured Talos cluster version.
 talosctl = "1.14.2"
 
@@ -38,32 +27,25 @@ UNIFI_API_KEY = "op://Homelab/OpenTofu/unifi_api_key"
 
 # Deploy
 [tasks.apply]
-description = "Apply All Changes"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu apply'"
 
 [tasks.plan]
-description = "Plan All Changes"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu plan'"
 
 # Development
 [tasks.check]
-description = "Run All Repository Checks"
-run = "prek run --all-files"
+depends = ["hooks:check"]
 
 [tasks.fmt]
-description = "Format Project Files"
-run = """
-prettier --write .
-tofu fmt -recursive
-"""
+depends = ["fmt:prettier"]
+run = "tofu fmt -recursive"
 
 # Scripts
-[tasks.client-configs]
+[tasks."clients:sync"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
 
 [tasks.ignition]
-description = "Render uCore Ignition Configurations With Butane"
 run = '''
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
 mkdir -p "${output_directory}"
@@ -72,31 +54,26 @@ for config in hosts/*/*.bu; do
 done
 '''
 
-[tasks.prepare-oci-image]
-description = "Download Talos QCOW2 Image From Image Factory"
+[tasks."oci:image:prepare"]
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- scripts/prepare_oci_image.sh"
 
-[tasks.ssh-config]
-description = "Install Homelab SSH Include"
+[tasks."ssh:configure"]
 run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
 [tasks.init]
-description = "Initialise Providers & Remote Backend"
 run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- sh -c 'export OP_CONNECT_HOST=\"$_OP_CONNECT_HOST\" OP_CONNECT_TOKEN=\"$_OP_CONNECT_TOKEN\"; exec tofu init -input=false'"
 
-[tasks.init-check]
+[tasks."init:check"]
 description = "Initialise Providers Without Remote Backend"
 run = "env -u GOOGLE_CREDENTIALS tofu init -backend=false -input=false -lockfile=readonly"
 
-[tasks.opentofu-item]
+[tasks."opentofu:item"]
 description = "Create Missing OpenTofu 1Password Item"
 run = "scripts/setup_opentofu_item.sh"
 
 [tasks.setup]
-description = "Install Tools & Initialise Providers"
 run = """
-mise install
-mise run opentofu-item
+mise run opentofu:item
 mise run init
 """
