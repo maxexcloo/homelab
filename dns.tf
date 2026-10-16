@@ -65,6 +65,15 @@ locals {
 
   dns_records_derived_specs = merge(
     {
+      for name, machine in local.machines : "machine/${name}/ingress" => {
+        content = local.machine_fqdns[name]
+        name    = "*.${local.machine_fqdns[name]}"
+        type    = "CNAME"
+        zone    = local.domains.infrastructure
+      }
+      if can(machine.ingress)
+    },
+    {
       for record_key, entry in local.cloudflare_dns_records_resend : "resend/${record_key}" => {
         content  = entry.record.value
         name     = "${entry.record.name}.${entry.zone}"

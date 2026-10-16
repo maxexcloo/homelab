@@ -164,6 +164,18 @@ resource "truenas_app" "talos_container" {
         security_opt = ["seccomp=unconfined"]
         tmpfs        = ["/run", "/system", "/tmp"]
         volumes = concat(
+          # Mount parent paths before dataset-specific read-only mounts.
+          [
+            for host_path in try(local.talos_nodes["kimbap"].container.host_paths, []) : {
+              read_only = try(host_path.read_only, false)
+              source    = host_path.source
+              target    = host_path.target
+              type      = "bind"
+              bind = {
+                propagation = "rshared"
+              }
+            }
+          ],
           [
             for volume in [
               { directory = "controlplane/opt", target = "/opt" },

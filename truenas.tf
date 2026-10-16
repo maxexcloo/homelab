@@ -1,3 +1,10 @@
+data "truenas_certificate" "ingress" {
+  for_each = local.truenas_hosts_ingress
+
+  name     = each.value.certificate
+  provider = truenas.hosts[each.key]
+}
+
 data "truenas_network_interface" "services_physical" {
   for_each = local.truenas_hosts_services
 
@@ -40,6 +47,11 @@ locals {
     if machine.platform == "truenas"
   }
 
+  truenas_hosts_ingress = {
+    for name, host in local.truenas_hosts : name => host.ingress
+    if can(host.ingress)
+  }
+
   truenas_hosts_services = {
     for name, machine in local.truenas_hosts : name => {
       interface = one([
@@ -64,6 +76,33 @@ locals {
         for name, dataset in storage.datasets : name => merge(storage.dataset_defaults, dataset)
       }
     })
+  }
+}
+
+resource "terraform_data" "truenas_ingress_validation" {
+  input = sort(keys(local.truenas_hosts_ingress))
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for name, ingress in local.truenas_hosts_ingress :
+        !data.truenas_certificate.ingress[name].expired && contains([
+          for san in split(",", data.truenas_certificate.ingress[name].san) : trimprefix(trimspace(san), "DNS:")
+        ], "*.${local.machine_fqdns[name]}")
+      ])
+      error_message = "TrueNAS ingress requires an unexpired native certificate covering the host's wildcard domain."
+    }
+
+    precondition {
+      condition = alltrue([
+        for name, ingress in local.truenas_hosts_ingress : try(
+          ingress.port >= 1 && ingress.port <= 65535 && floor(ingress.port) == ingress.port &&
+          ingress.port != local.truenas_hosts[name].services.management.port,
+          false,
+        )
+      ])
+      error_message = "TrueNAS ingress requires a valid port separate from management."
+    }
   }
 }
 
@@ -95,6 +134,112 @@ resource "terraform_data" "truenas_storage_target" {
       error_message = "Every child dataset must reference an existing root dataset in the same pool."
     }
   }
+}
+
+resource "truenas_app" "ingress" {
+  for_each = local.truenas_hosts_ingress
+
+  app_name          = "traefik"
+  provider          = truenas.hosts[each.key]
+  remove_images     = false
+  remove_ix_volumes = false
+
+  custom_compose = yamlencode({
+    configs = {
+      dynamic = {
+        content = yamlencode({
+          http = {
+            middlewares = {
+              private = {
+                ipAllowList = {
+                  sourceRange = concat(
+                    ["100.64.0.0/10", "fd7a:115c:a1e0::/48"],
+                    [for subnet in values(local.networks[local.machines[each.key].network].subnets) : cidrsubnet(subnet.cidr, 0, 0)],
+                  )
+                }
+              }
+            }
+          }
+          tls = {
+            certificates = [{
+              certFile = "/etc/certificates/${data.truenas_certificate.ingress[each.key].name}.crt"
+              keyFile  = "/etc/certificates/${data.truenas_certificate.ingress[each.key].name}.key"
+            }]
+          }
+        })
+      }
+      static = {
+        content = yamlencode({
+          entryPoints = {
+            websecure = {
+              address = ":${each.value.port}"
+              http = {
+                middlewares = ["private@file"]
+                tls         = {}
+              }
+            }
+          }
+          providers = {
+            docker = {
+              defaultRule      = "Host(`{{ index .Labels \"com.docker.compose.service\" }}.${local.machine_fqdns[each.key]}`)"
+              exposedByDefault = false
+              useBindPortIP    = true
+            }
+            file = {
+              filename = "/etc/traefik/dynamic.yaml"
+            }
+          }
+        })
+      }
+    }
+    services = {
+      traefik = {
+        image        = each.value.image
+        network_mode = "host"
+        restart      = "unless-stopped"
+        configs = [
+          { source = "static", target = "/etc/traefik/traefik.yaml" },
+          { source = "dynamic", target = "/etc/traefik/dynamic.yaml" },
+        ]
+        # Host-network apps must resolve back to this network namespace.
+        extra_hosts  = ["host.docker.internal:127.0.0.1"]
+        security_opt = ["no-new-privileges:true"]
+        volumes = [
+          {
+            read_only = true
+            source    = "/etc/certificates"
+            target    = "/etc/certificates"
+            type      = "bind"
+          },
+          {
+            read_only = true
+            source    = "/var/run/docker.sock"
+            target    = "/var/run/docker.sock"
+            type      = "bind"
+          },
+        ]
+      }
+    }
+  })
+
+  depends_on = [terraform_data.truenas_ingress_validation]
+}
+
+resource "truenas_cronjob" "ingress_certificate_reload" {
+  for_each = local.truenas_hosts_ingress
+
+  command         = "docker ps --filter label=com.docker.compose.project=ix-${truenas_app.ingress[each.key].app_name} --quiet | xargs --no-run-if-empty docker kill --signal HUP"
+  description     = "Reload Traefik Native Certificates"
+  enabled         = true
+  provider        = truenas.hosts[each.key]
+  schedule_dom    = "*"
+  schedule_dow    = "*"
+  schedule_hour   = "*"
+  schedule_minute = "0"
+  schedule_month  = "*"
+  stderr          = true
+  stdout          = false
+  user            = "root"
 }
 
 resource "truenas_dataset" "child" {

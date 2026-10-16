@@ -6,6 +6,9 @@ Kubernetes resources and application integrations reconciled by Flux.
 
 ## Setup
 
+Install the [shared Mise configuration](https://github.com/maxexcloo/dotfiles#shared-tools--tasks)
+before running local Mise tasks.
+
 Install [Mise](https://mise.jdx.dev/), jq and the 1Password desktop app. Enable its
 CLI integration. The workstation also needs `curl` and `shasum`.
 
@@ -34,15 +37,15 @@ for that machine, including its actual scheme and port.
 | --------------------------------------------------- | --------------------------------------------- |
 | `mise run apply`                                    | Apply explicitly approved changes             |
 | `mise run check`                                    | Run all repository checks                     |
-| `mise run client-configs`                           | Sync Kubernetes & Talos client configurations |
+| `mise run clients:sync`                             | Sync Kubernetes & Talos client configurations |
 | `mise run fmt`                                      | Format repository files                       |
 | `mise run ignition`                                 | Render host installation files                |
 | `mise run init`                                     | Initialise providers & the remote backend     |
-| `mise run init-check`                               | Initialise providers without the backend      |
+| `mise run init:check`                               | Initialise providers without the backend      |
+| `mise run oci:image:prepare <cluster-or-image-url>` | Download a cluster installation image         |
 | `mise run plan`                                     | Preview requested infrastructure changes      |
-| `mise run prepare-oci-image <cluster-or-image-url>` | Download a cluster installation image         |
 | `mise run setup`                                    | Set up the workstation                        |
-| `mise run ssh-config`                               | Install configured SSH aliases                |
+| `mise run ssh:configure`                            | Install configured SSH aliases                |
 
 Every apply requires explicit approval and review of the exact plan it presents.
 Plans and applies run locally. Merge pull requests into `main` after review. The
@@ -57,7 +60,7 @@ For credential-free validation on a fresh checkout:
 
 ```shell
 mise install
-mise run init-check
+mise run init:check
 mise run check
 ```
 
@@ -75,6 +78,28 @@ Updatecli previews updates locally for manual review through [.updatecli.d/](.up
 compatibility before accepting updates. Host and cluster upgrades are deliberate
 operations; changing installation configuration does not update existing hosts.
 
+### TrueNAS App Access
+
+Shared TrueNAS ingress uses wildcard DNS and a wildcard certificate below the
+host's configured machine name. Traefik discovers apps with `traefik.enable=true`;
+the Compose service name selects the subdomain. Set the app's backend port with
+`traefik.http.services.<service>.loadbalancer.server.port`. Native app labels live
+beside their service in the machine inventory and belong in the app's custom
+labels settings.
+
+Use native TrueNAS certificate support where an app provides it; those apps keep
+their own HTTPS ports and do not need Traefik labels.
+Use Traefik for other web apps, including apps whose native TLS only supplies a
+self-signed certificate. Configure their private upstream for HTTP using the
+app's supported settings.
+
+Ingress accepts the host's LAN subnets and Tailscale on its configured HTTPS port.
+It reads Docker labels through the host socket and reuses the native TrueNAS
+wildcard certificate through a read-only directory mount. TrueNAS owns renewal;
+an hourly native cron job reloads Traefik's certificate without restarting it.
+TrueNAS management keeps its existing ports. Review and approve the plan before deploying ingress,
+then verify DNS, trusted certificates and application access.
+
 ### Native S3
 
 OpenTofu owns the S3 parent dataset, service enablement and private service DNS.
@@ -85,13 +110,13 @@ Keep client credentials in 1Password, outside Git.
 
 ### Workstation Access
 
-After `mise run ssh-config`, add this near the start of `~/.ssh/config`:
+After `mise run ssh:configure`, add this near the start of `~/.ssh/config`:
 
 ```sshconfig
 Include config.d/homelab
 ```
 
-SSH aliases are derived from the machine inventory. `mise run client-configs`
+SSH aliases are derived from the machine inventory. `mise run clients:sync`
 merges cluster credentials into existing client configurations, preserves unrelated
 contexts and backs up each destination as `.bak`.
 
@@ -129,8 +154,7 @@ finished.
 ### Cluster Installation & Upgrades
 
 Select architecture, desired versions and extensions from the cluster inventory.
-For VM installation, deliver the matching installation image to the configured
-boot-media path. For an initial OCI image upload, run `mise run prepare-oci-image`
+For an initial OCI image upload, run `mise run oci:image:prepare`
 with a configured cluster or explicit Image Factory URL, then export the printed
 `TF_VAR_oci_talos_image_path` before planning. An explicit URL is required when
 state has no cluster image output. Raw images from other sources require

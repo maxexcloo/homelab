@@ -43,9 +43,13 @@ clusters:
             - name: immich
             - name: papra
             - name: romm
+            - name: syncthing
             - name: games
             - name: icloud-photos
               read_only: true
+          host_paths:
+            - source: /mnt/truenas
+              target: /var/mnt/datasets/truenas
         machine_type: controlplane
         tailscale_address: 100.120.55.119
         tailscale_routes:

@@ -145,6 +145,10 @@ machines:
       cloudflare:
         acme: direct
         tunnel: {}
+      ingress:
+        certificate: truenas
+        image: traefik:v3.7.13
+        port: 8443
       interfaces:
         - name: eno1
           address: 10.0.0.3
@@ -154,16 +158,28 @@ machines:
           bridge: br4
           mac_address: c8:ff:bf:01:52:e1
       services:
+        macos:
+          hostname: macos.kimbap.mbk.excloo.net
+          name: macOS
+          port: 8443
+          scheme: https
+          labels:
+            traefik.enable: "true"
+            traefik.http.services.macos.loadbalancer.server.port: "8080"
         management:
           monitoring: true
           name: TrueNAS
           port: 443
           scheme: https
         netboot:
+          hostname: netboot.kimbap.mbk.excloo.net
           monitoring: true
           name: Netboot
-          port: 31010
-          scheme: http
+          port: 8443
+          scheme: https
+          labels:
+            traefik.enable: "true"
+            traefik.http.services.netboot.loadbalancer.server.port: "31010"
         s3:
           dns_zone: excloo.net
           hostname: s3.kimbap.mbk.excloo.net
@@ -171,10 +187,11 @@ machines:
           port: 9000
           scheme: https
         syncthing:
+          hostname: syncthing.kimbap.mbk.excloo.net
           monitoring: true
           name: Syncthing
           port: 20910
-          scheme: http
+          scheme: https
     macbook-pro:
       platform: macos
       username: max.schaefer

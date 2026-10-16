@@ -11,6 +11,7 @@ truenas:
       immich: {}
       papra: {}
       romm: {}
+      syncthing: {}
       talos: {}
       games:
         pool: truenas
