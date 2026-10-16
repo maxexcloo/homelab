@@ -269,7 +269,7 @@ resource "talos_machine_bootstrap" "control_plane" {
 
   lifecycle {
     precondition {
-      condition     = try(each.value.configuration_delivery == "container" ? talos_machine_configuration_apply.container_test.id : talos_machine_configuration_apply.node[each.key].id, "") != ""
+      condition     = try(each.value.configuration_delivery == "container" ? talos_machine_configuration_apply.container.id : talos_machine_configuration_apply.node[each.key].id, "") != ""
       error_message = "Deliver this node's Talos configuration before bootstrapping it."
     }
   }
