@@ -273,4 +273,4 @@ types:
   router: Routers
   server: Servers
   storage: Servers
-  vm: VMs
+  vm: Servers
