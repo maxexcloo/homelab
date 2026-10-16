@@ -33,6 +33,7 @@ clusters:
         address: 10.4.0.7
         configuration_delivery: container
         container:
+          app_name: talos
           # Match host MemTotal so kubelet reserves memory outside the container budget.
           host_memory_kib: 65253188
           mac: 02:74:61:63:6f:01

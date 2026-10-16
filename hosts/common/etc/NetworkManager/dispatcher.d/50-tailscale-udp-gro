@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 set -Eeuo pipefail
 
-readonly interface=enp3s0
+read -r interface < /etc/tailscale-udp-gro-interface
 
 if [[ ${1:-} != "${interface}" ]]; then
   exit 0

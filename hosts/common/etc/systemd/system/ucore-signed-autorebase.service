@@ -1,0 +1,18 @@
+[Unit]
+Description=Rebase To Signed uCore & Reboot
+After=network-online.target
+ConditionPathExists=/etc/ucore-autorebase/unverified
+ConditionPathExists=!/etc/ucore-autorebase/signed
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=/etc/ucore-autorebase/image.env
+ExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-image-signed:docker://${UCORE_IMAGE}
+ExecStart=/usr/bin/touch /etc/ucore-autorebase/signed
+ExecStart=/usr/bin/systemctl disable ucore-signed-autorebase.service
+ExecStart=/usr/bin/systemctl reboot
+StandardOutput=journal+console
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

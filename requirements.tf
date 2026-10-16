@@ -7,47 +7,58 @@ language {
 terraform {
   required_providers {
     b2 = {
-      source = "backblaze/b2"
+      source  = "backblaze/b2"
+      version = "~> 0.14.0"
     }
 
     cloudflare = {
-      source = "cloudflare/cloudflare"
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.28"
     }
 
     deepmerge = {
-      source = "isometry/deepmerge"
+      source  = "isometry/deepmerge"
+      version = "~> 1.3"
     }
 
     oci = {
-      source = "oracle/oci"
+      source  = "oracle/oci"
+      version = "~> 9.9"
     }
 
     onepassword = {
-      source = "1Password/onepassword"
+      source  = "1Password/onepassword"
+      version = "~> 3.3"
     }
 
     random = {
-      source = "hashicorp/random"
+      source  = "hashicorp/random"
+      version = "~> 3.9"
     }
 
     resend = {
-      source = "y0n0zawa/resend"
+      source  = "y0n0zawa/resend"
+      version = "~> 1.0"
     }
 
     tailscale = {
-      source = "tailscale/tailscale"
+      source  = "tailscale/tailscale"
+      version = "~> 0.29.2"
     }
 
     talos = {
-      source = "siderolabs/talos"
+      source  = "siderolabs/talos"
+      version = "~> 0.12.0"
     }
 
     truenas = {
-      source = "PjSalty/truenas"
+      source  = "PjSalty/truenas"
+      version = "~> 3.1"
     }
 
     unifi = {
-      source = "ubiquiti-community/unifi"
+      source  = "ubiquiti-community/unifi"
+      version = "~> 0.59.0"
     }
   }
 }
