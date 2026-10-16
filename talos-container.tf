@@ -154,6 +154,7 @@ resource "truenas_app" "talos_container" {
           PLATFORM = "container"
         }
         networks = {
+          local = {}
           services = {
             ipv4_address = local.truenas_talos_container.address
           }
@@ -209,6 +210,11 @@ resource "truenas_app" "talos_container" {
       }
     }
     networks = {
+      # macvlan cannot reach the host; this bridge gives Tailscale a local peer path.
+      local = {
+        driver   = "bridge"
+        internal = true
+      }
       services = {
         driver = "macvlan"
         driver_opts = {
