@@ -182,8 +182,6 @@ machines:
             traefik.http.services.netboot.loadbalancer.server.port: "31010"
         s3:
           bucket: syd-backups
-          dns_zone: excloo.net
-          hostname: s3.kimbap.mbk.excloo.net
           name: Object Storage
           port: 9000
           scheme: https
