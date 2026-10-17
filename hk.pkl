@@ -1,0 +1,29 @@
+amends "package://github.com/jdx/hk/releases/download/v2.7.0/hk@2.7.0#/Config.pkl"
+
+import "package://github.com/jdx/hk/releases/download/v2.7.0/hk@2.7.0#/Builtins.pkl"
+
+steps {
+  ["actionlint"] = Builtins.actionlint
+  ["butane"] = new Step {
+    glob = "hosts/**"
+    check = "for config in hosts/*/*.bu; do butane --files-dir hosts --strict \"$config\" > /dev/null || exit 1; done"
+  }
+  ["byte-order-marker"] = Builtins.byte_order_marker
+  ["check-added-large-files"] = (Builtins.check_added_large_files) {
+    check = "hk util check-added-large-files --maxkb=1024 {{files}}"
+  }
+  ["check-case-conflict"] = Builtins.check_case_conflict
+  ["check-merge-conflict"] = Builtins.check_merge_conflict
+  ["check-symlinks"] = Builtins.check_symlinks
+  ["detect-private-key"] = Builtins.detect_private_key
+  ["mixed-line-ending"] = Builtins.mixed_line_ending
+  ["newlines"] = Builtins.newlines
+  ["oxfmt"] = Builtins.oxfmt
+  ["shellcheck"] = Builtins.shellcheck
+  ["tofu"] = Builtins.tofu
+  ["tofu-validate"] = new Step {
+    glob = List("*.tf", ".terraform.lock.hcl", "data/**")
+    check = "tofu validate"
+  }
+  ["trailing-whitespace"] = Builtins.trailing_whitespace
+}

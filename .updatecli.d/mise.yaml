@@ -9,11 +9,13 @@ targets:
     kind: shell
     spec:
       command: |
+        # Platform policies own cluster-compatible clients.
         updates=$(mise outdated --bump --json --local) || exit "$?"
+        updates=$(printf '%s\n' "$updates" | jq --compact-output 'del(.kubectl, .talosctl)') || exit "$?"
         if [ "$updates" = "{}" ]; then
           exit 0
         fi
         if [ "$DRY_RUN" = false ]; then
-          mise upgrade --bump --local --no-prune || exit "$?"
+          mise upgrade --bump --exclude kubectl --exclude talosctl --local --no-prune || exit "$?"
         fi
         printf '%s\n' "$updates"

@@ -1,9 +1,0 @@
-# yaml-language-server: $schema=https://www.updatecli.io/schema/latest/policy/manifest/config.json
-name: Update Prek
-pipelineid: update-prek
-autodiscovery:
-  crawlers:
-    precommit:
-      digest: false
-labels:
-  group: prek

@@ -1,4 +1,16 @@
 [tools]
+# 1password-cli = "latest"
+# actionlint = "latest"
+# gh = "latest"
+# hk = "latest"
+# jq = "latest"
+# node = "latest"
+# opentofu = "latest"
+# oxfmt = "latest"
+# python = "latest"
+# shellcheck = "latest"
+# updatecli = "latest"
+# yq = "latest"
 "aqua:coreos/butane" = "0.29.0"
 # Match the configured Kubernetes cluster version.
 kubectl = "1.37.1"
@@ -35,10 +47,10 @@ run = "scripts/opentofu.sh plan"
 
 # Development
 [tasks.check]
-depends = ["hooks:check"]
+depends = ["check:updates", "hooks:check"]
 
 [tasks.fmt]
-depends = ["fmt:prettier"]
+depends = ["fmt:oxfmt"]
 run = "tofu fmt -recursive"
 
 # Scripts
