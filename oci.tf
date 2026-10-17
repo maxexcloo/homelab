@@ -36,9 +36,8 @@ locals {
     for network_name, network in local.oci_networks : [
       for ingress_name, ingress in try(network.tcp_ingress, {}) : "${network_name}/${ingress_name}"
       if(
-        !contains(["cloudflared", "public", "tailscale"], try(ingress.mode, "")) ||
         try(length(ingress.ports), 0) == 0 ||
-        (try(ingress.mode, "") == "public") != (try(length(ingress.sources), 0) > 0) ||
+        try(length(ingress.sources), 0) == 0 ||
         !alltrue([
           for port in try(ingress.ports, []) : try(port >= 1 && port <= 65535 && floor(port) == port, false)
         ]) ||
@@ -82,7 +81,7 @@ locals {
               source = source
             }
           ]
-        ] if try(ingress.mode, "") == "public"
+        ]
       ]
     ]) : rule.key => rule
   }
@@ -472,7 +471,7 @@ resource "terraform_data" "oci_ingress_validation" {
   lifecycle {
     precondition {
       condition     = length(local.oci_ingress_rules_invalid) == 0
-      error_message = "OCI TCP ingress rules must use valid ports and CIDR sources, use tailscale, cloudflared, or public mode, and declare sources only in public mode."
+      error_message = "OCI TCP ingress rules must declare non-empty ports and CIDR sources, with integer ports from 1 to 65535."
     }
   }
 }
