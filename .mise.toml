@@ -47,11 +47,14 @@ run = "scripts/opentofu.sh plan"
 
 # Development
 [tasks.check]
-depends = ["check:updates", "hooks:check"]
+depends = ["check:updates"]
+run = "hk check --all"
 
 [tasks.fmt]
-depends = ["fmt:oxfmt"]
-run = "tofu fmt -recursive"
+run = """
+oxfmt --write --no-error-on-unmatched-pattern .
+tofu fmt -recursive
+"""
 
 # Scripts
 [tasks."clients:sync"]
