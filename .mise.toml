@@ -2,18 +2,19 @@
 # 1password-cli = "latest"
 # actionlint = "latest"
 # gh = "latest"
-# hk = "latest"
 # jq = "latest"
 # node = "latest"
 # opentofu = "latest"
-# oxfmt = "latest"
 # python = "latest"
 # shellcheck = "latest"
 # updatecli = "latest"
 # yq = "latest"
 "aqua:coreos/butane" = "0.29.0"
+# The published shared CI configuration still uses Prek and Prettier.
+hk = "2.7.0"
 # Match the configured Kubernetes cluster version.
 kubectl = "1.37.1"
+oxfmt = "0.73.0"
 # Match the configured Talos cluster version.
 talosctl = "1.14.2"
 
