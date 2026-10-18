@@ -64,17 +64,16 @@ locals {
   }
 
   truenas_hosts_services = {
-    for name, machine in local.truenas_hosts : name => {
-      interface = one([
+    for name, interfaces in {
+      for name, machine in local.truenas_hosts : name => [
         for interface in machine.interfaces : interface
         if try(interface.bridge, null) != null
-      ])
-      machine = machine
+      ]
+      } : name => {
+      interface = interfaces[0]
+      machine   = local.truenas_hosts[name]
     }
-    if length([
-      for interface in machine.interfaces : interface
-      if try(interface.bridge, null) != null
-    ]) == 1
+    if length(interfaces) == 1
   }
 
   truenas_machine_interfaces_by_mac = {

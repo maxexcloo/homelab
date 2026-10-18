@@ -120,10 +120,9 @@ locals {
     for route in local.cloudflare_tunnel_route_entries : route.hostname => route...
   }
 
+  # Path-specific ingress rules repeat their hostname; each hostname needs one DNS route.
   cloudflare_tunnel_routes = {
-    for route_key, routes in {
-      for route in local.cloudflare_tunnel_route_entries : "${route.consumer}/${route.hostname}" => route...
-    } : route_key => routes[0]
+    for route in distinct(local.cloudflare_tunnel_route_entries) : "${route.consumer}/${route.hostname}" => route
   }
 
   cloudflare_waf_zones = [
