@@ -11,10 +11,9 @@ configuration and service units belong to their owning application repository.
 
 ## Conventions
 
-- Pin tools to stable releases and record exact provider versions in the lockfile.
-  Keep provider compatibility constraints in `requirements.tf`. Use readable major
-  tags such as `v7` for GitHub Actions, not commit SHAs. Use local Updatecli previews
-  for manual review.
+- Follow the global version policy. Keep provider compatibility constraints in
+  `requirements.tf` and hold `kubectl` and `talosctl` at the configured cluster
+  versions. Use local Updatecli previews for manual review.
 - Keep the complete provider environment in the credential item referenced by
   `.mise.toml`; local setup may create its schema, but OpenTofu never manages it.
   Resolve its `op://` references only inside credential-consuming Mise tasks, and
