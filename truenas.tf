@@ -170,7 +170,7 @@ resource "truenas_app" "ingress" {
               private = {
                 ipAllowList = {
                   sourceRange = concat(
-                    ["100.64.0.0/10", "fd7a:115c:a1e0::/48"],
+                    values(local.tailscale_address_ranges),
                     [for subnet in values(local.networks[local.machines[each.key].network].subnets) : cidrsubnet(subnet.cidr, 0, 0)],
                   )
                 }
