@@ -174,7 +174,7 @@ machines:
           user: root
       ingress:
         certificate: truenas
-        image: traefik:v3.7.13
+        image: traefik:v3.7.15
         port: 8443
       interfaces:
         - name: eno1
