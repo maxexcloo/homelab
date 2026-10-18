@@ -68,6 +68,7 @@ locals {
     { for name in keys(local.cloudflare_consumers_external_dns) : "cloudflare_external_dns/${name}" => sha256(cloudflare_account_token.external_dns[name].id) },
     { for name in keys(local.cloudflare_consumers_tunnel) : "cloudflare_tunnel/${name}" => sha256(cloudflare_zero_trust_tunnel_cloudflared.cluster[name].id) },
     { for name in keys(local.cloudflare_consumers_waf) : "cloudflare_waf/${name}" => sha256(cloudflare_account_token.waf[name].id) },
+    { for name in keys(local.clusters) : "control_d/${name}" => sha256(var.control_d_api_key) },
     {
       for name in keys(local.onepassword_machine_access) : "machine_access/${name}" => sha256(jsonencode({
         machine = name
@@ -191,11 +192,12 @@ resource "onepassword_item" "cloudflare_waf" {
 resource "onepassword_item" "control_d" {
   for_each = local.clusters
 
-  category = "login"
-  password = var.control_d_api_key
-  tags     = [local.access.onepassword.ownership_tag]
-  title    = "Control D"
-  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+  category            = "login"
+  password_wo         = var.control_d_api_key
+  password_wo_version = local.onepassword_versions["control_d/${each.key}"]
+  tags                = [local.access.onepassword.ownership_tag]
+  title               = "Control D"
+  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
 resource "onepassword_item" "infrastructure_inventory" {
