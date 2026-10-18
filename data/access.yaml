@@ -65,6 +65,7 @@ tailscale:
     scopes:
       - auth_keys
       - devices:core
+      - services
   tags:
     - tag:appliance
     - tag:backup

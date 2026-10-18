@@ -289,6 +289,17 @@ resource "cloudflare_dns_record" "managed" {
   depends_on = [terraform_data.dns_validation]
 }
 
+resource "cloudflare_zone_setting" "ssl" {
+  for_each = {
+    for source_file in local.dns_zone_files : source_file.zone.name => source_file.zone.ssl
+    if try(source_file.zone.ssl, null) != null
+  }
+
+  setting_id = "ssl"
+  value      = each.value
+  zone_id    = data.cloudflare_zone.configured[each.key].zone_id
+}
+
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 

@@ -1,4 +1,5 @@
 name: excloo.com
+ssl: full
 waf: true
 providers:
   - fastmail

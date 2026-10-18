@@ -1,6 +1,28 @@
 data "tailscale_devices" "all" {}
 
+data "tailscale_service" "cluster_ingress" {
+  for_each = {
+    for name, cluster in local.clusters : name => cluster.tailscale_ingress_service
+    if try(cluster.tailscale_ingress_service, null) != null
+  }
+
+  name = "svc:${each.value}"
+}
+
 locals {
+  tailscale_cluster_addresses = {
+    for name, cluster in local.clusters : name => {
+      ipv4 = try(
+        one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))]),
+        local.tailscale_device_addresses[name].ipv4,
+      )
+      ipv6 = try(
+        one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")]),
+        local.tailscale_device_addresses[name].ipv6,
+      )
+    }
+  }
+
   tailscale_cluster_devices_by_hostname = {
     for device in data.tailscale_devices.all.devices : device.hostname => device...
     if can(local.clusters[device.hostname])
@@ -56,6 +78,9 @@ locals {
         local.access.tailscale.auto_approvers.routes,
         local.tailscale_route_approvers,
       )
+      services = {
+        for name in keys(local.clusters) : "tag:cluster-${name}" => ["tag:cluster-${name}"]
+      }
     }
 
     grants    = local.access.tailscale.grants
@@ -63,8 +88,8 @@ locals {
     tagOwners = local.tailscale_tag_owners
     hosts = merge([
       for name in keys(local.clusters) : {
-        (name)           = "${local.tailscale_device_addresses[name].ipv4}/32"
-        ("${name}-ipv6") = "${local.tailscale_device_addresses[name].ipv6}/128"
+        (name)           = "${local.tailscale_cluster_addresses[name].ipv4}/32"
+        ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
       }
     ]...)
   }
