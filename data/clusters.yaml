@@ -46,7 +46,6 @@ clusters:
             - name: immich
             - name: papra
             - name: romm
-            - name: syncthing
             - name: games
             - name: icloud-photos
               read_only: true
