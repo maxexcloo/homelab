@@ -36,7 +36,7 @@ machines:
       services:
         ai:
           description: AI Workload Control
-          dns_zone: excloo.com
+          dns_record: true
           group: Artificial Intelligence
           hostname: ai.excloo.com
           icon: mdi-brain-#ffffff
@@ -45,7 +45,7 @@ machines:
           scheme: https
         comfyui:
           description: Image Workflows
-          dns_zone: excloo.com
+          dns_record: true
           group: Artificial Intelligence
           hostname: comfy.excloo.com
           icon: sh-comfyui
@@ -55,7 +55,7 @@ machines:
           siteMonitor: ""
         comfyui-video:
           description: Video Workflows
-          dns_zone: excloo.com
+          dns_record: true
           group: Artificial Intelligence
           hostname: comfy-video.excloo.com
           icon: sh-comfyui
@@ -65,7 +65,7 @@ machines:
           siteMonitor: ""
         heiss:
           description: Image & Video Studio
-          dns_zone: excloo.com
+          dns_record: true
           group: Artificial Intelligence
           hostname: studio.excloo.com
           icon: mdi-image-#ffffff
@@ -120,7 +120,6 @@ machines:
             - hostname: home-assistant.excloo.com
               path: ^/api/webhook/.+$
               service: https://homeassistant
-              zone: excloo.com
               origin_request:
                 no_tls_verify: true
       interfaces:

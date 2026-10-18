@@ -4,9 +4,9 @@ locals {
       for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
         hostname = service.hostname
         machine  = machine_name
-        zone     = service.dns_zone
+        zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${service.hostname}", ".${zone}")])
       }
-      if try(service.hostname, null) != null && try(service.dns_zone, null) != null
+      if try(service.dns_record, false)
     }
   ]...)
 
@@ -24,7 +24,7 @@ locals {
     {
       for record_key, record in local.dns_records_derived_specs : record_key => merge(
         {
-          comment  = "Homelab OpenTofu Managed"
+          comment  = local.managed_comment
           priority = null
           proxied  = false
           ttl      = 1
@@ -192,7 +192,7 @@ locals {
       ]
     ]) :
     "${entry.zone}-manual-${entry.key}" => {
-      comment  = "Homelab OpenTofu Managed"
+      comment  = local.managed_comment
       content  = entry.record.content
       name     = entry.record.name == "@" ? entry.zone : "${entry.record.name}.${entry.zone}"
       priority = try(entry.record.priority, null)
