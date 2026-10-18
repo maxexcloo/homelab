@@ -69,3 +69,13 @@ resource "unifi_client" "host" {
 
   depends_on = [terraform_data.unifi_network_validation]
 }
+
+resource "unifi_client" "talos_container" {
+  allow_existing   = true
+  fixed_ip         = local.truenas_talos_container.address
+  local_dns_record = "${local.truenas_talos_container.app_name}.${local.machines[local.truenas_talos_container_host].network}.${local.domains.infrastructure}"
+  mac              = local.truenas_talos_container.mac
+  name             = local.truenas_talos_container.app_name
+  network_id       = data.unifi_network.configured[local.truenas_talos_container_network_key].id
+  note             = "Talos Kubernetes Node"
+}

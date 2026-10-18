@@ -15,7 +15,7 @@ locals {
       for source_file in local.dns_zone_files : [
         for record in concat(
           try(source_file.zone.records, []),
-          try(local.cloudflare_dns_records_fastmail[source_file.zone.name], []),
+          try(local.dns_records_fastmail[source_file.zone.name], []),
           ) : {
           key = try(
             record.id,
@@ -74,7 +74,7 @@ locals {
       if can(machine.ingress)
     },
     {
-      for record_key, entry in local.cloudflare_dns_records_resend : "resend/${record_key}" => {
+      for record_key, entry in local.dns_records_resend : "resend/${record_key}" => {
         content  = entry.record.value
         name     = "${entry.record.name}.${entry.zone}"
         priority = try(tonumber(entry.record.priority), null)
@@ -190,6 +190,15 @@ locals {
     },
   )
 
+  dns_records_fastmail = {
+    for source_file in local.dns_zone_files : source_file.zone.name => [
+      for record in local.provider_settings.dns.fastmail : merge(record, {
+        content = replace(record.content, "{domain}", source_file.zone.name)
+      })
+    ]
+    if contains(try(source_file.zone.providers, []), "fastmail")
+  }
+
   dns_records_manual = {
     for record_key, entries in local.dns_record_entries_manual_by_key : record_key => {
       comment  = "Homelab OpenTofu Managed"
@@ -202,6 +211,24 @@ locals {
       zone     = entries[0].zone
     }
   }
+
+  dns_records_resend = merge([
+    for domain, settings in local.resend_domains : {
+      for name, selector in {
+        cname = "SPF/CNAME"
+        dkim  = "DKIM/TXT"
+        mx    = "SPF/MX"
+        spf   = "SPF/TXT"
+        } : "${domain}/${name}" => {
+        zone = domain
+        record = one([
+          for record in resend_domain.configured[domain].records : record
+          if "${record.record}/${record.type}" == selector
+        ])
+      }
+      if name != "cname" || settings.cname
+    }
+  ]...)
 
   dns_zone_file_names_mismatched = [
     for source_file in local.dns_zone_files :

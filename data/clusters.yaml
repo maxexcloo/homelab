@@ -2,7 +2,6 @@ clusters:
   syd:
     api_node: kimbap
     backblaze: true
-    endpoint: https://100.120.55.119:6443
     kubernetes_version: v1.37.1
     pod_subnet: 10.100.0.0/22
     public_node: hsp

@@ -56,16 +56,12 @@ locals {
       credential_scope   = can(local.machines[name]) ? local.machine_fqdns[name] : name
       dns_write_zone     = consumer.acme == "direct" ? (can(local.machines[name]) ? local.domains.infrastructure : local.domains.services) : local.domains.acme
       target_hostname    = can(local.machines[name]) ? "_acme-challenge.${name}.${local.domains.acme}" : "_acme-challenge.${name}.${local.domains.services}.${local.domains.acme}"
-      title              = can(local.machines[name]) ? "Cloudflare ACME DNS: ${local.machine_fqdns[name]}" : "Cloudflare ACME DNS"
-      vault              = can(local.machines[name]) ? "homelab" : "cluster/${name}"
     }
     if can(consumer.acme)
   }
 
   cloudflare_consumers_external_dns = {
     for name, cluster in local.clusters : name => {
-      title = "Cloudflare ExternalDNS"
-      vault = "cluster/${name}"
       zones = cluster.cloudflare.external_dns
     }
     if can(cluster.cloudflare.external_dns)
@@ -74,8 +70,6 @@ locals {
   cloudflare_consumers_tunnel = {
     for name, consumer in local.cloudflare_consumers : name => {
       is_cluster = can(local.clusters[name])
-      title      = can(local.machines[name]) ? "Cloudflare Tunnel: ${local.machine_fqdns[name]}" : "Cloudflare Tunnel"
-      vault      = can(local.machines[name]) ? "homelab" : "cluster/${name}"
       ingress = concat(
         [
           for route in try(consumer.tunnel.ingress, []) : merge(
@@ -111,33 +105,6 @@ locals {
     }
     if try(cluster.cloudflare.waf, false)
   }
-
-  cloudflare_dns_records_fastmail = {
-    for source_file in local.dns_zone_files : source_file.zone.name => [
-      for record in local.provider_settings.dns.fastmail : merge(record, {
-        content = replace(record.content, "{domain}", source_file.zone.name)
-      })
-    ]
-    if contains(try(source_file.zone.providers, []), "fastmail")
-  }
-
-  cloudflare_dns_records_resend = merge([
-    for domain, settings in local.resend_domains : {
-      for name, selector in {
-        cname = "SPF/CNAME"
-        dkim  = "DKIM/TXT"
-        mx    = "SPF/MX"
-        spf   = "SPF/TXT"
-        } : "${domain}/${name}" => {
-        zone = domain
-        record = one([
-          for record in resend_domain.configured[domain].records : record
-          if "${record.record}/${record.type}" == selector
-        ])
-      }
-      if name != "cname" || settings.cname
-    }
-  ]...)
 
   cloudflare_tunnel_route_entries = flatten([
     for consumer_name, consumer in local.cloudflare_consumers : [
@@ -289,17 +256,6 @@ resource "cloudflare_dns_record" "managed" {
   depends_on = [terraform_data.dns_validation]
 }
 
-resource "cloudflare_zone_setting" "ssl" {
-  for_each = {
-    for source_file in local.dns_zone_files : source_file.zone.name => source_file.zone.ssl
-    if try(source_file.zone.ssl, null) != null
-  }
-
-  setting_id = "ssl"
-  value      = each.value
-  zone_id    = data.cloudflare_zone.configured[each.key].zone_id
-}
-
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 
@@ -319,6 +275,17 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   config = {
     ingress = each.value.ingress
   }
+}
+
+resource "cloudflare_zone_setting" "ssl" {
+  for_each = {
+    for source_file in local.dns_zone_files : source_file.zone.name => source_file.zone.ssl
+    if try(source_file.zone.ssl, null) != null
+  }
+
+  setting_id = "ssl"
+  value      = each.value
+  zone_id    = data.cloudflare_zone.configured[each.key].zone_id
 }
 
 resource "terraform_data" "acme_validation" {

@@ -194,6 +194,15 @@ resource "tailscale_tailnet_key" "server" {
   depends_on = [tailscale_acl.default]
 }
 
+resource "tailscale_tailnet_key" "talos_container" {
+  description         = "Talos container bootstrap"
+  expiry              = local.access.tailscale.key_expiry_seconds
+  preauthorized       = true
+  recreate_if_invalid = "never"
+  reusable            = false
+  tags                = [local.truenas_talos_container.tailscale_tag]
+}
+
 resource "terraform_data" "tailscale_tag_validation" {
   input = {
     route_approvers = local.tailscale_route_approvers
@@ -201,6 +210,13 @@ resource "terraform_data" "tailscale_tag_validation" {
   }
 
   lifecycle {
+    precondition {
+      condition = alltrue([
+        for name in values(local.machine_tailscale_names) : can(regex(local.configuration_dns_label_pattern, name))
+      ])
+      error_message = "Derived Tailscale device names must be valid lowercase DNS labels."
+    }
+
     precondition {
       condition     = length(local.tailscale_tags_missing) == 0
       error_message = "Every machine, cluster, and route approver Tailscale tag must be declared: ${join(", ", sort(tolist(local.tailscale_tags_missing)))}"
