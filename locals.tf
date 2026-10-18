@@ -1,12 +1,11 @@
 locals {
-  access                          = yamldecode(file("${path.module}/data/access.yaml"))
-  clusters                        = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
-  configuration_dns_label_pattern = "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
-  domains                         = yamldecode(file("${path.module}/data/domains.yaml")).domains
-  machines_by_network             = yamldecode(file("${path.module}/data/machines.yaml")).machines
-  networks                        = yamldecode(file("${path.module}/data/networks.yaml")).networks
-  provider_settings               = yamldecode(file("${path.module}/data/providers.yaml"))
-  storage                         = yamldecode(file("${path.module}/data/storage.yaml"))
+  access              = yamldecode(file("${path.module}/data/access.yaml"))
+  clusters            = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
+  domains             = yamldecode(file("${path.module}/data/domains.yaml")).domains
+  machines_by_network = yamldecode(file("${path.module}/data/machines.yaml")).machines
+  networks            = yamldecode(file("${path.module}/data/networks.yaml")).networks
+  provider_settings   = yamldecode(file("${path.module}/data/providers.yaml"))
+  storage             = yamldecode(file("${path.module}/data/storage.yaml"))
 
   infrastructure_inventory = {
     cloudflare = {

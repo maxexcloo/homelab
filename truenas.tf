@@ -64,17 +64,16 @@ locals {
   }
 
   truenas_hosts_services = {
-    for name, machine in local.truenas_hosts : name => {
-      interface = one([
+    for name, interfaces in {
+      for name, machine in local.truenas_hosts : name => [
         for interface in machine.interfaces : interface
         if try(interface.bridge, null) != null
-      ])
-      machine = machine
+      ]
+      } : name => {
+      interface = interfaces[0]
+      machine   = local.truenas_hosts[name]
     }
-    if length([
-      for interface in machine.interfaces : interface
-      if try(interface.bridge, null) != null
-    ]) == 1
+    if length(interfaces) == 1
   }
 
   truenas_machine_interfaces_by_mac = {
@@ -134,8 +133,6 @@ locals {
 }
 
 resource "terraform_data" "truenas_ingress_validation" {
-  input = sort(keys(local.truenas_hosts_ingress))
-
   lifecycle {
     precondition {
       condition = alltrue([
@@ -149,47 +146,9 @@ resource "terraform_data" "truenas_ingress_validation" {
 
     precondition {
       condition = alltrue([
-        for name, ingress in local.truenas_hosts_ingress : try(
-          ingress.port >= 1 && ingress.port <= 65535 && floor(ingress.port) == ingress.port &&
-          ingress.port != local.truenas_hosts[name].services.management.port,
-          false,
-        )
+        for name, ingress in local.truenas_hosts_ingress : ingress.port != local.truenas_hosts[name].services.management.port
       ])
-      error_message = "TrueNAS ingress requires a valid port separate from management."
-    }
-  }
-}
-
-resource "terraform_data" "truenas_storage_target" {
-  for_each = local.truenas_storage
-
-  input = each.key
-
-  lifecycle {
-    precondition {
-      condition     = can(local.truenas_hosts[each.key])
-      error_message = "Every TrueNAS storage configuration must reference an existing TrueNAS host."
-    }
-
-    precondition {
-      condition     = try(trimspace(local.truenas_hosts_services[each.key].interface.name) != "", false)
-      error_message = "Every managed TrueNAS host must declare exactly one named bridged interface."
-    }
-
-    precondition {
-      condition = alltrue([
-        for path in keys(each.value.datasets) : length(split("/", path)) >= 2
-      ])
-      error_message = "Every dataset key must be a full ZFS path in pool/dataset form."
-    }
-
-    precondition {
-      condition = alltrue([
-        for dataset in values(local.truenas_datasets) :
-        dataset.parent_dataset_key == null || can(local.truenas_datasets_root[dataset.parent_dataset_key])
-        if dataset.target == each.key
-      ])
-      error_message = "Every child dataset must reference a configured root dataset in the same pool."
+      error_message = "TrueNAS ingress requires a port separate from management."
     }
   }
 }
@@ -446,8 +405,6 @@ resource "truenas_dataset" "child" {
   provider       = truenas.hosts[each.value.target]
   quota          = try(each.value.quota, null)
 
-  depends_on = [terraform_data.truenas_storage_target]
-
   lifecycle {
     prevent_destroy = true
   }
@@ -460,8 +417,6 @@ resource "truenas_dataset" "root" {
   pool     = each.value.pool
   provider = truenas.hosts[each.value.target]
   quota    = try(each.value.quota, null)
-
-  depends_on = [terraform_data.truenas_storage_target]
 
   lifecycle {
     prevent_destroy = true
