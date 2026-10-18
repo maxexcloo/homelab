@@ -12,6 +12,10 @@ data "truenas_network_interface" "services_physical" {
   provider = truenas.hosts[each.key]
 }
 
+data "truenas_system_info" "container_host" {
+  provider = truenas.hosts[local.truenas_talos_container_host]
+}
+
 locals {
   truenas_cronjobs = merge([
     for target, host in local.truenas_hosts : {
@@ -102,6 +106,25 @@ locals {
   ]...)
 
   truenas_storage = local.storage.truenas
+
+  truenas_talos_container = merge(
+    local.talos_nodes[local.truenas_talos_container_host],
+    local.talos_nodes[local.truenas_talos_container_host].container,
+    { name = local.machine_hostnames[local.truenas_talos_container_host] },
+  )
+
+  truenas_talos_container_host = one([
+    for name, node in local.talos_nodes : name
+    if node.configuration_delivery == "container"
+  ])
+
+  truenas_talos_container_network_key = local.unifi_clients[
+    lower(local.truenas_hosts_services[local.truenas_talos_container_host].interface.mac_address)
+  ].network_key
+
+  truenas_talos_container_storage_path = truenas_dataset.root[
+    "${local.truenas_talos_container_host}/${local.truenas_talos_container.dataset}"
+  ].mount_point
 
   truenas_tunables = merge([
     for target, host in local.truenas_hosts : {
@@ -258,6 +281,130 @@ resource "truenas_app" "ingress" {
   })
 
   depends_on = [terraform_data.truenas_ingress_validation]
+}
+
+resource "truenas_app" "talos_container" {
+  app_name      = local.truenas_talos_container.app_name
+  provider      = truenas.hosts[local.truenas_talos_container_host]
+  remove_images = false
+
+  custom_compose = yamlencode({
+    services = {
+      tailscale = {
+        cap_add      = ["NET_ADMIN", "NET_RAW"]
+        depends_on   = ["talos"]
+        devices      = ["/dev/net/tun:/dev/net/tun"]
+        image        = "tailscale/tailscale:v1.104.1"
+        network_mode = "service:talos"
+        restart      = "unless-stopped"
+        environment = {
+          TS_AUTHKEY    = tailscale_tailnet_key.talos_container.key
+          TS_AUTH_ONCE  = "true"
+          TS_EXTRA_ARGS = "--accept-dns=false"
+          TS_HOSTNAME   = "${local.truenas_talos_container.cluster}-${local.truenas_talos_container.app_name}"
+          TS_ROUTES     = join(",", local.truenas_talos_container.tailscale_routes)
+          TS_STATE_DIR  = "/var/lib/tailscale"
+          TS_USERSPACE  = "false"
+        }
+        volumes = [{
+          source = "${local.truenas_talos_container_storage_path}/tailscale"
+          target = "/var/lib/tailscale"
+          type   = "bind"
+          bind = {
+            create_host_path = true
+          }
+        }]
+      }
+      talos = {
+        cgroup = "private"
+        # Keep private service DNS on its public Tailscale records rather than UniFi LAN overrides.
+        dns          = ["1.1.1.1", "1.0.0.1"]
+        hostname     = local.truenas_talos_container.name
+        image        = "ghcr.io/siderolabs/talos:${local.clusters[local.truenas_talos_container.cluster].talos_version}"
+        mem_limit    = "${local.truenas_talos_container.memory_gib}g"
+        privileged   = true
+        read_only    = true
+        restart      = "unless-stopped"
+        security_opt = ["seccomp=unconfined"]
+        tmpfs        = ["/run", "/system", "/tmp"]
+        environment = {
+          PLATFORM = "container"
+        }
+        networks = {
+          local = {}
+          services = {
+            ipv4_address = local.truenas_talos_container.address
+            mac_address  = local.truenas_talos_container.mac
+          }
+        }
+        volumes = concat(
+          # Mount parent paths before dataset-specific read-only mounts.
+          [
+            for host_path in try(local.truenas_talos_container.host_paths, []) : {
+              read_only = try(host_path.read_only, false)
+              source    = host_path.source
+              target    = host_path.target
+              type      = "bind"
+              bind = {
+                propagation = "rshared"
+              }
+            }
+          ],
+          [
+            for volume in [
+              { directory = "controlplane/opt", target = "/opt" },
+              { directory = "controlplane/state", target = "/system/state" },
+              { directory = "controlplane/var", target = "/var" },
+              ] : {
+              source = "${local.truenas_talos_container_storage_path}/${volume.directory}"
+              target = volume.target
+              type   = "bind"
+              bind = {
+                create_host_path = true
+                propagation      = "rshared"
+              }
+            }
+          ],
+          [
+            for dataset in local.truenas_talos_container.datasets : {
+              source    = truenas_dataset.root["${local.truenas_talos_container_host}/${dataset.name}"].mount_point
+              target    = "/var/mnt/datasets/${truenas_dataset.root["${local.truenas_talos_container_host}/${dataset.name}"].id}"
+              type      = "bind"
+              read_only = try(dataset.read_only, false)
+              bind = {
+                propagation = "rshared"
+              }
+            }
+          ],
+          [{
+            read_only = true
+            source    = "/lib/modules"
+            target    = "/lib/modules"
+            type      = "bind"
+          }],
+        )
+      }
+    }
+    networks = {
+      # macvlan cannot reach the host; this bridge gives Tailscale a local peer path.
+      local = {
+        driver   = "bridge"
+        internal = true
+      }
+      services = {
+        driver = "macvlan"
+        driver_opts = {
+          parent = local.truenas_hosts_services[local.truenas_talos_container_host].interface.bridge
+        }
+        ipam = {
+          config = [{
+            gateway = cidrhost(local.unifi_networks[local.truenas_talos_container_network_key].subnet, 1)
+            subnet  = cidrsubnet(local.unifi_networks[local.truenas_talos_container_network_key].subnet, 0, 0)
+          }]
+        }
+      }
+    }
+  })
 }
 
 resource "truenas_cronjob" "host" {

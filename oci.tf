@@ -229,6 +229,11 @@ resource "oci_core_instance" "node" {
     prevent_destroy = true
 
     precondition {
+      condition     = cidrcontains(local.oci_networks[each.value.network].subnet_cidr, local.machine_private_ipv4_addresses[each.key])
+      error_message = "Every OCI machine address must belong to its configured OCI subnet."
+    }
+
+    precondition {
       condition     = each.value.compute.memory_mib % 1024 == 0
       error_message = "OCI memory_mib must be a whole multiple of 1024 MiB."
     }
@@ -279,18 +284,6 @@ resource "oci_core_network_security_group" "node" {
   }
 }
 
-resource "oci_core_network_security_group_security_rule" "node_egress" {
-  for_each = local.oci_network_security_group_rules_egress
-
-  description               = "Allow ${each.key} outbound traffic"
-  destination               = each.value.destination
-  destination_type          = "CIDR_BLOCK"
-  direction                 = "EGRESS"
-  network_security_group_id = oci_core_network_security_group.node[each.value.node].id
-  protocol                  = "all"
-  stateless                 = false
-}
-
 resource "oci_core_network_security_group_security_rule" "node_echo" {
   for_each = {
     for name, node in local.oci_instances : name => node
@@ -308,6 +301,18 @@ resource "oci_core_network_security_group_security_rule" "node_echo" {
   icmp_options {
     type = 8
   }
+}
+
+resource "oci_core_network_security_group_security_rule" "node_egress" {
+  for_each = local.oci_network_security_group_rules_egress
+
+  description               = "Allow ${each.key} outbound traffic"
+  destination               = each.value.destination
+  destination_type          = "CIDR_BLOCK"
+  direction                 = "EGRESS"
+  network_security_group_id = oci_core_network_security_group.node[each.value.node].id
+  protocol                  = "all"
+  stateless                 = false
 }
 
 resource "oci_core_network_security_group_security_rule" "node_ingress" {
