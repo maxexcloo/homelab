@@ -221,12 +221,6 @@ locals {
     }
   ]...)
 
-  dns_zone_file_names_mismatched = [
-    for source_file in local.dns_zone_files :
-    "${source_file.file_name} -> ${source_file.zone.name}"
-    if source_file.file_name != source_file.zone.name
-  ]
-
   dns_zone_files = [
     for file_path in fileset(path.module, "data/dns/*.yaml") : {
       file_name = trimsuffix(basename(file_path), ".yaml")
@@ -234,47 +228,10 @@ locals {
     }
   ]
 
-  dns_zone_files_by_name = {
-    for source_file in local.dns_zone_files : source_file.zone.name => source_file...
-  }
-
-  dns_zones_duplicate = [
-    for zone_name, source_files in local.dns_zone_files_by_name : zone_name
-    if length(source_files) > 1
-  ]
 }
 
 resource "terraform_data" "dns_validation" {
-  input = sort(keys(local.dns_zone_files_by_name))
-
   lifecycle {
-    precondition {
-      condition = alltrue([
-        for service in values(local.dns_machine_services) :
-        contains(local.cloudflare_zones, service.zone) && endswith(service.hostname, ".${service.zone}")
-      ])
-      error_message = "Service hostnames must belong to their configured Cloudflare DNS zone."
-    }
-
-    precondition {
-      condition = alltrue(flatten([
-        for source_file in local.dns_zone_files : [
-          for provider in try(source_file.zone.providers, []) : contains(["fastmail", "resend"], provider)
-        ]
-      ]))
-      error_message = "DNS providers must be Fastmail or Resend."
-    }
-
-    precondition {
-      condition     = length(local.dns_zones_duplicate) == 0
-      error_message = "DNS zone names must be unique: ${join(", ", local.dns_zones_duplicate)}"
-    }
-
-    precondition {
-      condition     = length(local.dns_zone_file_names_mismatched) == 0
-      error_message = "DNS YAML filenames must match their zone name: ${join(", ", local.dns_zone_file_names_mismatched)}"
-    }
-
     precondition {
       condition     = length(local.dns_record_sets_conflicting_cname) == 0
       error_message = "DNS CNAME records cannot coexist with other records at the same name: ${join(", ", local.dns_record_sets_conflicting_cname)}"

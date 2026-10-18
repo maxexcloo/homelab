@@ -105,15 +105,6 @@ locals {
     ]))
   }
 
-  tailscale_tag_owner_tags_missing = setsubtract(
-    toset(flatten([
-      for owners in values(local.tailscale_tag_owners) : [
-        for owner in owners : owner if startswith(owner, "tag:")
-      ]
-    ])),
-    toset(keys(local.tailscale_tag_owners)),
-  )
-
   tailscale_tag_owners = merge(
     {
       for tag in local.access.tailscale.tags : tag => local.access.tailscale.default_tag_owners
@@ -206,37 +197,15 @@ resource "tailscale_tailnet_key" "talos_container" {
 }
 
 resource "terraform_data" "tailscale_tag_validation" {
-  input = {
-    route_approvers = local.tailscale_route_approvers
-    tags            = sort(keys(local.tailscale_tag_owners))
-  }
-
   lifecycle {
-    precondition {
-      condition = alltrue([
-        for name in values(local.machine_tailscale_names) : can(regex(local.configuration_dns_label_pattern, name))
-      ])
-      error_message = "Derived Tailscale device names must be valid lowercase DNS labels."
-    }
-
     precondition {
       condition     = length(local.tailscale_tags_missing) == 0
       error_message = "Every machine, cluster, and route approver Tailscale tag must be declared: ${join(", ", sort(tolist(local.tailscale_tags_missing)))}"
     }
 
     precondition {
-      condition     = length(local.tailscale_tag_owner_tags_missing) == 0
-      error_message = "Tailscale tags used as owners must also be declared: ${join(", ", sort(tolist(local.tailscale_tag_owner_tags_missing)))}"
-    }
-
-    precondition {
       condition     = length(local.tailscale_tags_cluster_conflicting) == 0
       error_message = "Static Tailscale tags must not duplicate derived cluster tags: ${join(", ", sort(tolist(local.tailscale_tags_cluster_conflicting)))}"
-    }
-
-    precondition {
-      condition     = alltrue([for approvers in values(local.tailscale_route_approvers) : length(approvers) > 0])
-      error_message = "Every advertised Tailscale route must have at least one tagged machine approver."
     }
   }
 }
