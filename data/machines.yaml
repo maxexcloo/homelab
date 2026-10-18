@@ -162,15 +162,15 @@ machines:
           command: midclt call disk.smart_test LONG '["*"]'
           description: S.M.A.R.T. Test
           schedule_dow: "1"
+          schedule_hour: "0"
           schedule_minute: "00"
-          stderr: true
           user: root
         smart-short:
           command: midclt call disk.smart_test SHORT '["*"]'
           description: S.M.A.R.T. Test
           schedule_dow: 2,3,4,5,6
+          schedule_hour: "0"
           schedule_minute: "00"
-          stderr: true
           user: root
       ingress:
         certificate: truenas
