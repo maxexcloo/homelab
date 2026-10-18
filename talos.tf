@@ -136,21 +136,12 @@ locals {
 
   talos_machine_configuration_documents = {
     for name, node in local.talos_nodes : name => concat([
-      provider::deepmerge::mergo(
-        {},
-        length(node.sysctls) > 0 ? {
-          machine = {
-            sysctls = node.sysctls
-          }
-        } : {},
-        length(node.time_servers) > 0 ? {
-          machine = {
-            time = {
-              servers = node.time_servers
-            }
-          }
-        } : {},
-      ),
+      {
+        machine = merge(
+          length(node.sysctls) > 0 ? { sysctls = node.sysctls } : {},
+          length(node.time_servers) > 0 ? { time = { servers = node.time_servers } } : {},
+        )
+      },
       ], local.talos_machine_configuration_documents_common[name], [
       {
         apiVersion = "v1alpha1"

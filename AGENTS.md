@@ -116,7 +116,6 @@ Do not create a documentation directory or additional Markdown files.
   wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
   required by a native schema. Define shared provider settings once rather than
   adding per-consumer overrides without a concrete need.
-- Keep Deepmerge for nested Talos configuration.
 - Put `for_each` first in every HCL block that uses it, followed by a blank line.
 - Keep `depends_on` in its own group, separated from other arguments and blocks
   by blank lines.
