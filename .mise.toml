@@ -1,20 +1,7 @@
 [tools]
-# 1password-cli = "latest"
-# actionlint = "latest"
-# gh = "latest"
-# jq = "latest"
-# node = "latest"
-# opentofu = "latest"
-# python = "latest"
-# shellcheck = "latest"
-# updatecli = "latest"
-# yq = "latest"
-"aqua:coreos/butane" = "0.29.0"
-# Keep repository tools pinned to stable releases.
-hk = "2.7.0"
+"aqua:coreos/butane" = "latest"
 # Match the configured Kubernetes cluster version.
 kubectl = "1.37.1"
-oxfmt = "0.73.0"
 # Match the configured Talos cluster version.
 talosctl = "1.14.2"
 
