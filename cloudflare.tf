@@ -111,7 +111,7 @@ locals {
       for ingress in try(consumer.tunnel.ingress, []) : {
         consumer = consumer_name
         hostname = ingress.hostname
-        zone     = ingress.zone
+        zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${ingress.hostname}", ".${zone}")])
       }
     ]
   ])
