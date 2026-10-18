@@ -13,11 +13,18 @@ data "truenas_network_interface" "services_physical" {
 }
 
 locals {
+  truenas_cronjobs = merge([
+    for target, host in local.truenas_hosts : {
+      for name, job in try(host.cronjobs, {}) : "${target}/${name}" => merge(job, { target = target })
+    }
+  ]...)
+
   truenas_datasets = merge([
     for target, storage in local.truenas_storage : {
-      for name, dataset in storage.datasets : "${target}/${name}" => merge(dataset, {
-        name               = try(dataset.name, name)
-        parent_dataset_key = try(dataset.parent_dataset, null) == null ? null : "${target}/${dataset.parent_dataset}"
+      for path, dataset in storage.datasets : "${target}/${path}" => merge(dataset, {
+        name               = basename(path)
+        parent_dataset_key = dirname(path) == split("/", path)[0] ? null : "${target}/${dirname(path)}"
+        pool               = split("/", path)[0]
         target             = target
       })
     }
@@ -70,13 +77,37 @@ locals {
     for interface in local.machine_interface_assignments : interface.mac => interface
   }
 
-  truenas_storage = {
-    for target, storage in local.storage.truenas : target => merge(storage, {
-      datasets = {
-        for name, dataset in storage.datasets : name => merge(storage.dataset_defaults, dataset)
+  truenas_services = merge([
+    for target, host in local.truenas_hosts : {
+      for service, enabled in try(host.service_settings, {}) : "${target}/${service}" => {
+        enabled = enabled
+        service = service
+        target  = target
       }
+    }
+  ]...)
+
+  truenas_smb_shares = {
+    for key, dataset in local.truenas_datasets : key => merge(dataset.smb, {
+      name   = try(dataset.smb.name, dataset.name)
+      target = dataset.target
     })
+    if can(dataset.smb)
   }
+
+  truenas_snapshots = merge([
+    for target, storage in local.truenas_storage : {
+      for name, snapshot in try(storage.snapshots, {}) : "${target}/${name}" => merge(snapshot, { target = target })
+    }
+  ]...)
+
+  truenas_storage = local.storage.truenas
+
+  truenas_tunables = merge([
+    for target, host in local.truenas_hosts : {
+      for name, tunable in try(host.tunables, {}) : "${target}/${name}" => merge(tunable, { target = target, var = name })
+    }
+  ]...)
 }
 
 resource "terraform_data" "truenas_ingress_validation" {
@@ -124,14 +155,18 @@ resource "terraform_data" "truenas_storage_target" {
 
     precondition {
       condition = alltrue([
-        for dataset in values(each.value.datasets) : try(dataset.parent_dataset, null) == null || try(
-          can(each.value.datasets[dataset.parent_dataset]) &&
-          try(each.value.datasets[dataset.parent_dataset].parent_dataset, null) == null &&
-          each.value.datasets[dataset.parent_dataset].pool == dataset.pool,
-          false,
-        )
+        for path in keys(each.value.datasets) : length(split("/", path)) >= 2
       ])
-      error_message = "Every child dataset must reference an existing root dataset in the same pool."
+      error_message = "Every dataset key must be a full ZFS path in pool/dataset form."
+    }
+
+    precondition {
+      condition = alltrue([
+        for dataset in values(local.truenas_datasets) :
+        dataset.parent_dataset_key == null || can(local.truenas_datasets_root[dataset.parent_dataset_key])
+        if dataset.target == each.key
+      ])
+      error_message = "Every child dataset must reference a configured root dataset in the same pool."
     }
   }
 }
@@ -225,6 +260,19 @@ resource "truenas_app" "ingress" {
   depends_on = [terraform_data.truenas_ingress_validation]
 }
 
+resource "truenas_cronjob" "host" {
+  for_each = local.truenas_cronjobs
+
+  command         = each.value.command
+  description     = try(each.value.description, null)
+  provider        = truenas.hosts[each.value.target]
+  schedule_dow    = each.value.schedule_dow
+  schedule_hour   = try(each.value.schedule_hour, null)
+  schedule_minute = try(each.value.schedule_minute, null)
+  stderr          = try(each.value.stderr, null)
+  user            = each.value.user
+}
+
 resource "truenas_cronjob" "ingress_certificate_reload" {
   for_each = local.truenas_hosts_ingress
 
@@ -245,18 +293,11 @@ resource "truenas_cronjob" "ingress_certificate_reload" {
 resource "truenas_dataset" "child" {
   for_each = local.truenas_datasets_child
 
-  atime          = each.value.atime
-  comments       = "Homelab OpenTofu Managed"
-  compression    = each.value.compression
-  deduplication  = "OFF"
   name           = each.value.name
   parent_dataset = truenas_dataset.root[each.value.parent_dataset_key].name
   pool           = each.value.pool
   provider       = truenas.hosts[each.value.target]
-  readonly       = "OFF"
-  record_size    = each.value.record_size
-  share_type     = "GENERIC"
-  sync           = "STANDARD"
+  quota          = try(each.value.quota, null)
 
   depends_on = [terraform_data.truenas_storage_target]
 
@@ -268,17 +309,10 @@ resource "truenas_dataset" "child" {
 resource "truenas_dataset" "root" {
   for_each = local.truenas_datasets_root
 
-  atime         = each.value.atime
-  comments      = "Homelab OpenTofu Managed"
-  compression   = each.value.compression
-  deduplication = "OFF"
-  name          = each.value.name
-  pool          = each.value.pool
-  provider      = truenas.hosts[each.value.target]
-  readonly      = "OFF"
-  record_size   = each.value.record_size
-  share_type    = "GENERIC"
-  sync          = "STANDARD"
+  name     = each.value.name
+  pool     = each.value.pool
+  provider = truenas.hosts[each.value.target]
+  quota    = try(each.value.quota, null)
 
   depends_on = [terraform_data.truenas_storage_target]
 
@@ -302,6 +336,20 @@ resource "truenas_mail_config" "host" {
   security       = "TLS"
   smtp           = true
   user           = "resend"
+}
+
+resource "truenas_network_config" "host" {
+  for_each = {
+    for name, host in local.truenas_hosts : name => host
+    if can(host.network_configuration)
+  }
+
+  domain      = "${each.value.network}.${local.domains.infrastructure}"
+  hostname    = local.machine_hostnames[each.key]
+  ipv4gateway = cidrhost(local.networks[each.value.network].subnets.default.cidr, 1)
+  ipv6gateway = each.value.network_configuration.ipv6gateway
+  nameserver1 = cidrhost(local.networks[each.value.network].subnets.default.cidr, 1)
+  provider    = truenas.hosts[each.key]
 }
 
 resource "truenas_network_interface" "services_bridge" {
@@ -362,6 +410,14 @@ resource "truenas_network_interface" "services_physical" {
   }
 }
 
+resource "truenas_service" "host" {
+  for_each = local.truenas_services
+
+  enable   = each.value.enabled
+  provider = truenas.hosts[each.value.target]
+  service  = each.value.service
+}
+
 resource "truenas_service" "s3" {
   for_each = {
     for name, host in local.truenas_hosts : name => host
@@ -373,6 +429,81 @@ resource "truenas_service" "s3" {
   service  = "s3"
 
   depends_on = [truenas_dataset.root]
+}
+
+resource "truenas_share_smb" "dataset" {
+  for_each = local.truenas_smb_shares
+
+  # Preserve TrueNAS enumeration; the pinned provider defaults it to false.
+  abe      = true
+  name     = each.value.name
+  options  = try(each.value.options, null)
+  path     = merge(truenas_dataset.child, truenas_dataset.root)[each.key].mount_point
+  provider = truenas.hosts[each.value.target]
+  purpose  = try(each.value.purpose, null)
+
+  depends_on = [truenas_smb_config.host]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "truenas_smb_config" "host" {
+  for_each = {
+    for name, host in local.truenas_hosts : name => host.smb
+    if can(host.smb)
+  }
+
+  aapl_extensions = each.value.aapl_extensions
+  netbiosname     = upper(local.machine_hostnames[each.key])
+  provider        = truenas.hosts[each.key]
+}
+
+resource "truenas_snapshot_task" "pool" {
+  for_each = local.truenas_snapshots
+
+  dataset        = each.value.dataset
+  exclude        = try(each.value.exclude, null)
+  lifetime_unit  = try(each.value.lifetime_unit, null)
+  lifetime_value = try(each.value.lifetime_value, null)
+  naming_schema  = try(each.value.naming_schema, null)
+  provider       = truenas.hosts[each.value.target]
+  recursive      = try(each.value.recursive, null)
+  schedule_dom   = try(each.value.schedule_dom, null)
+}
+
+resource "truenas_ssh_config" "host" {
+  for_each = {
+    for name, host in local.truenas_hosts : name => host.ssh
+    if can(host.ssh)
+  }
+
+  passwordauth = each.value.passwordauth
+  provider     = truenas.hosts[each.key]
+  tcpfwd       = each.value.tcpfwd
+}
+
+resource "truenas_tunable" "host" {
+  for_each = local.truenas_tunables
+
+  type     = each.value.type
+  provider = truenas.hosts[each.value.target]
+  value    = each.value.value
+  var      = each.value.var
+}
+
+resource "truenas_ups_config" "host" {
+  for_each = {
+    for name, host in local.truenas_hosts : name => host.ups
+    if can(host.ups)
+  }
+
+  driver     = each.value.driver
+  port       = each.value.port
+  provider   = truenas.hosts[each.key]
+  remotehost = each.value.remotehost
+  shutdown   = each.value.shutdown
 }
 
 resource "truenas_user" "s3" {

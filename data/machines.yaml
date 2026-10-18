@@ -145,6 +145,33 @@ machines:
       cloudflare:
         acme: direct
         tunnel: {}
+      cronjobs:
+        icloud-photos-check:
+          command: /bin/bash /mnt/truenas/icloud-photos/.rclone/icloud-files-check.sh
+          description: iCloud Photos Check
+          schedule_dow: "*"
+          schedule_hour: "6"
+          user: root
+        icloud-photos-copy:
+          command: /bin/bash /mnt/truenas/icloud-photos/.rclone/icloud-files-copy.sh
+          description: iCloud Photos Copy
+          schedule_dow: "*"
+          schedule_hour: "3"
+          user: root
+        smart-long:
+          command: midclt call disk.smart_test LONG '["*"]'
+          description: S.M.A.R.T. Test
+          schedule_dow: "1"
+          schedule_minute: "00"
+          stderr: true
+          user: root
+        smart-short:
+          command: midclt call disk.smart_test SHORT '["*"]'
+          description: S.M.A.R.T. Test
+          schedule_dow: 2,3,4,5,6
+          schedule_minute: "00"
+          stderr: true
+          user: root
       ingress:
         certificate: truenas
         image: traefik:v3.7.13
@@ -157,6 +184,12 @@ machines:
           address: 10.4.0.3
           bridge: br4
           mac_address: c8:ff:bf:01:52:e1
+      network_configuration:
+        ipv6gateway: fe80::2870:4eff:fe6e:59cc
+      service_settings:
+        cifs: true
+        ssh: true
+        ups: true
       services:
         macos:
           hostname: macos.kimbap.mbk.excloo.net
@@ -186,6 +219,29 @@ machines:
           port: 9000
           scheme: https
           username: syd-backups
+      smb:
+        aapl_extensions: true
+      ssh:
+        passwordauth: false
+        tcpfwd: true
+      tunables:
+        net.core.rmem_max:
+          type: SYSCTL
+          value: "8388608"
+        net.core.wmem_max:
+          type: SYSCTL
+          value: "8388608"
+        net.ipv4.conf.all.forwarding:
+          type: SYSCTL
+          value: "1"
+        net.ipv6.conf.all.forwarding:
+          type: SYSCTL
+          value: "1"
+      ups:
+        driver: usbhid-ups$CP1500AVRLCD
+        port: auto
+        remotehost: study-homelab-ups.internal
+        shutdown: LOWBATT
     macbook-pro:
       platform: macos
       username: max.schaefer

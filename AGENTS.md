@@ -77,6 +77,11 @@ Do not create a documentation directory or additional Markdown files.
   their intended result; remove the file when empty.
 - Never migrate, import, move, or remove state as part of an unrelated resource
   change.
+- Adopt existing TrueNAS resources without changing their live settings. Preserve
+  dataset ACLs, case sensitivity, quotas, share identities and backup schedules.
+  Keep system datasets, app-managed children, replication receivers and credentials
+  under native ownership. Leave replication tasks native while the pinned provider
+  cannot represent their exclusions, snapshot bindings and receiver protections.
 - Never migrate a backend except through its separately reviewed procedure.
 - Never apply archived branches or migrate archived state into the active backend.
   Keep historical backend objects outside routine substrate changes.
@@ -105,6 +110,8 @@ Do not create a documentation directory or additional Markdown files.
 
 - Use lowercase identifiers for shared data keys and `name` for human-readable
   labels. Keep resource identity separate from presentation.
+- Use full ZFS paths for TrueNAS dataset keys. Configure only deviations from
+  defaults and leave factory-default resources native.
 - Keep consumer settings beside their owner in shared data. Avoid app-name
   wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
   required by a native schema. Define shared provider settings once rather than

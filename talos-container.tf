@@ -16,12 +16,6 @@ data "talos_machine_configuration" "container" {
         machine = {
           kubelet = {
             image = "ghcr.io/siderolabs/kubelet:${local.clusters[local.truenas_talos_container.cluster].kubernetes_version}"
-            extraMounts = [{
-              destination = "/var/mnt/datasets"
-              options     = ["rbind", "rshared", "rw"]
-              source      = "/var/mnt/datasets"
-              type        = "bind"
-            }]
             extraConfig = {
               # The stock kubelet image cannot report capacity for the host ZFS dataset.
               localStorageCapacityIsolation = false
@@ -29,15 +23,25 @@ data "talos_machine_configuration" "container" {
                 memory = "1Gi"
               }
               systemReserved = {
-                memory = "${local.truenas_talos_container.host_memory_kib - local.truenas_talos_container.memory_gib * 1024 * 1024}Ki"
+                memory = "${data.truenas_system_info.container_host.physical_memory / 1024 - local.truenas_talos_container.memory_gib * 1024 * 1024}Ki"
               }
             }
+            extraMounts = [{
+              destination = "/var/mnt/datasets"
+              options     = ["rbind", "rshared", "rw"]
+              source      = "/var/mnt/datasets"
+              type        = "bind"
+            }]
           }
         }
       }),
     ],
     [for document in local.talos_machine_configuration_documents_common[local.truenas_talos_container_host] : yamlencode(document)],
   )
+}
+
+data "truenas_system_info" "container_host" {
+  provider = truenas.hosts[local.truenas_talos_container_host]
 }
 
 locals {
@@ -57,8 +61,17 @@ locals {
   ].network_key
 
   truenas_talos_container_storage_path = truenas_dataset.root[
-    "${local.truenas_talos_container_host}/${local.truenas_talos_container.app_name}"
+    "${local.truenas_talos_container_host}/${local.truenas_talos_container.dataset}"
   ].mount_point
+}
+
+resource "tailscale_tailnet_key" "container" {
+  description         = "Talos container bootstrap"
+  expiry              = local.access.tailscale.key_expiry_seconds
+  preauthorized       = true
+  recreate_if_invalid = "never"
+  reusable            = false
+  tags                = [local.truenas_talos_container.tailscale_tag]
 }
 
 resource "talos_machine_configuration_apply" "container" {
@@ -77,15 +90,6 @@ resource "talos_machine_configuration_apply" "container" {
   depends_on = [truenas_app.talos_container]
 }
 
-resource "tailscale_tailnet_key" "container" {
-  description         = "Talos container bootstrap"
-  expiry              = local.access.tailscale.key_expiry_seconds
-  preauthorized       = true
-  recreate_if_invalid = "never"
-  reusable            = false
-  tags                = [local.truenas_talos_container.tailscale_tag]
-}
-
 resource "truenas_app" "talos_container" {
   app_name      = local.truenas_talos_container.app_name
   provider      = truenas.hosts[local.truenas_talos_container_host]
@@ -95,6 +99,7 @@ resource "truenas_app" "talos_container" {
     services = {
       tailscale = {
         cap_add      = ["NET_ADMIN", "NET_RAW"]
+        depends_on   = ["talos"]
         devices      = ["/dev/net/tun:/dev/net/tun"]
         image        = "tailscale/tailscale:v1.104.1"
         network_mode = "service:talos"
@@ -116,18 +121,19 @@ resource "truenas_app" "talos_container" {
             create_host_path = true
           }
         }]
-        depends_on = ["talos"]
       }
       talos = {
         cgroup = "private"
         # Keep private service DNS on its public Tailscale records rather than UniFi LAN overrides.
-        dns        = ["1.1.1.1", "1.0.0.1"]
-        hostname   = local.truenas_talos_container.name
-        image      = "ghcr.io/siderolabs/talos:${local.clusters[local.truenas_talos_container.cluster].talos_version}"
-        mem_limit  = "${local.truenas_talos_container.memory_gib}g"
-        privileged = true
-        read_only  = true
-        restart    = "unless-stopped"
+        dns          = ["1.1.1.1", "1.0.0.1"]
+        hostname     = local.truenas_talos_container.name
+        image        = "ghcr.io/siderolabs/talos:${local.clusters[local.truenas_talos_container.cluster].talos_version}"
+        mem_limit    = "${local.truenas_talos_container.memory_gib}g"
+        privileged   = true
+        read_only    = true
+        restart      = "unless-stopped"
+        security_opt = ["seccomp=unconfined"]
+        tmpfs        = ["/run", "/system", "/tmp"]
         environment = {
           PLATFORM = "container"
         }
@@ -138,8 +144,6 @@ resource "truenas_app" "talos_container" {
             mac_address  = local.truenas_talos_container.mac
           }
         }
-        security_opt = ["seccomp=unconfined"]
-        tmpfs        = ["/run", "/system", "/tmp"]
         volumes = concat(
           # Mount parent paths before dataset-specific read-only mounts.
           [
@@ -208,7 +212,6 @@ resource "truenas_app" "talos_container" {
       }
     }
   })
-
 }
 
 resource "unifi_client" "talos_container" {

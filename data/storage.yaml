@@ -1,20 +1,80 @@
 truenas:
   kimbap:
-    dataset_defaults:
-      atime: "OFF"
-      compression: LZ4
-      pool: truenas-nvme
-      record_size: 128K
     datasets:
-      bichon: {}
-      bookorbit: {}
-      immich: {}
-      papra: {}
-      romm: {}
-      talos: {}
-      games:
-        pool: truenas
-      icloud-photos:
-        pool: truenas
-      s3:
-        pool: truenas
+      truenas-nvme/beets: {}
+      truenas-nvme/bichon: {}
+      truenas-nvme/bookorbit: {}
+      truenas-nvme/immich: {}
+      truenas-nvme/macos: {}
+      truenas-nvme/papra: {}
+      truenas-nvme/romm: {}
+      truenas-nvme/talos: {}
+      truenas/ai: {}
+      truenas/s3: {}
+      truenas/backups:
+        smb: {}
+      truenas/documents:
+        smb: {}
+      truenas/games:
+        smb: {}
+      truenas/home-assistant:
+        smb: {}
+      truenas/icloud-photos:
+        smb: {}
+      truenas/music:
+        smb: {}
+      truenas/pictures:
+        smb: {}
+      truenas/projects:
+        smb: {}
+      truenas/public:
+        smb: {}
+      truenas/time-machine:
+        quota: 8796093022208
+      truenas/time-machine/ginny.koh:
+        smb:
+          name: time-machine-ginny-koh
+          purpose: TIMEMACHINE_SHARE
+          options:
+            timemachine_quota: 2199023255552
+      truenas/time-machine/max.schaefer:
+        smb:
+          name: time-machine-max-schaefer
+          purpose: TIMEMACHINE_SHARE
+          options:
+            timemachine_quota: 5497558138880
+      truenas/unsorted:
+        smb: {}
+    snapshots:
+      truenas-daily:
+        dataset: truenas
+        lifetime_unit: MONTH
+        lifetime_value: 1
+        naming_schema: autosnap_%Y-%m-%d_%H:%M:%S_daily
+        recursive: true
+        exclude:
+          - truenas/.system
+          - truenas/nvme
+      truenas-monthly:
+        dataset: truenas
+        lifetime_unit: YEAR
+        lifetime_value: 1
+        naming_schema: autosnap_%Y-%m-%d_%H:%M:%S_monthly
+        recursive: true
+        schedule_dom: "1"
+        exclude:
+          - truenas/.system
+          - truenas/nvme
+      truenas-nvme-daily:
+        dataset: truenas-nvme
+        lifetime_unit: MONTH
+        lifetime_value: 1
+        naming_schema: autosnap_%Y-%m-%d_%H:%M:%S_daily
+        recursive: true
+      truenas-nvme-monthly:
+        dataset: truenas-nvme
+        lifetime_unit: YEAR
+        lifetime_value: 1
+        naming_schema: autosnap_%Y-%m-%d_%H:%M:%S_monthly
+        recursive: true
+        schedule_dom: "1"

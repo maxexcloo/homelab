@@ -2,13 +2,14 @@ clusters:
   syd:
     api_node: kimbap
     backblaze: true
+    endpoint: https://100.120.55.119:6443
     kubernetes_version: v1.37.1
-    public_node: hsp
     pod_subnet: 10.100.0.0/22
+    public_node: hsp
     service_subnet: 10.100.4.0/22
-    talos_version: v1.14.2
     tailscale_ingress_ipv6: false
     tailscale_ingress_service: syd-ingress
+    talos_version: v1.14.2
     cloudflare:
       acme: delegated
       tunnel: {}
@@ -31,30 +32,28 @@ clusters:
         time_servers:
           - 169.254.169.254
       kimbap:
-        bootstrap: true
         address: 10.4.0.7
+        bootstrap: true
         configuration_delivery: container
+        machine_type: controlplane
+        tailscale_address: 100.120.55.119
+        tailscale_tag: tag:vm
         container:
           app_name: talos
-          # Match host MemTotal so kubelet reserves memory outside the container budget.
-          host_memory_kib: 65253188
+          dataset: truenas-nvme/talos
           mac: 02:74:61:63:6f:01
           memory_gib: 32
           datasets:
-            - name: bichon
-            - name: bookorbit
-            - name: immich
-            - name: papra
-            - name: romm
-            - name: games
-            - name: icloud-photos
+            - name: truenas-nvme/bichon
+            - name: truenas-nvme/bookorbit
+            - name: truenas-nvme/immich
+            - name: truenas-nvme/papra
+            - name: truenas-nvme/romm
+            - name: truenas/games
+            - name: truenas/icloud-photos
               read_only: true
           host_paths:
             - source: /mnt/truenas
               target: /var/mnt/datasets/truenas
-        machine_type: controlplane
-        tailscale_address: 100.120.55.119
         tailscale_routes:
           - 10.4.0.0/22
-        tailscale_tag: tag:vm
-    endpoint: https://100.120.55.119:6443

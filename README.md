@@ -81,6 +81,21 @@ Updatecli previews updates locally for manual review through [.updatecli.d/](.up
 compatibility before accepting updates. Host and cluster upgrades are deliberate
 operations; changing installation configuration does not update existing hosts.
 
+### TrueNAS Configuration
+
+Storage policy and SMB shares live beside their datasets in `data/storage.yaml`;
+non-secret host settings live beside their machine in `data/machines.yaml`.
+Dataset keys use full ZFS paths such as `pool/dataset`. Root `truenas.tf` uses
+native provider resources, with only deviations from defaults in the inventory.
+Factory-default tasks and settings remain native.
+
+For adoption, put temporary imports and address moves in `migrations.tf`, match
+the live settings and review a plan with no resource changes. Remove completed
+blocks after verifying state. Existing ACLs and case sensitivity remain native.
+Keep replication tasks native because the pinned provider cannot express their
+exclusions, snapshot bindings and receiver protections. Application state,
+credentials and TrueNAS-generated datasets remain outside this configuration.
+
 ### TrueNAS App Access
 
 Shared TrueNAS ingress uses wildcard DNS and a wildcard certificate below the
