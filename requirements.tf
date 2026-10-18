@@ -18,7 +18,7 @@ terraform {
 
     oci = {
       source  = "oracle/oci"
-      version = "~> 9.9"
+      version = "~> 9.10"
     }
 
     onepassword = {
