@@ -310,6 +310,13 @@ resource "talos_machine_configuration_apply" "container" {
   }
 
   depends_on = [truenas_app.talos_container]
+
+  lifecycle {
+    precondition {
+      condition     = onepassword_item.talos_recovery[local.truenas_talos_container.cluster].uuid != ""
+      error_message = "Store this cluster's Talos recovery material before applying container configuration."
+    }
+  }
 }
 
 resource "talos_machine_configuration_apply" "node" {

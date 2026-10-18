@@ -201,6 +201,8 @@ resource "tailscale_tailnet_key" "talos_container" {
   recreate_if_invalid = "never"
   reusable            = false
   tags                = [local.truenas_talos_container.tailscale_tag]
+
+  depends_on = [tailscale_acl.default]
 }
 
 resource "terraform_data" "tailscale_tag_validation" {
