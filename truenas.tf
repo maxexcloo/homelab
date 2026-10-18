@@ -237,8 +237,8 @@ resource "truenas_cronjob" "ingress_certificate_reload" {
   schedule_hour   = "*"
   schedule_minute = "0"
   schedule_month  = "*"
-  stderr          = true
-  stdout          = false
+  stderr          = false
+  stdout          = true
   user            = "root"
 }
 
