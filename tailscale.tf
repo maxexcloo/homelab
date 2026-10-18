@@ -16,10 +16,10 @@ locals {
         one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))]),
         local.tailscale_device_addresses[name].ipv4,
       )
-      ipv6 = try(
+      ipv6 = try(cluster.tailscale_ingress_ipv6, true) ? try(
         one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")]),
         local.tailscale_device_addresses[name].ipv6,
-      )
+      ) : null
     }
   }
 
@@ -87,10 +87,12 @@ locals {
     groups    = local.access.tailscale.groups
     tagOwners = local.tailscale_tag_owners
     hosts = merge([
-      for name in keys(local.clusters) : {
-        (name)           = "${local.tailscale_cluster_addresses[name].ipv4}/32"
-        ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
-      }
+      for name in keys(local.clusters) : merge(
+        { (name) = "${local.tailscale_cluster_addresses[name].ipv4}/32" },
+        local.tailscale_cluster_addresses[name].ipv6 != null ? {
+          ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
+        } : {},
+      )
     ]...)
   }
 

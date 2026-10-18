@@ -7,6 +7,8 @@ clusters:
     pod_subnet: 10.100.0.0/22
     service_subnet: 10.100.4.0/22
     talos_version: v1.14.2
+    tailscale_ingress_ipv6: false
+    tailscale_ingress_service: syd-ingress
     cloudflare:
       acme: delegated
       tunnel: {}
