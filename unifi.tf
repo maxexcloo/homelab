@@ -63,11 +63,11 @@ resource "unifi_client" "host" {
   note                   = "Homelab OpenTofu Managed"
   skip_forget_on_destroy = false
 
+  depends_on = [terraform_data.unifi_network_validation]
+
   lifecycle {
     prevent_destroy = true
   }
-
-  depends_on = [terraform_data.unifi_network_validation]
 }
 
 resource "unifi_client" "talos_container" {
@@ -78,4 +78,8 @@ resource "unifi_client" "talos_container" {
   name             = local.truenas_talos_container.app_name
   network_id       = data.unifi_network.configured[local.truenas_talos_container_network_key].id
   note             = "Talos Kubernetes Node"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
