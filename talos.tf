@@ -186,10 +186,10 @@ locals {
         apiVersion = "v1alpha1"
         kind       = "KubeNodeConfig"
         labels = {
-          "node.excloo.dev/network" = name == try(local.clusters[node.cluster].public_node, null) ? "external" : "internal"
+          "node.${local.domains.services}/network" = name == try(local.clusters[node.cluster].public_node, null) ? "external" : "internal"
         }
         nodeIP = {
-          validSubnets = node.configuration_delivery == "container" ? ["${node.tailscale_address}/32"] : ["100.64.0.0/10"]
+          validSubnets = node.configuration_delivery == "container" ? ["${node.tailscale_address}/32"] : [local.tailscale_address_ranges.ipv4]
         }
         taints = {
           "$patch" = "delete"

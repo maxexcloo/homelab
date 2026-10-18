@@ -10,6 +10,11 @@ data "tailscale_service" "cluster_ingress" {
 }
 
 locals {
+  tailscale_address_ranges = {
+    ipv4 = "100.64.0.0/10"
+    ipv6 = "fd7a:115c:a1e0::/48"
+  }
+
   tailscale_cluster_addresses = {
     for name, cluster in local.clusters : name => {
       ipv4 = try(
