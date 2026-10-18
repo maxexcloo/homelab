@@ -10,7 +10,7 @@
 # updatecli = "latest"
 # yq = "latest"
 "aqua:coreos/butane" = "0.29.0"
-# The published shared CI configuration still uses Prek and Prettier.
+# Keep repository tools pinned to stable releases.
 hk = "2.7.0"
 # Match the configured Kubernetes cluster version.
 kubectl = "1.37.1"
