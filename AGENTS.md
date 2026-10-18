@@ -15,46 +15,26 @@ configuration and service units belong to their owning application repository.
   Keep provider compatibility constraints in `requirements.tf`. Use readable major
   tags such as `v7` for GitHub Actions, not commit SHAs. Use local Updatecli previews
   for manual review.
-- Keep credentials, kubeconfigs, plans, state, and recovery material out of Git.
 - Keep the complete provider environment in the credential item referenced by
-  `.mise.toml`. Let local setup create its schema when missing, but never manage
-  it with OpenTofu. Resolve its tracked `op://` references only through
-  credential-consuming Mise tasks authenticated by the 1Password desktop app.
-  Keep resolved credentials out of the parent shell. Credential-consuming task
-  children inherit them; export the standard Connect variable names only in the
-  OpenTofu wrapper.
+  `.mise.toml`; local setup may create its schema, but OpenTofu never manages it.
+  Resolve its `op://` references only inside credential-consuming Mise tasks, and
+  export the standard Connect variable names only in the OpenTofu wrapper.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
-- Never change live infrastructure without explicit approval and review of the
-  OpenTofu plan presented for that apply.
 
 ## File Organisation
 
 - `.github/workflows/`: validation and external-monitoring dispatch only;
   infrastructure applies are local.
-- Root HCL: the homelab cluster substrate.
-
-Use ordinary provider resources directly and keep the root small enough to
-review in one plan. Do not recreate the archived catalogue, schema, model,
-generator, or deployment pipeline. Add another state root only with its first
-reviewed resource and keep it outside the root substrate configuration.
+- Root HCL: the homelab cluster substrate, small enough to review in one plan.
+  Add another state root only with its first reviewed resource.
 
 Keep conventional root files for backend, locals, outputs, providers,
-requirements, and variables. Put direct provider resources and their exclusive
-data sources in the corresponding domain file. Do not combine unrelated
-domains merely to deduplicate lookups.
+requirements, and variables. Put provider resources and their exclusive data
+sources in the corresponding domain file.
 
-Keep decoded shared inputs and genuinely cross-domain derived values in
-`locals.tf`. Put provider-scoped derived locals in the corresponding domain
-file, and name them from largest scope to smallest as
-`provider_resource_qualifier`.
-
-Keep `README.md` focused on purpose and actual usage. Keep deployment identities,
-endpoints, versions and settings in their owning configuration; read the live
-system when current behaviour must be verified. Do not maintain a second runtime
-inventory in documentation. Keep project invariants in `AGENTS.md`.
-
-Keep all maintained documentation in the root `AGENTS.md` and `README.md`.
-Do not create a documentation directory or additional Markdown files.
+Each local lives with its primary owner: decoded shared inputs in `locals.tf`,
+derived values in the domain file that owns them. Name locals from largest
+scope to smallest as `provider_resource_qualifier`.
 
 ## OpenTofu Safety
 
@@ -68,9 +48,11 @@ Do not create a documentation directory or additional Markdown files.
 - Use `one()` only for a true singleton. Use `can(map[key])` for relationship
   membership and `try(map[key], null)` for optional related values.
 - Keep one GCS prefix per state root and never manage a backend from the root
-  that consumes it.
+  that consumes it. Never migrate a backend except through its separately
+  reviewed procedure.
 - Commit `.terraform.lock.hcl` for every root and include checksums for every
   platform used to validate or plan it.
+- Renaming a resource or changing its `for_each` key requires a `moved` block.
 - Keep every temporary `moved`, `removed`, and `import` block in
   `migrations.tf`, separate from ordinary resources.
   Remove completed blocks after verifying the sole managed state reflects
@@ -82,9 +64,6 @@ Do not create a documentation directory or additional Markdown files.
   Keep system datasets, app-managed children, replication receivers and credentials
   under native ownership. Leave replication tasks native while the pinned provider
   cannot represent their exclusions, snapshot bindings and receiver protections.
-- Never migrate a backend except through its separately reviewed procedure.
-- Never apply archived branches or migrate archived state into the active backend.
-  Keep historical backend objects outside routine substrate changes.
 - Do not make routine destroy operations reset Talos nodes or retained
   substrate.
 - Read only the secret fields a provider consumer needs, prefer write-only
@@ -99,13 +78,6 @@ Do not create a documentation directory or additional Markdown files.
   titles inside cluster vaults, and qualify titles in the infrastructure vault
   only when needed to distinguish their scope.
 
-## Sorting Exceptions
-
-- Put underscore-prefixed keys first within each value-shape group.
-- Treat non-empty YAML containers as multi-line and scalar-only JSON arrays as
-  single-line. Let `tofu fmt` determine HCL layout.
-- Keep tags limited to useful scope, system and purpose labels.
-
 ## Style
 
 - Use lowercase identifiers for shared data keys and `name` for human-readable
@@ -116,10 +88,10 @@ Do not create a documentation directory or additional Markdown files.
   wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
   required by a native schema. Define shared provider settings once rather than
   adding per-consumer overrides without a concrete need.
-- Keep Deepmerge for nested Talos configuration.
+- Keep tags limited to useful scope, system and purpose labels.
 - Put `for_each` first in every HCL block that uses it, followed by a blank line.
 - Keep `depends_on` in its own group, separated from other arguments and blocks
-  by blank lines.
+  by blank lines, before any `lifecycle` block.
 - In mixed HCL files, order data sources, then locals, then resources; sort
   each group alphabetically by address.
 

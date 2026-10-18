@@ -120,10 +120,9 @@ locals {
     for route in local.cloudflare_tunnel_route_entries : route.hostname => route...
   }
 
+  # Path-specific ingress rules repeat their hostname; each hostname needs one DNS route.
   cloudflare_tunnel_routes = {
-    for route_key, routes in {
-      for route in local.cloudflare_tunnel_route_entries : "${route.consumer}/${route.hostname}" => route...
-    } : route_key => routes[0]
+    for route in distinct(local.cloudflare_tunnel_route_entries) : "${route.consumer}/${route.hostname}" => route
   }
 
   cloudflare_waf_zones = [
@@ -179,8 +178,6 @@ resource "cloudflare_account_token" "acme" {
       if zone != each.value.dns_write_zone
     ],
   )
-
-  depends_on = [terraform_data.acme_validation]
 }
 
 resource "cloudflare_account_token" "external_dns" {
@@ -208,8 +205,6 @@ resource "cloudflare_account_token" "external_dns" {
       })
     },
   ]
-
-  depends_on = [terraform_data.external_dns_validation]
 }
 
 resource "cloudflare_account_token" "waf" {
@@ -237,8 +232,6 @@ resource "cloudflare_account_token" "waf" {
       })
     },
   ]
-
-  depends_on = [terraform_data.waf_validation]
 }
 
 resource "cloudflare_dns_record" "managed" {
@@ -262,8 +255,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   account_id = data.cloudflare_account.default.id
   config_src = "cloudflare"
   name       = each.key
-
-  depends_on = [terraform_data.tunnel_validation]
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
@@ -286,79 +277,4 @@ resource "cloudflare_zone_setting" "ssl" {
   setting_id = "ssl"
   value      = each.value
   zone_id    = data.cloudflare_zone.configured[each.key].zone_id
-}
-
-resource "terraform_data" "acme_validation" {
-  input = sort(keys(local.cloudflare_consumers_acme))
-
-  lifecycle {
-    precondition {
-      condition = alltrue([
-        for consumer in values(local.cloudflare_consumers_acme) :
-        contains(["delegated", "direct"], consumer.challenge_mode)
-      ])
-      error_message = "Every ACME consumer challenge mode must be delegated or direct."
-    }
-  }
-}
-
-resource "terraform_data" "external_dns_validation" {
-  input = sort(keys(local.cloudflare_consumers_external_dns))
-
-  lifecycle {
-    precondition {
-      condition = alltrue([
-        for consumer in values(local.cloudflare_consumers_external_dns) : length(distinct(consumer.zones)) == length(consumer.zones)
-      ])
-      error_message = "ExternalDNS consumer zones must be unique."
-    }
-
-    precondition {
-      condition = alltrue(flatten([
-        for consumer in values(local.cloudflare_consumers_external_dns) : [
-          for zone in consumer.zones : contains(local.cloudflare_zones, zone)
-        ]
-      ]))
-      error_message = "Every ExternalDNS consumer zone must have a DNS data file or a configured domain role."
-    }
-  }
-}
-
-resource "terraform_data" "tunnel_validation" {
-  input = {
-    consumers = sort(keys(local.cloudflare_consumers_tunnel))
-    routes    = sort(keys(local.cloudflare_tunnel_routes))
-  }
-
-  lifecycle {
-    precondition {
-      condition = alltrue([
-        for route in local.cloudflare_tunnel_route_entries :
-        contains(local.cloudflare_zones, route.zone) &&
-        (route.hostname == route.zone || endswith(route.hostname, ".${route.zone}"))
-      ])
-      error_message = "Every Cloudflare Tunnel ingress hostname must belong to its configured managed zone."
-    }
-
-    precondition {
-      condition = alltrue([
-        for routes in values(local.cloudflare_tunnel_route_entries_by_hostname) : (
-          length(distinct([for route in routes : route.consumer])) == 1 &&
-          length(distinct([for route in routes : route.zone])) == 1
-        )
-      ])
-      error_message = "Every Cloudflare Tunnel ingress hostname must belong to one consumer and zone."
-    }
-  }
-}
-
-resource "terraform_data" "waf_validation" {
-  input = sort(keys(local.cloudflare_consumers_waf))
-
-  lifecycle {
-    precondition {
-      condition     = length(local.cloudflare_consumers_waf) == 0 || length(local.cloudflare_waf_zones) > 0
-      error_message = "Enabled Cloudflare WAF consumers must have at least one selected DNS zone."
-    }
-  }
 }

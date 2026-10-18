@@ -26,7 +26,7 @@ jobs:
       - name: Set Up Shared Tools & Tasks
         uses: maxexcloo/dotfiles/.github/actions/mise@main
         with:
-          tools: actionlint aqua:coreos/butane gh hk node opentofu oxfmt python shellcheck updatecli
+          tools: actionlint aqua:coreos/butane gh hk node opentofu oxfmt shellcheck updatecli
       - name: Initialise Providers
         run: mise run init:check
       - name: Run Checks

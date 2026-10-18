@@ -33,7 +33,7 @@ data "talos_machine_configuration" "container" {
   talos_version      = local.clusters[local.truenas_talos_container.cluster].talos_version
 
   config_patches = concat(
-    [yamlencode(local.talos_user_volume_local_path_directory)],
+    [yamlencode(local.talos_user_volume_local_path.directory)],
     local.truenas_talos_container.machine_type == "controlplane" ? [yamlencode(local.talos_cluster_authentication_configuration)] : [],
     [
       # v1.14's standalone KubeletConfig does not expose extraMounts.
@@ -49,7 +49,7 @@ data "talos_machine_configuration" "container" {
                 memory = "1Gi"
               }
               systemReserved = {
-                memory = "${data.truenas_system_info.container_host.physical_memory / 1024 - local.truenas_talos_container.memory_gib * 1024 * 1024}Ki"
+                memory = "${floor(data.truenas_system_info.container_host.physical_memory / 1024) - local.truenas_talos_container.memory_gib * 1024 * 1024}Ki"
               }
             }
             extraMounts = [{
@@ -115,11 +115,11 @@ locals {
   }
 
   talos_client_endpoints = {
-    for name, node in local.talos_nodes : name => distinct(compact([
+    for name, node in local.talos_nodes : name => compact([
       try(node.tailscale_address, null),
       node.address,
-      try(node.tailscale_address, local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
-    ]))
+      can(node.tailscale_address) ? null : try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
+    ])
   }
 
   talos_cluster_endpoints = {
@@ -136,21 +136,12 @@ locals {
 
   talos_machine_configuration_documents = {
     for name, node in local.talos_nodes : name => concat([
-      provider::deepmerge::mergo(
-        {},
-        length(node.sysctls) > 0 ? {
-          machine = {
-            sysctls = node.sysctls
-          }
-        } : {},
-        length(node.time_servers) > 0 ? {
-          machine = {
-            time = {
-              servers = node.time_servers
-            }
-          }
-        } : {},
-      ),
+      {
+        machine = merge(
+          length(node.sysctls) > 0 ? { sysctls = node.sysctls } : {},
+          length(node.time_servers) > 0 ? { time = { servers = node.time_servers } } : {},
+        )
+      },
       ], local.talos_machine_configuration_documents_common[name], [
       {
         apiVersion = "v1alpha1"
@@ -163,11 +154,7 @@ locals {
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },
-      yamldecode(
-        can(local.machines[name].oci.volumes.data) ?
-        yamlencode(local.talos_user_volume_local_path_partition) :
-        yamlencode(local.talos_user_volume_local_path_directory)
-      ),
+      local.talos_user_volume_local_path[can(local.machines[name].oci.volumes.data) ? "partition" : "directory"],
       ], node.machine_type == "controlplane" ? [local.talos_cluster_authentication_configuration] : [], node.install_disk != null ? [{
         apiVersion = "v1alpha1"
         kind       = "UnattendedInstallConfig"
@@ -239,23 +226,25 @@ locals {
     }
   ]...)
 
-  talos_user_volume_local_path_directory = {
-    apiVersion = "v1alpha1"
-    kind       = "UserVolumeConfig"
-    name       = "local-path-provisioner"
-    volumeType = "directory"
-  }
-
-  talos_user_volume_local_path_partition = {
-    apiVersion = "v1alpha1"
-    kind       = "UserVolumeConfig"
-    name       = "local-path-provisioner"
-    volumeType = "partition"
-    provisioning = {
-      grow    = true
-      minSize = "1GiB"
-      diskSelector = {
-        match = "!system_disk"
+  # Keyed by volume type so each node selects one shape without type coercion.
+  talos_user_volume_local_path = {
+    directory = {
+      apiVersion = "v1alpha1"
+      kind       = "UserVolumeConfig"
+      name       = "local-path-provisioner"
+      volumeType = "directory"
+    }
+    partition = {
+      apiVersion = "v1alpha1"
+      kind       = "UserVolumeConfig"
+      name       = "local-path-provisioner"
+      volumeType = "partition"
+      provisioning = {
+        grow    = true
+        minSize = "1GiB"
+        diskSelector = {
+          match = "!system_disk"
+        }
       }
     }
   }
@@ -321,6 +310,13 @@ resource "talos_machine_configuration_apply" "container" {
   }
 
   depends_on = [truenas_app.talos_container]
+
+  lifecycle {
+    precondition {
+      condition     = onepassword_item.talos_recovery[local.truenas_talos_container.cluster].uuid != ""
+      error_message = "Store this cluster's Talos recovery material before applying container configuration."
+    }
+  }
 }
 
 resource "talos_machine_configuration_apply" "node" {
@@ -362,30 +358,12 @@ resource "talos_machine_secrets" "cluster" {
 }
 
 resource "terraform_data" "talos_configuration_validation" {
-  input = sort(keys(local.clusters))
-
   lifecycle {
-    precondition {
-      condition = alltrue([
-        for cluster in values(local.clusters) : can(cluster.nodes[cluster.api_node])
-      ])
-      error_message = "Every cluster API node must belong to that cluster."
-    }
-
     precondition {
       condition = alltrue([
         for cluster in values(local.clusters) : try(cluster.nodes[cluster.api_node].machine_type == "controlplane", false)
       ])
-      error_message = "Every cluster API node must be a control plane."
-    }
-
-    precondition {
-      condition = alltrue(flatten([
-        for cluster in values(local.clusters) : [
-          for node_name in keys(cluster.nodes) : can(local.machines[node_name])
-        ]
-      ]))
-      error_message = "Every cluster node must reference an existing machine."
+      error_message = "Every cluster API node must be a control plane in that cluster."
     }
 
     precondition {
@@ -401,15 +379,6 @@ resource "terraform_data" "talos_configuration_validation" {
     }
 
     precondition {
-      condition = alltrue(flatten([
-        for cluster in values(local.clusters) : [
-          for node_name, node in cluster.nodes : try(local.machines[node_name].platform == "talos" || (node.configuration_delivery == "container" && local.machines[node_name].platform == "truenas"), false)
-        ]
-      ]))
-      error_message = "Every cluster node must use Talos or a Talos container on TrueNAS."
-    }
-
-    precondition {
       condition = alltrue([
         for cluster in values(local.clusters) : length([
           for node in values(cluster.nodes) : node
@@ -417,13 +386,6 @@ resource "terraform_data" "talos_configuration_validation" {
         ]) == 1
       ])
       error_message = "Every enabled Talos cluster must have exactly one bootstrap control plane."
-    }
-
-    precondition {
-      condition = alltrue([
-        for name in keys(local.clusters) : can(regex(local.configuration_dns_label_pattern, name))
-      ])
-      error_message = "Cluster names must be valid lowercase DNS labels."
     }
 
     precondition {

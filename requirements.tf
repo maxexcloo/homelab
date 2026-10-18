@@ -16,11 +16,6 @@ terraform {
       version = "~> 5.28"
     }
 
-    deepmerge = {
-      source  = "isometry/deepmerge"
-      version = "~> 1.3"
-    }
-
     oci = {
       source  = "oracle/oci"
       version = "~> 9.9"
