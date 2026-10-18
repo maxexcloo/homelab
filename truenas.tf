@@ -382,7 +382,8 @@ resource "truenas_cronjob" "host" {
 resource "truenas_cronjob" "ingress_certificate_reload" {
   for_each = local.truenas_hosts_ingress
 
-  command         = "docker ps --filter label=com.docker.compose.project=ix-${truenas_app.ingress[each.key].app_name} --quiet | xargs --no-run-if-empty docker kill --signal HUP"
+  # Signal from inside the container; docker kill marks it manually stopped, so it stays down after a Docker restart.
+  command         = "docker ps --filter label=com.docker.compose.project=ix-${truenas_app.ingress[each.key].app_name} --quiet | xargs --no-run-if-empty -I {} docker exec {} kill -HUP 1"
   description     = "Reload Traefik Native Certificates"
   enabled         = true
   provider        = truenas.hosts[each.key]
