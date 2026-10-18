@@ -120,4 +120,6 @@ locals {
       for name, machine in machines : name => merge(machine, { network = network }, can(local.machine_clusters[name]) ? { cluster = local.machine_clusters[name] } : {})
     }
   ]...)
+
+  managed_comment = "Homelab OpenTofu Managed"
 }
