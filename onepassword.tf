@@ -110,9 +110,9 @@ resource "onepassword_item" "cloudflare_acme" {
   category            = "login"
   password_wo         = cloudflare_account_token.acme[each.key].value
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_cloudflare_acme_password_version[each.key].output), 10)
-  tags                = each.value.vault == "homelab" ? [] : [local.access.onepassword.ownership_tag]
-  title               = each.value.title
-  vault               = data.onepassword_vault.configured[each.value.vault].uuid
+  tags                = can(local.machines[each.key]) ? [] : [local.access.onepassword.ownership_tag]
+  title               = can(local.machines[each.key]) ? "Cloudflare ACME DNS: ${local.machine_fqdns[each.key]}" : "Cloudflare ACME DNS"
+  vault               = data.onepassword_vault.configured[can(local.machines[each.key]) ? "homelab" : "cluster/${each.key}"].uuid
 }
 
 resource "onepassword_item" "cloudflare_external_dns" {
@@ -122,8 +122,8 @@ resource "onepassword_item" "cloudflare_external_dns" {
   password_wo         = cloudflare_account_token.external_dns[each.key].value
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_cloudflare_external_dns_password_version[each.key].output), 10)
   tags                = [local.access.onepassword.ownership_tag]
-  title               = each.value.title
-  vault               = data.onepassword_vault.configured[each.value.vault].uuid
+  title               = "Cloudflare ExternalDNS"
+  vault               = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
 resource "onepassword_item" "cloudflare_tunnel" {
@@ -132,9 +132,9 @@ resource "onepassword_item" "cloudflare_tunnel" {
   category            = "login"
   password_wo         = data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[each.key].token
   password_wo_version = local.onepassword_timestamp_version_offset + parseint(formatdate("YYYYMMDDhhmmss", terraform_data.onepassword_cloudflare_tunnel_password_version[each.key].output), 10)
-  tags                = each.value.vault == "homelab" ? [] : [local.access.onepassword.ownership_tag]
-  title               = each.value.title
-  vault               = data.onepassword_vault.configured[each.value.vault].uuid
+  tags                = can(local.machines[each.key]) ? [] : [local.access.onepassword.ownership_tag]
+  title               = can(local.machines[each.key]) ? "Cloudflare Tunnel: ${local.machine_fqdns[each.key]}" : "Cloudflare Tunnel"
+  vault               = data.onepassword_vault.configured[can(local.machines[each.key]) ? "homelab" : "cluster/${each.key}"].uuid
 }
 
 resource "onepassword_item" "cloudflare_waf" {
@@ -311,11 +311,8 @@ resource "terraform_data" "onepassword_backblaze_host_password_version" {
 resource "terraform_data" "onepassword_cloudflare_acme_password_version" {
   for_each = local.cloudflare_consumers_acme
 
-  input = plantimestamp()
-  triggers_replace = sha256(jsonencode({
-    configuration = each.value
-    token_id      = cloudflare_account_token.acme[each.key].id
-  }))
+  input            = plantimestamp()
+  triggers_replace = sha256(cloudflare_account_token.acme[each.key].id)
 
   lifecycle {
     ignore_changes = [input]
@@ -325,11 +322,8 @@ resource "terraform_data" "onepassword_cloudflare_acme_password_version" {
 resource "terraform_data" "onepassword_cloudflare_external_dns_password_version" {
   for_each = local.cloudflare_consumers_external_dns
 
-  input = plantimestamp()
-  triggers_replace = sha256(jsonencode({
-    configuration = each.value
-    token_id      = cloudflare_account_token.external_dns[each.key].id
-  }))
+  input            = plantimestamp()
+  triggers_replace = sha256(cloudflare_account_token.external_dns[each.key].id)
 
   lifecycle {
     ignore_changes = [input]
@@ -339,11 +333,8 @@ resource "terraform_data" "onepassword_cloudflare_external_dns_password_version"
 resource "terraform_data" "onepassword_cloudflare_tunnel_password_version" {
   for_each = local.cloudflare_consumers_tunnel
 
-  input = plantimestamp()
-  triggers_replace = sha256(jsonencode({
-    configuration = each.value
-    tunnel_id     = cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id
-  }))
+  input            = plantimestamp()
+  triggers_replace = sha256(cloudflare_zero_trust_tunnel_cloudflared.cluster[each.key].id)
 
   lifecycle {
     ignore_changes = [input]
@@ -353,11 +344,8 @@ resource "terraform_data" "onepassword_cloudflare_tunnel_password_version" {
 resource "terraform_data" "onepassword_cloudflare_waf_password_version" {
   for_each = local.cloudflare_consumers_waf
 
-  input = plantimestamp()
-  triggers_replace = sha256(jsonencode({
-    configuration = each.value
-    token_id      = cloudflare_account_token.waf[each.key].id
-  }))
+  input            = plantimestamp()
+  triggers_replace = sha256(cloudflare_account_token.waf[each.key].id)
 
   lifecycle {
     ignore_changes = [input]

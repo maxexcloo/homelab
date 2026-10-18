@@ -43,3 +43,16 @@ resource "resend_domain_verification" "configured" {
 
   depends_on = [cloudflare_dns_record.managed]
 }
+
+resource "terraform_data" "resend_configuration_validation" {
+  input = sort(tolist(local.resend_hosts))
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for machine in values(local.machines) : try(machine.smtp, null) == null || try(machine.smtp == "resend", false)
+      ])
+      error_message = "Machine SMTP providers must be Resend."
+    }
+  }
+}
