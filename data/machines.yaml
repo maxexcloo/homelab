@@ -271,6 +271,7 @@ machines:
           scheme: https
     nanokvm:
       monitoring: false
+      name: NanoKVM
       platform: nanokvm
       type: appliance
       username: root
