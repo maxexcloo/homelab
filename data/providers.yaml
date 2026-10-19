@@ -67,7 +67,7 @@ providers:
         - "[DNS_RCODE] == NOERROR"
         - "[RESPONSE_TIME] < 5000"
     widget:
-      key: "{{HOMEPAGE_FILE_CLOUDFLARE_KEY}}"
+      key: "{{HOMEPAGE_VAR_CLOUDFLARE_API_TOKEN}}"
       type: cloudflared
   control_d:
     description: DNS
@@ -147,7 +147,7 @@ providers:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
     widget:
-      key: "{{HOMEPAGE_FILE_TAILSCALE_KEY}}"
+      key: "{{HOMEPAGE_VAR_TAILSCALE_API_TOKEN}}"
       type: tailscale
   unifi:
     description: Network
