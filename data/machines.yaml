@@ -281,6 +281,7 @@ machines:
       services:
         management:
           description: Remote Console & Power Control
+          group: Infrastructure
           icon: sh-sipeed
           name: NanoKVM
           port: 80
@@ -295,6 +296,7 @@ machines:
       services:
         management:
           description: Zigbee Ethernet Adapter
+          group: Smart Home
           icon: sh-zigbee
           name: SLZB-06M
           port: 80
