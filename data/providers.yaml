@@ -98,6 +98,14 @@ providers:
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
+  gatus:
+    description: Health Monitoring & Status Page • Fly
+    group: Operations
+    icon: sh-gatus
+    name: Gatus
+    url: https://status.excloo.com
+    widget:
+      type: gatus
   github:
     description: Source Control
     icon: si-github-#ffffff
