@@ -99,7 +99,7 @@ providers:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
   gatus:
-    description: Health Monitoring & Status Page • Fly
+    description: Health Monitoring & Status Page • fly
     group: Operations
     icon: sh-gatus
     name: Gatus
