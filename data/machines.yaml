@@ -286,6 +286,7 @@ machines:
           port: 80
           scheme: http
     slzb-06m:
+      name: SLZB-06M
       platform: slzb
       type: appliance
       interfaces:
