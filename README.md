@@ -67,8 +67,7 @@ mise run init:check
 mise run check
 ```
 
-The same checks are available locally when needed. Run `hk install --mise` to enable optional
-commit hooks; `mise run check` runs the full suite.
+Run `hk install --mise` to enable optional commit hooks.
 Static checks do not verify live provider behaviour or plan preconditions.
 Provider updates require reinitialisation with `mise run init`. Regenerate
 checksums for supported workstation and validation platforms with:
