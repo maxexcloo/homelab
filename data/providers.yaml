@@ -70,7 +70,7 @@ providers:
       key: "{{HOMEPAGE_VAR_CLOUDFLARE_API_TOKEN}}"
       type: cloudflared
   control_d:
-    description: DNS
+    description: DNS Filtering
     icon: sh-control-d
     name: Control D
     url: https://controld.com
