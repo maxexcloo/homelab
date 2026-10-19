@@ -1,6 +1,10 @@
+oidc_issuer_url: https://id.excloo.com
+cloudflare_access:
+  cluster: syd
+  name: Excloo ID
+  oidc_client_id: cloudflare-access-excloo_id
 kubernetes:
   oidc_client_id: headlamp
-  oidc_issuer_url: https://id.excloo.com
 onepassword:
   cluster_vault_prefix: "Cluster: "
   ownership_tag: Homelab

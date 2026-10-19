@@ -112,7 +112,7 @@ locals {
         }
         issuer = {
           audiences = [local.access.kubernetes.oidc_client_id]
-          url       = local.access.kubernetes.oidc_issuer_url
+          url       = local.access.oidc_issuer_url
         }
       }]
     }

@@ -140,6 +140,18 @@ resource "onepassword_item" "backblaze_host" {
   }
 }
 
+resource "onepassword_item" "cloudflare_access" {
+  tags  = [local.access.onepassword.ownership_tag]
+  title = "Cloudflare Access"
+  vault = data.onepassword_vault.configured["cluster/${local.access.cloudflare_access.cluster}"].uuid
+
+  # Kubelab's PushSecret created this server item, a category the provider cannot
+  # express, and owns its fields, including the Pocket ID client's generated secret.
+  lifecycle {
+    ignore_changes = [category, section]
+  }
+}
+
 resource "onepassword_item" "cloudflare_acme" {
   for_each = local.cloudflare_consumers_acme
 
