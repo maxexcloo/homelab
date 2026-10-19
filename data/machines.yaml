@@ -375,6 +375,7 @@ machines:
           name: SLZB-06M
           port: 80
           scheme: http
+          siteMonitor: ""
       tailscale:
         enabled: false
     steam-deck:
