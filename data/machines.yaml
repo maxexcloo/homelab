@@ -63,16 +63,6 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
-        heiss:
-          description: Image & Video Studio
-          dns_record: true
-          group: Artificial Intelligence
-          hostname: studio.excloo.com
-          icon: mdi-image-#ffffff
-          name: HEISS
-          port: 443
-          scheme: https
-          siteMonitor: ""
         management:
           description: Server Administration
           icon: cockpit-light
@@ -213,6 +203,22 @@ machines:
           description: iCloud Photos Copy
           schedule_dow: "*"
           schedule_hour: "3"
+          user: root
+        # Kimbap's model library is canonical; Bento's ComfyUI workers read this mirror.
+        studio-models-push:
+          command: flock -n /run/studio-models-push.lock rsync -a --delete -e "ssh -i /root/.ssh/bento_ai -o BatchMode=yes" /mnt/truenas/ai/models/comfyui/ core@bento.mbk.excloo.net:ai/models/comfyui/
+          description: Studio Model Library Push
+          schedule_dow: "*"
+          schedule_hour: "*"
+          schedule_minute: "*/15"
+          user: root
+        # Bento stages Studio's profiles and configuration from the AI repository.
+        studio-profiles-pull:
+          command: flock -n /run/studio-profiles-pull.lock sh -c 'rsync -a --chown=1000:1000 -e "ssh -i /root/.ssh/bento_ai -o BatchMode=yes" core@bento.mbk.excloo.net:ai/studio/data/workflows/ /mnt/truenas-nvme/studio/workflows/ && rsync -a --chown=1000:1000 -e "ssh -i /root/.ssh/bento_ai -o BatchMode=yes" core@bento.mbk.excloo.net:ai/config/models.json core@bento.mbk.excloo.net:ai/config/prompting.json /mnt/truenas-nvme/studio/config/'
+          description: Studio Profiles Pull
+          schedule_dow: "*"
+          schedule_hour: "*"
+          schedule_minute: "*/15"
           user: root
         smart-long:
           command: midclt call disk.smart_test LONG '["*"]'

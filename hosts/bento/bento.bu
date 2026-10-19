@@ -12,6 +12,8 @@ passwd:
     - name: core
       ssh_authorized_keys:
         - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaF+DCJq1CyGrafKzDMtNjW02M5XJoH5MLFFSlHPjyz Max Schaefer
+        # Kimbap pushes the ComfyUI model library and pulls Studio's staged files.
+        - restrict,command="/var/home/core/.local/bin/ai-sync-rsync" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINSF/XgIGlHjO79F6qvkna9yLEGslfMqLMC53/i1+obi kimbap AI sync
 
 storage:
   directories:
@@ -38,6 +40,14 @@ storage:
       path: /var/home/core/.config/btop/btop.conf
       contents:
         local: bento/btop.conf
+      group:
+        name: core
+      user:
+        name: core
+    - mode: 0755
+      path: /var/home/core/.local/bin/ai-sync-rsync
+      contents:
+        local: bento/ai-sync-rsync.sh
       group:
         name: core
       user:

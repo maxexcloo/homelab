@@ -50,6 +50,7 @@ clusters:
             - name: truenas-nvme/immich
             - name: truenas-nvme/papra
             - name: truenas-nvme/romm
+            - name: truenas-nvme/studio
             - name: truenas/games
             - name: truenas/icloud-photos
               read_only: true

@@ -8,6 +8,7 @@ truenas:
       truenas-nvme/macos: {}
       truenas-nvme/papra: {}
       truenas-nvme/romm: {}
+      truenas-nvme/studio: {}
       truenas-nvme/talos: {}
       truenas/ai: {}
       truenas/s3: {}
