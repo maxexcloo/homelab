@@ -107,7 +107,7 @@ machines:
           port: 443
           scheme: https
           widget:
-            key: "{{HOMEPAGE_FILE_UNIFI_KEY}}"
+            key: "{{HOMEPAGE_VAR_UNIFI_API_KEY}}"
             type: unifi
     hass:
       beszel: true
@@ -161,7 +161,7 @@ machines:
           port: 443
           scheme: https
           widget:
-            key: "{{HOMEPAGE_FILE_HOME_ASSISTANT_KEY}}"
+            key: "{{HOMEPAGE_VAR_HOME_ASSISTANT_ACCESS_TOKEN}}"
             type: homeassistant
         matter-hub:
           description: Matter Bridge
@@ -266,7 +266,7 @@ machines:
           scheme: https
           widget:
             enablePools: true
-            key: "{{HOMEPAGE_FILE_TRUENAS_KEY}}"
+            key: "{{HOMEPAGE_VAR_TRUENAS_API_KEY}}"
             type: truenas
             version: 2
         netboot:
