@@ -99,10 +99,16 @@ machines:
         acme: delegated
       services:
         management:
+          description: Network Controller
+          group: Infrastructure
+          icon: sh-ubiquiti-unifi
           monitoring: true
           name: UniFi
           port: 443
           scheme: https
+          widget:
+            key: "{{HOMEPAGE_FILE_UNIFI_KEY}}"
+            type: unifi
     hass:
       beszel: true
       name: HASS
@@ -128,11 +134,62 @@ machines:
         - address: 10.4.0.2
           mac_address: 84:47:09:67:c8:36
       services:
+        esphome:
+          description: ESP Device Builder
+          group: Smart Home
+          icon: sh-esphome
+          name: ESPHome
+          path: /5c53de3b_esphome
+          port: 443
+          scheme: https
+          siteMonitor: ""
+        espresense-companion:
+          description: Room Presence
+          group: Smart Home
+          icon: espressif
+          name: ESPresense Companion
+          path: /f32ea98b_espresense-companion
+          port: 443
+          scheme: https
+          siteMonitor: ""
         management:
+          description: Smart Home & Automations
+          group: Smart Home
+          icon: sh-home-assistant
           monitoring: true
           name: Home Assistant
           port: 443
           scheme: https
+          widget:
+            key: "{{HOMEPAGE_FILE_HOME_ASSISTANT_KEY}}"
+            type: homeassistant
+        matter-hub:
+          description: Matter Bridge
+          group: Smart Home
+          icon: sh-home-assistant-matter-hub
+          name: Home Assistant Matter Hub
+          path: /3fd9e6b0_hamh
+          port: 443
+          scheme: https
+          siteMonitor: ""
+        vscode:
+          description: Browser IDE
+          group: Smart Home
+          icon: sh-visual-studio-code
+          name: Studio Code Server
+          path: /a0d7b954_vscode
+          port: 443
+          scheme: https
+          siteMonitor: ""
+        zigbee2mqtt:
+          description: Zigbee Coordinator
+          group: Smart Home
+          icon: sh-zigbee2mqtt
+          name: Zigbee2MQTT
+          path: /45df7312_zigbee2mqtt
+          port: 443
+          scheme: https
+          siteMonitor: ""
     kimbap:
       beszel: true
       platform: truenas
@@ -200,12 +257,23 @@ machines:
             traefik.enable: "true"
             traefik.http.services.macos.loadbalancer.server.port: "8080"
         management:
+          description: Storage Appliance
+          group: Infrastructure
+          icon: sh-truenas-scale
           monitoring: true
           name: TrueNAS
           port: 443
           scheme: https
+          widget:
+            enablePools: true
+            key: "{{HOMEPAGE_FILE_TRUENAS_KEY}}"
+            type: truenas
+            version: 2
         netboot:
+          description: Network Boot Server
+          group: Infrastructure
           hostname: netboot.kimbap.mbk.excloo.net
+          icon: mdi-server-network-#ffffff
           monitoring: true
           name: Netboot
           port: 8443
