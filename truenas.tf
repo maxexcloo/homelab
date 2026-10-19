@@ -250,9 +250,10 @@ resource "truenas_app" "talos_container" {
   custom_compose = yamlencode({
     services = {
       tailscale = {
-        cap_add      = ["NET_ADMIN", "NET_RAW"]
-        depends_on   = ["talos"]
-        devices      = ["/dev/net/tun:/dev/net/tun"]
+        cap_add    = ["NET_ADMIN", "NET_RAW"]
+        depends_on = ["talos"]
+        devices    = ["/dev/net/tun:/dev/net/tun"]
+        # renovate: datasource=docker depName=tailscale/tailscale
         image        = "tailscale/tailscale:v1.104.1"
         network_mode = "service:talos"
         restart      = "unless-stopped"
