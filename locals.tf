@@ -4,6 +4,7 @@ locals {
   domains             = yamldecode(file("${path.module}/data/domains.yaml")).domains
   machines_by_network = yamldecode(file("${path.module}/data/machines.yaml")).machines
   networks            = yamldecode(file("${path.module}/data/networks.yaml")).networks
+  platforms           = yamldecode(file("${path.module}/data/platforms.yaml")).platforms
   provider_settings   = yamldecode(file("${path.module}/data/providers.yaml"))
   storage             = yamldecode(file("${path.module}/data/storage.yaml"))
 
