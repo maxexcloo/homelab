@@ -34,7 +34,11 @@ data "talos_machine_configuration" "container" {
 
   config_patches = concat(
     [yamlencode(local.talos_user_volume_local_path.directory)],
-    local.truenas_talos_container.machine_type == "controlplane" ? [yamlencode(local.talos_cluster_authentication_configuration)] : [],
+    local.truenas_talos_container.machine_type == "controlplane" ? [
+      yamlencode(local.talos_cluster_authentication_configuration),
+      # Collect pods left Failed by graceful node shutdowns instead of waiting for 12,500.
+      yamlencode({ apiVersion = "v1alpha1", kind = "KubeControllerManagerConfig", extraArgs = { "terminated-pod-gc-threshold" = "20" } }),
+    ] : [],
     [
       # v1.14's standalone KubeletConfig does not expose extraMounts.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
