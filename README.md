@@ -76,9 +76,12 @@ checksums for supported workstation and validation platforms with:
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ```
 
-Updatecli previews updates locally for manual review through [.updatecli.d/](.updatecli.d/). Review provider release notes and cluster
-compatibility before accepting updates. Host and cluster upgrades are deliberate
-operations; changing installation configuration does not update existing hosts.
+Renovate opens update pull requests from [renovate.json5](renovate.json5);
+`mise run dependencies:check` previews them locally. Cluster versions in
+`data/clusters.yaml` and their matching `kubectl` and `talosctl` pins update
+together. Review provider release notes and cluster compatibility before
+accepting updates. Host and cluster upgrades are deliberate operations; changing
+installation configuration does not update existing hosts.
 
 ### TrueNAS Configuration
 
