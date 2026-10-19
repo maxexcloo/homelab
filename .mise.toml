@@ -3,7 +3,7 @@
 # Match the configured Kubernetes cluster version.
 kubectl = "1.37.1"
 # Match the configured Talos cluster version.
-talosctl = "1.14.2"
+talosctl = "1.14.4"
 
 [env]
 _OP_CONNECT_HOST = "op://Homelab/OpenTofu/op_connect_host"
