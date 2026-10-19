@@ -1,0 +1,28 @@
+platforms:
+  bazzite:
+    icon: sh-linux
+    name: Bazzite
+  haos:
+    icon: sh-home-assistant
+    name: Home Assistant OS
+  macos:
+    icon: sh-apple
+    name: macOS
+  nanokvm:
+    icon: mdi-server
+    name: NanoKVM
+  steamos:
+    icon: sh-steam
+    name: SteamOS
+  talos:
+    icon: talos
+    name: Talos Linux
+  truenas:
+    icon: sh-truenas-scale
+    name: TrueNAS
+  ucore:
+    icon: sh-linux
+    name: uCore
+  unifi:
+    icon: sh-ubiquiti-unifi
+    name: UniFi
