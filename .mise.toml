@@ -36,8 +36,8 @@ run = "scripts/opentofu.sh plan"
 
 # Development
 [tasks.check]
-depends = ["check:updates"]
 run = "hk check --all"
+depends = ["check:updates"]
 
 [tasks.fmt]
 run = """
@@ -86,7 +86,4 @@ description = "Create Missing OpenTofu 1Password Item"
 run = "scripts/setup_opentofu_item.sh"
 
 [tasks.setup]
-run = """
-mise run opentofu:item
-mise run init
-"""
+run = [{ task = "opentofu:item" }, { task = "init" }]
