@@ -30,7 +30,7 @@ for word in "$@"; do
   case $sender:$word in
     *:rsync | *:-* | *:.) continue ;;
     false:ai/models/comfyui/*) ;;
-    true:ai/config/models.json | true:ai/config/prompting.json | true:ai/studio/data/workflows/*) ;;
+    true:ai/config/lora-catalogue.json | true:ai/config/models.json | true:ai/config/prompting.json | true:ai/studio/data/workflows/*) ;;
     *) refuse ;;
   esac
   paths=$((paths + 1))
