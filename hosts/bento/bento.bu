@@ -30,6 +30,12 @@ storage:
       contents:
         inline: |
           UCORE_IMAGE=ghcr.io/ublue-os/ucore-hci:stable
+    - mode: 0440
+      overwrite: true
+      path: /etc/sudoers.d/coreos-sudo-group
+      contents:
+        inline: |
+          # Sudo requires the user password (replaces the CoreOS passwordless default).
     - mode: 0644
       overwrite: true
       path: /etc/hostname
