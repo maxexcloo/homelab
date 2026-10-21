@@ -173,6 +173,7 @@ machines:
           path: /admin
           port: 555
           scheme: https
+          username: max@excloo.com
         vscode:
           description: Browser IDE
           group: Smart Home
