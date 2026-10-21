@@ -175,14 +175,6 @@ machines:
           scheme: https
           credentials:
             username: max@excloo.com
-            fields:
-              protocol:
-                pin:
-                  length: 6
-                  lower: false
-                  numeric: true
-                  special: false
-                  upper: false
         vscode:
           description: Browser IDE
           group: Smart Home
