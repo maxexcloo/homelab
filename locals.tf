@@ -64,6 +64,7 @@ locals {
       for interface_index, interface in try(machine.interfaces, []) : {
         address = try(interface.address, null)
         bridge  = try(interface.bridge, null)
+        ipv6    = try(interface.ipv6_address, null)
         mac     = lower(interface.mac_address)
         machine = machine_name
         network = machine.network

@@ -9,6 +9,7 @@ locals {
     for interface in local.machine_interface_assignments : interface.mac => {
       fixed_ip    = interface.bridge == null ? interface.address : null
       hostname    = interface.primary ? local.machine_fqdns[interface.machine] : null
+      ipv6        = interface.ipv6
       mac         = interface.mac
       name        = local.machine_hostnames[interface.machine]
       network_key = "${interface.network}/${interface.subnet}"
@@ -82,4 +83,15 @@ resource "unifi_client" "talos_container" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+resource "unifi_dns_record" "host_ipv6" {
+  for_each = { for mac, client in local.unifi_clients : mac => client if client.hostname != null }
+
+  # Client DNS records only override A; missing AAAA queries otherwise reach
+  # public Tailscale DNS. Use native IPv6 when configured, or an unusable target
+  # for this IPv4-only local name, without changing public DNS or LAN IPv6.
+  name        = each.value.hostname
+  record_type = "AAAA"
+  value       = each.value.ipv6 != null ? each.value.ipv6 : "::"
 }
