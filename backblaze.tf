@@ -1,6 +1,6 @@
 locals {
   b2_clusters = toset([for name, cluster in local.clusters : name if try(cluster.backblaze, false)])
-  b2_endpoint = try(local.provider_settings.providers.backblaze.endpoint, null)
+  b2_endpoint = local.provider_settings.providers.backblaze.endpoint
 
   b2_application_key_capabilities_cluster = [
     "listBuckets",
@@ -23,7 +23,7 @@ locals {
 
   b2_hosts = {
     for name, machine in local.machines : name => {
-      bucket_name = try(trimspace(machine.backblaze.bucket_name), null)
+      bucket_name = trimspace(machine.backblaze.bucket_name)
     }
     if can(machine.backblaze)
   }

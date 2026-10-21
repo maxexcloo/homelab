@@ -293,7 +293,7 @@ machines:
       ingress:
         certificate: truenas
         # renovate: datasource=docker depName=traefik
-        image: traefik:v3.7.15
+        image: traefik:v3.7.16
         port: 8443
       interfaces:
         - name: eno1
