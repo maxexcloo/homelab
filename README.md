@@ -83,6 +83,54 @@ Renovate opens update pull requests from [renovate.json5](renovate.json5), and
 accepting updates. Host and cluster upgrades are done on purpose; changing the
 installation configuration doesn't update existing hosts.
 
+### Home Assistant Access
+
+Home Assistant's tunnel routes live in `data/machines.yaml`. The remote app
+hostname uses Cloudflare's managed client-certificate CA and a WAF block rule
+owned by Kubelab's Home Assistant integration. [Managed-CA mTLS](https://developers.cloudflare.com/api-shield/security/mtls/)
+works on Cloudflare Free;
+it does not use Access mTLS. The `mtls_rule` field names the exact enabled WAF
+rule that OpenTofu must find before it can publish the route or DNS record.
+The rule rejects unverified or revoked certificates on every path. WAF skip
+rules prevent publication until their effect has been reviewed.
+
+Deploy and verify that WAF rule first, after PR approval. Then review a requested
+OpenTofu plan and approve the apply separately. Do not remove the WAF rule while
+the remote route remains published. The existing webhook hostname still permits
+only its configured webhook path and otherwise returns 404. Local access uses
+the machine's normal hostname and server TLS without requiring a client
+certificate. All paths retain Home Assistant's own authentication behaviour.
+
+After deployment approval, enrol one Cloudflare-issued certificate per device:
+
+1. Generate a private key and CSR locally using restrictive temporary files;
+   send only the CSR to Cloudflare's **SSL/TLS > Client Certificates** page.
+   Use a recognisable device label and a 90-day validity period.
+2. Store the private key, certificate, encrypted PKCS12 identity and its password
+   in 1Password under `Homelab/Home Assistant mTLS: <device>`. Record its expiry
+   and public certificate identifier there. Keep private material out of Git,
+   OpenTofu, command arguments, logs and chat; resolve it only inside local
+   credential-consuming processes. Remove temporary private files after import.
+3. Import the identity into the device's Home Assistant app and select it for
+   the remote hostname. Keep the direct local hostname as the internal URL.
+   Verify the app's HTTPS and WebSocket connections; iOS supports mTLS from
+   [version 2026.8](https://github.com/orgs/home-assistant/discussions/1078)
+   without its former experimental setting.
+4. Renew with a fresh key before expiry, allowing 30 days for device import and
+   testing; revoke the superseded certificate after confirming the replacement.
+   For a lost device, revoke its certificate and HA refresh tokens immediately.
+   Wait for [Cloudflare's status](https://developers.cloudflare.com/ssl/client-certificates/revoke-client-certificate/)
+   to become `revoked`, then test a fresh connection
+   and WebSocket reconnect. Revocation does not retroactively terminate an
+   established WebSocket connection. Do not reactivate compromised identities.
+
+After an approved deployment, test the remote root, authentication, API,
+WebSocket and webhook paths with absent, untrusted, valid, expired and revoked
+certificates. Only a valid non-revoked certificate may pass the edge rule.
+Independently test local HTTPS with and without a client identity, and confirm
+the webhook hostname still rejects non-webhook paths without requiring mTLS.
+Do not call a real webhook during verification.
+
 ### TrueNAS Configuration
 
 Storage policy and SMB shares sit beside their datasets in `data/storage.yaml`,

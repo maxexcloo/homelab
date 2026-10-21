@@ -118,6 +118,9 @@ machines:
               service: https://homeassistant
               origin_request:
                 no_tls_verify: true
+            - hostname: remote-hass.excloo.com
+              mtls_rule: homelab-hass-mtls
+              service: https://homeassistant
       interfaces:
         - address: 10.0.0.2
           mac_address: 84:47:09:67:c8:33

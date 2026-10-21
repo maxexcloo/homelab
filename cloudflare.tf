@@ -25,6 +25,22 @@ data "cloudflare_account_api_token_permission_groups_list" "zone_waf_write" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
+data "cloudflare_ruleset" "mtls" {
+  for_each = local.cloudflare_mtls_zones
+
+  id = one([
+    for ruleset in data.cloudflare_rulesets.mtls[each.key].rulesets : ruleset.id
+    if ruleset.kind == "zone" && ruleset.phase == "http_request_firewall_custom"
+  ])
+  zone_id = data.cloudflare_zone.configured[each.key].zone_id
+}
+
+data "cloudflare_rulesets" "mtls" {
+  for_each = local.cloudflare_mtls_zones
+
+  zone_id = data.cloudflare_zone.configured[each.key].zone_id
+}
+
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 
@@ -87,7 +103,12 @@ locals {
             try(route.path, null) != null ? {
               path = route.path
             } : {},
-            try(route.origin_request, null) != null ? {
+            try(route.mtls_rule, null) != null ? {
+              origin_request = {
+                no_tls_verify      = false
+                origin_server_name = local.machine_fqdns[name]
+              }
+              } : try(route.origin_request, null) != null ? {
               origin_request = route.origin_request
             } : {},
           )
@@ -113,12 +134,22 @@ locals {
     if try(cluster.cloudflare.waf, false)
   }
 
+  cloudflare_mtls_routes = {
+    for key, route in local.cloudflare_tunnel_routes : key => merge(route, {
+      expression = "(http.host eq ${jsonencode(route.hostname)} and (not cf.tls_client_auth.cert_verified or cf.tls_client_auth.cert_revoked))"
+    })
+    if route.mtls_rule != null
+  }
+
+  cloudflare_mtls_zones = toset([for route in values(local.cloudflare_mtls_routes) : route.zone])
+
   cloudflare_tunnel_route_entries = flatten([
     for consumer_name, consumer in local.cloudflare_consumers : [
       for ingress in try(consumer.tunnel.ingress, []) : {
-        consumer = consumer_name
-        hostname = ingress.hostname
-        zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${ingress.hostname}", ".${zone}")])
+        consumer  = consumer_name
+        hostname  = ingress.hostname
+        mtls_rule = try(ingress.mtls_rule, null)
+        zone      = one([for zone in local.cloudflare_zones : zone if endswith(".${ingress.hostname}", ".${zone}")])
       }
     ]
   ])
@@ -241,6 +272,16 @@ resource "cloudflare_account_token" "waf" {
   ]
 }
 
+resource "cloudflare_certificate_authorities_hostname_associations" "mtls" {
+  for_each = local.cloudflare_mtls_zones
+
+  # Omitting mtls_certificate_id selects Cloudflare's managed CA, available on Free.
+  hostnames = sort(distinct([for route in values(local.cloudflare_mtls_routes) : route.hostname if route.zone == each.key]))
+  zone_id   = data.cloudflare_zone.configured[each.key].zone_id
+
+  depends_on = [terraform_data.cloudflare_mtls_validation]
+}
+
 resource "cloudflare_dns_record" "managed" {
   for_each = local.dns_records
 
@@ -253,7 +294,7 @@ resource "cloudflare_dns_record" "managed" {
   type     = each.value.type
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 
-  depends_on = [terraform_data.dns_validation]
+  depends_on = [terraform_data.dns_validation, cloudflare_certificate_authorities_hostname_associations.mtls]
 }
 
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
@@ -297,6 +338,8 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   config = {
     ingress = each.value.ingress
   }
+
+  depends_on = [cloudflare_certificate_authorities_hostname_associations.mtls]
 }
 
 resource "cloudflare_zone_setting" "ssl" {
@@ -308,4 +351,27 @@ resource "cloudflare_zone_setting" "ssl" {
   setting_id = "ssl"
   value      = each.value
   zone_id    = data.cloudflare_zone.configured[each.key].zone_id
+}
+
+resource "terraform_data" "cloudflare_mtls_validation" {
+  for_each = local.cloudflare_mtls_routes
+
+  input = each.value.hostname
+
+  lifecycle {
+    precondition {
+      # Kubelab owns the zone ruleset. Refuse publication until its exact rule
+      # blocks missing, invalid, expired and revoked certificates on every path.
+      condition = anytrue([
+        for rule in data.cloudflare_ruleset.mtls[each.value.zone].rules :
+        rule.ref == each.value.mtls_rule && rule.enabled && rule.action == "block" && rule.expression == each.value.expression
+      ])
+      error_message = "Deploy and verify Kubelab's ${each.value.mtls_rule} WAF block rule before publishing ${each.value.hostname}."
+    }
+
+    precondition {
+      condition     = alltrue([for rule in data.cloudflare_ruleset.mtls[each.value.zone].rules : rule.action != "skip"])
+      error_message = "Review WAF skip rules before publishing an mTLS-protected hostname; a preceding skip could bypass its block rule."
+    }
+  }
 }
