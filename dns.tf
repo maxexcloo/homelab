@@ -4,9 +4,10 @@ locals {
       for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
         hostname = service.hostname
         machine  = machine_name
+        public   = try(service.dns_record, false)
         zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${service.hostname}", ".${zone}")])
       }
-      if try(service.dns_record, false)
+      if try(service.dns_record, false) || try(service.local_dns_record, false)
     }
   ]...)
 
@@ -132,6 +133,7 @@ locals {
         type    = "CNAME"
         zone    = service.zone
       }
+      if service.public
     },
     {
       for service_key, service in local.dns_machine_services : "service-acme/${service_key}" => {
