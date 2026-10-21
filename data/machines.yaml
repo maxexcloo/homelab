@@ -118,8 +118,7 @@ machines:
               service: https://homeassistant
               origin_request:
                 no_tls_verify: true
-            - hostname: remote-hass.excloo.com
-              mtls_rule: homelab-hass-mtls
+            - hostname: home-assistant.excloo.com
               service: https://homeassistant
               origin_request:
                 origin_server_name: hass.mbk.excloo.net

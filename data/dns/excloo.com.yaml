@@ -1,6 +1,8 @@
 name: excloo.com
 ssl: full
 waf: true
+mtls_hostnames:
+  - home-assistant.excloo.com
 providers:
   - fastmail
   - resend

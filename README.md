@@ -85,11 +85,11 @@ installation configuration doesn't update existing hosts.
 
 ### Client Certificates
 
-Tunnel routes with `mtls_rule` use [Cloudflare-managed mTLS](https://developers.cloudflare.com/api-shield/security/mtls/).
-Kubelab owns the WAF rules: deploy the matching all-path block rule before
-requesting a plan and approving publication. OpenTofu checks that the rule
-rejects unverified and revoked certificates and that no WAF skip rule can
-bypass it. Keep that protection active while the route is published.
+Zone files in `data/dns/` enable [Cloudflare-managed mTLS](https://developers.cloudflare.com/api-shield/security/mtls/)
+with `mtls_hostnames`. Kubelab owns the WAF rules that enforce it. After PR
+approval, activate and verify the WAF rule before approving a plan that opens
+an application route. Keep webhook exceptions restricted to their existing
+paths, and keep the WAF protection active while the app route is published.
 
 Use one 90-day certificate per device. Keep its private key and encrypted PKCS12
 identity, password and expiry in 1Password; never put private material in Git or

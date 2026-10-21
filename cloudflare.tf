@@ -25,22 +25,6 @@ data "cloudflare_account_api_token_permission_groups_list" "zone_waf_write" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
-data "cloudflare_ruleset" "mtls" {
-  for_each = local.cloudflare_mtls_zones
-
-  id = one([
-    for ruleset in data.cloudflare_rulesets.mtls[each.key].rulesets : ruleset.id
-    if ruleset.kind == "zone" && ruleset.phase == "http_request_firewall_custom"
-  ])
-  zone_id = data.cloudflare_zone.configured[each.key].zone_id
-}
-
-data "cloudflare_rulesets" "mtls" {
-  for_each = local.cloudflare_mtls_zones
-
-  zone_id = data.cloudflare_zone.configured[each.key].zone_id
-}
-
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 
@@ -129,22 +113,12 @@ locals {
     if try(cluster.cloudflare.waf, false)
   }
 
-  cloudflare_mtls_routes = {
-    for key, route in local.cloudflare_tunnel_routes : key => merge(route, {
-      expression = "(http.host eq ${jsonencode(route.hostname)} and (not cf.tls_client_auth.cert_verified or cf.tls_client_auth.cert_revoked))"
-    })
-    if route.mtls_rule != null
-  }
-
-  cloudflare_mtls_zones = toset([for route in values(local.cloudflare_mtls_routes) : route.zone])
-
   cloudflare_tunnel_route_entries = flatten([
     for consumer_name, consumer in local.cloudflare_consumers : [
       for ingress in try(consumer.tunnel.ingress, []) : {
-        consumer  = consumer_name
-        hostname  = ingress.hostname
-        mtls_rule = try(ingress.mtls_rule, null)
-        zone      = one([for zone in local.cloudflare_zones : zone if endswith(".${ingress.hostname}", ".${zone}")])
+        consumer = consumer_name
+        hostname = ingress.hostname
+        zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${ingress.hostname}", ".${zone}")])
       }
     ]
   ])
@@ -268,29 +242,13 @@ resource "cloudflare_account_token" "waf" {
 }
 
 resource "cloudflare_certificate_authorities_hostname_associations" "mtls" {
-  for_each = local.cloudflare_mtls_zones
-
-  # Omitting mtls_certificate_id selects Cloudflare's managed CA, available on Free.
-  hostnames = sort(distinct([for route in values(local.cloudflare_mtls_routes) : route.hostname if route.zone == each.key]))
-  zone_id   = data.cloudflare_zone.configured[each.key].zone_id
-
-  lifecycle {
-    precondition {
-      # Kubelab owns the zone ruleset; require its protection before publication.
-      condition = alltrue([
-        for route in values(local.cloudflare_mtls_routes) : anytrue([
-          for rule in data.cloudflare_ruleset.mtls[each.key].rules :
-          rule.ref == route.mtls_rule && rule.enabled && rule.action == "block" && rule.expression == route.expression
-        ]) if route.zone == each.key
-      ])
-      error_message = "Deploy the matching Kubelab mTLS block rules before publishing protected tunnel hostnames."
-    }
-
-    precondition {
-      condition     = alltrue([for rule in data.cloudflare_ruleset.mtls[each.key].rules : rule.action != "skip"])
-      error_message = "Review WAF skip rules before publishing mTLS hostnames; a preceding skip could bypass protection."
-    }
+  for_each = {
+    for source_file in local.dns_zone_files : source_file.zone.name => source_file.zone.mtls_hostnames
+    if can(source_file.zone.mtls_hostnames)
   }
+
+  hostnames = each.value
+  zone_id   = data.cloudflare_zone.configured[each.key].zone_id
 }
 
 resource "cloudflare_dns_record" "managed" {
@@ -305,7 +263,7 @@ resource "cloudflare_dns_record" "managed" {
   type     = each.value.type
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 
-  depends_on = [terraform_data.dns_validation, cloudflare_certificate_authorities_hostname_associations.mtls]
+  depends_on = [terraform_data.dns_validation]
 }
 
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
@@ -349,8 +307,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   config = {
     ingress = each.value.ingress
   }
-
-  depends_on = [cloudflare_certificate_authorities_hostname_associations.mtls]
 }
 
 resource "cloudflare_zone_setting" "ssl" {
