@@ -93,9 +93,9 @@ from the defaults. Factory-default tasks and settings stay native.
 
 Bento owns the active AI model and LoRA library. TrueNAS's native **AI Model
 Library Mirror** task pulls Bento's `ai/models/` into kimbap's `/mnt/truenas/ai/`
-every 15 minutes. The dataset root contains `comfyui/`, `radiance/`, `licences/`
-and the preserved `.archive/`; it has no additional `models/` wrapper. Studio's
-media, configuration and profiles live separately in `/mnt/truenas-nvme/studio/`.
+every 15 minutes. The dataset root contains only `comfyui/` and `radiance/`,
+with no additional `models/` wrapper. Studio's media, configuration and profiles
+live separately in `/mnt/truenas-nvme/studio/`.
 Keep this rsync task native while the provider cannot represent its SSH
 credentials, archive mode and deletion settings. Bento's restricted sync key
 allows reads of its model library only.
