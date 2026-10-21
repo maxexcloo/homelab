@@ -164,11 +164,12 @@ machines:
           siteMonitor: ""
         roborock:
           description: Local Vacuum Server
+          dns_lan: true
+          dns_record: true
           group: Smart Home
           hostname: api-rr.hass.mbk.excloo.net
           icon: mdi-robot-vacuum
-          local_dns_record: true
-          name: Roborock
+          name: Roborock Local Server
           path: /admin
           port: 555
           scheme: https

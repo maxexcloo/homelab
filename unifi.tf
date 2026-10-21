@@ -16,16 +16,6 @@ locals {
     if interface.address != null
   }
 
-  unifi_dns_services = merge([
-    for machine_name, machine in local.machines : {
-      for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
-        address  = local.machine_private_ipv4_addresses[machine_name]
-        hostname = service.hostname
-      }
-      if try(service.local_dns_record, false)
-    }
-  ]...)
-
   unifi_networks = merge([
     for network, site in local.networks : {
       for subnet, subnet_config in try(site.subnets, {}) :
@@ -92,12 +82,4 @@ resource "unifi_client" "talos_container" {
   lifecycle {
     prevent_destroy = true
   }
-}
-
-resource "unifi_dns_record" "service" {
-  for_each = local.unifi_dns_services
-
-  name        = each.value.hostname
-  record_type = "A"
-  value       = each.value.address
 }

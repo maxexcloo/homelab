@@ -2,12 +2,13 @@ locals {
   dns_machine_services = merge([
     for machine_name, machine in local.machines : {
       for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
+        content  = try(service.dns_lan, false) ? local.machine_private_ipv4_addresses[machine_name] : local.machine_fqdns[machine_name]
         hostname = service.hostname
         machine  = machine_name
-        public   = try(service.dns_record, false)
+        type     = try(service.dns_lan, false) ? "A" : "CNAME"
         zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${service.hostname}", ".${zone}")])
       }
-      if try(service.dns_record, false) || try(service.local_dns_record, false)
+      if try(service.dns_record, false)
     }
   ]...)
 
@@ -128,12 +129,11 @@ locals {
     },
     {
       for service_key, service in local.dns_machine_services : "service/${service_key}" => {
-        content = local.machine_fqdns[service.machine]
+        content = service.content
         name    = service.hostname
-        type    = "CNAME"
+        type    = service.type
         zone    = service.zone
       }
-      if service.public
     },
     {
       for service_key, service in local.dns_machine_services : "service-acme/${service_key}" => {
