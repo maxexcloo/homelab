@@ -167,7 +167,7 @@ machines:
           dns_lan: true
           dns_record: true
           group: Smart Home
-          hostname: api-rr.hass.mbk.excloo.net
+          hostname: api-rr.excloo.net
           icon: mdi-robot-vacuum
           name: Roborock Local Server
           path: /admin
