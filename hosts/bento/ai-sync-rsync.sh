@@ -1,6 +1,6 @@
 #!/bin/sh
-# Forced command for kimbap's AI sync key: rsync may write only the model
-# library and read only Studio's staged workflows and configuration.
+# Forced command for kimbap's AI sync key: read only Bento's active model
+# library and Studio's staged workflows and configuration.
 set -eu
 
 refuse() {
@@ -29,7 +29,7 @@ paths=0
 for word in "$@"; do
   case $sender:$word in
     *:rsync | *:-* | *:.) continue ;;
-    false:ai/models/comfyui/*) ;;
+    true:ai/models/*) ;;
     true:ai/config/lora-catalogue.json | true:ai/config/models.json | true:ai/config/prompting.json | true:ai/studio/data/workflows/*) ;;
     *) refuse ;;
   esac
