@@ -85,18 +85,15 @@ installation configuration doesn't update existing hosts.
 
 ### Client Certificates
 
-Zone files in `data/dns/` enable [Cloudflare-managed mTLS](https://developers.cloudflare.com/api-shield/security/mtls/)
-with `mtls_hostnames`. Kubelab owns the WAF rules that enforce it. After PR
-approval, activate and verify the WAF rule before approving a plan that opens
-an application route. Keep webhook exceptions restricted to their existing
-paths, and keep the WAF protection active while the app route is published.
+Set `mtls: true` on a tunnel ingress entry to enable [Cloudflare client certificates](https://developers.cloudflare.com/api-shield/security/mtls/)
+for its hostname. Kubelab owns enforcement and webhook exceptions. After review,
+activate and verify its WAF rule before opening the application route.
 
-Use one 90-day certificate per device. Keep its private key and encrypted PKCS12
-identity, password and expiry in 1Password; never put private material in Git or
-OpenTofu. Renew with a fresh key 30 days before expiry. For a lost device, revoke
-its certificate and application tokens, wait for Cloudflare's `revoked` status,
-and verify a fresh connection. Existing WebSockets must reconnect for the WAF
-to check the certificate again.
+Keep one 90-day certificate per device, with its private key, encrypted PKCS12
+identity, password and expiry in 1Password. Renew 30 days before expiry. For a
+lost device, revoke its certificate and application tokens, wait for Cloudflare's
+`revoked` status and test a fresh connection. Reconnect existing WebSockets to
+recheck certificates.
 
 ### TrueNAS Configuration
 

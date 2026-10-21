@@ -113,6 +113,14 @@ locals {
     if try(cluster.cloudflare.waf, false)
   }
 
+  cloudflare_tunnel_mtls_hostnames = {
+    for route in local.cloudflare_tunnel_routes : route.zone => route.hostname...
+    if anytrue([
+      for ingress in local.cloudflare_consumers[route.consumer].tunnel.ingress :
+      ingress.hostname == route.hostname && try(ingress.mtls, false)
+    ])
+  }
+
   cloudflare_tunnel_route_entries = flatten([
     for consumer_name, consumer in local.cloudflare_consumers : [
       for ingress in try(consumer.tunnel.ingress, []) : {
@@ -242,12 +250,9 @@ resource "cloudflare_account_token" "waf" {
 }
 
 resource "cloudflare_certificate_authorities_hostname_associations" "mtls" {
-  for_each = {
-    for source_file in local.dns_zone_files : source_file.zone.name => source_file.zone.mtls_hostnames
-    if can(source_file.zone.mtls_hostnames)
-  }
+  for_each = local.cloudflare_tunnel_mtls_hostnames
 
-  hostnames = each.value
+  hostnames = distinct(each.value)
   zone_id   = data.cloudflare_zone.configured[each.key].zone_id
 }
 

@@ -119,6 +119,7 @@ machines:
               origin_request:
                 no_tls_verify: true
             - hostname: home-assistant.excloo.com
+              mtls: true
               service: https://homeassistant
               origin_request:
                 origin_server_name: hass.mbk.excloo.net
