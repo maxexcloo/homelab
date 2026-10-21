@@ -89,11 +89,11 @@ Set `mtls: true` on a tunnel ingress entry to enable [Cloudflare client certific
 for its hostname. Kubelab owns enforcement and webhook exceptions. After review,
 activate and verify its WAF rule before opening the application route.
 
-Keep one 90-day certificate per device, with its private key, encrypted PKCS12
-identity, password and expiry in 1Password. Renew 30 days before expiry. For a
-lost device, revoke its certificate and application tokens, wait for Cloudflare's
-`revoked` status and test a fresh connection. Reconnect existing WebSockets to
-recheck certificates.
+Keep one certificate per device, with its private key, encrypted PKCS12 identity,
+password and expiry in 1Password. Choose its validity when issuing it and renew
+before expiry. For a lost device, revoke its certificate and application tokens,
+wait for Cloudflare's `revoked` status and test a fresh connection. Reconnect
+existing WebSockets to recheck certificates.
 
 ### TrueNAS Configuration
 
