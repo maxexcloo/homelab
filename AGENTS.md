@@ -71,6 +71,8 @@ scope to smallest as `provider_resource_qualifier`.
 - Follow the pinned provider's write-only version semantics. The 1Password
   provider requires strictly increasing versions for updates; use automatic
   tracking triggered by non-secret identity or content changes, not manual counters.
+  Control D exposes no separate credential revision: its existing secret hash is
+  the narrow rotation trigger exception. Keep that hash sensitive; never print it.
 - Let the 1Password vault carry scope. Omit tags from items in the infrastructure
   vault and use only the configured ownership tag for items managed in cluster
   vaults. Use human-readable display names for titles, omit cluster names from

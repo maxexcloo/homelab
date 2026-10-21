@@ -15,7 +15,10 @@ for tool in jq kubectl op talosctl yq; do
   fi
 done
 
-cluster_vault_prefix="$(yq -r '.onepassword.cluster_vault_prefix' "${access_path}")"
+if ! cluster_vault_prefix="$(yq -er '.onepassword.cluster_vault_prefix | select(tag == "!!str" and length > 0)' "${access_path}")"; then
+  echo "error: .onepassword.cluster_vault_prefix is required and must be a non-empty string." >&2
+  exit 1
+fi
 
 tmpdir="$(mktemp -d)"
 trap 'rm -fr -- "${tmpdir}"' EXIT

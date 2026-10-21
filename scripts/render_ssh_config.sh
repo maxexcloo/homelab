@@ -12,8 +12,14 @@ if ! command -v yq >/dev/null 2>&1; then
   exit 1
 fi
 
-identity_agent="$(yq -r '.ssh.identity_agent' "${access_path}")"
-infrastructure_domain="$(yq -r '.domains.infrastructure' "${domains_path}")"
+if ! identity_agent="$(yq -er '.ssh.identity_agent | select(tag == "!!str" and length > 0)' "${access_path}")"; then
+  echo "error: .ssh.identity_agent is required and must be a non-empty string." >&2
+  exit 1
+fi
+if ! infrastructure_domain="$(yq -er '.domains.infrastructure | select(tag == "!!str" and length > 0)' "${domains_path}")"; then
+  echo "error: .domains.infrastructure is required and must be a non-empty string." >&2
+  exit 1
+fi
 
 # Read all machine input before rendering the configuration.
 # $network is a yq variable.

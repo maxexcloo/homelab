@@ -110,7 +110,8 @@ with no additional `models/` wrapper. Studio's media, configuration and profiles
 live separately in `/mnt/truenas-nvme/studio/`.
 Keep this rsync task native while the provider cannot represent its SSH
 credentials, archive mode and deletion settings. Bento's restricted sync key
-allows reads of its model library only.
+allows reads of its model library only. Archive pulls, compression and numeric IDs
+are supported; unrecognised server options are refused.
 
 ### TrueNAS App Access
 

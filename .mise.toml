@@ -37,7 +37,10 @@ run = "scripts/opentofu.sh plan"
 # Development
 [tasks.check]
 run = "hk check --all"
-depends = ["check:mise", "check:updates"]
+depends = ["check:access", "check:mise", "check:updates"]
+
+[tasks."check:access"]
+run = "python3 scripts/test_access.py"
 
 [tasks.fmt]
 depends = ["fmt:mise"]
