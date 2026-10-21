@@ -35,15 +35,30 @@ locals {
     if machine.platform != "talos" && try(machine.username, null) != null
   }
 
-  onepassword_machine_access_password_policy = {
+  onepassword_password_policy = {
     length  = 32
     special = false
   }
 
-  onepassword_roborock_local_servers = {
-    for name, machine in local.machines : name => machine.services.roborock
-    if can(machine.services.roborock)
-  }
+  onepassword_service_access = merge([
+    for machine_name, machine in local.machines : {
+      for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
+        fields   = try(service.credentials.fields, {})
+        name     = service.name
+        url      = "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+        username = service.credentials.username
+      }
+      if can(service.credentials)
+    }
+  ]...)
+
+  onepassword_service_fields = merge(flatten([
+    for service_key, service in local.onepassword_service_access : [
+      for section_name, fields in service.fields : {
+        for field_name, policy in fields : "${service_key}/${section_name}/${field_name}" => policy
+      }
+    ]
+  ])...)
 
   onepassword_talos_recovery_note_values = {
     for name, cluster in local.clusters : name => jsonencode({
@@ -72,16 +87,16 @@ locals {
     {
       for name in keys(local.onepassword_machine_access) : "machine_access/${name}" => sha256(jsonencode({
         machine = name
-        policy  = local.onepassword_machine_access_password_policy
+        policy  = local.onepassword_password_policy
       }))
     },
     { for name in keys(local.clusters) : "resend/${name}" => sha256(resend_api_key.cluster[name].id) },
     { resend_fly = sha256(resend_api_key.fly.id) },
     { for name in local.resend_hosts : "resend_host/${name}" => sha256(resend_api_key.host[name].id) },
     {
-      for name in keys(local.onepassword_roborock_local_servers) : "roborock_local_server/${name}" => sha256(jsonencode({
-        machine = name
-        policy  = local.onepassword_machine_access_password_policy
+      for name in keys(local.onepassword_service_access) : "service_access/${name}" => sha256(jsonencode({
+        policy  = local.onepassword_password_policy
+        service = name
       }))
     },
     { for name in keys(local.tailscale_key_machines) : "tailscale_auth_key/${name}" => sha256(tailscale_tailnet_key.server[name].id) },
@@ -112,15 +127,15 @@ locals {
 ephemeral "random_password" "machine_access" {
   for_each = local.onepassword_machine_access
 
-  length  = local.onepassword_machine_access_password_policy.length
-  special = local.onepassword_machine_access_password_policy.special
+  length  = local.onepassword_password_policy.length
+  special = local.onepassword_password_policy.special
 }
 
-ephemeral "random_password" "roborock_local_server" {
-  for_each = local.onepassword_roborock_local_servers
+ephemeral "random_password" "service_access" {
+  for_each = local.onepassword_service_access
 
-  length  = local.onepassword_machine_access_password_policy.length
-  special = local.onepassword_machine_access_password_policy.special
+  length  = local.onepassword_password_policy.length
+  special = local.onepassword_password_policy.special
 }
 
 resource "onepassword_item" "backblaze_cluster" {
@@ -295,23 +310,23 @@ resource "onepassword_item" "resend_host" {
   vault               = data.onepassword_vault.configured["homelab"].uuid
 }
 
-resource "onepassword_item" "roborock_local_server" {
-  for_each = local.onepassword_roborock_local_servers
+resource "onepassword_item" "service_access" {
+  for_each = local.onepassword_service_access
 
   category            = "login"
-  password_wo         = ephemeral.random_password.roborock_local_server[each.key].result
-  password_wo_version = local.onepassword_versions["roborock_local_server/${each.key}"]
-  title               = "${each.value.name}: ${local.machine_fqdns[each.key]}"
-  url                 = "${each.value.scheme}://${each.value.hostname}:${each.value.port}${each.value.path}"
+  password_wo         = ephemeral.random_password.service_access[each.key].result
+  password_wo_version = local.onepassword_versions["service_access/${each.key}"]
+  title               = each.value.name
+  url                 = each.value.url
   username            = each.value.username
   vault               = data.onepassword_vault.configured["homelab"].uuid
 
   section_map = {
-    protocol = {
+    for section_name, fields in each.value.fields : section_name => {
       field_map = {
-        pin = {
+        for field_name, policy in fields : field_name => {
           type  = "CONCEALED"
-          value = random_password.roborock_protocol_pin[each.key].result
+          value = random_password.service_field["${each.key}/${section_name}/${field_name}"].result
         }
       }
     }
@@ -376,14 +391,14 @@ resource "onepassword_item" "talosconfig" {
   vault                 = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
-resource "random_password" "roborock_protocol_pin" {
-  for_each = local.onepassword_roborock_local_servers
+resource "random_password" "service_field" {
+  for_each = local.onepassword_service_fields
 
-  length  = 6
-  lower   = false
-  numeric = true
-  special = false
-  upper   = false
+  length  = each.value.length
+  lower   = try(each.value.lower, null)
+  numeric = try(each.value.numeric, null)
+  special = try(each.value.special, null)
+  upper   = try(each.value.upper, null)
 }
 
 # Keep kubeconfig tracking separate: its trigger waits for bootstrap, whose node
