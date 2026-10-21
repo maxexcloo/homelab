@@ -40,6 +40,11 @@ locals {
     special = false
   }
 
+  onepassword_roborock_local_servers = {
+    for name, machine in local.machines : name => machine.services.roborock
+    if can(machine.services.roborock)
+  }
+
   onepassword_talos_recovery_note_values = {
     for name, cluster in local.clusters : name => jsonencode({
       client_configuration = talos_machine_secrets.cluster[name].client_configuration
@@ -73,6 +78,12 @@ locals {
     { for name in keys(local.clusters) : "resend/${name}" => sha256(resend_api_key.cluster[name].id) },
     { resend_fly = sha256(resend_api_key.fly.id) },
     { for name in local.resend_hosts : "resend_host/${name}" => sha256(resend_api_key.host[name].id) },
+    {
+      for name in keys(local.onepassword_roborock_local_servers) : "roborock_local_server/${name}" => sha256(jsonencode({
+        machine = name
+        policy  = local.onepassword_machine_access_password_policy
+      }))
+    },
     { for name in keys(local.tailscale_key_machines) : "tailscale_auth_key/${name}" => sha256(tailscale_tailnet_key.server[name].id) },
     { tailscale_fly = sha256(tailscale_oauth_client.fly.id) },
     { for name in keys(local.clusters) : "tailscale_operator/${name}" => sha256(tailscale_oauth_client.kubernetes_operator[name].id) },
@@ -100,6 +111,13 @@ locals {
 
 ephemeral "random_password" "machine_access" {
   for_each = local.onepassword_machine_access
+
+  length  = local.onepassword_machine_access_password_policy.length
+  special = local.onepassword_machine_access_password_policy.special
+}
+
+ephemeral "random_password" "roborock_local_server" {
+  for_each = local.onepassword_roborock_local_servers
 
   length  = local.onepassword_machine_access_password_policy.length
   special = local.onepassword_machine_access_password_policy.special
@@ -277,6 +295,29 @@ resource "onepassword_item" "resend_host" {
   vault               = data.onepassword_vault.configured["homelab"].uuid
 }
 
+resource "onepassword_item" "roborock_local_server" {
+  for_each = local.onepassword_roborock_local_servers
+
+  category            = "login"
+  password_wo         = ephemeral.random_password.roborock_local_server[each.key].result
+  password_wo_version = local.onepassword_versions["roborock_local_server/${each.key}"]
+  title               = "${each.value.name}: ${local.machine_fqdns[each.key]}"
+  url                 = "${each.value.scheme}://${each.value.hostname}:${each.value.port}${each.value.path}"
+  username            = each.value.username
+  vault               = data.onepassword_vault.configured["homelab"].uuid
+
+  section_map = {
+    protocol = {
+      field_map = {
+        pin = {
+          type  = "CONCEALED"
+          value = random_password.roborock_protocol_pin[each.key].result
+        }
+      }
+    }
+  }
+}
+
 resource "onepassword_item" "tailscale_auth_key" {
   for_each = local.tailscale_key_machines
 
@@ -333,6 +374,16 @@ resource "onepassword_item" "talosconfig" {
   tags                  = [local.access.onepassword.ownership_tag]
   title                 = "Talos Client Configuration"
   vault                 = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
+resource "random_password" "roborock_protocol_pin" {
+  for_each = local.onepassword_roborock_local_servers
+
+  length  = 6
+  lower   = false
+  numeric = true
+  special = false
+  upper   = false
 }
 
 # Keep kubeconfig tracking separate: its trigger waits for bootstrap, whose node
