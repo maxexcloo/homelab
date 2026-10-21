@@ -36,18 +36,14 @@ run = "scripts/opentofu.sh plan"
 
 # Development
 [tasks.check]
-run = "hk check --all"
-depends = ["check:access", "check:mise", "check:updates"]
+depends = ["check:access", "check:mise", "check:updates", "hooks:check"]
 
 [tasks."check:access"]
 run = "python3 scripts/test_access.py"
 
 [tasks.fmt]
-depends = ["fmt:mise"]
-run = """
-oxfmt --write --no-error-on-unmatched-pattern .
-tofu fmt -recursive
-"""
+depends = ["fmt:mise", "fmt:oxfmt"]
+run = "tofu fmt -recursive"
 
 # Dependencies
 # Cluster-compatible clients follow the platform policies.
