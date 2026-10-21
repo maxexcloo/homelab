@@ -22,7 +22,10 @@ set -f
 set -- $command
 sender=false
 for word in "$@"; do
-  [ "$word" = --sender ] && sender=true
+  case $word in
+    --remove-source-files | --remove-source-files=* | --remove-sent-files | --remove-sent-files=*) refuse ;;
+    --sender) sender=true ;;
+  esac
 done
 paths=0
 for word in "$@"; do
