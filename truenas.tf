@@ -254,7 +254,7 @@ resource "truenas_app" "talos_container" {
         depends_on = ["talos"]
         devices    = ["/dev/net/tun:/dev/net/tun"]
         # renovate: datasource=docker depName=tailscale/tailscale
-        image        = "tailscale/tailscale:v1.104.1"
+        image        = "tailscale/tailscale:v1.104.2"
         network_mode = "service:talos"
         restart      = "unless-stopped"
         environment = {

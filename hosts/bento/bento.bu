@@ -12,7 +12,7 @@ passwd:
     - name: core
       ssh_authorized_keys:
         - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaF+DCJq1CyGrafKzDMtNjW02M5XJoH5MLFFSlHPjyz Max Schaefer
-        # Kimbap pushes the ComfyUI model library and pulls Studio's staged files.
+        # Kimbap pulls Bento's active model library.
         - restrict,command="/var/home/core/.local/bin/ai-sync-rsync" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINSF/XgIGlHjO79F6qvkna9yLEGslfMqLMC53/i1+obi kimbap AI sync
 
 storage:
@@ -97,7 +97,7 @@ systemd:
 
         [Service]
         Type=oneshot
-        ExecStart=/usr/bin/rpm-ostree install --allow-inactive --idempotent btop rocm-smi https://github.com/Lexonight1/thermalright-trcc-linux/releases/download/v9.10.9/trcc-linux-9.10.9-1.fc44.noarch.rpm
+        ExecStart=/usr/bin/rpm-ostree install --allow-inactive --idempotent btop rocm-smi https://github.com/Lexonight1/thermalright-trcc-linux/releases/download/v9.11.2/trcc-linux-9.11.2-1.fc44.noarch.rpm
         ExecStart=/usr/bin/touch /etc/ucore-autorebase/displays
         ExecStart=/usr/bin/systemctl reboot
 
