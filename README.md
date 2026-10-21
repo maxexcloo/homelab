@@ -158,10 +158,8 @@ redacted. Changing a stored login credential doesn't change the matching host
 account.
 
 Service entries opt into generated 1Password logins with `credentials.username`.
-Their name and endpoint define the item title and URL. Optional
-`credentials.fields` maps section and field names to password-generation policies;
-each policy requires `length` and can set `lower`, `numeric`, `special` and `upper`.
-Generated custom fields are concealed in 1Password and stored in OpenTofu state.
+Their name and endpoint define the item title and URL. Application-specific
+settings remain in the application configuration.
 
 ### Backup Recovery
 

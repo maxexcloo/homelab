@@ -43,7 +43,6 @@ locals {
   onepassword_service_access = merge([
     for machine_name, machine in local.machines : {
       for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
-        fields   = try(service.credentials.fields, {})
         name     = service.name
         url      = "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
         username = service.credentials.username
@@ -51,14 +50,6 @@ locals {
       if can(service.credentials)
     }
   ]...)
-
-  onepassword_service_fields = merge(flatten([
-    for service_key, service in local.onepassword_service_access : [
-      for section_name, fields in service.fields : {
-        for field_name, policy in fields : "${service_key}/${section_name}/${field_name}" => policy
-      }
-    ]
-  ])...)
 
   onepassword_talos_recovery_note_values = {
     for name, cluster in local.clusters : name => jsonencode({
@@ -320,17 +311,6 @@ resource "onepassword_item" "service_access" {
   url                 = each.value.url
   username            = each.value.username
   vault               = data.onepassword_vault.configured["homelab"].uuid
-
-  section_map = {
-    for section_name, fields in each.value.fields : section_name => {
-      field_map = {
-        for field_name, policy in fields : field_name => {
-          type  = "CONCEALED"
-          value = random_password.service_field["${each.key}/${section_name}/${field_name}"].result
-        }
-      }
-    }
-  }
 }
 
 resource "onepassword_item" "tailscale_auth_key" {
@@ -389,16 +369,6 @@ resource "onepassword_item" "talosconfig" {
   tags                  = [local.access.onepassword.ownership_tag]
   title                 = "Talos Client Configuration"
   vault                 = data.onepassword_vault.configured["cluster/${each.key}"].uuid
-}
-
-resource "random_password" "service_field" {
-  for_each = local.onepassword_service_fields
-
-  length  = each.value.length
-  lower   = try(each.value.lower, null)
-  numeric = try(each.value.numeric, null)
-  special = try(each.value.special, null)
-  upper   = try(each.value.upper, null)
 }
 
 # Keep kubeconfig tracking separate: its trigger waits for bootstrap, whose node
