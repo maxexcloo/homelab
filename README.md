@@ -83,6 +83,18 @@ Renovate opens update pull requests from [renovate.json5](renovate.json5), and
 accepting updates. Host and cluster upgrades are done on purpose; changing the
 installation configuration doesn't update existing hosts.
 
+### Client Certificates
+
+Set `mtls: true` on a tunnel ingress entry to enable [Cloudflare client certificates](https://developers.cloudflare.com/api-shield/security/mtls/)
+for its hostname. Kubelab owns enforcement and webhook exceptions. After review,
+activate and verify its WAF rule before opening the application route.
+
+Keep one certificate per device, with its private key, encrypted PKCS12 identity,
+password and expiry in 1Password. Choose its validity when issuing it and renew
+before expiry. For a lost device, revoke its certificate and application tokens,
+wait for Cloudflare's `revoked` status and test a fresh connection. Reconnect
+existing WebSockets to recheck certificates.
+
 ### TrueNAS Configuration
 
 Storage policy and SMB shares sit beside their datasets in `data/storage.yaml`,
