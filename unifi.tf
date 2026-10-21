@@ -6,10 +6,10 @@ data "unifi_network" "configured" {
 
 locals {
   unifi_clients = {
-    for interface in local.machine_interface_assignments : interface.mac => {
-      fixed_ip    = interface.bridge == null ? interface.address : null
+    for interface in local.machine_interface_assignments : interface.client_mac => {
+      fixed_ip    = interface.address
       hostname    = interface.primary ? local.machine_fqdns[interface.machine] : null
-      mac         = interface.mac
+      mac         = interface.client_mac
       name        = local.machine_hostnames[interface.machine]
       network_key = "${interface.network}/${interface.subnet}"
     }

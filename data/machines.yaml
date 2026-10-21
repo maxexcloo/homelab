@@ -302,6 +302,7 @@ machines:
         - name: enp3s0
           address: 10.4.0.3
           bridge: br4
+          bridge_mac_address: e2:2a:94:db:be:24
           mac_address: c8:ff:bf:01:52:e1
       network_configuration:
         ipv6gateway: fe80::2870:4eff:fe6e:59cc

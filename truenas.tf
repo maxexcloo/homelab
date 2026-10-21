@@ -118,7 +118,9 @@ locals {
   ])
 
   truenas_talos_container_network_key = local.unifi_clients[
-    lower(local.truenas_hosts_services[local.truenas_talos_container_host].interface.mac_address)
+    local.truenas_machine_interfaces_by_mac[
+      lower(local.truenas_hosts_services[local.truenas_talos_container_host].interface.mac_address)
+    ].client_mac
   ].network_key
 
   truenas_talos_container_storage_path = truenas_dataset.root[

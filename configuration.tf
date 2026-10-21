@@ -2,6 +2,7 @@ resource "terraform_data" "configuration_validation" {
   lifecycle {
     precondition {
       condition = (
+        length(distinct(local.machine_interface_assignments[*].client_mac)) == length(local.machine_interface_assignments) &&
         length(distinct(local.machine_interface_assignments[*].mac)) == length(local.machine_interface_assignments) &&
         length(distinct(local.machine_network_addresses)) == length(local.machine_network_addresses) &&
         length(distinct(local.machine_public_ipv4_addresses)) == length(local.machine_public_ipv4_addresses) &&

@@ -64,10 +64,12 @@ locals {
       for interface_index, interface in try(machine.interfaces, []) : {
         address = try(interface.address, null)
         bridge  = try(interface.bridge, null)
-        mac     = lower(interface.mac_address)
-        machine = machine_name
-        network = machine.network
-        primary = interface_index == 0
+        # A bridge answers for its address with its own MAC, not its member's.
+        client_mac = lower(try(interface.bridge, null) == null ? interface.mac_address : interface.bridge_mac_address)
+        mac        = lower(interface.mac_address)
+        machine    = machine_name
+        network    = machine.network
+        primary    = interface_index == 0
         subnet = try(one([
           for subnet_name, subnet in try(local.networks[machine.network].subnets, {}) : subnet_name
           if try(interface.address, null) != null && cidrcontains(subnet.cidr, interface.address)
