@@ -162,6 +162,17 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
+        roborock:
+          description: Local Vacuum Server
+          dns_lan: true
+          dns_record: true
+          group: Smart Home
+          hostname: api-rr.hass.mbk.excloo.net
+          icon: mdi-robot-vacuum
+          name: Roborock Local Server
+          path: /admin
+          port: 555
+          scheme: https
         vscode:
           description: Browser IDE
           group: Smart Home
