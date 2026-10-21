@@ -162,6 +162,33 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
+        matter-server:
+          description: Matter Device Management
+          group: Smart Home
+          icon: sh-matter
+          name: Matter Server
+          path: /core_matter_server
+          port: 443
+          scheme: https
+          siteMonitor: ""
+        mqtt-explorer:
+          description: MQTT Topics & Messages
+          group: Smart Home
+          icon: sh-mqtt
+          name: MQTT Explorer
+          path: /a0d7b954_mqtt-explorer
+          port: 443
+          scheme: https
+          siteMonitor: ""
+        piper:
+          description: Local Text-to-Speech
+          group: Smart Home
+          icon: mdi-account-voice
+          name: Piper
+          path: /core_piper
+          port: 443
+          scheme: https
+          siteMonitor: ""
         roborock:
           description: Local Vacuum Server
           dns_lan: true
@@ -175,6 +202,33 @@ machines:
           scheme: https
           credentials:
             username: max@excloo.com
+        scrypted:
+          description: Camera Integration
+          group: Smart Home
+          icon: sh-scrypted
+          name: Scrypted
+          path: /09e60fb6_scrypted
+          port: 443
+          scheme: https
+          siteMonitor: ""
+        ssh:
+          description: SSH & Web Terminal
+          group: Smart Home
+          icon: mdi-console
+          name: Advanced SSH & Web Terminal
+          path: /a0d7b954_ssh
+          port: 443
+          scheme: https
+          siteMonitor: ""
+        tailscale:
+          description: Private Network Access
+          group: Smart Home
+          icon: sh-tailscale
+          name: Tailscale
+          path: /a0d7b954_tailscale
+          port: 443
+          scheme: https
+          siteMonitor: ""
         vscode:
           description: Browser IDE
           group: Smart Home
