@@ -121,6 +121,8 @@ machines:
             - hostname: remote-hass.excloo.com
               mtls_rule: homelab-hass-mtls
               service: https://homeassistant
+              origin_request:
+                origin_server_name: hass.mbk.excloo.net
       interfaces:
         - address: 10.0.0.2
           mac_address: 84:47:09:67:c8:33

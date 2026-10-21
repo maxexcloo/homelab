@@ -103,12 +103,7 @@ locals {
             try(route.path, null) != null ? {
               path = route.path
             } : {},
-            try(route.mtls_rule, null) != null ? {
-              origin_request = {
-                no_tls_verify      = false
-                origin_server_name = local.machine_fqdns[name]
-              }
-              } : try(route.origin_request, null) != null ? {
+            try(route.origin_request, null) != null ? {
               origin_request = route.origin_request
             } : {},
           )
@@ -279,7 +274,23 @@ resource "cloudflare_certificate_authorities_hostname_associations" "mtls" {
   hostnames = sort(distinct([for route in values(local.cloudflare_mtls_routes) : route.hostname if route.zone == each.key]))
   zone_id   = data.cloudflare_zone.configured[each.key].zone_id
 
-  depends_on = [terraform_data.cloudflare_mtls_validation]
+  lifecycle {
+    precondition {
+      # Kubelab owns the zone ruleset; require its protection before publication.
+      condition = alltrue([
+        for route in values(local.cloudflare_mtls_routes) : anytrue([
+          for rule in data.cloudflare_ruleset.mtls[each.key].rules :
+          rule.ref == route.mtls_rule && rule.enabled && rule.action == "block" && rule.expression == route.expression
+        ]) if route.zone == each.key
+      ])
+      error_message = "Deploy the matching Kubelab mTLS block rules before publishing protected tunnel hostnames."
+    }
+
+    precondition {
+      condition     = alltrue([for rule in data.cloudflare_ruleset.mtls[each.key].rules : rule.action != "skip"])
+      error_message = "Review WAF skip rules before publishing mTLS hostnames; a preceding skip could bypass protection."
+    }
+  }
 }
 
 resource "cloudflare_dns_record" "managed" {
@@ -351,27 +362,4 @@ resource "cloudflare_zone_setting" "ssl" {
   setting_id = "ssl"
   value      = each.value
   zone_id    = data.cloudflare_zone.configured[each.key].zone_id
-}
-
-resource "terraform_data" "cloudflare_mtls_validation" {
-  for_each = local.cloudflare_mtls_routes
-
-  input = each.value.hostname
-
-  lifecycle {
-    precondition {
-      # Kubelab owns the zone ruleset. Refuse publication until its exact rule
-      # blocks missing, invalid, expired and revoked certificates on every path.
-      condition = anytrue([
-        for rule in data.cloudflare_ruleset.mtls[each.value.zone].rules :
-        rule.ref == each.value.mtls_rule && rule.enabled && rule.action == "block" && rule.expression == each.value.expression
-      ])
-      error_message = "Deploy and verify Kubelab's ${each.value.mtls_rule} WAF block rule before publishing ${each.value.hostname}."
-    }
-
-    precondition {
-      condition     = alltrue([for rule in data.cloudflare_ruleset.mtls[each.value.zone].rules : rule.action != "skip"])
-      error_message = "Review WAF skip rules before publishing an mTLS-protected hostname; a preceding skip could bypass its block rule."
-    }
-  }
 }
