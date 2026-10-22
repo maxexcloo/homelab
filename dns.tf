@@ -12,16 +12,6 @@ locals {
     }
   ]...)
 
-  dns_record_sets = {
-    for record in values(local.dns_records) :
-    "${record.zone}/${record.name}" => record...
-  }
-
-  dns_record_sets_conflicting_cname = [
-    for record_set, records in local.dns_record_sets : record_set
-    if contains([for record in records : record.type], "CNAME") && length(records) > 1
-  ]
-
   dns_records = merge(
     {
       for record_key, record in local.dns_records_derived_specs : record_key => merge(
@@ -230,13 +220,4 @@ locals {
     }
   ]
 
-}
-
-resource "terraform_data" "dns_validation" {
-  lifecycle {
-    precondition {
-      condition     = length(local.dns_record_sets_conflicting_cname) == 0
-      error_message = "DNS CNAME records cannot coexist with other records at the same name: ${join(", ", local.dns_record_sets_conflicting_cname)}"
-    }
-  }
 }

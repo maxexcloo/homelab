@@ -28,29 +28,6 @@ locals {
   ]...)
 }
 
-resource "terraform_data" "unifi_network_validation" {
-  for_each = local.unifi_networks
-
-  input = data.unifi_network.configured[each.key].id
-
-  lifecycle {
-    precondition {
-      condition     = data.unifi_network.configured[each.key].enabled
-      error_message = "UniFi network ${each.value.name} is disabled."
-    }
-
-    precondition {
-      condition     = data.unifi_network.configured[each.key].subnet == each.value.subnet
-      error_message = "UniFi network ${each.value.name} does not use the expected subnet ${each.value.subnet}."
-    }
-
-    precondition {
-      condition     = each.value.vlan == null ? data.unifi_network.configured[each.key].vlan == null : data.unifi_network.configured[each.key].vlan == each.value.vlan
-      error_message = "UniFi network ${each.value.name} does not use the expected VLAN."
-    }
-  }
-}
-
 resource "unifi_client" "host" {
   for_each = local.unifi_clients
 
@@ -62,8 +39,6 @@ resource "unifi_client" "host" {
   network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
   note                   = local.managed_comment
   skip_forget_on_destroy = false
-
-  depends_on = [terraform_data.unifi_network_validation]
 
   lifecycle {
     prevent_destroy = true

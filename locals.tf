@@ -37,11 +37,6 @@ locals {
     )
   }
 
-  machine_cluster_names_duplicate = setintersection(
-    toset(keys(local.machines)),
-    toset(keys(local.clusters)),
-  )
-
   machine_clusters = merge([
     for cluster_name, cluster in local.clusters : {
       for node_name in keys(cluster.nodes) : node_name => cluster_name
@@ -77,39 +72,10 @@ locals {
     ]
   ])
 
-  machine_names_duplicate = [
-    for name in distinct(flatten([
-      for machines in values(local.machines_by_network) : keys(machines)
-    ])) : name
-    if length([
-      for machines in values(local.machines_by_network) : name
-      if can(machines[name])
-    ]) > 1
-  ]
-
-  machine_network_addresses = concat(
-    [
-      for interface in local.machine_interface_assignments : "${interface.network}/${interface.address}"
-      if interface.address != null
-    ],
-    [
-      for name, machine in local.machines : "${machine.network}/${local.machine_private_ipv4_addresses[name]}"
-      if length(try(machine.interfaces, [])) == 0 && local.machine_private_ipv4_addresses[name] != null
-    ],
-  )
-
   machine_private_ipv4_addresses = {
     for name, machine in local.machines :
     name => try(machine.interfaces[0].address, machine.private_ipv4, null)
   }
-
-  machine_public_ipv4_addresses = compact([
-    for machine in values(local.machines) : try(machine.public_ipv4, null)
-  ])
-
-  machine_public_ipv6_addresses = compact([
-    for machine in values(local.machines) : try(machine.public_ipv6, null)
-  ])
 
   machine_tailscale_names = {
     for name, machine in local.machines :

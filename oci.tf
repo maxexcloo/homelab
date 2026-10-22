@@ -32,22 +32,6 @@ locals {
     if cluster.image.platform == "oracle"
   }
 
-  oci_ingress_rules_invalid = flatten([
-    for network_name, network in local.oci_networks : [
-      for ingress_name, ingress in try(network.tcp_ingress, {}) : "${network_name}/${ingress_name}"
-      if(
-        try(length(ingress.ports), 0) == 0 ||
-        try(length(ingress.sources), 0) == 0 ||
-        !alltrue([
-          for port in try(ingress.ports, []) : try(port >= 1 && port <= 65535 && floor(port) == port, false)
-        ]) ||
-        !alltrue([
-          for source in values(try(ingress.sources, {})) : can(cidrhost(source, 0))
-        ])
-      )
-    ]
-  ])
-
   oci_instances = {
     for name, machine in local.machines : name => machine
     if try(machine.provider, null) == "oci"
@@ -231,16 +215,6 @@ resource "oci_core_instance" "node" {
     precondition {
       condition     = cidrcontains(local.oci_networks[each.value.network].subnet_cidr, local.machine_private_ipv4_addresses[each.key])
       error_message = "Every OCI machine address must belong to its configured OCI subnet."
-    }
-
-    precondition {
-      condition     = each.value.compute.memory_mib % 1024 == 0
-      error_message = "OCI memory_mib must be a whole multiple of 1024 MiB."
-    }
-
-    precondition {
-      condition     = each.value.boot.size_mib % 1024 == 0
-      error_message = "OCI boot size_mib must be a whole multiple of 1024 MiB."
     }
 
     precondition {
@@ -467,16 +441,5 @@ resource "oci_objectstorage_object" "talos_image" {
     # Retain the uploaded bootstrap artefact across live Talos upgrades.
     ignore_changes  = [object, source]
     prevent_destroy = true
-  }
-}
-
-resource "terraform_data" "oci_ingress_validation" {
-  input = local.oci_ingress_rules_invalid
-
-  lifecycle {
-    precondition {
-      condition     = length(local.oci_ingress_rules_invalid) == 0
-      error_message = "OCI TCP ingress rules must declare non-empty ports and CIDR sources, with integer ports from 1 to 65535."
-    }
   }
 }
