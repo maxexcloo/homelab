@@ -8,13 +8,6 @@ clusters_path="${repo_dir}/data/clusters.yaml"
 kubeconfig_dest="${HOME}/.kube/config"
 talosconfig_dest="${HOME}/.talos/config"
 
-for tool in jq kubectl op talosctl yq; do
-  if ! command -v "${tool}" >/dev/null 2>&1; then
-    echo "error: ${tool} is required but not found in PATH." >&2
-    exit 1
-  fi
-done
-
 if ! cluster_vault_prefix="$(yq -er '.onepassword.cluster_vault_prefix | select(tag == "!!str" and length > 0)' "${access_path}")"; then
   echo "error: .onepassword.cluster_vault_prefix is required and must be a non-empty string." >&2
   exit 1
@@ -37,24 +30,9 @@ install_config() {
 }
 
 get_note() {
-  local item_id
-
-  if ! item_id="$(jq --arg title "$2" -r '
-    [.[] | select(.title == $title)] |
-    if length > 1 then error("Multiple items have the requested title")
-    else .[0].id // "" end
-  ' <<<"${vault_items}")"; then
-    echo "error: could not identify '$2' in vault '$1'." >&2
-    exit 1
-  fi
-  [[ -n "${item_id}" ]] || return 1
-
   # Vault names containing colons cannot be used in op:// references.
-  if ! op item get "${item_id}" --format json --vault "$1" |
-    jq -er '.fields[] | select(.id == "notesPlain") | .value | select(length > 0)' >"$3"; then
-    echo "error: could not read a non-empty configuration from '$2' in vault '$1'." >&2
-    exit 1
-  fi
+  op item get "$2" --format json --vault "$1" |
+    jq -er '.fields[] | select(.id == "notesPlain") | .value | select(length > 0)' >"$3"
 }
 
 kubeconfig_paths=()
@@ -69,11 +47,6 @@ while IFS= read -r cluster; do
   talos_file="${tmpdir}/${cluster}.talosconfig"
 
   echo "  - Fetching ${cluster} from vault '${vault}'..."
-
-  if ! vault_items="$(op item list --format json --vault "${vault}")"; then
-    echo "error: could not list items in vault '${vault}'." >&2
-    exit 1
-  fi
 
   if get_note "${vault}" "Kubernetes Client Configuration" "${kube_file}"; then
     context="$(kubectl --kubeconfig "${kube_file}" config current-context)"
