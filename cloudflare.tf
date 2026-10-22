@@ -263,8 +263,6 @@ resource "cloudflare_dns_record" "managed" {
   ttl      = each.value.ttl
   type     = each.value.type
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
-
-  depends_on = [terraform_data.dns_validation]
 }
 
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {

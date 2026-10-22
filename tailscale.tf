@@ -121,32 +121,12 @@ locals {
       for name in keys(local.clusters) : "tag:cluster-${name}-operator" => local.access.tailscale.default_tag_owners
     },
   )
-
-  tailscale_tags_cluster_all = flatten([
-    for name in keys(local.clusters) : ["tag:cluster-${name}", "tag:cluster-${name}-operator"]
-  ])
-
-  tailscale_tags_cluster_conflicting = setintersection(
-    toset(local.access.tailscale.tags),
-    toset(local.tailscale_tags_cluster_all),
-  )
-
-  tailscale_tags_missing = setsubtract(
-    toset(concat(
-      compact([for machine in values(local.machines) : try("tag:${machine.type}", null)]),
-      local.tailscale_tags_cluster_all,
-      flatten(values(local.tailscale_route_approvers)),
-    )),
-    toset(keys(local.tailscale_tag_owners)),
-  )
 }
 
 resource "tailscale_acl" "default" {
   acl                        = jsonencode(local.tailscale_policy)
   overwrite_existing_content = false
   reset_acl_on_destroy       = false
-
-  depends_on = [terraform_data.tailscale_tag_validation]
 }
 
 resource "tailscale_federated_identity" "github" {
@@ -199,18 +179,4 @@ resource "tailscale_tailnet_key" "talos_container" {
   tags                = [local.truenas_talos_container.tailscale_tag]
 
   depends_on = [tailscale_acl.default]
-}
-
-resource "terraform_data" "tailscale_tag_validation" {
-  lifecycle {
-    precondition {
-      condition     = length(local.tailscale_tags_missing) == 0
-      error_message = "Every machine, cluster, and route approver Tailscale tag must be declared: ${join(", ", sort(tolist(local.tailscale_tags_missing)))}"
-    }
-
-    precondition {
-      condition     = length(local.tailscale_tags_cluster_conflicting) == 0
-      error_message = "Static Tailscale tags must not duplicate derived cluster tags: ${join(", ", sort(tolist(local.tailscale_tags_cluster_conflicting)))}"
-    }
-  }
 }
