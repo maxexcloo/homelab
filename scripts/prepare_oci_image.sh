@@ -19,35 +19,10 @@ else
   fi
 fi
 
-# Image Factory supplies QCOW2 directly; older state may still contain a raw URL.
-case "${image_url%%[?#]*}" in
-  https://factory.talos.dev/*.raw.xz) image_url="${image_url/.raw.xz/.qcow2}" ;;
-  https://factory.talos.dev/*.raw.gz) image_url="${image_url/.raw.gz/.qcow2}" ;;
-esac
-
-archive_name="$(basename "${image_url%%[?#]*}")"
-case "${archive_name}" in
-  *.qcow2) image_name="${archive_name}" ;;
-  *.raw.gz) image_name="${archive_name%.raw.gz}.qcow2" ;;
-  *.raw.xz) image_name="${archive_name%.raw.xz}.qcow2" ;;
-  *) echo "error: unsupported image archive: ${archive_name}" >&2; exit 1 ;;
-esac
 read -r image_hash _ < <(printf '%s' "${image_url}" | shasum -a 256)
 image_directory="${cache_dir}/images/${image_hash}"
-image_path="${image_directory}/${image_name}"
+image_path="${image_directory}/$(basename "${image_url%%[?#]*}")"
 mkdir -p "${image_directory}"
-work_dir="$(mktemp -d "${cache_dir}/prepare.XXXXXX")"
-trap 'rm -fr -- "${work_dir}"' EXIT
-curl --fail --location --output "${work_dir}/download" --retry 3 "${image_url}"
-case "${archive_name}" in
-  *.qcow2) mv "${work_dir}/download" "${work_dir}/image.qcow2" ;;
-  *)
-    case "${archive_name}" in
-      *.gz) gzip -dc "${work_dir}/download" >"${work_dir}/image.raw" ;;
-      *.xz) xz -dc "${work_dir}/download" >"${work_dir}/image.raw" ;;
-    esac
-    qemu-img convert -f raw -O qcow2 "${work_dir}/image.raw" "${work_dir}/image.qcow2"
-    ;;
-esac
-mv "${work_dir}/image.qcow2" "${image_path}"
+curl --fail --location --output "${image_path}.part" --retry 3 "${image_url}"
+mv "${image_path}.part" "${image_path}"
 printf 'Prepared %s\nExport before planning the upload:\n  export TF_VAR_oci_talos_image_path="%s"\n' "${image_path}" "${image_path}"
