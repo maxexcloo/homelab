@@ -87,13 +87,8 @@ installation configuration doesn't update existing hosts.
 
 Set `mtls: true` on a tunnel ingress entry to enable [Cloudflare client certificates](https://developers.cloudflare.com/api-shield/security/mtls/)
 for its hostname. Kubelab owns enforcement and webhook exceptions. After review,
-activate and verify its WAF rule before opening the application route.
-
-Keep one certificate per device, with its private key, encrypted PKCS12 identity,
-password and expiry in 1Password. Choose its validity when issuing it and renew
-before expiry. For a lost device, revoke its certificate and application tokens,
-wait for Cloudflare's `revoked` status and test a fresh connection. Reconnect
-existing WebSockets to recheck certificates.
+activate and verify its WAF rule before opening the application route. Keep one
+certificate per device in 1Password.
 
 ### TrueNAS Configuration
 
@@ -183,23 +178,13 @@ Service entries opt into generated 1Password logins with `credentials.username`.
 Their name and endpoint define the item title and URL. Application-specific
 settings remain in the application configuration.
 
-### Backup Recovery
-
-Keep backup receivers read-only and unmounted. Replicate recursively without the
-source mount or sharing properties, and leave receiver trees out of destination
-snapshot jobs and onward replication. After rebuilding a receiver, verify matching
-snapshot GUIDs and an incremental transfer. Mount recovery snapshots read-only
-with `nosuid,nodev,noexec` in a root-owned `0700` directory, then unmount them when
-finished.
-
 ### Cluster Installation & Upgrades
 
 Architecture, versions and extensions come from the cluster inventory. For the
 first OCI image upload, run `mise run oci:image:prepare` with a configured cluster
 or an explicit Image Factory URL, then export the printed
 `TF_VAR_oci_talos_image_path` before planning. You need an explicit URL when
-state has no cluster image output. Raw images from other sources need `qemu-img`
-and the right decompressor.
+state has no cluster image output.
 
 Review upstream [Talos](https://docs.siderolabs.com/talos/) and
 [Kubernetes](https://docs.siderolabs.com/kubernetes-guides/) upgrade instructions
@@ -215,15 +200,8 @@ for the configured versions. Upgrade one cluster at a time:
 3. Upgrade Kubernetes and verify node health again.
 4. Review and approve the OpenTofu reconciliation plan before applying it.
 
-Single-node upgrades mean an outage. If disruption budgets block draining, use
-`--drain=false`, but only for an approved Talos upgrade; workloads still stop
-during the reboot or container replacement. Changing the configured installer
-doesn't upgrade installed Talos nodes, while changing a container image replaces
-its running userspace. Applying a new Kubernetes version can restart components.
-Follow the upgrade steps before reconciling. Existing state outputs can hold an
-older installer, so get the image you want from Image Factory. Configuration
-applies use `no_reboot`, so handle changes that need a reboot in an approved
-maintenance window.
+Single-node upgrades mean an outage. Changing the configured installer doesn't
+upgrade installed Talos nodes, and configuration applies use `no_reboot`.
 
 ### Host Installation
 
@@ -239,19 +217,9 @@ channels are update channels, not fixed release pins.
 
 ### State Recovery
 
-Use the backend location configured in [backend.tf](backend.tf). Stop plans and
-applies before recovery:
-
-1. Record the operator, OpenTofu version, workspace and affected backend generation;
-   save the current resource list.
-2. Securely copy the current and selected historical generations outside Git.
-3. Restore the selected generation at the same location and compare its resource
-   list with the saved list.
-4. Review a refresh-only plan and obtain explicit approval before corrective apply.
-
-Don't migrate the backend to recover. Before force-unlocking state, find its lock
-holder, process and timestamp, and prove no apply is running. Never apply
-archived state or branches to the active backend.
+Restore a previous generation of the versioned state object in the backend
+configured in [backend.tf](backend.tf), then review a refresh-only plan. Don't
+migrate the backend to recover.
 
 ## Licence
 
