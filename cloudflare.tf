@@ -131,10 +131,6 @@ locals {
     ]
   ])
 
-  cloudflare_tunnel_route_entries_by_hostname = {
-    for route in local.cloudflare_tunnel_route_entries : route.hostname => route...
-  }
-
   # Path-specific ingress rules repeat their hostname; each hostname needs one DNS route.
   cloudflare_tunnel_routes = {
     for route in distinct(local.cloudflare_tunnel_route_entries) : "${route.consumer}/${route.hostname}" => route

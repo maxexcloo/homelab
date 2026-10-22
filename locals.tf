@@ -16,7 +16,6 @@ locals {
     hosts = {
       for name, machine in local.machines : name => try(coalesce(
         try(local.dns_records_derived_specs["machine/${name}/a"].name, local.dns_records_derived_specs["machine/${name}/aaaa"].name, null),
-        try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
         try(format("%s.%s",
           local.machine_hostnames[name],
           data.unifi_network.configured[local.unifi_clients[lower(machine.interfaces[0].mac_address)].network_key].domain_name,
