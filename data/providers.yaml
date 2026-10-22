@@ -30,8 +30,6 @@ providers:
     icon: si-1password-#ffffff
     name: 1Password
     url: https://my.1password.com
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
@@ -41,8 +39,6 @@ providers:
     icon: si-backblaze-#ffffff
     name: Backblaze
     url: https://backblaze.com
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
@@ -52,16 +48,12 @@ providers:
     icon: si-cloudflare-#ffffff
     name: Cloudflare
     url: https://dash.cloudflare.com
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
     dns:
       query-type: A
       url: 1.1.1.1
-      alerts:
-        - type: email
       conditions:
         - "[CONNECTED] == true"
         - "[DNS_RCODE] == NOERROR"
@@ -74,16 +66,12 @@ providers:
     icon: sh-control-d
     name: Control D
     url: https://controld.com
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
     dns:
       query-type: A
       url: 76.76.2.0
-      alerts:
-        - type: email
       conditions:
         - "[CONNECTED] == true"
         - "[DNS_RCODE] == NOERROR"
@@ -93,8 +81,6 @@ providers:
     icon: si-flydotio-#ffffff
     name: Fly.io
     url: https://fly.io/dashboard
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
@@ -111,8 +97,6 @@ providers:
     icon: si-github-#ffffff
     name: GitHub
     url: https://github.com/maxexcloo
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
@@ -121,8 +105,6 @@ providers:
     icon: si-oracle-#ffffff
     name: Oracle Cloud
     url: https://cloud.oracle.com
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
@@ -131,8 +113,6 @@ providers:
     icon: si-resend-#ffffff
     name: Resend
     url: https://resend.com/overview
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
@@ -141,8 +121,6 @@ providers:
     icon: tailscale-light
     name: Tailscale
     url: https://login.tailscale.com/admin
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
@@ -154,8 +132,6 @@ providers:
     icon: si-ubiquiti-#ffffff
     name: UniFi
     url: https://unifi.ui.com
-    alerts:
-      - type: email
     conditions:
       - "[STATUS] == any(200, 401, 403)"
       - "[RESPONSE_TIME] < 5000"
