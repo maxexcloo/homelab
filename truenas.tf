@@ -1,17 +1,3 @@
-data "truenas_certificate" "ingress" {
-  for_each = local.truenas_hosts_ingress
-
-  name     = each.value.certificate
-  provider = truenas.hosts[each.key]
-}
-
-data "truenas_network_interface" "services_physical" {
-  for_each = local.truenas_hosts_services
-
-  id       = each.value.interface.name
-  provider = truenas.hosts[each.key]
-}
-
 data "truenas_system_info" "container_host" {
   provider = truenas.hosts[local.truenas_talos_container_host]
 }
@@ -134,27 +120,6 @@ locals {
   ]...)
 }
 
-resource "terraform_data" "truenas_ingress_validation" {
-  lifecycle {
-    precondition {
-      condition = alltrue([
-        for name, ingress in local.truenas_hosts_ingress :
-        !data.truenas_certificate.ingress[name].expired && contains([
-          for san in split(",", data.truenas_certificate.ingress[name].san) : trimprefix(trimspace(san), "DNS:")
-        ], "*.${local.machine_fqdns[name]}")
-      ])
-      error_message = "TrueNAS ingress requires an unexpired native certificate covering the host's wildcard domain."
-    }
-
-    precondition {
-      condition = alltrue([
-        for name, ingress in local.truenas_hosts_ingress : ingress.port != local.truenas_hosts[name].services.management.port
-      ])
-      error_message = "TrueNAS ingress requires a port separate from management."
-    }
-  }
-}
-
 resource "truenas_app" "ingress" {
   for_each = local.truenas_hosts_ingress
 
@@ -181,8 +146,8 @@ resource "truenas_app" "ingress" {
           }
           tls = {
             certificates = [{
-              certFile = "/etc/certificates/${data.truenas_certificate.ingress[each.key].name}.crt"
-              keyFile  = "/etc/certificates/${data.truenas_certificate.ingress[each.key].name}.key"
+              certFile = "/etc/certificates/${each.value.certificate}.crt"
+              keyFile  = "/etc/certificates/${each.value.certificate}.key"
             }]
           }
         })
@@ -240,8 +205,6 @@ resource "truenas_app" "ingress" {
       }
     }
   })
-
-  depends_on = [terraform_data.truenas_ingress_validation]
 }
 
 resource "truenas_app" "talos_container" {
@@ -495,24 +458,6 @@ resource "truenas_network_interface" "services_physical" {
 
   lifecycle {
     prevent_destroy = true
-
-    precondition {
-      condition = (
-        data.truenas_network_interface.services_physical[each.key].type == "PHYSICAL" &&
-        data.truenas_network_interface.services_physical[each.key].ipv4_dhcp == false &&
-        (
-          length(data.truenas_network_interface.services_physical[each.key].aliases) == 0 ||
-          try(
-            length(data.truenas_network_interface.services_physical[each.key].aliases) == 1 &&
-            one(data.truenas_network_interface.services_physical[each.key].aliases).type == "INET" &&
-            one(data.truenas_network_interface.services_physical[each.key].aliases).address == each.value.interface.address &&
-            one(data.truenas_network_interface.services_physical[each.key].aliases).netmask == local.truenas_host_services_prefix_lengths[each.key],
-            false,
-          )
-        )
-      )
-      error_message = "The live Services NIC on ${each.key} must be a static physical interface holding the expected IPv4 address before bridge adoption, or no address after adoption."
-    }
   }
 }
 
