@@ -1,3 +1,11 @@
+# Kept by hand: TrueNAS issues the S3 key and Restic owns its repository password.
+data "onepassword_item" "s3_backups" {
+  for_each = local.clusters
+
+  title = "S3 Backups: ${each.key}"
+  vault = data.onepassword_vault.configured["homelab"].uuid
+}
+
 data "onepassword_vault" "configured" {
   for_each = local.onepassword_vaults
 
@@ -240,6 +248,28 @@ resource "onepassword_item" "resend_host" {
   url      = "https://resend.com/api-keys"
   username = resend_api_key.host[each.key].id
   vault    = data.onepassword_vault.configured["homelab"].uuid
+}
+
+resource "onepassword_item" "s3_backups" {
+  for_each = local.clusters
+
+  category = "login"
+  password = data.onepassword_item.s3_backups[each.key].password
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "S3 Backups"
+  username = data.onepassword_item.s3_backups[each.key].username
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+
+  section_map = {
+    backup = {
+      field_map = {
+        for label, field in data.onepassword_item.s3_backups[each.key].section_map.backup.field_map : label => {
+          type  = field.type
+          value = field.value
+        }
+      }
+    }
+  }
 }
 
 resource "onepassword_item" "service_access" {
