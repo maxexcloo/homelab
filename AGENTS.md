@@ -11,14 +11,14 @@ configuration and service units belong to their owning application repository.
 
 ## Conventions
 
-- Follow the global version policy. Keep provider compatibility constraints in
-  `requirements.tf` and hold `kubectl` and `talosctl` at the configured cluster
-  versions; Renovate groups each cluster version with its client pin.
+- Keep provider compatibility constraints in `requirements.tf` and hold
+  `kubectl` and `talosctl` at the configured cluster versions.
 - Keep the complete provider environment in the credential item referenced by
   `fnox.toml`; local setup may create its schema, but OpenTofu never manages it.
   Resolve it only inside credential-consuming Mise tasks with `fnox exec`, and
   export the standard Connect variable names only in the OpenTofu wrapper.
-- Treat anyone who can read OpenTofu state as able to read its secrets.
+- Treat anyone who can read OpenTofu state as able to read its secrets, even
+  when plan output is redacted.
 
 ## File Organisation
 

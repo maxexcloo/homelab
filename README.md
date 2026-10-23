@@ -67,10 +67,10 @@ mise run init:check
 mise run check
 ```
 
-Run `hk install --mise` to turn on the optional commit hooks. Static checks don't
-verify live provider behaviour or plan preconditions. After a provider update,
-reinitialise with `mise run init`. To regenerate checksums for the supported
-workstation and validation platforms, run:
+Run `mise run hooks:install` to turn on the optional commit hooks. Static checks
+don't verify live provider behaviour or plan preconditions. After a provider
+update, reinitialise with `mise run init`. To regenerate checksums for the
+supported workstation and validation platforms, run:
 
 ```shell
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
@@ -170,8 +170,7 @@ Kubernetes resources belong with their workload configuration. See
 ## Operations
 
 Keep state, plans, credentials, installation output and recovery material out of
-Git. Anyone who can read state can read secrets, even when plan output is
-redacted. Changing a stored login credential doesn't change the matching host
+Git. Changing a stored login credential doesn't change the matching host
 account.
 
 Service entries opt into generated 1Password logins with `credentials.username`.
