@@ -1,3 +1,9 @@
+# Kept by hand: Fly.io issues its deploy token outside OpenTofu.
+data "onepassword_item" "fly" {
+  title = "Fly.io"
+  vault = data.onepassword_vault.configured["homelab"].uuid
+}
+
 # Kept by hand: TrueNAS issues the S3 key and Restic owns its repository password.
 data "onepassword_item" "s3_backups" {
   for_each = local.clusters
@@ -182,6 +188,15 @@ resource "onepassword_item" "control_d" {
   tags     = [local.access.onepassword.ownership_tag]
   title    = "Control D"
   vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
+resource "onepassword_item" "fly" {
+  category = "login"
+  password = data.onepassword_item.fly.password
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "Fly.io"
+  url      = local.provider_settings.providers.fly.url
+  vault    = data.onepassword_vault.configured["flylab"].uuid
 }
 
 resource "onepassword_item" "infrastructure_inventory" {
