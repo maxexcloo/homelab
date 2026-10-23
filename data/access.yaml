@@ -6,7 +6,7 @@ cloudflare_access:
 kubernetes:
   oidc_client_id: headlamp
 onepassword:
-  cluster_vault_prefix: "Cluster "
+  cluster_vault_prefix: "Kubelab "
   ownership_tag: Homelab
   vaults:
     flylab: Flylab
