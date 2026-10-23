@@ -26,7 +26,7 @@ Setup installs the configured tools and initialises providers. If the provider
 credential item doesn't exist yet, setup creates it; fill in its fields and run
 setup again. Existing items are left alone. Store the Control D API key in
 `Homelab/OpenTofu/control_d_api_key`, and OpenTofu copies it into each cluster's
-managed `Control D` item. Credential references live in [.mise.toml](.mise.toml).
+managed `Control D` item. Credential references live in [fnox.toml](fnox.toml).
 Tasks that need credentials resolve them through the 1Password desktop app
 without exporting the values to the parent shell.
 

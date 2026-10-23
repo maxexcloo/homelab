@@ -1,0 +1,25 @@
+[providers.homelab]
+type = "1password"
+vault = "Homelab"
+
+[secrets]
+B2_APPLICATION_KEY = { provider = "homelab", value = "OpenTofu/b2_application_key" }
+B2_APPLICATION_KEY_ID = { provider = "homelab", value = "OpenTofu/b2_application_key_id" }
+CLOUDFLARE_API_KEY = { provider = "homelab", value = "OpenTofu/cloudflare_api_key" }
+CLOUDFLARE_EMAIL = { provider = "homelab", value = "OpenTofu/cloudflare_email" }
+GOOGLE_CREDENTIALS = { provider = "homelab", value = "OpenTofu/google_credentials" }
+OCI_FINGERPRINT = { provider = "homelab", value = "OpenTofu/oci_fingerprint" }
+OCI_USER_OCID = { provider = "homelab", value = "OpenTofu/oci_user_ocid" }
+RESEND_API_KEY = { provider = "homelab", value = "OpenTofu/resend_api_key" }
+TAILSCALE_OAUTH_CLIENT_ID = { provider = "homelab", value = "OpenTofu/tailscale_oauth_client_id" }
+TAILSCALE_OAUTH_CLIENT_SECRET = { provider = "homelab", value = "OpenTofu/tailscale_oauth_client_secret" }
+TAILSCALE_TAILNET = { provider = "homelab", value = "OpenTofu/tailscale_tailnet" }
+TF_VAR_control_d_api_key = { provider = "homelab", value = "OpenTofu/control_d_api_key" }
+TF_VAR_oci_private_key_base64 = { provider = "homelab", value = "OpenTofu/oci_private_key_base64" }
+TF_VAR_oci_tenancy_ocid = { provider = "homelab", value = "OpenTofu/oci_tenancy_ocid" }
+TF_VAR_truenas_connections = { provider = "homelab", value = "OpenTofu/truenas_connections" }
+UNIFI_API = { provider = "homelab", value = "OpenTofu/unifi_api" }
+UNIFI_API_KEY = { provider = "homelab", value = "OpenTofu/unifi_api_key" }
+# Prefixed so the 1Password CLI resolving these never sees Connect settings; scripts/opentofu.sh exports the standard names.
+_OP_CONNECT_HOST = { provider = "homelab", value = "OpenTofu/op_connect_host" }
+_OP_CONNECT_TOKEN = { provider = "homelab", value = "OpenTofu/op_connect_token" }

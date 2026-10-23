@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-# Expand credential references only in the child authenticated by 1Password.
+# Resolve credentials only in the child process.
 # shellcheck disable=SC2016
-exec op run -- sh -c '
+exec fnox exec -- sh -c '
   export OP_CONNECT_HOST="$_OP_CONNECT_HOST" OP_CONNECT_TOKEN="$_OP_CONNECT_TOKEN"
   exec tofu "$@"
 ' sh "$@"
