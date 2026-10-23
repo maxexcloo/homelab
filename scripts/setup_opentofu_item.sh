@@ -2,8 +2,6 @@
 
 set -eu
 
-unset OP_CONNECT_HOST OP_CONNECT_TOKEN
-
 items="$(op item list --format json --vault "Homelab")"
 if printf '%s' "${items}" | jq -e 'any(.[]; .title == "OpenTofu")' >/dev/null; then
   echo "The Homelab/OpenTofu item already exists."

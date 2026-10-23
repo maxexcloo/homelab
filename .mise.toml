@@ -56,7 +56,7 @@ run = "mise upgrade --bump --exclude kubectl --exclude talosctl --local --no-pru
 # Scripts
 [tasks."clients:sync"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN scripts/sync_client_configs.sh"
+run = "scripts/sync_client_configs.sh"
 
 [tasks.ignition]
 run = '''
@@ -68,7 +68,7 @@ done
 '''
 
 [tasks."oci:image:prepare"]
-run = "env -u OP_CONNECT_HOST -u OP_CONNECT_TOKEN op run -- scripts/prepare_oci_image.sh"
+run = "op run -- scripts/prepare_oci_image.sh"
 
 [tasks."ssh:configure"]
 run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
