@@ -22,13 +22,14 @@ locals {
     }))
   }
 
+  # Untyped machines are personal devices; their logins stay outside OpenTofu.
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
-      title    = "${try(local.platforms[coalesce(try(machine.type, null), machine.platform)].name, title(coalesce(try(machine.type, null), machine.platform)))}: ${local.machine_fqdns[name]}"
+      title    = "${title(machine.type)}: ${local.machine_fqdns[name]}"
       url      = can(machine.services.management) ? "${machine.services.management.scheme}://${local.machine_fqdns[name]}${contains(["http:80", "https:443"], "${machine.services.management.scheme}:${machine.services.management.port}") ? "" : ":${machine.services.management.port}"}" : "ssh://${machine.username}@${local.machine_fqdns[name]}"
       username = machine.username
     }
-    if machine.platform != "talos" && try(machine.username, null) != null
+    if machine.platform != "talos" && try(machine.type, null) != null && try(machine.username, null) != null
   }
 
   onepassword_password_policy = {
