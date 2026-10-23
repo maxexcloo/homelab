@@ -8,10 +8,7 @@ clusters_path="${repo_dir}/data/clusters.yaml"
 kubeconfig_dest="${HOME}/.kube/config"
 talosconfig_dest="${HOME}/.talos/config"
 
-if ! cluster_vault_prefix="$(yq -er '.onepassword.cluster_vault_prefix | select(tag == "!!str" and length > 0)' "${access_path}")"; then
-  echo "error: .onepassword.cluster_vault_prefix is required and must be a non-empty string." >&2
-  exit 1
-fi
+cluster_vault_prefix="$(yq -r '.onepassword.cluster_vault_prefix | select(length > 0) // error(".onepassword.cluster_vault_prefix is required")' "${access_path}")"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -fr -- "${tmpdir}"' EXIT

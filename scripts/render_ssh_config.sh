@@ -7,19 +7,8 @@ access_path="${repo_dir}/data/access.yaml"
 domains_path="${repo_dir}/data/domains.yaml"
 machines_path="${repo_dir}/data/machines.yaml"
 
-if ! command -v yq >/dev/null 2>&1; then
-  echo "error: yq is required but not found in PATH." >&2
-  exit 1
-fi
-
-if ! identity_agent="$(yq -er '.ssh.identity_agent | select(tag == "!!str" and length > 0)' "${access_path}")"; then
-  echo "error: .ssh.identity_agent is required and must be a non-empty string." >&2
-  exit 1
-fi
-if ! infrastructure_domain="$(yq -er '.domains.infrastructure | select(tag == "!!str" and length > 0)' "${domains_path}")"; then
-  echo "error: .domains.infrastructure is required and must be a non-empty string." >&2
-  exit 1
-fi
+identity_agent="$(yq -r '.ssh.identity_agent | select(length > 0) // error(".ssh.identity_agent is required")' "${access_path}")"
+infrastructure_domain="$(yq -r '.domains.infrastructure | select(length > 0) // error(".domains.infrastructure is required")' "${domains_path}")"
 
 # Read all machine input before rendering the configuration.
 # $network is a yq variable.
