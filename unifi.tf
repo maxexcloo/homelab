@@ -52,7 +52,7 @@ resource "unifi_client" "talos_container" {
   mac              = local.truenas_talos_container.mac
   name             = local.truenas_talos_container.app_name
   network_id       = data.unifi_network.configured[local.truenas_talos_container_network_key].id
-  note             = "Talos Kubernetes Node"
+  note             = local.managed_comment
 
   lifecycle {
     prevent_destroy = true
