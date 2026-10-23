@@ -85,16 +85,26 @@ ephemeral "random_password" "service_access" {
   special = local.onepassword_password_policy.special
 }
 
-resource "onepassword_item" "backblaze_cluster" {
-  for_each = local.b2_clusters
+resource "onepassword_item" "backblaze_application" {
+  for_each = local.b2_applications
 
   category = "login"
-  password = b2_application_key.cluster[each.key].application_key
+  password = b2_application_key.application[each.key].application_key
   tags     = [local.access.onepassword.ownership_tag]
-  title    = "Backblaze B2"
+  title    = "Backblaze B2: ${each.value.name}"
   url      = local.b2_endpoint
-  username = b2_application_key.cluster[each.key].application_key_id
-  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+  username = b2_application_key.application[each.key].application_key_id
+  vault    = data.onepassword_vault.configured["cluster/${each.value.cluster}"].uuid
+
+  section_map = {
+    storage = {
+      field_map = {
+        bucket = {
+          value = b2_bucket.application[each.key].bucket_name
+        }
+      }
+    }
+  }
 }
 
 resource "onepassword_item" "backblaze_host" {

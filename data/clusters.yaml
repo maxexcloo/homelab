@@ -1,7 +1,6 @@
 clusters:
   syd:
     api_node: kimbap
-    backblaze: true
     # renovate: datasource=github-tags depName=kubernetes packageName=kubernetes/kubernetes
     kubernetes_version: v1.37.1
     pod_subnet: 10.100.0.0/22
@@ -11,6 +10,10 @@ clusters:
     tailscale_ingress_service: syd-ingress
     # renovate: datasource=github-tags depName=talos packageName=siderolabs/talos
     talos_version: v1.14.4
+    backblaze:
+      beszel:
+        bucket_name: excloo-mbk-beszel
+        name: Beszel
     cloudflare:
       acme: delegated
       tunnel: {}
