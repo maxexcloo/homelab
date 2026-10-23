@@ -30,34 +30,21 @@ providers:
     icon: si-1password-#ffffff
     name: 1Password
     url: https://my.1password.com
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
   backblaze:
     description: Object Storage
     endpoint: https://s3.us-east-005.backblazeb2.com
     icon: si-backblaze-#ffffff
     name: Backblaze
     url: https://backblaze.com
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
   cloudflare:
     account_name: excloo
     description: DNS & Zero Trust
     icon: si-cloudflare-#ffffff
     name: Cloudflare
     url: https://dash.cloudflare.com
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
     dns:
       query-type: A
       url: 1.1.1.1
-      conditions:
-        - "[CONNECTED] == true"
-        - "[DNS_RCODE] == NOERROR"
-        - "[RESPONSE_TIME] < 5000"
     widget:
       key: "{{HOMEPAGE_VAR_CLOUDFLARE_API_TOKEN}}"
       type: cloudflared
@@ -66,28 +53,19 @@ providers:
     icon: sh-control-d
     name: Control D
     url: https://controld.com
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
     dns:
       query-type: A
       url: 76.76.2.0
-      conditions:
-        - "[CONNECTED] == true"
-        - "[DNS_RCODE] == NOERROR"
-        - "[RESPONSE_TIME] < 5000"
   fly:
     description: App Platform
     icon: si-flydotio-#ffffff
     name: Fly.io
     url: https://fly.io/dashboard
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
   gatus:
     description: Health Monitoring & Status Page • fly
     group: Operations
     icon: sh-gatus
+    monitoring: false
     name: Gatus
     url: https://status.excloo.com
     widget:
@@ -97,33 +75,21 @@ providers:
     icon: si-github-#ffffff
     name: GitHub
     url: https://github.com/maxexcloo
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
   oracle_cloud:
     description: Cloud VMs
     icon: si-oracle-#ffffff
     name: Oracle Cloud
     url: https://cloud.oracle.com
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
   resend:
     description: Email API
     icon: si-resend-#ffffff
     name: Resend
     url: https://resend.com/overview
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
   tailscale:
     description: VPN
     icon: tailscale-light
     name: Tailscale
     url: https://login.tailscale.com/admin
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
     widget:
       key: "{{HOMEPAGE_VAR_TAILSCALE_API_TOKEN}}"
       type: tailscale
@@ -132,6 +98,3 @@ providers:
     icon: si-ubiquiti-#ffffff
     name: UniFi
     url: https://unifi.ui.com
-    conditions:
-      - "[STATUS] == any(200, 401, 403)"
-      - "[RESPONSE_TIME] < 5000"
