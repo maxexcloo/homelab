@@ -36,13 +36,23 @@ run = "scripts/opentofu.sh plan"
 
 # Development
 [tasks.check]
-depends = ["check:access", "check:mise", "check:updates", "hooks:check"]
+depends = [
+  "check:access",
+  "check:actions",
+  "check:mise",
+  "check:oxfmt",
+  "check:python",
+  "check:shell",
+  "check:updates",
+  "check:whitespace",
+  "hooks:check",
+]
 
 [tasks."check:access"]
 run = "python3 scripts/test_access.py"
 
 [tasks.fmt]
-depends = ["fmt:mise", "fmt:oxfmt"]
+depends = ["fmt:mise", "fmt:oxfmt", "fmt:python"]
 run = "tofu fmt -recursive"
 
 # Dependencies

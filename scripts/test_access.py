@@ -53,8 +53,9 @@ class AccessTests(unittest.TestCase):
                             "fixture:ai/models/",
                             str(destination),
                         ],
-                        env=environment,
                         capture_output=True,
+                        check=False,
+                        env=environment,
                     )
                     self.assertEqual(result.returncode, 0, result.stderr.decode())
                     self.assertEqual(
@@ -99,10 +100,11 @@ class AccessTests(unittest.TestCase):
                 with self.subTest(command=command):
                     result = subprocess.run(
                         ["sh", str(WRAPPER)],
+                        capture_output=True,
+                        check=False,
                         env=dict(
                             os.environ, HOME=str(root), SSH_ORIGINAL_COMMAND=command
                         ),
-                        capture_output=True,
                     )
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn(b"ai-sync-rsync: refused", result.stderr)
