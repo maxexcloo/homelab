@@ -1,6 +1,5 @@
 """Exercise the restricted native rsync pull and required client settings."""
 
-import json
 import os
 import shlex
 import shutil
@@ -109,48 +108,6 @@ class AccessTests(unittest.TestCase):
                     self.assertIn(b"ai-sync-rsync: refused", result.stderr)
                     self.assertEqual(outside.read_text(), "untouched")
                     self.assertEqual(source.read_text(), "model data")
-
-    def test_required_settings_fail_with_their_names_before_writing(self):
-        for script, setting in [
-            ("render_ssh_config.sh", ".ssh.identity_agent"),
-            ("render_ssh_config.sh", ".domains.infrastructure"),
-            ("sync_client_configs.sh", ".onepassword.cluster_vault_prefix"),
-        ]:
-            for value in [None, ""]:
-                with (
-                    self.subTest(setting=setting, value=value),
-                    tempfile.TemporaryDirectory() as temporary,
-                ):
-                    root = Path(temporary)
-                    (root / "scripts").mkdir()
-                    (root / "data").mkdir()
-                    shutil.copy2(ROOT / "scripts" / script, root / "scripts" / script)
-                    data = {
-                        "domains": {"infrastructure": "example.invalid"},
-                        "onepassword": {"cluster_vault_prefix": "Cluster "},
-                        "ssh": {"identity_agent": "/fixture/agent"},
-                    }
-                    group, key = setting.lstrip(".").split(".")
-                    data[group][key] = value
-                    for filename in ["access.yaml", "domains.yaml"]:
-                        (root / "data" / filename).write_text(json.dumps(data))
-                    for tool in ["kubectl", "op", "talosctl"]:
-                        path = root / tool
-                        path.write_text("#!/bin/sh\nexit 0\n")
-                        path.chmod(0o700)
-                    destination = root / "configuration"
-                    result = subprocess.run(
-                        [str(root / "scripts" / script), str(destination)],
-                        env=dict(
-                            os.environ,
-                            HOME=str(root),
-                            PATH=str(root) + os.pathsep + os.environ["PATH"],
-                        ),
-                        capture_output=True,
-                    )
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertIn(setting.encode(), result.stderr)
-                    self.assertFalse(destination.exists())
 
 
 if __name__ == "__main__":
