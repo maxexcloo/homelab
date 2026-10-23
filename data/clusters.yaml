@@ -14,7 +14,6 @@ clusters:
     cloudflare:
       acme: delegated
       tunnel: {}
-      waf: true
       external_dns:
         - excloo.com
         - excloo.dev

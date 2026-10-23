@@ -1,3 +1,8 @@
+data "onepassword_item" "redlib" {
+  title = "Redlib"
+  vault = data.onepassword_vault.configured["cluster/syd"].uuid
+}
+
 data "onepassword_vault" "configured" {
   for_each = local.onepassword_vaults
 
@@ -153,16 +158,6 @@ resource "onepassword_item" "cloudflare_tunnel" {
   tags     = can(local.machines[each.key]) ? [] : [local.access.onepassword.ownership_tag]
   title    = can(local.machines[each.key]) ? "Cloudflare Tunnel: ${local.machine_fqdns[each.key]}" : "Cloudflare Tunnel"
   vault    = data.onepassword_vault.configured[can(local.machines[each.key]) ? "homelab" : "cluster/${each.key}"].uuid
-}
-
-resource "onepassword_item" "cloudflare_waf" {
-  for_each = local.cloudflare_consumers_waf
-
-  category = "login"
-  password = cloudflare_account_token.waf[each.key].value
-  tags     = [local.access.onepassword.ownership_tag]
-  title    = "Cloudflare WAF"
-  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
 
 resource "onepassword_item" "control_d" {

@@ -18,13 +18,6 @@ data "cloudflare_account_api_token_permission_groups_list" "zone_read" {
   scope      = "com.cloudflare.api.account.zone"
 }
 
-data "cloudflare_account_api_token_permission_groups_list" "zone_waf_write" {
-  account_id = data.cloudflare_account.default.id
-  max_items  = 1
-  name       = "Zone%20WAF%20Write"
-  scope      = "com.cloudflare.api.account.zone"
-}
-
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 
@@ -105,13 +98,12 @@ locals {
     if can(consumer.tunnel)
   }
 
-  cloudflare_consumers_waf = {
-    for name, cluster in local.clusters : name => {
-      title = "Cloudflare WAF: ${name}"
-      zones = local.cloudflare_waf_zones
-    }
-    if try(cluster.cloudflare.waf, false)
-  }
+  cloudflare_redlib_monitoring_token = one(flatten([
+    for section in data.onepassword_item.redlib.section : [
+      for field in section.field : field.value
+      if field.label == "monitoring-token"
+    ]
+  ]))
 
   cloudflare_tunnel_mtls_hostnames = {
     for route in local.cloudflare_tunnel_routes : route.zone => route.hostname...
@@ -135,11 +127,6 @@ locals {
   cloudflare_tunnel_routes = {
     for route in distinct(local.cloudflare_tunnel_route_entries) : "${route.consumer}/${route.hostname}" => route
   }
-
-  cloudflare_waf_zones = [
-    for source_file in local.dns_zone_files : source_file.zone.name
-    if try(source_file.zone.waf, false)
-  ]
 
   cloudflare_zones = toset(concat(
     values(local.domains),
@@ -218,33 +205,6 @@ resource "cloudflare_account_token" "external_dns" {
   ]
 }
 
-resource "cloudflare_account_token" "waf" {
-  for_each = local.cloudflare_consumers_waf
-
-  account_id = data.cloudflare_account.default.id
-  name       = each.value.title
-
-  policies = [
-    {
-      effect = "allow"
-
-      permission_groups = [
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
-        },
-        {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_waf_write.result).id
-        },
-      ]
-
-      resources = jsonencode({
-        for zone in each.value.zones :
-        "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" => "*"
-      })
-    },
-  ]
-}
-
 resource "cloudflare_certificate_authorities_hostname_associations" "mtls" {
   for_each = local.cloudflare_tunnel_mtls_hostnames
 
@@ -263,6 +223,34 @@ resource "cloudflare_dns_record" "managed" {
   ttl      = each.value.ttl
   type     = each.value.type
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
+}
+
+resource "cloudflare_ruleset" "waf" {
+  description = "Kubelab app WAF rules"
+  kind        = "zone"
+  name        = "default"
+  phase       = "http_request_firewall_custom"
+  zone_id     = data.cloudflare_zone.configured["excloo.com"].zone_id
+
+  rules = [
+    {
+      action      = "js_challenge"
+      description = "Kubelab Redlib JavaScript challenge"
+      enabled     = true
+      # Gatus sends the token; static assets stay reachable for challenged clients.
+      expression = "(http.request.full_uri wildcard r\"https://reddit.excloo.com/*\" and not any(http.request.headers[\"x-gatus-token\"][*] eq \"${local.cloudflare_redlib_monitoring_token}\") and not http.cookie contains \"cf_clearance\" and not ends_with(http.request.uri.path, \".css\") and not ends_with(http.request.uri.path, \".js\") and not ends_with(http.request.uri.path, \".woff2\") and not ends_with(http.request.uri.path, \"favicon.ico\") and not ends_with(http.request.uri.path, \"manifest.json\") and not ends_with(http.request.uri.path, \"touch-icon-iphone.png\"))"
+      ref        = "kubelab-redlib-js-challenge"
+    },
+    {
+      action      = "block"
+      description = "Require a valid non-revoked client certificate for remote Home Assistant"
+      enabled     = true
+      # Preserve the tunnel's ^/api/webhook/.+$ exception using Free-plan string
+      # matching, including a non-empty suffix.
+      expression = "(http.host eq \"home-assistant.excloo.com\" and not (starts_with(http.request.uri.path, \"/api/webhook/\") and http.request.uri.path ne \"/api/webhook/\") and (not cf.tls_client_auth.cert_verified or cf.tls_client_auth.cert_revoked))"
+      ref        = "homelab-hass-mtls"
+    },
+  ]
 }
 
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {

@@ -86,9 +86,9 @@ installation configuration doesn't update existing hosts.
 ### Client Certificates
 
 Set `mtls: true` on a tunnel ingress entry to enable [Cloudflare client certificates](https://developers.cloudflare.com/api-shield/security/mtls/)
-for its hostname. Kubelab owns enforcement and webhook exceptions. After review,
-activate and verify its WAF rule before opening the application route. Keep one
-certificate per device in 1Password.
+for its hostname. The WAF ruleset in `cloudflare.tf` enforces it with any webhook
+exceptions; add and verify the rule before opening the application route. Keep
+one certificate per device in 1Password.
 
 ### TrueNAS Configuration
 
