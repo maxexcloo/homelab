@@ -15,8 +15,8 @@ configuration and service units belong to their owning application repository.
   `requirements.tf` and hold `kubectl` and `talosctl` at the configured cluster
   versions; Renovate groups each cluster version with its client pin.
 - Keep the complete provider environment in the credential item referenced by
-  `.mise.toml`; local setup may create its schema, but OpenTofu never manages it.
-  Resolve its `op://` references only inside credential-consuming Mise tasks, and
+  `fnox.toml`; local setup may create its schema, but OpenTofu never manages it.
+  Resolve it only inside credential-consuming Mise tasks with `fnox exec`, and
   export the standard Connect variable names only in the OpenTofu wrapper.
 - Treat anyone who can read OpenTofu state as able to read its secrets.
 
