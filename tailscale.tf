@@ -170,6 +170,19 @@ resource "tailscale_tailnet_key" "server" {
   depends_on = [tailscale_acl.default]
 }
 
+resource "tailscale_tailnet_key" "sidestore_vpn" {
+  for_each = local.clusters
+
+  description         = "Cluster ${each.key} SideStore VPN bootstrap"
+  expiry              = local.access.tailscale.key_expiry_seconds
+  preauthorized       = true
+  recreate_if_invalid = "always"
+  reusable            = false
+  tags                = ["tag:cluster-${each.key}"]
+
+  depends_on = [tailscale_acl.default]
+}
+
 resource "tailscale_tailnet_key" "talos_container" {
   description         = "Talos container bootstrap"
   expiry              = local.access.tailscale.key_expiry_seconds
