@@ -299,6 +299,16 @@ resource "onepassword_item" "service_access" {
   vault               = data.onepassword_vault.configured["homelab"].uuid
 }
 
+resource "onepassword_item" "sidestore_vpn" {
+  for_each = local.clusters
+
+  category = "login"
+  password = tailscale_tailnet_key.sidestore_vpn[each.key].key
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "SideStore VPN"
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
 resource "onepassword_item" "tailscale_auth_key" {
   for_each = local.tailscale_key_machines
 
