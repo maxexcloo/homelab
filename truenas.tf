@@ -226,7 +226,7 @@ resource "truenas_app" "talos_container" {
           TS_AUTHKEY    = tailscale_tailnet_key.talos_container.key
           TS_AUTH_ONCE  = "true"
           TS_EXTRA_ARGS = "--accept-dns=false"
-          TS_HOSTNAME   = "${local.truenas_talos_container.cluster}-${local.truenas_talos_container.app_name}"
+          TS_HOSTNAME   = "${local.truenas_talos_container.cluster}-${local.truenas_talos_container.name}-${local.truenas_talos_container.app_name}"
           TS_ROUTES     = join(",", local.truenas_talos_container.tailscale_routes)
           TS_STATE_DIR  = "/var/lib/tailscale"
           TS_USERSPACE  = "false"
