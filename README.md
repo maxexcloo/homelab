@@ -51,6 +51,7 @@ for that machine, including its actual scheme and port.
 | `mise run ssh:configure`                            | Install configured SSH aliases                |
 
 Every apply needs explicit approval after reviewing the exact plan it shows.
+Plans and applies skip the Docker resources of hosts that SSH cannot reach.
 Plans and applies run locally. Merge pull requests into `main` after review. The
 single GitHub job validates changes and refreshes external monitoring after a
 merge. It never applies infrastructure. Its cross-repository dispatch token needs
