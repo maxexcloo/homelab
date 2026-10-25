@@ -255,18 +255,6 @@ resource "truenas_app" "talos_container" {
         }
         # Host mounts propagate into Talos but never back, so restarts cannot stack mounts on the host.
         volumes = concat(
-          # Mount parent paths before dataset-specific read-only mounts.
-          [
-            for host_path in try(each.value.host_paths, []) : {
-              read_only = try(host_path.read_only, false)
-              source    = host_path.source
-              target    = host_path.target
-              type      = "bind"
-              bind = {
-                propagation = "rslave"
-              }
-            }
-          ],
           [
             for volume in [
               { directory = "controlplane/opt", target = "/opt" },
