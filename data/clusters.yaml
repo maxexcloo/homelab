@@ -30,10 +30,8 @@ clusters:
         configuration_delivery: container
         dedicated: gpu
         machine_type: worker
-        tailscale_tag: tag:cluster-syd
         container:
           app_name: talos
-          interface: enp13s0
           mac: 02:74:61:63:6f:02
       hsp:
         configuration_delivery: metadata
@@ -48,7 +46,6 @@ clusters:
         configuration_delivery: container
         machine_type: controlplane
         tailscale_address: 100.120.55.119
-        tailscale_tag: tag:vm
         container:
           app_name: talos
           dataset: truenas-nvme/talos
@@ -74,8 +71,6 @@ clusters:
         configuration_delivery: container
         dedicated: gaming
         machine_type: worker
-        tailscale_tag: tag:cluster-syd
         container:
           app_name: talos
-          interface: eno1
           mac: 02:74:61:63:6f:03

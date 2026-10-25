@@ -247,6 +247,7 @@ locals {
         install_disk           = try(node.install_disk, null)
         sysctls                = try(node.sysctls, {})
         tailscale_routes       = try(node.tailscale_routes, [])
+        tailscale_tag          = try(node.configuration_delivery, null) == "container" ? "tag:cluster-${cluster_name}" : "tag:${local.machines[node_name].type}"
         time_servers           = try(node.time_servers, [])
       })
     }

@@ -5,7 +5,12 @@ locals {
   }
 
   docker_talos_containers = {
-    for name, container in local.talos_containers : name => container
+    for name, container in local.talos_containers : name => merge(container, {
+      interface = one([
+        for interface in local.machines[name].interfaces : interface.name
+        if cidrcontains(local.unifi_networks[container.network_key].subnet, interface.address)
+      ])
+    })
     if can(local.docker_hosts[name])
   }
 }
