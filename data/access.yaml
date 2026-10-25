@@ -35,7 +35,6 @@ tailscale:
         - tag:fly
         - tag:router
         - tag:server
-        - tag:storage
         - tag:vm
       ip:
         - "*"
@@ -76,5 +75,4 @@ tailscale:
     - tag:fly
     - tag:router
     - tag:server
-    - tag:storage
     - tag:vm

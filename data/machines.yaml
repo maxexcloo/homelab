@@ -256,7 +256,7 @@ machines:
       beszel: true
       platform: truenas
       smtp: resend
-      type: storage
+      type: server
       username: root
       backblaze:
         bucket_name: au-truenas-494jkq
@@ -464,5 +464,4 @@ types:
   backup: Servers
   router: Routers
   server: Servers
-  storage: Servers
   vm: Servers
