@@ -20,6 +20,11 @@ networks:
       region: ap-sydney-1
       subnet_cidr: 10.20.0.0/24
       tcp_ingress:
+        # Reach Talos without Tailscale; update the source when Meadowbank's WAN address changes.
+        talos:
+          ports: [50000]
+          sources:
+            mbk: 160.250.145.163/32
         web:
           ports: [80, 443]
           sources:
