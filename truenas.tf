@@ -200,7 +200,7 @@ resource "truenas_app" "ingress" {
 resource "truenas_app" "talos_container" {
   for_each = local.truenas_talos_containers
 
-  app_name      = each.value.app_name
+  app_name      = "talos"
   provider      = truenas.hosts[each.key]
   remove_images = false
 

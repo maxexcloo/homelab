@@ -25,7 +25,7 @@ resource "docker_container" "talos" {
   env           = ["PLATFORM=container"]
   hostname      = each.value.name
   image         = docker_image.talos[each.key].image_id
-  name          = each.value.app_name
+  name          = "talos"
   privileged    = true
   provider      = docker.hosts[each.key]
   read_only     = true
@@ -79,7 +79,7 @@ resource "docker_container" "talos" {
 
     content {
       container_path = volumes.key
-      volume_name    = "${each.value.app_name}-${volumes.value}"
+      volume_name    = "talos-${volumes.value}"
     }
   }
 }
@@ -97,7 +97,7 @@ resource "docker_container" "talos_tailscale" {
     "TS_USERSPACE=false",
   ]
   image        = docker_image.talos_tailscale[each.key].image_id
-  name         = "${each.value.app_name}-tailscale"
+  name         = "talos-tailscale"
   network_mode = "container:${docker_container.talos[each.key].id}"
   provider     = docker.hosts[each.key]
   restart      = "unless-stopped"
@@ -113,7 +113,7 @@ resource "docker_container" "talos_tailscale" {
 
   volumes {
     container_path = "/var/lib/tailscale"
-    volume_name    = "${each.value.app_name}-tailscale"
+    volume_name    = "talos-tailscale"
   }
 }
 
@@ -138,7 +138,7 @@ resource "docker_network" "talos_local" {
 
   driver   = "bridge"
   internal = true
-  name     = "${each.value.app_name}-local"
+  name     = "talos-local"
   provider = docker.hosts[each.key]
 }
 
@@ -146,7 +146,7 @@ resource "docker_network" "talos_services" {
   for_each = local.docker_talos_containers
 
   driver   = "macvlan"
-  name     = "${each.value.app_name}-services"
+  name     = "talos-services"
   provider = docker.hosts[each.key]
 
   options = {
