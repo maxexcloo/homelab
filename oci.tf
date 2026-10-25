@@ -209,7 +209,8 @@ resource "oci_core_instance" "node" {
 
   lifecycle {
     # Talos metadata is bootstrap-only; live configuration is reconciled over its API.
-    ignore_changes = [metadata]
+    ignore_changes  = [metadata]
+    prevent_destroy = true
 
     precondition {
       condition     = cidrcontains(local.oci_networks[each.value.network].subnet_cidr, local.machine_private_ipv4_addresses[each.key])
