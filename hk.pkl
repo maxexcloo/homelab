@@ -2,7 +2,7 @@ amends "package://github.com/jdx/hk/releases/download/v2.8.0/hk@2.8.0#/Config.pk
 
 import "package://github.com/jdx/hk/releases/download/v2.8.0/hk@2.8.0#/Builtins.pkl"
 
-// Shared Mise check tasks cover Actions, formatting, Python, shell and whitespace.
+// Shared Mise check tasks cover Actions, formatting, shell and whitespace.
 steps {
   ["butane"] = new Step {
     glob = "hosts/**"

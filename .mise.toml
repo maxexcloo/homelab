@@ -21,16 +21,14 @@ depends = [
   "check:actions",
   "check:mise",
   "check:oxfmt",
-  "check:python",
   "check:shell",
   "check:updates",
   "check:whitespace",
   "hooks:check",
-  "test:python",
 ]
 
 [tasks.fmt]
-depends = ["fmt:mise", "fmt:oxfmt", "fmt:python"]
+depends = ["fmt:mise", "fmt:oxfmt"]
 run = "tofu fmt -recursive"
 
 # Dependencies
