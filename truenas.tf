@@ -253,6 +253,7 @@ resource "truenas_app" "talos_container" {
             mac_address  = each.value.mac
           }
         }
+        # Host mounts propagate into Talos but never back, so restarts cannot stack mounts on the host.
         volumes = concat(
           # Mount parent paths before dataset-specific read-only mounts.
           [
@@ -262,7 +263,7 @@ resource "truenas_app" "talos_container" {
               target    = host_path.target
               type      = "bind"
               bind = {
-                propagation = "rshared"
+                propagation = "rslave"
               }
             }
           ],
@@ -277,7 +278,7 @@ resource "truenas_app" "talos_container" {
               type   = "bind"
               bind = {
                 create_host_path = true
-                propagation      = "rshared"
+                propagation      = "rslave"
               }
             }
           ],
@@ -288,7 +289,7 @@ resource "truenas_app" "talos_container" {
               type      = "bind"
               read_only = try(dataset.read_only, false)
               bind = {
-                propagation = "rshared"
+                propagation = "rslave"
               }
             }
           ],
