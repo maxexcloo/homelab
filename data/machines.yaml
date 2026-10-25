@@ -36,51 +36,12 @@ machines:
           address: 10.4.0.5
           mac_address: 9c:6b:00:d7:e9:63
       services:
-        ai:
-          description: AI Workload Control
-          dns_record: true
-          group: Artificial Intelligence
-          hostname: ai.excloo.com
-          icon: mdi-brain-#ffffff
-          name: AI Control
-          port: 443
-          scheme: https
-        comfyui:
-          description: Image Workflows
-          dns_record: true
-          group: Artificial Intelligence
-          hostname: comfy.excloo.com
-          icon: sh-comfyui
-          name: ComfyUI Image
-          port: 443
-          scheme: https
-          siteMonitor: ""
-        comfyui-video:
-          description: Video Workflows
-          dns_record: true
-          group: Artificial Intelligence
-          hostname: comfy-video.excloo.com
-          icon: sh-comfyui
-          name: ComfyUI Video
-          port: 443
-          scheme: https
-          siteMonitor: ""
         management:
           description: Server Administration
           icon: cockpit-light
           name: Cockpit
           port: 9090
           scheme: https
-        radiance:
-          description: Text Models
-          group: Artificial Intelligence
-          hostname: ai.excloo.com
-          icon: mdi-message-text-#ffffff
-          name: Radiance
-          path: /radiance/
-          port: 443
-          scheme: https
-          siteMonitor: ""
     gateway:
       beszel: true
       platform: unifi
