@@ -31,7 +31,6 @@ clusters:
         dedicated: gpu
         machine_type: worker
         container:
-          app_name: talos
           mac: 02:74:61:63:6f:02
           paths:
             - /var/home/core/ai
@@ -47,7 +46,6 @@ clusters:
         machine_type: controlplane
         tailscale_address: 100.120.55.119
         container:
-          app_name: talos
           dataset: truenas-nvme/talos
           mac: 02:74:61:63:6f:01
           memory_gib: 32
@@ -71,7 +69,6 @@ clusters:
         dedicated: gaming
         machine_type: worker
         container:
-          app_name: talos
           mac: 02:74:61:63:6f:03
           paths:
             - /var/home/max.schaefer/ai

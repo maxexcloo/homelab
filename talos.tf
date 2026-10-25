@@ -141,7 +141,7 @@ locals {
 
   talos_containers = {
     for name, node in local.talos_nodes : name => merge(node, node.container, {
-      device_name = "${node.cluster}-${local.machine_hostnames[name]}-${node.container.app_name}"
+      device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
       name        = local.machine_hostnames[name]
       network_key = one([
         for key, network in local.unifi_networks : key
