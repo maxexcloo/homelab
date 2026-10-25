@@ -36,7 +36,6 @@ clusters:
       hsp:
         configuration_delivery: metadata
         machine_type: worker
-        tailscale_address: 100.126.70.78
         time_servers:
           - 169.254.169.254
       kimbap:

@@ -123,8 +123,8 @@ locals {
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
       try(node.tailscale_address, null),
-      node.address,
       can(node.tailscale_address) ? null : try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
+      node.address,
     ])
   }
 
@@ -171,7 +171,7 @@ locals {
         environment = compact([
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
-          "TS_EXTRA_ARGS=--accept-routes=true",
+          "TS_EXTRA_ARGS=--accept-routes=true --reset",
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },
@@ -353,7 +353,7 @@ resource "talos_machine_configuration_apply" "node" {
 
   apply_mode                     = "no_reboot"
   client_configuration_wo        = talos_machine_secrets.cluster[each.value.cluster].client_configuration
-  endpoint                       = try(each.value.tailscale_address, each.value.address)
+  endpoint                       = local.talos_client_endpoints[each.key][0]
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
 
