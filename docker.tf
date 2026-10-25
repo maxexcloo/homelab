@@ -49,6 +49,21 @@ resource "docker_container" "talos" {
     name         = docker_network.talos_services[each.key].name
   }
 
+  # Host directories sit beside TrueNAS nodes' datasets, so pods share one hostPath root.
+  dynamic "mounts" {
+    for_each = toset(each.value.paths)
+
+    content {
+      source = mounts.value
+      target = "/var/mnt/datasets/${basename(mounts.value)}"
+      type   = "bind"
+
+      bind_options {
+        propagation = "rslave"
+      }
+    }
+  }
+
   volumes {
     container_path = "/lib/modules"
     host_path      = "/lib/modules"
