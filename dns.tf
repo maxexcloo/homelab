@@ -159,7 +159,7 @@ locals {
         type    = "A"
         zone    = local.domains.infrastructure
       }
-      if can(machine.public_ipv4) || try(machine.oci.assign_public_ip, false)
+      if try(machine.public_ipv4, null) != null || try(machine.oci.assign_public_ip, false)
     },
     {
       for name, machine in local.machines : "machine/${name}/public-aaaa" => {
@@ -168,7 +168,7 @@ locals {
         type    = "AAAA"
         zone    = local.domains.infrastructure
       }
-      if can(machine.public_ipv6)
+      if try(machine.public_ipv6, null) != null
     },
   )
 
