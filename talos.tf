@@ -353,7 +353,7 @@ resource "talos_machine_configuration_apply" "node" {
 
   apply_mode                     = "no_reboot"
   client_configuration_wo        = talos_machine_secrets.cluster[each.value.cluster].client_configuration
-  endpoint                       = each.value.configuration_delivery == "metadata" ? oci_core_instance.node[each.key].private_ip : each.value.address
+  endpoint                       = try(each.value.tailscale_address, each.value.address)
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
 
@@ -367,6 +367,8 @@ resource "talos_machine_configuration_apply" "node" {
     create = "10m"
     update = "10m"
   }
+
+  depends_on = [oci_core_instance.node]
 
   lifecycle {
     precondition {
