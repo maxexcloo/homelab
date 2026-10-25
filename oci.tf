@@ -163,8 +163,7 @@ resource "oci_core_image" "talos" {
 
   lifecycle {
     # Custom images bootstrap instances only; upgrade running nodes with talosctl.
-    ignore_changes  = [display_name, image_source_details]
-    prevent_destroy = true
+    ignore_changes = [display_name, image_source_details]
   }
 }
 
@@ -209,8 +208,7 @@ resource "oci_core_instance" "node" {
 
   lifecycle {
     # Talos metadata is bootstrap-only; live configuration is reconciled over its API.
-    ignore_changes  = [metadata]
-    prevent_destroy = true
+    ignore_changes = [metadata]
 
     precondition {
       condition     = cidrcontains(local.oci_networks[each.value.network].subnet_cidr, local.machine_private_ipv4_addresses[each.key])
@@ -439,7 +437,6 @@ resource "oci_objectstorage_object" "talos_image" {
 
   lifecycle {
     # Retain the uploaded bootstrap artefact across live Talos upgrades.
-    ignore_changes  = [object, source]
-    prevent_destroy = true
+    ignore_changes = [object, source]
   }
 }
