@@ -88,7 +88,7 @@ resource "docker_container" "talos_tailscale" {
   restart      = "unless-stopped"
 
   capabilities {
-    add = ["NET_ADMIN", "NET_RAW"]
+    add = ["CAP_NET_ADMIN", "CAP_NET_RAW"]
   }
 
   devices {
