@@ -195,7 +195,10 @@ for the configured versions. Upgrade one cluster at a time:
    preserve the dataset bind mounts and Docker volumes. The container shares its
    host's kernel. Verify node health after either operation.
 3. Upgrade Kubernetes and verify node health again.
-4. Review and approve the OpenTofu reconciliation plan before applying it.
+4. For OCI clusters, run `mise run oci:image:prepare <cluster>` and export the
+   printed `TF_VAR_oci_talos_image_path`, so the stored image matches the new
+   version and later rebuilds boot it. Running nodes keep their boot volumes.
+5. Review and approve the OpenTofu reconciliation plan before applying it.
 
 Single-node upgrades mean an outage. Changing the configured installer doesn't
 upgrade installed Talos nodes, and configuration applies use `no_reboot`.

@@ -162,9 +162,8 @@ resource "oci_core_image" "talos" {
   }
 
   lifecycle {
-    # Custom images bootstrap instances only; upgrade running nodes with talosctl.
-    ignore_changes  = [display_name, image_source_details]
-    prevent_destroy = true
+    # Each Talos version gets its own image so rebuilds boot the configured release.
+    create_before_destroy = true
   }
 }
 
@@ -208,8 +207,8 @@ resource "oci_core_instance" "node" {
   }
 
   lifecycle {
-    # Talos metadata is bootstrap-only; live configuration is reconciled over its API.
-    ignore_changes  = [metadata]
+    # Metadata and images are bootstrap-only; upgrade and configure live nodes with talosctl.
+    ignore_changes  = [metadata, source_details[0].source_id]
     prevent_destroy = true
 
     precondition {
@@ -438,8 +437,8 @@ resource "oci_objectstorage_object" "talos_image" {
   source       = var.oci_talos_image_path
 
   lifecycle {
-    # Retain the uploaded bootstrap artefact across live Talos upgrades.
-    ignore_changes  = [object, source]
-    prevent_destroy = true
+    # The local upload path differs between workstations; the object name tracks the version.
+    create_before_destroy = true
+    ignore_changes        = [source]
   }
 }
