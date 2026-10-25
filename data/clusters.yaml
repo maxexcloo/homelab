@@ -25,6 +25,14 @@ clusters:
       extensions:
         - siderolabs/tailscale
     nodes:
+      bento:
+        address: 10.0.0.7
+        configuration_delivery: container
+        dedicated: gpu
+        machine_type: worker
+        container:
+          app_name: talos
+          mac: 02:74:61:63:6f:02
       hsp:
         configuration_delivery: metadata
         machine_type: worker
@@ -38,7 +46,6 @@ clusters:
         configuration_delivery: container
         machine_type: controlplane
         tailscale_address: 100.120.55.119
-        tailscale_tag: tag:vm
         container:
           app_name: talos
           dataset: truenas-nvme/talos
@@ -59,3 +66,11 @@ clusters:
               target: /var/mnt/datasets/truenas
         tailscale_routes:
           - 10.4.0.0/22
+      mandu:
+        address: 10.4.0.8
+        configuration_delivery: container
+        dedicated: gaming
+        machine_type: worker
+        container:
+          app_name: talos
+          mac: 02:74:61:63:6f:03

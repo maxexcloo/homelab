@@ -29,9 +29,11 @@ machines:
       cloudflare:
         acme: delegated
       interfaces:
-        - address: 10.0.0.5
+        - name: enp13s0
+          address: 10.0.0.5
           mac_address: 9c:6b:00:d7:e9:40
-        - address: 10.4.0.5
+        - name: enp12s0
+          address: 10.4.0.5
           mac_address: 9c:6b:00:d7:e9:63
       services:
         ai:
@@ -389,9 +391,11 @@ machines:
       cloudflare:
         tunnel: {}
       interfaces:
-        - address: 10.4.0.4
+        - name: eno1
+          address: 10.4.0.4
           mac_address: c8:ff:bf:0f:9f:d0
-        - address: 10.0.0.4
+        - name: enp5s0
+          address: 10.0.0.4
           mac_address: c8:ff:bf:0f:9f:d1
       services:
         management:

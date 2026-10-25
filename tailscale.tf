@@ -106,7 +106,7 @@ locals {
       for node in values(local.talos_nodes) : node.tailscale_routes
       ])) : route => distinct(compact([
       for node_name, node in local.talos_nodes :
-      contains(node.tailscale_routes, route) ? try(node.tailscale_tag, "tag:${local.machines[node_name].type}") : null
+      contains(node.tailscale_routes, route) ? node.tailscale_tag : null
     ]))
   }
 
@@ -184,12 +184,14 @@ resource "tailscale_tailnet_key" "sidestore_vpn" {
 }
 
 resource "tailscale_tailnet_key" "talos_container" {
+  for_each = local.talos_containers
+
   description         = "Talos container bootstrap"
   expiry              = local.access.tailscale.key_expiry_seconds
   preauthorized       = true
   recreate_if_invalid = "never"
   reusable            = false
-  tags                = [local.truenas_talos_container.tailscale_tag]
+  tags                = [each.value.tailscale_tag]
 
   depends_on = [tailscale_acl.default]
 }
