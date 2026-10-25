@@ -60,7 +60,7 @@ data "talos_machine_configuration" "container" {
             }
             extraMounts = [{
               destination = "/var/mnt/datasets"
-              options     = ["rbind", "rshared", "rw"]
+              options     = ["rbind", "rslave", "rw"]
               source      = "/var/mnt/datasets"
               type        = "bind"
             }]
