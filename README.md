@@ -193,9 +193,9 @@ for the configured versions. Upgrade one cluster at a time:
    snapshot outside Git.
 2. For installed Talos nodes, upgrade with the Image Factory installer matching
    the desired version and schematic. For a container node, review and apply the
-   container image version change through its TrueNAS app configuration; preserve
-   the dataset bind mounts. The container shares the TrueNAS kernel. Verify node
-   health after either operation.
+   container image version change through its TrueNAS app or Docker container;
+   preserve the dataset bind mounts and Docker volumes. The container shares its
+   host's kernel. Verify node health after either operation.
 3. Upgrade Kubernetes and verify node health again.
 4. Review and approve the OpenTofu reconciliation plan before applying it.
 

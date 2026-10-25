@@ -206,15 +206,14 @@ locals {
       {
         apiVersion = "v1alpha1"
         kind       = "KubeNodeConfig"
-        labels = {
-          "node.${local.domains.services}/network" = name == try(local.clusters[node.cluster].public_node, null) ? "external" : "internal"
-        }
+        labels = merge(
+          { "node.${local.domains.services}/network" = name == try(local.clusters[node.cluster].public_node, null) ? "external" : "internal" },
+          node.dedicated != null ? { "node.${local.domains.services}/dedicated" = node.dedicated } : {},
+        )
         nodeIP = {
-          validSubnets = node.configuration_delivery == "container" ? ["${node.tailscale_address}/32"] : [local.tailscale_address_ranges.ipv4]
+          validSubnets = [try("${node.tailscale_address}/32", local.tailscale_address_ranges.ipv4)]
         }
-        taints = {
-          "$patch" = "delete"
-        }
+        taints = node.dedicated != null ? { "node.${local.domains.services}/dedicated" = "${node.dedicated}:NoSchedule" } : { "$patch" = "delete" }
       },
       {
         apiVersion = "v1alpha1"
@@ -244,6 +243,7 @@ locals {
         address                = try(node.address, local.machine_private_ipv4_addresses[node_name])
         cluster                = cluster_name
         configuration_delivery = try(node.configuration_delivery, null)
+        dedicated              = try(node.dedicated, null)
         install_disk           = try(node.install_disk, null)
         sysctls                = try(node.sysctls, {})
         tailscale_routes       = try(node.tailscale_routes, [])
@@ -337,7 +337,7 @@ resource "talos_machine_configuration_apply" "container" {
     reset    = false
   }
 
-  depends_on = [truenas_app.talos_container]
+  depends_on = [docker_container.talos, truenas_app.talos_container]
 
   lifecycle {
     precondition {

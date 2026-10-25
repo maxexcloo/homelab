@@ -16,6 +16,11 @@ terraform {
       version = "~> 5.28"
     }
 
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 4.6"
+    }
+
     oci = {
       source  = "oracle/oci"
       version = "~> 9.10"
