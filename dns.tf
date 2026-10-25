@@ -152,6 +152,24 @@ locals {
       }
       if try(local.tailscale_device_addresses[tailscale_name].ipv6, null) != null
     },
+    {
+      for name, machine in local.machines : "machine/${name}/public-a" => {
+        content = try(machine.public_ipv4, oci_core_instance.node[name].public_ip)
+        name    = "public.${local.machine_fqdns[name]}"
+        type    = "A"
+        zone    = local.domains.infrastructure
+      }
+      if can(machine.public_ipv4) || try(machine.oci.assign_public_ip, false)
+    },
+    {
+      for name, machine in local.machines : "machine/${name}/public-aaaa" => {
+        content = machine.public_ipv6
+        name    = "public.${local.machine_fqdns[name]}"
+        type    = "AAAA"
+        zone    = local.domains.infrastructure
+      }
+      if can(machine.public_ipv6)
+    },
   )
 
   dns_records_fastmail = {
