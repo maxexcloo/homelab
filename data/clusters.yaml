@@ -57,11 +57,13 @@ clusters:
             - name: truenas-nvme/papra
             - name: truenas-nvme/romm
             - name: truenas-nvme/studio
+            - name: truenas/backups
+            - name: truenas/documents
+            - name: truenas/games
             - name: truenas/icloud-photos
               read_only: true
-          host_paths:
-            - source: /mnt/truenas
-              target: /var/mnt/datasets/truenas
+            - name: truenas/projects
+            - name: truenas/public
       mandu:
         address: 10.4.0.8
         configuration_delivery: container
