@@ -64,8 +64,6 @@ clusters:
           host_paths:
             - source: /mnt/truenas
               target: /var/mnt/datasets/truenas
-        tailscale_routes:
-          - 10.4.0.0/22
       mandu:
         address: 10.4.0.8
         configuration_delivery: container
