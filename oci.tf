@@ -110,14 +110,11 @@ resource "oci_core_default_dhcp_options" "default" {
   display_name               = "${each.key}.${local.domains.infrastructure}"
   manage_default_resource_id = oci_core_vcn.default[each.key].default_dhcp_options_id
 
+  # No search domain: pods inherit it from the node, and CoreDNS on nodes
+  # outside OCI answers lookups with it appended with SERVFAIL.
   options {
     server_type = "VcnLocalPlusInternet"
     type        = "DomainNameServer"
-  }
-
-  options {
-    search_domain_names = [oci_core_vcn.default[each.key].vcn_domain_name]
-    type                = "SearchDomain"
   }
 }
 

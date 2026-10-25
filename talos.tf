@@ -224,11 +224,6 @@ locals {
           enabled              = true
           forwardKubeDNSToHost = true
         }, node.configuration_delivery == "container" ? {} : { resolveMemberNames = true })
-        # Pods inherit node search domains; provider DHCP domains such as OCI's
-        # private zone fail on nodes whose resolvers cannot answer them.
-        searchDomains = {
-          domains = []
-        }
       },
       {
         apiVersion = "v1alpha1"
