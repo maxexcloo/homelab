@@ -41,13 +41,20 @@ data "talos_machine_configuration" "container" {
       # Collect pods left Failed by graceful node shutdowns instead of waiting for 12,500.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeControllerManagerConfig", extraArgs = { "terminated-pod-gc-threshold" = "20" } }),
     ] : [],
-    can(local.truenas_talos_containers[each.key]) ? [
+    can(local.truenas_talos_containers[each.key]) || length(each.value.paths) > 0 ? [
       # v1.14's standalone KubeletConfig does not expose extraMounts.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
       yamlencode({
         machine = {
-          kubelet = {
+          kubelet = merge({
             image = "ghcr.io/siderolabs/kubelet:${local.clusters[each.value.cluster].kubernetes_version}"
+            extraMounts = [{
+              destination = "/var/mnt/datasets"
+              options     = ["rbind", "rslave", "rw"]
+              source      = "/var/mnt/datasets"
+              type        = "bind"
+            }]
+            }, can(local.truenas_talos_containers[each.key]) ? {
             extraConfig = {
               # The stock kubelet image cannot report capacity for the host ZFS dataset.
               localStorageCapacityIsolation = false
@@ -58,13 +65,7 @@ data "talos_machine_configuration" "container" {
                 memory = "${floor(data.truenas_system_info.container_host[each.key].physical_memory / 1024) - each.value.memory_gib * 1024 * 1024}Ki"
               }
             }
-            extraMounts = [{
-              destination = "/var/mnt/datasets"
-              options     = ["rbind", "rslave", "rw"]
-              source      = "/var/mnt/datasets"
-              type        = "bind"
-            }]
-          }
+          } : {})
         }
       }),
     ] : [],
@@ -146,6 +147,7 @@ locals {
         for key, network in local.unifi_networks : key
         if startswith(key, "${local.machines[name].network}/") && cidrcontains(network.subnet, node.address)
       ])
+      paths = try(node.container.paths, [])
     })
     if node.configuration_delivery == "container"
   }
