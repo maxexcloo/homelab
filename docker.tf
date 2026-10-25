@@ -30,7 +30,7 @@ resource "docker_container" "talos" {
   provider      = docker.hosts[each.key]
   read_only     = true
   restart       = "unless-stopped"
-  security_opts = ["seccomp=unconfined"]
+  security_opts = ["label=disable", "seccomp=unconfined"]
 
   tmpfs = {
     "/run"    = ""
