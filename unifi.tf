@@ -46,12 +46,14 @@ resource "unifi_client" "host" {
 }
 
 resource "unifi_client" "talos_container" {
+  for_each = local.talos_containers
+
   allow_existing   = true
-  fixed_ip         = local.truenas_talos_container.address
-  local_dns_record = "${local.truenas_talos_container.app_name}.${local.machines[local.truenas_talos_container_host].network}.${local.domains.infrastructure}"
-  mac              = local.truenas_talos_container.mac
-  name             = local.truenas_talos_container.app_name
-  network_id       = data.unifi_network.configured[local.truenas_talos_container_network_key].id
+  fixed_ip         = each.value.address
+  local_dns_record = "${each.value.device_name}.${local.machines[each.key].network}.${local.domains.infrastructure}"
+  mac              = each.value.mac
+  name             = each.value.device_name
+  network_id       = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
   note             = local.managed_comment
 
   lifecycle {

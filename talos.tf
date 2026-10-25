@@ -25,27 +25,29 @@ data "talos_image_factory_urls" "cluster" {
 }
 
 data "talos_machine_configuration" "container" {
-  cluster_endpoint   = local.talos_cluster_endpoints[local.truenas_talos_container.cluster]
-  cluster_name       = local.truenas_talos_container.cluster
-  kubernetes_version = local.clusters[local.truenas_talos_container.cluster].kubernetes_version
-  machine_secrets    = talos_machine_secrets.cluster[local.truenas_talos_container.cluster].machine_secrets
-  machine_type       = local.truenas_talos_container.machine_type
-  talos_version      = local.clusters[local.truenas_talos_container.cluster].talos_version
+  for_each = local.talos_containers
+
+  cluster_endpoint   = local.talos_cluster_endpoints[each.value.cluster]
+  cluster_name       = each.value.cluster
+  kubernetes_version = local.clusters[each.value.cluster].kubernetes_version
+  machine_secrets    = talos_machine_secrets.cluster[each.value.cluster].machine_secrets
+  machine_type       = each.value.machine_type
+  talos_version      = local.clusters[each.value.cluster].talos_version
 
   config_patches = concat(
     [yamlencode(local.talos_user_volume_local_path.directory)],
-    local.truenas_talos_container.machine_type == "controlplane" ? [
+    each.value.machine_type == "controlplane" ? [
       yamlencode(local.talos_cluster_authentication_configuration),
       # Collect pods left Failed by graceful node shutdowns instead of waiting for 12,500.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeControllerManagerConfig", extraArgs = { "terminated-pod-gc-threshold" = "20" } }),
     ] : [],
-    [
+    can(local.truenas_talos_containers[each.key]) ? [
       # v1.14's standalone KubeletConfig does not expose extraMounts.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
       yamlencode({
         machine = {
           kubelet = {
-            image = "ghcr.io/siderolabs/kubelet:${local.clusters[local.truenas_talos_container.cluster].kubernetes_version}"
+            image = "ghcr.io/siderolabs/kubelet:${local.clusters[each.value.cluster].kubernetes_version}"
             extraConfig = {
               # The stock kubelet image cannot report capacity for the host ZFS dataset.
               localStorageCapacityIsolation = false
@@ -53,7 +55,7 @@ data "talos_machine_configuration" "container" {
                 memory = "1Gi"
               }
               systemReserved = {
-                memory = "${floor(data.truenas_system_info.container_host.physical_memory / 1024) - local.truenas_talos_container.memory_gib * 1024 * 1024}Ki"
+                memory = "${floor(data.truenas_system_info.container_host[each.key].physical_memory / 1024) - each.value.memory_gib * 1024 * 1024}Ki"
               }
             }
             extraMounts = [{
@@ -65,8 +67,8 @@ data "talos_machine_configuration" "container" {
           }
         }
       }),
-    ],
-    [for document in local.talos_machine_configuration_documents_common[local.truenas_talos_container_host] : yamlencode(document)],
+    ] : [],
+    [for document in local.talos_machine_configuration_documents_common[each.key] : yamlencode(document)],
   )
 }
 
@@ -131,6 +133,21 @@ locals {
       cluster.endpoint,
       "https://${try(local.talos_nodes[cluster.api_node].tailscale_address, local.talos_nodes[cluster.api_node].address)}:6443",
     )
+  }
+
+  # renovate: datasource=docker depName=tailscale/tailscale
+  talos_container_tailscale_image = "tailscale/tailscale:v1.104.2"
+
+  talos_containers = {
+    for name, node in local.talos_nodes : name => merge(node, node.container, {
+      device_name = "${node.cluster}-${local.machine_hostnames[name]}-${node.container.app_name}"
+      name        = local.machine_hostnames[name]
+      network_key = one([
+        for key, network in local.unifi_networks : key
+        if startswith(key, "${local.machines[name].network}/") && cidrcontains(network.subnet, node.address)
+      ])
+    })
+    if node.configuration_delivery == "container"
   }
 
   talos_machine_bootstrap_nodes = {
@@ -299,18 +316,20 @@ resource "talos_machine_bootstrap" "control_plane" {
 
   lifecycle {
     precondition {
-      condition     = try(each.value.configuration_delivery == "container" ? talos_machine_configuration_apply.container.id : talos_machine_configuration_apply.node[each.key].id, "") != ""
+      condition     = try(each.value.configuration_delivery == "container" ? talos_machine_configuration_apply.container[each.key].id : talos_machine_configuration_apply.node[each.key].id, "") != ""
       error_message = "Deliver this node's Talos configuration before bootstrapping it."
     }
   }
 }
 
 resource "talos_machine_configuration_apply" "container" {
+  for_each = local.talos_containers
+
   apply_mode                     = "no_reboot"
-  client_configuration_wo        = talos_machine_secrets.cluster[local.truenas_talos_container.cluster].client_configuration
-  endpoint                       = local.truenas_talos_container.address
-  machine_configuration_input_wo = data.talos_machine_configuration.container.machine_configuration
-  node                           = local.truenas_talos_container.address
+  client_configuration_wo        = talos_machine_secrets.cluster[each.value.cluster].client_configuration
+  endpoint                       = each.value.address
+  machine_configuration_input_wo = data.talos_machine_configuration.container[each.key].machine_configuration
+  node                           = each.value.address
 
   on_destroy = {
     graceful = false
@@ -322,7 +341,7 @@ resource "talos_machine_configuration_apply" "container" {
 
   lifecycle {
     precondition {
-      condition     = onepassword_item.talos_recovery[local.truenas_talos_container.cluster].uuid != ""
+      condition     = onepassword_item.talos_recovery[each.value.cluster].uuid != ""
       error_message = "Store this cluster's Talos recovery material before applying container configuration."
     }
   }
