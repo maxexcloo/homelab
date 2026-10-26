@@ -161,6 +161,7 @@ resource "oci_core_image" "talos" {
   lifecycle {
     # Each Talos version gets its own image so rebuilds boot the configured release.
     create_before_destroy = true
+    replace_triggered_by  = [oci_objectstorage_object.talos_image[each.key]]
   }
 }
 
@@ -433,8 +434,13 @@ resource "oci_objectstorage_object" "talos_image" {
   object       = "talos-${each.value.talos_version}-${each.value.image.platform}-${each.value.image.architecture}.qcow2"
   source       = var.oci_talos_image_path
 
+  # Renaming the object alone keeps the old upload; metadata changes force a new one.
+  metadata = {
+    "talos-version" = each.value.talos_version
+  }
+
   lifecycle {
-    # The local upload path differs between workstations; the object name tracks the version.
+    # The local upload path differs between workstations.
     create_before_destroy = true
     ignore_changes        = [source]
   }
