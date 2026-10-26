@@ -51,6 +51,7 @@ for that machine, including its actual scheme and port.
 | `mise run ssh:configure`                            | Install configured SSH aliases                |
 
 Every apply needs explicit approval after reviewing the exact plan it shows.
+Plans and applies skip the Docker resources of hosts that SSH cannot reach.
 Plans and applies run locally. Merge pull requests into `main` after review. The
 single GitHub job validates changes and refreshes external monitoring after a
 merge. It never applies infrastructure. Its cross-repository dispatch token needs
@@ -195,7 +196,10 @@ for the configured versions. Upgrade one cluster at a time:
    preserve the dataset bind mounts and Docker volumes. The container shares its
    host's kernel. Verify node health after either operation.
 3. Upgrade Kubernetes and verify node health again.
-4. Review and approve the OpenTofu reconciliation plan before applying it.
+4. For OCI clusters, run `mise run oci:image:prepare <cluster>` and export the
+   printed `TF_VAR_oci_talos_image_path`, so the stored image matches the new
+   version and later rebuilds boot it. Running nodes keep their boot volumes.
+5. Review and approve the OpenTofu reconciliation plan before applying it.
 
 Single-node upgrades mean an outage. Changing the configured installer doesn't
 upgrade installed Talos nodes, and configuration applies use `no_reboot`.

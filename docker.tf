@@ -88,13 +88,7 @@ resource "docker_container" "talos_tailscale" {
   for_each = local.docker_talos_containers
 
   env = [
-    "TS_AUTHKEY=${tailscale_tailnet_key.talos_container[each.key].key}",
-    "TS_AUTH_ONCE=true",
-    "TS_EXTRA_ARGS=--accept-dns=false",
-    "TS_HOSTNAME=${each.value.device_name}",
-    "TS_ROUTES=${join(",", each.value.tailscale_routes)}",
-    "TS_STATE_DIR=/var/lib/tailscale",
-    "TS_USERSPACE=false",
+    for key, value in local.talos_container_tailscale_environment[each.key] : "${key}=${value}"
   ]
   image        = docker_image.talos_tailscale[each.key].image_id
   name         = "talos-tailscale"
@@ -112,7 +106,7 @@ resource "docker_container" "talos_tailscale" {
   }
 
   volumes {
-    container_path = "/var/lib/tailscale"
+    container_path = local.talos_container_tailscale_state_directory
     volume_name    = "talos-tailscale"
   }
 }

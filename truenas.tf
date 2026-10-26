@@ -213,18 +213,10 @@ resource "truenas_app" "talos_container" {
         image        = local.talos_container_tailscale_image
         network_mode = "service:talos"
         restart      = "unless-stopped"
-        environment = {
-          TS_AUTHKEY    = tailscale_tailnet_key.talos_container[each.key].key
-          TS_AUTH_ONCE  = "true"
-          TS_EXTRA_ARGS = "--accept-dns=false"
-          TS_HOSTNAME   = each.value.device_name
-          TS_ROUTES     = join(",", each.value.tailscale_routes)
-          TS_STATE_DIR  = "/var/lib/tailscale"
-          TS_USERSPACE  = "false"
-        }
+        environment  = local.talos_container_tailscale_environment[each.key]
         volumes = [{
           source = "${local.truenas_talos_container_storage_paths[each.key]}/tailscale"
-          target = "/var/lib/tailscale"
+          target = local.talos_container_tailscale_state_directory
           type   = "bind"
           bind = {
             create_host_path = true
