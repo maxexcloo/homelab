@@ -5,7 +5,7 @@ locals {
   machines_by_network = yamldecode(file("${path.module}/data/machines.yaml")).machines
   networks            = yamldecode(file("${path.module}/data/networks.yaml")).networks
   provider_settings   = yamldecode(file("${path.module}/data/providers.yaml"))
-  storage             = yamldecode(file("${path.module}/data/storage.yaml"))
+  storage             = yamldecode(file("${path.module}/data/storage.yaml")).truenas
 
   infrastructure_inventory = {
     cloudflare = {
