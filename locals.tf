@@ -89,10 +89,4 @@ locals {
   ]...)
 
   managed_comment = "Homelab OpenTofu Managed"
-
-  # Hosts whose files `mise run hosts:sync` delivers.
-  sync_hosts = {
-    for name, machine in local.machines : name => machine
-    if contains(["bazzite", "ucore"], machine.platform)
-  }
 }
