@@ -205,7 +205,8 @@ resource "oci_core_instance" "node" {
 
   lifecycle {
     # Metadata and images are bootstrap-only; upgrade and configure live nodes with talosctl.
-    ignore_changes = [metadata, source_details[0].source_id]
+    ignore_changes  = [metadata, source_details[0].source_id]
+    prevent_destroy = true
 
     precondition {
       condition     = cidrcontains(local.oci_networks[each.value.network].subnet_cidr, local.machine_private_ipv4_addresses[each.key])
