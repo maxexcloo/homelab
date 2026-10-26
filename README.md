@@ -10,8 +10,8 @@ where Flux reconciles them.
 Install the [shared Mise configuration](https://github.com/maxexcloo/dotfiles#shared-tools--tasks)
 before running local Mise tasks.
 
-Install [Mise](https://mise.jdx.dev/), jq and the 1Password desktop app, and turn
-on its CLI integration. The workstation also needs `curl` and `shasum`.
+Install [Mise](https://mise.jdx.dev/) and the 1Password desktop app, and turn on
+its CLI integration. The workstation also needs `curl` and `shasum`.
 
 Create the provider accounts, remote backend and external services referenced by
 the configuration before initialising the project:

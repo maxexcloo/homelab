@@ -129,19 +129,44 @@ locals {
     ])
   }
 
+  talos_cluster_api_addresses = {
+    for name, cluster in local.clusters :
+    name => try(local.talos_nodes[cluster.api_node].tailscale_address, local.talos_nodes[cluster.api_node].address)
+  }
+
   talos_cluster_endpoints = {
     for name, cluster in local.clusters : name => try(
       cluster.endpoint,
-      "https://${try(local.talos_nodes[cluster.api_node].tailscale_address, local.talos_nodes[cluster.api_node].address)}:6443",
+      "https://${local.talos_cluster_api_addresses[name]}:6443",
     )
+  }
+
+  # Public DNS keeps private service names on their Tailscale records rather than
+  # UniFi LAN overrides.
+  talos_container_dns_servers = ["1.1.1.1", "1.0.0.1"]
+
+  # Shared by the TrueNAS and Docker sidecars.
+  talos_container_tailscale_environment = {
+    for name, container in local.talos_containers : name => {
+      TS_AUTH_ONCE  = "true"
+      TS_AUTHKEY    = tailscale_tailnet_key.talos_container[name].key
+      TS_EXTRA_ARGS = "--accept-dns=false"
+      TS_HOSTNAME   = container.device_name
+      TS_ROUTES     = join(",", container.tailscale_routes)
+      TS_STATE_DIR  = local.talos_container_tailscale_state_directory
+      TS_USERSPACE  = "false"
+    }
   }
 
   # renovate: datasource=docker depName=tailscale/tailscale
   talos_container_tailscale_image = "tailscale/tailscale:v1.104.2"
 
+  talos_container_tailscale_state_directory = "/var/lib/tailscale"
+
   talos_containers = {
     for name, node in local.talos_nodes : name => merge(node, node.container, {
       device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
+      image       = "ghcr.io/siderolabs/talos:${local.clusters[node.cluster].talos_version}"
       name        = local.machine_hostnames[name]
       network_key = one([
         for key, network in local.unifi_networks : key
@@ -278,8 +303,8 @@ resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.clusters
 
   client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
-  endpoint             = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
-  node                 = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
+  endpoint             = local.talos_cluster_api_addresses[each.key]
+  node                 = local.talos_cluster_api_addresses[each.key]
 
   timeouts = {
     create = "10m"
