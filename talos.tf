@@ -74,7 +74,7 @@ data "talos_machine_configuration" "container" {
 }
 
 data "talos_machine_configuration" "node" {
-  for_each = { for name, node in local.talos_nodes : name => node if node.configuration_delivery != "container" }
+  for_each = local.talos_nodes_installed
 
   cluster_endpoint   = local.talos_cluster_endpoints[each.value.cluster]
   cluster_name       = each.value.cluster
@@ -275,6 +275,11 @@ locals {
     }
   ]...)
 
+  talos_nodes_installed = {
+    for name, node in local.talos_nodes : name => node
+    if node.configuration_delivery != "container"
+  }
+
   # Keyed by volume type so each node selects one shape without type coercion.
   talos_user_volume_local_path = {
     directory = {
@@ -371,7 +376,7 @@ resource "talos_machine_configuration_apply" "container" {
 }
 
 resource "talos_machine_configuration_apply" "node" {
-  for_each = { for name, node in local.talos_nodes : name => node if node.configuration_delivery != "container" }
+  for_each = local.talos_nodes_installed
 
   apply_mode                     = "no_reboot"
   client_configuration_wo        = talos_machine_secrets.cluster[each.value.cluster].client_configuration
