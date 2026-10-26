@@ -1,7 +1,7 @@
 locals {
   resend_domains = {
-    for source_file in local.dns_zone_files : source_file.zone.name => local.provider_settings.dns.resend
-    if contains(try(source_file.zone.providers, []), "resend")
+    for dns_zone in local.dns_zones : dns_zone.name => local.provider_settings.dns.resend
+    if contains(try(dns_zone.providers, []), "resend")
   }
 
   resend_hosts = toset([

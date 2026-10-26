@@ -31,14 +31,6 @@ depends = [
 depends = ["fmt:mise", "fmt:oxfmt"]
 run = "tofu fmt -recursive"
 
-# Dependencies
-# Cluster-compatible clients follow the platform policies.
-[tasks."dependencies:mise:check"]
-run = "mise upgrade --bump --dry-run --exclude kubectl --exclude talosctl --local --no-prune"
-
-[tasks."dependencies:mise:update"]
-run = "mise upgrade --bump --exclude kubectl --exclude talosctl --local --no-prune"
-
 # Scripts
 [tasks."clients:sync"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"

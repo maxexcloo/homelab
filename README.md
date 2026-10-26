@@ -10,8 +10,8 @@ where Flux reconciles them.
 Install the [shared Mise configuration](https://github.com/maxexcloo/dotfiles#shared-tools--tasks)
 before running local Mise tasks.
 
-Install [Mise](https://mise.jdx.dev/), jq and the 1Password desktop app, and turn
-on its CLI integration. The workstation also needs `curl` and `shasum`.
+Install [Mise](https://mise.jdx.dev/) and the 1Password desktop app, and turn on
+its CLI integration. The workstation also needs `curl` and `shasum`.
 
 Create the provider accounts, remote backend and external services referenced by
 the configuration before initialising the project:
@@ -77,10 +77,9 @@ supported workstation and validation platforms, run:
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ```
 
-Renovate opens update pull requests from [renovate.json5](renovate.json5), and
-`mise run dependencies:check` previews them locally. Cluster versions in
-`data/clusters.yaml` update together with their matching `kubectl` and
-`talosctl` pins. Check provider release notes and cluster compatibility before
+Renovate opens update pull requests from [renovate.json5](renovate.json5).
+Cluster versions in `data/clusters.yaml` update together with their matching
+`kubectl` and `talosctl` pins. Check provider release notes and cluster compatibility before
 accepting updates. Host and cluster upgrades are done on purpose; changing the
 installation configuration doesn't update existing hosts.
 
