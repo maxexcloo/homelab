@@ -173,20 +173,20 @@ locals {
   )
 
   dns_records_fastmail = {
-    for source_file in local.dns_zone_files : source_file.zone.name => [
+    for dns_zone in local.dns_zones : dns_zone.name => [
       for record in local.provider_settings.dns.fastmail : merge(record, {
-        content = replace(record.content, "{domain}", source_file.zone.name)
+        content = replace(record.content, "{domain}", dns_zone.name)
       })
     ]
-    if contains(try(source_file.zone.providers, []), "fastmail")
+    if contains(try(dns_zone.providers, []), "fastmail")
   }
 
   dns_records_manual = {
     for entry in flatten([
-      for source_file in local.dns_zone_files : [
+      for dns_zone in local.dns_zones : [
         for record in concat(
-          try(source_file.zone.records, []),
-          try(local.dns_records_fastmail[source_file.zone.name], []),
+          try(dns_zone.records, []),
+          try(local.dns_records_fastmail[dns_zone.name], []),
           ) : {
           key = try(
             record.id,
@@ -197,7 +197,7 @@ locals {
             ])),
           )
           record = record
-          zone   = source_file.zone.name
+          zone   = dns_zone.name
         }
       ]
     ]) :
@@ -231,11 +231,7 @@ locals {
     }
   ]...)
 
-  dns_zone_files = [
-    for file_path in fileset(path.module, "data/dns/*.yaml") : {
-      file_name = trimsuffix(basename(file_path), ".yaml")
-      zone      = yamldecode(file("${path.module}/${file_path}"))
-    }
+  dns_zones = [
+    for file_path in fileset(path.module, "data/dns/*.yaml") : yamldecode(file("${path.module}/${file_path}"))
   ]
-
 }
