@@ -12,7 +12,7 @@ locals {
   ]...)
 
   truenas_datasets = merge([
-    for target, storage in local.truenas_storage : {
+    for target, storage in local.storage : {
       for path, dataset in storage.datasets : "${target}/${path}" => merge(dataset, {
         name               = basename(path)
         parent_dataset_key = dirname(path) == split("/", path)[0] ? null : "${target}/${dirname(path)}"
@@ -87,12 +87,10 @@ locals {
   }
 
   truenas_snapshots = merge([
-    for target, storage in local.truenas_storage : {
+    for target, storage in local.storage : {
       for name, snapshot in try(storage.snapshots, {}) : "${target}/${name}" => merge(snapshot, { target = target })
     }
   ]...)
-
-  truenas_storage = local.storage.truenas
 
   truenas_talos_container_storage_paths = {
     for name, container in local.truenas_talos_containers : name => truenas_dataset.root["${name}/${container.dataset}"].mount_point
