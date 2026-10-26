@@ -17,6 +17,7 @@ case "${1:-}" in
   apply | plan)
     for arg; do
       case "${arg}" in
+        -out=*) ;;
         -target=* | *.tfplan) run_tofu "$@"; exit ;;
       esac
     done
