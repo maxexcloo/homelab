@@ -129,10 +129,15 @@ locals {
     ])
   }
 
+  talos_cluster_api_addresses = {
+    for name, cluster in local.clusters :
+    name => try(local.talos_nodes[cluster.api_node].tailscale_address, local.talos_nodes[cluster.api_node].address)
+  }
+
   talos_cluster_endpoints = {
     for name, cluster in local.clusters : name => try(
       cluster.endpoint,
-      "https://${try(local.talos_nodes[cluster.api_node].tailscale_address, local.talos_nodes[cluster.api_node].address)}:6443",
+      "https://${local.talos_cluster_api_addresses[name]}:6443",
     )
   }
 
@@ -278,8 +283,8 @@ resource "talos_cluster_kubeconfig" "cluster" {
   for_each = local.clusters
 
   client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
-  endpoint             = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
-  node                 = try(local.talos_nodes[each.value.api_node].tailscale_address, local.talos_nodes[each.value.api_node].address)
+  endpoint             = local.talos_cluster_api_addresses[each.key]
+  node                 = local.talos_cluster_api_addresses[each.key]
 
   timeouts = {
     create = "10m"

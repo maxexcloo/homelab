@@ -65,8 +65,8 @@ locals {
       if consumer.challenge_mode == "delegated"
     },
     {
-      for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/api" => {
-        content = try(local.talos_nodes[cluster.api_node].tailscale_address, local.talos_nodes[cluster.api_node].address)
+      for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/api" => {
+        content = local.talos_cluster_api_addresses[cluster_name]
         name    = "api.${cluster_name}.${local.domains.services}"
         type    = "A"
         zone    = local.domains.services
