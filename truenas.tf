@@ -509,8 +509,8 @@ resource "truenas_ssh_config" "host" {
 resource "truenas_tunable" "host" {
   for_each = local.truenas_tunables
 
-  type     = each.value.type
   provider = truenas.hosts[each.value.target]
+  type     = each.value.type
   value    = each.value.value
   var      = each.value.var
 }
