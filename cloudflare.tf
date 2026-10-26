@@ -137,13 +137,13 @@ locals {
   }
 
   cloudflare_waf_zones = [
-    for source_file in local.dns_zone_files : source_file.zone.name
-    if try(source_file.zone.waf, false)
+    for dns_zone in local.dns_zones : dns_zone.name
+    if try(dns_zone.waf, false)
   ]
 
   cloudflare_zones = toset(concat(
     values(local.domains),
-    [for source_file in local.dns_zone_files : source_file.zone.name],
+    [for dns_zone in local.dns_zones : dns_zone.name],
   ))
 }
 
@@ -310,8 +310,8 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
 
 resource "cloudflare_zone_setting" "ssl" {
   for_each = {
-    for source_file in local.dns_zone_files : source_file.zone.name => source_file.zone.ssl
-    if try(source_file.zone.ssl, null) != null
+    for dns_zone in local.dns_zones : dns_zone.name => dns_zone.ssl
+    if try(dns_zone.ssl, null) != null
   }
 
   setting_id = "ssl"

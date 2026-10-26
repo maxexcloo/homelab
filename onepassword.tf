@@ -79,7 +79,7 @@ locals {
   )
 }
 
-# Generated passwords are written once: provider 3.3.1 keeps the stored value
+# Generated passwords are written once: the provider keeps the stored value
 # unless the version increases.
 ephemeral "random_password" "machine_access" {
   for_each = local.onepassword_machine_access
