@@ -110,25 +110,6 @@ locals {
     ]))
   }
 
-  # Shared by the TrueNAS and Docker sidecars; each adds its key, name and routes.
-  talos_container_tailscale_environment = {
-    for name, container in local.talos_containers : name => merge(
-      {
-        TS_AUTH_ONCE  = "true"
-        TS_EXTRA_ARGS = "--accept-dns=false"
-        TS_STATE_DIR  = local.talos_container_tailscale_state_directory
-        TS_USERSPACE  = "false"
-      },
-      {
-        TS_AUTHKEY  = tailscale_tailnet_key.talos_container[name].key
-        TS_HOSTNAME = container.device_name
-        TS_ROUTES   = join(",", container.tailscale_routes)
-      },
-    )
-  }
-
-  talos_container_tailscale_state_directory = "/var/lib/tailscale"
-
   tailscale_tag_owners = merge(
     {
       for tag in local.access.tailscale.tags : tag => local.access.tailscale.default_tag_owners

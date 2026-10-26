@@ -141,12 +141,32 @@ locals {
     )
   }
 
+  # Public DNS keeps private service names on their Tailscale records rather than
+  # UniFi LAN overrides.
+  talos_container_dns_servers = ["1.1.1.1", "1.0.0.1"]
+
+  # Shared by the TrueNAS and Docker sidecars.
+  talos_container_tailscale_environment = {
+    for name, container in local.talos_containers : name => {
+      TS_AUTH_ONCE  = "true"
+      TS_AUTHKEY    = tailscale_tailnet_key.talos_container[name].key
+      TS_EXTRA_ARGS = "--accept-dns=false"
+      TS_HOSTNAME   = container.device_name
+      TS_ROUTES     = join(",", container.tailscale_routes)
+      TS_STATE_DIR  = local.talos_container_tailscale_state_directory
+      TS_USERSPACE  = "false"
+    }
+  }
+
   # renovate: datasource=docker depName=tailscale/tailscale
   talos_container_tailscale_image = "tailscale/tailscale:v1.104.2"
+
+  talos_container_tailscale_state_directory = "/var/lib/tailscale"
 
   talos_containers = {
     for name, node in local.talos_nodes : name => merge(node, node.container, {
       device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
+      image       = "ghcr.io/siderolabs/talos:${local.clusters[node.cluster].talos_version}"
       name        = local.machine_hostnames[name]
       network_key = one([
         for key, network in local.unifi_networks : key

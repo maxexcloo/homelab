@@ -15,13 +15,12 @@ locals {
   }
 }
 
-# Privileged, so GPU pods see the host's /dev/dri and /dev/kfd. Public DNS keeps
-# private service names on their Tailscale records rather than UniFi LAN overrides.
+# Privileged, so GPU pods see the host's /dev/dri and /dev/kfd.
 resource "docker_container" "talos" {
   for_each = local.docker_talos_containers
 
   cgroupns_mode = "private"
-  dns           = ["1.1.1.1", "1.0.0.1"]
+  dns           = local.talos_container_dns_servers
   env           = ["PLATFORM=container"]
   hostname      = each.value.name
   image         = docker_image.talos[each.key].image_id
@@ -115,7 +114,7 @@ resource "docker_image" "talos" {
   for_each = local.docker_talos_containers
 
   keep_locally = true
-  name         = "ghcr.io/siderolabs/talos:${local.clusters[each.value.cluster].talos_version}"
+  name         = each.value.image
   provider     = docker.hosts[each.key]
 }
 
