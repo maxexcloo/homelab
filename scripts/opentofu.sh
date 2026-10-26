@@ -11,9 +11,15 @@ run_tofu() {
 }
 
 # Docker hosts include desktops that may be off, so skip their resources until
-# SSH reaches them. The platforms mirror local.docker_hosts.
+# SSH reaches them. The platforms mirror local.docker_hosts. Targeted runs and
+# saved plans already fix their scope, and OpenTofu rejects -exclude with them.
 case "${1:-}" in
   apply | plan)
+    for arg; do
+      case "${arg}" in
+        -target=* | *.tfplan) run_tofu "$@"; exit ;;
+      esac
+    done
     # $network and $domain are yq variables.
     # shellcheck disable=SC2016
     hosts="$(yq -r '
