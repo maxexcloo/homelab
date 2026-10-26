@@ -411,6 +411,9 @@ resource "talos_machine_secrets" "cluster" {
   talos_version = each.value.talos_version
 
   lifecycle {
+    # The provider regenerates every cluster secret when this changes; it only
+    # sets generation defaults, so upgrades must leave the secrets alone.
+    ignore_changes  = [talos_version]
     prevent_destroy = true
   }
 }
