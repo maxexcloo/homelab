@@ -224,11 +224,10 @@ resource "truenas_app" "talos_container" {
         }]
       }
       talos = {
-        cgroup = "private"
-        # Keep private service DNS on its public Tailscale records rather than UniFi LAN overrides.
-        dns          = ["1.1.1.1", "1.0.0.1"]
+        cgroup       = "private"
+        dns          = local.talos_container_dns_servers
         hostname     = each.value.name
-        image        = "ghcr.io/siderolabs/talos:${local.clusters[each.value.cluster].talos_version}"
+        image        = each.value.image
         mem_limit    = "${each.value.memory_gib}g"
         privileged   = true
         read_only    = true
@@ -510,8 +509,8 @@ resource "truenas_ssh_config" "host" {
 resource "truenas_tunable" "host" {
   for_each = local.truenas_tunables
 
-  type     = each.value.type
   provider = truenas.hosts[each.value.target]
+  type     = each.value.type
   value    = each.value.value
   var      = each.value.var
 }
