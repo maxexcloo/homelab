@@ -113,6 +113,41 @@ locals {
     if try(cluster.cloudflare.waf, false)
   }
 
+  cloudflare_tunnel_files = {
+    for name in keys(local.cloudflare_consumers_tunnel) : name => {
+      "/etc/cloudflared/cloudflared.env" = {
+        content = "TUNNEL_TOKEN=${data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[name].token}\n"
+        mode    = "0600"
+      }
+      "/etc/containers/systemd/cloudflared.container" = {
+        content = <<-EOT
+          [Unit]
+          Description=Cloudflare Tunnel
+
+          [Container]
+          ContainerName=cloudflared
+          EnvironmentFile=/etc/cloudflared/cloudflared.env
+          Exec=tunnel --no-autoupdate run
+          Image=${local.cloudflare_tunnel_image}
+          Network=host
+
+          [Service]
+          Restart=always
+          RestartSec=5
+          TimeoutStartSec=300
+
+          [Install]
+          WantedBy=multi-user.target
+        EOT
+        mode    = "0644"
+      }
+    }
+    if can(local.sync_hosts[name])
+  }
+
+  # renovate: datasource=docker depName=cloudflare/cloudflared
+  cloudflare_tunnel_image = "docker.io/cloudflare/cloudflared:2026.10.4"
+
   cloudflare_tunnel_mtls_hostnames = {
     for route in local.cloudflare_tunnel_routes : route.zone => route.hostname...
     if anytrue([
