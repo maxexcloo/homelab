@@ -7,7 +7,7 @@ images:
   # renovate: datasource=docker depName=ghcr.io/acmesh-official/acme.sh
   acme_sh: ghcr.io/acmesh-official/acme.sh:3.1.6
   # renovate: datasource=docker depName=cloudflare/cloudflared
-  cloudflared: docker.io/cloudflare/cloudflared:2026.10.4
+  cloudflared: docker.io/cloudflare/cloudflared:2026.10.5
   # renovate: datasource=docker depName=tailscale/tailscale
   tailscale: docker.io/tailscale/tailscale:v1.104.2
   # renovate: datasource=docker depName=traefik
