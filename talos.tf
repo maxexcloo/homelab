@@ -463,7 +463,7 @@ resource "talos_machine_configuration_apply" "container" {
     reset    = false
   }
 
-  depends_on = [docker_container.talos, truenas_app.talos_container]
+  depends_on = [truenas_app.talos_container]
 
   lifecycle {
     precondition {
