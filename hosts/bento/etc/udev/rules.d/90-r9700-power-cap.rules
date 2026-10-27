@@ -1,0 +1,2 @@
+# Caps Radeon AI PRO R9700 cards at 210 W.
+ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{vendor}=="0x1002", ATTRS{device}=="0x7551", ATTR{power1_cap}="210000000"
