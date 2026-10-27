@@ -50,6 +50,33 @@ locals {
     ]
   ]))
 
+  # The timer in hosts/common runs this renewal.
+  cloudflare_acme_files = {
+    for name in keys(local.cloudflare_consumers_acme) : name => {
+      "/etc/containers/systemd/cockpit-letsencrypt.container" = {
+        content = <<-EOT
+          [Unit]
+          Description=Renew the Let's Encrypt certificate used by Cockpit
+
+          [Container]
+          ContainerName=cockpit-letsencrypt
+          Exec=--cron
+          Image=${local.versions.images.acme_sh}
+          Pull=newer
+          Volume=/etc/cockpit/ws-certs.d:/cockpit:Z
+          Volume=/var/lib/acme-%H:/acme.sh:Z
+
+          [Service]
+          ExecStartPost=/usr/sbin/restorecon -RF /etc/cockpit/ws-certs.d
+          ExecStartPost=/usr/bin/systemctl try-restart cockpit.service
+          Type=oneshot
+        EOT
+        mode    = "0644"
+      }
+    }
+    if can(local.sync_hosts[name])
+  }
+
   cloudflare_consumers = {
     for name, consumer in merge(local.machines, local.clusters) : name => consumer.cloudflare
     if can(consumer.cloudflare)
@@ -128,7 +155,7 @@ locals {
           ContainerName=cloudflared
           EnvironmentFile=/etc/cloudflared/cloudflared.env
           Exec=tunnel --no-autoupdate run
-          Image=${local.images.cloudflared}
+          Image=${local.versions.images.cloudflared}
           Network=host
 
           [Service]

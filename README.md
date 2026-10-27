@@ -49,14 +49,14 @@ lock file's checksums:
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ```
 
-Renovate keeps versions current. Cluster versions in `data/clusters.yaml` move
-together with the `kubectl` and `talosctl` pins, and images deployed outside
-Kubernetes are pinned in `data/images.yaml`.
+Renovate keeps versions current. Talos, Kubernetes and every image deployed
+outside Kubernetes are pinned in `data/versions.yaml`; the Talos and Kubernetes
+versions move together with the `kubectl` and `talosctl` pins.
 
 ## Configuration
 
-- [data/](data/) is the inventory: access, clusters, DNS, domains, images,
-  machines, networks, providers and storage.
+- [data/](data/) is the inventory: access, clusters, DNS, domains, machines,
+  networks, providers, storage and versions.
 - [hosts/](hosts/) holds Butane configurations and the files they install.
 - Root HCL files define provider resources by domain; [AGENTS.md](AGENTS.md)
   covers conventions and change safety.

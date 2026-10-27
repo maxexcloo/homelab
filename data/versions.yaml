@@ -1,0 +1,14 @@
+# Versions deployed outside Kubernetes. Podman needs fully qualified image names.
+# renovate: datasource=github-tags depName=kubernetes packageName=kubernetes/kubernetes
+kubernetes: v1.37.1
+# renovate: datasource=github-tags depName=talos packageName=siderolabs/talos
+talos: v1.14.5
+images:
+  # renovate: datasource=docker depName=acmesh-official/acme.sh
+  acme_sh: ghcr.io/acmesh-official/acme.sh:3.1.6
+  # renovate: datasource=docker depName=cloudflare/cloudflared
+  cloudflared: docker.io/cloudflare/cloudflared:2026.10.4
+  # renovate: datasource=docker depName=tailscale/tailscale
+  tailscale: docker.io/tailscale/tailscale:v1.104.2
+  # renovate: datasource=docker depName=traefik
+  traefik: docker.io/library/traefik:v3.7.16

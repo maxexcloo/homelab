@@ -181,7 +181,7 @@ locals {
           AddDevice=/dev/net/tun
           ContainerName=talos-tailscale
           EnvironmentFile=/etc/talos/tailscale.env
-          Image=${local.images.tailscale}
+          Image=${local.versions.images.tailscale}
           Network=talos.container
           Volume=talos-tailscale:${local.talos_container_tailscale_state_directory}
 
