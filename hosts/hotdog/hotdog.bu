@@ -54,6 +54,10 @@ systemd:
   units:
     - name: cockpit-letsencrypt.timer
       enabled: true
+    - name: cockpit.service
+      enabled: true
+    - name: tailscaled.service
+      enabled: true
     - name: ucore-unsigned-autorebase.service
       enabled: true
     - name: ucore-signed-autorebase.service
