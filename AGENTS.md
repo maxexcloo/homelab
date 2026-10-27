@@ -15,8 +15,7 @@ configuration and service units belong to their owning application repository.
   `kubectl` and `talosctl` at the configured cluster versions.
 - Keep the complete provider environment in the credential item referenced by
   `fnox.toml`; local setup may create its schema, but OpenTofu never manages it.
-  Resolve it only inside credential-consuming Mise tasks with `fnox exec`, and
-  export the standard Connect variable names only in the OpenTofu wrapper.
+  Resolve it only inside credential-consuming Mise tasks with `fnox exec`.
 - Treat anyone who can read OpenTofu state as able to read its secrets, even
   when plan output is redacted.
 

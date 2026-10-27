@@ -10,10 +10,10 @@ TF_DATA_DIR = "{{env.HOME}}/.cache/opentofu/homelab"
 
 # Deploy
 [tasks.apply]
-run = "scripts/opentofu.sh apply"
+run = "fnox exec -- tofu apply"
 
 [tasks.plan]
-run = "scripts/opentofu.sh plan"
+run = "fnox exec -- tofu plan"
 
 # Development
 [tasks.check]
@@ -58,7 +58,7 @@ run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
 [tasks.init]
-run = "scripts/opentofu.sh init -input=false"
+run = "fnox exec -- tofu init -input=false"
 
 [tasks."init:check"]
 description = "Initialise Providers Without Remote Backend"

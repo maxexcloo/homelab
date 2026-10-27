@@ -5,6 +5,11 @@ provider "oci" {
   tenancy_ocid                                     = var.oci_tenancy_ocid
 }
 
+provider "onepassword" {
+  connect_token = var.onepassword_connect_token
+  connect_url   = var.onepassword_connect_url
+}
+
 provider "truenas" {
   for_each = local.truenas_hosts
 
