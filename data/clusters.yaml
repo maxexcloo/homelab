@@ -67,4 +67,6 @@ clusters:
         container:
           mac: 02:74:61:63:6f:03
           paths:
+            # Syncthing's copy of RomM's ROM library, for RomM streaming.
+            - /run/media/system/roms
             - /var/home/max.schaefer/ai
