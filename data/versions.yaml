@@ -4,7 +4,7 @@ kubernetes: v1.37.1
 # renovate: datasource=github-tags depName=talos packageName=siderolabs/talos
 talos: v1.14.5
 images:
-  # renovate: datasource=docker depName=acmesh-official/acme.sh
+  # renovate: datasource=docker depName=ghcr.io/acmesh-official/acme.sh
   acme_sh: ghcr.io/acmesh-official/acme.sh:3.1.6
   # renovate: datasource=docker depName=cloudflare/cloudflared
   cloudflared: docker.io/cloudflare/cloudflared:2026.10.5
