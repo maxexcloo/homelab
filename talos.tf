@@ -158,9 +158,6 @@ locals {
     }
   }
 
-  # renovate: datasource=docker depName=tailscale/tailscale
-  talos_container_tailscale_image = "tailscale/tailscale:v1.104.2"
-
   talos_container_tailscale_state_directory = "/var/lib/tailscale"
 
   talos_containers = {

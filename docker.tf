@@ -122,7 +122,7 @@ resource "docker_image" "talos_tailscale" {
   for_each = local.docker_talos_containers
 
   keep_locally = true
-  name         = local.talos_container_tailscale_image
+  name         = local.images.tailscale
   provider     = docker.hosts[each.key]
 }
 

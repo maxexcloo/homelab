@@ -2,6 +2,7 @@ locals {
   access              = yamldecode(file("${path.module}/data/access.yaml"))
   clusters            = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
   domains             = yamldecode(file("${path.module}/data/domains.yaml")).domains
+  images              = yamldecode(file("${path.module}/data/images.yaml")).images
   machines_by_network = yamldecode(file("${path.module}/data/machines.yaml")).machines
   networks            = yamldecode(file("${path.module}/data/networks.yaml")).networks
   provider_settings   = yamldecode(file("${path.module}/data/providers.yaml"))

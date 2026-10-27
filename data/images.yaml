@@ -1,0 +1,8 @@
+# Container images deployed outside Kubernetes. Podman needs fully qualified names.
+images:
+  # renovate: datasource=docker depName=cloudflare/cloudflared
+  cloudflared: docker.io/cloudflare/cloudflared:2026.10.4
+  # renovate: datasource=docker depName=tailscale/tailscale
+  tailscale: docker.io/tailscale/tailscale:v1.104.2
+  # renovate: datasource=docker depName=traefik
+  traefik: docker.io/library/traefik:v3.7.16
