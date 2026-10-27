@@ -32,7 +32,10 @@ depends = ["fmt:mise", "fmt:oxfmt"]
 run = "tofu fmt -recursive"
 
 # Scripts
-[tasks."clients:sync"]
+[tasks."clusters:image"]
+run = "fnox exec -- scripts/prepare_oci_image.sh"
+
+[tasks."clusters:sync"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "scripts/sync_client_configs.sh"
 
@@ -46,27 +49,24 @@ for config in hosts/*/*.bu; do
 done
 '''
 
+[tasks."hosts:ssh"]
+run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
+
 [tasks."hosts:sync"]
 description = "Sync Host Files & Restart Changed Units"
 run = "scripts/sync_hosts.sh"
-
-[tasks."oci:image:prepare"]
-run = "fnox exec -- scripts/prepare_oci_image.sh"
-
-[tasks."ssh:configure"]
-run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
 [tasks.init]
 run = "fnox exec -- tofu init -input=false"
 
-[tasks."init:check"]
+[tasks."init:offline"]
 description = "Initialise Providers Without Remote Backend"
 run = "tofu init -backend=false -input=false -lockfile=readonly"
 
-[tasks."opentofu:item"]
+[tasks.setup]
+run = [{ task = "setup:credentials" }, { task = "init" }]
+
+[tasks."setup:credentials"]
 description = "Create Missing OpenTofu 1Password Item"
 run = "scripts/setup_opentofu_item.sh"
-
-[tasks.setup]
-run = [{ task = "opentofu:item" }, { task = "init" }]
