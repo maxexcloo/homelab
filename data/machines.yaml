@@ -139,15 +139,6 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
-        mqtt-explorer:
-          description: MQTT Topics & Messages
-          group: Smart Home
-          icon: sh-mqtt
-          name: MQTT Explorer
-          path: /a0d7b954_mqtt-explorer
-          port: 443
-          scheme: https
-          siteMonitor: ""
         piper:
           description: Local Text-to-Speech
           group: Smart Home
