@@ -56,9 +56,13 @@ systemd:
       enabled: true
     - name: cockpit.service
       enabled: true
+    - name: sanoid.timer
+      enabled: true
     - name: tailscaled.service
       enabled: true
     - name: ucore-unsigned-autorebase.service
       enabled: true
     - name: ucore-signed-autorebase.service
+      enabled: true
+    - name: zfs-scrub-monthly@hotdog.timer
       enabled: true
