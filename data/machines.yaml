@@ -97,7 +97,7 @@ machines:
           group: Smart Home
           icon: sh-esphome
           name: ESPHome
-          path: /5c53de3b_esphome
+          path: /app/5c53de3b_esphome
           port: 443
           scheme: https
           siteMonitor: ""
@@ -106,7 +106,7 @@ machines:
           group: Smart Home
           icon: espressif
           name: ESPresense Companion
-          path: /f32ea98b_espresense-companion
+          path: /app/f32ea98b_espresense-companion
           port: 443
           scheme: https
           siteMonitor: ""
@@ -126,7 +126,7 @@ machines:
           group: Smart Home
           icon: sh-home-assistant-matter-hub
           name: Home Assistant Matter Hub
-          path: /3fd9e6b0_hamh
+          path: /app/3fd9e6b0_hamh
           port: 443
           scheme: https
           siteMonitor: ""
@@ -135,7 +135,7 @@ machines:
           group: Smart Home
           icon: sh-matter
           name: Matter Server
-          path: /core_matter_server
+          path: /app/core_matter_server
           port: 443
           scheme: https
           siteMonitor: ""
@@ -144,7 +144,7 @@ machines:
           group: Smart Home
           icon: mdi-account-voice
           name: Piper
-          path: /core_piper
+          path: /app/core_piper
           port: 443
           scheme: https
           siteMonitor: ""
@@ -166,7 +166,7 @@ machines:
           group: Smart Home
           icon: sh-scrypted
           name: Scrypted
-          path: /09e60fb6_scrypted
+          path: /app/09e60fb6_scrypted
           port: 443
           scheme: https
           siteMonitor: ""
@@ -175,7 +175,7 @@ machines:
           group: Smart Home
           icon: mdi-console
           name: Advanced SSH & Web Terminal
-          path: /a0d7b954_ssh
+          path: /app/a0d7b954_ssh
           port: 443
           scheme: https
           siteMonitor: ""
@@ -184,7 +184,7 @@ machines:
           group: Smart Home
           icon: sh-visual-studio-code
           name: Studio Code Server
-          path: /a0d7b954_vscode
+          path: /app/a0d7b954_vscode
           port: 443
           scheme: https
           siteMonitor: ""
@@ -193,7 +193,7 @@ machines:
           group: Smart Home
           icon: sh-zigbee2mqtt
           name: Zigbee2MQTT
-          path: /45df7312_zigbee2mqtt
+          path: /app/45df7312_zigbee2mqtt
           port: 443
           scheme: https
           siteMonitor: ""
