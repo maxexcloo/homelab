@@ -154,6 +154,7 @@ locals {
         content = <<-EOT
           # macvlan cannot reach the host; this bridge gives Tailscale a peer path.
           [Network]
+          DisableDNS=true
           Internal=true
           NetworkName=talos-local
         EOT
