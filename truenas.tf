@@ -166,7 +166,7 @@ resource "truenas_app" "ingress" {
     }
     services = {
       traefik = {
-        image        = each.value.image
+        image        = local.versions.images.traefik
         network_mode = "host"
         restart      = "unless-stopped"
         configs = [
@@ -208,7 +208,7 @@ resource "truenas_app" "talos_container" {
         cap_add      = ["NET_ADMIN", "NET_RAW"]
         depends_on   = ["talos"]
         devices      = ["/dev/net/tun:/dev/net/tun"]
-        image        = local.talos_container_tailscale_image
+        image        = local.versions.images.tailscale
         network_mode = "service:talos"
         restart      = "unless-stopped"
         environment  = local.talos_container_tailscale_environment[each.key]

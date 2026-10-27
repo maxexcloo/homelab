@@ -1,16 +1,13 @@
-provider "docker" {
-  for_each = local.docker_hosts
-
-  alias                       = "hosts"
-  disable_docker_daemon_check = true
-  host                        = "ssh://${each.value.username}@${local.machine_fqdns[each.key]}"
-}
-
 provider "oci" {
   private_key                                      = base64decode(var.oci_private_key_base64)
   realm_specific_service_endpoint_template_enabled = true
   region                                           = one(local.oci_network_regions)
   tenancy_ocid                                     = var.oci_tenancy_ocid
+}
+
+provider "onepassword" {
+  connect_token = var.onepassword_connect_token
+  connect_url   = var.onepassword_connect_url
 }
 
 provider "truenas" {

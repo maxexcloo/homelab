@@ -17,9 +17,8 @@ TAILSCALE_TAILNET = { provider = "homelab", value = "OpenTofu/tailscale_tailnet"
 TF_VAR_control_d_api_key = { provider = "homelab", value = "OpenTofu/control_d_api_key" }
 TF_VAR_oci_private_key_base64 = { provider = "homelab", value = "OpenTofu/oci_private_key_base64" }
 TF_VAR_oci_tenancy_ocid = { provider = "homelab", value = "OpenTofu/oci_tenancy_ocid" }
+TF_VAR_onepassword_connect_token = { provider = "homelab", value = "OpenTofu/op_connect_token" }
+TF_VAR_onepassword_connect_url = { provider = "homelab", value = "OpenTofu/op_connect_host" }
 TF_VAR_truenas_connections = { provider = "homelab", value = "OpenTofu/truenas_connections" }
 UNIFI_API = { provider = "homelab", value = "OpenTofu/unifi_api" }
 UNIFI_API_KEY = { provider = "homelab", value = "OpenTofu/unifi_api_key" }
-# Prefixed so the 1Password CLI resolving these never sees Connect settings; scripts/opentofu.sh exports the standard names.
-_OP_CONNECT_HOST = { provider = "homelab", value = "OpenTofu/op_connect_host" }
-_OP_CONNECT_TOKEN = { provider = "homelab", value = "OpenTofu/op_connect_token" }

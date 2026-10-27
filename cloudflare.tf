@@ -50,6 +50,33 @@ locals {
     ]
   ]))
 
+  # The timer in hosts/common runs this renewal.
+  cloudflare_acme_files = {
+    for name in keys(local.cloudflare_consumers_acme) : name => {
+      "/etc/containers/systemd/cockpit-letsencrypt.container" = {
+        content = <<-EOT
+          [Unit]
+          Description=Renew the Let's Encrypt certificate used by Cockpit
+
+          [Container]
+          ContainerName=cockpit-letsencrypt
+          Exec=--cron
+          Image=${local.versions.images.acme_sh}
+          Pull=newer
+          Volume=/etc/cockpit/ws-certs.d:/cockpit:Z
+          Volume=/var/lib/acme-%H:/acme.sh:Z
+
+          [Service]
+          ExecStartPost=/usr/sbin/restorecon -RF /etc/cockpit/ws-certs.d
+          ExecStartPost=/usr/bin/systemctl try-restart cockpit.service
+          Type=oneshot
+        EOT
+        mode    = "0644"
+      }
+    }
+    if can(local.sync_hosts[name])
+  }
+
   cloudflare_consumers = {
     for name, consumer in merge(local.machines, local.clusters) : name => consumer.cloudflare
     if can(consumer.cloudflare)
@@ -111,6 +138,38 @@ locals {
       zones = local.cloudflare_waf_zones
     }
     if try(cluster.cloudflare.waf, false)
+  }
+
+  cloudflare_tunnel_files = {
+    for name in keys(local.cloudflare_consumers_tunnel) : name => {
+      "/etc/cloudflared/cloudflared.env" = {
+        content = "TUNNEL_TOKEN=${data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[name].token}\n"
+        mode    = "0600"
+      }
+      "/etc/containers/systemd/cloudflared.container" = {
+        content = <<-EOT
+          [Unit]
+          Description=Cloudflare Tunnel
+
+          [Container]
+          ContainerName=cloudflared
+          EnvironmentFile=/etc/cloudflared/cloudflared.env
+          Exec=tunnel --no-autoupdate run
+          Image=${local.versions.images.cloudflared}
+          Network=host
+
+          [Service]
+          Restart=always
+          RestartSec=5
+          TimeoutStartSec=300
+
+          [Install]
+          WantedBy=multi-user.target
+        EOT
+        mode    = "0644"
+      }
+    }
+    if can(local.sync_hosts[name])
   }
 
   cloudflare_tunnel_mtls_hostnames = {

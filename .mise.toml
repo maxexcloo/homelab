@@ -1,8 +1,8 @@
 [tools]
 "aqua:coreos/butane" = "latest"
-# Match the configured Kubernetes cluster version.
+# Match the Kubernetes version in data/versions.yaml.
 kubectl = "1.37.1"
-# Match the configured Talos cluster version.
+# Match the Talos version in data/versions.yaml.
 talosctl = "1.14.5"
 
 [env]
@@ -10,10 +10,10 @@ TF_DATA_DIR = "{{env.HOME}}/.cache/opentofu/homelab"
 
 # Deploy
 [tasks.apply]
-run = "scripts/opentofu.sh apply"
+run = "fnox exec -- tofu apply"
 
 [tasks.plan]
-run = "scripts/opentofu.sh plan"
+run = "fnox exec -- tofu plan"
 
 # Development
 [tasks.check]
@@ -32,11 +32,15 @@ depends = ["fmt:mise", "fmt:oxfmt"]
 run = "tofu fmt -recursive"
 
 # Scripts
-[tasks."clients:sync"]
+[tasks."clusters:image"]
+run = "fnox exec -- scripts/prepare_oci_image.sh"
+
+[tasks."clusters:sync"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "scripts/sync_client_configs.sh"
 
-[tasks.ignition]
+[tasks."hosts:ignition"]
+description = "Render Host Installation Files"
 run = '''
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
 mkdir -p "${output_directory}"
@@ -45,23 +49,24 @@ for config in hosts/*/*.bu; do
 done
 '''
 
-[tasks."oci:image:prepare"]
-run = "fnox exec -- scripts/prepare_oci_image.sh"
-
-[tasks."ssh:configure"]
+[tasks."hosts:ssh"]
 run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
+
+[tasks."hosts:sync"]
+description = "Sync Host Files & Restart Changed Units"
+run = "scripts/sync_hosts.sh"
 
 # Setup
 [tasks.init]
-run = "scripts/opentofu.sh init -input=false"
+run = "fnox exec -- tofu init -input=false"
 
-[tasks."init:check"]
+[tasks."init:offline"]
 description = "Initialise Providers Without Remote Backend"
 run = "tofu init -backend=false -input=false -lockfile=readonly"
 
-[tasks."opentofu:item"]
+[tasks.setup]
+run = [{ task = "setup:credentials" }, { task = "init" }]
+
+[tasks."setup:credentials"]
 description = "Create Missing OpenTofu 1Password Item"
 run = "scripts/setup_opentofu_item.sh"
-
-[tasks.setup]
-run = [{ task = "opentofu:item" }, { task = "init" }]

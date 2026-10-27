@@ -27,6 +27,17 @@ variable "oci_tenancy_ocid" {
   type        = string
 }
 
+variable "onepassword_connect_token" {
+  description = "1Password Connect token."
+  sensitive   = true
+  type        = string
+}
+
+variable "onepassword_connect_url" {
+  description = "1Password Connect server URL."
+  type        = string
+}
+
 variable "truenas_connections" {
   description = "TrueNAS API connections keyed by machine name, supplied by 1Password."
   sensitive   = true

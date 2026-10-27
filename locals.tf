@@ -1,11 +1,19 @@
 locals {
   access              = yamldecode(file("${path.module}/data/access.yaml"))
-  clusters            = yamldecode(file("${path.module}/data/clusters.yaml")).clusters
   domains             = yamldecode(file("${path.module}/data/domains.yaml")).domains
   machines_by_network = yamldecode(file("${path.module}/data/machines.yaml")).machines
   networks            = yamldecode(file("${path.module}/data/networks.yaml")).networks
   provider_settings   = yamldecode(file("${path.module}/data/providers.yaml"))
   storage             = yamldecode(file("${path.module}/data/storage.yaml")).truenas
+  versions            = yamldecode(file("${path.module}/data/versions.yaml"))
+
+  # Every cluster runs the pinned versions.
+  clusters = {
+    for name, cluster in yamldecode(file("${path.module}/data/clusters.yaml")).clusters : name => merge(cluster, {
+      kubernetes_version = local.versions.kubernetes
+      talos_version      = local.versions.talos
+    })
+  }
 
   infrastructure_inventory = {
     cloudflare = {
@@ -89,4 +97,10 @@ locals {
   ]...)
 
   managed_comment = "Homelab OpenTofu Managed"
+
+  # Hosts whose files `mise run hosts:sync` delivers.
+  sync_hosts = {
+    for name, machine in local.machines : name => machine
+    if contains(["bazzite", "ucore"], machine.platform)
+  }
 }

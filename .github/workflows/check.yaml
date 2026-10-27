@@ -28,7 +28,7 @@ jobs:
         with:
           tools: actionlint aqua:coreos/butane hk node@24 npm:renovate opentofu oxfmt ruff shellcheck
       - name: Initialise Providers
-        run: mise run init:check
+        run: mise run init:offline
       - name: Run Checks
         run: mise run check
 

@@ -29,6 +29,21 @@ output "github_identity" {
   }
 }
 
+output "hosts" {
+  description = "Generated files for `mise run hosts:sync`, by host."
+  sensitive   = true
+  value = {
+    for name, machine in local.sync_hosts : name => {
+      address = "${machine.username}@${local.machine_fqdns[name]}"
+      files = merge(
+        try(local.cloudflare_acme_files[name], {}),
+        try(local.cloudflare_tunnel_files[name], {}),
+        try(local.talos_container_files[name], {}),
+      )
+    }
+  }
+}
+
 output "machines" {
   description = "Managed machine network identities and addresses."
   value = {
