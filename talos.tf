@@ -145,7 +145,108 @@ locals {
   # UniFi LAN overrides.
   talos_container_dns_servers = ["1.1.1.1", "1.0.0.1"]
 
-  # Shared by the TrueNAS and Docker sidecars.
+  # Privileged, so GPU pods see the host's /dev/dri and /dev/kfd. Podman's systemd
+  # mode would replace Talos's own /run handling, so it stays off. Host directories
+  # sit beside TrueNAS nodes' datasets, so pods share one hostPath root.
+  talos_container_files = {
+    for name, container in local.talos_container_hosts : name => {
+      "/etc/containers/systemd/talos-local.network" = {
+        content = <<-EOT
+          # macvlan cannot reach the host; this bridge gives Tailscale a peer path.
+          [Network]
+          Internal=true
+          NetworkName=talos-local
+        EOT
+        mode    = "0644"
+      }
+      "/etc/containers/systemd/talos-services.network" = {
+        content = <<-EOT
+          [Network]
+          Driver=macvlan
+          Gateway=${cidrhost(local.unifi_networks[container.network_key].subnet, 1)}
+          NetworkName=talos-services
+          Options=parent=${container.interface}
+          Subnet=${cidrsubnet(local.unifi_networks[container.network_key].subnet, 0, 0)}
+        EOT
+        mode    = "0644"
+      }
+      "/etc/containers/systemd/talos-tailscale.container" = {
+        content = <<-EOT
+          [Unit]
+          Description=Talos Tailscale
+          PartOf=talos.service
+
+          [Container]
+          AddCapability=CAP_NET_ADMIN CAP_NET_RAW
+          AddDevice=/dev/net/tun
+          ContainerName=talos-tailscale
+          EnvironmentFile=/etc/talos/tailscale.env
+          Image=${local.images.tailscale}
+          Network=talos.container
+          Volume=talos-tailscale:${local.talos_container_tailscale_state_directory}
+
+          [Service]
+          Restart=always
+
+          [Install]
+          WantedBy=talos.service
+        EOT
+        mode    = "0644"
+      }
+      "/etc/containers/systemd/talos.container" = {
+        content = <<-EOT
+          [Unit]
+          Description=Talos Kubernetes Node
+
+          [Container]
+          ContainerName=talos
+          ${join("\n", [for server in local.talos_container_dns_servers : "DNS=${server}"])}
+          Environment=PLATFORM=container
+          HostName=${container.name}
+          Image=${container.image}
+          ${join("\n", [for path in container.paths : "Mount=type=bind,source=${path},target=/var/mnt/datasets/${basename(path)},bind-propagation=rslave"])}
+          Network=talos-local.network
+          Network=talos-services.network:ip=${container.address},mac=${container.mac}
+          PodmanArgs=--cgroupns=private --privileged --systemd=false
+          ReadOnly=true
+          ReadOnlyTmpfs=false
+          SeccompProfile=unconfined
+          SecurityLabelDisable=true
+          Tmpfs=/run
+          Tmpfs=/system
+          Tmpfs=/tmp
+          Volume=/lib/modules:/lib/modules:ro
+          Volume=talos-opt:/opt
+          Volume=talos-state:/system/state
+          Volume=talos-var:/var
+
+          [Service]
+          Restart=always
+          TimeoutStartSec=900
+
+          [Install]
+          WantedBy=multi-user.target
+        EOT
+        mode    = "0644"
+      }
+      "/etc/talos/tailscale.env" = {
+        content = join("", [for key, value in local.talos_container_tailscale_environment[name] : "${key}=${value}\n"])
+        mode    = "0600"
+      }
+    }
+  }
+
+  talos_container_hosts = {
+    for name, container in local.talos_containers : name => merge(container, {
+      interface = one([
+        for interface in local.machines[name].interfaces : interface.name
+        if cidrcontains(local.unifi_networks[container.network_key].subnet, interface.address)
+      ])
+    })
+    if can(local.sync_hosts[name])
+  }
+
+  # Shared by the TrueNAS and Podman sidecars.
   talos_container_tailscale_environment = {
     for name, container in local.talos_containers : name => {
       TS_AUTH_ONCE  = "true"

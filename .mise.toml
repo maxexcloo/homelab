@@ -36,7 +36,8 @@ run = "tofu fmt -recursive"
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
 run = "scripts/sync_client_configs.sh"
 
-[tasks.ignition]
+[tasks."hosts:ignition"]
+description = "Render Host Installation Files"
 run = '''
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
 mkdir -p "${output_directory}"
@@ -44,6 +45,10 @@ for config in hosts/*/*.bu; do
   butane --files-dir hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "${config}"
 done
 '''
+
+[tasks."hosts:sync"]
+description = "Sync Host Files & Restart Changed Units"
+run = "scripts/sync_hosts.sh"
 
 [tasks."oci:image:prepare"]
 run = "fnox exec -- scripts/prepare_oci_image.sh"
