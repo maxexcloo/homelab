@@ -70,3 +70,5 @@ clusters:
             # Syncthing's copy of RomM's ROM library, for RomM streaming.
             - /run/media/system/roms
             - /var/home/max.schaefer/ai
+            # Syncthing's RetroDECK BIOS folder, for RomM streaming.
+            - /var/home/max.schaefer/retrodeck/bios
