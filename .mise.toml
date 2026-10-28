@@ -1,7 +1,7 @@
 [tools]
 "aqua:coreos/butane" = "latest"
 # Match the Kubernetes version in data/versions.yaml.
-kubectl = "1.37.1"
+kubectl = "1.37.2"
 # Match the Talos version in data/versions.yaml.
 talosctl = "1.14.5"
 
