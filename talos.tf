@@ -56,15 +56,15 @@ data "talos_machine_configuration" "container" {
             }]
             extraConfig = merge({
               # The stock reserves (15% for eviction, image cleanup from 85% used) are 140 GB of a
-              # shared 1 TB model disk; keep about 10 GiB. Image cleanup takes only percentages.
+              # shared 1 TB model disk; keep 1% free instead.
               # Setting evictionHard replaces every default signal, so all of them are listed.
               imageGCHighThresholdPercent = 99
               imageGCLowThresholdPercent  = 98
               evictionHard = {
-                "imagefs.available"  = "10Gi"
+                "imagefs.available"  = "1%"
                 "imagefs.inodesFree" = "5%"
                 "memory.available"   = "100Mi"
-                "nodefs.available"   = "10Gi"
+                "nodefs.available"   = "1%"
                 "nodefs.inodesFree"  = "5%"
               }
               }, can(local.truenas_talos_containers[each.key]) ? {
