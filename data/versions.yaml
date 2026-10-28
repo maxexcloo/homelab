@@ -1,6 +1,6 @@
 # Versions deployed outside Kubernetes. Podman needs fully qualified image names.
 # renovate: datasource=github-tags depName=kubernetes packageName=kubernetes/kubernetes
-kubernetes: v1.37.1
+kubernetes: v1.37.2
 # renovate: datasource=github-tags depName=talos packageName=siderolabs/talos
 talos: v1.14.5
 images:
