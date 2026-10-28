@@ -76,6 +76,7 @@ install_files() {
     case "${path}" in
       "${quadlets}"/*.network) systemctl restart "$(basename "${path}" .network)-network.service" ;;
       /etc/systemd/system/*.service | /etc/systemd/system/*.timer) systemctl try-restart "$(basename "${path}")" ;;
+      /etc/tmpfiles.d/*.conf) systemd-tmpfiles --create "${path}" ;;
     esac
   done
   # One transaction lets systemd order each container after the units it needs.
