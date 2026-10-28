@@ -46,7 +46,7 @@ data "talos_machine_configuration" "container" {
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
       yamlencode({
         machine = {
-          kubelet = merge({
+          kubelet = {
             image = "ghcr.io/siderolabs/kubelet:${local.clusters[each.value.cluster].kubernetes_version}"
             extraMounts = [{
               destination = "/var/mnt/datasets"
@@ -54,8 +54,20 @@ data "talos_machine_configuration" "container" {
               source      = "/var/mnt/datasets"
               type        = "bind"
             }]
-            }, can(local.truenas_talos_containers[each.key]) ? {
-            extraConfig = {
+            extraConfig = merge({
+              # The stock reserves (15% for eviction, image cleanup from 85% used) are 140 GB of a
+              # shared 1 TB model disk; keep about 10 GiB. Image cleanup takes only percentages.
+              # Setting evictionHard replaces every default signal, so all of them are listed.
+              imageGCHighThresholdPercent = 99
+              imageGCLowThresholdPercent  = 98
+              evictionHard = {
+                "imagefs.available"  = "10Gi"
+                "imagefs.inodesFree" = "5%"
+                "memory.available"   = "100Mi"
+                "nodefs.available"   = "10Gi"
+                "nodefs.inodesFree"  = "5%"
+              }
+              }, can(local.truenas_talos_containers[each.key]) ? {
               # The stock kubelet image cannot report capacity for the host ZFS dataset.
               localStorageCapacityIsolation = false
               kubeReserved = {
@@ -64,8 +76,8 @@ data "talos_machine_configuration" "container" {
               systemReserved = {
                 memory = "${floor(data.truenas_system_info.container_host[each.key].physical_memory / 1024) - each.value.memory_gib * 1024 * 1024}Ki"
               }
-            }
-          } : {})
+            } : null)
+          }
         }
       }),
     ] : [],
