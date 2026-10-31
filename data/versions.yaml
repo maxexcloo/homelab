@@ -11,4 +11,4 @@ images:
   # renovate: datasource=docker depName=tailscale/tailscale
   tailscale: docker.io/tailscale/tailscale:v1.104.4
   # renovate: datasource=docker depName=traefik
-  traefik: docker.io/library/traefik:v3.7.16
+  traefik: docker.io/library/traefik:v3.7.17
