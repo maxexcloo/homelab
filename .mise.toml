@@ -33,7 +33,7 @@ run = "tofu fmt -recursive"
 
 # Scripts
 [tasks."clusters:image"]
-run = "fnox exec -- scripts/prepare_oci_image.sh"
+run = "scripts/prepare_oci_image.sh"
 
 [tasks."clusters:sync"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"

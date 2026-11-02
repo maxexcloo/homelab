@@ -5,9 +5,9 @@
     {
       customType: "regex",
       datasourceTemplate: "github-releases",
-      description: "GitHub release asset URLs, matched whole so every copy of the version changes",
+      description: "Install-time GitHub release asset URLs in Butane configurations, matched whole so every copy of the version changes",
       extractVersionTemplate: "^v?(?<version>.+)$",
-      managerFilePatterns: ["/.*/"],
+      managerFilePatterns: ["/^hosts/.+\\.bu$/"],
       matchStrings: [
         "https://github\\.com/(?<depName>[^/\\s]+/[^/\\s]+)/releases/download/v?(?<currentValue>\\d+(?:\\.\\d+)+)/\\S+",
       ],

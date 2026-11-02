@@ -8,7 +8,7 @@ cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}/homelab"
 if [[ "${target}" =~ ^https?:// ]]; then
   image_url="${target}"
 else
-  if ! image_url="$(tofu -chdir="${repo_dir}" output -json clusters |
+  if ! image_url="$(fnox exec -- tofu -chdir="${repo_dir}" output -json clusters |
     jq --arg cluster "${target}" -er '
       if $cluster == "" then [.[].disk_image_url // empty][0]
       else .[$cluster].disk_image_url end
