@@ -5,7 +5,6 @@ truenas:
       truenas-nvme/bichon: {}
       truenas-nvme/bookorbit: {}
       truenas-nvme/immich: {}
-      truenas-nvme/macos: {}
       truenas-nvme/papra: {}
       truenas-nvme/romm: {}
       truenas-nvme/studio: {}
