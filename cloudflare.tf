@@ -4,24 +4,12 @@ data "cloudflare_account" "default" {
   }
 }
 
-data "cloudflare_account_api_token_permission_groups_list" "dns_write" {
-  account_id = data.cloudflare_account.default.id
-  max_items  = 1
-  name       = "DNS%20Write"
-  scope      = "com.cloudflare.api.account.zone"
-}
+data "cloudflare_account_api_token_permission_groups_list" "configured" {
+  for_each = toset(["DNS Write", "Zone Read", "Zone WAF Write"])
 
-data "cloudflare_account_api_token_permission_groups_list" "zone_read" {
   account_id = data.cloudflare_account.default.id
   max_items  = 1
-  name       = "Zone%20Read"
-  scope      = "com.cloudflare.api.account.zone"
-}
-
-data "cloudflare_account_api_token_permission_groups_list" "zone_waf_write" {
-  account_id = data.cloudflare_account.default.id
-  max_items  = 1
-  name       = "Zone%20WAF%20Write"
+  name       = replace(each.key, " ", "%20")
   scope      = "com.cloudflare.api.account.zone"
 }
 
@@ -132,12 +120,14 @@ locals {
     if can(consumer.tunnel)
   }
 
-  cloudflare_consumers_waf = {
-    for name, cluster in local.clusters : name => {
-      title = "Cloudflare WAF: ${name}"
-      zones = local.cloudflare_waf_zones
-    }
+  cloudflare_consumers_waf = toset([
+    for name, cluster in local.clusters : name
     if try(cluster.cloudflare.waf, false)
+  ])
+
+  cloudflare_permission_group_ids = {
+    for name, groups in data.cloudflare_account_api_token_permission_groups_list.configured :
+    name => one(groups.result).id
   }
 
   cloudflare_tunnel_files = {
@@ -219,10 +209,10 @@ resource "cloudflare_account_token" "acme" {
 
         permission_groups = [
           {
-            id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
+            id = local.cloudflare_permission_group_ids["DNS Write"]
           },
           {
-            id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+            id = local.cloudflare_permission_group_ids["Zone Read"]
           },
         ]
 
@@ -237,7 +227,7 @@ resource "cloudflare_account_token" "acme" {
 
         permission_groups = [
           {
-            id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+            id = local.cloudflare_permission_group_ids["Zone Read"]
           },
         ]
 
@@ -262,10 +252,10 @@ resource "cloudflare_account_token" "external_dns" {
 
       permission_groups = [
         {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.dns_write.result).id
+          id = local.cloudflare_permission_group_ids["DNS Write"]
         },
         {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+          id = local.cloudflare_permission_group_ids["Zone Read"]
         },
       ]
 
@@ -281,7 +271,7 @@ resource "cloudflare_account_token" "waf" {
   for_each = local.cloudflare_consumers_waf
 
   account_id = data.cloudflare_account.default.id
-  name       = each.value.title
+  name       = "Cloudflare WAF: ${each.key}"
 
   policies = [
     {
@@ -289,15 +279,15 @@ resource "cloudflare_account_token" "waf" {
 
       permission_groups = [
         {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_read.result).id
+          id = local.cloudflare_permission_group_ids["Zone Read"]
         },
         {
-          id = one(data.cloudflare_account_api_token_permission_groups_list.zone_waf_write.result).id
+          id = local.cloudflare_permission_group_ids["Zone WAF Write"]
         },
       ]
 
       resources = jsonencode({
-        for zone in each.value.zones :
+        for zone in local.cloudflare_waf_zones :
         "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" => "*"
       })
     },

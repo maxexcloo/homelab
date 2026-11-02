@@ -69,6 +69,7 @@ locals {
         client_mac = lower(try(interface.bridge, null) == null ? interface.mac_address : interface.bridge_mac_address)
         mac        = lower(interface.mac_address)
         machine    = machine_name
+        name       = try(interface.name, null)
         network    = machine.network
         primary    = interface_index == 0
         subnet = try(one([
