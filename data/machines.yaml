@@ -396,9 +396,3 @@ machines:
         volumes:
           data:
             size_mib: 51200
-types:
-  appliance: Appliances
-  backup: Servers
-  router: Routers
-  server: Servers
-  vm: Servers
