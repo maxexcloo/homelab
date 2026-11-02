@@ -88,7 +88,7 @@ locals {
         type    = "A"
         zone    = local.domains.services
       }
-      if try(local.tailscale_cluster_addresses[cluster_name].ipv4, null) != null
+      if local.tailscale_cluster_addresses[cluster_name].ipv4 != null
     },
     {
       for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale-aaaa" => {
@@ -97,7 +97,7 @@ locals {
         type    = "AAAA"
         zone    = local.domains.services
       }
-      if try(local.tailscale_cluster_addresses[cluster_name].ipv6, null) != null
+      if local.tailscale_cluster_addresses[cluster_name].ipv6 != null
     },
     {
       for cluster_name, consumer in local.cloudflare_consumers_tunnel : "cluster/${cluster_name}/tunnel" => {

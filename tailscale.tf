@@ -1,12 +1,9 @@
 data "tailscale_devices" "all" {}
 
 data "tailscale_service" "cluster_ingress" {
-  for_each = {
-    for name, cluster in local.clusters : name => cluster.tailscale_ingress_service
-    if try(cluster.tailscale_ingress_service, null) != null
-  }
+  for_each = local.clusters
 
-  name = "svc:${each.value}"
+  name = "svc:${each.value.tailscale_ingress_service}"
 }
 
 locals {
@@ -17,20 +14,11 @@ locals {
 
   tailscale_cluster_addresses = {
     for name, cluster in local.clusters : name => {
-      ipv4 = try(
-        one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))]),
-        local.tailscale_device_addresses[name].ipv4,
-      )
-      ipv6 = try(cluster.tailscale_ingress_ipv6, true) ? try(
-        one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")]),
-        local.tailscale_device_addresses[name].ipv6,
-      ) : null
+      ipv4 = one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))])
+      ipv6 = try(cluster.tailscale_ingress_ipv6, true) ? one([
+        for address in data.tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")
+      ]) : null
     }
-  }
-
-  tailscale_cluster_devices_by_hostname = {
-    for device in data.tailscale_devices.all.devices : device.hostname => device...
-    if can(local.clusters[device.hostname])
   }
 
   tailscale_device_addresses = {
@@ -47,7 +35,7 @@ locals {
   }
 
   tailscale_devices = {
-    for name, devices in merge(local.tailscale_devices_by_name, local.tailscale_cluster_devices_by_hostname) :
+    for name, devices in local.tailscale_devices_by_name :
     name => one([
       for device in devices : device
       if "${device.last_seen}|${device.id}" == element(
