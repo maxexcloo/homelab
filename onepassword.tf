@@ -40,7 +40,7 @@ locals {
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
       title    = "${title(machine.type)}: ${local.machine_fqdns[name]}"
-      url      = can(machine.services.management) ? "${machine.services.management.scheme}://${local.machine_fqdns[name]}${contains(["http:80", "https:443"], "${machine.services.management.scheme}:${machine.services.management.port}") ? "" : ":${machine.services.management.port}"}" : "ssh://${machine.username}@${local.machine_fqdns[name]}"
+      url      = try(local.onepassword_service_urls["${name}/management"], "ssh://${machine.username}@${local.machine_fqdns[name]}")
       username = machine.username
     }
     if machine.platform != "talos" && try(machine.type, null) != null && try(machine.username, null) != null
@@ -55,21 +55,19 @@ locals {
     for machine_name, machine in local.machines : {
       for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
         name     = service.name
-        url      = "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+        url      = local.onepassword_service_urls["${machine_name}/${service_name}"]
         username = service.credentials.username
       }
       if can(service.credentials)
     }
   ]...)
 
-  onepassword_talos_recovery_note_values = {
-    for name, cluster in local.clusters : name => jsonencode({
-      client_configuration = talos_machine_secrets.cluster[name].client_configuration
-      cluster_name         = name
-      machine_secrets      = talos_machine_secrets.cluster[name].machine_secrets
-      talos_version        = cluster.talos_version
-    })
-  }
+  onepassword_service_urls = merge([
+    for machine_name, machine in local.machines : {
+      for service_name, service in try(machine.services, {}) :
+      "${machine_name}/${service_name}" => "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+    }
+  ]...)
 
   onepassword_vaults = merge(
     local.access.onepassword.vaults,
@@ -112,7 +110,7 @@ resource "onepassword_item" "backblaze_host" {
 
   category = "login"
   password = b2_application_key.host[each.key].application_key
-  title    = "Backblaze B2: ${try(local.machine_fqdns[each.key], each.key)}"
+  title    = "Backblaze B2: ${local.machine_fqdns[each.key]}"
   url      = local.b2_endpoint
   username = b2_application_key.host[each.key].application_key_id
   vault    = data.onepassword_vault.configured["homelab"].uuid
@@ -342,10 +340,16 @@ resource "onepassword_item" "tailscale_operator" {
 resource "onepassword_item" "talos_recovery" {
   for_each = local.clusters
 
-  category   = "secure_note"
-  note_value = local.onepassword_talos_recovery_note_values[each.key]
-  title      = "Talos Recovery: ${each.key}"
-  vault      = data.onepassword_vault.configured["homelab"].uuid
+  category = "secure_note"
+  title    = "Talos Recovery: ${each.key}"
+  vault    = data.onepassword_vault.configured["homelab"].uuid
+
+  note_value = jsonencode({
+    client_configuration = talos_machine_secrets.cluster[each.key].client_configuration
+    cluster_name         = each.key
+    machine_secrets      = talos_machine_secrets.cluster[each.key].machine_secrets
+    talos_version        = each.value.talos_version
+  })
 
   lifecycle {
     prevent_destroy = true

@@ -11,8 +11,7 @@ configuration and service units belong to their owning application repository.
 
 ## Conventions
 
-- Keep provider compatibility constraints in `requirements.tf` and hold
-  `kubectl` and `talosctl` at the versions in `data/versions.yaml`.
+- Keep provider compatibility constraints in `requirements.tf`.
 - Keep the complete provider environment in the credential item referenced by
   `fnox.toml`; local setup may create its schema, but OpenTofu never manages it.
   Resolve it only inside credential-consuming Mise tasks with `fnox exec`.

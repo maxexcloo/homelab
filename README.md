@@ -50,8 +50,7 @@ mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ```
 
 Renovate keeps versions current. Talos, Kubernetes and every image deployed
-outside Kubernetes are pinned in `data/versions.yaml`; the Talos and Kubernetes
-versions move together with the `kubectl` and `talosctl` pins.
+outside Kubernetes are pinned in `data/versions.yaml`.
 
 ## Configuration
 

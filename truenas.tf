@@ -32,15 +32,6 @@ locals {
     if dataset.parent_dataset_key == null
   }
 
-  truenas_host_services_prefix_lengths = {
-    for name, host in local.truenas_hosts_services : name => tonumber(split(
-      "/",
-      local.networks[host.machine.network].subnets[
-        local.truenas_machine_interfaces_by_mac[lower(host.interface.mac_address)].subnet
-      ].cidr,
-    )[1])
-  }
-
   truenas_hosts = {
     for name, machine in local.machines : name => machine
     if machine.platform == "truenas"
@@ -52,20 +43,10 @@ locals {
   }
 
   truenas_hosts_services = {
-    for name, interfaces in {
-      for name, machine in local.truenas_hosts : name => [
-        for interface in machine.interfaces : interface
-        if try(interface.bridge, null) != null
-      ]
-      } : name => {
-      interface = interfaces[0]
-      machine   = local.truenas_hosts[name]
-    }
-    if length(interfaces) == 1
-  }
-
-  truenas_machine_interfaces_by_mac = {
-    for interface in local.machine_interface_assignments : interface.mac => interface
+    for interface in local.machine_interface_assignments : interface.machine => merge(interface, {
+      prefix_length = tonumber(split("/", local.networks[interface.network].subnets[interface.subnet].cidr)[1])
+    })
+    if can(local.truenas_hosts[interface.machine]) && interface.bridge != null
   }
 
   truenas_services = merge([
@@ -288,7 +269,7 @@ resource "truenas_app" "talos_container" {
       services = {
         driver = "macvlan"
         driver_opts = {
-          parent = local.truenas_hosts_services[each.key].interface.bridge
+          parent = local.truenas_hosts_services[each.key].bridge
         }
         ipam = {
           config = [{
@@ -396,15 +377,15 @@ resource "truenas_network_interface" "services_bridge" {
   bridge_members = [truenas_network_interface.services_physical[each.key].name]
   ipv4_dhcp      = false
   ipv6_auto      = false
-  name           = each.value.interface.bridge
+  name           = each.value.bridge
   provider       = truenas.hosts[each.key]
   rollback       = true
   type           = "BRIDGE"
 
   aliases = [
     {
-      address = each.value.interface.address
-      netmask = local.truenas_host_services_prefix_lengths[each.key]
+      address = each.value.address
+      netmask = each.value.prefix_length
       type    = "INET"
     },
   ]
@@ -420,7 +401,7 @@ resource "truenas_network_interface" "services_physical" {
   aliases   = []
   ipv4_dhcp = false
   ipv6_auto = false
-  name      = each.value.interface.name
+  name      = each.value.name
   provider  = truenas.hosts[each.key]
   rollback  = true
   type      = "PHYSICAL"

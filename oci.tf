@@ -204,6 +204,12 @@ resource "oci_core_instance" "node" {
     source_type             = "image"
   }
 
+  depends_on = [
+    oci_core_compute_image_capability_schema.talos,
+    oci_core_shape_management.talos,
+    onepassword_item.talos_recovery,
+  ]
+
   lifecycle {
     # Metadata and images are bootstrap-only; upgrade and configure live nodes with talosctl.
     ignore_changes  = [metadata, source_details[0].source_id]
@@ -227,12 +233,6 @@ resource "oci_core_instance" "node" {
       error_message = "OCI deployments must stay within the Always Free envelope of 2 Ampere A1 OCPUs, 12288 MiB of Ampere A1 memory, and 204800 MiB of combined boot and block storage."
     }
   }
-
-  depends_on = [
-    oci_core_compute_image_capability_schema.talos,
-    oci_core_shape_management.talos,
-    onepassword_item.talos_recovery,
-  ]
 }
 
 resource "oci_core_internet_gateway" "default" {
@@ -399,13 +399,13 @@ resource "oci_core_volume" "node" {
   }
 }
 
+# The current OCI/Talos deployment fails to attach this volume when encryption in transit is enabled.
 resource "oci_core_volume_attachment" "node" {
   for_each = local.oci_volumes
 
-  attachment_type = "paravirtualized"
-  display_name    = "${each.value.node}-${each.value.name}"
-  instance_id     = oci_core_instance.node[each.value.node].id
-  # The current OCI/Talos deployment fails to attach this volume when encryption in transit is enabled.
+  attachment_type                     = "paravirtualized"
+  display_name                        = "${each.value.node}-${each.value.name}"
+  instance_id                         = oci_core_instance.node[each.value.node].id
   is_pv_encryption_in_transit_enabled = false
   volume_id                           = oci_core_volume.node[each.key].id
 }
