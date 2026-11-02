@@ -361,6 +361,17 @@ locals {
           forwardKubeDNSToHost = true
         }, node.configuration_delivery == "container" ? {} : { resolveMemberNames = true })
       },
+      # Cilium writes pod identities into the packet mark, and identities with
+      # id % 256 == 8 set Tailscale's bypass mark (0x80000/0xff0000). Its rules
+      # from 5210 then send that pod's VXLAN to peer nodes out the LAN instead
+      # of tailscale0. Look up Tailscale's table for tailnet addresses first.
+      {
+        apiVersion = "v1alpha1"
+        kind       = "RoutingRuleConfig"
+        name       = "5200"
+        dst        = local.tailscale_address_ranges.ipv4
+        table      = "52"
+      },
       {
         apiVersion = "v1alpha1"
         kind       = "HostnameConfig"
