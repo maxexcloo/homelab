@@ -1,3 +1,8 @@
 name: excloo.net
 providers:
   - resend
+records:
+  - type: TXT
+    name: _dmarc
+    id: txt-apex-dmarc
+    content: '"v=DMARC1; p=none;"'
