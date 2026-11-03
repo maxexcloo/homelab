@@ -49,11 +49,9 @@ providers:
       key: "{{HOMEPAGE_VAR_CLOUDFLARE_API_TOKEN}}"
       type: cloudflared
     zone_settings:
-      0rtt: "on"
       always_use_https: "on"
       browser_check: "off"
       email_obfuscation: "off"
-      hotlink_protection: "off"
       min_tls_version: "1.2"
       security_level: essentially_off
       server_side_exclude: "off"
