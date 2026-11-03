@@ -102,7 +102,6 @@ locals {
 
   cloudflare_consumers_tunnel = {
     for name, consumer in local.cloudflare_consumers : name => {
-      is_cluster = can(local.clusters[name])
       ingress = concat(
         [
           for route in try(consumer.tunnel.ingress, []) : merge(
