@@ -42,8 +42,8 @@ HOMELAB_INFRASTRUCTURE_FILE=tests/fixtures/homepage/infrastructure.json \
 '''
 
 [tasks.fmt]
-depends = ["fmt:mise", "fmt:oxfmt"]
 run = "tofu fmt -recursive"
+depends = ["fmt:mise", "fmt:oxfmt"]
 
 # Scripts
 [tasks."clusters:image"]
