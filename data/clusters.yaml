@@ -8,6 +8,7 @@ clusters:
     tailscale_ingress_ipv6: false
     tailscale_ingress_service: syd-ingress
     cloudflare:
+      access_applications: true
       acme: delegated
       tunnel: {}
       waf: true
