@@ -346,6 +346,7 @@ locals {
         kind       = "KubeNodeConfig"
         labels = merge(
           { "node.${local.domains.services}/network" = name == try(local.clusters[node.cluster].public_node, null) ? "external" : "internal" },
+          node.configuration_delivery == "container" ? { "node.${local.domains.services}/container" = "true" } : {},
           node.dedicated != null ? { "node.${local.domains.services}/dedicated" = node.dedicated } : {},
         )
         nodeIP = {
