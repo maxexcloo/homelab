@@ -19,7 +19,8 @@ Setup creates the `Homelab/OpenTofu` credential item if it's missing; fill in it
 fields and run setup again. [fnox.toml](fnox.toml) maps each field into the tasks
 that need it, without exporting it to your shell. `truenas_connections` is a JSON
 map keyed by machine name, with the `api_key` and `url` of each TrueNAS API.
-`control_d_api_key` is copied into each cluster's `Control D` item.
+`control_d_api_key` manages Control D rules and is copied into each cluster's
+`Control D` item.
 
 ## Usage
 

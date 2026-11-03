@@ -152,6 +152,7 @@ machines:
           description: Local Vacuum Server
           dns_lan: true
           dns_record: true
+          dns_tailscale: true
           group: Smart Home
           hostname: api-rr.hass.mbk.excloo.net
           icon: mdi-robot-vacuum

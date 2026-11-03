@@ -16,6 +16,11 @@ terraform {
       version = "~> 5.28"
     }
 
+    controld = {
+      source  = "baptistecdr/controld"
+      version = "~> 0.0.7"
+    }
+
     oci = {
       source  = "oracle/oci"
       version = "~> 9.10"

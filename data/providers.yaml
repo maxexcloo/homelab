@@ -61,6 +61,7 @@ providers:
     description: DNS Filtering
     icon: sh-control-d
     name: Control D
+    tailscale_profile: 653224sydwhf
     url: https://controld.com
     dns:
       query-type: A

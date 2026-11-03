@@ -1,3 +1,7 @@
+provider "controld" {
+  api_token = var.control_d_api_key
+}
+
 provider "oci" {
   private_key                                      = base64decode(var.oci_private_key_base64)
   realm_specific_service_endpoint_template_enabled = true
