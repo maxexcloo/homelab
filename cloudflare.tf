@@ -300,8 +300,17 @@ resource "cloudflare_dns_record" "managed" {
 }
 
 resource "cloudflare_zero_trust_access_application" "app_launcher" {
-  account_id = data.cloudflare_account.default.id
-  type       = "app_launcher"
+  account_id                = data.cloudflare_account.default.id
+  allowed_idps              = [cloudflare_zero_trust_access_identity_provider.pocket_id.id]
+  auto_redirect_to_identity = true
+  type                      = "app_launcher"
+
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.pocket_id.id
+      precedence = 1
+    },
+  ]
 }
 
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
@@ -326,6 +335,21 @@ resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
       error_message = "Kubelab has not yet published the Pocket ID client secret to the Cloudflare Access item."
     }
   }
+}
+
+resource "cloudflare_zero_trust_access_policy" "pocket_id" {
+  account_id = data.cloudflare_account.default.id
+  decision   = "allow"
+  name       = local.access.cloudflare_access.name
+
+  # Each Pocket ID client's user group decides who can sign in.
+  include = [
+    {
+      login_method = {
+        id = cloudflare_zero_trust_access_identity_provider.pocket_id.id
+      }
+    },
+  ]
 }
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
