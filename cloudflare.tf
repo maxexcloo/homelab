@@ -352,6 +352,12 @@ resource "cloudflare_zero_trust_access_policy" "pocket_id" {
   ]
 }
 
+resource "cloudflare_zero_trust_access_service_token" "fly" {
+  account_id = data.cloudflare_account.default.id
+  duration   = "forever"
+  name       = "fly"
+}
+
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 
