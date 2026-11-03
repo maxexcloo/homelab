@@ -10,7 +10,6 @@ machines_path="${repo_dir}/data/machines.yaml"
 identity_agent="$(yq -er '.ssh.identity_agent' "${access_path}")"
 infrastructure_domain="$(yq -er '.domains.infrastructure' "${domains_path}")"
 
-# Read all machine input before rendering the configuration.
 # $network is a yq variable.
 # shellcheck disable=SC2016
 machine_entries="$(yq -r '

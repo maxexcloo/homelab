@@ -7,7 +7,6 @@ locals {
   storage             = yamldecode(file("${path.module}/data/storage.yaml")).truenas
   versions            = yamldecode(file("${path.module}/data/versions.yaml"))
 
-  # Every cluster runs the pinned versions.
   clusters = {
     for name, cluster in yamldecode(file("${path.module}/data/clusters.yaml")).clusters : name => merge(cluster, {
       kubernetes_version = local.versions.kubernetes
