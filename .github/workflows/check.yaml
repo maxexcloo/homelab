@@ -26,11 +26,13 @@ jobs:
       - name: Set Up Shared Tools & Tasks
         uses: maxexcloo/dotfiles/.github/actions/mise@main
         with:
-          tools: actionlint aqua:coreos/butane hk node@24 npm:renovate opentofu oxfmt shellcheck
+          tools: actionlint aqua:coreos/butane hk node@24 npm:renovate opentofu oxfmt shellcheck yq
       - name: Initialise Providers
         run: mise run init:offline
       - name: Run Checks
         run: mise run check
+      - name: Render Kubelab Homepage Services
+        run: mise run check:kubelab
 
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         name: Refresh External Monitoring

@@ -27,6 +27,20 @@ depends = [
   "hooks:check",
 ]
 
+# Kubelab's Homepage downloads this repository's data at runtime.
+[tasks."check:kubelab"]
+description = "Render Kubelab Main Homepage Services From This Checkout"
+run = '''
+set -eu
+kubelab_directory=$(mktemp -d)
+trap 'rm -fr -- "$kubelab_directory"' EXIT
+curl -fsSL https://codeload.github.com/maxexcloo/kubelab/tar.gz/refs/heads/main | tar -xz -C "$kubelab_directory" --strip-components=1
+cd "$kubelab_directory"
+HOMELAB_INFRASTRUCTURE_FILE=tests/fixtures/homepage/infrastructure.json \
+  HOMEPAGE_BESZEL_ROUTES=tests/fixtures/homepage/beszel-routes.json \
+  sh apps/base/homepage/render_services.sh output/services.yaml "$MISE_PROJECT_ROOT"
+'''
+
 [tasks.fmt]
 depends = ["fmt:mise", "fmt:oxfmt"]
 run = "tofu fmt -recursive"
