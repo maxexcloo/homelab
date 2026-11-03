@@ -140,8 +140,11 @@ locals {
         content = <<-EOT
           [Unit]
           Description=Cloudflare Tunnel
+          # Hosts leave Podman's auto-update timer disabled by default.
+          Wants=podman-auto-update.timer
 
           [Container]
+          AutoUpdate=registry
           ContainerName=cloudflared
           EnvironmentFile=/etc/cloudflared/cloudflared.env
           Exec=tunnel --no-autoupdate run
