@@ -387,6 +387,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   }
 }
 
+resource "cloudflare_zone_dnssec" "configured" {
+  for_each = local.cloudflare_zones
+
+  status  = "active"
+  zone_id = data.cloudflare_zone.configured[each.key].zone_id
+}
+
 resource "cloudflare_zone_setting" "configured" {
   for_each = local.cloudflare_zone_settings
 
