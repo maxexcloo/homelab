@@ -193,6 +193,16 @@ locals {
     if try(dns_zone.waf, false)
   ]
 
+  cloudflare_zone_settings = merge([
+    for zone in local.cloudflare_zones : {
+      for setting, value in local.cloudflare.zone_settings : "${zone}/${setting}" => {
+        setting = setting
+        value   = value
+        zone    = zone
+      }
+    }
+  ]...)
+
   cloudflare_zones = toset(concat(
     values(local.domains),
     [for dns_zone in local.dns_zones : dns_zone.name],
@@ -377,13 +387,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   }
 }
 
-resource "cloudflare_zone_setting" "ssl" {
-  for_each = {
-    for dns_zone in local.dns_zones : dns_zone.name => dns_zone.ssl
-    if try(dns_zone.ssl, null) != null
-  }
+resource "cloudflare_zone_setting" "configured" {
+  for_each = local.cloudflare_zone_settings
 
-  setting_id = "ssl"
-  value      = each.value
-  zone_id    = data.cloudflare_zone.configured[each.key].zone_id
+  setting_id = each.value.setting
+  value      = each.value.value
+  zone_id    = data.cloudflare_zone.configured[each.value.zone].zone_id
 }
