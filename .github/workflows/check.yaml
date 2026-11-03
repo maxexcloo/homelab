@@ -37,6 +37,6 @@ jobs:
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         name: Refresh External Monitoring
         env:
-          GH_TOKEN: ${{ secrets.HOMELAB_FLY_DEPLOY_TOKEN }}
+          GH_TOKEN: ${{ secrets.FLYLAB_DISPATCH_TOKEN }}
           HOMELAB_REVISION: ${{ github.sha }}
         run: gh workflow run deploy.yaml --field homelab_revision="$HOMELAB_REVISION" --ref main --repo maxexcloo/flylab
