@@ -353,6 +353,11 @@ resource "cloudflare_zero_trust_access_application" "app_launcher" {
   auto_redirect_to_identity = true
   type                      = "app_launcher"
 
+  # Cloudflare stores an empty design that the provider otherwise keeps removing.
+  landing_page_design = {
+    title = "Welcome!"
+  }
+
   policies = [
     {
       id         = cloudflare_zero_trust_access_policy.pocket_id.id
