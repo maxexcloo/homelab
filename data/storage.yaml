@@ -6,6 +6,7 @@ truenas:
       truenas-nvme/bookorbit: {}
       truenas-nvme/immich: {}
       truenas-nvme/papra: {}
+      # RomM chmods its writes, so aclmode is PASSTHROUGH natively; the TrueNAS provider cannot manage it.
       truenas-nvme/romm: {}
       truenas-nvme/studio: {}
       truenas-nvme/talos: {}
