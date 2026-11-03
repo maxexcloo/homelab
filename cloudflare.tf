@@ -5,12 +5,18 @@ data "cloudflare_account" "default" {
 }
 
 data "cloudflare_account_api_token_permission_groups_list" "configured" {
-  for_each = toset(["DNS Write", "Zone Read", "Zone WAF Write"])
+  for_each = {
+    "Access: Apps Write"    = "com.cloudflare.api.account"
+    "Access: Policies Read" = "com.cloudflare.api.account"
+    "DNS Write"             = "com.cloudflare.api.account.zone"
+    "Zone Read"             = "com.cloudflare.api.account.zone"
+    "Zone WAF Write"        = "com.cloudflare.api.account.zone"
+  }
 
   account_id = data.cloudflare_account.default.id
   max_items  = 1
   name       = replace(each.key, " ", "%20")
-  scope      = "com.cloudflare.api.account.zone"
+  scope      = each.value
 }
 
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "cluster" {
@@ -69,6 +75,11 @@ locals {
     for name, consumer in merge(local.machines, local.clusters) : name => consumer.cloudflare
     if can(consumer.cloudflare)
   }
+
+  cloudflare_consumers_access_applications = toset([
+    for name, cluster in local.clusters : name
+    if try(cluster.cloudflare.access_applications, false)
+  ])
 
   cloudflare_consumers_acme = {
     for name, consumer in local.cloudflare_consumers : name => {
@@ -209,6 +220,33 @@ locals {
   ))
 }
 
+resource "cloudflare_account_token" "access_applications" {
+  for_each = local.cloudflare_consumers_access_applications
+
+  account_id = data.cloudflare_account.default.id
+  name       = "Cloudflare Access Applications: ${each.key}"
+
+  # Consumers attach the reusable policies Homelab owns but cannot change them.
+  policies = [
+    {
+      effect = "allow"
+
+      permission_groups = [
+        {
+          id = local.cloudflare_permission_group_ids["Access: Apps Write"]
+        },
+        {
+          id = local.cloudflare_permission_group_ids["Access: Policies Read"]
+        },
+      ]
+
+      resources = jsonencode({
+        "com.cloudflare.api.account.${data.cloudflare_account.default.id}" = "*"
+      })
+    },
+  ]
+}
+
 resource "cloudflare_account_token" "acme" {
   for_each = local.cloudflare_consumers_acme
 
@@ -345,6 +383,32 @@ resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
       error_message = "Kubelab has not yet published the Pocket ID client secret to the Cloudflare Access item."
     }
   }
+}
+
+resource "cloudflare_zero_trust_access_policy" "bypass" {
+  account_id = data.cloudflare_account.default.id
+  decision   = "bypass"
+  name       = "Bypass"
+
+  include = [
+    {
+      everyone = {}
+    },
+  ]
+}
+
+resource "cloudflare_zero_trust_access_policy" "fly" {
+  account_id = data.cloudflare_account.default.id
+  decision   = "non_identity"
+  name       = "Gatus"
+
+  include = [
+    {
+      service_token = {
+        token_id = cloudflare_zero_trust_access_service_token.fly.id
+      }
+    },
+  ]
 }
 
 resource "cloudflare_zero_trust_access_policy" "pocket_id" {

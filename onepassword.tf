@@ -138,6 +138,16 @@ resource "onepassword_item" "cloudflare_access" {
   }
 }
 
+resource "onepassword_item" "cloudflare_access_applications" {
+  for_each = local.cloudflare_consumers_access_applications
+
+  category = "login"
+  password = cloudflare_account_token.access_applications[each.key].value
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "Cloudflare Access Applications"
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
 resource "onepassword_item" "cloudflare_access_fly" {
   category = "login"
   password = cloudflare_zero_trust_access_service_token.fly.client_secret

@@ -18,7 +18,12 @@ locals {
   infrastructure_inventory = {
     cloudflare = {
       account_id = data.cloudflare_account.default.id
-      tunnels    = { for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id }
+      access_policies = {
+        bypass    = cloudflare_zero_trust_access_policy.bypass.id
+        excloo_id = cloudflare_zero_trust_access_policy.pocket_id.id
+        gatus     = cloudflare_zero_trust_access_policy.fly.id
+      }
+      tunnels = { for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id }
     }
     hosts = {
       for name, machine in local.machines : name => try(coalesce(
