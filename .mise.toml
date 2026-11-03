@@ -82,5 +82,5 @@ run = "tofu init -backend=false -input=false -lockfile=readonly"
 run = [{ task = "setup:credentials" }, { task = "init" }]
 
 [tasks."setup:credentials"]
-description = "Create Missing OpenTofu 1Password Item"
+description = "Create Missing OpenTofu 1Password Fields"
 run = "scripts/setup_opentofu_item.sh"
