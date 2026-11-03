@@ -60,13 +60,11 @@ while IFS= read -r cluster; do
       talosconfig_path="${tmpdir}/talosconfig"
       if [[ -f "${talosconfig_dest}" ]]; then
         cp "${talosconfig_dest}" "${talosconfig_path}"
-        TALOSCONFIG_SOURCE="${talos_file}" yq -i '.contexts *= load(strenv(TALOSCONFIG_SOURCE)).contexts' "${talosconfig_path}"
       else
         cp "${talos_file}" "${talosconfig_path}"
       fi
-    else
-      TALOSCONFIG_SOURCE="${talos_file}" yq -i '.contexts *= load(strenv(TALOSCONFIG_SOURCE)).contexts' "${talosconfig_path}"
     fi
+    TALOSCONFIG_SOURCE="${talos_file}" yq -i '.contexts *= load(strenv(TALOSCONFIG_SOURCE)).contexts' "${talosconfig_path}"
   else
     echo "    (warning: no talosconfig found for cluster ${cluster})" >&2
   fi
