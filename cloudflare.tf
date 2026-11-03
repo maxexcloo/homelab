@@ -299,6 +299,11 @@ resource "cloudflare_dns_record" "managed" {
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 }
 
+resource "cloudflare_zero_trust_access_application" "app_launcher" {
+  account_id = data.cloudflare_account.default.id
+  type       = "app_launcher"
+}
+
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
   account_id = data.cloudflare_account.default.id
   name       = local.access.cloudflare_access.name
