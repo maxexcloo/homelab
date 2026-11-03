@@ -140,8 +140,11 @@ locals {
         content = <<-EOT
           [Unit]
           Description=Cloudflare Tunnel
+          # Hosts leave Podman's auto-update timer disabled by default.
+          Wants=podman-auto-update.timer
 
           [Container]
+          AutoUpdate=registry
           ContainerName=cloudflared
           EnvironmentFile=/etc/cloudflared/cloudflared.env
           Exec=tunnel --no-autoupdate run
@@ -190,6 +193,16 @@ locals {
     if try(dns_zone.waf, false)
   ]
 
+  cloudflare_zone_settings = merge([
+    for zone in local.cloudflare_zones : {
+      for setting, value in local.cloudflare.zone_settings : "${zone}/${setting}" => {
+        setting = setting
+        value   = value
+        zone    = zone
+      }
+    }
+  ]...)
+
   cloudflare_zones = toset(concat(
     values(local.domains),
     [for dns_zone in local.dns_zones : dns_zone.name],
@@ -202,42 +215,24 @@ resource "cloudflare_account_token" "acme" {
   account_id = data.cloudflare_account.default.id
   name       = "Cloudflare ACME DNS: ${each.value.credential_scope}"
 
-  policies = concat(
-    [
-      {
-        effect = "allow"
+  policies = [
+    {
+      effect = "allow"
 
-        permission_groups = [
-          {
-            id = local.cloudflare_permission_group_ids["DNS Write"]
-          },
-          {
-            id = local.cloudflare_permission_group_ids["Zone Read"]
-          },
-        ]
+      permission_groups = [
+        {
+          id = local.cloudflare_permission_group_ids["DNS Write"]
+        },
+        {
+          id = local.cloudflare_permission_group_ids["Zone Read"]
+        },
+      ]
 
-        resources = jsonencode({
-          "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[each.value.dns_write_zone].zone_id}" = "*"
-        })
-      },
-    ],
-    [
-      for zone in local.cloudflare_zones : {
-        effect = "allow"
-
-        permission_groups = [
-          {
-            id = local.cloudflare_permission_group_ids["Zone Read"]
-          },
-        ]
-
-        resources = jsonencode({
-          "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" = "*"
-        })
-      }
-      if zone != each.value.dns_write_zone
-    ],
-  )
+      resources = jsonencode({
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[each.value.dns_write_zone].zone_id}" = "*"
+      })
+    },
+  ]
 }
 
 resource "cloudflare_account_token" "external_dns" {
@@ -314,6 +309,20 @@ resource "cloudflare_dns_record" "managed" {
   zone_id  = data.cloudflare_zone.configured[each.value.zone].zone_id
 }
 
+resource "cloudflare_zero_trust_access_application" "app_launcher" {
+  account_id                = data.cloudflare_account.default.id
+  allowed_idps              = [cloudflare_zero_trust_access_identity_provider.pocket_id.id]
+  auto_redirect_to_identity = true
+  type                      = "app_launcher"
+
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.pocket_id.id
+      precedence = 1
+    },
+  ]
+}
+
 resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
   account_id = data.cloudflare_account.default.id
   name       = local.access.cloudflare_access.name
@@ -338,6 +347,27 @@ resource "cloudflare_zero_trust_access_identity_provider" "pocket_id" {
   }
 }
 
+resource "cloudflare_zero_trust_access_policy" "pocket_id" {
+  account_id = data.cloudflare_account.default.id
+  decision   = "allow"
+  name       = local.access.cloudflare_access.name
+
+  # Each Pocket ID client's user group decides who can sign in.
+  include = [
+    {
+      login_method = {
+        id = cloudflare_zero_trust_access_identity_provider.pocket_id.id
+      }
+    },
+  ]
+}
+
+resource "cloudflare_zero_trust_access_service_token" "fly" {
+  account_id = data.cloudflare_account.default.id
+  duration   = "forever"
+  name       = "fly"
+}
+
 resource "cloudflare_zero_trust_tunnel_cloudflared" "cluster" {
   for_each = local.cloudflare_consumers_tunnel
 
@@ -357,13 +387,17 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "cluster" {
   }
 }
 
-resource "cloudflare_zone_setting" "ssl" {
-  for_each = {
-    for dns_zone in local.dns_zones : dns_zone.name => dns_zone.ssl
-    if try(dns_zone.ssl, null) != null
-  }
+resource "cloudflare_zone_dnssec" "configured" {
+  for_each = local.cloudflare_zones
 
-  setting_id = "ssl"
-  value      = each.value
-  zone_id    = data.cloudflare_zone.configured[each.key].zone_id
+  status  = "active"
+  zone_id = data.cloudflare_zone.configured[each.key].zone_id
+}
+
+resource "cloudflare_zone_setting" "configured" {
+  for_each = local.cloudflare_zone_settings
+
+  setting_id = each.value.setting
+  value      = each.value.value
+  zone_id    = data.cloudflare_zone.configured[each.value.zone].zone_id
 }

@@ -138,6 +138,16 @@ resource "onepassword_item" "cloudflare_access" {
   }
 }
 
+resource "onepassword_item" "cloudflare_access_fly" {
+  category = "login"
+  password = cloudflare_zero_trust_access_service_token.fly.client_secret
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "Cloudflare Access Service Token"
+  url      = "https://one.dash.cloudflare.com"
+  username = cloudflare_zero_trust_access_service_token.fly.client_id
+  vault    = data.onepassword_vault.configured["flylab"].uuid
+}
+
 resource "onepassword_item" "cloudflare_acme" {
   for_each = local.cloudflare_consumers_acme
 
