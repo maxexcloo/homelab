@@ -40,6 +40,40 @@ provider "registry.opentofu.org/backblaze/b2" {
   ]
 }
 
+provider "registry.opentofu.org/baptistecdr/controld" {
+  version     = "0.0.7"
+  constraints = "~> 0.0.7"
+  hashes = [
+    "h1:9BKjMqaI3mpRw0B/45idZwQfpfrT+5/wbMu7oPqEwhE=",
+    "h1:BBW6ywciMyGF1N98+RSIJpF/gghczZx6rTnW3ypGq8w=",
+    "h1:Eod/2t9ov4X8dLqARS9oTNWH2Ivc46y/SLbnxjZXuiE=",
+    "h1:ORHXudzhYiVkhyYMMN2YDayjCNMbcKSnjnPu+0Bt5ps=",
+    "h1:PkD/ixWanjyuyyE+Z0xdFU+f67GKMNqW/91D1s6QsYg=",
+    "h1:QAg235LgkWsanRBOC115QZfuzClYeFxrJx3JHGPtxW0=",
+    "h1:ZlUEfnW7U1XNj/qfHzBJvUx5jPjbH6WdvuDi2sO0wWk=",
+    "h1:cj2DJxSsUemSbMrg40widI8IMk0A0+sV6IsFTPpBtRI=",
+    "h1:d33Nqt2Lkywcpit8fvAaARkm5HEjH1GHrcyz+ipdrUY=",
+    "h1:jTb2jFV1K86DoANCnQrMeo6vJLYDn35s10eHTsToXb0=",
+    "h1:l9E5A2dqYzcbQCJ28Sic8QrvGQDfdGFXGB5zwL8rdwg=",
+    "h1:ostsHJiT6FILmO/aeA1+lr9A9TKKnQrTl1k1x/V7Rng=",
+    "h1:wEYudxD2WGqzjV/OexSBP2v9x8YPMS72yQWoER756rU=",
+    "zh:208e77f2df274b0fea58db47f416154765267354a6150ef2db65f0573f80a37e",
+    "zh:261ee7d443eece1d0a6c172587854db29914fa25176414647cc56bf4b706f073",
+    "zh:2cac376afbe61c0974a604a56a4def787743e9d4570ba8f856e1a23962c92ddf",
+    "zh:426b34c6860872e8b7f896a85574cde83fca9327879e15f5661840c58b3f10d5",
+    "zh:43e9955418ddb9c05032de77beba22dc2ee763f12e970425c183fac085c4210f",
+    "zh:6fe723ce1b49e1a2529f428dbafff1f5dbaf56177c48db029b3718f2e85d4185",
+    "zh:7ba8d3b3c10e3416d259e9ae0b9aa1426bafc88688a387b7c85d0852b5ed54b4",
+    "zh:86bf1b027fc8c66628b4d31994a57ce1257b632c1eb46b31d6e7a41c78423746",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:8d03026c2a4b0874ca686b6de7f07b38fddbd31a766043bb9dd099b75e1ac498",
+    "zh:8dd7b7c57e63565a00b73096930057507eba7eb68170455db96e9dcf92462b32",
+    "zh:bc8938c7ab7fbfbb24032db79ce935cb5472a7e1f763bb29e649bfb8ffa86c9a",
+    "zh:d4c53d9d2fdcd8ea7eaf7305833478a79a1336d8a0827213afffe3afaba493af",
+    "zh:e8d374333a1cd31d750172e5afbac4c81f1083b69957d7649cf02469e645158e",
+  ]
+}
+
 provider "registry.opentofu.org/cloudflare/cloudflare" {
   version     = "5.28.1"
   constraints = "~> 5.28"
