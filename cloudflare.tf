@@ -205,42 +205,24 @@ resource "cloudflare_account_token" "acme" {
   account_id = data.cloudflare_account.default.id
   name       = "Cloudflare ACME DNS: ${each.value.credential_scope}"
 
-  policies = concat(
-    [
-      {
-        effect = "allow"
+  policies = [
+    {
+      effect = "allow"
 
-        permission_groups = [
-          {
-            id = local.cloudflare_permission_group_ids["DNS Write"]
-          },
-          {
-            id = local.cloudflare_permission_group_ids["Zone Read"]
-          },
-        ]
+      permission_groups = [
+        {
+          id = local.cloudflare_permission_group_ids["DNS Write"]
+        },
+        {
+          id = local.cloudflare_permission_group_ids["Zone Read"]
+        },
+      ]
 
-        resources = jsonencode({
-          "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[each.value.dns_write_zone].zone_id}" = "*"
-        })
-      },
-    ],
-    [
-      for zone in local.cloudflare_zones : {
-        effect = "allow"
-
-        permission_groups = [
-          {
-            id = local.cloudflare_permission_group_ids["Zone Read"]
-          },
-        ]
-
-        resources = jsonencode({
-          "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" = "*"
-        })
-      }
-      if zone != each.value.dns_write_zone
-    ],
-  )
+      resources = jsonencode({
+        "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[each.value.dns_write_zone].zone_id}" = "*"
+      })
+    },
+  ]
 }
 
 resource "cloudflare_account_token" "external_dns" {
