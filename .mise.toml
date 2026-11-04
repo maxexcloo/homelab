@@ -6,7 +6,7 @@ kubectl = "1.37.2"
 talosctl = "1.14.5"
 
 [env]
-TF_DATA_DIR = "{{env.HOME}}/.cache/opentofu/homelab"
+TF_DATA_DIR = "{{ get_env(name='XDG_CACHE_HOME', default=env.HOME ~ '/.cache') }}/opentofu/homelab"
 
 # Deploy
 [tasks.apply]
