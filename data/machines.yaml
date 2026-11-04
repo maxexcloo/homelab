@@ -338,6 +338,18 @@ machines:
           name: Cockpit
           port: 9090
           scheme: https
+        polaris:
+          description: Game Streaming Host
+          icon: sh-sunshine
+          name: Polaris
+          port: 47990
+          scheme: https
+        syncthing:
+          description: File Synchronisation
+          icon: sh-syncthing
+          name: Syncthing
+          port: 8384
+          scheme: http
     nanokvm:
       monitoring: false
       name: NanoKVM
