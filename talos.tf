@@ -103,8 +103,7 @@ data "talos_machine_configuration" "node" {
 locals {
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
-      try(node.tailscale_address, null),
-      can(node.tailscale_address) ? null : try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
+      try(node.tailscale_address, local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
       node.address,
     ])
   }
