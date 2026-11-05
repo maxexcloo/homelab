@@ -105,6 +105,46 @@ providers:
       type: tailscale
   unifi:
     description: Network
+    firewall_policies:
+      internal_iot:
+        action: ALLOW
+        destination:
+          matching_target: ANY
+          zone: iot
+        enabled: true
+        id: 68959311f8f0702f9177b484
+        name: Allow Internal Traffic to IoT
+        source:
+          matching_target: ANY
+          zone: internal
+      iot_haos:
+        action: ALLOW
+        destination:
+          ips:
+            - 10.0.0.2
+          matching_target: IP
+          zone: internal
+        enabled: true
+        id: 6944b4ac254b3c1a8aa2deac
+        name: Allow IoT Traffic to HAOS
+        source:
+          matching_target: ANY
+          zone: iot
+      vpn_iot:
+        action: ALLOW
+        destination:
+          matching_target: ANY
+          zone: iot
+        enabled: true
+        id: 6895934ff8f0702f9177b674
+        name: Allow VPN Traffic to IoT
+        source:
+          matching_target: ANY
+          zone: vpn
+    firewall_zones:
+      internal: Internal
+      iot: IoT
+      vpn: Vpn
     icon: si-ubiquiti-#ffffff
     name: UniFi
     url: https://unifi.ui.com

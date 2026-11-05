@@ -1,3 +1,9 @@
+data "unifi_firewall_zone" "configured" {
+  for_each = local.provider_settings.providers.unifi.firewall_zones
+
+  name = each.value
+}
+
 data "unifi_network" "configured" {
   for_each = local.unifi_networks
 
@@ -55,6 +61,31 @@ resource "unifi_client" "talos_container" {
   name             = each.value.device_name
   network_id       = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
   note             = local.managed_comment
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "unifi_firewall_policy" "configured" {
+  for_each = local.provider_settings.providers.unifi.firewall_policies
+
+  action  = each.value.action
+  enabled = each.value.enabled
+  name    = each.value.name
+
+  source = {
+    matching_target = each.value.source.matching_target
+    zone_id         = data.unifi_firewall_zone.configured[each.value.source.zone].id
+  }
+
+  destination = merge(
+    {
+      matching_target = each.value.destination.matching_target
+      zone_id         = data.unifi_firewall_zone.configured[each.value.destination.zone].id
+    },
+    try({ ips = each.value.destination.ips }, {}),
+  )
 
   lifecycle {
     prevent_destroy = true
