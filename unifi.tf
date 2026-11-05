@@ -61,11 +61,28 @@ resource "unifi_client" "talos_container" {
   }
 }
 
-# IDS is detect-only; switching to blocking is a separate decision after reviewing alerts.
 resource "unifi_setting" "site" {
   site = "default"
 
+  # IDS is detect-only; switching to blocking is a separate decision after reviewing alerts.
   ips = {
     ips_mode = "ids"
+  }
+
+  mgmt = {
+    auto_upgrade = {
+      enabled = true
+      hour    = 3
+    }
+  }
+
+  usg = {
+    broadcast_ping    = false
+    receive_redirects = false
+    syn_cookies       = true
+
+    upnp = {
+      enabled = false
+    }
   }
 }
