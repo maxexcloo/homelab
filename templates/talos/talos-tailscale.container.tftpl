@@ -1,0 +1,18 @@
+[Unit]
+Description=Talos Tailscale
+PartOf=talos.service
+
+[Container]
+AddCapability=CAP_NET_ADMIN CAP_NET_RAW
+AddDevice=/dev/net/tun
+ContainerName=talos-tailscale
+EnvironmentFile=/etc/talos/tailscale.env
+Image=${image}
+Network=talos.container
+Volume=talos-tailscale:${state_directory}
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=talos.service

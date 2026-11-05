@@ -1,0 +1,35 @@
+[Unit]
+Description=Talos Kubernetes Node
+
+[Container]
+ContainerName=talos
+%{ for server in dns_servers ~}
+DNS=${server}
+%{ endfor ~}
+Environment=PLATFORM=container
+HostName=${name}
+Image=${image}
+%{ for path in paths ~}
+Mount=type=bind,source=${path},target=/var/mnt/datasets/${basename(path)},bind-propagation=rslave
+%{ endfor ~}
+Network=talos-local.network
+Network=talos-services.network:ip=${address},mac=${mac}
+PodmanArgs=--cgroupns=private --privileged --systemd=false
+ReadOnly=true
+ReadOnlyTmpfs=false
+SeccompProfile=unconfined
+SecurityLabelDisable=true
+Tmpfs=/run
+Tmpfs=/system
+Tmpfs=/tmp
+Volume=/lib/modules:/lib/modules:ro
+Volume=talos-opt:/opt
+Volume=talos-state:/system/state
+Volume=talos-var:/var
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

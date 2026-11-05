@@ -44,28 +44,14 @@ locals {
     ]
   ]))
 
-  # The timer in hosts/common runs this renewal.
+  # The timer in data/hosts/common runs this renewal.
   cloudflare_acme_files = {
     for name in keys(local.cloudflare_consumers_acme) : name => {
       "/etc/containers/systemd/cockpit-letsencrypt.container" = {
-        content = <<-EOT
-          [Unit]
-          Description=Renew the Let's Encrypt certificate used by Cockpit
-
-          [Container]
-          ContainerName=cockpit-letsencrypt
-          Exec=--cron
-          Image=${local.versions.images.acme_sh}
-          Pull=newer
-          Volume=/etc/cockpit/ws-certs.d:/cockpit:Z
-          Volume=/var/lib/acme-%H:/acme.sh:Z
-
-          [Service]
-          ExecStartPost=/usr/sbin/restorecon -RF /etc/cockpit/ws-certs.d
-          ExecStartPost=/usr/bin/systemctl try-restart cockpit.service
-          Type=oneshot
-        EOT
-        mode    = "0644"
+        content = templatefile("${path.module}/templates/cloudflare/cockpit-letsencrypt.container.tftpl", {
+          image = local.versions.images.acme_sh
+        })
+        mode = "0644"
       }
     }
     if can(local.sync_hosts[name])
@@ -147,29 +133,10 @@ locals {
         mode    = "0600"
       }
       "/etc/containers/systemd/cloudflared.container" = {
-        content = <<-EOT
-          [Unit]
-          Description=Cloudflare Tunnel
-          # Hosts leave Podman's auto-update timer disabled by default.
-          Wants=podman-auto-update.timer
-
-          [Container]
-          AutoUpdate=registry
-          ContainerName=cloudflared
-          EnvironmentFile=/etc/cloudflared/cloudflared.env
-          Exec=tunnel --no-autoupdate run
-          Image=${local.versions.images.cloudflared}
-          Network=host
-
-          [Service]
-          Restart=always
-          RestartSec=5
-          TimeoutStartSec=300
-
-          [Install]
-          WantedBy=multi-user.target
-        EOT
-        mode    = "0644"
+        content = templatefile("${path.module}/templates/cloudflare/cloudflared.container.tftpl", {
+          image = local.versions.images.cloudflared
+        })
+        mode = "0644"
       }
     }
     if can(local.sync_hosts[name])

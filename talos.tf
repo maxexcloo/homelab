@@ -162,84 +162,34 @@ locals {
   talos_container_files = {
     for name, container in local.talos_container_hosts : name => {
       "/etc/containers/systemd/talos-local.network" = {
-        content = <<-EOT
-          # macvlan cannot reach the host; this bridge gives Tailscale a peer path.
-          [Network]
-          DisableDNS=true
-          Internal=true
-          NetworkName=talos-local
-        EOT
+        content = file("${path.module}/templates/talos/talos-local.network")
         mode    = "0644"
       }
       "/etc/containers/systemd/talos-services.network" = {
-        content = <<-EOT
-          [Network]
-          Driver=macvlan
-          Gateway=${cidrhost(local.unifi_networks[container.network_key].subnet, 1)}
-          NetworkName=talos-services
-          Options=parent=${container.interface}
-          Subnet=${cidrsubnet(local.unifi_networks[container.network_key].subnet, 0, 0)}
-        EOT
-        mode    = "0644"
+        content = templatefile("${path.module}/templates/talos/talos-services.network.tftpl", {
+          gateway = cidrhost(local.unifi_networks[container.network_key].subnet, 1)
+          parent  = container.interface
+          subnet  = cidrsubnet(local.unifi_networks[container.network_key].subnet, 0, 0)
+        })
+        mode = "0644"
       }
       "/etc/containers/systemd/talos-tailscale.container" = {
-        content = <<-EOT
-          [Unit]
-          Description=Talos Tailscale
-          PartOf=talos.service
-
-          [Container]
-          AddCapability=CAP_NET_ADMIN CAP_NET_RAW
-          AddDevice=/dev/net/tun
-          ContainerName=talos-tailscale
-          EnvironmentFile=/etc/talos/tailscale.env
-          Image=${local.versions.images.tailscale}
-          Network=talos.container
-          Volume=talos-tailscale:${local.talos_container_tailscale_state_directory}
-
-          [Service]
-          Restart=always
-
-          [Install]
-          WantedBy=talos.service
-        EOT
-        mode    = "0644"
+        content = templatefile("${path.module}/templates/talos/talos-tailscale.container.tftpl", {
+          image           = local.versions.images.tailscale
+          state_directory = local.talos_container_tailscale_state_directory
+        })
+        mode = "0644"
       }
       "/etc/containers/systemd/talos.container" = {
-        content = <<-EOT
-          [Unit]
-          Description=Talos Kubernetes Node
-
-          [Container]
-          ContainerName=talos
-          ${join("\n", [for server in local.talos_container_dns_servers : "DNS=${server}"])}
-          Environment=PLATFORM=container
-          HostName=${container.name}
-          Image=${container.image}
-          ${join("\n", [for path in container.paths : "Mount=type=bind,source=${path},target=/var/mnt/datasets/${basename(path)},bind-propagation=rslave"])}
-          Network=talos-local.network
-          Network=talos-services.network:ip=${container.address},mac=${container.mac}
-          PodmanArgs=--cgroupns=private --privileged --systemd=false
-          ReadOnly=true
-          ReadOnlyTmpfs=false
-          SeccompProfile=unconfined
-          SecurityLabelDisable=true
-          Tmpfs=/run
-          Tmpfs=/system
-          Tmpfs=/tmp
-          Volume=/lib/modules:/lib/modules:ro
-          Volume=talos-opt:/opt
-          Volume=talos-state:/system/state
-          Volume=talos-var:/var
-
-          [Service]
-          Restart=always
-          TimeoutStartSec=900
-
-          [Install]
-          WantedBy=multi-user.target
-        EOT
-        mode    = "0644"
+        content = templatefile("${path.module}/templates/talos/talos.container.tftpl", {
+          address     = container.address
+          dns_servers = local.talos_container_dns_servers
+          image       = container.image
+          mac         = container.mac
+          name        = container.name
+          paths       = container.paths
+        })
+        mode = "0644"
       }
       "/etc/talos/tailscale.env" = {
         content = join("", [for key, value in local.talos_container_tailscale_environment[name] : "${key}=${value}\n"])

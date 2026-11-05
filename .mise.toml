@@ -56,10 +56,14 @@ run = "scripts/sync_client_configs.sh"
 [tasks."hosts:ignition"]
 description = "Render Host Installation Files"
 run = '''
+set -eu
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
+rendered_directory=$(mktemp -d)
+trap 'rm -fr -- "$rendered_directory"' EXIT
 mkdir -p "${output_directory}"
-for config in hosts/*/*.bu; do
-  butane --files-dir hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "${config}"
+scripts/render_hosts.sh "$rendered_directory"
+for config in "$rendered_directory"/*.bu; do
+  butane --files-dir data/hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "$config"
 done
 '''
 

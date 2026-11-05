@@ -1,0 +1,96 @@
+hosts:
+  bento:
+    files:
+      - group: core
+        local: bento/btop.conf
+        mode: "0644"
+        path: /var/home/core/.config/btop/btop.conf
+        user: core
+      - group: core
+        local: bento/trcc.json
+        mode: "0644"
+        path: /var/home/core/.trcc/trcc.json
+        user: core
+    groups: []
+    hostname: bento
+    image: ghcr.io/ublue-os/ucore-hci:stable
+    interface: enp3s0
+    kernel_arguments:
+      - fbcon=rotate:3
+      - quiet
+      - systemd.show_status=false
+    linger: true
+    links:
+      - group: core
+        path: /var/home/core/.config/systemd/user/default.target.wants/trccd.service
+        target: /etc/systemd/user/trccd.service
+        user: core
+    trees:
+      - local: common/etc
+        path: /etc
+      - local: bento/etc
+        path: /etc
+    units:
+      - enabled: true
+        name: bento-display-packages.service
+      - enabled: true
+        name: btop-display.service
+      - enabled: true
+        name: cockpit-letsencrypt.timer
+      - enabled: true
+        name: cockpit.service
+      - enabled: false
+        name: getty@tty1.service
+      - enabled: true
+        name: tailscaled.service
+      - enabled: true
+        name: ucore-unsigned-autorebase.service
+      - enabled: true
+        name: ucore-signed-autorebase.service
+    users:
+      - name: core
+        ssh_authorized_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaF+DCJq1CyGrafKzDMtNjW02M5XJoH5MLFFSlHPjyz Max Schaefer
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINSF/XgIGlHjO79F6qvkna9yLEGslfMqLMC53/i1+obi kimbap AI sync
+  hotdog:
+    files: []
+    groups:
+      - gid: 1001
+        name: kimbap
+    hostname: hotdog
+    image: ghcr.io/ublue-os/ucore:stable
+    interface: enp1s0
+    kernel_arguments: []
+    linger: false
+    links: []
+    trees:
+      - local: common/etc
+        path: /etc
+      - local: hotdog/etc
+        path: /etc
+    units:
+      - enabled: true
+        name: cockpit-letsencrypt.timer
+      - enabled: true
+        name: cockpit.service
+      - enabled: true
+        name: sanoid.timer
+      - enabled: true
+        name: tailscaled.service
+      - enabled: true
+        name: ucore-unsigned-autorebase.service
+      - enabled: true
+        name: ucore-signed-autorebase.service
+      - enabled: true
+        name: zfs-scrub-monthly@hotdog.timer
+    users:
+      - name: core
+        ssh_authorized_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaF+DCJq1CyGrafKzDMtNjW02M5XJoH5MLFFSlHPjyz Max Schaefer
+      - home_dir: /var/home/kimbap
+        name: kimbap
+        primary_group: kimbap
+        shell: /bin/bash
+        ssh_authorized_keys:
+          - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDGPyyx+gC7EcrTGSyMhl5UPtzAFCGDZTKQn/0rVNVlX2bEMJlCtPvC2OQOU3Rrs5EG+vFc5jhgd8/+DW87eqCI9C5hDvliRHCS6aHR1Cwtf7sthj49+auDVimSUFMFHfHe8VBcXNPXWcPT866zjSl6rgPh7M57iL+p6M/tbKayT4nyKhnUI6CRu4xa/VygnAHOwiKtbGxuy4ehbID8EjRO3+WouCf+hacOnp9l4piVzLexGF+i4cLPSc5b2lzDRSUgQjLTzvvB9it8W1hjgusWWGlsDo6TRem4ZjfABBxZSqkHzpRkVMFu6Axja/iz++fNnNAlA2uf8WRFDle79IIdu2QEIpDBPCnaXh6RvnhkZitL+fkHk3882o2h8dPJWHQfjYpm3JyNSoGlNtmTpfyRHrh2+uKXBvBjrITXBnHZuOALQU+xNCd0VVf+PY2jTwBi7uIzgHRpLeVeWu9uJd1IF8EjrXQ9OM5OAtOc1rSuRs5jScuUviEpj98pnpIQPis= root@truenas
+        uid: 1001
