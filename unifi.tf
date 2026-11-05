@@ -60,3 +60,12 @@ resource "unifi_client" "talos_container" {
     prevent_destroy = true
   }
 }
+
+# IDS is detect-only; switching to blocking is a separate decision after reviewing alerts.
+resource "unifi_setting" "site" {
+  site = "default"
+
+  ips = {
+    ips_mode = "ids"
+  }
+}
