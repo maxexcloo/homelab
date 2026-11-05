@@ -53,7 +53,7 @@ providers:
       browser_check: "off"
       email_obfuscation: "off"
       min_tls_version: "1.2"
-      security_level: essentially_off
+      security_level: medium
       server_side_exclude: "off"
       ssl: strict
       tls_1_3: zrt
