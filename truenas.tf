@@ -135,6 +135,7 @@ resource "truenas_app" "ingress" {
           providers = {
             docker = {
               defaultRule      = "Host(`{{ index .Labels \"com.docker.compose.service\" }}.${local.machine_fqdns[each.key]}`)"
+              endpoint         = "tcp://127.0.0.1:2375"
               exposedByDefault = false
               useBindPortIP    = true
             }
@@ -146,6 +147,33 @@ resource "truenas_app" "ingress" {
       }
     }
     services = {
+      # The Docker socket grants root-equivalent control.
+      # This proxy exposes only the read endpoints Traefik uses.
+      docker-socket-proxy = {
+        image        = local.versions.images.docker_socket_proxy
+        ports        = ["127.0.0.1:2375:2375"]
+        restart      = "unless-stopped"
+        security_opt = ["no-new-privileges:true"]
+        environment = {
+          CONTAINERS = "1"
+          EVENTS     = "1"
+          IMAGES     = "1"
+          INFO       = "1"
+          NETWORKS   = "1"
+          PING       = "1"
+          SERVICES   = "1"
+          TASKS      = "1"
+          VERSION    = "1"
+        }
+        volumes = [
+          {
+            read_only = true
+            source    = "/var/run/docker.sock"
+            target    = "/var/run/docker.sock"
+            type      = "bind"
+          },
+        ]
+      }
       traefik = {
         image        = local.versions.images.traefik
         network_mode = "host"
@@ -154,6 +182,7 @@ resource "truenas_app" "ingress" {
           { source = "static", target = "/etc/traefik/traefik.yaml" },
           { source = "dynamic", target = "/etc/traefik/dynamic.yaml" },
         ]
+        depends_on = ["docker-socket-proxy"]
         # Host-network apps must resolve back to this network namespace.
         extra_hosts  = ["host.docker.internal:127.0.0.1"]
         security_opt = ["no-new-privileges:true"]
@@ -162,12 +191,6 @@ resource "truenas_app" "ingress" {
             read_only = true
             source    = "/etc/certificates"
             target    = "/etc/certificates"
-            type      = "bind"
-          },
-          {
-            read_only = true
-            source    = "/var/run/docker.sock"
-            target    = "/var/run/docker.sock"
             type      = "bind"
           },
         ]
