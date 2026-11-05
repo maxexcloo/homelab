@@ -112,7 +112,6 @@ providers:
           matching_target: ANY
           zone: iot
         enabled: true
-        id: 68959311f8f0702f9177b484
         name: Allow Internal Traffic to IoT
         source:
           matching_target: ANY
@@ -125,7 +124,6 @@ providers:
           matching_target: IP
           zone: internal
         enabled: true
-        id: 6944b4ac254b3c1a8aa2deac
         name: Allow IoT Traffic to HAOS
         source:
           matching_target: ANY
@@ -136,7 +134,6 @@ providers:
           matching_target: ANY
           zone: iot
         enabled: true
-        id: 6895934ff8f0702f9177b674
         name: Allow VPN Traffic to IoT
         source:
           matching_target: ANY
