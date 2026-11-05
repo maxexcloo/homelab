@@ -49,6 +49,26 @@ locals {
     if can(local.truenas_hosts[interface.machine]) && interface.bridge != null
   }
 
+  truenas_ingress_compose_configs = {
+    for name, host in local.truenas_hosts_ingress : name => {
+      dynamic = {
+        content = templatefile("${path.module}/templates/traefik/dynamic.yaml.tftpl", {
+          certificate = host.certificate
+          private_source_ranges = concat(
+            values(local.tailscale_address_ranges),
+            [for subnet in values(local.networks[local.machines[name].network].subnets) : cidrsubnet(subnet.cidr, 0, 0)],
+          )
+        })
+      }
+      static = {
+        content = templatefile("${path.module}/templates/traefik/static.yaml.tftpl", {
+          fqdn = local.machine_fqdns[name]
+          port = host.port
+        })
+      }
+    }
+  }
+
   truenas_services = merge([
     for target, host in local.truenas_hosts : {
       for service, enabled in try(host.service_settings, {}) : "${target}/${service}" => {
@@ -98,54 +118,7 @@ resource "truenas_app" "ingress" {
   remove_ix_volumes = false
 
   custom_compose = yamlencode({
-    configs = {
-      dynamic = {
-        content = yamlencode({
-          http = {
-            middlewares = {
-              private = {
-                ipAllowList = {
-                  sourceRange = concat(
-                    values(local.tailscale_address_ranges),
-                    [for subnet in values(local.networks[local.machines[each.key].network].subnets) : cidrsubnet(subnet.cidr, 0, 0)],
-                  )
-                }
-              }
-            }
-          }
-          tls = {
-            certificates = [{
-              certFile = "/etc/certificates/${each.value.certificate}.crt"
-              keyFile  = "/etc/certificates/${each.value.certificate}.key"
-            }]
-          }
-        })
-      }
-      static = {
-        content = yamlencode({
-          entryPoints = {
-            websecure = {
-              address = ":${each.value.port}"
-              http = {
-                middlewares = ["private@file"]
-                tls         = {}
-              }
-            }
-          }
-          providers = {
-            docker = {
-              defaultRule      = "Host(`{{ index .Labels \"com.docker.compose.service\" }}.${local.machine_fqdns[each.key]}`)"
-              endpoint         = "tcp://127.0.0.1:2375"
-              exposedByDefault = false
-              useBindPortIP    = true
-            }
-            file = {
-              filename = "/etc/traefik/dynamic.yaml"
-            }
-          }
-        })
-      }
-    }
+    configs = local.truenas_ingress_compose_configs[each.key]
     services = {
       # The Docker socket grants root-equivalent control.
       # This proxy exposes only the read endpoints Traefik uses.
