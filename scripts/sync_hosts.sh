@@ -93,8 +93,10 @@ fi
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 hosts_json="$(fnox exec -- tofu output -json hosts)"
+rendered_hosts="$(mktemp -d)"
 staging_root="$(mktemp -d)"
-trap 'rm -rf -- "${staging_root}"' EXIT
+trap 'rm -rf -- "${rendered_hosts}" "${staging_root}"' EXIT
+"${repo_dir}/scripts/render_hosts.sh" "${rendered_hosts}"
 
 if (($# == 0)); then
   names="$(jq -r 'keys[]' <<<"${hosts_json}")"
@@ -110,11 +112,11 @@ for name in "$@"; do
   mkdir -p "${staging}/root"
   cp "${BASH_SOURCE[0]}" "${staging}/sync_hosts.sh"
 
-  butane_config="${repo_dir}/hosts/${name}/${name}.bu"
+  butane_config="${rendered_hosts}/${name}.bu"
   if [[ -f "${butane_config}" ]]; then
     while IFS=$'\t' read -r tree path; do
       mkdir -p "${staging}/root${path}"
-      cp -Rp "${repo_dir}/hosts/${tree}/." "${staging}/root${path}/"
+      cp -Rp "${repo_dir}/data/hosts/${tree}/." "${staging}/root${path}/"
     done < <(yq -r '.storage.trees[] | [.local, .path] | @tsv' "${butane_config}")
   fi
 

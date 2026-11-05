@@ -1,0 +1,105 @@
+variant: fcos
+version: 1.6.0
+
+%{ if length(kernel_arguments) > 0 ~}
+kernel_arguments:
+  should_exist:
+%{ for argument in kernel_arguments ~}
+    - ${argument}
+%{ endfor ~}
+%{ endif ~}
+passwd:
+%{ if length(groups) > 0 ~}
+  groups:
+%{ for group in groups ~}
+    - name: ${group.name}
+      gid: ${group.gid}
+%{ endfor ~}
+%{ endif ~}
+  users:
+%{ for user in users ~}
+    - name: ${user.name}
+%{ if try(user.home_dir, null) != null ~}
+      home_dir: ${user.home_dir}
+%{ endif ~}
+%{ if try(user.primary_group, null) != null ~}
+      primary_group: ${user.primary_group}
+%{ endif ~}
+%{ if try(user.shell, null) != null ~}
+      shell: ${user.shell}
+%{ endif ~}
+%{ if try(user.uid, null) != null ~}
+      uid: ${user.uid}
+%{ endif ~}
+      ssh_authorized_keys:
+%{ for key in user.ssh_authorized_keys ~}
+        - ${key}
+%{ endfor ~}
+%{ endfor ~}
+
+storage:
+  directories:
+    - mode: 0754
+      path: /etc/ucore-autorebase
+  files:
+    - mode: 0644
+      path: /etc/tailscale-udp-gro-interface
+      contents:
+        inline: |
+          ${interface}
+    - mode: 0644
+      path: /etc/ucore-autorebase/image.env
+      contents:
+        inline: |
+          UCORE_IMAGE=${image}
+    - mode: 0440
+      overwrite: true
+      path: /etc/sudoers.d/coreos-sudo-group
+      contents:
+        inline: |
+          # Sudo requires the user password (replaces the CoreOS passwordless default).
+    - mode: 0644
+      overwrite: true
+      path: /etc/hostname
+      contents:
+        inline: |
+          ${hostname}
+%{ for file in files ~}
+    - mode: ${file.mode}
+      path: ${file.path}
+      contents:
+        local: ${file.local}
+      group:
+        name: ${file.group}
+      user:
+        name: ${file.user}
+%{ endfor ~}
+%{ if linger ~}
+    - mode: 0644
+      path: /var/lib/systemd/linger/core
+      contents:
+        inline: ""
+%{ endif ~}
+%{ if length(links) > 0 ~}
+  links:
+%{ for link in links ~}
+    - path: ${link.path}
+      target: ${link.target}
+      group:
+        name: ${link.group}
+      user:
+        name: ${link.user}
+%{ endfor ~}
+%{ endif ~}
+  trees:
+%{ for tree in trees ~}
+    - local: ${tree.local}
+      path: ${tree.path}
+%{ endfor ~}
+
+systemd:
+  units:
+%{ for unit in units ~}
+    - name: ${unit.name}
+      enabled: ${unit.enabled}
+%{ endfor ~}
