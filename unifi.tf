@@ -10,6 +10,12 @@ data "unifi_network" "configured" {
   name = each.value.name
 }
 
+data "unifi_network" "ips" {
+  for_each = local.unifi_ips_networks
+
+  name = each.value
+}
+
 locals {
   unifi_clients = {
     for interface in local.machine_interface_assignments : interface.client_mac => {
@@ -20,6 +26,13 @@ locals {
       network_key = "${interface.network}/${interface.subnet}"
     }
     if interface.address != null
+  }
+
+  unifi_ips_networks = {
+    default  = "Default"
+    guest    = "Guest"
+    iot      = "IoT"
+    services = "Services"
   }
 
   unifi_networks = merge([
@@ -96,8 +109,12 @@ resource "unifi_setting" "site" {
   site = "default"
 
   # IDS is detect-only; switching to blocking is a separate decision after reviewing alerts.
+  # The controller ignores ips_mode unless categories and networks are also set.
   ips = {
-    ips_mode = "ids"
+    advanced_filtering_preference = "manual"
+    enabled_categories            = ["emerging-malware", "emerging-attackresponse", "emerging-shellcode", "emerging-worm", "botcc", "ciarmy", "compromised", "dshield"]
+    enabled_networks              = [for network in data.unifi_network.ips : network.id]
+    ips_mode                      = "ids"
   }
 
   mgmt = {
@@ -109,16 +126,6 @@ resource "unifi_setting" "site" {
     # Leave SSH enabled and its keys unmanaged; the provider preserves omitted fields.
     ssh = {
       auth_password_enabled = false
-    }
-  }
-
-  usg = {
-    broadcast_ping    = false
-    receive_redirects = false
-    syn_cookies       = true
-
-    upnp = {
-      enabled = false
     }
   }
 }
