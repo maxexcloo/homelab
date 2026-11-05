@@ -1,3 +1,9 @@
+data "unifi_firewall_zone" "configured" {
+  for_each = local.provider_settings.providers.unifi.firewall_zones
+
+  name = each.value
+}
+
 data "unifi_network" "configured" {
   for_each = local.unifi_networks
 
@@ -58,5 +64,61 @@ resource "unifi_client" "talos_container" {
 
   lifecycle {
     prevent_destroy = true
+  }
+}
+
+resource "unifi_firewall_policy" "configured" {
+  for_each = local.provider_settings.providers.unifi.firewall_policies
+
+  action  = each.value.action
+  enabled = each.value.enabled
+  name    = each.value.name
+
+  source = {
+    matching_target = each.value.source.matching_target
+    zone_id         = data.unifi_firewall_zone.configured[each.value.source.zone].id
+  }
+
+  destination = merge(
+    {
+      matching_target = each.value.destination.matching_target
+      zone_id         = data.unifi_firewall_zone.configured[each.value.destination.zone].id
+    },
+    try({ ips = each.value.destination.ips }, {}),
+  )
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "unifi_setting" "site" {
+  site = "default"
+
+  # IDS is detect-only; switching to blocking is a separate decision after reviewing alerts.
+  ips = {
+    ips_mode = "ids"
+  }
+
+  mgmt = {
+    auto_upgrade = {
+      enabled = true
+      hour    = 3
+    }
+
+    # Leave SSH enabled and its keys unmanaged; the provider preserves omitted fields.
+    ssh = {
+      auth_password_enabled = false
+    }
+  }
+
+  usg = {
+    broadcast_ping    = false
+    receive_redirects = false
+    syn_cookies       = true
+
+    upnp = {
+      enabled = false
+    }
   }
 }
