@@ -105,6 +105,11 @@ resource "unifi_setting" "site" {
       enabled = true
       hour    = 3
     }
+
+    # Leave SSH enabled and its keys unmanaged; the provider preserves omitted fields.
+    ssh = {
+      auth_password_enabled = false
+    }
   }
 
   usg = {
