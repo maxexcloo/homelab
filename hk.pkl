@@ -5,7 +5,7 @@ import "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Builtin
 // Shared Mise check tasks cover Actions, formatting, shell and whitespace.
 steps {
   ["butane"] = new Step {
-    glob = List("data/hosts.yaml", "data/hosts/**", "templates/hosts/**", "scripts/render_hosts.sh")
+    glob = List("data/access.yaml", "data/machines.yaml", "data/hosts/**", "templates/hosts/**", "scripts/render_hosts.sh")
     check = "scripts/render_hosts.sh --check"
   }
   ["check-added-large-files"] = (Builtins.check_added_large_files) {

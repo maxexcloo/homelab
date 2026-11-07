@@ -55,10 +55,10 @@ outside Kubernetes are pinned in `data/versions.yaml`.
 
 ## Configuration
 
-- [data/](data/) is the inventory: access, clusters, DNS, domains, hosts,
-  machines, networks, providers, storage and versions.
-- [data/hosts/](data/hosts/) and [data/hosts.yaml](data/hosts.yaml) hold each
-  host's Butane values and the files it installs.
+- [data/](data/) is the inventory: access, clusters, DNS, domains, machines,
+  networks, providers, storage and versions.
+- [data/machines.yaml](data/machines.yaml) holds machine inventory and optional
+  `butane` provisioning settings; [data/hosts/](data/hosts/) holds installed files.
 - [templates/hosts/common/](templates/hosts/common/) holds the files every host
   installs.
 - [templates/](templates/) holds the text templates rendered into host and app
@@ -72,7 +72,7 @@ titled and linked from the service's name and endpoint.
 ## Hosts
 
 `mise run hosts:ignition [host...]` renders installation files from
-`data/hosts.yaml` and the Butane template. Files go to
+`data/machines.yaml` and the Butane template. Files go to
 `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition`; set
 `IGNITION_OUTPUT_DIRECTORY` to change the destination. Local file and tree paths
 in Butane values are relative to the repository root.
@@ -101,8 +101,16 @@ For a fresh installation:
    Enrol the uBlue key before enabling
    Secure Boot, following the [uCore installation guide](https://github.com/ublue-os/ucore).
 
-Set `interface` to the verified physical network interface for Tailscale UDP GRO
-tuning; `null` leaves this tuning disabled until the hardware is known.
+Each provisioned machine has a `butane` block containing its image and any
+host-specific settings. Omit unused optional settings, including empty groups,
+files and units. Common bootstrap units, the shared file tree and the login user
+are rendered once by the template; `ssh.authorized_keys` in
+[data/access.yaml](data/access.yaml) supplies common login keys. Per-machine
+`butane.ssh_authorized_keys` adds keys for that login; `butane.users` defines
+additional users. Machines without `butane`, such as Mandu, remain sync-only.
+
+Set `butane.interface` only to a verified physical network interface for
+Tailscale UDP GRO tuning; omitting it leaves this tuning disabled.
 Application packages and runtime units belong in their owning application
 repository.
 

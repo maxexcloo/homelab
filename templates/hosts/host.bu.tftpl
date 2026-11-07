@@ -1,62 +1,49 @@
 variant: fcos
 version: 1.6.0
 
-%{ if length(kernel_arguments) > 0 ~}
+%{ if can(machine.butane.kernel_arguments) ~}
 kernel_arguments:
   should_exist:
-%{ for argument in kernel_arguments ~}
+%{ for argument in machine.butane.kernel_arguments ~}
     - ${argument}
 %{ endfor ~}
 %{ endif ~}
 passwd:
-%{ if length(groups) > 0 ~}
+%{ if can(machine.butane.groups) ~}
   groups:
-%{ for group in groups ~}
+%{ for group in machine.butane.groups ~}
     - name: ${group.name}
       gid: ${group.gid}
 %{ endfor ~}
 %{ endif ~}
   users:
-%{ for user in users ~}
-    - name: ${user.name}
-%{ if try(user.home_dir, null) != null ~}
-      home_dir: ${user.home_dir}
-%{ endif ~}
-%{ if try(user.primary_group, null) != null ~}
-      primary_group: ${user.primary_group}
-%{ endif ~}
-%{ if try(user.shell, null) != null ~}
-      shell: ${user.shell}
-%{ endif ~}
-%{ if try(user.uid, null) != null ~}
-      uid: ${user.uid}
-%{ endif ~}
-%{ if user.name == "core" ~}
+    - name: ${machine.username}
       password_hash: "${password_hash}"
-%{ endif ~}
       ssh_authorized_keys:
-%{ for key in user.ssh_authorized_keys ~}
+%{ for key in concat(ssh_authorized_keys, try(machine.butane.ssh_authorized_keys, [])) ~}
         - ${key}
 %{ endfor ~}
-%{ endfor ~}
+%{ if can(machine.butane.users) ~}
+    ${indent(4, yamlencode(machine.butane.users))}
+%{ endif ~}
 
 storage:
   directories:
     - mode: 0754
       path: /etc/ucore-autorebase
   files:
-%{ if interface != null ~}
+%{ if can(machine.butane.interface) ~}
     - mode: 0644
       path: /etc/tailscale-udp-gro-interface
       contents:
         inline: |
-          ${interface}
+          ${machine.butane.interface}
 %{ endif ~}
     - mode: 0644
       path: /etc/ucore-autorebase/image.env
       contents:
         inline: |
-          UCORE_IMAGE=${image}
+          UCORE_IMAGE=${machine.butane.image}
     - mode: 0440
       overwrite: true
       path: /etc/sudoers.d/coreos-sudo-group
@@ -68,8 +55,8 @@ storage:
       path: /etc/hostname
       contents:
         inline: |
-          ${hostname}
-%{ for file in files ~}
+          ${machine.hostname}
+%{ for file in try(machine.butane.files, []) ~}
     - mode: ${file.mode}
       path: ${file.path}
       contents:
@@ -79,15 +66,15 @@ storage:
       user:
         name: ${file.user}
 %{ endfor ~}
-%{ if linger ~}
+%{ if try(machine.butane.linger, false) ~}
     - mode: 0644
-      path: /var/lib/systemd/linger/core
+      path: /var/lib/systemd/linger/${machine.username}
       contents:
         inline: ""
 %{ endif ~}
-%{ if length(links) > 0 ~}
+%{ if can(machine.butane.links) ~}
   links:
-%{ for link in links ~}
+%{ for link in machine.butane.links ~}
     - path: ${link.path}
       target: ${link.target}
       group:
@@ -97,7 +84,9 @@ storage:
 %{ endfor ~}
 %{ endif ~}
   trees:
-%{ for tree in trees ~}
+    - local: templates/hosts/common/etc
+      path: /etc
+%{ for tree in try(machine.butane.trees, []) ~}
     - local: ${tree.local}
       path: ${tree.path}
 %{ endfor ~}
@@ -108,7 +97,13 @@ systemd:
       mask: true
     - name: cockpit.socket
       mask: true
-%{ for unit in units ~}
+    - name: tailscaled.service
+      enabled: true
+    - name: ucore-unsigned-autorebase.service
+      enabled: true
+    - name: ucore-signed-autorebase.service
+      enabled: true
+%{ for unit in try(machine.butane.units, []) ~}
     - name: ${unit.name}
       enabled: ${unit.enabled}
 %{ endfor ~}
