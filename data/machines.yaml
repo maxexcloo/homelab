@@ -37,7 +37,7 @@ machines:
       beszel: true
       monitoring: false
       platform: talos
-      # Retain the old disk's credentials until conversion acceptance.
+      # Keep the uCore login and Resend key for rollback to the Crucial disk.
       smtp: resend
       type: server
       username: core
