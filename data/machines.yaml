@@ -37,10 +37,7 @@ machines:
       beszel: true
       monitoring: false
       platform: talos
-      # Keep the uCore login and Resend key for rollback to the Crucial disk.
-      smtp: resend
       type: server
-      username: core
       interfaces:
         - name: enp13s0
           address: 10.0.0.5

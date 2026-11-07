@@ -19,7 +19,7 @@ machine_entries="$(yq -r '
     | .key as $network
     | .value
     | to_entries[]
-    | select(.value.username != null and .value.platform != "talos")
+    | select(.value.username != null)
     | {
         "hostname": (.value.hostname // .key),
         "network": $network,
