@@ -33,7 +33,7 @@ clusters:
             name: EPHEMERAL
             provisioning:
               # Leave the rest of the Kingston for the model library.
-              maxSize: 200GiB
+              maxSize: 256GiB
           - apiVersion: v1alpha1
             kind: UserVolumeConfig
             name: datasets

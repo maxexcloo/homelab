@@ -78,6 +78,7 @@ scope to smallest as `provider_resource_qualifier`.
 
 ## Style
 
+- Prefer multiples of 64 GiB when choosing disk or volume allocations.
 - Use lowercase identifiers for shared data keys and `name` for human-readable
   labels. Keep resource identity separate from presentation.
 - Use full ZFS paths for TrueNAS dataset keys. Configure only deviations from
