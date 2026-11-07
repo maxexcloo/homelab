@@ -23,14 +23,28 @@ clusters:
         - siderolabs/tailscale
     nodes:
       bento:
-        address: 10.0.0.7
-        configuration_delivery: container
+        configuration_delivery: direct
         dedicated: gpu
+        install_disk_selector: 'disk.transport == "nvme" && disk.model.matches(".*OM8PGP42048N-A0.*")'
         machine_type: worker
-        container:
-          mac: 02:74:61:63:6f:02
-          paths:
-            - /var/home/core/ai
+        configuration:
+          - apiVersion: v1alpha1
+            kind: UserVolumeConfig
+            name: datasets
+            volumeType: directory
+          - apiVersion: v1alpha1
+            kind: UdevRulesConfig
+            rules:
+              # Match both R9700s by hardware identity, not hwmon index.
+              - 'ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{vendor}=="0x1002", ATTRS{device}=="0x7551", ATTR{power1_cap}="210000000"'
+        image:
+          architecture: amd64
+          platform: metal
+          extensions:
+            - siderolabs/amd-ucode
+            - siderolabs/amdgpu
+            - siderolabs/realtek-firmware
+            - siderolabs/tailscale
       hsp:
         configuration_delivery: metadata
         machine_type: worker

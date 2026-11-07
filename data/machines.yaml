@@ -36,46 +36,8 @@ machines:
     bento:
       beszel: true
       monitoring: false
-      platform: ucore
-      smtp: resend
+      platform: talos
       type: server
-      username: core
-      butane:
-        files:
-          - group: core
-            local: data/hosts/bento/btop.conf
-            mode: "0644"
-            path: /var/home/core/.config/btop/btop.conf
-            user: core
-          - group: core
-            local: data/hosts/bento/trcc.json
-            mode: "0644"
-            path: /var/home/core/.trcc/trcc.json
-            user: core
-        image: ghcr.io/ublue-os/ucore-hci:stable
-        interface: enp3s0
-        kernel_arguments:
-          - fbcon=rotate:3
-          - quiet
-          - systemd.show_status=false
-        linger: true
-        links:
-          - group: core
-            path: /var/home/core/.config/systemd/user/default.target.wants/trccd.service
-            target: /etc/systemd/user/trccd.service
-            user: core
-        ssh_authorized_keys:
-          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINSF/XgIGlHjO79F6qvkna9yLEGslfMqLMC53/i1+obi kimbap AI sync
-        trees:
-          - local: data/hosts/bento/etc
-            path: /etc
-        units:
-          - enabled: true
-            name: bento-display-packages.service
-          - enabled: true
-            name: btop-display.service
-          - enabled: false
-            name: getty@tty1.service
       interfaces:
         - name: enp13s0
           address: 10.0.0.5
