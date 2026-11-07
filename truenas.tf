@@ -69,6 +69,12 @@ locals {
     }
   }
 
+  truenas_init_scripts = merge([
+    for target, host in local.truenas_hosts : {
+      for name, script in try(host.init_scripts, {}) : "${target}/${name}" => merge(script, { target = target })
+    }
+  ]...)
+
   truenas_services = merge([
     for target, host in local.truenas_hosts : {
       for service, enabled in try(host.service_settings, {}) : "${target}/${service}" => {
@@ -334,6 +340,17 @@ resource "truenas_dataset" "root" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+resource "truenas_init_script" "host" {
+  for_each = local.truenas_init_scripts
+
+  command  = each.value.command
+  comment  = each.value.comment
+  provider = truenas.hosts[each.value.target]
+  timeout  = each.value.timeout
+  type     = each.value.type
+  when     = each.value.when
 }
 
 resource "truenas_mail_config" "host" {
