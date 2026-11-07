@@ -114,6 +114,10 @@ those and their own ports instead.
 
 These stay native because the provider can't represent them:
 
+- Kimbap's `truenas-nvme` pool: one Lexar NM790 4TB and two Crucial X9 4TB
+  drives in RAIDZ1, with `autotrim=on`. The pinned provider cannot update pool
+  topology or manage autotrim. Its USB discard workaround is managed through
+  the `crucial-x9-trim` startup task in `data/machines.yaml`.
 - The **AI Model Library Mirror** rsync task, which pulls Bento's `ai/models/`
   into kimbap's `/mnt/truenas/ai/` every 15 minutes.
 - S3 HTTPS, buckets and access keys. OpenTofu only manages the parent dataset,
