@@ -104,6 +104,10 @@ storage:
 
 systemd:
   units:
+    - name: cockpit.service
+      mask: true
+    - name: cockpit.socket
+      mask: true
 %{ for unit in units ~}
     - name: ${unit.name}
       enabled: ${unit.enabled}
