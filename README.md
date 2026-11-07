@@ -71,67 +71,38 @@ titled and linked from the service's name and endpoint.
 
 ## Hosts
 
-`mise run hosts:ignition [host...]` renders installation files from
-`data/machines.yaml` and the Butane template. Files go to
-`${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition`; set
-`IGNITION_OUTPUT_DIRECTORY` to change the destination. Local file and tree paths
-in Butane values are relative to the repository root.
+`data/machines.yaml` contains each machine's inventory and optional `butane`
+settings. `butane.image` is required for provisioning; omit unused settings.
+The template supplies the shared `/etc` files, Tailscale and uCore rebase units.
+Mandu has no `butane` block and is synced only. Set a machine's `hostname` to
+override the hostname derived from its inventory key.
 
-Rendering requires an unlocked 1Password CLI and OpenSSL (on macOS, install
-`openssl@3` with Homebrew). The `core` password is read from the machine's login
-in 1Password and piped directly to the password hasher. Only its hash enters the
-private generated Butane and Ignition files; neither password nor hash is
-committed. The machine login must exist first, through a reviewed infrastructure
-apply. Checks and file sync use a locked password without accessing credentials;
-their intermediate configs are not installation files. Changing a login in
-1Password does not update the password on an installed host.
+`ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
+login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
+`butane.users` and `butane.groups` define additional accounts. Hotdog's `kimbap`
+user and group retain UID/GID 1001 for backup access. `butane.interface` enables
+UDP GRO tuning for the named interface; omit it when the interface is unknown.
 
-For a fresh installation:
+Run `mise run hosts:ignition mercury` to render Mercury's installation file.
+The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
+`IGNITION_OUTPUT_DIRECTORY` overrides the directory. Rendering needs an unlocked
+1Password CLI and OpenSSL (`brew install openssl@3` on macOS). Mercury's
+`Server: mercury.mbk.excloo.net` login must exist from a reviewed apply.
+Its password is hashed locally for `core`; generated files stay private.
+Password changes in 1Password do not update an installed host.
 
-1. Review and merge the host configuration, then review and apply the
-   infrastructure changes that create its login and supporting resources.
-2. Run `mise run hosts:ignition mercury` (substitute the intended host).
-3. Boot the Fedora CoreOS live ISO and transfer that host's Ignition file
-   privately. Identify the target disk by model and serial before installing
-   with `coreos-installer`; installation erases that disk.
-4. Allow the unsigned and signed uCore rebases to finish. Verify console login,
-   password-required sudo, the signed deployment and SSH key access.
-5. Authenticate Tailscale with the inventory's network-prefixed hostname,
-   then review/apply its discovered DNS records and sync generated host files.
-   Enrol the uBlue key before enabling
-   Secure Boot, following the [uCore installation guide](https://github.com/ublue-os/ucore).
+`mise run hosts:sync [host...]` installs Butane trees and generated files on
+uCore and Bazzite hosts. Apply generated configuration changes before syncing.
+Sync removes files it previously installed and restarts affected units; it does
+not apply users, passwords, kernel arguments or unit enablement. Checks and sync
+do not read login passwords, and their intermediate files are not installable.
+Local file and tree paths are relative to the repository root.
 
-Each provisioned machine has a `butane` block containing its image and any
-host-specific settings. Omit unused optional settings, including empty groups,
-files and units. Common bootstrap units, the shared file tree and the login user
-are rendered once by the template; `ssh.authorized_keys` in
-[data/access.yaml](data/access.yaml) supplies common login keys. Per-machine
-`butane.ssh_authorized_keys` adds keys for that login; `butane.users` defines
-additional users. Machines without `butane`, such as Mandu, remain sync-only.
-
-Set `butane.interface` only to a verified physical network interface for
-Tailscale UDP GRO tuning; omitting it leaves this tuning disabled.
-Application packages and runtime units belong in their owning application
-repository.
-
-`mise run hosts:sync` keeps uCore and Bazzite hosts current. It installs each
-host's Butane trees and the files OpenTofu generates for it, such as the Talos
-worker and Cloudflare Tunnel Quadlets, so apply before syncing generated changes.
-Each host asks for its sudo password once. Only units whose files changed
-restart, files removed from the repository are removed from the host, and hosts
-that are off are skipped until the next sync. Other files take effect when their
-service reloads or the host reboots. Users, kernel arguments and enabled units
-stay with Butane.
-
-Cockpit is disabled, including socket activation, in fresh host installations.
-For existing uCore and Bazzite hosts, stop and disable
-`cockpit-letsencrypt.timer` where present, then run
-`sudo systemctl mask --now cockpit.socket cockpit.service` on each host.
-After reviewing and applying the inventory changes, run `mise run hosts:sync`
-to remove the managed renewal timer and container files. Existing renewal
-state and local certificates can be removed after confirming renewal has stopped.
-Cockpit packages bundled in the OS image remain masked; no package overrides are
-needed. ACME configuration for other services remains in place.
+Fresh installs mask Cockpit's service and socket. On existing hosts, stop
+`cockpit-letsencrypt.timer` if present, then run
+`sudo systemctl mask --now cockpit.socket cockpit.service`. After the removal
+apply, sync deletes managed renewal files. OS-bundled Cockpit packages remain
+installed and masked.
 
 ## Cluster Upgrades
 
