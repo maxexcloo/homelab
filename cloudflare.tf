@@ -44,19 +44,6 @@ locals {
     ]
   ]))
 
-  # The timer in data/hosts/common runs this renewal.
-  cloudflare_acme_files = {
-    for name in keys(local.cloudflare_consumers_acme) : name => {
-      "/etc/containers/systemd/cockpit-letsencrypt.container" = {
-        content = templatefile("${path.module}/templates/cloudflare/cockpit-letsencrypt.container.tftpl", {
-          image = local.versions.images.acme_sh
-        })
-        mode = "0644"
-      }
-    }
-    if can(local.sync_hosts[name])
-  }
-
   cloudflare_consumers = {
     for name, consumer in merge(local.machines, local.clusters) : name => consumer.cloudflare
     if can(consumer.cloudflare)

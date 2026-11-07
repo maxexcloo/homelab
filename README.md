@@ -31,7 +31,7 @@ map keyed by machine name, with the `api_key` and `url` of each TrueNAS API.
 | `mise run clusters:image <cluster-or-image-url>` | Download a cluster installation image         |
 | `mise run clusters:sync`                         | Sync Kubernetes & Talos client configurations |
 | `mise run fmt`                                   | Format repository files                       |
-| `mise run hosts:ignition`                        | Render host installation files                |
+| `mise run hosts:ignition [host...]`              | Render host installation files                |
 | `mise run hosts:ssh`                             | Install configured SSH aliases                |
 | `mise run hosts:sync [host...]`                  | Sync host files & restart changed units       |
 | `mise run init`                                  | Initialise providers & the remote backend     |
@@ -55,10 +55,12 @@ outside Kubernetes are pinned in `data/versions.yaml`.
 
 ## Configuration
 
-- [data/](data/) is the inventory: access, clusters, DNS, domains, hosts,
-  machines, networks, providers, storage and versions.
-- [data/hosts/](data/hosts/) and [data/hosts.yaml](data/hosts.yaml) hold each
-  host's Butane values and the files it installs.
+- [data/](data/) is the inventory: access, clusters, DNS, domains, machines,
+  networks, providers, storage and versions.
+- [data/machines.yaml](data/machines.yaml) holds machine inventory and optional
+  `butane` provisioning settings; [data/hosts/](data/hosts/) holds installed files.
+- [templates/hosts/common/](templates/hosts/common/) holds the files every host
+  installs.
 - [templates/](templates/) holds the text templates rendered into host and app
   configs.
 - Root HCL files define provider resources by domain; [AGENTS.md](AGENTS.md)
@@ -69,18 +71,38 @@ titled and linked from the service's name and endpoint.
 
 ## Hosts
 
-`mise run hosts:ignition` renders installation files from `data/hosts.yaml` and
-the Butane template; set `IGNITION_OUTPUT_DIRECTORY` to change where they go.
-Supply credentials separately during installation.
+`data/machines.yaml` contains each machine's inventory and optional `butane`
+settings. `butane.image` is required for provisioning; omit unused settings.
+The template supplies the shared `/etc` files, Tailscale and uCore rebase units.
+Mandu has no `butane` block and is synced only. Set a machine's `hostname` to
+override the hostname derived from its inventory key.
 
-`mise run hosts:sync` keeps uCore and Bazzite hosts current. It installs each
-host's Butane trees and the files OpenTofu generates for it, such as the Talos
-worker and Cloudflare Tunnel Quadlets, so apply before syncing generated changes.
-Each host asks for its sudo password once. Only units whose files changed
-restart, files removed from the repository are removed from the host, and hosts
-that are off are skipped until the next sync. Other files take effect when their
-service reloads or the host reboots. Users, kernel arguments and enabled units
-stay with Butane.
+`ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
+login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
+`butane.users` and `butane.groups` define additional accounts. Hotdog's `kimbap`
+user and group retain UID/GID 1001 for backup access. `butane.interface` enables
+UDP GRO tuning for the named interface; omit it when the interface is unknown.
+
+Run `mise run hosts:ignition mercury` to render Mercury's installation file.
+The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
+`IGNITION_OUTPUT_DIRECTORY` overrides the directory. Rendering needs an unlocked
+1Password CLI and OpenSSL (`brew install openssl@3` on macOS). Mercury's
+`Server: mercury.mbk.excloo.net` login must exist from a reviewed apply.
+Its password is hashed locally for `core`; generated files stay private.
+Password changes in 1Password do not update an installed host.
+
+`mise run hosts:sync [host...]` installs Butane trees and generated files on
+uCore and Bazzite hosts. Apply generated configuration changes before syncing.
+Sync removes files it previously installed and restarts affected units; it does
+not apply users, passwords, kernel arguments or unit enablement. Checks and sync
+do not read login passwords, and their intermediate files are not installable.
+Local file and tree paths are relative to the repository root.
+
+Fresh installs mask Cockpit's service and socket. On existing hosts, stop
+`cockpit-letsencrypt.timer` if present, then run
+`sudo systemctl mask --now cockpit.socket cockpit.service`. After the removal
+apply, sync deletes managed renewal files. OS-bundled Cockpit packages remain
+installed and masked.
 
 ## Cluster Upgrades
 
