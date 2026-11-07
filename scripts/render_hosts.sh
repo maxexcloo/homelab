@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders Butane configs from data/hosts.yaml and templates/hosts/host.bu.tftpl.
+# Renders the machines with Butane provisioning in data/machines.yaml.
 set -euo pipefail
 umask 077
 
@@ -29,17 +29,21 @@ temporary_directory="$(mktemp -d)"
 cleanup+=("${temporary_directory}")
 trap 'rm -rf -- "${cleanup[@]}"' EXIT
 
-ln -s "${repo_dir}/data" "${temporary_directory}/data"
-ln -s "${repo_dir}/templates" "${temporary_directory}/templates"
-
-TF_DATA_DIR="${temporary_directory}/.terraform" \
-  tofu -chdir="${temporary_directory}" init -backend=false -input=false >/dev/null
+# Keep each machine's network and derived hostname beside its provisioning.
+machines_file="${temporary_directory}/machines.json"
+# $network is a yq variable.
+# shellcheck disable=SC2016
+yq -o=json '[.machines | to_entries[] | .key as $network |
+  .value | to_entries[] | select(.value.butane != null) |
+  {"key": .key, "value": (.value + {
+    "hostname": (.value.hostname // .key), "network": $network
+  })}] | from_entries' "${repo_dir}/data/machines.yaml" >"${machines_file}"
 
 names=("$@")
 if ((${#names[@]} == 0)); then
   while IFS= read -r name; do
     names+=("${name}")
-  done < <(yq -r '.hosts | keys[]' "${repo_dir}/data/hosts.yaml")
+  done < <(jq -r 'keys[]' "${machines_file}")
 fi
 
 # Only checks and file sync can render without credentials; installable Butane
@@ -61,9 +65,8 @@ for name in "${names[@]}"; do
     printf '%s\n' '!' >"${password_hashes}/${name}"
     continue
   fi
-  network="$(yq -r ".machines | to_entries[] | select(.value | has(\"${name}\")) | .key" "${repo_dir}/data/machines.yaml")"
-  hostname="$(yq -r ".machines[\"${network}\"][\"${name}\"].hostname // \"${name}\"" "${repo_dir}/data/machines.yaml")"
-  type="$(yq -e -r ".machines[\"${network}\"][\"${name}\"].type" "${repo_dir}/data/machines.yaml")"
+  machine_access="$(jq -er --arg name "${name}" '.[$name] | [.network, .hostname, .type] | @tsv' "${machines_file}")"
+  IFS=$'\t' read -r network hostname type <<<"${machine_access}"
   type_title="$(printf '%s' "${type}" | awk '{ print toupper(substr($0, 1, 1)) substr($0, 2) }')"
   title="${type_title}: ${hostname}.${network}.${domain}"
   if ! op item get "${title}" --vault "${vault}" --fields password --reveal |
@@ -82,7 +85,7 @@ fi
 
 mkdir -p "${bu_directory}"
 for name in "${names[@]}"; do
-  printf 'base64encode(templatefile("templates/hosts/host.bu.tftpl", merge(yamldecode(file("data/hosts.yaml")).hosts["%s"], { password_hash = trimspace(file("%s")) })))\n' "${name}" "${password_hashes}/${name}" |
+  printf 'base64encode(templatefile("%s/templates/hosts/host.bu.tftpl", { machine = jsondecode(file("%s"))["%s"], password_hash = trimspace(file("%s")), ssh_authorized_keys = yamldecode(file("%s/data/access.yaml")).ssh.authorized_keys }))\n' "${repo_dir}" "${machines_file}" "${name}" "${password_hashes}/${name}" "${repo_dir}" |
     TF_DATA_DIR="${temporary_directory}/.terraform" \
       tofu -chdir="${temporary_directory}" console |
     jq -r . |
