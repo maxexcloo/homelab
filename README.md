@@ -100,10 +100,6 @@ Upgrade one cluster at a time, after reading the upstream
 Single-node clusters have an outage while they upgrade. Configuration applies use
 `no_reboot`, and changing the installer doesn't upgrade running nodes.
 
-The proposed [Bento Talos conversion](bento-talos.md) covers the fresh Kingston
-installation, retained USB source disk, qualification gates and physical rollback.
-It requires separate conversion approval after the sequential storage work.
-
 ## TrueNAS
 
 Storage policy and SMB shares sit beside their datasets in `data/storage.yaml`,
