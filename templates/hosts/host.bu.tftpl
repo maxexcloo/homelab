@@ -31,6 +31,9 @@ passwd:
 %{ if try(user.uid, null) != null ~}
       uid: ${user.uid}
 %{ endif ~}
+%{ if user.name == "core" ~}
+      password_hash: "${password_hash}"
+%{ endif ~}
       ssh_authorized_keys:
 %{ for key in user.ssh_authorized_keys ~}
         - ${key}

@@ -96,7 +96,7 @@ hosts_json="$(fnox exec -- tofu output -json hosts)"
 rendered_hosts="$(mktemp -d)"
 staging_root="$(mktemp -d)"
 trap 'rm -rf -- "${rendered_hosts}" "${staging_root}"' EXIT
-"${repo_dir}/scripts/render_hosts.sh" "${rendered_hosts}"
+"${repo_dir}/scripts/render_hosts.sh" --sync "${rendered_hosts}"
 
 if (($# == 0)); then
   names="$(jq -r 'keys[]' <<<"${hosts_json}")"
