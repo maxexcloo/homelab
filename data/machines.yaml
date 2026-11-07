@@ -358,6 +358,22 @@ machines:
           name: Syncthing
           port: 8384
           scheme: http
+    mercury:
+      beszel: true
+      monitoring: false
+      platform: ucore
+      smtp: resend
+      type: server
+      username: core
+      cloudflare:
+        acme: delegated
+      services:
+        management:
+          description: Server Administration
+          icon: cockpit-light
+          name: Cockpit
+          port: 9090
+          scheme: https
     nanokvm:
       monitoring: false
       name: NanoKVM

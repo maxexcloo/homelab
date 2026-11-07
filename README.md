@@ -86,6 +86,26 @@ apply. Checks and file sync use a locked password without accessing credentials;
 their intermediate configs are not installation files. Changing a login in
 1Password does not update the password on an installed host.
 
+For a fresh installation:
+
+1. Review and merge the host configuration, then review and apply the
+   infrastructure changes that create its login and supporting resources.
+2. Run `mise run hosts:ignition mercury` (substitute the intended host).
+3. Boot the Fedora CoreOS live ISO and transfer that host's Ignition file
+   privately. Identify the target disk by model and serial before installing
+   with `coreos-installer`; installation erases that disk.
+4. Allow the unsigned and signed uCore rebases to finish. Verify console login,
+   password-required sudo, the signed deployment and SSH key access.
+5. Authenticate Tailscale with the inventory's network-prefixed hostname,
+   then review/apply its discovered DNS records and sync generated host files.
+   Verify Cockpit HTTPS after syncing. Enrol the uBlue key before enabling
+   Secure Boot, following the [uCore installation guide](https://github.com/ublue-os/ucore).
+
+Set `interface` to the verified physical network interface for Tailscale UDP GRO
+tuning; `null` leaves this tuning disabled until the hardware is known.
+Application packages and runtime units belong in their owning application
+repository.
+
 `mise run hosts:sync` keeps uCore and Bazzite hosts current. It installs each
 host's Butane trees and the files OpenTofu generates for it, such as the Talos
 worker and Cloudflare Tunnel Quadlets, so apply before syncing generated changes.

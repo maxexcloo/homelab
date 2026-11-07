@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 set -Eeuo pipefail
 
+[[ -f /etc/tailscale-udp-gro-interface ]] || exit 0
 read -r interface < /etc/tailscale-udp-gro-interface
 
 if [[ ${1:-} != "${interface}" ]]; then

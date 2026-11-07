@@ -45,11 +45,13 @@ storage:
     - mode: 0754
       path: /etc/ucore-autorebase
   files:
+%{ if interface != null ~}
     - mode: 0644
       path: /etc/tailscale-udp-gro-interface
       contents:
         inline: |
           ${interface}
+%{ endif ~}
     - mode: 0644
       path: /etc/ucore-autorebase/image.env
       contents:
