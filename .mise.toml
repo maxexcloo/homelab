@@ -58,13 +58,7 @@ description = "Render Host Installation Files"
 run = '''
 set -eu
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
-rendered_directory=$(mktemp -d)
-trap 'rm -fr -- "$rendered_directory"' EXIT
-mkdir -p "${output_directory}"
-scripts/render_hosts.sh "$rendered_directory"
-for config in "$rendered_directory"/*.bu; do
-  butane --files-dir data/hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "$config"
-done
+scripts/render_hosts.sh --ignition "${output_directory}" "$@"
 '''
 
 [tasks."hosts:ssh"]

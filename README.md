@@ -31,7 +31,7 @@ map keyed by machine name, with the `api_key` and `url` of each TrueNAS API.
 | `mise run clusters:image <cluster-or-image-url>` | Download a cluster installation image         |
 | `mise run clusters:sync`                         | Sync Kubernetes & Talos client configurations |
 | `mise run fmt`                                   | Format repository files                       |
-| `mise run hosts:ignition`                        | Render host installation files                |
+| `mise run hosts:ignition [host...]`              | Render host installation files                |
 | `mise run hosts:ssh`                             | Install configured SSH aliases                |
 | `mise run hosts:sync [host...]`                  | Sync host files & restart changed units       |
 | `mise run init`                                  | Initialise providers & the remote backend     |
@@ -59,6 +59,8 @@ outside Kubernetes are pinned in `data/versions.yaml`.
   machines, networks, providers, storage and versions.
 - [data/hosts/](data/hosts/) and [data/hosts.yaml](data/hosts.yaml) hold each
   host's Butane values and the files it installs.
+- [templates/hosts/common/](templates/hosts/common/) holds the files every host
+  installs.
 - [templates/](templates/) holds the text templates rendered into host and app
   configs.
 - Root HCL files define provider resources by domain; [AGENTS.md](AGENTS.md)
@@ -69,9 +71,40 @@ titled and linked from the service's name and endpoint.
 
 ## Hosts
 
-`mise run hosts:ignition` renders installation files from `data/hosts.yaml` and
-the Butane template; set `IGNITION_OUTPUT_DIRECTORY` to change where they go.
-Supply credentials separately during installation.
+`mise run hosts:ignition [host...]` renders installation files from
+`data/hosts.yaml` and the Butane template. Files go to
+`${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition`; set
+`IGNITION_OUTPUT_DIRECTORY` to change the destination. Local file and tree paths
+in Butane values are relative to the repository root.
+
+Rendering requires an unlocked 1Password CLI and OpenSSL (on macOS, install
+`openssl@3` with Homebrew). The `core` password is read from the machine's login
+in 1Password and piped directly to the password hasher. Only its hash enters the
+private generated Butane and Ignition files; neither password nor hash is
+committed. The machine login must exist first, through a reviewed infrastructure
+apply. Checks and file sync use a locked password without accessing credentials;
+their intermediate configs are not installation files. Changing a login in
+1Password does not update the password on an installed host.
+
+For a fresh installation:
+
+1. Review and merge the host configuration, then review and apply the
+   infrastructure changes that create its login and supporting resources.
+2. Run `mise run hosts:ignition mercury` (substitute the intended host).
+3. Boot the Fedora CoreOS live ISO and transfer that host's Ignition file
+   privately. Identify the target disk by model and serial before installing
+   with `coreos-installer`; installation erases that disk.
+4. Allow the unsigned and signed uCore rebases to finish. Verify console login,
+   password-required sudo, the signed deployment and SSH key access.
+5. Authenticate Tailscale with the inventory's network-prefixed hostname,
+   then review/apply its discovered DNS records and sync generated host files.
+   Verify Cockpit HTTPS after syncing. Enrol the uBlue key before enabling
+   Secure Boot, following the [uCore installation guide](https://github.com/ublue-os/ucore).
+
+Set `interface` to the verified physical network interface for Tailscale UDP GRO
+tuning; `null` leaves this tuning disabled until the hardware is known.
+Application packages and runtime units belong in their owning application
+repository.
 
 `mise run hosts:sync` keeps uCore and Bazzite hosts current. It installs each
 host's Butane trees and the files OpenTofu generates for it, such as the Talos
