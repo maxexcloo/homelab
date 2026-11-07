@@ -23,14 +23,43 @@ clusters:
         - siderolabs/tailscale
     nodes:
       bento:
-        address: 10.0.0.7
-        configuration_delivery: container
+        address: 10.0.0.5
+        configuration_delivery: direct
         dedicated: gpu
+        install_disk_selector: 'disk.transport == "nvme" && disk.model.matches(".*OM8PGP42048N-A0.*")'
         machine_type: worker
-        container:
-          mac: 02:74:61:63:6f:02
-          paths:
-            - /var/home/core/ai
+        configuration:
+          - apiVersion: v1alpha1
+            kind: VolumeConfig
+            name: EPHEMERAL
+            provisioning:
+              # Leave the rest of the Kingston for the model library.
+              maxSize: 200GiB
+          - apiVersion: v1alpha1
+            kind: UserVolumeConfig
+            name: datasets
+            volumeType: partition
+            mount:
+              # GPU workers use this volume for their executable caches too.
+              secure: false
+            provisioning:
+              grow: true
+              minSize: 1TiB
+              diskSelector:
+                match: system_disk
+          - apiVersion: v1alpha1
+            kind: UdevRulesConfig
+            rules:
+              # Match both R9700s by hardware identity, not hwmon index.
+              - 'ACTION=="add", SUBSYSTEM=="hwmon", ATTRS{vendor}=="0x1002", ATTRS{device}=="0x7551", ATTR{power1_cap}="210000000"'
+        image:
+          architecture: amd64
+          platform: metal
+          extensions:
+            - siderolabs/amd-ucode
+            - siderolabs/amdgpu
+            - siderolabs/realtek-firmware
+            - siderolabs/tailscale
       hsp:
         configuration_delivery: metadata
         machine_type: worker

@@ -22,7 +22,8 @@ machines:
     bento:
       beszel: true
       monitoring: false
-      platform: ucore
+      platform: talos
+      # Retain the old disk's credentials until conversion acceptance.
       smtp: resend
       type: server
       username: core
@@ -35,13 +36,6 @@ machines:
         - name: enp12s0
           address: 10.4.0.5
           mac_address: 9c:6b:00:d7:e9:63
-      services:
-        management:
-          description: Server Administration
-          icon: cockpit-light
-          name: Cockpit
-          port: 9090
-          scheme: https
     gateway:
       beszel: true
       platform: unifi

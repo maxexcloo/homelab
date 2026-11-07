@@ -43,7 +43,7 @@ locals {
       url      = try(local.onepassword_service_urls["${name}/management"], "ssh://${machine.username}@${local.machine_fqdns[name]}")
       username = machine.username
     }
-    if machine.platform != "talos" && try(machine.type, null) != null && try(machine.username, null) != null
+    if try(machine.type, null) != null && try(machine.username, null) != null
   }
 
   onepassword_password_policy = {
