@@ -59,6 +59,7 @@ outside Kubernetes are pinned in `data/versions.yaml`.
   machines, networks, providers, storage and versions.
 - [data/hosts/](data/hosts/) and [data/hosts.yaml](data/hosts.yaml) hold each
   host's Butane values and the files it installs.
+- [templates/hosts/common/](templates/hosts/common/) holds the shared host files.
 - [templates/](templates/) holds the text templates rendered into host and app
   configs.
 - Root HCL files define provider resources by domain; [AGENTS.md](AGENTS.md)
@@ -71,6 +72,7 @@ titled and linked from the service's name and endpoint.
 
 `mise run hosts:ignition` renders installation files from `data/hosts.yaml` and
 the Butane template; set `IGNITION_OUTPUT_DIRECTORY` to change where they go.
+Local file and tree paths in Butane values are relative to the repository root.
 Supply credentials separately during installation.
 
 `mise run hosts:sync` keeps uCore and Bazzite hosts current. It installs each

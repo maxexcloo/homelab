@@ -63,7 +63,7 @@ trap 'rm -fr -- "$rendered_directory"' EXIT
 mkdir -p "${output_directory}"
 scripts/render_hosts.sh "$rendered_directory"
 for config in "$rendered_directory"/*.bu; do
-  butane --files-dir data/hosts --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "$config"
+  butane --files-dir . --output "${output_directory}/$(basename "${config}" .bu).ign" --pretty --strict "$config"
 done
 '''
 

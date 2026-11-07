@@ -2,12 +2,12 @@ hosts:
   bento:
     files:
       - group: core
-        local: bento/btop.conf
+        local: data/hosts/bento/btop.conf
         mode: "0644"
         path: /var/home/core/.config/btop/btop.conf
         user: core
       - group: core
-        local: bento/trcc.json
+        local: data/hosts/bento/trcc.json
         mode: "0644"
         path: /var/home/core/.trcc/trcc.json
         user: core
@@ -26,9 +26,9 @@ hosts:
         target: /etc/systemd/user/trccd.service
         user: core
     trees:
-      - local: common/etc
+      - local: templates/hosts/common/etc
         path: /etc
-      - local: bento/etc
+      - local: data/hosts/bento/etc
         path: /etc
     units:
       - enabled: true
@@ -64,9 +64,9 @@ hosts:
     linger: false
     links: []
     trees:
-      - local: common/etc
+      - local: templates/hosts/common/etc
         path: /etc
-      - local: hotdog/etc
+      - local: data/hosts/hotdog/etc
         path: /etc
     units:
       - enabled: true

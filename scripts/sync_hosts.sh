@@ -116,7 +116,7 @@ for name in "$@"; do
   if [[ -f "${butane_config}" ]]; then
     while IFS=$'\t' read -r tree path; do
       mkdir -p "${staging}/root${path}"
-      cp -Rp "${repo_dir}/data/hosts/${tree}/." "${staging}/root${path}/"
+      cp -Rp "${repo_dir}/${tree}/." "${staging}/root${path}/"
     done < <(yq -r '.storage.trees[] | [.local, .path] | @tsv' "${butane_config}")
   fi
 

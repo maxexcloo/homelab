@@ -44,6 +44,6 @@ done
 
 if "${check}"; then
   for config in "${output_directory}"/*.bu; do
-    butane --files-dir "${repo_dir}/data/hosts" --strict "${config}" >/dev/null
+    butane --files-dir "${repo_dir}" --strict "${config}" >/dev/null
   done
 fi
