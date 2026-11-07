@@ -29,23 +29,9 @@ clusters:
         machine_type: worker
         configuration:
           - apiVersion: v1alpha1
-            kind: VolumeConfig
-            name: EPHEMERAL
-            provisioning:
-              # Leave the rest of the Kingston for the model library.
-              maxSize: 256GiB
-          - apiVersion: v1alpha1
             kind: UserVolumeConfig
             name: datasets
-            volumeType: partition
-            mount:
-              # GPU workers use this volume for their executable caches too.
-              secure: false
-            provisioning:
-              grow: true
-              minSize: 1TiB
-              diskSelector:
-                match: system_disk
+            volumeType: directory
           - apiVersion: v1alpha1
             kind: UdevRulesConfig
             rules:
