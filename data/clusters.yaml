@@ -23,7 +23,6 @@ clusters:
         - siderolabs/tailscale
     nodes:
       bento:
-        address: 10.0.0.5
         configuration_delivery: direct
         dedicated: gpu
         install_disk_selector: 'disk.transport == "nvme" && disk.model.matches(".*OM8PGP42048N-A0.*")'
