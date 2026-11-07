@@ -35,10 +35,6 @@ hosts:
         name: bento-display-packages.service
       - enabled: true
         name: btop-display.service
-      - enabled: true
-        name: cockpit-letsencrypt.timer
-      - enabled: true
-        name: cockpit.service
       - enabled: false
         name: getty@tty1.service
       - enabled: true
@@ -69,10 +65,6 @@ hosts:
       - local: data/hosts/hotdog/etc
         path: /etc
     units:
-      - enabled: true
-        name: cockpit-letsencrypt.timer
-      - enabled: true
-        name: cockpit.service
       - enabled: true
         name: sanoid.timer
       - enabled: true
@@ -107,10 +99,6 @@ hosts:
       - local: templates/hosts/common/etc
         path: /etc
     units:
-      - enabled: true
-        name: cockpit-letsencrypt.timer
-      - enabled: true
-        name: cockpit.service
       - enabled: true
         name: tailscaled.service
       - enabled: true

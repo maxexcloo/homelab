@@ -98,7 +98,7 @@ For a fresh installation:
    password-required sudo, the signed deployment and SSH key access.
 5. Authenticate Tailscale with the inventory's network-prefixed hostname,
    then review/apply its discovered DNS records and sync generated host files.
-   Verify Cockpit HTTPS after syncing. Enrol the uBlue key before enabling
+   Enrol the uBlue key before enabling
    Secure Boot, following the [uCore installation guide](https://github.com/ublue-os/ucore).
 
 Set `interface` to the verified physical network interface for Tailscale UDP GRO
@@ -114,6 +114,16 @@ restart, files removed from the repository are removed from the host, and hosts
 that are off are skipped until the next sync. Other files take effect when their
 service reloads or the host reboots. Users, kernel arguments and enabled units
 stay with Butane.
+
+Cockpit is disabled, including socket activation, in fresh host installations.
+For existing uCore and Bazzite hosts, stop and disable
+`cockpit-letsencrypt.timer` where present, then run
+`sudo systemctl mask --now cockpit.socket cockpit.service` on each host.
+After reviewing and applying the inventory changes, run `mise run hosts:sync`
+to remove the managed renewal timer and container files. Existing renewal
+state and local certificates can be removed after confirming renewal has stopped.
+Cockpit packages bundled in the OS image remain masked; no package overrides are
+needed. ACME configuration for other services remains in place.
 
 ## Cluster Upgrades
 

@@ -9,15 +9,7 @@ machines:
       type: backup
       username: core
       cloudflare:
-        acme: delegated
         tunnel: {}
-      services:
-        management:
-          description: Server Administration
-          icon: cockpit-light
-          name: Cockpit
-          port: 9090
-          scheme: https
   mbk:
     bento:
       beszel: true
@@ -26,8 +18,6 @@ machines:
       smtp: resend
       type: server
       username: core
-      cloudflare:
-        acme: delegated
       interfaces:
         - name: enp13s0
           address: 10.0.0.5
@@ -35,13 +25,6 @@ machines:
         - name: enp12s0
           address: 10.4.0.5
           mac_address: 9c:6b:00:d7:e9:63
-      services:
-        management:
-          description: Server Administration
-          icon: cockpit-light
-          name: Cockpit
-          port: 9090
-          scheme: https
     gateway:
       beszel: true
       platform: unifi
@@ -340,12 +323,6 @@ machines:
           address: 10.0.0.4
           mac_address: c8:ff:bf:0f:9f:d1
       services:
-        management:
-          description: Server Administration
-          icon: cockpit-light
-          name: Cockpit
-          port: 9090
-          scheme: https
         polaris:
           description: Game Streaming Host
           icon: sh-sunshine
@@ -365,15 +342,6 @@ machines:
       smtp: resend
       type: server
       username: core
-      cloudflare:
-        acme: delegated
-      services:
-        management:
-          description: Server Administration
-          icon: cockpit-light
-          name: Cockpit
-          port: 9090
-          scheme: https
     nanokvm:
       monitoring: false
       name: NanoKVM
