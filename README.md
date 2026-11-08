@@ -134,6 +134,15 @@ host. Label an app with `traefik.enable=true` and its backend port with
 name becomes the subdomain. Apps that support TrueNAS certificates natively use
 those and their own ports instead.
 
+Kimbap’s native Beszel custom app discovers storage devices using a read-only
+`/dev:/dev` directory bind and device cgroup rules (`b 8:* rw`, `b 259:* rw`,
+`c 242:* rw`). It retains the explicit `/dev/zfs` mapping and its existing
+`SYS_ADMIN`/`SYS_RAWIO` capabilities, with privileged mode disabled. Avoid
+per-disk mappings: removing a drive would prevent the app from starting. The
+NVMe character major is kernel-assigned; recheck it after kernel changes with
+`ls -l /dev/nvme0` and update the character-device rule if necessary.
+USB SSDs may require a device-type override for their limited SMART data.
+
 These stay native because the provider can't represent them:
 
 - Kimbap's `truenas-nvme` pool: one Lexar NM790 4TB and two Crucial X9 4TB
