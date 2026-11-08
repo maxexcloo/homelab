@@ -134,12 +134,23 @@ host. Label an app with `traefik.enable=true` and its backend port with
 name becomes the subdomain. Apps that support TrueNAS certificates natively use
 those and their own ports instead.
 
+Kimbap’s native Beszel custom app discovers storage devices using a read-only
+`/dev:/dev` directory bind and device cgroup rules (`b 8:* rw`, `b 259:* rw`,
+`c 242:* rw`). It retains the explicit `/dev/zfs` mapping and its existing
+`SYS_ADMIN`/`SYS_RAWIO` capabilities, with privileged mode disabled. Avoid
+per-disk mappings: removing a drive would prevent the app from starting. The
+NVMe character major is kernel-assigned; recheck it after kernel changes with
+`ls -l /dev/nvme0` and update the character-device rule if necessary.
+USB SSDs may require a device-type override for their limited SMART data.
+
 These stay native because the provider can't represent them:
 
 - Kimbap's `truenas-nvme` pool: one Lexar NM790 4TB and two Crucial X9 4TB
   drives in RAIDZ1, with `autotrim=on`. The pinned provider cannot update pool
   topology or manage autotrim. Its USB discard workaround is managed through
   the `crucial-x9-trim` startup task in `data/machines.yaml`.
+- Kimbap's native replication tasks send each pool directly to hotdog. The SSD
+  pool keeps its scheduled snapshots; whole-pool recovery uses the offsite replica.
 - The **AI Model Library Mirror** rsync task, which pulls Bento's `ai/models/`
   into kimbap's `/mnt/truenas/ai/` every 15 minutes.
 - S3 HTTPS, buckets and access keys. OpenTofu only manages the parent dataset,
