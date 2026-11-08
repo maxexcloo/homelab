@@ -44,6 +44,7 @@ clusters:
             - name: truenas-nvme/papra
             - name: truenas-nvme/romm
             - name: truenas-nvme/studio
+            - name: truenas/ai
             - name: truenas/backups
             - name: truenas/documents
             - name: truenas/games
