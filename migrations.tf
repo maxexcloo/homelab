@@ -39,18 +39,8 @@ moved {
 }
 
 moved {
-  from = onepassword_item.resend_host["hotdog"]
-  to   = onepassword_item.resend_host["pluto"]
-}
-
-moved {
   from = onepassword_item.tailscale_auth_key["hotdog"]
   to   = onepassword_item.tailscale_auth_key["pluto"]
-}
-
-moved {
-  from = resend_api_key.host["hotdog"]
-  to   = resend_api_key.host["pluto"]
 }
 
 moved {
