@@ -32,26 +32,6 @@ machines:
       cloudflare:
         tunnel: {}
   mbk:
-    gateway:
-      beszel: true
-      platform: unifi
-      private_ipv4: 10.0.0.1
-      type: router
-      username: root
-      cloudflare:
-        acme: delegated
-      services:
-        management:
-          description: Network Controller
-          group: Infrastructure
-          icon: sh-ubiquiti-unifi
-          monitoring: true
-          name: UniFi
-          port: 443
-          scheme: https
-          widget:
-            key: "{{HOMEPAGE_VAR_UNIFI_API_KEY}}"
-            type: unifi
     hass:
       beszel: true
       name: HASS
@@ -388,6 +368,27 @@ machines:
           siteMonitor: ""
       tailscale:
         enabled: false
+    sol:
+      beszel: true
+      name: Sol
+      platform: unifi
+      private_ipv4: 10.0.0.1
+      type: router
+      username: root
+      cloudflare:
+        acme: delegated
+      services:
+        management:
+          description: Network Controller
+          group: Infrastructure
+          icon: sh-ubiquiti-unifi
+          monitoring: true
+          name: UniFi
+          port: 443
+          scheme: https
+          widget:
+            key: "{{HOMEPAGE_VAR_UNIFI_API_KEY}}"
+            type: unifi
     steam-deck:
       platform: steamos
       username: deck
