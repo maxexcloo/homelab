@@ -1,6 +1,6 @@
 machines:
   fre:
-    hotdog:
+    pluto:
       beszel: true
       platform: ucore
       public_ipv4: 199.127.129.143
@@ -15,7 +15,7 @@ machines:
         image: ghcr.io/ublue-os/ucore:stable
         interface: enp1s0
         trees:
-          - local: data/hosts/hotdog/etc
+          - local: data/hosts/pluto/etc
             path: /etc
         units:
           - enabled: true
