@@ -210,7 +210,7 @@ machines:
         crucial-x9-trim:
           command: >-
             mkdir -p /run/udev/rules.d && printf '%s\n' 'ACTION=="add|change", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ATTRS{idVendor}=="0634", ATTRS{idProduct}=="5605", ATTRS{serial}=="2332E8DB0370|2332E8DB0C47", ATTR{device/scsi_disk/*/provisioning_mode}="unmap"' > /run/udev/rules.d/90-crucial-x9-unmap.rules && udevadm control --reload-rules && udevadm trigger --action=change --subsystem-match=block --property-match=ID_VENDOR_ID=0634 --property-match=ID_MODEL_ID=5605 && udevadm settle --timeout=15
-          comment: Enable TRIM For The Two Crucial X9 SSDs
+          comment: Enable Crucial X9 TRIM
           timeout: 30
           type: COMMAND
           when: PREINIT
