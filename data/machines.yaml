@@ -414,7 +414,7 @@ machines:
       provider: oci
       type: vm
       boot:
-        size_mib: 51200
+        size_mib: 102400
       compute:
         cores: 2
         memory_mib: 12288
