@@ -69,9 +69,6 @@ clusters:
         image:
           architecture: amd64
           platform: metal
-          # Secure Boot requires kernel arguments inside the signed UKI.
-          kernel_arguments:
-            - fbcon=rotate:3
           extensions:
             - siderolabs/amd-ucode
             - siderolabs/amdgpu
