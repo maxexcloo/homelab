@@ -20,7 +20,7 @@ machines:
           - enabled: true
             name: sanoid.timer
           - enabled: true
-            name: zfs-scrub-monthly@hotdog.timer
+            name: zfs-scrub-monthly@pluto.timer
         users:
           - home_dir: /var/home/kimbap
             name: kimbap
