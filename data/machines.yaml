@@ -33,18 +33,6 @@ machines:
       cloudflare:
         tunnel: {}
   mbk:
-    bento:
-      beszel: true
-      monitoring: false
-      platform: talos
-      type: server
-      interfaces:
-        - name: enp13s0
-          address: 10.0.0.5
-          mac_address: 9c:6b:00:d7:e9:40
-        - name: enp12s0
-          address: 10.4.0.5
-          mac_address: 9c:6b:00:d7:e9:63
     gateway:
       beszel: true
       platform: unifi
@@ -405,6 +393,18 @@ machines:
       interfaces:
         - address: 10.0.0.14
           mac_address: e8:8d:a6:e2:2a:da
+    venus:
+      beszel: true
+      monitoring: false
+      platform: talos
+      type: server
+      interfaces:
+        - name: enp13s0
+          address: 10.0.0.5
+          mac_address: 9c:6b:00:d7:e9:40
+        - name: enp12s0
+          address: 10.4.0.5
+          mac_address: 9c:6b:00:d7:e9:63
   syd:
     hsp:
       beszel: true
