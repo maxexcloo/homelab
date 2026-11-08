@@ -407,7 +407,7 @@ machines:
           address: 10.4.0.5
           mac_address: 9c:6b:00:d7:e9:63
   syd:
-    hsp:
+    neptune:
       beszel: true
       platform: talos
       private_ipv4: 10.20.0.4
