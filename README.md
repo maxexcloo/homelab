@@ -77,7 +77,11 @@ The template supplies the shared `/etc` files, Tailscale and uCore rebase units.
 Mars has no `butane` block and is synced only. Set a machine's `hostname` to
 override the hostname derived from its inventory key.
 Mars runs stock Bazzite without a Talos worker; its game library and Syncthing
-folders remain on the host.
+folders remain on the host. Syncthing instances belong to individual nodes;
+Kubelab deploys the Kimbap and Venus instances, while Mars runs natively.
+Venus sends its model library to Kimbap's `/mnt/truenas/ai/` with send-only and
+receive-only folders respectively. Kubelab owns their private routes and
+authentication.
 
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
@@ -153,8 +157,6 @@ These stay native because the provider can't represent them:
   the `crucial-x9-trim` startup task in `data/machines.yaml`.
 - Kimbap's native replication tasks send each pool directly to Pluto. The SSD
   pool keeps its scheduled snapshots; whole-pool recovery uses the offsite replica.
-- The **AI Model Library Mirror** rsync task, which pulls the read-only `models`
-  module published by Venus into Kimbap's `/mnt/truenas/ai/` every 15 minutes.
 - S3 HTTPS, buckets and access keys. OpenTofu only manages the parent dataset,
   the service and its DNS.
 
