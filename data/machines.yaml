@@ -421,6 +421,3 @@ machines:
       oci:
         assign_public_ip: true
         shape: VM.Standard.A1.Flex
-        volumes:
-          data:
-            size_mib: 51200
