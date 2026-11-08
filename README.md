@@ -104,32 +104,6 @@ Fresh installs mask Cockpit's service and socket. On existing hosts, stop
 apply, sync deletes managed renewal files. OS-bundled Cockpit packages remain
 installed and masked.
 
-### Pluto Rename
-
-The Hotdog → Pluto rename preserves the ZFS pool `hotdog`, replication datasets
-`hotdog/kimbap/truenas` and `hotdog/kimbap/truenas-nvme`, scrub timer and backup
-account `kimbap`. Resource moves in `migrations.tf` retain the managed identities.
-The unused Resend key and its 1Password item are removed during apply.
-
-For cutover, retain an SSH connection to the current Tailscale address. Set the
-hostname to `pluto` and the Tailscale device name to `fre-pluto` before planning,
-so discovery finds the existing device at its unchanged address. Review the plan
-for DNS updates, resource moves and credential replacements before applying.
-Then regenerate SSH aliases with `mise run hosts:ssh` and sync Pluto with
-`mise run hosts:sync pluto`.
-
-Kimbap's two native replication jobs share the SSH connection named `hotdog`.
-After the new DNS resolves, rename that connection to `pluto` and set its host to
-`pluto.fre.excloo.net`, preserving its user, keys and other settings. Keep the
-replication task names and target datasets unchanged, as they name ZFS paths.
-Verify both replications complete and a second host sync
-reports `Up to date`. Do not render installation Ignition for this existing host.
-
-To roll back an applied rename, restore the old inventory and host directory,
-reverse the resource moves, and restore the original hostname and Tailscale name.
-Review and apply the reversal and restore the native SSH connection. Keep the
-unused mail configuration removed when restoring the old inventory.
-
 ## Cluster Upgrades
 
 Upgrade one cluster at a time, after reading the upstream
