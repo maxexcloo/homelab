@@ -61,10 +61,6 @@ resource "unifi_client" "talos_container" {
   name             = each.value.device_name
   network_id       = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
   note             = local.managed_comment
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "unifi_firewall_policy" "configured" {
