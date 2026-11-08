@@ -206,9 +206,6 @@ machines:
           schedule_hour: "0"
           schedule_minute: "00"
           user: root
-      ingress:
-        certificate: truenas
-        port: 8443
       init_scripts:
         crucial-x9-trim:
           command: >-
@@ -249,15 +246,11 @@ machines:
         netboot:
           description: Network Boot Server
           group: Infrastructure
-          hostname: netboot.kimbap.mbk.excloo.net
           icon: mdi-server-network-#ffffff
           monitoring: true
           name: Netboot
-          port: 8443
-          scheme: https
-          labels:
-            traefik.enable: "true"
-            traefik.http.services.netboot.loadbalancer.server.port: "31010"
+          port: 31010
+          scheme: http
         s3:
           bucket: syd-backups
           name: Object Storage

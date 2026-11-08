@@ -6,9 +6,5 @@ talos: v1.14.5
 images:
   # Podman auto-update follows the tag on each tunnel host.
   cloudflared: docker.io/cloudflare/cloudflared:latest
-  # renovate: datasource=docker depName=tecnativa/docker-socket-proxy
-  docker_socket_proxy: docker.io/tecnativa/docker-socket-proxy:v0.5.0
   # renovate: datasource=docker depName=tailscale/tailscale
   tailscale: docker.io/tailscale/tailscale:v1.104.4
-  # renovate: datasource=docker depName=traefik
-  traefik: docker.io/library/traefik:v3.7.17
