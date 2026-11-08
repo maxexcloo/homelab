@@ -79,9 +79,9 @@ override the hostname derived from its inventory key.
 Mars runs stock Bazzite without a Talos worker; its game library and Syncthing
 folders remain on the host. Syncthing instances belong to individual nodes;
 Kubelab deploys the Kimbap and Venus instances, while Mars runs natively.
-Venus and Kimbap synchronise the model library in both directions, with Kimbap's
-copy at `/mnt/truenas/ai/`. Changes and deletions propagate both ways. Kubelab owns
-their private routes and authentication.
+Venus and Kimbap synchronise the `AI` folder (ID `ai`) in both directions, with
+Kimbap's copy at `/mnt/truenas/ai/`. Changes and deletions propagate both ways.
+Kubelab owns their private routes and authentication.
 
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
