@@ -5,7 +5,6 @@ machines:
       platform: ucore
       public_ipv4: 199.127.129.143
       public_ipv6: 2602:f831::4665:8aff:fee1:40ed
-      smtp: resend
       type: backup
       username: core
       butane:
