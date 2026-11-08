@@ -313,7 +313,7 @@ machines:
       interfaces:
         - address: 10.0.0.76
           mac_address: b6:7c:bc:fa:01:50
-    mandu:
+    mars:
       beszel: true
       monitoring: false
       platform: bazzite
