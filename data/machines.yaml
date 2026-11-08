@@ -351,6 +351,8 @@ machines:
       username: core
       butane:
         image: ghcr.io/ublue-os/ucore:stable
+      cloudflare:
+        tunnel: {}
     nanokvm:
       monitoring: false
       name: NanoKVM
