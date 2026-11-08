@@ -319,7 +319,7 @@ machines:
         syncthing:
           description: File Synchronisation
           icon: sh-syncthing
-          name: Syncthing
+          name: Syncthing (Mars)
           port: 8384
           scheme: http
     mercury:
