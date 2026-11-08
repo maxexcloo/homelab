@@ -79,7 +79,7 @@ override the hostname derived from its inventory key.
 
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
-`butane.users` and `butane.groups` define additional accounts. Hotdog's `kimbap`
+`butane.users` and `butane.groups` define additional accounts. Pluto's `kimbap`
 user and group retain UID/GID 1001 for backup access. `butane.interface` enables
 UDP GRO tuning for the named interface; omit it when the interface is unknown.
 
@@ -103,6 +103,33 @@ Fresh installs mask Cockpit's service and socket. On existing hosts, stop
 `sudo systemctl mask --now cockpit.socket cockpit.service`. After the removal
 apply, sync deletes managed renewal files. OS-bundled Cockpit packages remain
 installed and masked.
+
+### Pluto Rename
+
+The Hotdog → Pluto rename preserves the ZFS pool `hotdog`, replication datasets
+`hotdog/kimbap/truenas` and `hotdog/kimbap/truenas-nvme`, scrub timer and backup
+account `kimbap`. Resource moves in `migrations.tf` retain the managed identities;
+the Resend mail key is replaced because its provider cannot rename keys.
+
+For cutover, retain an SSH connection to the current Tailscale address. Set the
+hostname to `pluto` and the Tailscale device name to `fre-pluto` before planning,
+so discovery finds the existing device at its unchanged address. Review the plan
+for DNS updates, resource moves and credential replacements before applying.
+Then regenerate SSH aliases with `mise run hosts:ssh` and sync Pluto with
+`mise run hosts:sync pluto`. Update the host's mail credential from
+`Resend: pluto.fre.excloo.net` in 1Password without printing its value.
+
+Kimbap's two native replication jobs share the SSH connection named `hotdog`.
+After the new DNS resolves, rename that connection to `pluto` and set its host to
+`pluto.fre.excloo.net`, preserving its user, keys and other settings. Keep the
+replication task names and target datasets unchanged, as they name ZFS paths.
+Verify both replications complete, mail delivery works and a second host sync
+reports `Up to date`. Do not render installation Ignition for this existing host.
+
+To roll back an applied rename, restore the old inventory and host directory,
+reverse the resource moves, and restore the original hostname and Tailscale name.
+Review and apply the reversal, restore the native SSH connection, and refresh the
+host mail credential again if its key was replaced.
 
 ## Cluster Upgrades
 
@@ -149,7 +176,7 @@ These stay native because the provider can't represent them:
   drives in RAIDZ1, with `autotrim=on`. The pinned provider cannot update pool
   topology or manage autotrim. Its USB discard workaround is managed through
   the `crucial-x9-trim` startup task in `data/machines.yaml`.
-- Kimbap's native replication tasks send each pool directly to hotdog. The SSD
+- Kimbap's native replication tasks send each pool directly to Pluto. The SSD
   pool keeps its scheduled snapshots; whole-pool recovery uses the offsite replica.
 - The **AI Model Library Mirror** rsync task, which pulls Bento's `ai/models/`
   into kimbap's `/mnt/truenas/ai/` every 15 minutes.
