@@ -44,7 +44,7 @@ data "talos_machine_configuration" "container" {
   talos_version      = local.clusters[each.value.cluster].talos_version
 
   config_patches = concat(
-    [yamlencode(local.talos_user_volume_local_path.directory)],
+    [yamlencode(local.talos_user_volume_local_path)],
     each.value.machine_type == "controlplane" ? [
       yamlencode(local.talos_cluster_authentication_configuration),
       # Collect pods left Failed by graceful node shutdowns instead of waiting for 12,500.
@@ -219,7 +219,7 @@ locals {
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },
-      local.talos_user_volume_local_path[can(local.machines[name].oci.volumes.data) ? "partition" : "directory"],
+      local.talos_user_volume_local_path,
       ], node.machine_type == "controlplane" ? [local.talos_cluster_authentication_configuration] : [], node.install_disk_selector != null ? [{
         apiVersion = "v1alpha1"
         kind       = "UnattendedInstallConfig"
@@ -315,27 +315,11 @@ locals {
     if node.configuration_delivery != "container"
   }
 
-  # Keyed by volume type so each node selects one shape without type coercion.
   talos_user_volume_local_path = {
-    directory = {
-      apiVersion = "v1alpha1"
-      kind       = "UserVolumeConfig"
-      name       = "local-path-provisioner"
-      volumeType = "directory"
-    }
-    partition = {
-      apiVersion = "v1alpha1"
-      kind       = "UserVolumeConfig"
-      name       = "local-path-provisioner"
-      volumeType = "partition"
-      provisioning = {
-        grow    = true
-        minSize = "1GiB"
-        diskSelector = {
-          match = "!system_disk"
-        }
-      }
-    }
+    apiVersion = "v1alpha1"
+    kind       = "UserVolumeConfig"
+    name       = "local-path-provisioner"
+    volumeType = "directory"
   }
 }
 

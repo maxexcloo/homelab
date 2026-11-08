@@ -414,13 +414,10 @@ machines:
       provider: oci
       type: vm
       boot:
-        size_mib: 51200
+        size_mib: 102400
       compute:
         cores: 2
         memory_mib: 12288
       oci:
         assign_public_ip: true
         shape: VM.Standard.A1.Flex
-        volumes:
-          data:
-            size_mib: 51200
