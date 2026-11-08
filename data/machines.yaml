@@ -324,7 +324,7 @@ machines:
         tunnel: {}
       interfaces:
         - name: eno1
-          address: 10.4.0.4
+          address: 10.0.3.204
           mac_address: c8:ff:bf:0f:9f:d0
         - name: enp5s0
           address: 10.0.0.4
