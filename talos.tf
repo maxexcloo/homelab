@@ -355,6 +355,7 @@ resource "talos_image_factory_schematic" "node" {
 
   schematic = yamlencode({
     customization = {
+      extraKernelArgs = try(each.value.image.kernel_arguments, [])
       systemExtensions = {
         officialExtensions = each.value.image.extensions
       }
