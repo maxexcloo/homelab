@@ -6,6 +6,14 @@ output "clusters" {
         endpoint        = local.talos_cluster_endpoints[name]
         installer_image = data.talos_image_factory_urls.cluster[name].urls.installer
         schematic_id    = talos_image_factory_schematic.cluster[name].id
+        nodes = {
+          for node_name, node in local.talos_node_images : node_name => {
+            installer_image = data.talos_image_factory_urls.node[node_name].urls.installer
+            iso_url         = data.talos_image_factory_urls.node[node_name].urls.iso
+            schematic_id    = talos_image_factory_schematic.node[node_name].id
+          }
+          if node.cluster == name
+        }
       },
       can(cloudflare_zero_trust_tunnel_cloudflared.cluster[name]) ? {
         tunnel_id = cloudflare_zero_trust_tunnel_cloudflared.cluster[name].id

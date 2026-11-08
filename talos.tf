@@ -24,6 +24,15 @@ data "talos_image_factory_urls" "cluster" {
   talos_version     = each.value.talos_version
 }
 
+data "talos_image_factory_urls" "node" {
+  for_each = local.talos_node_images
+
+  architecture  = each.value.image.architecture
+  platform      = each.value.image.platform
+  schematic_id  = talos_image_factory_schematic.node[each.key].id
+  talos_version = local.clusters[each.value.cluster].talos_version
+}
+
 data "talos_machine_configuration" "container" {
   for_each = local.talos_containers
 
@@ -263,18 +272,18 @@ locals {
         ])
       },
       local.talos_user_volume_local_path[can(local.machines[name].oci.volumes.data) ? "partition" : "directory"],
-      ], node.machine_type == "controlplane" ? [local.talos_cluster_authentication_configuration] : [], node.install_disk != null ? [{
+      ], node.machine_type == "controlplane" ? [local.talos_cluster_authentication_configuration] : [], node.install_disk_selector != null ? [{
         apiVersion = "v1alpha1"
         kind       = "UnattendedInstallConfig"
         installer = {
-          image = data.talos_image_factory_urls.cluster[node.cluster].urls.installer
+          image = can(local.talos_node_images[name]) ? data.talos_image_factory_urls.node[name].urls.installer : data.talos_image_factory_urls.cluster[node.cluster].urls.installer
         }
         provisioning = {
           diskSelector = {
-            match = "disk.dev_path == ${jsonencode(node.install_disk)}"
+            match = node.install_disk_selector
           }
         }
-    }] : [])
+    }] : [], node.configuration)
   }
 
   talos_machine_configuration_documents_common = {
@@ -331,14 +340,20 @@ locals {
     ]
   }
 
+  talos_node_images = {
+    for name, node in local.talos_nodes_installed : name => node
+    if can(node.image)
+  }
+
   talos_nodes = merge([
     for cluster_name, cluster in local.clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
         address                = try(node.address, local.machine_private_ipv4_addresses[node_name])
         cluster                = cluster_name
+        configuration          = try(node.configuration, [])
         configuration_delivery = try(node.configuration_delivery, null)
         dedicated              = try(node.dedicated, null)
-        install_disk           = try(node.install_disk, null)
+        install_disk_selector  = try(node.install_disk_selector, null)
         sysctls                = try(node.sysctls, {})
         tailscale_routes       = try(node.tailscale_routes, [])
         tailscale_tag          = try(node.configuration_delivery, null) == "container" ? "tag:cluster-${cluster_name}" : "tag:${local.machines[node_name].type}"
@@ -403,6 +418,18 @@ resource "talos_image_factory_schematic" "cluster" {
   })
 }
 
+resource "talos_image_factory_schematic" "node" {
+  for_each = local.talos_node_images
+
+  schematic = yamlencode({
+    customization = {
+      systemExtensions = {
+        officialExtensions = each.value.image.extensions
+      }
+    }
+  })
+}
+
 resource "talos_machine_bootstrap" "control_plane" {
   for_each = local.talos_machine_bootstrap_nodes
 
@@ -450,9 +477,10 @@ resource "talos_machine_configuration_apply" "container" {
 resource "talos_machine_configuration_apply" "node" {
   for_each = local.talos_nodes_installed
 
+  # Direct installs start on the LAN before their new Tailscale identity exists.
   apply_mode                     = "no_reboot"
   client_configuration_wo        = talos_machine_secrets.cluster[each.value.cluster].client_configuration
-  endpoint                       = local.talos_client_endpoints[each.key][0]
+  endpoint                       = each.value.configuration_delivery == "direct" ? each.value.address : local.talos_client_endpoints[each.key][0]
   machine_configuration_input_wo = data.talos_machine_configuration.node[each.key].machine_configuration
   node                           = each.value.address
 
