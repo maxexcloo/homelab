@@ -3,7 +3,7 @@ clusters:
     api_node: kimbap
     backblaze: true
     pod_subnet: 10.100.0.0/22
-    public_node: hsp
+    public_node: neptune
     service_subnet: 10.100.4.0/22
     tailscale_ingress_ipv6: false
     tailscale_ingress_service: syd-ingress
@@ -22,7 +22,7 @@ clusters:
       extensions:
         - siderolabs/tailscale
     nodes:
-      hsp:
+      neptune:
         configuration_delivery: metadata
         machine_type: worker
         time_servers:
