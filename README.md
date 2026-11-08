@@ -134,11 +134,9 @@ Storage policy and SMB shares sit beside their datasets in `data/storage.yaml`,
 keyed by full ZFS path. Only settings that differ from TrueNAS defaults are
 recorded.
 
-Apps reach HTTPS through shared Traefik ingress on a wildcard name under the
-host. Label an app with `traefik.enable=true` and its backend port with
-`traefik.http.services.<service>.loadbalancer.server.port`; the Compose service
-name becomes the subdomain. Apps that support TrueNAS certificates natively use
-those and their own ports instead.
+Netboot's admin page uses its native HTTP port, recorded with the service in
+`data/machines.yaml`. Apps that support TrueNAS certificates natively use those
+and their own HTTPS ports.
 
 Kimbap’s native Beszel custom app discovers storage devices using a read-only
 `/dev:/dev` directory bind and device cgroup rules (`b 8:* rw`, `b 259:* rw`,

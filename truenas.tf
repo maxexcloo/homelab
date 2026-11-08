@@ -37,36 +37,11 @@ locals {
     if machine.platform == "truenas"
   }
 
-  truenas_hosts_ingress = {
-    for name, host in local.truenas_hosts : name => host.ingress
-    if can(host.ingress)
-  }
-
   truenas_hosts_services = {
     for interface in local.machine_interface_assignments : interface.machine => merge(interface, {
       prefix_length = tonumber(split("/", local.networks[interface.network].subnets[interface.subnet].cidr)[1])
     })
     if can(local.truenas_hosts[interface.machine]) && interface.bridge != null
-  }
-
-  truenas_ingress_compose_configs = {
-    for name, host in local.truenas_hosts_ingress : name => {
-      dynamic = {
-        content = templatefile("${path.module}/templates/traefik/dynamic.yaml.tftpl", {
-          certificate = host.certificate
-          private_source_ranges = concat(
-            values(local.tailscale_address_ranges),
-            [for subnet in values(local.networks[local.machines[name].network].subnets) : cidrsubnet(subnet.cidr, 0, 0)],
-          )
-        })
-      }
-      static = {
-        content = templatefile("${path.module}/templates/traefik/static.yaml.tftpl", {
-          fqdn = local.machine_fqdns[name]
-          port = host.port
-        })
-      }
-    }
   }
 
   truenas_init_scripts = merge([
@@ -113,69 +88,6 @@ locals {
       for name, tunable in try(host.tunables, {}) : "${target}/${name}" => merge(tunable, { target = target, var = name })
     }
   ]...)
-}
-
-resource "truenas_app" "ingress" {
-  for_each = local.truenas_hosts_ingress
-
-  app_name          = "traefik"
-  provider          = truenas.hosts[each.key]
-  remove_images     = false
-  remove_ix_volumes = false
-
-  custom_compose = yamlencode({
-    configs = local.truenas_ingress_compose_configs[each.key]
-    services = {
-      # The Docker socket grants root-equivalent control.
-      # This proxy exposes only the read endpoints Traefik uses.
-      docker-socket-proxy = {
-        image        = local.versions.images.docker_socket_proxy
-        ports        = ["127.0.0.1:2375:2375"]
-        restart      = "unless-stopped"
-        security_opt = ["no-new-privileges:true"]
-        environment = {
-          CONTAINERS = "1"
-          EVENTS     = "1"
-          IMAGES     = "1"
-          INFO       = "1"
-          NETWORKS   = "1"
-          PING       = "1"
-          SERVICES   = "1"
-          TASKS      = "1"
-          VERSION    = "1"
-        }
-        volumes = [
-          {
-            read_only = true
-            source    = "/var/run/docker.sock"
-            target    = "/var/run/docker.sock"
-            type      = "bind"
-          },
-        ]
-      }
-      traefik = {
-        image        = local.versions.images.traefik
-        network_mode = "host"
-        restart      = "unless-stopped"
-        configs = [
-          { source = "static", target = "/etc/traefik/traefik.yaml" },
-          { source = "dynamic", target = "/etc/traefik/dynamic.yaml" },
-        ]
-        depends_on = ["docker-socket-proxy"]
-        # Host-network apps must resolve back to this network namespace.
-        extra_hosts  = ["host.docker.internal:127.0.0.1"]
-        security_opt = ["no-new-privileges:true"]
-        volumes = [
-          {
-            read_only = true
-            source    = "/etc/certificates"
-            target    = "/etc/certificates"
-            type      = "bind"
-          },
-        ]
-      }
-    }
-  })
 }
 
 resource "truenas_app" "talos_container" {
@@ -295,24 +207,6 @@ resource "truenas_cronjob" "host" {
   schedule_minute = try(each.value.schedule_minute, null)
   stderr          = try(each.value.stderr, null)
   user            = each.value.user
-}
-
-resource "truenas_cronjob" "ingress_certificate_reload" {
-  for_each = local.truenas_hosts_ingress
-
-  # Signal from inside the container; docker kill marks it manually stopped, so it stays down after a Docker restart.
-  command         = "docker ps --filter label=com.docker.compose.project=ix-${truenas_app.ingress[each.key].app_name} --quiet | xargs --no-run-if-empty -I {} docker exec {} kill -HUP 1"
-  description     = "Reload Traefik Native Certificates"
-  enabled         = true
-  provider        = truenas.hosts[each.key]
-  schedule_dom    = "*"
-  schedule_dow    = "*"
-  schedule_hour   = "*"
-  schedule_minute = "0"
-  schedule_month  = "*"
-  stderr          = false
-  stdout          = true
-  user            = "root"
 }
 
 resource "truenas_dataset" "child" {
