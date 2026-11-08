@@ -149,6 +149,8 @@ These stay native because the provider can't represent them:
   drives in RAIDZ1, with `autotrim=on`. The pinned provider cannot update pool
   topology or manage autotrim. Its USB discard workaround is managed through
   the `crucial-x9-trim` startup task in `data/machines.yaml`.
+- Kimbap's native replication tasks send each pool directly to hotdog. The SSD
+  pool keeps its scheduled snapshots; whole-pool recovery uses the offsite replica.
 - The **AI Model Library Mirror** rsync task, which pulls Bento's `ai/models/`
   into kimbap's `/mnt/truenas/ai/` every 15 minutes.
 - S3 HTTPS, buckets and access keys. OpenTofu only manages the parent dataset,

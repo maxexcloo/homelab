@@ -54,7 +54,6 @@ truenas:
         recursive: true
         exclude:
           - truenas/.system
-          - truenas/nvme
       truenas-monthly:
         dataset: truenas
         lifetime_unit: YEAR
@@ -64,7 +63,6 @@ truenas:
         schedule_dom: "1"
         exclude:
           - truenas/.system
-          - truenas/nvme
       truenas-nvme-daily:
         dataset: truenas-nvme
         lifetime_unit: MONTH
