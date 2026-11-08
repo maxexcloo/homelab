@@ -51,19 +51,6 @@ clusters:
               read_only: true
             - name: truenas/projects
             - name: truenas/public
-      mandu:
-        address: 10.4.0.8
-        configuration_delivery: container
-        dedicated: gaming
-        machine_type: worker
-        container:
-          mac: 02:74:61:63:6f:03
-          paths:
-            # Syncthing's copy of RomM's ROM library, for RomM streaming.
-            - /var/home/max.schaefer/retrodeck/roms
-            - /var/home/max.schaefer/ai
-            # Syncthing's RetroDECK BIOS folder, for RomM streaming.
-            - /var/home/max.schaefer/retrodeck/bios
       venus:
         configuration_delivery: direct
         dedicated: gpu

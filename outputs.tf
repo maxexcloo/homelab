@@ -43,10 +43,7 @@ output "hosts" {
   value = {
     for name, machine in local.sync_hosts : name => {
       address = "${machine.username}@${local.machine_fqdns[name]}"
-      files = merge(
-        try(local.cloudflare_tunnel_files[name], {}),
-        try(local.talos_container_files[name], {}),
-      )
+      files   = try(local.cloudflare_tunnel_files[name], {})
     }
   }
 }

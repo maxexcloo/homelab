@@ -76,6 +76,8 @@ settings. `butane.image` is required for provisioning; omit unused settings.
 The template supplies the shared `/etc` files, Tailscale and uCore rebase units.
 Mandu has no `butane` block and is synced only. Set a machine's `hostname` to
 override the hostname derived from its inventory key.
+Mandu runs stock Bazzite without a Talos worker; its game library and Syncthing
+folders remain on the host.
 
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
