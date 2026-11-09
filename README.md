@@ -130,12 +130,14 @@ Single-node clusters have an outage while they upgrade. Configuration applies us
 
 ## NanoKVM
 
-NanoKVM uses Ubuntu's `lego` package for Let's Encrypt certificates. DNS-01
-challenges follow the inventory's ACME delegation into the challenge zone.
+NanoKVM uses the official Lego ARM64 binary at `/usr/local/bin/lego`, pinned in
+`data/versions.yaml`, for Let's Encrypt certificates. DNS-01 challenges follow
+the inventory's ACME delegation into the challenge zone.
 Its dedicated DNS token can edit only that zone; OpenTofu stores it in
 `Cloudflare ACME DNS: <hostname>` in the Homelab vault. The appliance reads a
 root-only copy at `/etc/lego/cloudflare-token` using Lego's native `_FILE`
-credential support.
+credential support. Lego checks public DNS through `1.1.1.1:53`; the appliance's
+local resolver did not return delegated TXT answers during validation.
 
 `/etc/cron.d/nanokvm-acme` checks for renewal twice daily, with account and
 certificate state under `/var/lib/lego`. Lego's renewal hook at
