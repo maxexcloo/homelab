@@ -19,18 +19,22 @@ tailscale:
   key_expiry_seconds: 7776000
   auto_approvers:
     exit_node:
-      - tag:exit-node
+      - tag:appliance
+      - tag:backup
+      - tag:router
+      - tag:server
+      - tag:vm
+      - tag:workstation
     routes: {}
   default_tag_owners:
     - group:admin
   grants:
-    # Ephemeral runners do not inherit trusted devices' unrestricted access.
     - dst: &trusted_tags
         - tag:appliance
         - tag:backup
         - tag:cluster-syd
         - tag:cluster-syd-operator
-        - tag:fly
+        - tag:ephemeral
         - tag:router
         - tag:server
         - tag:vm
@@ -71,8 +75,6 @@ tailscale:
     - tag:appliance
     - tag:backup
     - tag:ephemeral
-    - tag:exit-node
-    - tag:fly
     - tag:router
     - tag:server
     - tag:vm

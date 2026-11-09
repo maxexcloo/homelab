@@ -180,9 +180,9 @@ These stay native because the provider can't represent them:
 
 ## Workstation Access
 
-Infrastructure hosts use `tag:exit-node` alongside their role tag to approve exit
-routes automatically. Personal devices, the dashboard tablet and application or
-proxy nodes do not receive this tag.
+Infrastructure role tags automatically approve advertised exit routes. Hosts
+advertise the capability; the dashboard tablet and application or proxy nodes
+do not.
 
 After `mise run hosts:ssh`, add this near the start of `~/.ssh/config`:
 

@@ -130,7 +130,7 @@ resource "tailscale_federated_identity" "github" {
 resource "tailscale_oauth_client" "fly" {
   description = "Fly"
   scopes      = ["auth_keys"]
-  tags        = ["tag:fly"]
+  tags        = ["tag:ephemeral"]
 
   depends_on = [tailscale_acl.default]
 }
@@ -153,7 +153,7 @@ resource "tailscale_tailnet_key" "server" {
   preauthorized       = true
   recreate_if_invalid = "always"
   reusable            = false
-  tags                = ["tag:${each.value.type}", "tag:exit-node"]
+  tags                = ["tag:${each.value.type}"]
 
   depends_on = [tailscale_acl.default]
 }
