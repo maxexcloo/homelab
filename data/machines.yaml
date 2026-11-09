@@ -214,6 +214,8 @@ machines:
       platform: nanokvm
       type: appliance
       username: root
+      cloudflare:
+        acme: direct
       interfaces:
         - address: 10.0.1.213
           mac_address: 48:da:35:6d:cb:80
