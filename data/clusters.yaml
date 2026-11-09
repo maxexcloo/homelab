@@ -8,7 +8,6 @@ clusters:
     # Kubelab pins Traefik's private Service to this address; every node's Tailscale forwards
     # the cluster's Tailscale Service to it.
     tailscale_ingress_target: 10.100.5.189
-    tailscale_ingress_ipv6: false
     tailscale_ingress_service: syd-ingress
     cloudflare:
       access_applications: true
