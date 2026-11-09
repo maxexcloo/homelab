@@ -65,12 +65,12 @@ locals {
     },
     {
       for cluster_name, cluster in local.clusters : "cluster/${cluster_name}/public" => {
-        content = oci_core_instance.node[try(cluster.public_node, cluster.api_node)].public_ip
+        content = oci_core_instance.node[cluster.public_node].public_ip
         name    = "public.${cluster_name}.${local.domains.services}"
         type    = "A"
         zone    = local.domains.services
       }
-      if try(local.machines[try(cluster.public_node, cluster.api_node)].oci.assign_public_ip, false)
+      if try(local.machines[cluster.public_node].oci.assign_public_ip, false)
     },
     {
       for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale" => {
@@ -79,7 +79,6 @@ locals {
         type    = "A"
         zone    = local.domains.services
       }
-      if local.tailscale_cluster_addresses[cluster_name].ipv4 != null
     },
     {
       for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale-aaaa" => {
@@ -88,7 +87,6 @@ locals {
         type    = "AAAA"
         zone    = local.domains.services
       }
-      if local.tailscale_cluster_addresses[cluster_name].ipv6 != null
     },
     {
       for cluster_name in keys(local.cloudflare_consumers_tunnel) : "cluster/${cluster_name}/tunnel" => {

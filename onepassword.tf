@@ -345,7 +345,6 @@ resource "onepassword_item" "tailscale_fly" {
   vault    = data.onepassword_vault.configured["flylab"].uuid
 }
 
-
 resource "onepassword_item" "talos_recovery" {
   for_each = local.clusters
 
