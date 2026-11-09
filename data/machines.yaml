@@ -173,7 +173,7 @@ machines:
       monitoring: false
       platform: bazzite
       smtp: resend
-      type: server
+      type: workstation
       username: max.schaefer
       cloudflare:
         tunnel: {}
@@ -202,7 +202,7 @@ machines:
       monitoring: false
       platform: ucore
       smtp: resend
-      type: server
+      type: workstation
       username: core
       butane:
         image: ghcr.io/ublue-os/ucore:stable

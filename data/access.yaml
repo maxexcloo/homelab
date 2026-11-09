@@ -19,12 +19,8 @@ tailscale:
   key_expiry_seconds: 7776000
   auto_approvers:
     exit_node:
-      - tag:router
-    routes:
-      "0.0.0.0/0":
-        - tag:router
-      "::/0":
-        - tag:router
+      - tag:exit-node
+    routes: {}
   default_tag_owners:
     - group:admin
   grants:
@@ -38,6 +34,7 @@ tailscale:
         - tag:router
         - tag:server
         - tag:vm
+        - tag:workstation
       ip:
         - "*"
       src: *trusted_tags
@@ -74,7 +71,9 @@ tailscale:
     - tag:appliance
     - tag:backup
     - tag:ephemeral
+    - tag:exit-node
     - tag:fly
     - tag:router
     - tag:server
     - tag:vm
+    - tag:workstation

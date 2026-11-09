@@ -93,7 +93,7 @@ Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
 `IGNITION_OUTPUT_DIRECTORY` overrides the directory. Rendering needs an unlocked
 1Password CLI and OpenSSL (`brew install openssl@3` on macOS). Mercury's
-`Server: mercury.mbk.excloo.net` login must exist from a reviewed apply.
+`Workstation: mercury.mbk.excloo.net` login must exist from a reviewed apply.
 Its password is hashed locally for `core`; generated files stay private.
 Password changes in 1Password do not update an installed host.
 
@@ -159,6 +159,10 @@ These stay native because the provider can't represent them:
   the service and its DNS.
 
 ## Workstation Access
+
+Infrastructure hosts use `tag:exit-node` alongside their role tag to approve exit
+routes automatically. Personal devices, the dashboard tablet and application or
+proxy nodes do not receive this tag.
 
 After `mise run hosts:ssh`, add this near the start of `~/.ssh/config`:
 
