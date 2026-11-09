@@ -17,9 +17,7 @@ locals {
   tailscale_cluster_addresses = {
     for name, cluster in local.clusters : name => {
       ipv4 = one([for address in tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))])
-      ipv6 = try(cluster.tailscale_ingress_ipv6, true) ? one([
-        for address in tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")
-      ]) : null
+      ipv6 = one([for address in tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")])
     }
   }
 
