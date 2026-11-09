@@ -120,10 +120,7 @@ locals {
       for tag in local.access.tailscale.tags : tag => local.access.tailscale.default_tag_owners
     },
     {
-      for name in keys(local.clusters) : "tag:cluster-${name}" => concat(local.access.tailscale.default_tag_owners, ["tag:cluster-${name}-operator"])
-    },
-    {
-      for name in keys(local.clusters) : "tag:cluster-${name}-operator" => local.access.tailscale.default_tag_owners
+      for name in keys(local.clusters) : "tag:cluster-${name}" => local.access.tailscale.default_tag_owners
     },
   )
 }
@@ -153,15 +150,6 @@ resource "tailscale_oauth_client" "fly" {
   depends_on = [tailscale_acl.default]
 }
 
-resource "tailscale_oauth_client" "kubernetes_operator" {
-  for_each = local.clusters
-
-  description = "Cluster ${each.key} Kubernetes operator"
-  scopes      = local.access.tailscale.operator.scopes
-  tags        = ["tag:cluster-${each.key}-operator"]
-
-  depends_on = [tailscale_acl.default]
-}
 
 resource "tailscale_tailnet_key" "server" {
   for_each = local.tailscale_key_machines

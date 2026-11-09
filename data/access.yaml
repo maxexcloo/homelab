@@ -33,7 +33,6 @@ tailscale:
         - tag:appliance
         - tag:backup
         - tag:cluster-syd
-        - tag:cluster-syd-operator
         - tag:ephemeral
         - tag:router
         - tag:server
@@ -66,11 +65,6 @@ tailscale:
     group:admin:
       - max@excloo.com
       - maxexcloo@passkey
-  operator:
-    scopes:
-      - auth_keys
-      - devices:core
-      - services
   tags:
     - tag:appliance
     - tag:backup
