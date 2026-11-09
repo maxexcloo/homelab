@@ -179,9 +179,8 @@ These stay native because the provider can't represent them:
 
 ## Workstation Access
 
-Infrastructure role tags automatically approve advertised exit routes. Hosts
-advertise the capability; the dashboard tablet and application or proxy nodes
-do not.
+Infrastructure role tags automatically approve advertised exit routes. The
+dashboard tablet, NanoKVM and application or proxy nodes do not advertise exits.
 
 After `mise run hosts:ssh`, add this near the start of `~/.ssh/config`:
 
