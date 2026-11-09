@@ -140,7 +140,11 @@ and installed root-only at `/etc/letsencrypt/cloudflare.ini`.
 `/etc/kvm/server.crt` and `/etc/kvm/server.key`, then restarts `nanokvm.service`.
 Use an RSA key: NanoKVM's startup script rejects other key types and replaces
 them with a self-signed certificate. Test renewal with
-`sudo certbot renew --dry-run`.
+`sudo /usr/bin/python3.10 /usr/bin/certbot renew --dry-run`.
+
+The appliance's default Python points to its custom 3.13 installation. A
+`certbot.service` drop-in runs Ubuntu's Certbot with `/usr/bin/python3.10`,
+which has the distribution's Certbot modules.
 
 ## TrueNAS
 
