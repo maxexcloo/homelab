@@ -1,9 +1,11 @@
 data "tailscale_devices" "all" {}
 
-data "tailscale_service" "cluster_ingress" {
+resource "tailscale_service" "cluster_ingress" {
   for_each = local.clusters
 
-  name = "svc:${each.value.tailscale_ingress_service}"
+  name  = "svc:${each.value.tailscale_ingress_service}"
+  ports = ["tcp:80", "tcp:443"]
+  tags  = ["tag:cluster-${each.key}"]
 }
 
 locals {
@@ -14,11 +16,24 @@ locals {
 
   tailscale_cluster_addresses = {
     for name, cluster in local.clusters : name => {
-      ipv4 = one([for address in data.tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))])
+      ipv4 = one([for address in tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))])
       ipv6 = try(cluster.tailscale_ingress_ipv6, true) ? one([
-        for address in data.tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")
+        for address in tailscale_service.cluster_ingress[name].addrs : address if startswith(address, "fd7a:")
       ]) : null
     }
+  }
+
+  # Every node's Tailscale serves the cluster's ingress Service and forwards it to Traefik.
+  tailscale_cluster_serve_configs = {
+    for name, cluster in local.clusters : name => jsonencode({
+      Services = {
+        "svc:${cluster.tailscale_ingress_service}" = {
+          TCP = {
+            for port in [80, 443] : tostring(port) => { TCPForward = "${cluster.tailscale_ingress_target}:${port}" }
+          }
+        }
+      }
+    })
   }
 
   tailscale_device_addresses = {
@@ -72,7 +87,9 @@ locals {
         local.tailscale_route_approvers,
       )
       services = {
-        for name in keys(local.clusters) : "tag:cluster-${name}" => ["tag:cluster-${name}"]
+        for name in keys(local.clusters) : "tag:cluster-${name}" => distinct([
+          for node in values(local.talos_nodes) : node.tailscale_tag if node.cluster == name
+        ])
       }
     }
 
