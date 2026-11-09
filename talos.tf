@@ -79,6 +79,8 @@ data "talos_machine_configuration" "container" {
               }, can(local.truenas_talos_containers[each.key]) ? {
               # The stock kubelet image cannot report capacity for the host ZFS dataset.
               localStorageCapacityIsolation = false
+              # Most workloads and their image pre-pull pods share this node; its /24 pod range has room.
+              maxPods = 200
               kubeReserved = {
                 memory = "1Gi"
               }
@@ -168,17 +170,20 @@ locals {
   # TrueNAS containers use a Tailscale sidecar.
   talos_container_tailscale_environment = {
     for name, container in local.talos_containers : name => {
-      TS_AUTH_ONCE  = "true"
-      TS_AUTHKEY    = tailscale_tailnet_key.talos_container[name].key
-      TS_EXTRA_ARGS = "--accept-dns=false"
-      TS_HOSTNAME   = container.device_name
-      TS_ROUTES     = join(",", container.tailscale_routes)
-      TS_STATE_DIR  = local.talos_container_tailscale_state_directory
-      TS_USERSPACE  = "false"
+      TS_AUTH_ONCE    = "true"
+      TS_AUTHKEY      = tailscale_tailnet_key.talos_container[name].key
+      TS_EXTRA_ARGS   = "--accept-dns=false"
+      TS_HOSTNAME     = container.device_name
+      TS_ROUTES       = join(",", container.tailscale_routes)
+      TS_SERVE_CONFIG = local.talos_tailscale_serve_config_path
+      TS_STATE_DIR    = local.talos_container_tailscale_state_directory
+      TS_USERSPACE    = "false"
     }
   }
 
   talos_container_tailscale_state_directory = "/var/lib/tailscale"
+
+  talos_tailscale_serve_config_path = "/etc/tailscale/serve.json"
 
   talos_containers = {
     for name, node in local.talos_nodes : name => merge(node, node.container, {
@@ -217,7 +222,12 @@ locals {
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
           "TS_EXTRA_ARGS=--accept-routes=true --advertise-exit-node --reset",
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
+          "TS_SERVE_CONFIG=${local.talos_tailscale_serve_config_path}",
         ])
+        configFiles = [{
+          content   = local.tailscale_cluster_serve_configs[node.cluster]
+          mountPath = local.talos_tailscale_serve_config_path
+        }]
       },
       local.talos_user_volume_local_path,
       ], node.machine_type == "controlplane" ? [local.talos_cluster_authentication_configuration] : [], node.install_disk_selector != null ? [{

@@ -98,9 +98,18 @@ resource "truenas_app" "talos_container" {
   remove_images = false
 
   custom_compose = yamlencode({
+    configs = {
+      tailscale-serve = {
+        content = local.tailscale_cluster_serve_configs[each.value.cluster]
+      }
+    }
     services = {
       tailscale = {
-        cap_add      = ["NET_ADMIN", "NET_RAW"]
+        cap_add = ["NET_ADMIN", "NET_RAW"]
+        configs = [{
+          source = "tailscale-serve"
+          target = local.talos_tailscale_serve_config_path
+        }]
         depends_on   = ["talos"]
         devices      = ["/dev/net/tun:/dev/net/tun"]
         image        = local.versions.images.tailscale
