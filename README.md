@@ -141,8 +141,9 @@ local resolver did not return delegated TXT answers during validation.
 
 `/etc/cron.d/nanokvm-acme` checks for renewal twice daily, with account and
 certificate state under `/var/lib/lego`. Lego's renewal hook at
-`/usr/local/libexec/nanokvm-certificate` installs the full chain and RSA key
-at NanoKVM's existing certificate paths, then signals `NanoKVM-Server` to exit.
+`/usr/local/libexec/nanokvm-certificate` installs the full chain and an RSA key,
+required by NanoKVM's startup validator, at its existing certificate paths. It
+then signals `NanoKVM-Server` to exit.
 NanoKVM's stock supervisor starts it again with the new certificate. Its service
 and the appliance's Python configuration are unchanged.
 
