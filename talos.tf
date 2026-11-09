@@ -79,8 +79,6 @@ data "talos_machine_configuration" "container" {
               }, can(local.truenas_talos_containers[each.key]) ? {
               # The stock kubelet image cannot report capacity for the host ZFS dataset.
               localStorageCapacityIsolation = false
-              # Most workloads and their image pre-pull pods share this node; its /24 pod range has room.
-              maxPods = 200
               kubeReserved = {
                 memory = "1Gi"
               }
