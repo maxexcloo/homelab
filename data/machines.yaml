@@ -223,8 +223,8 @@ machines:
           group: Infrastructure
           icon: sh-sipeed
           name: NanoKVM
-          port: 80
-          scheme: http
+          port: 443
+          scheme: https
     saturn:
       beszel: true
       platform: truenas
