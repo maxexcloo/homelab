@@ -215,7 +215,7 @@ locals {
         environment = compact([
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
-          "TS_EXTRA_ARGS=--accept-routes=true --reset",
+          "TS_EXTRA_ARGS=--accept-routes=true --advertise-exit-node --reset",
           length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
         ])
       },

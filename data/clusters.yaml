@@ -25,6 +25,8 @@ clusters:
       neptune:
         configuration_delivery: metadata
         machine_type: worker
+        sysctls: &exit_node_sysctls
+          net.ipv6.conf.all.forwarding: "1"
         time_servers:
           - 169.254.169.254
       saturn:
@@ -75,3 +77,4 @@ clusters:
             - siderolabs/amdgpu
             - siderolabs/realtek-firmware
             - siderolabs/tailscale
+        sysctls: *exit_node_sysctls

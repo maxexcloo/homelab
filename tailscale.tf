@@ -153,7 +153,7 @@ resource "tailscale_tailnet_key" "server" {
   preauthorized       = true
   recreate_if_invalid = "always"
   reusable            = false
-  tags                = ["tag:${each.value.type}"]
+  tags                = ["tag:${each.value.type}", "tag:exit-node"]
 
   depends_on = [tailscale_acl.default]
 }
