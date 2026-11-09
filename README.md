@@ -85,7 +85,7 @@ Kubelab owns their private routes and authentication.
 
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
-`butane.users` and `butane.groups` define additional accounts. Pluto's `kimbap`
+`butane.users` and `butane.groups` define additional accounts. Pluto's `saturn`
 user and group retain UID/GID 1001 for backup access. `butane.interface` enables
 UDP GRO tuning for the named interface; omit it when the interface is unknown.
 
