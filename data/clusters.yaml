@@ -33,17 +33,6 @@ clusters:
         configuration_delivery: container
         machine_type: controlplane
         tailscale_address: 100.120.55.119
-        # Temporary for the retained-volume rename; remove after cutover acceptance.
-        configuration:
-          - apiVersion: v1alpha1
-            kind: KubeAPIServerConfig
-            extraArgs:
-              feature-gates: MutablePVNodeAffinity=true
-          - machine:
-              kubelet:
-                extraConfig:
-                  featureGates:
-                    MutablePVNodeAffinity: true
         container:
           dataset: truenas-nvme/talos
           mac: 02:74:61:63:6f:01

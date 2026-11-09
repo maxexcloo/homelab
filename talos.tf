@@ -90,7 +90,7 @@ data "talos_machine_configuration" "container" {
         }
       }),
     ] : [],
-    [for document in local.talos_machine_configuration_documents_common[each.key] : yamlencode(document)],
+    [for document in concat(local.talos_machine_configuration_documents_common[each.key], each.value.configuration) : yamlencode(document)],
   )
 }
 
