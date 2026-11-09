@@ -50,7 +50,7 @@ data "talos_machine_configuration" "container" {
       # Collect pods left Failed by graceful node shutdowns instead of waiting for 12,500.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeControllerManagerConfig", extraArgs = { "terminated-pod-gc-threshold" = "20" } }),
     ] : [],
-    can(local.truenas_talos_containers[each.key]) || length(each.value.paths) > 0 ? [
+    can(local.truenas_talos_containers[each.key]) ? [
       # v1.14's standalone KubeletConfig does not expose extraMounts.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
       yamlencode({
@@ -155,10 +155,7 @@ locals {
   }
 
   talos_cluster_endpoints = {
-    for name, cluster in local.clusters : name => try(
-      cluster.endpoint,
-      "https://${local.talos_cluster_api_addresses[name]}:6443",
-    )
+    for name, cluster in local.clusters : name => "https://${local.talos_cluster_api_addresses[name]}:6443"
   }
 
   # Public DNS keeps private service names on their Tailscale records rather than
@@ -192,7 +189,6 @@ locals {
         for key, network in local.unifi_networks : key
         if startswith(key, "${local.machines[name].network}/") && cidrcontains(network.subnet, node.address)
       ])
-      paths = try(node.container.paths, [])
     })
     if node.configuration_delivery == "container"
   }
@@ -259,7 +255,7 @@ locals {
         apiVersion = "v1alpha1"
         kind       = "KubeNodeConfig"
         labels = merge(
-          { "node.${local.domains.services}/network" = name == try(local.clusters[node.cluster].public_node, null) ? "external" : "internal" },
+          { "node.${local.domains.services}/network" = name == local.clusters[node.cluster].public_node ? "external" : "internal" },
           node.configuration_delivery == "container" ? { "node.${local.domains.services}/container" = "true" } : {},
           node.dedicated != null ? { "node.${local.domains.services}/dedicated" = node.dedicated } : {},
         )
@@ -307,12 +303,12 @@ locals {
         address                = try(node.address, local.machine_private_ipv4_addresses[node_name])
         cluster                = cluster_name
         configuration          = try(node.configuration, [])
-        configuration_delivery = try(node.configuration_delivery, null)
+        configuration_delivery = node.configuration_delivery
         dedicated              = try(node.dedicated, null)
         install_disk_selector  = try(node.install_disk_selector, null)
         sysctls                = try(node.sysctls, {})
         tailscale_routes       = try(node.tailscale_routes, [])
-        tailscale_tag          = try(node.configuration_delivery, null) == "container" ? "tag:cluster-${cluster_name}" : "tag:${local.machines[node_name].type}"
+        tailscale_tag          = node.configuration_delivery == "container" ? "tag:cluster-${cluster_name}" : "tag:${local.machines[node_name].type}"
         time_servers           = try(node.time_servers, [])
       })
     }

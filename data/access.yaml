@@ -43,6 +43,7 @@ tailscale:
       src: *trusted_tags
     - dst:
         - syd
+        - syd-ipv6
       ip:
         - tcp:443
       src:

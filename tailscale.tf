@@ -95,12 +95,10 @@ locals {
     groups    = local.access.tailscale.groups
     tagOwners = local.tailscale_tag_owners
     hosts = merge([
-      for name in keys(local.clusters) : merge(
-        { (name) = "${local.tailscale_cluster_addresses[name].ipv4}/32" },
-        local.tailscale_cluster_addresses[name].ipv6 != null ? {
-          ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
-        } : {},
-      )
+      for name in keys(local.clusters) : {
+        (name)           = "${local.tailscale_cluster_addresses[name].ipv4}/32"
+        ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
+      }
     ]...)
   }
 
@@ -147,7 +145,6 @@ resource "tailscale_oauth_client" "fly" {
 
   depends_on = [tailscale_acl.default]
 }
-
 
 resource "tailscale_tailnet_key" "server" {
   for_each = local.tailscale_key_machines
