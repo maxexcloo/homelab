@@ -11,6 +11,9 @@ machines:
         groups:
           - gid: 1001
             name: saturn
+        trees:
+          - local: data/hosts/pluto/etc
+            path: /etc
         units:
           - enabled: true
             name: sanoid.timer
