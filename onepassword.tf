@@ -345,16 +345,6 @@ resource "onepassword_item" "tailscale_fly" {
   vault    = data.onepassword_vault.configured["flylab"].uuid
 }
 
-resource "onepassword_item" "tailscale_operator" {
-  for_each = local.clusters
-
-  category = "login"
-  password = tailscale_oauth_client.kubernetes_operator[each.key].key
-  tags     = [local.access.onepassword.ownership_tag]
-  title    = "Tailscale Kubernetes Operator"
-  username = tailscale_oauth_client.kubernetes_operator[each.key].id
-  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
-}
 
 resource "onepassword_item" "talos_recovery" {
   for_each = local.clusters
