@@ -90,11 +90,8 @@ not apply users, passwords, kernel arguments or unit enablement. Checks and sync
 do not read login passwords, and their intermediate files are not installable.
 Local file and tree paths are relative to the repository root.
 
-Fresh installs mask Cockpit's service and socket. On existing hosts, stop
-`cockpit-letsencrypt.timer` if present, then run
-`sudo systemctl mask --now cockpit.socket cockpit.service`. After the removal
-apply, sync deletes managed renewal files. OS-bundled Cockpit packages remain
-installed and masked.
+Installs mask Cockpit's service and socket; OS-bundled Cockpit packages remain
+installed.
 
 ## Cluster Upgrades
 
