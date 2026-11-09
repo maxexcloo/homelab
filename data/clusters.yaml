@@ -1,6 +1,6 @@
 clusters:
   syd:
-    api_node: kimbap
+    api_node: saturn
     backblaze: true
     pod_subnet: 10.100.0.0/22
     public_node: neptune
@@ -27,12 +27,23 @@ clusters:
         machine_type: worker
         time_servers:
           - 169.254.169.254
-      kimbap:
+      saturn:
         address: 10.4.0.7
         bootstrap: true
         configuration_delivery: container
         machine_type: controlplane
         tailscale_address: 100.120.55.119
+        # Temporary for the retained-volume rename; remove after cutover acceptance.
+        configuration:
+          - apiVersion: v1alpha1
+            kind: KubeAPIServerConfig
+            extraArgs:
+              feature-gates: MutablePVNodeAffinity=true
+          - machine:
+              kubelet:
+                extraConfig:
+                  featureGates:
+                    MutablePVNodeAffinity: true
         container:
           dataset: truenas-nvme/talos
           mac: 02:74:61:63:6f:01

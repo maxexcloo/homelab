@@ -78,9 +78,9 @@ Mars has no `butane` block and is synced only. Set a machine's `hostname` to
 override the hostname derived from its inventory key.
 Mars runs stock Bazzite without a Talos worker; its game library and Syncthing
 folders remain on the host. Syncthing instances belong to individual nodes;
-Kubelab deploys the Kimbap and Venus instances, while Mars runs natively.
-Venus and Kimbap synchronise the `AI` folder (ID `ai`) in both directions, with
-Kimbap's copy at `/mnt/truenas/ai/`. Changes and deletions propagate both ways.
+Kubelab deploys the Saturn and Venus instances, while Mars runs natively.
+Venus and Saturn synchronise the `AI` folder (ID `ai`) in both directions, with
+Saturn's copy at `/mnt/truenas/ai/`. Changes and deletions propagate both ways.
 Kubelab owns their private routes and authentication.
 
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
@@ -138,7 +138,7 @@ Netboot's admin page uses its native HTTP port, recorded with the service in
 `data/machines.yaml`. Apps that support TrueNAS certificates natively use those
 and their own HTTPS ports.
 
-Kimbap’s native Beszel custom app discovers storage devices using a read-only
+Saturn’s native Beszel custom app discovers storage devices using a read-only
 `/dev:/dev` directory bind and device cgroup rules (`b 8:* rw`, `b 259:* rw`,
 `c 242:* rw`). It retains the explicit `/dev/zfs` mapping and its existing
 `SYS_ADMIN`/`SYS_RAWIO` capabilities, with privileged mode disabled. Avoid
@@ -149,11 +149,11 @@ USB SSDs may require a device-type override for their limited SMART data.
 
 These stay native because the provider can't represent them:
 
-- Kimbap's `truenas-nvme` pool: one Lexar NM790 4TB and two Crucial X9 4TB
+- Saturn's `truenas-nvme` pool: one Lexar NM790 4TB and two Crucial X9 4TB
   drives in RAIDZ1, with `autotrim=on`. The pinned provider cannot update pool
   topology or manage autotrim. Its USB discard workaround is managed through
   the `crucial-x9-trim` startup task in `data/machines.yaml`.
-- Kimbap's native replication tasks send each pool directly to Pluto. The SSD
+- Saturn's native replication tasks send each pool directly to Pluto. The SSD
   pool keeps its scheduled snapshots; whole-pool recovery uses the offsite replica.
 - S3 HTTPS, buckets and access keys. OpenTofu only manages the parent dataset,
   the service and its DNS.

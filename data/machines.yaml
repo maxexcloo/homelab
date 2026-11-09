@@ -168,7 +168,64 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
-    kimbap:
+    mars:
+      beszel: true
+      monitoring: false
+      platform: bazzite
+      smtp: resend
+      type: server
+      username: max.schaefer
+      cloudflare:
+        tunnel: {}
+      interfaces:
+        - name: eno1
+          address: 10.0.3.204
+          mac_address: c8:ff:bf:0f:9f:d0
+        - name: enp5s0
+          address: 10.0.0.4
+          mac_address: c8:ff:bf:0f:9f:d1
+      services:
+        polaris:
+          description: Game Streaming Host
+          icon: sh-sunshine
+          name: Polaris
+          port: 47990
+          scheme: https
+        syncthing:
+          description: File Synchronisation
+          icon: sh-syncthing
+          name: Syncthing (Mars)
+          port: 8384
+          scheme: http
+    mercury:
+      beszel: true
+      monitoring: false
+      platform: ucore
+      smtp: resend
+      type: server
+      username: core
+      butane:
+        image: ghcr.io/ublue-os/ucore:stable
+      cloudflare:
+        tunnel: {}
+    nanokvm:
+      monitoring: false
+      name: NanoKVM
+      platform: nanokvm
+      type: appliance
+      username: root
+      interfaces:
+        - address: 10.0.1.213
+          mac_address: 48:da:35:6d:cb:80
+      services:
+        management:
+          description: Remote Console & Power Control
+          group: Infrastructure
+          icon: sh-sipeed
+          name: NanoKVM
+          port: 80
+          scheme: http
+    saturn:
       beszel: true
       platform: truenas
       smtp: resend
@@ -286,63 +343,6 @@ machines:
       interfaces:
         - address: 10.0.0.76
           mac_address: b6:7c:bc:fa:01:50
-    mars:
-      beszel: true
-      monitoring: false
-      platform: bazzite
-      smtp: resend
-      type: server
-      username: max.schaefer
-      cloudflare:
-        tunnel: {}
-      interfaces:
-        - name: eno1
-          address: 10.0.3.204
-          mac_address: c8:ff:bf:0f:9f:d0
-        - name: enp5s0
-          address: 10.0.0.4
-          mac_address: c8:ff:bf:0f:9f:d1
-      services:
-        polaris:
-          description: Game Streaming Host
-          icon: sh-sunshine
-          name: Polaris
-          port: 47990
-          scheme: https
-        syncthing:
-          description: File Synchronisation
-          icon: sh-syncthing
-          name: Syncthing (Mars)
-          port: 8384
-          scheme: http
-    mercury:
-      beszel: true
-      monitoring: false
-      platform: ucore
-      smtp: resend
-      type: server
-      username: core
-      butane:
-        image: ghcr.io/ublue-os/ucore:stable
-      cloudflare:
-        tunnel: {}
-    nanokvm:
-      monitoring: false
-      name: NanoKVM
-      platform: nanokvm
-      type: appliance
-      username: root
-      interfaces:
-        - address: 10.0.1.213
-          mac_address: 48:da:35:6d:cb:80
-      services:
-        management:
-          description: Remote Console & Power Control
-          group: Infrastructure
-          icon: sh-sipeed
-          name: NanoKVM
-          port: 80
-          scheme: http
     slzb-06m:
       name: SLZB-06M
       platform: slzb
