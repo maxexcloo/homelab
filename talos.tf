@@ -167,9 +167,7 @@ locals {
     for name, container in local.talos_containers : name => {
       TS_AUTH_ONCE    = "true"
       TS_AUTHKEY      = tailscale_tailnet_key.talos_container[name].key
-      TS_EXTRA_ARGS   = "--accept-dns=false"
       TS_HOSTNAME     = container.device_name
-      TS_ROUTES       = join(",", container.tailscale_routes)
       TS_SERVE_CONFIG = local.talos_tailscale_serve_config_path
       TS_STATE_DIR    = local.talos_container_tailscale_state_directory
       TS_USERSPACE    = "false"
@@ -211,13 +209,12 @@ locals {
         apiVersion = "v1alpha1"
         kind       = "ExtensionServiceConfig"
         name       = "tailscale"
-        environment = compact([
+        environment = [
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
           "TS_EXTRA_ARGS=--accept-routes=true --advertise-exit-node --reset",
-          length(node.tailscale_routes) > 0 ? "TS_ROUTES=${join(",", node.tailscale_routes)}" : null,
           "TS_SERVE_CONFIG=${local.talos_tailscale_serve_config_path}",
-        ])
+        ]
         configFiles = [{
           content   = local.tailscale_cluster_serve_configs[node.cluster]
           mountPath = local.talos_tailscale_serve_config_path
@@ -307,7 +304,6 @@ locals {
         dedicated              = try(node.dedicated, null)
         install_disk_selector  = try(node.install_disk_selector, null)
         sysctls                = try(node.sysctls, {})
-        tailscale_routes       = try(node.tailscale_routes, [])
         tailscale_tag          = node.configuration_delivery == "container" ? "tag:cluster-${cluster_name}" : "tag:${local.machines[node_name].type}"
         time_servers           = try(node.time_servers, [])
       })

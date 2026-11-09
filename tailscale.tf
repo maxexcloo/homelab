@@ -80,10 +80,7 @@ locals {
   tailscale_policy = {
     autoApprovers = {
       exitNode = local.access.tailscale.auto_approvers.exit_node
-      routes = merge(
-        local.access.tailscale.auto_approvers.routes,
-        local.tailscale_route_approvers,
-      )
+      routes   = local.access.tailscale.auto_approvers.routes
       services = {
         for name in keys(local.clusters) : "tag:cluster-${name}" => distinct([
           for node in values(local.talos_nodes) : node.tailscale_tag if node.cluster == name
@@ -100,15 +97,6 @@ locals {
         ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
       }
     ]...)
-  }
-
-  tailscale_route_approvers = {
-    for route in toset(flatten([
-      for node in values(local.talos_nodes) : node.tailscale_routes
-      ])) : route => distinct(compact([
-      for node_name, node in local.talos_nodes :
-      contains(node.tailscale_routes, route) ? node.tailscale_tag : null
-    ]))
   }
 
   tailscale_tag_owners = merge(
