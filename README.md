@@ -52,7 +52,7 @@ mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ## Configuration
 
 [data/](data/) holds the inventory and shared settings. Host provisioning uses
-[data/machines.yaml](data/machines.yaml) and
+[data/machines.yaml](data/machines.yaml), [data/hosts/](data/hosts/) and
 [templates/hosts/](templates/hosts/); [bluemax](https://github.com/maxexcloo/bluemax)
 images own the host OS configuration. [AGENTS.md](AGENTS.md) covers ownership,
 conventions and change safety.
@@ -72,7 +72,9 @@ propagate to peers. Kubelab owns its private routes and authentication.
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
 `butane.users` and `butane.groups` define additional accounts. Pluto's `saturn`
-user and group retain UID/GID 1001 for backup access.
+user and group retain UID/GID 1001 for backup access. `butane.trees` installs
+host-specific files, such as Pluto's sanoid configuration, from paths relative
+to the repository root; sync does not deliver them.
 
 Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;

@@ -45,6 +45,10 @@ storage:
   trees:
     - local: templates/hosts/common/etc
       path: /etc
+%{ for tree in try(machine.butane.trees, []) ~}
+    - local: ${tree.local}
+      path: ${tree.path}
+%{ endfor ~}
 
 systemd:
   units:
