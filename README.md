@@ -33,7 +33,7 @@ map keyed by machine name, with the `api_key` and `url` of each TrueNAS API.
 | `mise run fmt`                                   | Format repository files                       |
 | `mise run hosts:ignition [host...]`              | Render host installation files                |
 | `mise run hosts:ssh`                             | Install configured SSH aliases                |
-| `mise run hosts:sync [host...]`                  | Sync host files & restart changed units       |
+| `mise run hosts:sync [host...]`                  | Sync generated host files                     |
 | `mise run init`                                  | Initialise providers & the remote backend     |
 | `mise run init:offline`                          | Initialise providers without the backend      |
 | `mise run plan`                                  | Preview infrastructure changes                |
@@ -52,8 +52,9 @@ mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ## Configuration
 
 [data/](data/) holds the inventory and shared settings. Host provisioning uses
-[data/machines.yaml](data/machines.yaml), [data/hosts/](data/hosts/) and
-[templates/hosts/](templates/hosts/). [AGENTS.md](AGENTS.md) covers ownership,
+[data/machines.yaml](data/machines.yaml) and
+[templates/hosts/](templates/hosts/); [bluemax](https://github.com/maxexcloo/bluemax)
+images own the host OS configuration. [AGENTS.md](AGENTS.md) covers ownership,
 conventions and change safety.
 
 Service entries with `credentials.username` get a generated 1Password login
@@ -62,9 +63,8 @@ titled and linked from the service's name and endpoint.
 ## Hosts
 
 `data/machines.yaml` contains each machine's inventory and optional `butane`
-settings. `butane.image` is required for provisioning; omit unused settings.
-Set a machine's `hostname` to override the hostname derived from its inventory
-key.
+settings; omit unused settings. Set a machine's `hostname` to override the
+hostname derived from its inventory key.
 
 Syncthing's `AI` folder synchronises in both directions; changes and deletions
 propagate to peers. Kubelab owns its private routes and authentication.
@@ -72,8 +72,7 @@ propagate to peers. Kubelab owns its private routes and authentication.
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
 `butane.users` and `butane.groups` define additional accounts. Pluto's `saturn`
-user and group retain UID/GID 1001 for backup access. `butane.interface` enables
-UDP GRO tuning for the named interface; omit it when the interface is unknown.
+user and group retain UID/GID 1001 for backup access.
 
 Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
@@ -83,15 +82,12 @@ The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
 Its password is hashed locally for `core`; generated files stay private.
 Password changes in 1Password do not update an installed host.
 
-`mise run hosts:sync [host...]` installs Butane trees and generated files on
-uCore and Bazzite hosts. Apply generated configuration changes before syncing.
-Sync removes files it previously installed and restarts affected units; it does
-not apply users, passwords, kernel arguments or unit enablement. Checks and sync
-do not read login passwords, and their intermediate files are not installable.
-Local file and tree paths are relative to the repository root.
+Installs boot Fedora CoreOS, then rebase to the signed `bluemax-server` image,
+which owns the OS configuration and updates itself. Ignition also carries each
+host's generated files, such as its Cloudflare Tunnel token.
 
-Installs mask Cockpit's service and socket; OS-bundled Cockpit packages remain
-installed.
+`mise run hosts:sync [host...]` installs changed generated files on uCore and
+Bazzite tunnel hosts after an apply and restarts cloudflared.
 
 ## Cluster Upgrades
 

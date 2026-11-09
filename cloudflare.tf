@@ -113,20 +113,15 @@ locals {
     name => one(groups.result).id
   }
 
+  # The host images start cloudflared once its environment file exists.
   cloudflare_tunnel_files = {
     for name in keys(local.cloudflare_consumers_tunnel) : name => {
       "/etc/cloudflared/cloudflared.env" = {
         content = "TUNNEL_TOKEN=${data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[name].token}\n"
         mode    = "0600"
       }
-      "/etc/containers/systemd/cloudflared.container" = {
-        content = templatefile("${path.module}/templates/cloudflare/cloudflared.container.tftpl", {
-          image = local.versions.images.cloudflared
-        })
-        mode = "0644"
-      }
     }
-    if can(local.sync_hosts[name])
+    if contains(["bazzite", "ucore"], try(local.machines[name].platform, ""))
   }
 
   cloudflare_tunnel_mtls_hostnames = {

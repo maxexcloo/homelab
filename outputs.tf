@@ -38,12 +38,12 @@ output "github_identity" {
 }
 
 output "hosts" {
-  description = "Generated files for `mise run hosts:sync`, by host."
+  description = "Generated files for host installs and `mise run hosts:sync`, by host."
   sensitive   = true
   value = {
-    for name, machine in local.sync_hosts : name => {
-      address = "${machine.username}@${local.machine_fqdns[name]}"
-      files   = try(local.cloudflare_tunnel_files[name], {})
+    for name, files in local.cloudflare_tunnel_files : name => {
+      address = "${local.machines[name].username}@${local.machine_fqdns[name]}"
+      files   = files
     }
   }
 }
