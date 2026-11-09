@@ -15,9 +15,9 @@ configuration and service units belong to their owning application repository.
 - Keep the complete provider environment in the credential item referenced by
   `fnox.toml`; local setup may create its schema, but OpenTofu never manages it.
   Resolve it only inside credential-consuming Mise tasks with `fnox exec`.
-- Installable Butane and Ignition must derive the `core` password hash from the
-  machine's 1Password login. Never use check/sync output for installation: the
-  template removes passwordless sudo and those modes lock the password.
+- Installable Ignition must derive the `core` password hash from the machine's
+  1Password login. Never install check output: the image removes passwordless
+  sudo and checks lock the password.
 - Treat anyone who can read OpenTofu state as able to read its secrets, even
   when plan output is redacted.
 

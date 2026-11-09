@@ -58,14 +58,14 @@ description = "Render Host Installation Files"
 run = '''
 set -eu
 output_directory="${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"
-scripts/render_hosts.sh --ignition "${output_directory}" "$@"
+scripts/render_hosts.sh "${output_directory}" "$@"
 '''
 
 [tasks."hosts:ssh"]
 run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 [tasks."hosts:sync"]
-description = "Sync Host Files & Restart Changed Units"
+description = "Sync Generated Host Files"
 run = "scripts/sync_hosts.sh"
 
 # Setup

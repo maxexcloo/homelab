@@ -1,13 +1,6 @@
 variant: fcos
 version: 1.6.0
 
-%{ if can(machine.butane.kernel_arguments) ~}
-kernel_arguments:
-  should_exist:
-%{ for argument in machine.butane.kernel_arguments ~}
-    - ${argument}
-%{ endfor ~}
-%{ endif ~}
 passwd:
 %{ if can(machine.butane.groups) ~}
   groups:
@@ -32,73 +25,29 @@ storage:
     - mode: 0754
       path: /etc/ucore-autorebase
   files:
-%{ if can(machine.butane.interface) ~}
-    - mode: 0644
-      path: /etc/tailscale-udp-gro-interface
-      contents:
-        inline: |
-          ${machine.butane.interface}
-%{ endif ~}
     - mode: 0644
       path: /etc/ucore-autorebase/image.env
       contents:
         inline: |
-          UCORE_IMAGE=${machine.butane.image}
-    - mode: 0440
-      overwrite: true
-      path: /etc/sudoers.d/coreos-sudo-group
-      contents:
-        inline: |
-          # Sudo requires the user password (replaces the CoreOS passwordless default).
+          UCORE_IMAGE=ghcr.io/maxexcloo/bluemax-server:latest
     - mode: 0644
       overwrite: true
       path: /etc/hostname
       contents:
         inline: |
           ${machine.hostname}
-%{ for file in try(machine.butane.files, []) ~}
+%{ for path, file in files ~}
     - mode: ${file.mode}
-      path: ${file.path}
+      path: ${path}
       contents:
-        local: ${file.local}
-      group:
-        name: ${file.group}
-      user:
-        name: ${file.user}
+        inline: ${jsonencode(file.content)}
 %{ endfor ~}
-%{ if try(machine.butane.linger, false) ~}
-    - mode: 0644
-      path: /var/lib/systemd/linger/${machine.username}
-      contents:
-        inline: ""
-%{ endif ~}
-%{ if can(machine.butane.links) ~}
-  links:
-%{ for link in machine.butane.links ~}
-    - path: ${link.path}
-      target: ${link.target}
-      group:
-        name: ${link.group}
-      user:
-        name: ${link.user}
-%{ endfor ~}
-%{ endif ~}
   trees:
     - local: templates/hosts/common/etc
       path: /etc
-%{ for tree in try(machine.butane.trees, []) ~}
-    - local: ${tree.local}
-      path: ${tree.path}
-%{ endfor ~}
 
 systemd:
   units:
-    - name: cockpit.service
-      mask: true
-    - name: cockpit.socket
-      mask: true
-    - name: tailscaled.service
-      enabled: true
     - name: ucore-unsigned-autorebase.service
       enabled: true
     - name: ucore-signed-autorebase.service

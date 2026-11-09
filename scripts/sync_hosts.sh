@@ -1,89 +1,28 @@
 #!/usr/bin/env bash
-# Syncs every host, or the hosts named as arguments. Each host gets its Butane
-# trees and its generated files from the `hosts` output, then installs them as
-# root by running this script with --install after one sudo prompt.
+# Syncs every host's generated files from the `hosts` output, or those of the
+# hosts named as arguments. The host images own all other configuration.
 set -euo pipefail
 
-# Runs on the host from the uploaded staging directory. Installs changed files,
-# removes files an earlier sync installed that are no longer staged, and
-# restarts the units those changes affect.
+# Runs as root on the host from the uploaded staging directory. Installs changed
+# files and restarts cloudflared, their only consumer, when anything changed.
 install_files() {
-  local manifest=/var/lib/homelab-sync/files
-  local quadlets=/etc/containers/systemd
-  local affected=() changed network path restart=() running=() service unit
+  local changed=false path
 
   cd "$(dirname "${BASH_SOURCE[0]}")/root"
-  find . -type f | sed 's/^\.//' | sort >../files
-  mkdir -p "$(dirname "${manifest}")"
-  touch "${manifest}"
-
-  changed="$(
-    while read -r path; do
-      if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
-        echo "${path}"
-      fi
-    done <../files
-    comm -23 "${manifest}" ../files
-  )"
-  if [[ -z "${changed}" ]]; then
-    echo "Up to date"
-    return
-  fi
-
-  # A container restarts when its unit or any file it names changes.
-  for unit in $(printf '%s\n' "${quadlets}"/*.container ".${quadlets}"/*.container | sed 's/^\.//' | sort -u); do
-    for path in ${changed}; do
-      if [[ "${path}" == "${unit}" ]] || grep -qsF -e "${path}" -e "=$(basename "${path}")" ".${unit}" "${unit}"; then
-        service="$(basename "${unit}" .container).service"
-        affected+=("${service}")
-        [[ ! -f "${unit}" ]] || running+=("${service}")
-        break
-      fi
-    done
-  done
-
-  for path in ${changed}; do
-    echo "Changed ${path}"
-    case "${path}" in
-      /etc/systemd/system/*.service | /etc/systemd/system/*.timer)
-        [[ -f ".${path}" ]] || systemctl disable --now "$(basename "${path}")" || true
-        ;;
-    esac
-  done
-
-  # Podman keeps an existing network, so changed networks are recreated once
-  # their containers stop.
-  ((${#running[@]} == 0)) || systemctl stop "${running[@]}"
-  for path in ${changed}; do
-    if [[ "${path}" == "${quadlets}"/*.network && -f "${path}" ]]; then
-      network="$(sed -n 's/^NetworkName=//p' "${path}")"
-      ! podman network exists "${network}" || podman network rm "${network}"
-    fi
-  done
-
-  for path in ${changed}; do
-    if [[ -f ".${path}" ]]; then
+  while IFS= read -r path; do
+    path="${path#.}"
+    if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
+      echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
-    else
-      rm -f "${path}"
+      changed=true
     fi
-  done
-  cp ../files "${manifest}"
-  systemctl daemon-reload
+  done < <(find . -type f)
 
-  for path in ${changed}; do
-    [[ -f "${path}" ]] || continue
-    case "${path}" in
-      "${quadlets}"/*.network) systemctl restart "$(basename "${path}" .network)-network.service" ;;
-      /etc/systemd/system/*.service | /etc/systemd/system/*.timer) systemctl try-restart "$(basename "${path}")" ;;
-      /etc/tmpfiles.d/*.conf) systemd-tmpfiles --create "${path}" ;;
-    esac
-  done
-  # One transaction lets systemd order each container after the units it needs.
-  for service in "${affected[@]}"; do
-    [[ ! -f "${quadlets}/${service%.service}.container" ]] || restart+=("${service}")
-  done
-  ((${#restart[@]} == 0)) || systemctl restart "${restart[@]}"
+  if [[ "${changed}" == true ]]; then
+    systemctl restart cloudflared.service
+  else
+    echo "Up to date"
+  fi
 }
 
 if [[ "${1:-}" == "--install" ]]; then
@@ -91,12 +30,9 @@ if [[ "${1:-}" == "--install" ]]; then
   exit
 fi
 
-repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 hosts_json="$(fnox exec -- tofu output -json hosts)"
-rendered_hosts="$(mktemp -d)"
 staging_root="$(mktemp -d)"
-trap 'rm -rf -- "${rendered_hosts}" "${staging_root}"' EXIT
-"${repo_dir}/scripts/render_hosts.sh" --sync "${rendered_hosts}"
+trap 'rm -rf -- "${staging_root}"' EXIT
 
 if (($# == 0)); then
   names="$(jq -r 'keys[]' <<<"${hosts_json}")"
@@ -111,14 +47,6 @@ for name in "$@"; do
   staging="${staging_root}/${name}"
   mkdir -p "${staging}/root"
   cp "${BASH_SOURCE[0]}" "${staging}/sync_hosts.sh"
-
-  butane_config="${rendered_hosts}/${name}.bu"
-  if [[ -f "${butane_config}" ]]; then
-    while IFS=$'\t' read -r tree path; do
-      mkdir -p "${staging}/root${path}"
-      cp -Rp "${repo_dir}/${tree}/." "${staging}/root${path}/"
-    done < <(yq -r '.storage.trees[] | [.local, .path] | @tsv' "${butane_config}")
-  fi
 
   while IFS=$'\t' read -r path mode; do
     mkdir -p "$(dirname "${staging}/root${path}")"
