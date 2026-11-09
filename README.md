@@ -128,6 +128,20 @@ Upgrade one cluster at a time, after reading the upstream
 Single-node clusters have an outage while they upgrade. Configuration applies use
 `no_reboot`, and changing the installer doesn't upgrade running nodes.
 
+## NanoKVM
+
+NanoKVM uses Ubuntu's `certbot` and `python3-certbot-dns-cloudflare` packages
+for a Let's Encrypt certificate matching its inventory hostname. Its dedicated
+DNS token is stored in `Cloudflare ACME DNS: <hostname>` in the Homelab vault
+and installed root-only at `/etc/letsencrypt/cloudflare.ini`.
+
+`certbot.timer` renews the certificate. The deploy hook at
+`/etc/letsencrypt/renewal-hooks/deploy/nanokvm` copies the full chain and key to
+`/etc/kvm/server.crt` and `/etc/kvm/server.key`, then restarts `nanokvm.service`.
+Use an RSA key: NanoKVM's startup script rejects other key types and replaces
+them with a self-signed certificate. Test renewal with
+`sudo certbot renew --dry-run`.
+
 ## TrueNAS
 
 Storage policy and SMB shares sit beside their datasets in `data/storage.yaml`,
