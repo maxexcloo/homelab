@@ -215,7 +215,7 @@ machines:
       type: appliance
       username: root
       cloudflare:
-        acme: direct
+        acme: delegated
       interfaces:
         - address: 10.0.1.213
           mac_address: 48:da:35:6d:cb:80
