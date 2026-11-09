@@ -39,8 +39,7 @@ map keyed by machine name, with the `api_key` and `url` of each TrueNAS API.
 | `mise run plan`                                  | Preview infrastructure changes                |
 | `mise run setup`                                 | Set up the workstation                        |
 
-Plans and applies run locally; review each plan before applying it. CI validates
-changes and refreshes external monitoring after a merge, but never applies.
+Plans and applies run locally; review each plan before applying it.
 
 Run `mise run init:offline` before `mise run check` on a fresh checkout to validate
 without credentials. After a provider update, run `mise run init` and refresh the
@@ -50,21 +49,12 @@ lock file's checksums:
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ```
 
-Renovate keeps versions current. Talos, Kubernetes and every image deployed
-outside Kubernetes are pinned in `data/versions.yaml`.
-
 ## Configuration
 
-- [data/](data/) is the inventory: access, clusters, DNS, domains, machines,
-  networks, providers, storage and versions.
-- [data/machines.yaml](data/machines.yaml) holds machine inventory and optional
-  `butane` provisioning settings; [data/hosts/](data/hosts/) holds installed files.
-- [templates/hosts/common/](templates/hosts/common/) holds the files every host
-  installs.
-- [templates/](templates/) holds the text templates rendered into host and app
-  configs.
-- Root HCL files define provider resources by domain; [AGENTS.md](AGENTS.md)
-  covers conventions and change safety.
+[data/](data/) holds the inventory and shared settings. Host provisioning uses
+[data/machines.yaml](data/machines.yaml), [data/hosts/](data/hosts/) and
+[templates/hosts/](templates/hosts/). [AGENTS.md](AGENTS.md) covers ownership,
+conventions and change safety.
 
 Service entries with `credentials.username` get a generated 1Password login
 titled and linked from the service's name and endpoint.
@@ -73,15 +63,11 @@ titled and linked from the service's name and endpoint.
 
 `data/machines.yaml` contains each machine's inventory and optional `butane`
 settings. `butane.image` is required for provisioning; omit unused settings.
-The template supplies the shared `/etc` files, Tailscale and uCore rebase units.
-Mars has no `butane` block and is synced only. Set a machine's `hostname` to
-override the hostname derived from its inventory key.
-Mars runs stock Bazzite without a Talos worker; its game library and Syncthing
-folders remain on the host. Syncthing instances belong to individual nodes;
-Kubelab deploys the Saturn and Venus instances, while Mars runs natively.
-Venus and Saturn synchronise the `AI` folder (ID `ai`) in both directions, with
-Saturn's copy at `/mnt/truenas/ai/`. Changes and deletions propagate both ways.
-Kubelab owns their private routes and authentication.
+Set a machine's `hostname` to override the hostname derived from its inventory
+key.
+
+Syncthing's `AI` folder synchronises in both directions; changes and deletions
+propagate to peers. Kubelab owns its private routes and authentication.
 
 `ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
@@ -117,9 +103,9 @@ Upgrade one cluster at a time, after reading the upstream
 [Kubernetes](https://docs.siderolabs.com/kubernetes-guides/) upgrade notes:
 
 1. Take an etcd snapshot and confirm recovery access.
-2. Upgrade installed nodes with the matching Image Factory installer. Container
-   nodes change image when you apply: TrueNAS apps directly, Podman hosts after
-   `mise run hosts:sync`. Their volumes and bind mounts carry over.
+2. Upgrade installed nodes with the matching Image Factory installer. TrueNAS
+   container nodes change image when you apply; their volumes and bind mounts
+   carry over.
 3. Upgrade Kubernetes, checking node health after each step.
 4. For OCI clusters, run `mise run clusters:image <cluster>` and export the
    printed `TF_VAR_oci_talos_image_path` so rebuilds boot the new version.
@@ -130,32 +116,23 @@ Single-node clusters have an outage while they upgrade. Configuration applies us
 
 ## NanoKVM
 
-NanoKVM uses the official Lego ARM64 binary at `/usr/local/bin/lego`, pinned in
-`data/versions.yaml`, for Let's Encrypt certificates. DNS-01 challenges follow
-the inventory's ACME delegation into the challenge zone.
-Its dedicated DNS token can edit only that zone; OpenTofu stores it in
-`Cloudflare ACME DNS: <hostname>` in the Homelab vault. The appliance reads a
-root-only copy at `/etc/lego/cloudflare-token` using Lego's native `_FILE`
-credential support. Lego checks public DNS through `1.1.1.1:53`; the appliance's
-local resolver did not return delegated TXT answers during validation.
+NanoKVM uses Lego for Let's Encrypt certificates through the inventory's ACME
+delegation. Its dedicated DNS token can edit only the challenge zone; OpenTofu
+stores it in `Cloudflare ACME DNS: <hostname>` in the Homelab vault. The appliance
+reads a root-only copy at `/etc/lego/cloudflare-token`. Keep Lego's public DNS
+resolver override (`1.1.1.1:53`): the appliance's local resolver did not return
+delegated TXT answers during validation.
 
-`/etc/cron.d/nanokvm-acme` checks for renewal twice daily, with account and
-certificate state under `/var/lib/lego`. Lego's renewal hook at
-`/usr/local/libexec/nanokvm-certificate` installs the full chain and an RSA key,
-required by NanoKVM's startup validator, at its existing certificate paths. It
-then signals `NanoKVM-Server` to exit.
-NanoKVM's stock supervisor starts it again with the new certificate. Its service
-and the appliance's Python configuration are unchanged.
+`/etc/cron.d/nanokvm-acme` runs renewal, with certificate and account state under
+`/var/lib/lego`. Its hook at `/usr/local/libexec/nanokvm-certificate` must install
+the full chain and an RSA key, required by NanoKVM's startup validator, then
+signal `NanoKVM-Server` to exit so its stock supervisor restarts it with the new
+certificate.
 
 ## TrueNAS
 
-Storage policy and SMB shares sit beside their datasets in `data/storage.yaml`,
-keyed by full ZFS path. Only settings that differ from TrueNAS defaults are
-recorded.
-
-Netboot's admin page uses its native HTTP port, recorded with the service in
-`data/machines.yaml`. Apps that support TrueNAS certificates natively use those
-and their own HTTPS ports.
+Storage policy and SMB shares sit beside their datasets in
+[data/storage.yaml](data/storage.yaml), keyed by full ZFS path.
 
 Saturn’s native Beszel custom app discovers storage devices using a read-only
 `/dev:/dev` directory bind and device cgroup rules (`b 8:* rw`, `b 259:* rw`,
@@ -178,9 +155,6 @@ These stay native because the provider can't represent them:
   the service and its DNS.
 
 ## Workstation Access
-
-Infrastructure role tags automatically approve advertised exit routes. The
-dashboard tablet, NanoKVM and application or proxy nodes do not advertise exits.
 
 After `mise run hosts:ssh`, add this near the start of `~/.ssh/config`:
 

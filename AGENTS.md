@@ -43,8 +43,7 @@ scope to smallest as `provider_resource_qualifier`.
 - Derive resource membership and `for_each` keys only from configuration known
   before apply, never from values produced during apply. Infrastructure DNS may
   use Tailscale device discovery when its results are known during planning.
-- Normalise optional input once, use descriptive comprehension names, and add a
-  helper local only when it names a useful concept or removes real duplication.
+- Normalise optional input once and use descriptive comprehension names.
 - Use `one()` only for a true singleton. Use `can(map[key])` for relationship
   membership and `try(map[key], null)` for optional related values.
 - Keep one GCS prefix per state root and never manage a backend from the root
@@ -85,9 +84,7 @@ scope to smallest as `provider_resource_qualifier`.
   defaults and leave factory-default resources native.
 - Keep consumer settings beside their owner in shared data. Avoid app-name
   wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
-  required by a native schema. Define shared provider settings once rather than
-  adding per-consumer overrides without a concrete need.
-- Keep tags limited to useful scope, system and purpose labels.
+  required by a native schema.
 - Put `for_each` first in every HCL block that uses it, followed by a blank line.
 - Keep `depends_on` in its own group, separated from other arguments and blocks
   by blank lines, before any `lifecycle` block.
