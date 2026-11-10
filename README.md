@@ -33,7 +33,7 @@ map keyed by machine name, with the `api_key` and `url` of each TrueNAS API.
 | `mise run fmt`                                   | Format repository files                       |
 | `mise run hosts:ignition [host...]`              | Render host installation files                |
 | `mise run hosts:ssh`                             | Install configured SSH aliases                |
-| `mise run hosts:sync [host...]`                  | Sync generated host files                     |
+| `mise run hosts:sync [host...]`                  | Sync generated host files & trees             |
 | `mise run init`                                  | Initialise providers & the remote backend     |
 | `mise run init:offline`                          | Initialise providers without the backend      |
 | `mise run plan`                                  | Preview infrastructure changes                |
@@ -76,8 +76,10 @@ propagate to peers. Kubelab owns its private routes and authentication.
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
 `butane.users` and `butane.groups` define additional accounts. Pluto's `saturn`
 user and group retain UID/GID 1001 for backup access. `butane.trees` installs
-host-specific files, such as Pluto's sanoid configuration, from paths relative
-to the repository root; sync does not deliver them.
+host-specific files, such as Pluto's sanoid configuration and Mercury's 1Password
+Connect Quadlets, from paths relative to the repository root. Mercury's Connect
+reads its credentials file from the `onepassword-connect-credentials` Podman
+secret, created once with `sudo podman secret create`.
 
 Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
@@ -91,8 +93,9 @@ Installs boot Fedora CoreOS, then rebase to the signed `bluemax-server` image,
 which owns the OS configuration and updates itself. Ignition also carries each
 host's generated files, such as its Cloudflare Tunnel token.
 
-`mise run hosts:sync [host...]` installs changed generated files on uCore and
-Bazzite tunnel hosts after an apply and restarts cloudflared.
+`mise run hosts:sync [host...]` installs changed generated files and tree files on
+uCore and Bazzite tunnel hosts, then reloads systemd. It restarts cloudflared when
+its token changes; restart other changed services yourself.
 
 ## Cluster Upgrades
 
