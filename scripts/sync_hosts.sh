@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Syncs every host's generated files from the `hosts` output, or those of the
-# hosts named as arguments. The host images own all other configuration.
+# Syncs every host's generated files from the `hosts` output and its Butane
+# trees, or those of the hosts named as arguments. The host images own all other
+# configuration.
 set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory. Installs changed
-# files and restarts cloudflared, their only consumer, when anything changed.
+# files, reloads systemd and restarts cloudflared when its token changed.
 install_files() {
   local changed=false path
 
@@ -15,11 +16,14 @@ install_files() {
       echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
       changed=true
+      if [[ "${path}" == /etc/cloudflared/* ]]; then
+        systemctl restart cloudflared.service
+      fi
     fi
   done < <(find . -type f)
 
   if [[ "${changed}" == true ]]; then
-    systemctl restart cloudflared.service
+    systemctl daemon-reload
   else
     echo "Up to date"
   fi
@@ -31,6 +35,7 @@ if [[ "${1:-}" == "--install" ]]; then
 fi
 
 hosts_json="$(fnox exec -- tofu output -json hosts)"
+inventory_json="$(scripts/read_inventory.sh)"
 staging_root="$(mktemp -d)"
 trap 'rm -rf -- "${staging_root}"' EXIT
 
@@ -53,6 +58,11 @@ for name in "$@"; do
     jq -j --arg name "${name}" --arg path "${path}" '.[$name].files[$path].content' <<<"${hosts_json}" >"${staging}/root${path}"
     chmod "${mode}" "${staging}/root${path}"
   done < <(jq -r --arg name "${name}" '.[$name].files | to_entries[] | [.key, .value.mode] | @tsv' <<<"${hosts_json}")
+
+  while IFS=$'\t' read -r local path; do
+    mkdir -p "${staging}/root${path}"
+    cp -R "${local}/." "${staging}/root${path}/"
+  done < <(jq -r --arg name "${name}" '.machines[$name].butane.trees[]? | [.local, .path] | @tsv' <<<"${inventory_json}")
 
   echo "Syncing ${name}" >&2
   if ! tar --no-mac-metadata --no-xattrs -C "${staging}" -cf - . |
