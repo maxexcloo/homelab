@@ -19,6 +19,34 @@ data "onepassword_vault" "configured" {
 }
 
 locals {
+  onepassword_infrastructure_inventory = {
+    cloudflare = {
+      account_id = data.cloudflare_account.default.id
+      access_policies = {
+        bypass    = cloudflare_zero_trust_access_policy.bypass.id
+        excloo_id = cloudflare_zero_trust_access_policy.pocket_id.id
+        gatus     = cloudflare_zero_trust_access_policy.fly.id
+      }
+      tunnels = { for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id }
+    }
+    hosts = {
+      for name, machine in local.machines : name => try(coalesce(
+        try(local.dns_records_derived_specs["machine/${name}/a"].name, local.dns_records_derived_specs["machine/${name}/aaaa"].name, null),
+        try(format("%s.%s",
+          local.machine_hostnames[name],
+          data.unifi_network.configured[local.unifi_clients[lower(machine.interfaces[0].mac_address)].network_key].domain_name,
+        ), null),
+        local.machine_private_ipv4_addresses[name],
+        try(machine.public_ipv4, null),
+      ), null)
+    }
+    tailscale = {
+      for name, device_name in local.machine_tailscale_names :
+      name => local.tailscale_devices[device_name].node_id
+      if can(local.tailscale_devices[device_name])
+    }
+  }
+
   onepassword_kubeconfig_documents = {
     for name, configuration in talos_cluster_kubeconfig.cluster :
     name => yamldecode(configuration.kubeconfig_raw)
@@ -39,7 +67,7 @@ locals {
   # Untyped machines are personal devices; their logins stay outside OpenTofu.
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
-      title    = "${title(machine.type)}: ${local.machine_fqdns[name]}"
+      title    = local.machine_login_titles[name]
       url      = try(local.onepassword_service_urls["${name}/management"], "ssh://${machine.username}@${local.machine_fqdns[name]}")
       username = machine.username
     }
@@ -221,7 +249,7 @@ resource "onepassword_item" "infrastructure_inventory" {
 
   # This snapshot contains only provider identities, never credentials.
   category   = "secure_note"
-  note_value = jsonencode(local.infrastructure_inventory)
+  note_value = jsonencode(local.onepassword_infrastructure_inventory)
   tags       = [local.access.onepassword.ownership_tag]
   title      = "Infrastructure Inventory"
   vault      = data.onepassword_vault.configured["cluster/${each.key}"].uuid

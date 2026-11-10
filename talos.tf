@@ -34,7 +34,7 @@ data "talos_image_factory_urls" "node" {
 }
 
 data "talos_machine_configuration" "container" {
-  for_each = local.talos_containers
+  for_each = local.truenas_talos_containers
 
   cluster_endpoint   = local.talos_cluster_endpoints[each.value.cluster]
   cluster_name       = each.value.cluster
@@ -50,46 +50,11 @@ data "talos_machine_configuration" "container" {
       # Collect pods left Failed by graceful node shutdowns instead of waiting for 12,500.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeControllerManagerConfig", extraArgs = { "terminated-pod-gc-threshold" = "20" } }),
     ] : [],
-    can(local.truenas_talos_containers[each.key]) ? [
+    [
       # v1.14's standalone KubeletConfig does not expose extraMounts.
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
-      yamlencode({
-        machine = {
-          kubelet = {
-            image = "ghcr.io/siderolabs/kubelet:${local.clusters[each.value.cluster].kubernetes_version}"
-            extraMounts = [{
-              destination = "/var/mnt/datasets"
-              options     = ["rbind", "rslave", "rw"]
-              source      = "/var/mnt/datasets"
-              type        = "bind"
-            }]
-            extraConfig = merge({
-              # The stock reserves (15% for eviction, image cleanup from 85% used) are 140 GB of a
-              # shared 1 TB model disk; keep 1% free instead.
-              # Setting evictionHard replaces every default signal, so all of them are listed.
-              imageGCHighThresholdPercent = 99
-              imageGCLowThresholdPercent  = 98
-              evictionHard = {
-                "imagefs.available"  = "1%"
-                "imagefs.inodesFree" = "5%"
-                "memory.available"   = "100Mi"
-                "nodefs.available"   = "1%"
-                "nodefs.inodesFree"  = "5%"
-              }
-              }, can(local.truenas_talos_containers[each.key]) ? {
-              # The stock kubelet image cannot report capacity for the host ZFS dataset.
-              localStorageCapacityIsolation = false
-              kubeReserved = {
-                memory = "1Gi"
-              }
-              systemReserved = {
-                memory = "${floor(data.truenas_system_info.container_host[each.key].physical_memory / 1024) - each.value.memory_gib * 1024 * 1024}Ki"
-              }
-            } : null)
-          }
-        }
-      }),
-    ] : [],
+      yamlencode(local.truenas_talos_container_kubelet_configurations[each.key]),
+    ],
     [for document in concat(local.talos_machine_configuration_documents_common[each.key], each.value.configuration) : yamlencode(document)],
   )
 }
@@ -112,7 +77,7 @@ data "talos_machine_configuration" "node" {
 locals {
   talos_client_endpoints = {
     for name, node in local.talos_nodes : name => compact([
-      try(node.tailscale_address, local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null),
+      try(node.tailscale_address, local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv4, null),
       node.address,
     ])
   }
@@ -158,38 +123,7 @@ locals {
     for name, cluster in local.clusters : name => "https://${local.talos_cluster_api_addresses[name]}:6443"
   }
 
-  # Public DNS keeps private service names on their Tailscale records rather than
-  # UniFi LAN overrides.
-  talos_container_dns_servers = ["1.1.1.1", "1.0.0.1"]
-
-  # TrueNAS containers use a Tailscale sidecar.
-  talos_container_tailscale_environment = {
-    for name, container in local.talos_containers : name => {
-      TS_AUTH_ONCE    = "true"
-      TS_AUTHKEY      = tailscale_tailnet_key.talos_container[name].key
-      TS_HOSTNAME     = container.device_name
-      TS_SERVE_CONFIG = local.talos_tailscale_serve_config_path
-      TS_STATE_DIR    = local.talos_container_tailscale_state_directory
-      TS_USERSPACE    = "false"
-    }
-  }
-
-  talos_container_tailscale_state_directory = "/var/lib/tailscale"
-
   talos_tailscale_serve_config_path = "/etc/tailscale/serve.json"
-
-  talos_containers = {
-    for name, node in local.talos_nodes : name => merge(node, node.container, {
-      device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
-      image       = "ghcr.io/siderolabs/talos:${local.clusters[node.cluster].talos_version}"
-      name        = local.machine_hostnames[name]
-      network_key = one([
-        for key, network in local.unifi_networks : key
-        if startswith(key, "${local.machines[name].network}/") && cidrcontains(network.subnet, node.address)
-      ])
-    })
-    if node.configuration_delivery == "container"
-  }
 
   talos_machine_bootstrap_nodes = {
     for name, node in local.talos_nodes : name => node
@@ -382,7 +316,7 @@ resource "talos_machine_bootstrap" "control_plane" {
 }
 
 resource "talos_machine_configuration_apply" "container" {
-  for_each = local.talos_containers
+  for_each = local.truenas_talos_containers
 
   apply_mode                     = "no_reboot"
   client_configuration_wo        = talos_machine_secrets.cluster[each.value.cluster].client_configuration

@@ -68,15 +68,6 @@ locals {
     if can(local.machine_tailscale_names[name]) && try(machine.type, null) != null
   }
 
-  tailscale_machine_device_names = {
-    for machine_name, desired_name in local.machine_tailscale_names :
-    machine_name => (
-      can(local.tailscale_devices_by_name[desired_name]) ? desired_name :
-      can(local.tailscale_devices_by_name[machine_name]) ? machine_name :
-      desired_name
-    )
-  }
-
   tailscale_policy = {
     autoApprovers = {
       exitNode = local.access.tailscale.auto_approvers.exit_node
@@ -161,7 +152,7 @@ resource "tailscale_tailnet_key" "sidestore_vpn" {
 }
 
 resource "tailscale_tailnet_key" "talos_container" {
-  for_each = local.talos_containers
+  for_each = local.truenas_talos_containers
 
   description         = "Talos container bootstrap"
   expiry              = local.access.tailscale.key_expiry_seconds

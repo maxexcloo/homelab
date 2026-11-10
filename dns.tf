@@ -124,7 +124,7 @@ locals {
       if try(local.cloudflare_consumers_acme[service.machine].challenge_mode, null) == "delegated"
     },
     {
-      for name, tailscale_name in local.tailscale_machine_device_names : "machine/${name}/a" => {
+      for name, tailscale_name in local.machine_tailscale_names : "machine/${name}/a" => {
         content = local.tailscale_device_addresses[tailscale_name].ipv4
         name    = local.machine_fqdns[name]
         type    = "A"
@@ -133,7 +133,7 @@ locals {
       if try(local.tailscale_device_addresses[tailscale_name].ipv4, null) != null
     },
     {
-      for name, tailscale_name in local.tailscale_machine_device_names : "machine/${name}/aaaa" => {
+      for name, tailscale_name in local.machine_tailscale_names : "machine/${name}/aaaa" => {
         content = local.tailscale_device_addresses[tailscale_name].ipv6
         name    = local.machine_fqdns[name]
         type    = "AAAA"

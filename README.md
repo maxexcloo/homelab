@@ -62,6 +62,9 @@ titled and linked from the service's name and endpoint.
 
 ## Hosts
 
+`locals.tf` derives the shared inventory used by OpenTofu and the host scripts;
+SSH rendering and installation checks need no credentials.
+
 `data/machines.yaml` contains each machine's inventory and optional `butane`
 settings; omit unused settings. Set a machine's `hostname` to override the
 hostname derived from its inventory key.
