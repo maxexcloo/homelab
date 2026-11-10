@@ -14,34 +14,6 @@ locals {
     })
   }
 
-  infrastructure_inventory = {
-    cloudflare = {
-      account_id = data.cloudflare_account.default.id
-      access_policies = {
-        bypass    = cloudflare_zero_trust_access_policy.bypass.id
-        excloo_id = cloudflare_zero_trust_access_policy.pocket_id.id
-        gatus     = cloudflare_zero_trust_access_policy.fly.id
-      }
-      tunnels = { for name, tunnel in cloudflare_zero_trust_tunnel_cloudflared.cluster : name => tunnel.id }
-    }
-    hosts = {
-      for name, machine in local.machines : name => try(coalesce(
-        try(local.dns_records_derived_specs["machine/${name}/a"].name, local.dns_records_derived_specs["machine/${name}/aaaa"].name, null),
-        try(format("%s.%s",
-          local.machine_hostnames[name],
-          data.unifi_network.configured[local.unifi_clients[lower(machine.interfaces[0].mac_address)].network_key].domain_name,
-        ), null),
-        local.machine_private_ipv4_addresses[name],
-        try(machine.public_ipv4, null),
-      ), null)
-    }
-    tailscale = {
-      for name, device_name in local.tailscale_machine_device_names :
-      name => local.tailscale_devices[device_name].node_id
-      if can(local.tailscale_devices[device_name])
-    }
-  }
-
   machine_clusters = merge([
     for cluster_name, cluster in local.clusters : {
       for node_name in keys(cluster.nodes) : node_name => cluster_name
@@ -77,6 +49,12 @@ locals {
       }
     ]
   ])
+
+  machine_login_titles = {
+    for name, machine in local.machines :
+    name => "${title(machine.type)}: ${local.machine_fqdns[name]}"
+    if can(machine.type)
+  }
 
   machine_private_ipv4_addresses = {
     for name, machine in local.machines :

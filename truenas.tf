@@ -74,13 +74,78 @@ locals {
     }
   ]...)
 
+  # Public DNS keeps private service names on their Tailscale records rather than
+  # UniFi LAN overrides.
+  truenas_talos_container_dns_servers = ["1.1.1.1", "1.0.0.1"]
+
+  truenas_talos_container_kubelet_configurations = {
+    for name, container in local.truenas_talos_containers : name => {
+      machine = {
+        kubelet = {
+          image = "ghcr.io/siderolabs/kubelet:${local.clusters[container.cluster].kubernetes_version}"
+          extraMounts = [{
+            destination = "/var/mnt/datasets"
+            options     = ["rbind", "rslave", "rw"]
+            source      = "/var/mnt/datasets"
+            type        = "bind"
+          }]
+          extraConfig = {
+            # The stock reserves (15% for eviction, image cleanup from 85% used) are 140 GB of a
+            # shared 1 TB model disk; keep 1% free instead.
+            # Setting evictionHard replaces every default signal, so all of them are listed.
+            imageGCHighThresholdPercent = 99
+            imageGCLowThresholdPercent  = 98
+            evictionHard = {
+              "imagefs.available"  = "1%"
+              "imagefs.inodesFree" = "5%"
+              "memory.available"   = "100Mi"
+              "nodefs.available"   = "1%"
+              "nodefs.inodesFree"  = "5%"
+            }
+
+            # The stock kubelet image cannot report capacity for the host ZFS dataset.
+            localStorageCapacityIsolation = false
+            kubeReserved = {
+              memory = "1Gi"
+            }
+            systemReserved = {
+              memory = "${floor(data.truenas_system_info.container_host[name].physical_memory / 1024) - container.memory_gib * 1024 * 1024}Ki"
+            }
+          }
+        }
+      }
+    }
+  }
+
   truenas_talos_container_storage_paths = {
     for name, container in local.truenas_talos_containers : name => truenas_dataset.root["${name}/${container.dataset}"].mount_point
   }
 
+  # TrueNAS containers use a Tailscale sidecar.
+  truenas_talos_container_tailscale_environment = {
+    for name, container in local.truenas_talos_containers : name => {
+      TS_AUTH_ONCE    = "true"
+      TS_AUTHKEY      = tailscale_tailnet_key.talos_container[name].key
+      TS_HOSTNAME     = container.device_name
+      TS_SERVE_CONFIG = local.talos_tailscale_serve_config_path
+      TS_STATE_DIR    = local.truenas_talos_container_tailscale_state_directory
+      TS_USERSPACE    = "false"
+    }
+  }
+
+  truenas_talos_container_tailscale_state_directory = "/var/lib/tailscale"
+
   truenas_talos_containers = {
-    for name, container in local.talos_containers : name => container
-    if can(local.truenas_hosts[name])
+    for name, node in local.talos_nodes : name => merge(node, node.container, {
+      device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
+      image       = "ghcr.io/siderolabs/talos:${local.clusters[node.cluster].talos_version}"
+      name        = local.machine_hostnames[name]
+      network_key = one([
+        for key, network in local.unifi_networks : key
+        if startswith(key, "${local.machines[name].network}/") && cidrcontains(network.subnet, node.address)
+      ])
+    })
+    if node.configuration_delivery == "container"
   }
 
   truenas_tunables = merge([
@@ -115,10 +180,10 @@ resource "truenas_app" "talos_container" {
         image        = local.versions.images.tailscale
         network_mode = "service:talos"
         restart      = "unless-stopped"
-        environment  = local.talos_container_tailscale_environment[each.key]
+        environment  = local.truenas_talos_container_tailscale_environment[each.key]
         volumes = [{
           source = "${local.truenas_talos_container_storage_paths[each.key]}/tailscale"
-          target = local.talos_container_tailscale_state_directory
+          target = local.truenas_talos_container_tailscale_state_directory
           type   = "bind"
           bind = {
             create_host_path = true
@@ -127,7 +192,7 @@ resource "truenas_app" "talos_container" {
       }
       talos = {
         cgroup       = "private"
-        dns          = local.talos_container_dns_servers
+        dns          = local.truenas_talos_container_dns_servers
         hostname     = each.value.name
         image        = each.value.image
         mem_limit    = "${each.value.memory_gib}g"

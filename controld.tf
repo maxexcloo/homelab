@@ -4,7 +4,7 @@ resource "controld_custom_rule" "service" {
     for machine_name, machine in local.machines : {
       for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
         hostname = service.hostname
-        via      = local.tailscale_device_addresses[local.tailscale_machine_device_names[machine_name]].ipv4
+        via      = local.tailscale_device_addresses[local.machine_tailscale_names[machine_name]].ipv4
       }
       if try(service.dns_tailscale, false)
     }

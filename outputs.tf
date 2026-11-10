@@ -55,7 +55,7 @@ output "machines" {
       address      = try(coalesce(local.machine_private_ipv4_addresses[name], try(machine.public_ipv4, null)), null)
       fqdn         = local.machine_fqdns[name]
       hostname     = local.machine_hostnames[name]
-      tailscale_ip = try(local.tailscale_device_addresses[local.tailscale_machine_device_names[name]].ipv4, null)
+      tailscale_ip = try(local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv4, null)
     }
   }
 }

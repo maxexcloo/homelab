@@ -11,15 +11,10 @@ shift
 temporary_directory="$(mktemp -d)"
 trap 'rm -rf -- "${temporary_directory}"' EXIT
 
-# Keep each machine's network and derived hostname beside its provisioning.
+inventory_file="${temporary_directory}/inventory.json"
+"${repo_dir}/scripts/read_inventory.sh" >"${inventory_file}"
 machines_file="${temporary_directory}/machines.json"
-# $network is a yq variable.
-# shellcheck disable=SC2016
-yq -o=json '[.machines | to_entries[] | .key as $network |
-  .value | to_entries[] | select(.value.butane != null) |
-  {"key": .key, "value": (.value + {
-    "hostname": (.value.hostname // .key), "network": $network
-  })}] | from_entries' "${repo_dir}/data/machines.yaml" >"${machines_file}"
+jq '.machines | with_entries(select(.value.butane != null))' "${inventory_file}" >"${machines_file}"
 
 names=("$@")
 if ((${#names[@]} == 0)); then
@@ -41,18 +36,14 @@ if [[ "${output_directory}" == --check ]]; then
   done
 else
   (cd "${repo_dir}" && fnox exec -- tofu output -json hosts) >"${hosts_file}"
-  domain="$(yq -r '.domains.infrastructure' "${repo_dir}/data/domains.yaml")"
-  vault="$(yq -r '.onepassword.vaults.homelab' "${repo_dir}/data/access.yaml")"
+  vault="$(jq -er '.access.onepassword.vaults.homelab' "${inventory_file}")"
   openssl_command=openssl
   # macOS ships LibreSSL, whose passwd command cannot generate SHA-512 hashes.
   if [[ "$(uname -s)" == Darwin ]]; then
     openssl_command="$(brew --prefix openssl@3)/bin/openssl"
   fi
   for name in "${names[@]}"; do
-    machine_access="$(jq -er --arg name "${name}" '.[$name] | [.network, .hostname, .type] | @tsv' "${machines_file}")"
-    IFS=$'\t' read -r network hostname type <<<"${machine_access}"
-    type_title="$(printf '%s' "${type}" | awk '{ print toupper(substr($0, 1, 1)) substr($0, 2) }')"
-    title="${type_title}: ${hostname}.${network}.${domain}"
+    title="$(jq -er --arg name "${name}" '.[$name].login_title' "${machines_file}")"
     if ! op item get "${title}" --vault "${vault}" --fields password --reveal |
       "${openssl_command}" passwd -6 -stdin >"${password_hashes}/${name}"; then
       printf 'Host %s: could not render its password; ensure %s exists and 1Password is unlocked\n' "${name}" "${title}" >&2
@@ -64,7 +55,7 @@ fi
 
 for name in "${names[@]}"; do
   config="${temporary_directory}/${name}.bu"
-  printf 'base64encode(templatefile("%s/templates/hosts/host.bu.tftpl", { files = try(jsondecode(file("%s"))["%s"].files, {}), machine = jsondecode(file("%s"))["%s"], password_hash = trimspace(file("%s")), ssh_authorized_keys = yamldecode(file("%s/data/access.yaml")).ssh.authorized_keys }))\n' "${repo_dir}" "${hosts_file}" "${name}" "${machines_file}" "${name}" "${password_hashes}/${name}" "${repo_dir}" |
+  printf 'base64encode(templatefile("%s/templates/hosts/host.bu.tftpl", { files = try(jsondecode(file("%s"))["%s"].files, {}), machine = jsondecode(file("%s"))["%s"], password_hash = trimspace(file("%s")), ssh_authorized_keys = jsondecode(file("%s")).access.ssh.authorized_keys }))\n' "${repo_dir}" "${hosts_file}" "${name}" "${machines_file}" "${name}" "${password_hashes}/${name}" "${inventory_file}" |
     TF_DATA_DIR="${temporary_directory}/.terraform" \
       tofu -chdir="${temporary_directory}" console |
     jq -r . |

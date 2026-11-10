@@ -52,7 +52,7 @@ resource "unifi_client" "host" {
 }
 
 resource "unifi_client" "talos_container" {
-  for_each = local.talos_containers
+  for_each = local.truenas_talos_containers
 
   allow_existing   = true
   fixed_ip         = each.value.address

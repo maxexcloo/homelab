@@ -1,15 +1,4 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>maxexcloo/dotfiles//renovate/default.json5"],
-  // Cluster versions and their matching clients must change together.
-  packageRules: [
-    {
-      groupName: "Kubernetes",
-      matchPackageNames: ["kubernetes/kubernetes"],
-    },
-    {
-      groupName: "Talos",
-      matchPackageNames: ["siderolabs/talos"],
-    },
-  ],
 }
