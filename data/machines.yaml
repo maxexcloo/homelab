@@ -202,7 +202,10 @@ machines:
       smtp: resend
       type: workstation
       username: core
-      butane: {}
+      butane:
+        trees:
+          - local: data/hosts/mercury/etc
+            path: /etc
       cloudflare:
         tunnel: {}
     nanokvm:
