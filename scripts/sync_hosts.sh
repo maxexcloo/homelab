@@ -59,9 +59,9 @@ for name in "$@"; do
     chmod "${mode}" "${staging}/root${path}"
   done < <(jq -r --arg name "${name}" '.[$name].files | to_entries[] | [.key, .value.mode] | @tsv' <<<"${hosts_json}")
 
-  while IFS=$'\t' read -r local path; do
+  while IFS=$'\t' read -r source path; do
     mkdir -p "${staging}/root${path}"
-    cp -R "${local}/." "${staging}/root${path}/"
+    cp -R "${source}/." "${staging}/root${path}/"
   done < <(jq -r --arg name "${name}" '.machines[$name].butane.trees[]? | [.local, .path] | @tsv' <<<"${inventory_json}")
 
   echo "Syncing ${name}" >&2
