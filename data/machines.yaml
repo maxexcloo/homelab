@@ -206,6 +206,8 @@ machines:
         trees:
           - local: data/hosts/mercury/etc
             path: /etc
+          - local: data/hosts/mercury/var
+            path: /var
       cloudflare:
         tunnel: {}
     nanokvm:

@@ -97,6 +97,34 @@ host's generated files, such as its Cloudflare Tunnel token.
 uCore and Bazzite tunnel hosts, reloads systemd and restarts the services whose
 units mention a changed file.
 
+## Browser Automation
+
+Mercury runs [Browserless](https://github.com/browserless/browserless) as a
+rootless Quadlet in `core`'s UID 1000 user manager. The native linger marker in
+its `/var` tree keeps that manager running after logout. The container has no
+host-directory or container-socket mounts; Chromium and its libraries stay
+inside it. Browserless starts a fresh browser for each CDP connection.
+
+The unauthenticated API is bound only to `127.0.0.1:9222` for trusted local
+clients. Keep it off LAN interfaces, tunnels and public routes. Sandboxed agents
+connect through the agent-browser configuration in
+[Dotfiles](https://github.com/maxexcloo/dotfiles#browser-automation). Its dashboard
+provides remote viewing and input through an SSH port forward; Browserless's
+API port does not need forwarding.
+
+After deploying the host files, activate the user service on Mercury:
+
+```sh
+systemctl --user daemon-reload
+systemctl --user start browserless.service
+```
+
+The service allows four concurrent browsers and four queued connections. A
+connection lasts at most one hour. Close named agent-browser sessions when done;
+use its optional saved state for per-project login persistence. The container
+stores no persistent browser profiles. To stop it, run
+`systemctl --user stop browserless.service` on Mercury.
+
 ## Cluster Upgrades
 
 Upgrade one cluster at a time, after reading the upstream

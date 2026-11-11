@@ -1,0 +1,14 @@
+[Container]
+Environment=CONCURRENT=4
+Environment=QUEUED=4
+Environment=TIMEOUT=3600000
+Image=ghcr.io/browserless/chromium:v2.62.0
+PublishPort=127.0.0.1:9222:3000
+ShmSize=1g
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
