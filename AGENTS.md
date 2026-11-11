@@ -6,9 +6,9 @@ This repository owns homelab infrastructure and Kubernetes cluster substrate.
 The separate `kubelab` repository owns Kubernetes API resources reconciled by
 Flux.
 
-Keep host provisioning focused on OS, hardware and access. Services that run
-directly on one host are Podman Quadlets in its `data/hosts/` tree; other
-application runtime configuration belongs to its owning application repository.
+Keep host provisioning focused on OS, hardware and access. Workstation services
+belong to `dotfiles`; other host services are Podman Quadlets in `data/hosts/`.
+Other application runtime configuration belongs to its owning repository.
 
 ## Conventions
 
