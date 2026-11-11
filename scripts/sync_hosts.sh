@@ -5,9 +5,10 @@
 set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory. Installs changed
-# files, reloads systemd and restarts cloudflared when its token changed.
+# files, reloads systemd and restarts every service whose unit mentions one,
+# such as a Quadlet or a unit reading it as an environment file.
 install_files() {
-  local changed=false path
+  local path paths=() units=()
 
   cd "$(dirname "${BASH_SOURCE[0]}")/root"
   while IFS= read -r path; do
@@ -15,17 +16,18 @@ install_files() {
     if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
       echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
-      changed=true
-      if [[ "${path}" == /etc/cloudflared/* ]]; then
-        systemctl restart cloudflared.service
-      fi
+      paths+=("${path}")
     fi
   done < <(find . -type f)
 
-  if [[ "${changed}" == true ]]; then
-    systemctl daemon-reload
-  else
+  if ((${#paths[@]} == 0)); then
     echo "Up to date"
+    return
+  fi
+  systemctl daemon-reload
+  mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -n 1 basename | sort -u)
+  if ((${#units[@]} > 0)); then
+    systemctl restart "${units[@]}"
   fi
 }
 
@@ -59,9 +61,9 @@ for name in "$@"; do
     chmod "${mode}" "${staging}/root${path}"
   done < <(jq -r --arg name "${name}" '.[$name].files | to_entries[] | [.key, .value.mode] | @tsv' <<<"${hosts_json}")
 
-  while IFS=$'\t' read -r local path; do
+  while IFS=$'\t' read -r source path; do
     mkdir -p "${staging}/root${path}"
-    cp -R "${local}/." "${staging}/root${path}/"
+    cp -R "${source}/." "${staging}/root${path}/"
   done < <(jq -r --arg name "${name}" '.machines[$name].butane.trees[]? | [.local, .path] | @tsv' <<<"${inventory_json}")
 
   echo "Syncing ${name}" >&2
@@ -70,7 +72,8 @@ for name in "$@"; do
     skipped+=("${name}")
     continue
   fi
-  ssh -t "${address}" 'sudo bash .cache/homelab-sync/sync_hosts.sh --install; status=$?; rm -rf .cache/homelab-sync; exit "${status}"'
+  # Runs through bash, as login shells may be fish.
+  ssh -t "${address}" bash -c "'sudo bash .cache/homelab-sync/sync_hosts.sh --install; status=\$?; rm -rf .cache/homelab-sync; exit \$status'"
 done
 
 if ((${#skipped[@]} > 0)); then
