@@ -5,9 +5,9 @@
 set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory. Installs changed
-# files, reloads systemd and restarts cloudflared when its token changed.
+# files, reloads systemd and restarts the services they configure.
 install_files() {
-  local changed=false path
+  local changed=false path units=()
 
   cd "$(dirname "${BASH_SOURCE[0]}")/root"
   while IFS= read -r path; do
@@ -16,14 +16,19 @@ install_files() {
       echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
       changed=true
-      if [[ "${path}" == /etc/cloudflared/* ]]; then
-        systemctl restart cloudflared.service
-      fi
+      case "${path}" in
+      /etc/cloudflared/*) units+=(cloudflared.service) ;;
+      /etc/containers/systemd/*.container) units+=("$(basename "${path}" .container).service") ;;
+      /etc/containers/systemd/*.pod) units+=("$(basename "${path}" .pod)-pod.service") ;;
+      esac
     fi
   done < <(find . -type f)
 
   if [[ "${changed}" == true ]]; then
     systemctl daemon-reload
+    if ((${#units[@]} > 0)); then
+      systemctl restart "${units[@]}"
+    fi
   else
     echo "Up to date"
   fi
@@ -70,7 +75,8 @@ for name in "$@"; do
     skipped+=("${name}")
     continue
   fi
-  ssh -t "${address}" 'sudo bash .cache/homelab-sync/sync_hosts.sh --install; status=$?; rm -rf .cache/homelab-sync; exit "${status}"'
+  # Runs through bash, as login shells may be fish.
+  ssh -t "${address}" bash -c "'sudo bash .cache/homelab-sync/sync_hosts.sh --install; status=\$?; rm -rf .cache/homelab-sync; exit \$status'"
 done
 
 if ((${#skipped[@]} > 0)); then

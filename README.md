@@ -94,8 +94,8 @@ which owns the OS configuration and updates itself. Ignition also carries each
 host's generated files, such as its Cloudflare Tunnel token.
 
 `mise run hosts:sync [host...]` installs changed generated files and tree files on
-uCore and Bazzite tunnel hosts, then reloads systemd. It restarts cloudflared when
-its token changes; restart other changed services yourself.
+uCore and Bazzite tunnel hosts, reloads systemd and restarts cloudflared and
+changed Quadlet services.
 
 ## Cluster Upgrades
 
