@@ -9,10 +9,8 @@ provider "oci" {
   tenancy_ocid                                     = var.oci_tenancy_ocid
 }
 
-provider "onepassword" {
-  connect_token = var.onepassword_connect_token
-  connect_url   = var.onepassword_connect_url
-}
+# Reads OP_CONNECT_HOST and OP_CONNECT_TOKEN for the machine's own Connect server.
+provider "onepassword" {}
 
 provider "truenas" {
   for_each = local.truenas_hosts
