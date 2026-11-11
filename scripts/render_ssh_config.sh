@@ -15,7 +15,9 @@ render() {
   while IFS=$'\t' read -r hostname network user fqdn; do
     [[ -n "${hostname}" ]] || continue
     network_hostname="${network}-${hostname}"
-    printf 'Host %s %s %s\n' "${hostname}" "${network_hostname}" "${fqdn}"
+    # Only the network name is a Host pattern, so tools that list Host entries show one target per machine.
+    printf 'Host %s\n' "${network_hostname}"
+    printf 'Match originalhost %s,%s,%s\n' "${network_hostname}" "${hostname}" "${fqdn}"
     printf '  HostName %s\n' "${fqdn}"
     printf '  User %s\n' "${user}"
     printf '  IdentityAgent "%s"\n\n' "${identity_agent}"
