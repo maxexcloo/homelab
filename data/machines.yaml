@@ -206,6 +206,11 @@ machines:
         trees:
           - local: data/hosts/mercury/etc
             path: /etc
+        units:
+          - enabled: true
+            name: garm-incus.service
+          - enabled: true
+            name: incus.service
       cloudflare:
         tunnel: {}
     nanokvm:

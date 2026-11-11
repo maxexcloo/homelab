@@ -1,0 +1,9 @@
+[Unit]
+Description=Isolate GARM Runners & Incus API
+Before=incus.service incus-startup.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/incus/garm.nft
+ExecReload=/usr/sbin/nft -f /etc/incus/garm.nft

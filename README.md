@@ -97,6 +97,77 @@ host's generated files, such as its Cloudflare Tunnel token.
 uCore and Bazzite tunnel hosts, reloads systemd and restarts the services whose
 units mention a changed file.
 
+### Mercury Incus
+
+Mercury hosts disposable GARM **virtual machines** using Bluemax's native Incus,
+QEMU and OVMF packages. Kubelab owns GARM and repository enrolment. The native
+`garm-incus.service` applies [the preseed](data/hosts/mercury/etc/incus/garm.yaml)
+on boot; Incus requires [the firewall](data/hosts/mercury/etc/incus/garm.nft)
+before starting. No containerised daemon or additional state root is involved.
+
+The `garm` project allows one instance in total, zero containers and one VM,
+with aggregate limits of 4 CPUs and 6 GiB. This bounds all repository pools
+together. Its `garm-vm` profile provides those resources and a 64 GiB root disk.
+The native `dir` pool keeps images and VM disks under `/var/lib/incus` on Mercury's
+existing persistent filesystem; confirm free capacity before activation.
+Stopped instances still consume the slot, and VMs do not automatically start
+after a host reboot.
+
+The administrator-owned `garmbr0` bridge uses NAT on `10.231.0.1/24`, with no
+IPv6. DHCP advertises public DNS directly. Host nftables rules permit only DHCP
+to Mercury, block private, LAN, tailnet, link-local and metadata destinations,
+and reject unsolicited inbound runner traffic. Public dependency downloads and
+public HTTPS GARM bootstrap callbacks remain possible. The restricted project
+can use only this managed network and managed disks; it cannot create or edit
+the default project's networks. The project has its own profiles, so a stock
+default profile cannot attach a different host bridge. Keep controller client
+trust restricted to this project and never grant jobs access to the Incus socket.
+
+Activation requires a separate reviewed host sync/reboot after
+[Bluemax's Incus image change](https://github.com/maxexcloo/bluemax/pull/41)
+is published; this PR does not deploy or enable a remote listener. Existing
+hosts need `sudo systemctl enable --now incus.service garm-incus.service` after
+syncing the files; Ignition enables these units on new installations. Before
+that activation:
+
+1. Confirm hardware virtualisation, `/dev/kvm`, OVMF, disk capacity and that
+   `10.231.0.0/24` is unused. Inspect existing Incus state before applying the
+   preseed; do not adopt or overwrite a conflicting project, pool or bridge.
+2. Obtain the controller's stable Tailscale IPv4 from Kubelab and add it as the
+   sole `elements` entry in the firewall's `controller_ipv4` set. Preserve this
+   value in the reviewed host tree. Restrict Tailscale grants to this controller
+   identity reaching Mercury on TCP 8443, and confirm the private hostname
+   `mercury.mbk.excloo.net` resolves to Mercury's Tailscale IPv4 from the controller.
+3. Kubelab must supply a genuine client certificate and retain its private key
+   in its existing secret delivery. Transfer only the public certificate to
+   `/var/tmp/garm-controller.crt` on Mercury, then register it locally with
+   `sudo incus config trust add-certificate /var/tmp/garm-controller.crt --name garm-controller --restricted --projects garm`.
+   Verify the trust entry is restricted and lists only `garm`; securely deliver
+   Mercury's `/var/lib/incus/server.crt` to the controller for server pinning.
+4. Once the firewall is loaded and source restriction verified, bind only the
+   Tailscale IPv4 with `sudo incus config set core.https_address "$(tailscale ip -4):8443"`.
+   The provider URL is `https://mercury.mbk.excloo.net:8443`; no LAN listener,
+   public tunnel, trust password or generated credentials are configured here.
+5. Configure the [upstream Incus provider](https://github.com/cloudbase/garm-provider-incus/tree/v0.1.5)
+   with `project_name = "garm"`, `instance_type = "virtual-machine"`,
+   `include_default_profile = false`, the real TLS certificate/key paths and
+   pinned server certificate. Omit `unix_socket_path`, which overrides HTTPS.
+   Set pool flavour to `garm-vm` and use an Ubuntu `/cloud` VM image from an
+   explicitly configured simplestreams remote. The upstream sample selects
+   containers, so do not copy its instance type. Use public HTTPS callback and
+   metadata URLs; private bootstrap access needs a separately reviewed narrow
+   exception, never a blanket LAN or tailnet allow rule.
+
+Before workflow rollout, run an explicitly authorised disposable VM job and
+verify GitHub registration, downloads, callbacks and deletion. Probe Mercury
+(including its public addresses), LAN, tailnet and metadata endpoints from the
+guest and confirm denial while public HTTPS and DNS work. Confirm other tailnet
+clients cannot reach TCP 8443, an unrestricted/default-project API request with
+the controller certificate is denied, and a second VM across two repository
+pools is rejected until deletion releases the first slot. Check GARM's retry
+and cleanup behaviour under that quota rejection and after a host reboot;
+static rendering and CI do not exercise those live paths.
+
 ## Cluster Upgrades
 
 Upgrade one cluster at a time, after reading the upstream

@@ -1,0 +1,13 @@
+[Unit]
+Description=Configure Mercury's GARM Incus Project
+Requires=incus.service
+After=incus.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+StandardInput=file:/etc/incus/garm.yaml
+ExecStart=/usr/bin/incus admin init --preseed
+
+[Install]
+WantedBy=multi-user.target

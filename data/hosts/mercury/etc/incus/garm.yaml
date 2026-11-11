@@ -1,0 +1,51 @@
+# Shared networks remain in the administrator-owned default project.
+networks:
+  - name: garmbr0
+    project: default
+    type: bridge
+    config:
+      dns.mode: none
+      ipv4.address: 10.231.0.1/24
+      ipv4.dhcp: "true"
+      ipv4.nat: "true"
+      ipv6.address: none
+      raw.dnsmasq: dhcp-option=6,1.1.1.1,1.0.0.1
+storage_pools:
+  - name: garm
+    driver: dir
+projects:
+  - name: garm
+    config:
+      features.images: "true"
+      features.networks: "false"
+      features.profiles: "true"
+      features.storage.volumes: "true"
+      limits.containers: "0"
+      limits.cpu: "4"
+      limits.instances: "1"
+      limits.memory: 6GiB
+      limits.virtual-machines: "1"
+      restricted: "true"
+      restricted.devices.disk: managed
+      restricted.devices.nic: managed
+      restricted.networks.access: garmbr0
+      restricted.storage-pools.access: garm
+profiles:
+  - name: garm-vm
+    project: garm
+    config:
+      boot.autostart: "false"
+      limits.cpu: "4"
+      limits.memory: 6GiB
+    devices:
+      eth0:
+        name: eth0
+        network: garmbr0
+        security.ipv4_filtering: "true"
+        security.mac_filtering: "true"
+        type: nic
+      root:
+        path: /
+        pool: garm
+        size: 64GiB
+        type: disk
