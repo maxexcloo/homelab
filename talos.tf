@@ -150,7 +150,8 @@ locals {
           "TS_SERVE_CONFIG=${local.talos_tailscale_serve_config_path}",
         ]
         configFiles = [{
-          content   = local.tailscale_cluster_serve_configs[node.cluster]
+          # The public node stays out: private ingress would cross the WAN to reach internal apps.
+          content   = name == local.clusters[node.cluster].public_node ? jsonencode({}) : local.tailscale_cluster_serve_configs[node.cluster]
           mountPath = local.talos_tailscale_serve_config_path
         }]
       },
