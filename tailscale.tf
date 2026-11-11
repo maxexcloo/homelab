@@ -21,7 +21,7 @@ locals {
     }
   }
 
-  # Every node's Tailscale serves the cluster's ingress Service and forwards it to Traefik.
+  # Each internal node's Tailscale serves the cluster's ingress Service and forwards it to Traefik.
   tailscale_cluster_serve_configs = {
     for name, cluster in local.clusters : name => jsonencode({
       Services = {
