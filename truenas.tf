@@ -121,15 +121,16 @@ locals {
     for name, container in local.truenas_talos_containers : name => truenas_dataset.root["${name}/${container.dataset}"].mount_point
   }
 
-  # TrueNAS containers use a Tailscale sidecar.
+  # TrueNAS containers use a Tailscale sidecar, omitting local addresses as Talos nodes do (talos.tf).
   truenas_talos_container_tailscale_environment = {
     for name, container in local.truenas_talos_containers : name => {
-      TS_AUTH_ONCE    = "true"
-      TS_AUTHKEY      = tailscale_tailnet_key.talos_container[name].key
-      TS_HOSTNAME     = container.device_name
-      TS_SERVE_CONFIG = local.talos_tailscale_serve_config_path
-      TS_STATE_DIR    = local.truenas_talos_container_tailscale_state_directory
-      TS_USERSPACE    = "false"
+      TS_AUTH_ONCE              = "true"
+      TS_AUTHKEY                = tailscale_tailnet_key.talos_container[name].key
+      TS_DEBUG_OMIT_LOCAL_ADDRS = "true"
+      TS_HOSTNAME               = container.device_name
+      TS_SERVE_CONFIG           = local.talos_tailscale_serve_config_path
+      TS_STATE_DIR              = local.truenas_talos_container_tailscale_state_directory
+      TS_USERSPACE              = "false"
     }
   }
 

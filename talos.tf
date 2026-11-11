@@ -145,6 +145,8 @@ locals {
         name       = "tailscale"
         environment = [
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
+          # Local addresses include Cilium's; peers that pick one route Tailscale through itself and stall.
+          "TS_DEBUG_OMIT_LOCAL_ADDRS=true",
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
           "TS_EXTRA_ARGS=--accept-routes=true --advertise-exit-node --reset",
           "TS_SERVE_CONFIG=${local.talos_tailscale_serve_config_path}",
