@@ -252,18 +252,18 @@ machines:
           schedule_hour: "3"
           user: root
         smart-long:
-          command: midclt call disk.smart_test LONG '["*"]'
           description: S.M.A.R.T. Test
           schedule_dow: "1"
           schedule_hour: "0"
           schedule_minute: "00"
+          smart_test: LONG
           user: root
         smart-short:
-          command: midclt call disk.smart_test SHORT '["*"]'
           description: S.M.A.R.T. Test
           schedule_dow: 2,3,4,5,6
           schedule_hour: "0"
           schedule_minute: "00"
+          smart_test: SHORT
           user: root
       init_scripts:
         crucial-x9-trim:
@@ -318,6 +318,14 @@ machines:
           username: syd-backups
       smb:
         aapl_extensions: true
+      # Crucial X9 USB SSDs do not expose usable SMART self-tests.
+      smart_test_disks:
+        - "{serial_lunid}2YJWSB4D_5000cca273e8ccb7"
+        - "{serial_lunid}2YJXLDVD_5000cca273e92e86"
+        - "{serial_lunid}2YJXMJ2D_5000cca273e932ab"
+        - "{serial_lunid}2YK242BD_5000cca273eb3e8e"
+        - "{serial_lunid}48800479203542_00000000000000016479a748f0c01a60"
+        - "{serial_lunid}NJR565R003464P2202_0000000623090565caf25b031e001207"
       ssh:
         passwordauth: false
         tcpfwd: true
