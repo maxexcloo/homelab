@@ -5,9 +5,10 @@
 set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory. Installs changed
-# files, reloads systemd and restarts the services they configure.
+# files, reloads systemd and restarts every service whose unit mentions one,
+# such as a Quadlet or a unit reading it as an environment file.
 install_files() {
-  local changed=false path units=()
+  local path paths=() units=()
 
   cd "$(dirname "${BASH_SOURCE[0]}")/root"
   while IFS= read -r path; do
@@ -15,22 +16,18 @@ install_files() {
     if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
       echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
-      changed=true
-      case "${path}" in
-      /etc/cloudflared/*) units+=(cloudflared.service) ;;
-      /etc/containers/systemd/*.container) units+=("$(basename "${path}" .container).service") ;;
-      /etc/containers/systemd/*.pod) units+=("$(basename "${path}" .pod)-pod.service") ;;
-      esac
+      paths+=("${path}")
     fi
   done < <(find . -type f)
 
-  if [[ "${changed}" == true ]]; then
-    systemctl daemon-reload
-    if ((${#units[@]} > 0)); then
-      systemctl restart "${units[@]}"
-    fi
-  else
+  if ((${#paths[@]} == 0)); then
     echo "Up to date"
+    return
+  fi
+  systemctl daemon-reload
+  mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -n 1 basename | sort -u)
+  if ((${#units[@]} > 0)); then
+    systemctl restart "${units[@]}"
   fi
 }
 
