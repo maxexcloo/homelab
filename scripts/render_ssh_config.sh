@@ -7,17 +7,17 @@ inventory="$("${repo_dir}/scripts/read_inventory.sh")"
 identity_agent="$(jq -er '.access.ssh.identity_agent' <<<"${inventory}")"
 machine_entries="$(jq -r '
   .machines | to_entries | map(select(.value.username != null)) |
-  sort_by(.value.network, .value.hostname) | .[] | .value |
-  [.hostname, .network, .username, .fqdn] | @tsv
+  map(.value | .alias = if .type == null then .hostname else "\(.network)-\(.hostname)" end) |
+  sort_by(.type == null, .alias) | .[] |
+  [.alias, ([.alias, .hostname, .fqdn] | unique | join(",")), .username, .fqdn] | @tsv
 ' <<<"${inventory}")"
 
 render() {
-  while IFS=$'\t' read -r hostname network user fqdn; do
-    [[ -n "${hostname}" ]] || continue
-    network_hostname="${network}-${hostname}"
-    # Only the network name is a Host pattern, so tools that list Host entries show one target per machine.
-    printf 'Host %s\n' "${network_hostname}"
-    printf 'Match originalhost %s,%s,%s\n' "${network_hostname}" "${hostname}" "${fqdn}"
+  while IFS=$'\t' read -r alias names user fqdn; do
+    [[ -n "${alias}" ]] || continue
+    # Only the alias is a Host pattern, so tools that list Host entries show one target per machine.
+    printf 'Host %s\n' "${alias}"
+    printf 'Match originalhost %s\n' "${names}"
     printf '  HostName %s\n' "${fqdn}"
     printf '  User %s\n' "${user}"
     printf '  IdentityAgent "%s"\n\n' "${identity_agent}"
