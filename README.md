@@ -76,22 +76,9 @@ propagate to peers. Kubelab owns its private routes and authentication.
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
 `butane.users` and `butane.groups` define additional accounts. Pluto's `saturn`
 user and group retain UID/GID 1001 for backup access. `butane.trees` installs
-host-specific files, such as Pluto's sanoid configuration, from paths relative
-to the repository root. [Dotfiles](https://github.com/maxexcloo/dotfiles) owns
-workstation container services, including Mercury's 1Password Connect.
-
-Mercury’s boot configuration starts Dotfiles’ Connect Compose stack with rootful
-`podman-compose` and Fedora’s `syncthing@core.service` as `core`. Bluemax supplies
-the packages; Dotfiles supplies the Compose definition and note filters. Syncthing
-keeps its own configuration and device identity outside these repositories.
-
-The existing Mercury needs an approved Connect handover before this boot setup is
-activated: stage Dotfiles’ Compose definition, stop the old Quadlet pod, then start
-and verify the replacement against the existing secret and data volume. Retire the
-old installed Quadlet files only after successful verification. Installation
-rendering and `hosts:sync` both honour the declared boot units; syncing enables and
-starts enabled units, and disables and stops disabled units. Review that activation
-before syncing an existing host.
+host-specific files from paths relative to the repository root.
+[Dotfiles](https://github.com/maxexcloo/dotfiles) owns workstation Compose
+definitions; this repository owns Mercury’s boot configuration.
 
 Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
@@ -107,7 +94,9 @@ host's generated files, such as its Cloudflare Tunnel token.
 
 `mise run hosts:sync [host...]` installs changed generated files and tree files on
 uCore and Bazzite tunnel hosts, reloads systemd and restarts the services whose
-units mention a changed file.
+units mention a changed file. `butane.units` declares boot enablement for
+installations; host sync enables and starts those units, or disables and stops
+them, according to the declared state.
 
 ## Cluster Upgrades
 
