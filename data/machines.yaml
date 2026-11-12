@@ -206,11 +206,11 @@ machines:
         trees:
           - local: data/hosts/mercury/etc
             path: /etc
+          - local: data/hosts/mercury/var
+            path: /var
         units:
           - enabled: true
             name: onepassword-connect@core.service
-          - enabled: true
-            name: orca-serve.service
           - enabled: true
             name: syncthing@core.service
       cloudflare:
