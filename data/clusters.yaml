@@ -55,7 +55,7 @@ clusters:
             - name: truenas/icloud-photos
               read_only: true
             - name: truenas/projects
-            - name: truenas/public
+            - name: truenas/scratch
       venus:
         configuration_delivery: direct
         dedicated: gpu

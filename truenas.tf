@@ -274,7 +274,10 @@ resource "truenas_app" "talos_container" {
 resource "truenas_cronjob" "host" {
   for_each = local.truenas_cronjobs
 
-  command         = each.value.command
+  command = can(each.value.smart_test) ? (
+    "midclt call disk.smart_test ${each.value.smart_test} '${jsonencode(local.truenas_hosts[each.value.target].smart_test_disks)}'"
+  ) : each.value.command
+
   description     = try(each.value.description, null)
   provider        = truenas.hosts[each.value.target]
   schedule_dow    = each.value.schedule_dow
