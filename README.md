@@ -16,11 +16,8 @@ mise run check
 ```
 
 Setup creates the `Homelab/OpenTofu` credential item if it's missing; fill in its
-fields and run setup again. [fnox.toml](fnox.toml) maps each field into the tasks
-that need it, without exporting it to your shell. `truenas_connections` is a JSON
-map keyed by machine name, with the `api_key` and `url` of each TrueNAS API.
-`control_d_api_key` manages Control D rules and is copied into each cluster's
-`Control D` item.
+fields and run setup again. `truenas_connections` is a JSON map keyed by machine
+name, with the `api_key` and `url` of each TrueNAS API.
 
 ## Usage
 
@@ -49,54 +46,13 @@ lock file's checksums:
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
 ```
 
-## Configuration
-
-[data/](data/) holds the inventory and shared settings. Host provisioning uses
-[data/machines.yaml](data/machines.yaml), [data/hosts/](data/hosts/) and
-[templates/hosts/](templates/hosts/); [bluemax](https://github.com/maxexcloo/bluemax)
-images own the host OS configuration. [AGENTS.md](AGENTS.md) covers ownership,
-conventions and change safety.
-
-Service entries with `credentials.username` get a generated 1Password login
-titled and linked from the service's name and endpoint.
-
 ## Hosts
 
-`locals.tf` derives the shared inventory used by OpenTofu and the host scripts;
-SSH rendering and installation checks need no credentials.
-
-`data/machines.yaml` contains each machine's inventory and optional `butane`
-settings; omit unused settings. Set a machine's `hostname` to override the
-hostname derived from its inventory key.
-
-Syncthing's `AI` folder synchronises in both directions; changes and deletions
-propagate to peers. Kubelab owns its private routes and authentication.
-
-`ssh.authorized_keys` in [data/access.yaml](data/access.yaml) supplies the common
-login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
-`butane.users` and `butane.groups` define additional accounts. Pluto's `saturn`
-user and group retain UID/GID 1001 for backup access. `butane.trees` installs
-host-specific files from paths relative to the repository root.
-[Dotfiles](https://github.com/maxexcloo/dotfiles) owns workstation Compose
-definitions; this repository owns Mercury’s boot configuration.
-
-Run `mise run hosts:ignition mercury` to render Mercury's installation file.
-The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
-`IGNITION_OUTPUT_DIRECTORY` overrides the directory. Rendering needs an unlocked
-1Password CLI and OpenSSL (`brew install openssl@3` on macOS). Mercury's
-`Workstation: mercury.mbk.excloo.net` login must exist from a reviewed apply.
-Its password is hashed locally for `core`; generated files stay private.
-Password changes in 1Password do not update an installed host.
-
-Installs boot Fedora CoreOS, then rebase to the signed `bluemax-server` image,
-which owns the OS configuration and updates itself. Ignition also carries each
-host's generated files, such as its Cloudflare Tunnel token.
-
-`mise run hosts:sync [host...]` installs changed generated files and tree files on
-uCore and Bazzite tunnel hosts, reloads systemd and restarts the services whose
-units mention a changed file. `butane.units` declares boot enablement for
-installations; host sync enables and starts those units, or disables and stops
-them, according to the declared state.
+Run `mise run hosts:ignition mercury` to render Mercury's installation file into
+`${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/`. Rendering needs an unlocked
+1Password CLI, OpenSSL (`brew install openssl@3` on macOS) and the
+`Workstation: mercury.mbk.excloo.net` login from a reviewed apply. Password
+changes in 1Password do not update an installed host.
 
 ## Cluster Upgrades
 
@@ -118,43 +74,26 @@ Single-node clusters have an outage while they upgrade. Configuration applies us
 
 ## NanoKVM
 
-NanoKVM uses Lego for Let's Encrypt certificates through the inventory's ACME
-delegation. Its dedicated DNS token can edit only the challenge zone; OpenTofu
-stores it in `Cloudflare ACME DNS: <hostname>` in the Homelab vault. The appliance
-reads a root-only copy at `/etc/lego/cloudflare-token`. Keep Lego's public DNS
-resolver override (`1.1.1.1:53`): the appliance's local resolver did not return
-delegated TXT answers during validation.
-
-`/etc/cron.d/nanokvm-acme` runs renewal, with certificate and account state under
-`/var/lib/lego`. Its hook at `/usr/local/libexec/nanokvm-certificate` must install
-the full chain and an RSA key, required by NanoKVM's startup validator, then
-signal `NanoKVM-Server` to exit so its stock supervisor restarts it with the new
-certificate.
+NanoKVM renews its Let's Encrypt certificate with Lego from
+`/etc/cron.d/nanokvm-acme`, using the DNS token from `Cloudflare ACME DNS:
+<hostname>` copied to `/etc/lego/cloudflare-token`. Keep Lego's `1.1.1.1:53`
+resolver override, as the appliance's resolver doesn't return delegated TXT
+answers. The hook at `/usr/local/libexec/nanokvm-certificate` installs the full
+chain and an RSA key, then signals `NanoKVM-Server` to exit so its supervisor
+restarts it.
 
 ## TrueNAS
 
-Storage policy and SMB shares sit beside their datasets in
-[data/storage.yaml](data/storage.yaml), keyed by full ZFS path.
+These stay native because the pinned provider can't represent them:
 
-Saturn’s native Beszel custom app discovers storage devices using a read-only
-`/dev:/dev` directory bind and device cgroup rules (`b 8:* rw`, `b 259:* rw`,
-`c 242:* rw`). It retains the explicit `/dev/zfs` mapping and its existing
-`SYS_ADMIN`/`SYS_RAWIO` capabilities, with privileged mode disabled. Avoid
-per-disk mappings: removing a drive would prevent the app from starting. The
-NVMe character major is kernel-assigned; recheck it after kernel changes with
-`ls -l /dev/nvme0` and update the character-device rule if necessary.
-USB SSDs may require a device-type override for their limited SMART data.
-
-These stay native because the provider can't represent them:
-
-- Saturn's `truenas-nvme` pool: one Lexar NM790 4TB and two Crucial X9 4TB
-  drives in RAIDZ1, with `autotrim=on`. The pinned provider cannot update pool
-  topology or manage autotrim. Its USB discard workaround is managed through
-  the `crucial-x9-trim` startup task in `data/machines.yaml`.
-- Saturn's native replication tasks send each pool directly to Pluto. The SSD
-  pool keeps its scheduled snapshots; whole-pool recovery uses the offsite replica.
-- S3 HTTPS, buckets and access keys. OpenTofu only manages the parent dataset,
-  the service and its DNS.
+- Saturn's `truenas-nvme` pool topology and `autotrim=on`.
+- Saturn's replication tasks to Pluto.
+- S3 HTTPS, buckets and access keys.
+- Saturn's Beszel app device access: a read-only `/dev:/dev` bind, the
+  `/dev/zfs` mapping and device cgroup rules `b 8:* rw`, `b 259:* rw` and
+  `c 242:* rw`. Avoid per-disk mappings, which stop the app starting when a
+  drive is removed. The NVMe character major is kernel-assigned; recheck it
+  with `ls -l /dev/nvme0` after kernel changes.
 
 ## Workstation Access
 
@@ -164,13 +103,8 @@ After `mise run hosts:ssh`, add this near the start of `~/.ssh/config`:
 Include config.d/homelab
 ```
 
-`mise run clusters:sync` merges cluster credentials into existing client
-configurations, keeps unrelated contexts and backs up each file as `.bak`.
-
-Set `mtls: true` on a tunnel ingress entry to require
-[Cloudflare client certificates](https://developers.cloudflare.com/api-shield/security/mtls/)
-for its hostname; Kubelab owns enforcement. Activate and verify its WAF rule
-before opening the route, and keep one certificate per device in 1Password.
+Before opening a tunnel route with `mtls: true`, activate and verify its
+Cloudflare WAF rule in Kubelab.
 
 ## State Recovery
 

@@ -4,9 +4,7 @@
 # configuration.
 set -euo pipefail
 
-# Runs as root on the host from the uploaded staging directory. Installs changed
-# files, reloads systemd and restarts every service whose unit mentions one,
-# such as a Quadlet or a unit reading it as an environment file.
+# Runs as root on the host from the uploaded staging directory.
 install_files() {
   local path paths=() units=()
 
