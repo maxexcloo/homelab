@@ -80,6 +80,17 @@ host-specific files, such as Pluto's sanoid configuration, from paths relative
 to the repository root. [Dotfiles](https://github.com/maxexcloo/dotfiles) owns
 workstation container services, including Mercury's 1Password Connect.
 
+Mercury’s boot configuration starts Dotfiles’ Connect Compose stack with rootful
+`podman-compose` and Fedora’s `syncthing@core.service` as `core`. Bluemax supplies
+the packages; Dotfiles supplies the Compose definition and note filters. Syncthing
+keeps its own configuration and device identity outside these repositories.
+
+The existing Mercury needs an approved Connect handover before this boot setup is
+activated: stage Dotfiles’ Compose definition, stop the old Quadlet pod, then start
+and verify the replacement against the existing secret and data volume. Retire the
+old installed Quadlet files only after successful verification. Installation
+rendering configures boot units; syncing host files alone does not enable them.
+
 Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
 `IGNITION_OUTPUT_DIRECTORY` overrides the directory. Rendering needs an unlocked
