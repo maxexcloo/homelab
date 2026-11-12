@@ -210,7 +210,7 @@ machines:
             path: /var
         units:
           - enabled: true
-            name: onepassword-connect@core.service
+            name: podman-restart.service
           - enabled: true
             name: syncthing@core.service
       cloudflare:
