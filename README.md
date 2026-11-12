@@ -89,7 +89,9 @@ The existing Mercury needs an approved Connect handover before this boot setup i
 activated: stage Dotfiles’ Compose definition, stop the old Quadlet pod, then start
 and verify the replacement against the existing secret and data volume. Retire the
 old installed Quadlet files only after successful verification. Installation
-rendering configures boot units; syncing host files alone does not enable them.
+rendering and `hosts:sync` both honour the declared boot units; syncing enables and
+starts enabled units, and disables and stops disabled units. Review that activation
+before syncing an existing host.
 
 Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
