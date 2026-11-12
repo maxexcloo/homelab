@@ -29,6 +29,7 @@ truenas:
         smb: {}
       truenas/public:
         smb: {}
+      truenas/scratch: {}
       truenas/time-machine:
         quota: 8796093022208
       truenas/time-machine/ginny.koh:
