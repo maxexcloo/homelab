@@ -22,7 +22,7 @@ install_files() {
 
   if ((${#paths[@]} > 0)); then
     systemctl daemon-reload
-    mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -n 1 basename | sort -u)
+    mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -r -n 1 basename | sort -u)
     if ((${#units[@]} > 0)); then
       systemctl restart "${units[@]}"
     fi
