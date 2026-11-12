@@ -24,7 +24,6 @@ projects:
       limits.cpu: "4"
       limits.instances: "1"
       limits.memory: 6GiB
-      limits.virtual-machines: "1"
       restricted: "true"
       restricted.devices.disk: managed
       restricted.devices.nic: managed
