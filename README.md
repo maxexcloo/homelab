@@ -76,10 +76,9 @@ propagate to peers. Kubelab owns its private routes and authentication.
 login keys. `butane.ssh_authorized_keys` adds keys for that machine's login;
 `butane.users` and `butane.groups` define additional accounts. Pluto's `saturn`
 user and group retain UID/GID 1001 for backup access. `butane.trees` installs
-host-specific files, such as Pluto's sanoid configuration and Mercury's 1Password
-Connect Quadlets, from paths relative to the repository root. Mercury's Connect
-reads its credentials file from the `onepassword-connect-credentials` Podman
-secret, created once with `sudo podman secret create`.
+host-specific files, such as Pluto's sanoid configuration, from paths relative
+to the repository root. [Dotfiles](https://github.com/maxexcloo/dotfiles) owns
+workstation container services, including Mercury's 1Password Connect.
 
 Run `mise run hosts:ignition mercury` to render Mercury's installation file.
 The output is `${XDG_CACHE_HOME:-$HOME/.cache}/homelab/ignition/mercury.ign`;
