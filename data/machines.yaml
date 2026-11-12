@@ -210,6 +210,8 @@ machines:
           - enabled: true
             name: onepassword-connect@core.service
           - enabled: true
+            name: orca-serve.service
+          - enabled: true
             name: syncthing@core.service
       cloudflare:
         tunnel: {}

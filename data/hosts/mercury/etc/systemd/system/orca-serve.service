@@ -1,0 +1,21 @@
+[Unit]
+Description=Orca Server
+Wants=network-online.target
+Requires=user@1000.service
+After=network-online.target user@1000.service
+StartLimitIntervalSec=900
+StartLimitBurst=5
+
+[Service]
+User=core
+Environment=ORCA_USER_DATA_PATH=/var/home/core/.orca
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=PATH=/var/home/core/.local/share/mise/shims:/var/home/core/.local/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin
+ExecStart=/usr/bin/orca-ide serve --supervise --no-pairing --port 6768 --bind 0.0.0.0 --refuse-public
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=90
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
