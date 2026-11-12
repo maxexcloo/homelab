@@ -98,74 +98,44 @@ units mention a changed file.
 
 ### Mercury Incus
 
-Mercury hosts disposable GARM **virtual machines** using Bluemax's native Incus,
-QEMU and OVMF packages. Kubelab owns GARM and repository enrolment. The native
-`garm-incus.service` applies [the preseed](data/hosts/mercury/etc/incus/garm.yaml)
-on boot; Incus requires [the firewall](data/hosts/mercury/etc/incus/garm.nft)
-before starting. No containerised daemon or additional state root is involved.
+Mercury runs disposable GARM VMs using the packages in
+[Bluemax's server image](https://github.com/maxexcloo/bluemax/blob/main/recipes/recipe-server.yaml).
+[The Incus preseed](data/hosts/mercury/etc/incus/garm.yaml) owns project limits,
+VM resources, storage and the runner bridge;
+[the firewall](data/hosts/mercury/etc/incus/garm.nft) owns runner isolation and
+controller API access. The project enforces one VM across all repositories;
+stopped instances still consume capacity. Kubelab owns
+[GARM and enrolment](https://github.com/maxexcloo/kubelab/blob/main/garm.md).
 
-The `garm` project allows one instance in total, zero containers and one VM,
-with aggregate limits of 4 CPUs and 6 GiB. This bounds all repository pools
-together. Its `garm-vm` profile provides those resources and a 64 GiB root disk.
-The native `dir` pool keeps images and VM disks under `/var/lib/incus` on Mercury's
-existing persistent filesystem; confirm free capacity before activation.
-Stopped instances still consume the slot, and VMs do not automatically start
-after a host reboot.
+Activate only after a reviewed host sync/reboot with the required image available:
 
-The administrator-owned `garmbr0` bridge uses NAT on `10.231.0.1/24`, with no
-IPv6. DHCP advertises public DNS directly. Host nftables rules permit only DHCP
-to Mercury, block private, LAN, tailnet, link-local and metadata destinations,
-and reject unsolicited inbound runner traffic. Public dependency downloads and
-public HTTPS GARM bootstrap callbacks remain possible. The restricted project
-can use only this managed network and managed disks; it cannot create or edit
-the default project's networks. The project has its own profiles, so a stock
-default profile cannot attach a different host bridge. Keep controller client
-trust restricted to this project and never grant jobs access to the Incus socket.
-
-Activation requires a separate reviewed host sync/reboot after
-[Bluemax's Incus image change](https://github.com/maxexcloo/bluemax/pull/41)
-is published; this PR does not deploy or enable a remote listener. Existing
-hosts need `sudo systemctl enable --now incus.service garm-incus.service` after
-syncing the files; Ignition enables these units on new installations. Before
-that activation:
-
-1. Confirm hardware virtualisation, `/dev/kvm`, OVMF, disk capacity and that
-   `10.231.0.0/24` is unused. Inspect existing Incus state before applying the
-   preseed; do not adopt or overwrite a conflicting project, pool or bridge.
-2. Obtain the controller's stable Tailscale IPv4 from Kubelab and add it as the
-   sole `elements` entry in the firewall's `controller_ipv4` set. Preserve this
-   value in the reviewed host tree. Restrict Tailscale grants to this controller
-   identity reaching Mercury on TCP 8443, and confirm the private hostname
-   `mercury.mbk.excloo.net` resolves to Mercury's Tailscale IPv4 from the controller.
-3. Kubelab must supply a genuine client certificate and retain its private key
-   in its existing secret delivery. Transfer only the public certificate to
-   `/var/tmp/garm-controller.crt` on Mercury, then register it locally with
+1. Confirm hardware virtualisation, `/dev/kvm`, OVMF, free storage and that the
+   preseed's bridge subnet is unused. Inspect existing Incus state before applying
+   the preseed; do not overwrite a conflicting project, pool or bridge.
+2. Add the controller's actual egress Tailscale IPv4 as the sole entry in the
+   firewall's `controller_ipv4` set and preserve it in the reviewed host tree.
+   Restrict Tailscale grants to that identity reaching Mercury's Incus port;
+   confirm the controller resolves Mercury's private hostname to its Tailscale IP.
+3. Sync the files, then enable the units on an existing host with
+   `sudo systemctl enable --now incus.service garm-incus.service`.
+   Ignition enables them on new installations.
+4. Kubelab supplies the controller's genuine client certificate and retains its
+   private key in its secret delivery. Transfer only the public certificate to
+   `/var/tmp/garm-controller.crt`, then register it locally:
    `sudo incus config trust add-certificate /var/tmp/garm-controller.crt --name garm-controller --restricted --projects garm`.
-   Verify the trust entry is restricted and lists only `garm`; securely deliver
-   Mercury's `/var/lib/incus/server.crt` to the controller for server pinning.
-4. Once the firewall is loaded and source restriction verified, bind only the
-   Tailscale IPv4 with `sudo incus config set core.https_address "$(tailscale ip -4):8443"`.
-   The provider URL is `https://mercury.mbk.excloo.net:8443`; no LAN listener,
-   public tunnel, trust password or generated credentials are configured here.
-5. Configure the [upstream Incus provider](https://github.com/cloudbase/garm-provider-incus/tree/v0.1.5)
-   with `project_name = "garm"`, `instance_type = "virtual-machine"`,
-   `include_default_profile = false`, the real TLS certificate/key paths and
-   pinned server certificate. Omit `unix_socket_path`, which overrides HTTPS.
-   Set pool flavour to `garm-vm` and use an Ubuntu `/cloud` VM image from an
-   explicitly configured simplestreams remote. The upstream sample selects
-   containers, so do not copy its instance type. Use public HTTPS callback and
-   metadata URLs; private bootstrap access needs a separately reviewed narrow
-   exception, never a blanket LAN or tailnet allow rule.
+   Verify trust is restricted to `garm`; securely deliver Mercury's
+   `/var/lib/incus/server.crt` to the controller for server pinning.
+5. Once the firewall and source restriction are verified, bind the listener only
+   to Mercury's Tailscale IPv4:
+   `sudo incus config set core.https_address "$(tailscale ip -4):8443"`.
+   Keep the Incus socket and API credentials out of runner guests.
 
-Before workflow rollout, run an explicitly authorised disposable VM job and
-verify GitHub registration, downloads, callbacks and deletion. Probe Mercury
-(including its public addresses), LAN, tailnet and metadata endpoints from the
-guest and confirm denial while public HTTPS and DNS work. Confirm other tailnet
-clients cannot reach TCP 8443, an unrestricted/default-project API request with
-the controller certificate is denied, and a second VM across two repository
-pools is rejected until deletion releases the first slot. Check GARM's retry
-and cleanup behaviour under that quota rejection and after a host reboot;
-static rendering and CI do not exercise those live paths.
+Before workflow rollout, authorise a disposable VM test and verify registration,
+public downloads, callbacks and deletion. Confirm the guest cannot reach Mercury
+(including its public addresses), LAN, tailnet or metadata endpoints. Confirm
+other tailnet clients cannot reach the API, and the controller certificate cannot
+access the default project. Exercise cross-repository capacity rejection and
+recovery, including a host reboot, with Kubelab's activation checks.
 
 ## Cluster Upgrades
 
