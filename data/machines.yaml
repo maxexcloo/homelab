@@ -206,6 +206,11 @@ machines:
         trees:
           - local: data/hosts/mercury/etc
             path: /etc
+        units:
+          - enabled: true
+            name: onepassword-connect@core.service
+          - enabled: true
+            name: syncthing@core.service
       cloudflare:
         tunnel: {}
     nanokvm:

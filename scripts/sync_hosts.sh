@@ -20,15 +20,23 @@ install_files() {
     fi
   done < <(find . -type f)
 
-  if ((${#paths[@]} == 0)); then
-    echo "Up to date"
-    return
+  if ((${#paths[@]} > 0)); then
+    systemctl daemon-reload
+    mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -r -n 1 basename | sort -u)
+    if ((${#units[@]} > 0)); then
+      systemctl restart "${units[@]}"
+    fi
+  else
+    echo "Files up to date"
   fi
-  systemctl daemon-reload
-  mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -n 1 basename | sort -u)
-  if ((${#units[@]} > 0)); then
-    systemctl restart "${units[@]}"
-  fi
+
+  while IFS=$'\t' read -r unit enabled; do
+    if [[ "${enabled}" == true ]]; then
+      systemctl enable --now "${unit}"
+    else
+      systemctl disable --now "${unit}"
+    fi
+  done <../units
 }
 
 if [[ "${1:-}" == "--install" ]]; then
@@ -54,6 +62,7 @@ for name in "$@"; do
   staging="${staging_root}/${name}"
   mkdir -p "${staging}/root"
   cp "${BASH_SOURCE[0]}" "${staging}/sync_hosts.sh"
+  jq -r --arg name "${name}" '.machines[$name].butane.units[]? | [.name, .enabled] | @tsv' <<<"${inventory_json}" >"${staging}/units"
 
   while IFS=$'\t' read -r path mode; do
     mkdir -p "$(dirname "${staging}/root${path}")"
