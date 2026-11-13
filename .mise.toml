@@ -8,9 +8,11 @@ TF_DATA_DIR = "{{ get_env(name='XDG_CACHE_HOME', default=env.HOME ~ '/.cache') }
 
 # Deploy
 [tasks.apply]
+description = "Apply Reviewed Infrastructure Changes"
 run = "fnox exec -- tofu apply"
 
 [tasks.plan]
+description = "Preview Infrastructure Changes"
 run = "fnox exec -- tofu plan"
 
 # Development
@@ -50,6 +52,7 @@ description = "Render Host Installation Files"
 run = 'scripts/render_hosts.sh "${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"'
 
 [tasks."oci:image"]
+description = "Download A Cluster Installation Image"
 run = "scripts/prepare_oci_image.sh"
 
 [tasks."sync:clusters"]
@@ -61,10 +64,12 @@ description = "Sync Generated Host Files"
 run = "scripts/sync_hosts.sh"
 
 [tasks."sync:ssh"]
+description = "Install Configured SSH Aliases"
 run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 
 # Setup
 [tasks.init]
+description = "Initialise Providers & The Remote Backend"
 run = "fnox exec -- tofu init -input=false"
 
 [tasks."init:offline"]
@@ -72,7 +77,12 @@ description = "Initialise Providers Without Remote Backend"
 run = "tofu init -backend=false -input=false -lockfile=readonly"
 
 [tasks.setup]
-run = [{ task = "setup:credentials" }, { task = "init" }]
+description = "Set Up The Workstation"
+run = [
+  { task = "hooks:install" },
+  { task = "setup:credentials" },
+  { task = "init" },
+]
 
 [tasks."setup:credentials"]
 description = "Create Missing OpenTofu 1Password Fields"
