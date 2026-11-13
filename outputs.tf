@@ -38,7 +38,7 @@ output "github_identity" {
 }
 
 output "hosts" {
-  description = "Generated files for host installs and `mise run hosts:sync`, by host."
+  description = "Generated files for host installs and `mise run sync:hosts`, by host."
   sensitive   = true
   value = {
     for name, files in local.cloudflare_tunnel_files : name => {

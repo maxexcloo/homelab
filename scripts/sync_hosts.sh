@@ -75,7 +75,7 @@ for name in "$@"; do
   done < <(jq -r --arg name "${name}" '.machines[$name].butane.trees[]? | [.local, .path] | @tsv' <<<"${inventory_json}")
 
   echo "Syncing ${name}" >&2
-  if ! tar --no-mac-metadata --no-xattrs -C "${staging}" -cf - . |
+  if ! COPYFILE_DISABLE=1 tar --no-xattrs -C "${staging}" -cf - . |
     ssh -o ConnectTimeout=5 "${address}" 'rm -rf .cache/homelab-sync && mkdir -p -m 700 .cache/homelab-sync && tar -xpf - -C .cache/homelab-sync'; then
     skipped+=("${name}")
     continue
