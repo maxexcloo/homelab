@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local path paths=() units=()
+  local changed=false cloudflared_changed=false path
 
   cd "$(dirname "${BASH_SOURCE[0]}")/root"
   while IFS= read -r path; do
@@ -13,20 +13,17 @@ install_files() {
     if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
       echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
-      paths+=("${path}")
+      changed=true
+      case "${path}" in
+        /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
+      esac
     fi
   done < <(find . -type f)
 
-  if ((${#paths[@]} > 0)); then
+  if [[ "${changed}" == true ]]; then
     systemctl daemon-reload
-    mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -r -n 1 basename | sort -u)
-    # The upstream unit references config.yml, which names the credentials file.
-    if [[ -f /etc/systemd/system/cloudflared.service ]] &&
-      printf '%s\n' "${paths[@]}" | grep -qx /etc/cloudflared/credentials.json; then
-      units+=(cloudflared.service)
-    fi
-    if ((${#units[@]} > 0)); then
-      systemctl restart "${units[@]}"
+    if [[ "${cloudflared_changed}" == true && -f /etc/systemd/system/cloudflared.service ]]; then
+      systemctl restart cloudflared.service
     fi
   else
     echo "Files up to date"
