@@ -113,15 +113,30 @@ locals {
     name => one(groups.result).id
   }
 
-  # The host images start cloudflared once its environment file exists.
+  cloudflare_tunnel_credentials = {
+    for name, tunnel in data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster : name => jsondecode(base64decode(tunnel.token))
+    if contains(["bazzite", "ucore"], try(local.machines[name].platform, ""))
+  }
+
   cloudflare_tunnel_files = {
-    for name in keys(local.cloudflare_consumers_tunnel) : name => {
-      "/etc/cloudflared/cloudflared.env" = {
-        content = "TUNNEL_TOKEN=${data.cloudflare_zero_trust_tunnel_cloudflared_token.cluster[name].token}\n"
-        mode    = "0600"
+    for name, credentials in local.cloudflare_tunnel_credentials : name => {
+      "/etc/cloudflared/config.yml" = {
+        content = yamlencode({
+          credentials-file = "/etc/cloudflared/credentials.json"
+          tunnel           = credentials.t
+        })
+        mode = "0644"
+      }
+      "/etc/cloudflared/credentials.json" = {
+        content = jsonencode({
+          AccountTag   = credentials.a
+          Endpoint     = try(credentials.e, null)
+          TunnelID     = credentials.t
+          TunnelSecret = credentials.s
+        })
+        mode = "0600"
       }
     }
-    if contains(["bazzite", "ucore"], try(local.machines[name].platform, ""))
   }
 
   cloudflare_tunnel_mtls_hostnames = {

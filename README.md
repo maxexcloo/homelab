@@ -54,6 +54,12 @@ Run `mise run hosts:ignition mercury` to render Mercury's installation file into
 `Workstation: mercury.mbk.excloo.net` login from a reviewed apply. Password
 changes in 1Password do not update an installed host.
 
+On Cloudflare Tunnel hosts, run this once after syncing their configuration:
+
+```shell
+sudo /usr/bin/cloudflared service install --no-update-service
+```
+
 ## Cluster Upgrades
 
 Upgrade one cluster at a time, after reading the upstream
