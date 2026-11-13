@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Syncs every host's generated files from the `hosts` output and its Butane
-# trees, or those of the hosts named as arguments. The host images own all other
-# configuration.
+# trees, or those of the hosts named as arguments.
 set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
@@ -21,6 +20,11 @@ install_files() {
   if ((${#paths[@]} > 0)); then
     systemctl daemon-reload
     mapfile -t units < <(grep -rlF --include='*.service' -f <(printf '%s\n' "${paths[@]}") /run/systemd/generator /etc/systemd/system | xargs -r -n 1 basename | sort -u)
+    # The upstream unit references config.yml, which names the credentials file.
+    if [[ -f /etc/systemd/system/cloudflared.service ]] &&
+      printf '%s\n' "${paths[@]}" | grep -qx /etc/cloudflared/credentials.json; then
+      units+=(cloudflared.service)
+    fi
     if ((${#units[@]} > 0)); then
       systemctl restart "${units[@]}"
     fi

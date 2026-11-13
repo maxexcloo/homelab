@@ -54,6 +54,25 @@ Run `mise run hosts:ignition mercury` to render Mercury's installation file into
 `Workstation: mercury.mbk.excloo.net` login from a reviewed apply. Password
 changes in 1Password do not update an installed host.
 
+## Cloudflare Tunnel
+
+Bluemax installs the native Cloudflared package. After booting that image and
+completing a reviewed apply, run `mise run hosts:sync <host>` to install its
+configuration and credentials. On the host, install Cloudflared's own service
+once:
+
+```shell
+sudo /usr/bin/cloudflared service install --no-update-service
+```
+
+Later syncs restart the service when its credentials change. Package updates
+arrive through Bluemax image updates.
+
+For hosts migrating from the image's Quadlet, reboot into the native-package
+image before installing the service. The tunnel is unavailable between that
+reboot and service installation; use Tailscale SSH access. Verify the tunnel's
+routes, then remove the old `/etc/cloudflared/cloudflared.env` file.
+
 ## Cluster Upgrades
 
 Upgrade one cluster at a time, after reading the upstream
