@@ -122,17 +122,23 @@ locals {
   }
 
   # TrueNAS containers use a Tailscale sidecar, omitting local addresses as Talos nodes do (talos.tf).
+  # The router does not hairpin to the NATed endpoint, so same-site peers need the LAN address
+  # advertised explicitly or they relay through DERP.
   truenas_talos_container_tailscale_environment = {
     for name, container in local.truenas_talos_containers : name => {
       TS_AUTH_ONCE              = "true"
       TS_AUTHKEY                = tailscale_tailnet_key.talos_container[name].key
       TS_DEBUG_OMIT_LOCAL_ADDRS = "true"
+      TS_DEBUG_PRETENDPOINT     = "${container.address}:${local.truenas_talos_container_tailscale_port}"
       TS_HOSTNAME               = container.device_name
       TS_SERVE_CONFIG           = local.talos_tailscale_serve_config_path
       TS_STATE_DIR              = local.truenas_talos_container_tailscale_state_directory
+      TS_TAILSCALED_EXTRA_ARGS  = "--port=${local.truenas_talos_container_tailscale_port}"
       TS_USERSPACE              = "false"
     }
   }
+
+  truenas_talos_container_tailscale_port = 41641
 
   truenas_talos_container_tailscale_state_directory = "/var/lib/tailscale"
 
