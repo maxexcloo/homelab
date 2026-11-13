@@ -33,7 +33,6 @@ jobs:
         run: mise run check
       - name: Render Kubelab Homepage Services
         run: mise run check:kubelab
-
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         name: Refresh External Monitoring
         env:

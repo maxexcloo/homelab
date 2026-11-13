@@ -1,13 +1,5 @@
 data "tailscale_devices" "all" {}
 
-resource "tailscale_service" "cluster_ingress" {
-  for_each = local.clusters
-
-  name  = "svc:${each.value.tailscale_ingress_service}"
-  ports = ["tcp:80", "tcp:443"]
-  tags  = ["tag:cluster-${each.key}"]
-}
-
 locals {
   tailscale_address_ranges = {
     ipv4 = "100.64.0.0/10"
@@ -123,6 +115,14 @@ resource "tailscale_oauth_client" "fly" {
   tags        = ["tag:ephemeral"]
 
   depends_on = [tailscale_acl.default]
+}
+
+resource "tailscale_service" "cluster_ingress" {
+  for_each = local.clusters
+
+  name  = "svc:${each.value.tailscale_ingress_service}"
+  ports = ["tcp:80", "tcp:443"]
+  tags  = ["tag:cluster-${each.key}"]
 }
 
 resource "tailscale_tailnet_key" "server" {

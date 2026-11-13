@@ -2,6 +2,9 @@
 
 set -eu
 
+title="OpenTofu"
+vault="Homelab"
+
 set -- \
   "b2_application_key[password]=" \
   "b2_application_key_id[text]=" \
@@ -21,28 +24,28 @@ set -- \
   "unifi_api[url]=" \
   "unifi_api_key[password]="
 
-items="$(op item list --format json --vault "Homelab")"
-if ! printf '%s' "${items}" | jq -e 'any(.[]; .title == "OpenTofu")' >/dev/null; then
+items="$(op item list --format json --vault "${vault}")"
+if ! printf '%s' "${items}" | jq -e --arg title "${title}" 'any(.[]; .title == $title)' >/dev/null; then
   op item create \
     --category "API Credential" \
-    --title "OpenTofu" \
-    --vault "Homelab" \
+    --title "${title}" \
+    --vault "${vault}" \
     "notesPlain=Provider environment for the homelab OpenTofu root." \
     "$@" \
     >/dev/null
-  echo "Created Homelab/OpenTofu. Populate every field before planning or applying."
+  echo "Created ${vault}/${title}. Populate every field before planning or applying."
   exit 0
 fi
 
 # Add only absent fields, empty, so existing values are never overwritten.
-labels="$(op item get "OpenTofu" --format json --vault "Homelab" | jq -r '.fields[].label')"
+labels="$(op item get "${title}" --format json --vault "${vault}" | jq -r '.fields[].label')"
 for field do
   shift
   printf '%s\n' "${labels}" | grep -Fqx "${field%%\[*}" || set -- "$@" "${field}"
 done
 if [ "$#" -eq 0 ]; then
-  echo "Homelab/OpenTofu has every field."
+  echo "${vault}/${title} has every field."
   exit 0
 fi
-op item edit "OpenTofu" --vault "Homelab" "$@" >/dev/null
-echo "Added $# empty fields to Homelab/OpenTofu. Populate them before planning or applying."
+op item edit "${title}" --vault "${vault}" "$@" >/dev/null
+echo "Added $# empty fields to ${vault}/${title}. Populate them before planning or applying."
