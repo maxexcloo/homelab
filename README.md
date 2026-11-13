@@ -21,20 +21,20 @@ name, with the `api_key` and `url` of each TrueNAS API.
 
 ## Usage
 
-| Task                                             | Purpose                                       |
-| ------------------------------------------------ | --------------------------------------------- |
-| `mise run apply`                                 | Apply reviewed changes                        |
-| `mise run check`                                 | Run all repository checks                     |
-| `mise run clusters:image <cluster-or-image-url>` | Download a cluster installation image         |
-| `mise run clusters:sync`                         | Sync Kubernetes & Talos client configurations |
-| `mise run fmt`                                   | Format repository files                       |
-| `mise run hosts:ignition [host...]`              | Render host installation files                |
-| `mise run hosts:ssh`                             | Install configured SSH aliases                |
-| `mise run hosts:sync [host...]`                  | Sync generated host files & trees             |
-| `mise run init`                                  | Initialise providers & the remote backend     |
-| `mise run init:offline`                          | Initialise providers without the backend      |
-| `mise run plan`                                  | Preview infrastructure changes                |
-| `mise run setup`                                 | Set up the workstation                        |
+| Task                                        | Purpose                                       |
+| ------------------------------------------- | --------------------------------------------- |
+| `mise run apply`                            | Apply reviewed changes                        |
+| `mise run check`                            | Run all repository checks                     |
+| `mise run fmt`                              | Format repository files                       |
+| `mise run hosts:ignition [host...]`         | Render host installation files                |
+| `mise run init`                             | Initialise providers & the remote backend     |
+| `mise run init:offline`                     | Initialise providers without the backend      |
+| `mise run oci:image <cluster-or-image-url>` | Download a cluster installation image         |
+| `mise run plan`                             | Preview infrastructure changes                |
+| `mise run setup`                            | Set up the workstation                        |
+| `mise run sync:clusters`                    | Sync Kubernetes & Talos client configurations |
+| `mise run sync:hosts [host...]`             | Sync generated host files & trees             |
+| `mise run sync:ssh`                         | Install configured SSH aliases                |
 
 Plans and applies run locally; review each plan before applying it.
 
@@ -71,7 +71,7 @@ Upgrade one cluster at a time, after reading the upstream
    container nodes change image when you apply; their volumes and bind mounts
    carry over.
 3. Upgrade Kubernetes, checking node health after each step.
-4. For OCI clusters, run `mise run clusters:image <cluster>` and export the
+4. For OCI clusters, run `mise run oci:image <cluster>` and export the
    printed `TF_VAR_oci_talos_image_path` so rebuilds boot the new version.
 5. Review and apply the reconciliation plan.
 
@@ -103,7 +103,7 @@ These stay native because the pinned provider can't represent them:
 
 ## Workstation Access
 
-After `mise run hosts:ssh`, add this near the start of `~/.ssh/config`:
+After `mise run sync:ssh`, add this near the start of `~/.ssh/config`:
 
 ```sshconfig
 Include config.d/homelab
