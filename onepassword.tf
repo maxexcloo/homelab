@@ -93,7 +93,11 @@ locals {
   onepassword_service_urls = merge([
     for machine_name, machine in local.machines : {
       for service_name, service in try(machine.services, {}) :
-      "${machine_name}/${service_name}" => "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+      "${machine_name}/${service_name}" => (
+        can(service.private_proxy) ?
+        "https://${local.dns_private_proxy_services["${machine_name}/${service_name}"].hostname}${try(service.path, "")}" :
+        "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+      )
     }
   ]...)
 
@@ -253,6 +257,20 @@ resource "onepassword_item" "infrastructure_inventory" {
   tags       = [local.access.onepassword.ownership_tag]
   title      = "Infrastructure Inventory"
   vault      = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+
+  section_map = {
+    dns = {
+      field_map = {
+        private-proxy-dns-names = {
+          type = "STRING"
+          value = jsonencode(sort(distinct([
+            for frontend in local.dns_private_proxy_names : frontend.hostname
+            if frontend.cluster == each.key
+          ])))
+        }
+      }
+    }
+  }
 }
 
 resource "onepassword_item" "kubeconfig" {

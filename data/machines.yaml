@@ -194,6 +194,7 @@ machines:
           icon: sh-syncthing
           name: Syncthing (Mars)
           port: 8384
+          private_proxy: syd
           scheme: http
     mercury:
       beszel: true

@@ -12,6 +12,45 @@ locals {
     }
   ]...)
 
+  dns_private_proxy_ingresses = {
+    for cluster_name in keys(local.clusters) : cluster_name => "private.${cluster_name}.${local.domains.services}"
+  }
+
+  dns_private_proxy_names = merge(
+    {
+      for cluster_name, hostname in local.dns_private_proxy_ingresses : "cluster/${cluster_name}" => {
+        cluster  = cluster_name
+        hostname = hostname
+        zone     = local.domains.services
+      }
+    },
+    {
+      for service_key, service in local.dns_private_proxy_services : "service/${service_key}" => {
+        cluster  = service.cluster
+        hostname = service.hostname
+        zone     = local.domains.infrastructure
+      }
+    },
+    {
+      for service_key, service in local.dns_private_proxy_services : "alias/${service_key}" => {
+        cluster  = service.cluster
+        hostname = service.alias
+        zone     = local.domains.services
+      }
+    },
+  )
+
+  dns_private_proxy_services = merge([
+    for machine_name, machine in local.machines : {
+      for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
+        alias    = "${service_name}-${local.machine_hostnames[machine_name]}.${service.private_proxy}.${local.domains.services}"
+        cluster  = service.private_proxy
+        hostname = "${service_name}.${local.machine_hostnames[machine_name]}.${local.domains.infrastructure}"
+      }
+      if can(service.private_proxy)
+    }
+  ]...)
+
   dns_records = merge(
     {
       for record_key, record in local.dns_records_derived_specs : record_key => merge(
@@ -73,6 +112,22 @@ locals {
       if try(local.machines[cluster.public_node].oci.assign_public_ip, false)
     },
     {
+      for cluster_name, hostname in local.dns_private_proxy_ingresses : "cluster/${cluster_name}/private" => {
+        content = local.tailscale_cluster_addresses[cluster_name].ipv4
+        name    = hostname
+        type    = "A"
+        zone    = local.domains.services
+      }
+    },
+    {
+      for cluster_name, hostname in local.dns_private_proxy_ingresses : "cluster/${cluster_name}/private-aaaa" => {
+        content = local.tailscale_cluster_addresses[cluster_name].ipv6
+        name    = hostname
+        type    = "AAAA"
+        zone    = local.domains.services
+      }
+    },
+    {
       for cluster_name in keys(local.clusters) : "cluster/${cluster_name}/tailscale" => {
         content = local.tailscale_cluster_addresses[cluster_name].ipv4
         name    = "*.${cluster_name}.${local.domains.services}"
@@ -105,6 +160,24 @@ locals {
         type    = "CNAME"
         zone    = route.zone
       }
+    },
+    {
+      for name_key, frontend in local.dns_private_proxy_names : "private-proxy/${name_key}" => {
+        content = local.dns_private_proxy_ingresses[frontend.cluster]
+        name    = frontend.hostname
+        type    = "CNAME"
+        zone    = frontend.zone
+      }
+      if startswith(name_key, "service/") || startswith(name_key, "alias/")
+    },
+    {
+      for name_key, frontend in local.dns_private_proxy_names : "private-proxy-acme/${name_key}" => {
+        content = local.cloudflare_consumers_acme[frontend.cluster].target_hostname
+        name    = "_acme-challenge.${frontend.hostname}"
+        type    = "CNAME"
+        zone    = frontend.zone
+      }
+      if local.cloudflare_consumers_acme[frontend.cluster].challenge_mode == "delegated"
     },
     {
       for service_key, service in local.dns_machine_services : "service/${service_key}" => {
