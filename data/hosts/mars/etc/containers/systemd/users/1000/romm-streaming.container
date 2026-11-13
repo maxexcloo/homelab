@@ -1,6 +1,6 @@
 [Unit]
 Description=RomM Emulator Streaming
-AssertPathIsDirectory=%h/.local/share/romm-streaming/.config
+AssertPathIsDirectory=%h/.local/share/webstation/.config
 
 [Container]
 Image=lscr.io/linuxserver/webstation:romm-v0.15.3-ls45
@@ -17,7 +17,7 @@ ShmSize=1g
 # s6 starts as namespace root; keep-id maps the app user to the host user.
 User=0
 UserNS=keep-id
-Volume=%h/.local/share/romm-streaming:/config
+Volume=%h/.local/share/webstation:/config
 Volume=%h/retrodeck/bios:/config/.config/PCSX2/bios:ro
 Volume=%h/retrodeck/bios:/config/.config/retroarch/system:ro
 Volume=%h/retrodeck/bios/switch/firmware:/config/.local/share/eden/nand/system/Contents/registered:ro
