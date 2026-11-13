@@ -4,7 +4,7 @@ AssertPathIsDirectory=%h/.local/share/webstation/.config
 
 [Container]
 Image=lscr.io/linuxserver/webstation:romm-v0.15.3-ls45
-AddDevice=/dev/dri/by-path/pci-0000:03:00.0-render:/dev/dri/renderD128
+AddDevice=/dev/dri/renderD128
 Environment=PGID=%G
 Environment=PUID=%U
 Environment=SUBFOLDER=/streaming/
