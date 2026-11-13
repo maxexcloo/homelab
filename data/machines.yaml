@@ -173,6 +173,12 @@ machines:
       smtp: resend
       type: workstation
       username: max.schaefer
+      butane:
+        trees:
+          - local: data/hosts/mars/etc
+            path: /etc
+          - local: data/hosts/mars/var
+            path: /var
       cloudflare:
         tunnel: {}
       interfaces:

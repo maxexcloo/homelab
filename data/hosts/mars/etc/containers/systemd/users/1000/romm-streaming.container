@@ -1,0 +1,33 @@
+[Unit]
+Description=RomM Emulator Streaming
+AssertPathIsDirectory=%h/.local/share/webstation/.config
+
+[Container]
+Image=lscr.io/linuxserver/webstation:romm-v0.15.3-ls45
+AddDevice=/dev/dri/by-path/pci-0000:03:00.0-render:/dev/dri/renderD128
+Environment=PGID=%G
+Environment=PUID=%U
+Environment=SUBFOLDER=/streaming/
+Environment=TZ=Australia/Sydney
+PublishPort=3000:3000
+Secret=romm-streaming-broker,type=env,target=BROKER_SECRET
+# Preserve the SELinux labels shared by RetroDECK and Syncthing.
+SecurityLabelDisable=true
+ShmSize=1g
+# s6 starts as namespace root; keep-id maps the app user to the host user.
+User=0
+UserNS=keep-id
+Volume=%h/.local/share/webstation:/config
+Volume=%h/retrodeck/bios:/config/.config/PCSX2/bios:ro
+Volume=%h/retrodeck/bios:/config/.config/retroarch/system:ro
+Volume=%h/retrodeck/bios/switch/firmware:/config/.local/share/eden/nand/system/Contents/registered:ro
+Volume=%h/retrodeck/bios/switch/keys:/config/.local/share/eden/keys:ro
+Volume=%h/retrodeck/roms:/romm/library/roms:ro
+
+[Service]
+MemoryMax=16G
+Restart=on-failure
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
