@@ -188,6 +188,7 @@ machines:
           icon: sh-sunshine
           name: Polaris
           port: 47990
+          private_proxy: syd
           scheme: https
         syncthing:
           description: File Synchronisation
@@ -216,6 +217,14 @@ machines:
             name: syncthing@core.service
       cloudflare:
         tunnel: {}
+      services:
+        agent-browser:
+          description: Remote Browser
+          icon: sh-chromium
+          name: Browserless
+          port: 9222
+          private_proxy: syd
+          scheme: http
     nanokvm:
       monitoring: false
       name: NanoKVM
@@ -234,6 +243,7 @@ machines:
           icon: sh-sipeed
           name: NanoKVM
           port: 443
+          private_proxy: syd
           scheme: https
     saturn:
       beszel: true
@@ -304,6 +314,7 @@ machines:
           monitoring: true
           name: TrueNAS
           port: 443
+          private_proxy: syd
           scheme: https
           widget:
             enablePools: true
@@ -317,11 +328,13 @@ machines:
           monitoring: true
           name: Netboot
           port: 31010
+          private_proxy: syd
           scheme: http
         s3:
           bucket: syd-backups
           name: Object Storage
           port: 9000
+          private_proxy: syd
           scheme: https
           username: syd-backups
       smb:
@@ -375,6 +388,7 @@ machines:
           icon: sh-zigbee
           name: SLZB-06M
           port: 80
+          private_proxy: syd
           scheme: http
           siteMonitor: ""
       tailscale:
@@ -396,6 +410,7 @@ machines:
           monitoring: true
           name: UniFi
           port: 443
+          private_proxy: syd
           scheme: https
           widget:
             key: "{{HOMEPAGE_VAR_UNIFI_API_KEY}}"
