@@ -14,7 +14,6 @@ onepassword:
 ssh:
   authorized_keys:
     - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIaF+DCJq1CyGrafKzDMtNjW02M5XJoH5MLFFSlHPjyz Max Schaefer
-  identity_agent: ~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock
 tailscale:
   key_expiry_seconds: 7776000
   auto_approvers:
