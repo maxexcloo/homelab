@@ -33,7 +33,6 @@ tailscale:
         - tag:appliance
         - tag:backup
         - tag:cluster-syd
-        - tag:ephemeral
         - tag:router
         - tag:server
         - tag:vm
@@ -48,6 +47,33 @@ tailscale:
         - tcp:443
       src:
         - tag:ephemeral
+        - tag:monitoring
+    # Gatus pings monitored machines and probes their monitored or certificate-bearing services.
+    - dst:
+        - tag:appliance
+        - tag:backup
+        - tag:router
+        - tag:server
+        - tag:vm
+      ip:
+        - icmp:*
+      src:
+        - tag:monitoring
+    - dst:
+        - tag:appliance
+        - tag:router
+        - tag:server
+      ip:
+        - tcp:443
+      src:
+        - tag:monitoring
+    - dst:
+        - tag:server
+      ip:
+        - tcp:9000
+        - tcp:31010
+      src:
+        - tag:monitoring
     - dst:
         - "*"
         - autogroup:internet
@@ -70,6 +96,7 @@ tailscale:
     - tag:appliance
     - tag:backup
     - tag:ephemeral
+    - tag:monitoring
     - tag:router
     - tag:server
     - tag:vm
