@@ -112,7 +112,7 @@ resource "tailscale_oauth_client" "fly" {
   # Replace this client when changing tags; successful updates may not persist them.
   description = "Fly"
   scopes      = ["auth_keys"]
-  tags        = ["tag:ephemeral"]
+  tags        = ["tag:monitoring"]
 
   depends_on = [tailscale_acl.default]
 }
