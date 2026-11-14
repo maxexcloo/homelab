@@ -16,7 +16,7 @@ to its owning repository.
 - Keep provider compatibility constraints in `requirements.tf`.
 - Keep the complete provider environment in the credential item referenced by
   `fnox.toml`; local setup may create its schema, but OpenTofu never manages it.
-  Resolve it only inside credential-consuming Mise tasks with `fnox exec`.
+  Resolve it only inside credential-consuming Mise tasks with `op-connect fnox exec`.
 - Installable Ignition must derive the `core` password hash from the machine's
   1Password login. Never install check output: the image removes passwordless
   sudo and checks lock the password.
