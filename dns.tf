@@ -144,7 +144,7 @@ locals {
     {
       for name, machine in local.machines : "machine/${name}/public-a" => {
         content = try(machine.public_ipv4, oci_core_instance.node[name].public_ip)
-        name    = "public.${local.machine_fqdns[name]}"
+        name    = local.machine_public_fqdns[name]
         type    = "A"
         zone    = local.domains.infrastructure
       }
@@ -153,7 +153,7 @@ locals {
     {
       for name, machine in local.machines : "machine/${name}/public-aaaa" => {
         content = machine.public_ipv6
-        name    = "public.${local.machine_fqdns[name]}"
+        name    = local.machine_public_fqdns[name]
         type    = "AAAA"
         zone    = local.domains.infrastructure
       }

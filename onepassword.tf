@@ -68,7 +68,7 @@ locals {
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
       title    = local.machine_login_titles[name]
-      url      = try(local.onepassword_service_urls["${name}/management"], "ssh://${machine.username}@${local.machine_fqdns[name]}")
+      url      = try(local.machine_service_urls["${name}/management"], "ssh://${machine.username}@${local.machine_fqdns[name]}")
       username = machine.username
     }
     if machine.platform != "talos" && try(machine.type, null) != null && try(machine.username, null) != null
@@ -83,17 +83,10 @@ locals {
     for machine_name, machine in local.machines : {
       for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
         name     = service.name
-        url      = local.onepassword_service_urls["${machine_name}/${service_name}"]
+        url      = local.machine_service_urls["${machine_name}/${service_name}"]
         username = service.credentials.username
       }
       if can(service.credentials)
-    }
-  ]...)
-
-  onepassword_service_urls = merge([
-    for machine_name, machine in local.machines : {
-      for service_name, service in try(machine.services, {}) :
-      "${machine_name}/${service_name}" => "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
     }
   ]...)
 

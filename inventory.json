@@ -1,0 +1,488 @@
+{
+  "machines": {
+    "luna": {
+      "acme": "delegated",
+      "beszel": true,
+      "fqdn": "luna.mbk.excloo.net",
+      "location": "mbk-luna",
+      "monitoring": true,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "appliance"
+    },
+    "macbook-pro": {
+      "acme": null,
+      "beszel": false,
+      "fqdn": "macbook-pro.mbk.excloo.net",
+      "location": "mbk-macbook-pro",
+      "monitoring": true,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": null
+    },
+    "mars": {
+      "acme": null,
+      "beszel": true,
+      "fqdn": "mars.mbk.excloo.net",
+      "location": "mbk-mars",
+      "monitoring": false,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "workstation"
+    },
+    "mercury": {
+      "acme": null,
+      "beszel": true,
+      "fqdn": "mercury.mbk.excloo.net",
+      "location": "mbk-mercury",
+      "monitoring": false,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "workstation"
+    },
+    "nanokvm": {
+      "acme": "delegated",
+      "beszel": false,
+      "fqdn": "nanokvm.mbk.excloo.net",
+      "location": "mbk-nanokvm",
+      "monitoring": false,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "appliance"
+    },
+    "neptune": {
+      "acme": null,
+      "beszel": true,
+      "fqdn": "neptune.syd.excloo.net",
+      "location": "syd-neptune",
+      "monitoring": true,
+      "network": "syd",
+      "public_fqdn": "public.neptune.syd.excloo.net",
+      "tailscale": true,
+      "type": "vm"
+    },
+    "pluto": {
+      "acme": null,
+      "beszel": true,
+      "fqdn": "pluto.fre.excloo.net",
+      "location": "fre-pluto",
+      "monitoring": true,
+      "network": "fre",
+      "public_fqdn": "public.pluto.fre.excloo.net",
+      "tailscale": true,
+      "type": "backup"
+    },
+    "saturn": {
+      "acme": "direct",
+      "beszel": true,
+      "fqdn": "saturn.mbk.excloo.net",
+      "location": "mbk-saturn",
+      "monitoring": true,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "server"
+    },
+    "slzb-06m": {
+      "acme": null,
+      "beszel": false,
+      "fqdn": "slzb-06m.mbk.excloo.net",
+      "location": "mbk-slzb-06m",
+      "monitoring": true,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": false,
+      "type": "appliance"
+    },
+    "sol": {
+      "acme": "delegated",
+      "beszel": true,
+      "fqdn": "sol.mbk.excloo.net",
+      "location": "mbk-sol",
+      "monitoring": true,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "router"
+    },
+    "steam-deck": {
+      "acme": null,
+      "beszel": false,
+      "fqdn": "steam-deck.mbk.excloo.net",
+      "location": "mbk-steam-deck",
+      "monitoring": true,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": null
+    },
+    "venus": {
+      "acme": null,
+      "beszel": true,
+      "fqdn": "venus.mbk.excloo.net",
+      "location": "mbk-venus",
+      "monitoring": false,
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "server"
+    }
+  },
+  "providers": {
+    "1password": {
+      "description": "Passwords & Secrets",
+      "icon": "si-1password-#ffffff",
+      "monitoring": true,
+      "name": "1Password",
+      "url": "https://my.1password.com"
+    },
+    "backblaze": {
+      "description": "Object Storage",
+      "icon": "si-backblaze-#ffffff",
+      "monitoring": true,
+      "name": "Backblaze",
+      "url": "https://backblaze.com"
+    },
+    "cloudflare": {
+      "description": "DNS & Zero Trust",
+      "dns": {
+        "name": "Cloudflare DNS",
+        "query-name": "excloo.net",
+        "query-type": "A",
+        "url": "1.1.1.1"
+      },
+      "icon": "si-cloudflare-#ffffff",
+      "monitoring": true,
+      "name": "Cloudflare",
+      "url": "https://dash.cloudflare.com",
+      "widget": {
+        "key": "{{HOMEPAGE_VAR_CLOUDFLARE_API_TOKEN}}",
+        "type": "cloudflared"
+      }
+    },
+    "control_d": {
+      "description": "DNS Filtering",
+      "dns": {
+        "name": "Control D DNS",
+        "query-name": "excloo.net",
+        "query-type": "A",
+        "url": "76.76.2.0"
+      },
+      "icon": "sh-control-d",
+      "monitoring": true,
+      "name": "Control D",
+      "url": "https://controld.com"
+    },
+    "fly": {
+      "description": "App Platform",
+      "icon": "si-flydotio-#ffffff",
+      "monitoring": true,
+      "name": "Fly.io",
+      "url": "https://fly.io/dashboard"
+    },
+    "gatus": {
+      "description": "Health Monitoring & Status Page • fly",
+      "group": "Operations",
+      "icon": "sh-gatus",
+      "monitoring": false,
+      "name": "Gatus",
+      "url": "https://status.excloo.com",
+      "widget": {
+        "type": "gatus"
+      }
+    },
+    "github": {
+      "description": "Source Control",
+      "icon": "si-github-#ffffff",
+      "monitoring": true,
+      "name": "GitHub",
+      "url": "https://github.com/maxexcloo"
+    },
+    "oracle_cloud": {
+      "description": "Cloud VMs",
+      "icon": "si-oracle-#ffffff",
+      "monitoring": true,
+      "name": "Oracle Cloud",
+      "url": "https://cloud.oracle.com"
+    },
+    "resend": {
+      "description": "Email API",
+      "icon": "si-resend-#ffffff",
+      "monitoring": true,
+      "name": "Resend",
+      "url": "https://resend.com/overview"
+    },
+    "tailscale": {
+      "description": "VPN",
+      "icon": "tailscale-light",
+      "monitoring": true,
+      "name": "Tailscale",
+      "url": "https://login.tailscale.com/admin",
+      "widget": {
+        "key": "{{HOMEPAGE_VAR_TAILSCALE_API_TOKEN}}",
+        "type": "tailscale"
+      }
+    },
+    "unifi": {
+      "description": "Network",
+      "icon": "si-ubiquiti-#ffffff",
+      "monitoring": true,
+      "name": "UniFi",
+      "url": "https://unifi.ui.com"
+    }
+  },
+  "services": {
+    "luna/esphome": {
+      "description": "ESP Device Builder",
+      "group": "Smart Home",
+      "icon": "sh-esphome",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "ESPHome",
+      "path": "/app/5c53de3b_esphome",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/5c53de3b_esphome"
+    },
+    "luna/espresense-companion": {
+      "description": "Room Presence",
+      "group": "Smart Home",
+      "icon": "espressif",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "ESPresense Companion",
+      "path": "/app/f32ea98b_espresense-companion",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/f32ea98b_espresense-companion"
+    },
+    "luna/management": {
+      "description": "Smart Home & Automations",
+      "group": "Smart Home",
+      "icon": "sh-home-assistant",
+      "machine": "luna",
+      "monitoring": true,
+      "name": "Home Assistant",
+      "port": 443,
+      "scheme": "https",
+      "url": "https://luna.mbk.excloo.net",
+      "widget": {
+        "key": "{{HOMEPAGE_VAR_HOME_ASSISTANT_ACCESS_TOKEN}}",
+        "type": "homeassistant"
+      }
+    },
+    "luna/matter-hub": {
+      "description": "Matter Bridge",
+      "group": "Smart Home",
+      "icon": "sh-home-assistant-matter-hub",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Home Assistant Matter Hub",
+      "path": "/app/3fd9e6b0_hamh",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/3fd9e6b0_hamh"
+    },
+    "luna/matter-server": {
+      "description": "Matter Device Management",
+      "group": "Smart Home",
+      "icon": "sh-matter",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Matter Server",
+      "path": "/app/core_matter_server",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/core_matter_server"
+    },
+    "luna/piper": {
+      "description": "Local Text-to-Speech",
+      "group": "Smart Home",
+      "icon": "mdi-account-voice",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Piper",
+      "path": "/app/core_piper",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/core_piper"
+    },
+    "luna/roborock": {
+      "credentials": {
+        "username": "max@excloo.com"
+      },
+      "description": "Local Vacuum Server",
+      "dns_lan": true,
+      "dns_record": true,
+      "dns_tailscale": true,
+      "group": "Smart Home",
+      "hostname": "api-rr.luna.mbk.excloo.net",
+      "icon": "mdi-robot-vacuum",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Roborock Local Server",
+      "path": "/admin",
+      "port": 555,
+      "scheme": "https",
+      "url": "https://api-rr.luna.mbk.excloo.net:555/admin"
+    },
+    "luna/scrypted": {
+      "description": "Camera Integration",
+      "group": "Smart Home",
+      "icon": "sh-scrypted",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Scrypted",
+      "path": "/app/09e60fb6_scrypted",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/09e60fb6_scrypted"
+    },
+    "luna/ssh": {
+      "description": "SSH & Web Terminal",
+      "group": "Smart Home",
+      "icon": "mdi-console",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Advanced SSH & Web Terminal",
+      "path": "/app/a0d7b954_ssh",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/a0d7b954_ssh"
+    },
+    "luna/vscode": {
+      "description": "Browser IDE",
+      "group": "Smart Home",
+      "icon": "sh-visual-studio-code",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Studio Code Server",
+      "path": "/app/a0d7b954_vscode",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/a0d7b954_vscode"
+    },
+    "luna/zigbee2mqtt": {
+      "description": "Zigbee Coordinator",
+      "group": "Smart Home",
+      "icon": "sh-zigbee2mqtt",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Zigbee2MQTT",
+      "path": "/app/45df7312_zigbee2mqtt",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/45df7312_zigbee2mqtt"
+    },
+    "mars/polaris": {
+      "description": "Game Streaming Host",
+      "icon": "sh-sunshine",
+      "machine": "mars",
+      "monitoring": false,
+      "name": "Polaris",
+      "port": 47990,
+      "scheme": "https",
+      "url": "https://mars.mbk.excloo.net:47990"
+    },
+    "mars/syncthing": {
+      "description": "File Synchronisation",
+      "icon": "sh-syncthing",
+      "machine": "mars",
+      "monitoring": false,
+      "name": "Syncthing (Mars)",
+      "port": 8384,
+      "scheme": "http",
+      "url": "http://mars.mbk.excloo.net:8384"
+    },
+    "nanokvm/management": {
+      "description": "Remote Console & Power Control",
+      "group": "Infrastructure",
+      "icon": "sh-sipeed",
+      "machine": "nanokvm",
+      "monitoring": false,
+      "name": "NanoKVM",
+      "port": 443,
+      "scheme": "https",
+      "url": "https://nanokvm.mbk.excloo.net"
+    },
+    "saturn/management": {
+      "description": "Storage Appliance",
+      "group": "Infrastructure",
+      "icon": "sh-truenas-scale",
+      "machine": "saturn",
+      "monitoring": true,
+      "name": "TrueNAS",
+      "port": 443,
+      "scheme": "https",
+      "url": "https://saturn.mbk.excloo.net",
+      "widget": {
+        "enablePools": true,
+        "key": "{{HOMEPAGE_VAR_TRUENAS_API_KEY}}",
+        "type": "truenas",
+        "version": 2
+      }
+    },
+    "saturn/netboot": {
+      "description": "Network Boot Server",
+      "group": "Infrastructure",
+      "icon": "mdi-server-network-#ffffff",
+      "machine": "saturn",
+      "monitoring": true,
+      "name": "Netboot",
+      "port": 31010,
+      "scheme": "http",
+      "url": "http://saturn.mbk.excloo.net:31010"
+    },
+    "saturn/s3": {
+      "bucket": "syd-backups",
+      "machine": "saturn",
+      "monitoring": false,
+      "name": "Object Storage",
+      "port": 9000,
+      "scheme": "https",
+      "url": "https://saturn.mbk.excloo.net:9000",
+      "username": "syd-backups"
+    },
+    "slzb-06m/management": {
+      "description": "Zigbee Ethernet Adapter",
+      "group": "Smart Home",
+      "icon": "sh-zigbee",
+      "machine": "slzb-06m",
+      "monitoring": false,
+      "name": "SLZB-06M",
+      "port": 80,
+      "scheme": "http",
+      "siteMonitor": "",
+      "url": "http://slzb-06m.mbk.excloo.net"
+    },
+    "sol/management": {
+      "description": "Network Controller",
+      "group": "Infrastructure",
+      "icon": "sh-ubiquiti-unifi",
+      "machine": "sol",
+      "monitoring": true,
+      "name": "UniFi",
+      "port": 443,
+      "scheme": "https",
+      "url": "https://sol.mbk.excloo.net",
+      "widget": {
+        "key": "{{HOMEPAGE_VAR_UNIFI_API_KEY}}",
+        "type": "unifi"
+      }
+    }
+  }
+}
