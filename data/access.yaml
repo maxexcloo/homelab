@@ -46,7 +46,7 @@ tailscale:
       ip:
         - tcp:443
       src:
-        - tag:ephemeral
+        - tag:ci
         - tag:monitoring
     # Gatus pings monitored machines and probes their monitored or certificate-bearing services.
     - dst:
@@ -95,7 +95,7 @@ tailscale:
   tags:
     - tag:appliance
     - tag:backup
-    - tag:ephemeral
+    - tag:ci
     - tag:monitoring
     - tag:router
     - tag:server
