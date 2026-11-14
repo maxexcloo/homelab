@@ -9,11 +9,11 @@ TF_DATA_DIR = "{{ get_env(name='XDG_CACHE_HOME', default=env.HOME ~ '/.cache') }
 # Deploy
 [tasks.apply]
 description = "Apply Reviewed Infrastructure Changes"
-run = "fnox exec -- tofu apply"
+run = "op-connect fnox exec -- tofu apply"
 
 [tasks.plan]
 description = "Preview Infrastructure Changes"
-run = "fnox exec -- tofu plan"
+run = "op-connect fnox exec -- tofu plan"
 
 # Development
 [tasks.check]
@@ -49,19 +49,19 @@ depends = ["fmt:mise", "fmt:oxfmt"]
 # Scripts
 [tasks."hosts:ignition"]
 description = "Render Host Installation Files"
-run = 'scripts/render_hosts.sh "${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"'
+run = 'op-connect scripts/render_hosts.sh "${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"'
 
 [tasks."oci:image"]
 description = "Download A Cluster Installation Image"
-run = "scripts/prepare_oci_image.sh"
+run = "op-connect scripts/prepare_oci_image.sh"
 
 [tasks."sync:clusters"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
-run = "scripts/sync_client_configs.sh"
+run = "op-connect scripts/sync_client_configs.sh"
 
 [tasks."sync:hosts"]
 description = "Sync Generated Host Files"
-run = "scripts/sync_hosts.sh"
+run = "op-connect scripts/sync_hosts.sh"
 
 [tasks."sync:ssh"]
 description = "Install Configured SSH Aliases"
@@ -70,7 +70,7 @@ run = 'scripts/render_ssh_config.sh "${HOME}/.ssh/config.d/homelab"'
 # Setup
 [tasks.init]
 description = "Initialise Providers & The Remote Backend"
-run = "fnox exec -- tofu init -input=false"
+run = "op-connect fnox exec -- tofu init -input=false"
 
 [tasks."init:offline"]
 description = "Initialise Providers Without Remote Backend"
@@ -86,4 +86,4 @@ run = [
 
 [tasks."setup:credentials"]
 description = "Create Missing OpenTofu 1Password Fields"
-run = "scripts/setup_opentofu_item.sh"
+run = "op-connect scripts/setup_opentofu_item.sh"
