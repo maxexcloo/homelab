@@ -4,7 +4,6 @@ set -euo pipefail
 output_path="${1:-}"
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 inventory="$("${repo_dir}/scripts/read_inventory.sh")"
-identity_agent="$(jq -er '.access.ssh.identity_agent' <<<"${inventory}")"
 machine_entries="$(jq -r '
   .machines | to_entries | map(select(.value.username != null)) |
   map(.value | .alias = if .type == null then .hostname else "\(.network)-\(.hostname)" end) |
@@ -19,8 +18,7 @@ render() {
     printf 'Host %s\n' "${alias}"
     printf 'Match originalhost %s\n' "${names}"
     printf '  HostName %s\n' "${fqdn}"
-    printf '  User %s\n' "${user}"
-    printf '  IdentityAgent "%s"\n\n' "${identity_agent}"
+    printf '  User %s\n\n' "${user}"
   done <<<"${machine_entries}"
 }
 
