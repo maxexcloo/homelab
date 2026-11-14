@@ -1,4 +1,12 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>maxexcloo/dotfiles//renovate/default.json5"],
+  packageRules: [
+    {
+      description: "Hold cluster upgrades for the README procedure, outside the non-major group",
+      automerge: false,
+      groupName: "Talos & Kubernetes",
+      matchDepNames: ["kubernetes", "talos"],
+    },
+  ],
 }
