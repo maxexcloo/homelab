@@ -23,7 +23,7 @@ name, with the `api_key` and `url` of each TrueNAS API.
 
 | Task                                        | Purpose                                       |
 | ------------------------------------------- | --------------------------------------------- |
-| `mise run apply`                            | Apply reviewed changes                        |
+| `mise run apply`                            | Apply the saved plan                          |
 | `mise run check`                            | Run all repository checks                     |
 | `mise run fmt`                              | Format repository files                       |
 | `mise run hosts:ignition [host...]`         | Render host installation files                |
@@ -36,7 +36,8 @@ name, with the `api_key` and `url` of each TrueNAS API.
 | `mise run sync:hosts [host...]`             | Sync generated host files & trees             |
 | `mise run sync:ssh`                         | Install configured SSH aliases                |
 
-Plans and applies run locally; review each plan before applying it.
+Plans and applies run locally; `mise run apply` applies exactly the plan saved by
+the last `mise run plan`, so review that plan first.
 
 Run `mise run init:offline` before `mise run check` on a fresh checkout to validate
 without credentials. After a provider update, run `mise run init` and refresh the

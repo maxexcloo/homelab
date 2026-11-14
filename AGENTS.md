@@ -20,8 +20,8 @@ to its owning repository.
 - Installable Ignition must derive the `core` password hash from the machine's
   1Password login. Never install check output: the image removes passwordless
   sudo and checks lock the password.
-- Treat anyone who can read OpenTofu state as able to read its secrets, even
-  when plan output is redacted.
+- Treat anyone who can read OpenTofu state or a saved `tfplan` as able to read its
+  secrets, even when plan output is redacted.
 
 ## File Organisation
 
