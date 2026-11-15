@@ -6,7 +6,7 @@ CLOUDFLARE_EMAIL = { provider = "homelab", value = "OpenTofu/cloudflare_email" }
 GOOGLE_CREDENTIALS = { provider = "homelab", value = "OpenTofu/google_credentials" }
 OCI_FINGERPRINT = { provider = "homelab", value = "OpenTofu/oci_fingerprint" }
 OCI_USER_OCID = { provider = "homelab", value = "OpenTofu/oci_user_ocid" }
-OP_CONNECT_TOKEN = { provider = "homelab", value = "Connect Token: Mercury/credential" }
+OP_CONNECT_TOKEN = { provider = "homelab", value = "Connect Token Mercury/credential" }
 RESEND_API_KEY = { provider = "homelab", value = "OpenTofu/resend_api_key" }
 TAILSCALE_OAUTH_CLIENT_ID = { provider = "homelab", value = "OpenTofu/tailscale_oauth_client_id" }
 TAILSCALE_OAUTH_CLIENT_SECRET = { provider = "homelab", value = "OpenTofu/tailscale_oauth_client_secret" }
