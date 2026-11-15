@@ -14,9 +14,6 @@ records:
     name: "*.mini"
     content: private.syd.excloo.dev
   - type: CNAME
-    name: github-readme-stats
-    content: 2deabc39cdacdb79.vercel-dns-017.com
-  - type: CNAME
     name: mesmtp._domainkey
     content: mesmtp.excloo.com.dkim.fmhosted.com
   - type: CNAME
