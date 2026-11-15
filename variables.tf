@@ -14,11 +14,6 @@ variable "oci_talos_image_path" {
   default     = null
   description = "Absolute path to the prepared Talos Oracle image archive."
   type        = string
-
-  validation {
-    condition     = var.oci_talos_image_path == null || startswith(var.oci_talos_image_path, "/")
-    error_message = "The Talos Oracle image path must be absolute."
-  }
 }
 
 variable "oci_tenancy_ocid" {

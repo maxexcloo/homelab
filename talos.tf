@@ -247,15 +247,14 @@ locals {
   talos_nodes = merge([
     for cluster_name, cluster in local.clusters : {
       for node_name, node in cluster.nodes : node_name => merge(node, {
-        address                = try(node.address, local.machine_private_ipv4_addresses[node_name])
-        cluster                = cluster_name
-        configuration          = try(node.configuration, [])
-        configuration_delivery = node.configuration_delivery
-        dedicated              = try(node.dedicated, null)
-        install_disk_selector  = try(node.install_disk_selector, null)
-        sysctls                = try(node.sysctls, {})
-        tailscale_tag          = node.configuration_delivery == "container" ? "tag:cluster-${cluster_name}" : "tag:${local.machines[node_name].type}"
-        time_servers           = try(node.time_servers, [])
+        address               = try(node.address, local.machine_private_ipv4_addresses[node_name])
+        cluster               = cluster_name
+        configuration         = try(node.configuration, [])
+        dedicated             = try(node.dedicated, null)
+        install_disk_selector = try(node.install_disk_selector, null)
+        sysctls               = try(node.sysctls, {})
+        tailscale_tag         = node.configuration_delivery == "container" ? "tag:cluster-${cluster_name}" : "tag:${local.machines[node_name].type}"
+        time_servers          = try(node.time_servers, [])
       })
     }
   ]...)
