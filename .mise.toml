@@ -4,6 +4,7 @@ kubectl = "{{ exec(command=\"awk '/^kubernetes:/ { print substr($2, 2); found = 
 talosctl = "{{ exec(command=\"awk '/^talos:/ { print substr($2, 2); found = 1 } END { exit !found }' data/versions.yaml\") }}"
 
 [env]
+FNOX_PROFILE = "connect"
 TF_DATA_DIR = "{{ get_env(name='XDG_CACHE_HOME', default=env.HOME ~ '/.cache') }}/opentofu/homelab"
 
 # Deploy
