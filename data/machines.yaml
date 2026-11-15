@@ -417,12 +417,12 @@ machines:
       platform: talos
       type: server
       interfaces:
-        - name: enp13s0
-          address: 10.0.0.5
-          mac_address: 9c:6b:00:d7:e9:40
         - name: enp12s0
-          address: 10.4.0.5
+          address: 10.0.0.5
           mac_address: 9c:6b:00:d7:e9:63
+        - name: enp13s0
+          address: 10.4.0.5
+          mac_address: 9c:6b:00:d7:e9:40
   syd:
     neptune:
       beszel: true
