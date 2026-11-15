@@ -8,7 +8,7 @@ Flux.
 
 Keep host provisioning focused on OS, hardware, access and service boot settings.
 Workstation Compose definitions belong to `dotfiles`; other host services are
-Podman Quadlets in `data/hosts/`. Other application runtime configuration belongs
+Podman Quadlets, with other host files, in `data/hosts/`. Other application runtime configuration belongs
 to its owning repository.
 
 ## Conventions
@@ -34,8 +34,9 @@ Keep conventional root files for backend, locals, outputs, providers,
 requirements, and variables. Put provider resources and their exclusive data
 sources in the corresponding domain file.
 
-Each local lives with its primary owner: decoded shared inputs in `locals.tf`,
-derived values in the domain file that owns them. Name locals from largest
+Each local lives with its primary owner: decoded shared inputs and the machine
+values `scripts/read_inventory.sh` evaluates in `locals.tf`, which must reference
+no other file; other derived values in the domain file that owns them. Name locals from largest
 scope to smallest as `provider_resource_qualifier`.
 
 ## OpenTofu Safety
