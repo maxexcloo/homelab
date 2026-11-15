@@ -103,7 +103,7 @@ resource "tailscale_federated_identity" "github" {
   issuer      = "https://token.actions.githubusercontent.com"
   scopes      = ["auth_keys"]
   subject     = "repo:maxexcloo@927210/signtools-builder@1419923484:ref:refs/heads/main"
-  tags        = ["tag:ephemeral"]
+  tags        = ["tag:ci"]
 
   depends_on = [tailscale_acl.default]
 }
@@ -112,7 +112,7 @@ resource "tailscale_oauth_client" "fly" {
   # Replace this client when changing tags; successful updates may not persist them.
   description = "Fly"
   scopes      = ["auth_keys"]
-  tags        = ["tag:ephemeral"]
+  tags        = ["tag:monitoring"]
 
   depends_on = [tailscale_acl.default]
 }
