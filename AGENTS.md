@@ -87,6 +87,8 @@ scope to smallest as `provider_resource_qualifier`.
 - Keep consumer settings beside their owner in shared data. Avoid app-name
   wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
   required by a native schema.
+- Put comments above an aligned group of HCL arguments, never inside it;
+  `tofu fmt` splits the alignment around them.
 - Put `for_each` first in every HCL block that uses it, followed by a blank line.
 - Keep `depends_on` in its own group, separated from other arguments and blocks
   by blank lines, before any `lifecycle` block.
