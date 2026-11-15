@@ -14,6 +14,39 @@ locals {
     })
   }
 
+  # Published as inventory.json, so consumers read derived values instead of data/.
+  inventory = {
+    machines = {
+      for name, machine in local.machines : name => {
+        acme        = try(machine.cloudflare.acme, null)
+        beszel      = try(machine.beszel, false)
+        fqdn        = local.machine_fqdns[name]
+        location    = "${machine.network}-${local.machine_hostnames[name]}"
+        monitoring  = try(machine.monitoring, true)
+        network     = machine.network
+        public_fqdn = try(local.machine_public_fqdns[name], null)
+        tailscale   = can(local.machine_tailscale_names[name])
+        type        = try(machine.type, null)
+      }
+    }
+    providers = {
+      for name, provider in local.provider_settings.providers : name => merge(
+        { for key, value in provider : key => value if contains(["description", "group", "icon", "name", "url", "widget"], key) },
+        { monitoring = try(provider.monitoring, true) },
+        can(provider.dns) ? { dns = merge({ name = "${provider.name} DNS", "query-name" = local.domains.infrastructure }, provider.dns) } : {},
+      )
+    }
+    services = merge([
+      for machine_name, machine in local.machines : {
+        for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => merge(service, {
+          machine    = machine_name
+          monitoring = try(service.monitoring, false)
+          url        = local.machine_service_urls["${machine_name}/${service_name}"]
+        })
+      }
+    ]...)
+  }
+
   machine_clusters = merge([
     for cluster_name, cluster in local.clusters : {
       for node_name in keys(cluster.nodes) : node_name => cluster_name
@@ -60,6 +93,19 @@ locals {
     for name, machine in local.machines :
     name => try(machine.interfaces[0].address, machine.private_ipv4, null)
   }
+
+  machine_public_fqdns = {
+    for name, machine in local.machines :
+    name => "public.${local.machine_fqdns[name]}"
+    if try(machine.public_ipv4, null) != null || try(machine.public_ipv6, null) != null || try(machine.oci.assign_public_ip, false)
+  }
+
+  machine_service_urls = merge([
+    for machine_name, machine in local.machines : {
+      for service_name, service in try(machine.services, {}) :
+      "${machine_name}/${service_name}" => "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+    }
+  ]...)
 
   machine_tailscale_names = {
     for name, machine in local.machines :

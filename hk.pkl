@@ -12,6 +12,11 @@ steps {
     check = "hk util check-added-large-files --maxkb=1024 {{files}}"
   }
   ["detect-private-key"] = Builtins.detect_private_key
+  ["inventory"] = new Step {
+    glob = List("data/**", "inventory.json", "locals.tf", "scripts/read_inventory.sh")
+    check = "scripts/read_inventory.sh | jq .inventory | diff -u inventory.json -"
+    fix = "scripts/read_inventory.sh | jq .inventory >inventory.json"
+  }
   ["tofu"] = Builtins.tofu
   ["tofu-validate"] = new Step {
     glob = List("*.tf", ".terraform.lock.hcl", "data/**")
