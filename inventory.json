@@ -1,4 +1,11 @@
 {
+  "clusters": {
+    "syd": {
+      "pod_subnet": "10.100.0.0/22",
+      "tailscale_ingress_target": "10.100.5.189"
+    }
+  },
+  "control_d_profile": "653224sydwhf",
   "machines": {
     "luna": {
       "acme": "delegated",

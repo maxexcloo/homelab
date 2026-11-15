@@ -77,18 +77,9 @@ locals {
     for name, consumer in local.cloudflare_consumers : name => {
       ingress = concat(
         [
-          for route in try(consumer.tunnel.ingress, []) : merge(
-            {
-              hostname = route.hostname
-              service  = route.service
-            },
-            try(route.path, null) != null ? {
-              path = route.path
-            } : {},
-            try(route.origin_request, null) != null ? {
-              origin_request = route.origin_request
-            } : {},
-          )
+          for route in try(consumer.tunnel.ingress, []) : {
+            for key, value in route : key => value if key != "mtls"
+          }
         ],
         [
           {

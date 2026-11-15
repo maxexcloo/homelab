@@ -3,9 +3,7 @@ locals {
   b2_endpoint = local.provider_settings.providers.backblaze.endpoint
 
   b2_hosts = {
-    for name, machine in local.machines : name => {
-      bucket_name = machine.backblaze.bucket_name
-    }
+    for name, machine in local.machines : name => machine.backblaze
     if can(machine.backblaze)
   }
 }

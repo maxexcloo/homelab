@@ -57,7 +57,7 @@ locals {
 
   tailscale_key_machines = {
     for name, machine in local.machines : name => machine
-    if can(local.machine_tailscale_names[name]) && try(machine.type, null) != null
+    if can(local.machine_tailscale_names[name]) && machine.type != null
   }
 
   tailscale_policy = {

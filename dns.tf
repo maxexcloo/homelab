@@ -1,7 +1,7 @@
 locals {
   dns_machine_services = merge([
     for machine_name, machine in local.machines : {
-      for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
+      for service_name, service in machine.services : "${machine_name}/${service_name}" => {
         content  = try(service.dns_lan, false) ? local.machine_private_ipv4_addresses[machine_name] : local.machine_fqdns[machine_name]
         hostname = service.hostname
         machine  = machine_name
@@ -12,20 +12,17 @@ locals {
     }
   ]...)
 
-  dns_records = merge(
-    {
-      for record_key, record in local.dns_records_derived_specs : record_key => merge(
-        {
-          comment  = local.managed_comment
-          priority = null
-          proxied  = false
-          ttl      = 1
-        },
-        record,
-      )
-    },
-    local.dns_records_manual,
-  )
+  dns_records = {
+    for record_key, record in merge(local.dns_records_derived_specs, local.dns_records_manual) : record_key => merge(
+      {
+        comment  = local.managed_comment
+        priority = null
+        proxied  = false
+        ttl      = 1
+      },
+      record,
+    )
+  }
 
   dns_records_derived_specs = merge(
     {
@@ -190,16 +187,10 @@ locals {
         }
       ]
     ]) :
-    "${entry.zone}-manual-${entry.key}" => {
-      comment  = local.managed_comment
-      content  = entry.record.content
-      name     = entry.record.name == "@" ? entry.zone : "${entry.record.name}.${entry.zone}"
-      priority = try(entry.record.priority, null)
-      proxied  = try(entry.record.proxied, false)
-      ttl      = try(entry.record.ttl, 1)
-      type     = entry.record.type
-      zone     = entry.zone
-    }
+    "${entry.zone}-manual-${entry.key}" => merge(entry.record, {
+      name = entry.record.name == "@" ? entry.zone : "${entry.record.name}.${entry.zone}"
+      zone = entry.zone
+    })
   }
 
   dns_records_resend = merge([

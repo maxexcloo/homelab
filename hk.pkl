@@ -11,6 +11,11 @@ steps {
   ["check-added-large-files"] = (Builtins.check_added_large_files) {
     check = "hk util check-added-large-files --maxkb=1024 {{files}}"
   }
+  ["cluster-settings"] = new Step {
+    glob = List("clusters/**", "inventory.json", "scripts/render_cluster_settings.sh")
+    check = "temporary_directory=$(mktemp -d); trap 'rm -rf -- \"$temporary_directory\"' EXIT; scripts/render_cluster_settings.sh \"$temporary_directory\" && diff -ru clusters \"$temporary_directory\""
+    fix = "scripts/render_cluster_settings.sh clusters"
+  }
   ["detect-private-key"] = Builtins.detect_private_key
   ["inventory"] = new Step {
     glob = List("data/**", "inventory.json", "locals.tf", "scripts/read_inventory.sh")

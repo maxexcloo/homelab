@@ -16,6 +16,13 @@ locals {
 
   # Published as inventory.json, so consumers read derived values instead of data/.
   inventory = {
+    control_d_profile = local.provider_settings.providers.control_d.tailscale_profile
+    clusters = {
+      for name, cluster in local.clusters : name => {
+        pod_subnet               = cluster.pod_subnet
+        tailscale_ingress_target = cluster.tailscale_ingress_target
+      }
+    }
     machines = {
       for name, machine in local.machines : name => {
         acme        = try(machine.cloudflare.acme, null)
@@ -26,7 +33,7 @@ locals {
         network     = machine.network
         public_fqdn = try(local.machine_public_fqdns[name], null)
         tailscale   = can(local.machine_tailscale_names[name])
-        type        = try(machine.type, null)
+        type        = machine.type
       }
     }
     providers = {
@@ -38,7 +45,7 @@ locals {
     }
     services = merge([
       for machine_name, machine in local.machines : {
-        for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => merge(service, {
+        for service_name, service in machine.services : "${machine_name}/${service_name}" => merge(service, {
           machine    = machine_name
           monitoring = try(service.monitoring, false)
           url        = local.machine_service_urls["${machine_name}/${service_name}"]
@@ -86,7 +93,7 @@ locals {
   machine_login_titles = {
     for name, machine in local.machines :
     name => "${title(machine.type)}: ${local.machine_fqdns[name]}"
-    if can(machine.type)
+    if machine.type != null
   }
 
   machine_private_ipv4_addresses = {
@@ -102,7 +109,7 @@ locals {
 
   machine_service_urls = merge([
     for machine_name, machine in local.machines : {
-      for service_name, service in try(machine.services, {}) :
+      for service_name, service in machine.services :
       "${machine_name}/${service_name}" => "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
     }
   ]...)
@@ -115,7 +122,7 @@ locals {
 
   machines = merge([
     for network, machines in local.machines_by_network : {
-      for name, machine in machines : name => merge(machine, { network = network }, can(local.machine_clusters[name]) ? { cluster = local.machine_clusters[name] } : {})
+      for name, machine in machines : name => merge({ services = {}, type = null }, machine, { network = network }, can(local.machine_clusters[name]) ? { cluster = local.machine_clusters[name] } : {})
     }
   ]...)
 
