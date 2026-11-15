@@ -31,7 +31,7 @@ locals {
     }
     hosts = {
       for name, machine in local.machines : name => try(coalesce(
-        try(local.dns_records_derived_specs["machine/${name}/a"].name, local.dns_records_derived_specs["machine/${name}/aaaa"].name, null),
+        can(local.dns_records_derived_specs["machine/${name}/a"]) || can(local.dns_records_derived_specs["machine/${name}/aaaa"]) ? local.machine_fqdns[name] : null,
         try(format("%s.%s",
           local.machine_hostnames[name],
           data.unifi_network.configured[local.unifi_clients[lower(machine.interfaces[0].mac_address)].network_key].domain_name,
@@ -71,7 +71,7 @@ locals {
       url      = try(local.machine_service_urls["${name}/management"], "ssh://${machine.username}@${local.machine_fqdns[name]}")
       username = machine.username
     }
-    if machine.platform != "talos" && try(machine.type, null) != null && try(machine.username, null) != null
+    if machine.platform != "talos" && machine.type != null && try(machine.username, null) != null
   }
 
   onepassword_password_policy = {
@@ -81,7 +81,7 @@ locals {
 
   onepassword_service_access = merge([
     for machine_name, machine in local.machines : {
-      for service_name, service in try(machine.services, {}) : "${machine_name}/${service_name}" => {
+      for service_name, service in machine.services : "${machine_name}/${service_name}" => {
         name     = service.name
         url      = local.machine_service_urls["${machine_name}/${service_name}"]
         username = service.credentials.username

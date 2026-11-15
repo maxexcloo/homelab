@@ -64,8 +64,8 @@ scope to smallest as `provider_resource_qualifier`.
 - Adopt existing TrueNAS resources without changing their live settings. Preserve
   dataset ACLs, case sensitivity, quotas, share identities and backup schedules.
   Keep system datasets, app-managed children, replication receivers and credentials
-  under native ownership. Leave replication tasks native while the pinned provider
-  cannot represent their exclusions, snapshot bindings and receiver protections.
+  under native ownership. Preserve replication exclusions, snapshot bindings and
+  receiver protections.
 - Do not make routine destroy operations reset Talos nodes or retained
   substrate.
 - Read only the secret fields a provider consumer needs and mark every

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders Ignition for the machines with Butane provisioning in data/machines.yaml,
+# Renders Ignition for the uCore machines with Butane provisioning in data/machines.yaml,
 # or validates their Butane with --check.
 set -euo pipefail
 umask 077
@@ -13,7 +13,7 @@ trap 'rm -rf -- "${temporary_directory}"' EXIT
 
 inventory_file="${temporary_directory}/inventory.json"
 "${repo_dir}/scripts/read_inventory.sh" |
-  jq '.machines |= with_entries(select(.value.butane != null))' >"${inventory_file}"
+  jq '.machines |= with_entries(select(.value.platform == "ucore" and .value.butane != null))' >"${inventory_file}"
 
 names=("$@")
 if ((${#names[@]} == 0)); then

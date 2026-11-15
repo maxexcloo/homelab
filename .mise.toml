@@ -28,7 +28,7 @@ depends = [
   "hooks:check",
 ]
 
-# Kubelab's Homepage downloads this repository's data at runtime.
+# Kubelab's Homepage downloads this repository's inventory at runtime.
 [tasks."check:kubelab"]
 description = "Render Kubelab Main Homepage Services From This Checkout"
 run = '''

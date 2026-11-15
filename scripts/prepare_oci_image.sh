@@ -12,7 +12,6 @@ else
     jq --arg cluster "${target}" -er '
       if $cluster == "" then [.[].disk_image_url // empty][0]
       else .[$cluster].disk_image_url end
-      | select(. != null and . != "")
     ')"; then
     echo "error: no cluster image URL available; pass an Image Factory URL instead." >&2
     exit 1
