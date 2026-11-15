@@ -123,6 +123,8 @@ locals {
     for name, cluster in local.clusters : name => "https://${local.talos_cluster_api_addresses[name]}:6443"
   }
 
+  talos_tailscale_port = 41641
+
   talos_tailscale_serve_config_path = "/etc/tailscale/serve.json"
 
   talos_machine_bootstrap_nodes = {
@@ -147,9 +149,13 @@ locals {
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
           # Local addresses include Cilium's; peers that pick one route Tailscale through itself and stall.
           "TS_DEBUG_OMIT_LOCAL_ADDRS=true",
+          # The router does not hairpin to the NATed endpoint and saturn's container has no IPv6, so
+          # same-site peers need the LAN addresses advertised explicitly or they relay through DERP.
+          "TS_DEBUG_PRETENDPOINT=${join(",", local.talos_node_tailscale_endpoints[name])}",
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
           "TS_EXTRA_ARGS=--accept-routes=true --advertise-exit-node --reset",
           "TS_SERVE_CONFIG=${local.talos_tailscale_serve_config_path}",
+          "TS_TAILSCALED_EXTRA_ARGS=--port=${local.talos_tailscale_port}",
         ]
         configFiles = [{
           # The public node stays out: private ingress would cross the WAN to reach internal apps.
@@ -229,6 +235,13 @@ locals {
   talos_node_images = {
     for name, node in local.talos_nodes_installed : name => node
     if can(node.image)
+  }
+
+  talos_node_tailscale_endpoints = {
+    for name, node in local.talos_nodes : name => [
+      for interface in try(local.machines[name].interfaces, []) : "${interface.address}:${local.talos_tailscale_port}"
+      if can(interface.address)
+    ]
   }
 
   talos_nodes = merge([
