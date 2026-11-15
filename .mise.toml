@@ -1,11 +1,11 @@
+[env]
+FNOX_PROFILE = "connect"
+TF_DATA_DIR = "{{ get_env(name='XDG_CACHE_HOME', default=env.HOME ~ '/.cache') }}/opentofu/homelab"
+
 [tools]
 "aqua:coreos/butane" = "latest"
 kubectl = "{{ exec(command=\"awk '/^kubernetes:/ { print substr($2, 2); found = 1 } END { exit !found }' data/versions.yaml\") }}"
 talosctl = "{{ exec(command=\"awk '/^talos:/ { print substr($2, 2); found = 1 } END { exit !found }' data/versions.yaml\") }}"
-
-[env]
-FNOX_PROFILE = "connect"
-TF_DATA_DIR = "{{ get_env(name='XDG_CACHE_HOME', default=env.HOME ~ '/.cache') }}/opentofu/homelab"
 
 # Deploy
 [tasks.apply]
@@ -44,8 +44,8 @@ HOMELAB_INFRASTRUCTURE_FILE=tests/fixtures/homepage/infrastructure.json \
 '''
 
 [tasks.fmt]
-run = "tofu fmt -recursive"
 depends = ["fmt:mise", "fmt:oxfmt"]
+run = "tofu fmt -recursive"
 
 # Scripts
 [tasks."hosts:ignition"]

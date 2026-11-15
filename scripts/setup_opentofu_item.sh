@@ -1,6 +1,5 @@
-#!/bin/sh
-
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
 
 title="OpenTofu"
 vault="Homelab"
