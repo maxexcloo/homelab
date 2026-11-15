@@ -17,7 +17,9 @@ inventory_file="${temporary_directory}/inventory.json"
 
 names=("$@")
 if ((${#names[@]} == 0)); then
-  mapfile -t names < <(jq -r '.machines | keys[]' "${inventory_file}")
+  while IFS= read -r name; do
+    names+=("${name}")
+  done < <(jq -r '.machines | keys[]' "${inventory_file}")
 fi
 
 # Checks render without credentials; installable Ignition always gets a real
