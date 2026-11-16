@@ -5,14 +5,15 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local changed=false cloudflared_changed=false path
+  local changed=false cloudflared_changed=false owner path
 
   cd "$(dirname "${BASH_SOURCE[0]}")/root"
   while IFS= read -r path; do
     path="${path#.}"
-    if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
+    owner="$(jq -r --arg path "${path}" '.[$path] // "root"' ../owners)"
+    if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" || "${owner}" != "$(stat -c %U "${path}")" ]]; then
       echo "Changed ${path}"
-      install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
+      install -D -Z -o "${owner}" -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
       changed=true
       case "${path}" in
         /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
@@ -61,6 +62,7 @@ for name in "$@"; do
   staging="${staging_root}/${name}"
   mkdir -p "${staging}/root"
   cp "${BASH_SOURCE[0]}" "${staging}/sync_hosts.sh"
+  jq --arg name "${name}" '.[$name].files | with_entries(.value = (.value.user.name // "root"))' <<<"${hosts_json}" >"${staging}/owners"
   jq -r --arg name "${name}" '.machines[$name].butane.units[]? | [.name, .enabled] | @tsv' <<<"${inventory_json}" >"${staging}/units"
 
   while IFS=$'\t' read -r path mode; do

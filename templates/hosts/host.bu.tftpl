@@ -39,6 +39,9 @@ storage:
 %{ for path, file in files ~}
     - mode: ${file.mode}
       path: ${path}
+%{ if can(file.user) ~}
+      user: ${jsonencode(file.user)}
+%{ endif ~}
       contents:
         inline: ${jsonencode(file.content)}
 %{ endfor ~}
