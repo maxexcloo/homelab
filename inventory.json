@@ -416,7 +416,6 @@
       "url": "http://mars.mbk.excloo.net:8384"
     },
     "mercury/agent-browser": {
-      "browser_upstream": "http://127.0.0.1:9222",
       "description": "Browser Automation",
       "dns_record": true,
       "hostname": "browser.mercury.mbk.excloo.net",
@@ -426,7 +425,6 @@
       "name": "Agent Browser (Mercury)",
       "port": 443,
       "scheme": "https",
-      "upstream": "http://127.0.0.1:4848",
       "url": "https://browser.mercury.mbk.excloo.net"
     },
     "mercury/dsh": {
@@ -439,7 +437,6 @@
       "name": "DeepSeek Harness",
       "port": 443,
       "scheme": "https",
-      "upstream": "https://127.0.0.1:3080",
       "url": "https://code.excloo.com"
     },
     "mercury/syncthing": {
@@ -452,7 +449,6 @@
       "name": "Syncthing (Mercury)",
       "port": 443,
       "scheme": "https",
-      "upstream": "http://127.0.0.1:8384",
       "url": "https://syncthing.mercury.mbk.excloo.net"
     },
     "nanokvm/management": {

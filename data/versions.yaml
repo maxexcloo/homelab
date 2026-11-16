@@ -6,5 +6,3 @@ talos: v1.14.6
 images:
   # renovate: datasource=docker depName=tailscale/tailscale
   tailscale: docker.io/tailscale/tailscale:v1.104.7
-  # renovate: datasource=docker depName=traefik
-  traefik: docker.io/library/traefik:v3.7.18

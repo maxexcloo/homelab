@@ -216,8 +216,6 @@ machines:
             path: /var
         units:
           - enabled: true
-            name: homelab-proxy.service
-          - enabled: true
             name: podman-restart.service
           - enabled: true
             name: syncthing@core.service
@@ -226,7 +224,6 @@ machines:
         tunnel: {}
       services:
         agent-browser:
-          browser_upstream: http://127.0.0.1:9222
           description: Browser Automation
           dns_record: true
           hostname: browser.mercury.mbk.excloo.net
@@ -234,7 +231,6 @@ machines:
           name: Agent Browser (Mercury)
           port: 443
           scheme: https
-          upstream: http://127.0.0.1:4848
         dsh:
           description: Coding Agent
           dns_record: true
@@ -243,7 +239,6 @@ machines:
           name: DeepSeek Harness
           port: 443
           scheme: https
-          upstream: https://127.0.0.1:3080
         syncthing:
           description: File Synchronisation
           dns_record: true
@@ -252,8 +247,6 @@ machines:
           name: Syncthing (Mercury)
           port: 443
           scheme: https
-          upstream: http://127.0.0.1:8384
-      uid: 1000
     nanokvm:
       monitoring: false
       name: NanoKVM

@@ -5,29 +5,25 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local changed=false path
-  local username="" uid=""
+  local changed=false cloudflared_changed=false path
 
-  cd "$(dirname "${BASH_SOURCE[0]}")"
-  if [[ -s user ]]; then
-    IFS=$'\t' read -r username uid <user
-  fi
-
-  cd root
+  cd "$(dirname "${BASH_SOURCE[0]}")/root"
   while IFS= read -r path; do
     path="${path#.}"
     if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
       echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
       changed=true
+      case "${path}" in
+        /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
+      esac
     fi
   done < <(find . -type f)
 
   if [[ "${changed}" == true ]]; then
     systemctl daemon-reload
-    if [[ -n "${uid}" ]]; then
-      runuser -u "${username}" -- env HOME="/var/home/${username}" XDG_RUNTIME_DIR="/run/user/${uid}" \
-        systemctl --user daemon-reload
+    if [[ "${cloudflared_changed}" == true && -f /etc/systemd/system/cloudflared.service ]]; then
+      systemctl restart cloudflared.service
     fi
   else
     echo "Files up to date"
@@ -35,9 +31,9 @@ install_files() {
 
   while IFS=$'\t' read -r unit enabled; do
     if [[ "${enabled}" == true ]]; then
-      systemctl enable "${unit}"
+      systemctl enable --now "${unit}"
     else
-      systemctl disable "${unit}"
+      systemctl disable --now "${unit}"
     fi
   done <../units
 }
@@ -66,7 +62,6 @@ for name in "$@"; do
   mkdir -p "${staging}/root"
   cp "${BASH_SOURCE[0]}" "${staging}/sync_hosts.sh"
   jq -r --arg name "${name}" '.machines[$name].butane.units[]? | [.name, .enabled] | @tsv' <<<"${inventory_json}" >"${staging}/units"
-  jq -r --arg name "${name}" '.machines[$name] | select(has("uid")) | [.username, .uid] | @tsv' <<<"${inventory_json}" >"${staging}/user"
 
   while IFS=$'\t' read -r path mode; do
     mkdir -p "$(dirname "${staging}/root${path}")"

@@ -1,3 +1,0 @@
-[Service]
-Environment=PATH=/var/home/${username}/.local/share/mise/shims:/usr/local/bin:/usr/bin
-ExecStartPre=/var/home/${username}/.local/share/mise/shims/fnox exec --config /etc/homelab/proxy/fnox.toml --only SYNCTHING_PASSWORD -- /etc/homelab/proxy/syncthing-auth.sh ${username}
