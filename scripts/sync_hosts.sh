@@ -5,13 +5,14 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local changed=false cloudflared_changed=false proxy_restart=false syncthing_changed=false dsh_changed=false dashboard_changed=false browserless_changed=false path
+  local changed=false path unit
   local username="" uid=""
+  local -a user_units=()
+  local -A system_changed=() user_changed=()
 
   cd "$(dirname "${BASH_SOURCE[0]}")"
   if [[ -s user ]]; then
     IFS=$'\t' read -r username uid <user
-    jq empty root/etc/homelab/proxy/traefik/traefik.json
   fi
 
   cd root
@@ -22,21 +23,33 @@ install_files() {
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
       changed=true
       case "${path}" in
-        /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
-        /etc/homelab/proxy/agent-browser.json | /etc/containers/systemd/users/*/browserless.container) browserless_changed=true ;;
-        /etc/homelab/proxy/dsh-tls.sh) dsh_changed=true ;;
-        /etc/homelab/proxy/syncthing-auth.sh | /etc/systemd/system/syncthing@*.service.d/authentication.conf) syncthing_changed=true ;;
-        /etc/homelab/proxy/* | /etc/containers/systemd/users/*/traefik.container) proxy_restart=true ;;
-        /etc/systemd/user/agent-browser.service) dashboard_changed=true ;;
-        /etc/systemd/user/dsh.service) dsh_changed=true ;;
+        /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json)
+          if [[ -f /etc/systemd/system/cloudflared.service ]]; then
+            system_changed[cloudflared.service]=1
+          fi
+          ;;
+        /etc/systemd/user/*.service) user_changed["${path##*/}"]=1 ;;
+        /etc/containers/systemd/users/"${uid}"/*.container) user_changed["$(basename "${path}" .container).service"]=1 ;;
+        /etc/homelab/proxy/agent-browser.json) user_changed[browserless.service]=1 ;;
+        /etc/homelab/proxy/dsh-tls.sh) user_changed[dsh.service]=1 ;;
+        /etc/homelab/proxy/fnox.toml)
+          user_changed[traefik.service]=1
+          if [[ -f "etc/systemd/system/syncthing@${username}.service.d/authentication.conf" ]]; then
+            system_changed["syncthing@${username}.service"]=1
+          fi
+          ;;
+        /etc/homelab/proxy/syncthing-auth.sh | /etc/systemd/system/syncthing@*.service.d/authentication.conf)
+          system_changed["syncthing@${username}.service"]=1
+          ;;
+        /etc/homelab/proxy/*) user_changed[traefik.service]=1 ;;
       esac
     fi
   done < <(find . -type f)
 
   if [[ "${changed}" == true ]]; then
     systemctl daemon-reload
-    if [[ "${cloudflared_changed}" == true && -f /etc/systemd/system/cloudflared.service ]]; then
-      systemctl restart cloudflared.service
+    if ((${#system_changed[@]})); then
+      systemctl restart "${!system_changed[@]}"
     fi
   else
     echo "Files up to date"
@@ -45,32 +58,21 @@ install_files() {
   if [[ -n "${username}" ]]; then
     chcon -R -t container_file_t /etc/homelab/proxy/traefik
     as_user systemctl --user daemon-reload
-    if [[ "${syncthing_changed}" == true ]]; then
-      systemctl restart "syncthing@${username}.service"
+    if [[ -d etc/systemd/user ]]; then
+      while IFS= read -r path; do
+        unit="${path##*/}"
+        as_user systemctl --user enable "${unit}"
+        user_units+=("${unit}")
+      done < <(find etc/systemd/user -maxdepth 1 -name '*.service')
     fi
-    if [[ -f etc/systemd/user/agent-browser.service ]]; then
-      if [[ "${dashboard_changed}" == true ]] && as_user systemctl --user is-active --quiet agent-browser.service; then
-        as_user systemctl --user restart agent-browser.service
-      fi
-      as_user systemctl --user enable --now agent-browser.service
+    while IFS= read -r path; do
+      user_units+=("$(basename "${path}" .container).service")
+    done < <(find "etc/containers/systemd/users/${uid}" -maxdepth 1 -name '*.container')
+    if ((${#user_changed[@]})); then
+      as_user systemctl --user try-restart "${!user_changed[@]}"
     fi
-    if [[ -f etc/systemd/user/dsh.service ]]; then
-      if [[ "${dsh_changed}" == true ]] && as_user systemctl --user is-active --quiet dsh.service; then
-        as_user systemctl --user restart dsh.service
-      fi
-      as_user systemctl --user enable --now dsh.service
-    fi
-    if [[ -f "etc/containers/systemd/users/${uid}/browserless.container" ]]; then
-      if [[ "${browserless_changed}" == true ]] && as_user systemctl --user is-active --quiet browserless.service; then
-        as_user systemctl --user restart browserless.service
-      else
-        as_user systemctl --user start browserless.service
-      fi
-    fi
-    if [[ "${proxy_restart}" == true ]] && as_user systemctl --user is-active --quiet traefik.service; then
-      as_user systemctl --user restart traefik.service
-    else
-      as_user systemctl --user start traefik.service
+    if ((${#user_units[@]})); then
+      as_user systemctl --user start "${user_units[@]}"
     fi
   fi
 
