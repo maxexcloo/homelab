@@ -6,13 +6,20 @@ This repository owns homelab infrastructure and Kubernetes cluster substrate.
 The separate `kubelab` repository owns Kubernetes API resources reconciled by
 Flux.
 
-Keep host provisioning focused on OS, hardware, access and service boot settings.
-Workstation Compose definitions belong to `dotfiles`; other host services are
-Podman Quadlets, with other host files, in `data/hosts/`. Other application runtime configuration belongs
-to its owning repository.
+Keep host provisioning focused on OS, hardware, access, network configuration and
+boot settings for preinstalled system services. Bluemax owns OS packages and common
+image defaults; Dotfiles owns application runtime definitions, image versions and
+user configuration, including rootless ingress. Homelab supplies shared inventory
+and protected configuration and credentials rather than installing or supervising
+applications.
+Host-specific infrastructure files live in `data/hosts/`; provisioning templates
+live in `templates/hosts/`. Other application runtime configuration belongs to its
+owning repository.
 
 ## Conventions
 
+- Generated credential files use mode `0600`; declare their native `user` metadata
+  when a service user needs to read them.
 - Keep provider compatibility constraints in `requirements.tf`.
 - Keep the complete provider environment in the credential item referenced by
   `fnox.toml`; local setup may create its schema, but OpenTofu never manages it.

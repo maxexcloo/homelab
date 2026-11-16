@@ -41,9 +41,12 @@ output "hosts" {
   description = "Generated files for host installs and `mise run sync:hosts`, by host."
   sensitive   = true
   value = {
-    for name, files in local.cloudflare_tunnel_files : name => {
+    for name in setunion(keys(local.cloudflare_tunnel_files), keys(local.cloudflare_acme_files)) : name => {
       address = "${local.machines[name].username}@${local.machine_fqdns[name]}"
-      files   = files
+      files = merge(
+        try(local.cloudflare_tunnel_files[name], {}),
+        try(local.cloudflare_acme_files[name], {}),
+      )
     }
   }
 }

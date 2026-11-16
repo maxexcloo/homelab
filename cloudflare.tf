@@ -44,6 +44,17 @@ locals {
     ]
   ]))
 
+  cloudflare_acme_files = {
+    for name, machine in local.machines : name => {
+      "/etc/homelab/traefik.env" = {
+        content = "CF_DNS_API_TOKEN=${cloudflare_account_token.acme[name].value}\n"
+        mode    = "0600"
+        user    = { name = machine.username }
+      }
+    }
+    if try(machine.butane, null) != null && can(local.cloudflare_consumers_acme[name])
+  }
+
   cloudflare_consumers = {
     for name, consumer in merge(local.machines, local.clusters) : name => consumer.cloudflare
     if can(consumer.cloudflare)

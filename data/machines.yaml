@@ -220,7 +220,33 @@ machines:
           - enabled: true
             name: syncthing@core.service
       cloudflare:
+        acme: delegated
         tunnel: {}
+      services:
+        agent-browser:
+          description: Browser Automation
+          dns_record: true
+          hostname: browser.mercury.mbk.excloo.net
+          icon: mdi-web
+          name: Agent Browser (Mercury)
+          port: 443
+          scheme: https
+        dsh:
+          description: Coding Agent
+          dns_record: true
+          hostname: code.excloo.com
+          icon: mdi-code-braces
+          name: DeepSeek Harness
+          port: 443
+          scheme: https
+        syncthing:
+          description: File Synchronisation
+          dns_record: true
+          hostname: syncthing.mercury.mbk.excloo.net
+          icon: sh-syncthing
+          name: Syncthing (Mercury)
+          port: 443
+          scheme: https
     nanokvm:
       monitoring: false
       name: NanoKVM
