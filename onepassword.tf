@@ -67,10 +67,8 @@ locals {
   # Untyped machines are personal devices; their logins stay outside OpenTofu.
   onepassword_machine_access = {
     for name, machine in local.machines : name => {
-      title = local.machine_login_titles[name]
-      url = can(machine.login_service) ? local.machine_service_urls["${name}/${machine.login_service}"] : try(
-        local.machine_service_urls["${name}/management"], "ssh://${machine.username}@${local.machine_fqdns[name]}",
-      )
+      title    = local.machine_login_titles[name]
+      url      = "https://${local.machine_fqdns[name]}"
       username = machine.username
     }
     if machine.platform != "talos" && machine.type != null && try(machine.username, null) != null
