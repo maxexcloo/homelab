@@ -9,8 +9,12 @@ Flux.
 Keep host provisioning focused on OS, hardware, access and service boot settings.
 Workstation Compose definitions belong to `dotfiles`; other host services are
 Podman Quadlets. Coding agents that need the host's tools and repositories use
-native user services. Host files live in `data/hosts/`. Other application runtime
-configuration belongs to its owning repository.
+native user services. Host-specific files live in `data/hosts/`; shared and
+rendered provisioning templates live in `templates/hosts/`. Other application
+runtime configuration belongs to its owning repository.
+
+Host sync installs files and boot settings and reloads systemd. Service activation
+and restarts are explicit deployment operations.
 
 ## Conventions
 

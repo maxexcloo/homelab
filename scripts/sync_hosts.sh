@@ -5,10 +5,8 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local changed=false path unit
+  local changed=false path
   local username="" uid=""
-  local -a user_units=()
-  local -A system_changed=() user_changed=()
 
   cd "$(dirname "${BASH_SOURCE[0]}")"
   if [[ -s user ]]; then
@@ -22,72 +20,26 @@ install_files() {
       echo "Changed ${path}"
       install -D -Z -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
       changed=true
-      case "${path}" in
-        /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json)
-          if [[ -f /etc/systemd/system/cloudflared.service ]]; then
-            system_changed[cloudflared.service]=1
-          fi
-          ;;
-        /etc/systemd/user/*.service) user_changed["${path##*/}"]=1 ;;
-        /etc/containers/systemd/users/"${uid}"/*.container) user_changed["$(basename "${path}" .container).service"]=1 ;;
-        /etc/homelab/proxy/agent-browser.json) user_changed[browserless.service]=1 ;;
-        /etc/homelab/proxy/dsh-tls.sh) user_changed[dsh.service]=1 ;;
-        /etc/homelab/proxy/fnox.toml)
-          user_changed[traefik.service]=1
-          if [[ -f "etc/systemd/system/syncthing@${username}.service.d/authentication.conf" ]]; then
-            system_changed["syncthing@${username}.service"]=1
-          fi
-          ;;
-        /etc/homelab/proxy/syncthing-auth.sh | /etc/systemd/system/syncthing@*.service.d/authentication.conf)
-          system_changed["syncthing@${username}.service"]=1
-          ;;
-        /etc/homelab/proxy/*) user_changed[traefik.service]=1 ;;
-      esac
     fi
   done < <(find . -type f)
 
   if [[ "${changed}" == true ]]; then
     systemctl daemon-reload
-    if ((${#system_changed[@]})); then
-      systemctl restart "${!system_changed[@]}"
+    if [[ -n "${uid}" ]]; then
+      runuser -u "${username}" -- env HOME="/var/home/${username}" XDG_RUNTIME_DIR="/run/user/${uid}" \
+        systemctl --user daemon-reload
     fi
   else
     echo "Files up to date"
   fi
 
-  if [[ -n "${username}" ]]; then
-    chcon -R -t container_file_t /etc/homelab/proxy/traefik
-    as_user systemctl --user daemon-reload
-    if [[ -d etc/systemd/user ]]; then
-      while IFS= read -r path; do
-        unit="${path##*/}"
-        as_user systemctl --user enable "${unit}"
-        user_units+=("${unit}")
-      done < <(find etc/systemd/user -maxdepth 1 -name '*.service')
-    fi
-    while IFS= read -r path; do
-      user_units+=("$(basename "${path}" .container).service")
-    done < <(find "etc/containers/systemd/users/${uid}" -maxdepth 1 -name '*.container')
-    if ((${#user_changed[@]})); then
-      as_user systemctl --user try-restart "${!user_changed[@]}"
-    fi
-    if ((${#user_units[@]})); then
-      as_user systemctl --user start "${user_units[@]}"
-    fi
-  fi
-
   while IFS=$'\t' read -r unit enabled; do
     if [[ "${enabled}" == true ]]; then
-      systemctl enable --now "${unit}"
+      systemctl enable "${unit}"
     else
-      systemctl disable --now "${unit}"
+      systemctl disable "${unit}"
     fi
   done <../units
-}
-
-as_user() {
-  runuser -u "${username}" -- env HOME="/var/home/${username}" XDG_RUNTIME_DIR="/run/user/${uid}" \
-    PATH="/var/home/${username}/.local/share/mise/shims:/usr/local/bin:/usr/bin" "$@"
 }
 
 if [[ "${1:-}" == "--install" ]]; then
@@ -114,7 +66,7 @@ for name in "$@"; do
   mkdir -p "${staging}/root"
   cp "${BASH_SOURCE[0]}" "${staging}/sync_hosts.sh"
   jq -r --arg name "${name}" '.machines[$name].butane.units[]? | [.name, .enabled] | @tsv' <<<"${inventory_json}" >"${staging}/units"
-  jq -r --arg name "${name}" '.machines[$name] | select(any(.services[]; has("upstream"))) | [.username, .uid] | @tsv' <<<"${inventory_json}" >"${staging}/user"
+  jq -r --arg name "${name}" '.machines[$name] | select(has("uid")) | [.username, .uid] | @tsv' <<<"${inventory_json}" >"${staging}/user"
 
   while IFS=$'\t' read -r path mode; do
     mkdir -p "$(dirname "${staging}/root${path}")"
