@@ -1,0 +1,26 @@
+[Unit]
+Description=Private HTTPS Proxy
+%{ if dsh ~}
+After=dsh.service
+Requires=dsh.service
+%{ endif ~}
+
+[Container]
+ContainerName=traefik
+Image=${image}
+Exec=--configFile=/etc/traefik/traefik.json
+Network=host
+Secret=traefik-cloudflare,type=env,target=CF_DNS_API_TOKEN
+Volume=/etc/homelab/proxy/traefik:/etc/traefik:ro
+%{ if dsh ~}
+Volume=%S/dsh/server.crt:${dsh_ca}:ro,Z
+%{ endif ~}
+Volume=traefik-data:/data:Z
+
+[Service]
+Environment=PATH=%h/.local/share/mise/shims:/usr/local/bin:/usr/bin
+ExecStartPre=%h/.local/share/mise/shims/fnox exec --redact --config /etc/homelab/proxy/fnox.toml --only CF_DNS_API_TOKEN -- /etc/homelab/proxy/create-secret.sh
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

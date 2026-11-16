@@ -1,0 +1,23 @@
+[Unit]
+Description=Browser Automation
+
+[Container]
+ContainerName=browserless
+Image=${image}
+Environment=CONCURRENT=4
+Environment=EXTERNAL=${url}
+Environment=HOST=127.0.0.1
+Environment=PORT=${port}
+Environment=QUEUED=4
+Environment=TIMEOUT=3600000
+Network=host
+Secret=browserless-token,type=env,target=TOKEN
+ShmSize=1g
+
+[Service]
+Environment=PATH=%h/.local/share/mise/shims:/usr/local/bin:/usr/bin
+ExecStartPre=%h/.local/share/mise/shims/fnox exec --redact --config /etc/homelab/proxy/fnox.toml --only BROWSERLESS_TOKEN -- /usr/bin/python3 /etc/homelab/proxy/prepare_browserless.py
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

@@ -1,12 +1,12 @@
 # Versions deployed outside Kubernetes. Podman needs fully qualified image names.
-# renovate: datasource=github-releases depName=caddyserver/caddy extractVersion=^v(?<version>.*)$
-caddy: 2.11.9
-# renovate: datasource=github-tags depName=caddy-dns/cloudflare
-caddy_cloudflare: v0.2.4
 # renovate: datasource=github-tags depName=kubernetes packageName=kubernetes/kubernetes
 kubernetes: v1.37.2
 # renovate: datasource=github-tags depName=talos packageName=siderolabs/talos
 talos: v1.14.6
 images:
+  # renovate: datasource=docker depName=ghcr.io/browserless/chromium
+  browserless: ghcr.io/browserless/chromium:v2.63.1
   # renovate: datasource=docker depName=tailscale/tailscale
   tailscale: docker.io/tailscale/tailscale:v1.104.7
+  # renovate: datasource=docker depName=traefik
+  traefik: docker.io/library/traefik:v3.7.18

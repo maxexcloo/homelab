@@ -242,7 +242,7 @@ machines:
           name: DeepSeek Harness
           port: 443
           scheme: https
-          upstream: http://127.0.0.1:3080
+          upstream: https://127.0.0.1:3080
         syncthing:
           description: File Synchronisation
           dns_record: true

@@ -61,12 +61,19 @@ sudo /usr/bin/cloudflared service install --no-update-service
 ```
 
 For Mercury's private HTTPS services, apply the reviewed DNS and ACME credential
-changes and apply the Dotfiles configuration on Mercury. Provision its Browserless
-token in 1Password and run `mise run services:browserless:start` there before
-running `mise run sync:hosts mercury`. The sync builds the pinned Caddy image, validates
-the generated configuration before installing it, and reloads the proxy.
-Certificate storage stays in the `caddy-data` Podman volume. Service hostnames
-and local upstreams belong in `data/machines.yaml`.
+changes and apply the Dotfiles configuration on Mercury. Provision the
+`Browserless` item's `mercury` field in the Automation vault, stop its old
+Compose container when no browser sessions are active, then run
+`mise run sync:hosts mercury`. The sync checks the static JSON configuration and starts the
+stock Traefik and Browserless images through user Quadlets. Host sync labels its root-owned configuration for container access and restarts
+Traefik when that configuration changes. It renews public certificates in the
+`traefik-data` Podman volume.
+Service hostnames and local upstreams belong in `data/machines.yaml`.
+
+The dsh service creates a private localhost certificate in
+`~/.local/state/dsh` on its first start. Traefik trusts only its public certificate;
+replace the pair and restart both services before its ten-year expiry. Public
+browser certificates remain managed separately by Traefik.
 
 The dsh launch credential is kept in the user's private runtime directory, not
 the journal. Retrieve it only inside the browser login workflow; do not print or

@@ -22,6 +22,10 @@ steps {
     check = "scripts/read_inventory.sh | jq .inventory | diff -u inventory.json -"
     fix = "scripts/read_inventory.sh | jq .inventory >inventory.json"
   }
+  ["proxy-credentials"] = new Step {
+    glob = List("templates/proxy/*.py", "tests/test_proxy.py")
+    check = "python -m unittest discover -s tests"
+  }
   ["tofu"] = Builtins.tofu
   ["tofu-validate"] = new Step {
     glob = List("*.tf", ".terraform.lock.hcl", "data/**")
