@@ -60,6 +60,18 @@ On Cloudflare Tunnel hosts, run this once after syncing their configuration:
 sudo /usr/bin/cloudflared service install --no-update-service
 ```
 
+## Mercury Connect
+
+Connect's rootful Quadlets retain the existing `onepassword-connect` volume and
+`onepassword-connect-credentials` secret. Before their first start, sync the host
+files, stop the old Compose containers without removing volumes, then run
+`sudo systemctl start onepassword-connect-pod.service` on Mercury. Verify an
+authenticated credential lookup from Homelab before removing only the old
+containers. After applying Dotfiles' macOS-only Connect source, remove the
+retired Compose file as `core` with
+`rm ~/.config/services/onepassword-connect/compose.yaml`. Never run `down -v`.
+The API stays at `http://127.0.0.1:8080`.
+
 ## Cluster Upgrades
 
 Upgrade one cluster at a time, after reading the upstream
