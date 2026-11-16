@@ -90,11 +90,11 @@ locals {
             type        = "bind"
           }]
           extraConfig = {
-            # The stock reserves (15% for eviction, image cleanup from 85% used) are 140 GB of a
-            # shared 1 TB model disk; keep 1% free instead.
-            # Setting evictionHard replaces every default signal, so all of them are listed.
-            imageGCHighThresholdPercent = 99
+            # Image GC can only fail without dataset capacity (see below); 100 disables it.
+            imageGCHighThresholdPercent = 100
             imageGCLowThresholdPercent  = 98
+            # The stock 15% eviction reserve is too much of a shared model disk; keep 1% free.
+            # Setting evictionHard replaces every default signal, so all of them are listed.
             evictionHard = {
               "imagefs.available"  = "1%"
               "imagefs.inodesFree" = "5%"
