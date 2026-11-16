@@ -8,7 +8,8 @@ Flux.
 
 Keep host provisioning focused on OS, hardware, access and service boot settings.
 Workstation Compose definitions belong to `dotfiles`; other host services are
-Podman Quadlets, with other host files, in `data/hosts/`. Other application runtime configuration belongs
+Podman Quadlets, except coding agents that need the host's tools and repositories
+use native user services. Host files live in `data/hosts/`. Other application runtime configuration belongs
 to its owning repository.
 
 ## Conventions

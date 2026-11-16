@@ -5,9 +5,23 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local changed=false cloudflared_changed=false path
+  local changed=false cloudflared_changed=false proxy_changed=false proxy_restart=false syncthing_changed=false dsh_changed=false path
+  local username="" uid="" image=""
 
-  cd "$(dirname "${BASH_SOURCE[0]}")/root"
+  cd "$(dirname "${BASH_SOURCE[0]}")"
+  if [[ -s user ]]; then
+    IFS=$'\t' read -r username uid <user
+    image="$(awk -F= '$1 == "ImageTag" { print $2 }' "root/etc/containers/systemd/users/${uid}/caddy.build")"
+    if ! cmp -s root/etc/homelab/proxy/Containerfile /etc/homelab/proxy/Containerfile ||
+      ! as_user podman image exists "${image}"; then
+      as_user podman build --quiet --tag "${image}" --file "$PWD/root/etc/homelab/proxy/Containerfile" "$PWD/root/etc/homelab/proxy"
+    fi
+    as_user podman run --rm --network none --env CLOUDFLARE_API_TOKEN=0000000000000000000000000000000000000000 \
+      --volume "$PWD/root/etc/homelab/proxy/Caddyfile:/etc/caddy/Caddyfile:ro,Z" \
+      "${image}" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+  fi
+
+  cd root
   while IFS= read -r path; do
     path="${path#.}"
     if ! cmp -s ".${path}" "${path}" || [[ "$(stat -c %a ".${path}")" != "$(stat -c %a "${path}")" ]]; then
@@ -16,6 +30,10 @@ install_files() {
       changed=true
       case "${path}" in
         /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
+        /etc/homelab/proxy/Caddyfile) proxy_changed=true ;;
+        /etc/homelab/proxy/* | /etc/containers/systemd/users/*/caddy.*) proxy_restart=true ;;
+        /etc/systemd/system/syncthing@*.service.d/authentication.conf) syncthing_changed=true ;;
+        /etc/systemd/user/dsh.service) dsh_changed=true ;;
       esac
     fi
   done < <(find . -type f)
@@ -29,6 +47,28 @@ install_files() {
     echo "Files up to date"
   fi
 
+  if [[ -n "${username}" ]]; then
+    as_user systemctl --user daemon-reload
+    if as_user systemctl --user is-active --quiet caddy.service; then
+      if [[ "${proxy_restart}" == true ]]; then
+        as_user systemctl --user restart caddy.service
+      elif [[ "${proxy_changed}" == true ]]; then
+        as_user systemctl --user reload caddy.service
+      fi
+    else
+      as_user systemctl --user start caddy.service
+    fi
+    if [[ "${syncthing_changed}" == true ]]; then
+      systemctl restart "syncthing@${username}.service"
+    fi
+    if [[ -f etc/systemd/user/dsh.service ]]; then
+      if [[ "${dsh_changed}" == true ]] && as_user systemctl --user is-active --quiet dsh.service; then
+        as_user systemctl --user restart dsh.service
+      fi
+      as_user systemctl --user enable --now dsh.service
+    fi
+  fi
+
   while IFS=$'\t' read -r unit enabled; do
     if [[ "${enabled}" == true ]]; then
       systemctl enable --now "${unit}"
@@ -36,6 +76,11 @@ install_files() {
       systemctl disable --now "${unit}"
     fi
   done <../units
+}
+
+as_user() {
+  runuser -u "${username}" -- env HOME="/var/home/${username}" XDG_RUNTIME_DIR="/run/user/${uid}" \
+    PATH="/var/home/${username}/.local/share/mise/shims:/usr/local/bin:/usr/bin" "$@"
 }
 
 if [[ "${1:-}" == "--install" ]]; then
@@ -62,6 +107,7 @@ for name in "$@"; do
   mkdir -p "${staging}/root"
   cp "${BASH_SOURCE[0]}" "${staging}/sync_hosts.sh"
   jq -r --arg name "${name}" '.machines[$name].butane.units[]? | [.name, .enabled] | @tsv' <<<"${inventory_json}" >"${staging}/units"
+  jq -r --arg name "${name}" '.machines[$name] | select(any(.services[]; has("upstream"))) | [.username, .uid] | @tsv' <<<"${inventory_json}" >"${staging}/user"
 
   while IFS=$'\t' read -r path mode; do
     mkdir -p "$(dirname "${staging}/root${path}")"

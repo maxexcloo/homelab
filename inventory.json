@@ -41,7 +41,7 @@
       "type": "workstation"
     },
     "mercury": {
-      "acme": null,
+      "acme": "delegated",
       "beszel": true,
       "fqdn": "mercury.mbk.excloo.net",
       "location": "mbk-mercury",
@@ -414,6 +414,45 @@
       "port": 8384,
       "scheme": "http",
       "url": "http://mars.mbk.excloo.net:8384"
+    },
+    "mercury/browserless": {
+      "description": "Browser Automation",
+      "dns_record": true,
+      "hostname": "browserless.mercury.mbk.excloo.net",
+      "icon": "sh-browserless",
+      "machine": "mercury",
+      "monitoring": false,
+      "name": "Browserless (Mercury)",
+      "port": 443,
+      "scheme": "https",
+      "upstream": "http://127.0.0.1:9222",
+      "url": "https://browserless.mercury.mbk.excloo.net"
+    },
+    "mercury/dsh": {
+      "description": "Coding Agent",
+      "dns_record": true,
+      "hostname": "code.excloo.com",
+      "icon": "mdi-code-braces",
+      "machine": "mercury",
+      "monitoring": false,
+      "name": "DeepSeek Harness",
+      "port": 443,
+      "scheme": "https",
+      "upstream": "http://127.0.0.1:3080",
+      "url": "https://code.excloo.com"
+    },
+    "mercury/syncthing": {
+      "description": "File Synchronisation",
+      "dns_record": true,
+      "hostname": "syncthing.mercury.mbk.excloo.net",
+      "icon": "sh-syncthing",
+      "machine": "mercury",
+      "monitoring": false,
+      "name": "Syncthing (Mercury)",
+      "port": 443,
+      "scheme": "https",
+      "upstream": "http://127.0.0.1:8384",
+      "url": "https://syncthing.mercury.mbk.excloo.net"
     },
     "nanokvm/management": {
       "description": "Remote Console & Power Control",
