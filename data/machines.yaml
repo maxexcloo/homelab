@@ -203,7 +203,6 @@ machines:
           scheme: http
     mercury:
       beszel: true
-      login_service: syncthing
       monitoring: false
       platform: ucore
       smtp: resend
