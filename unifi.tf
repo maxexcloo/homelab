@@ -17,9 +17,8 @@ locals {
       hostname    = interface.primary ? local.machine_fqdns[interface.machine] : null
       mac         = interface.mac
       name        = local.machine_hostnames[interface.machine]
-      network_key = "${interface.network}/${interface.subnet}"
+      network_key = interface.address != null ? "${interface.network}/${interface.subnet}" : null
     }
-    if interface.address != null
   }
 
   unifi_networks = merge([
@@ -41,8 +40,8 @@ resource "unifi_client" "host" {
   fixed_ip               = each.value.fixed_ip
   local_dns_record       = each.value.hostname != null ? each.value.hostname : ""
   mac                    = each.value.mac
-  name                   = each.value.hostname != null ? each.value.name : null
-  network_id             = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
+  name                   = each.value.name
+  network_id             = try(local.unifi_networks[each.value.network_key].vlan, null) != null ? data.unifi_network.configured[each.value.network_key].id : null
   note                   = local.managed_comment
   skip_forget_on_destroy = false
 
@@ -105,4 +104,3 @@ resource "unifi_setting" "site" {
     }
   }
 }
-

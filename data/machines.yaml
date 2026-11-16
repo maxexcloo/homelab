@@ -57,6 +57,7 @@ machines:
       interfaces:
         - address: 10.0.0.2
           mac_address: 84:47:09:67:c8:33
+        - mac_address: 84:47:09:67:c8:36
       services:
         esphome:
           description: ESP Device Builder
@@ -444,6 +445,8 @@ machines:
         - name: enp13s0
           address: 10.0.0.5
           mac_address: 9c:6b:00:d7:e9:40
+        - name: enp12s0
+          mac_address: 9c:6b:00:d7:e9:63
   syd:
     neptune:
       beszel: true
