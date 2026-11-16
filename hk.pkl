@@ -19,8 +19,8 @@ steps {
   ["detect-private-key"] = Builtins.detect_private_key
   ["inventory"] = new Step {
     glob = List("data/**", "inventory.json", "locals.tf", "scripts/read_inventory.sh")
-    check = "scripts/read_inventory.sh | jq .inventory | diff -u inventory.json -"
-    fix = "scripts/read_inventory.sh | jq .inventory >inventory.json"
+    check = "scripts/read_inventory.sh | jq .inventory | oxfmt --stdin-filepath inventory.json | diff -u inventory.json -"
+    fix = "scripts/read_inventory.sh | jq .inventory | oxfmt --stdin-filepath inventory.json >inventory.json"
   }
   ["tofu"] = Builtins.tofu
   ["tofu-validate"] = new Step {

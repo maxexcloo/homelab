@@ -247,6 +247,7 @@
     "luna/esphome": {
       "description": "ESP Device Builder",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "sh-esphome",
       "machine": "luna",
       "monitoring": false,
@@ -260,6 +261,7 @@
     "luna/espresense-companion": {
       "description": "Room Presence",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "espressif",
       "machine": "luna",
       "monitoring": false,
@@ -273,6 +275,7 @@
     "luna/management": {
       "description": "Smart Home & Automations",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "sh-home-assistant",
       "machine": "luna",
       "monitoring": true,
@@ -288,6 +291,7 @@
     "luna/matter-hub": {
       "description": "Matter Bridge",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "sh-home-assistant-matter-hub",
       "machine": "luna",
       "monitoring": false,
@@ -301,6 +305,7 @@
     "luna/matter-server": {
       "description": "Matter Device Management",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "sh-matter",
       "machine": "luna",
       "monitoring": false,
@@ -314,6 +319,7 @@
     "luna/piper": {
       "description": "Local Text-to-Speech",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "mdi-account-voice",
       "machine": "luna",
       "monitoring": false,
@@ -334,6 +340,7 @@
       "dns_tailscale": true,
       "group": "Smart Home",
       "hostname": "api-rr.luna.mbk.excloo.net",
+      "hostnames": ["api-rr.luna.mbk.excloo.net"],
       "icon": "mdi-robot-vacuum",
       "machine": "luna",
       "monitoring": false,
@@ -346,6 +353,7 @@
     "luna/scrypted": {
       "description": "Camera Integration",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "sh-scrypted",
       "machine": "luna",
       "monitoring": false,
@@ -359,6 +367,7 @@
     "luna/ssh": {
       "description": "SSH & Web Terminal",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "mdi-console",
       "machine": "luna",
       "monitoring": false,
@@ -372,6 +381,7 @@
     "luna/vscode": {
       "description": "Browser IDE",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "sh-visual-studio-code",
       "machine": "luna",
       "monitoring": false,
@@ -385,6 +395,7 @@
     "luna/zigbee2mqtt": {
       "description": "Zigbee Coordinator",
       "group": "Smart Home",
+      "hostnames": ["luna.mbk.excloo.net"],
       "icon": "sh-zigbee2mqtt",
       "machine": "luna",
       "monitoring": false,
@@ -397,6 +408,7 @@
     },
     "mars/polaris": {
       "description": "Game Streaming Host",
+      "hostnames": ["mars.mbk.excloo.net"],
       "icon": "sh-sunshine",
       "machine": "mars",
       "monitoring": false,
@@ -407,6 +419,7 @@
     },
     "mars/syncthing": {
       "description": "File Synchronisation",
+      "hostnames": ["mars.mbk.excloo.net"],
       "icon": "sh-syncthing",
       "machine": "mars",
       "monitoring": false,
@@ -418,19 +431,22 @@
     "mercury/agent-browser": {
       "description": "Browser Automation",
       "dns_record": true,
-      "hostname": "browser.mercury.mbk.excloo.net",
+      "hostname": "agent-browser.mercury.mbk.excloo.net",
+      "hostnames": ["agent-browser.mercury.mbk.excloo.net"],
       "icon": "mdi-web",
       "machine": "mercury",
       "monitoring": false,
       "name": "Agent Browser (Mercury)",
       "port": 443,
       "scheme": "https",
-      "url": "https://browser.mercury.mbk.excloo.net"
+      "url": "https://agent-browser.mercury.mbk.excloo.net"
     },
     "mercury/dsh": {
+      "aliases": ["dsh.mercury.mbk.excloo.net"],
       "description": "Coding Agent",
       "dns_record": true,
       "hostname": "code.excloo.com",
+      "hostnames": ["code.excloo.com", "dsh.mercury.mbk.excloo.net"],
       "icon": "mdi-code-braces",
       "machine": "mercury",
       "monitoring": false,
@@ -443,6 +459,7 @@
       "description": "File Synchronisation",
       "dns_record": true,
       "hostname": "syncthing.mercury.mbk.excloo.net",
+      "hostnames": ["syncthing.mercury.mbk.excloo.net"],
       "icon": "sh-syncthing",
       "machine": "mercury",
       "monitoring": false,
@@ -454,6 +471,7 @@
     "nanokvm/management": {
       "description": "Remote Console & Power Control",
       "group": "Infrastructure",
+      "hostnames": ["nanokvm.mbk.excloo.net"],
       "icon": "sh-sipeed",
       "machine": "nanokvm",
       "monitoring": false,
@@ -465,6 +483,7 @@
     "saturn/management": {
       "description": "Storage Appliance",
       "group": "Infrastructure",
+      "hostnames": ["saturn.mbk.excloo.net"],
       "icon": "sh-truenas-scale",
       "machine": "saturn",
       "monitoring": true,
@@ -482,6 +501,7 @@
     "saturn/netboot": {
       "description": "Network Boot Server",
       "group": "Infrastructure",
+      "hostnames": ["saturn.mbk.excloo.net"],
       "icon": "mdi-server-network-#ffffff",
       "machine": "saturn",
       "monitoring": true,
@@ -492,6 +512,7 @@
     },
     "saturn/s3": {
       "bucket": "syd-backups",
+      "hostnames": ["saturn.mbk.excloo.net"],
       "machine": "saturn",
       "monitoring": false,
       "name": "Object Storage",
@@ -503,6 +524,7 @@
     "slzb-06m/management": {
       "description": "Zigbee Ethernet Adapter",
       "group": "Smart Home",
+      "hostnames": ["slzb-06m.mbk.excloo.net"],
       "icon": "sh-zigbee",
       "machine": "slzb-06m",
       "monitoring": false,
@@ -515,6 +537,7 @@
     "sol/management": {
       "description": "Network Controller",
       "group": "Infrastructure",
+      "hostnames": ["sol.mbk.excloo.net"],
       "icon": "sh-ubiquiti-unifi",
       "machine": "sol",
       "monitoring": true,
