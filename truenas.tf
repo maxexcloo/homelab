@@ -499,13 +499,3 @@ resource "truenas_user" "s3" {
   smb               = false
   username          = each.value.services.s3.username
 }
-
-moved {
-  from = truenas_network_interface.services_bridge
-  to   = truenas_network_interface.container_bridge
-}
-
-moved {
-  from = truenas_network_interface.services_physical
-  to   = truenas_network_interface.container_physical
-}
