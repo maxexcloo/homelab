@@ -19,6 +19,31 @@ data "onepassword_vault" "configured" {
 }
 
 locals {
+  onepassword_host_files = {
+    for name, machine in local.machines : name => {
+      "/etc/homelab/fnox.toml" = {
+        # 1Password secret-reference URIs cannot express ':' in item titles.
+        content = <<-TOML
+          [secrets]
+          %{if can(local.cloudflare_consumers_acme[name])~}
+          # ${onepassword_item.cloudflare_acme[name].title}
+          CF_DNS_API_TOKEN = { provider = "homelab", value = "${onepassword_item.cloudflare_acme[name].uuid}/password" }
+          %{endif~}
+          %{if can(local.machines[name].services.syncthing) && can(local.onepassword_machine_access[name])~}
+          # ${onepassword_item.machine_access[name].title}
+          SYNCTHING_PASSWORD = { provider = "homelab", value = "${onepassword_item.machine_access[name].uuid}/password" }
+          %{endif~}
+        TOML
+        mode    = "0644"
+      }
+    }
+    if try(machine.butane, null) != null && (
+      can(local.cloudflare_consumers_acme[name]) || (
+        can(machine.services.syncthing) && can(local.onepassword_machine_access[name])
+      )
+    )
+  }
+
   onepassword_infrastructure_inventory = {
     cloudflare = {
       account_id = data.cloudflare_account.default.id

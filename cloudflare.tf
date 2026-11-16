@@ -44,25 +44,6 @@ locals {
     ]
   ]))
 
-  cloudflare_acme_host_files = {
-    for name in keys(local.cloudflare_tunnel_files) : name => {
-      "/etc/homelab/fnox.toml" = {
-        # 1Password secret-reference URIs cannot express ':' in item titles.
-        content = <<-TOML
-          [secrets]
-          # ${onepassword_item.cloudflare_acme[name].title}
-          CF_DNS_API_TOKEN = { provider = "homelab", value = "${onepassword_item.cloudflare_acme[name].uuid}/password" }
-          %{if can(local.machines[name].services.syncthing) && can(local.onepassword_machine_access[name])~}
-          # ${onepassword_item.machine_access[name].title}
-          SYNCTHING_PASSWORD = { provider = "homelab", value = "${onepassword_item.machine_access[name].uuid}/password" }
-          %{endif~}
-        TOML
-        mode    = "0644"
-      }
-    }
-    if can(local.cloudflare_consumers_acme[name])
-  }
-
   cloudflare_consumers = {
     for name, consumer in merge(local.machines, local.clusters) : name => consumer.cloudflare
     if can(consumer.cloudflare)
