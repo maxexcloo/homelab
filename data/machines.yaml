@@ -207,7 +207,6 @@ machines:
       platform: ucore
       smtp: resend
       type: workstation
-      uid: 1000
       username: core
       butane:
         trees:
@@ -253,6 +252,7 @@ machines:
           port: 443
           scheme: https
           upstream: http://127.0.0.1:8384
+      uid: 1000
     nanokvm:
       monitoring: false
       name: NanoKVM

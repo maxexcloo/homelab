@@ -61,10 +61,10 @@ sudo /usr/bin/cloudflared service install --no-update-service
 ```
 
 For Mercury's private HTTPS services, apply the reviewed DNS and ACME credential
-changes, boot a Bluemax image with Caddy, apply the Dotfiles configuration on
-Mercury, then run `mise run sync:hosts mercury`. The sync validates the generated
-configuration before installing it and reloads the proxy. Certificate storage
-stays in the user's `~/.local/share/caddy` directory. Service hostnames
+changes, apply the Dotfiles configuration on Mercury, then run
+`mise run sync:hosts mercury`. The sync builds the pinned Caddy image, validates
+the generated configuration before installing it, and reloads the proxy.
+Certificate storage stays in the `caddy-data` Podman volume. Service hostnames
 and local upstreams belong in `data/machines.yaml`.
 
 The dsh launch credential is kept in the user's private runtime directory, not
