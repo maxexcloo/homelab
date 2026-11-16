@@ -7,10 +7,6 @@ networks:
       default:
         cidr: 10.0.0.1/22
         name: Default
-      services:
-        cidr: 10.4.0.1/22
-        name: Services
-        vlan: 4
   syd:
     name: Sydney
     oci:

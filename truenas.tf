@@ -37,10 +37,9 @@ locals {
     if machine.platform == "truenas"
   }
 
-  truenas_hosts_services = {
-    for interface in local.machine_interface_assignments : interface.machine => merge(interface, {
-      prefix_length = tonumber(split("/", local.networks[interface.network].subnets[interface.subnet].cidr)[1])
-    })
+  # A bridge without a host address gives the Talos container its own port.
+  truenas_container_bridges = {
+    for interface in local.machine_interface_assignments : interface.machine => interface
     if can(local.truenas_hosts[interface.machine]) && interface.bridge != null
   }
 
@@ -208,7 +207,7 @@ resource "truenas_app" "talos_container" {
         }
         networks = {
           local = {}
-          services = {
+          lan = {
             ipv4_address = each.value.address
             mac_address  = each.value.mac
           }
@@ -256,10 +255,10 @@ resource "truenas_app" "talos_container" {
         driver   = "bridge"
         internal = true
       }
-      services = {
+      lan = {
         driver = "macvlan"
         driver_opts = {
-          parent = local.truenas_hosts_services[each.key].bridge
+          parent = local.truenas_container_bridges[each.key].bridge
         }
         ipam = {
           config = [{
@@ -357,10 +356,11 @@ resource "truenas_network_config" "host" {
   provider    = truenas.hosts[each.key]
 }
 
-resource "truenas_network_interface" "services_bridge" {
-  for_each = local.truenas_hosts_services
+resource "truenas_network_interface" "container_bridge" {
+  for_each = local.truenas_container_bridges
 
-  bridge_members = [truenas_network_interface.services_physical[each.key].name]
+  aliases        = []
+  bridge_members = [truenas_network_interface.container_physical[each.key].name]
   ipv4_dhcp      = false
   ipv6_auto      = false
   name           = each.value.bridge
@@ -368,21 +368,13 @@ resource "truenas_network_interface" "services_bridge" {
   rollback       = true
   type           = "BRIDGE"
 
-  aliases = [
-    {
-      address = each.value.address
-      netmask = each.value.prefix_length
-      type    = "INET"
-    },
-  ]
-
   lifecycle {
     prevent_destroy = true
   }
 }
 
-resource "truenas_network_interface" "services_physical" {
-  for_each = local.truenas_hosts_services
+resource "truenas_network_interface" "container_physical" {
+  for_each = local.truenas_container_bridges
 
   aliases   = []
   ipv4_dhcp = false
