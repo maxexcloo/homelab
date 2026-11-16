@@ -121,7 +121,7 @@ locals {
     for name, container in local.truenas_talos_containers : name => truenas_dataset.root["${name}/${container.dataset}"].mount_point
   }
 
-  # TrueNAS containers use a Tailscale sidecar, advertising only their LAN address as Talos nodes do (talos.tf).
+  # TrueNAS containers use a Tailscale sidecar in the Talos network namespace, so Talos firewall rules cover it.
   truenas_talos_container_tailscale_environment = {
     for name, container in local.truenas_talos_containers : name => {
       TS_AUTH_ONCE             = "true"
