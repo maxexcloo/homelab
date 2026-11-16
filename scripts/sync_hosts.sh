@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local changed=false cloudflared_changed=false owner path
+  local changed=false owner path
 
   cd "$(dirname "${BASH_SOURCE[0]}")/root"
   while IFS= read -r path; do
@@ -15,17 +15,11 @@ install_files() {
       echo "Changed ${path}"
       install -D -Z -o "${owner}" -m "$(stat -c %a ".${path}")" ".${path}" "${path}"
       changed=true
-      case "${path}" in
-        /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
-      esac
     fi
   done < <(find . -type f)
 
   if [[ "${changed}" == true ]]; then
     systemctl daemon-reload
-    if [[ "${cloudflared_changed}" == true && -f /etc/systemd/system/cloudflared.service ]]; then
-      systemctl restart cloudflared.service
-    fi
   else
     echo "Files up to date"
   fi

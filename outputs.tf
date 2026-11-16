@@ -1,3 +1,12 @@
+locals {
+  host_files = {
+    for name in setunion(keys(local.cloudflare_tunnel_files), keys(local.cloudflare_acme_files)) : name => merge(
+      try(local.cloudflare_tunnel_files[name], {}),
+      try(local.cloudflare_acme_files[name], {}),
+    )
+  }
+}
+
 output "clusters" {
   description = "Talos Kubernetes cluster substrate configuration and endpoints."
   value = {

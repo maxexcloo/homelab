@@ -19,17 +19,6 @@ data "onepassword_vault" "configured" {
 }
 
 locals {
-  onepassword_host_files = {
-    for name, machine in local.machines : name => {
-      "/etc/homelab/traefik.env" = {
-        content = "CF_DNS_API_TOKEN=${onepassword_item.cloudflare_acme[name].password}\n"
-        mode    = "0600"
-        user    = { name = machine.username }
-      }
-    }
-    if try(machine.butane, null) != null && can(local.cloudflare_consumers_acme[name])
-  }
-
   onepassword_infrastructure_inventory = {
     cloudflare = {
       account_id = data.cloudflare_account.default.id
