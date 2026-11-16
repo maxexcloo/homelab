@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
-  local changed=false cloudflared_changed=false proxy_restart=false syncthing_changed=false dsh_changed=false browserless_changed=false path
+  local changed=false cloudflared_changed=false proxy_restart=false syncthing_changed=false dsh_changed=false dashboard_changed=false browserless_changed=false path
   local username="" uid=""
 
   cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -23,10 +23,11 @@ install_files() {
       changed=true
       case "${path}" in
         /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
-        /etc/homelab/proxy/browserless.json | /etc/homelab/proxy/prepare_browserless.py | /etc/containers/systemd/users/*/browserless.container) browserless_changed=true ;;
+        /etc/homelab/proxy/agent-browser.json | /etc/containers/systemd/users/*/browserless.container) browserless_changed=true ;;
         /etc/homelab/proxy/dsh-tls.sh) dsh_changed=true ;;
+        /etc/homelab/proxy/syncthing-auth.sh | /etc/systemd/system/syncthing@*.service.d/authentication.conf) syncthing_changed=true ;;
         /etc/homelab/proxy/* | /etc/containers/systemd/users/*/traefik.container) proxy_restart=true ;;
-        /etc/systemd/system/syncthing@*.service.d/authentication.conf) syncthing_changed=true ;;
+        /etc/systemd/user/agent-browser.service) dashboard_changed=true ;;
         /etc/systemd/user/dsh.service) dsh_changed=true ;;
       esac
     fi
@@ -46,6 +47,12 @@ install_files() {
     as_user systemctl --user daemon-reload
     if [[ "${syncthing_changed}" == true ]]; then
       systemctl restart "syncthing@${username}.service"
+    fi
+    if [[ -f etc/systemd/user/agent-browser.service ]]; then
+      if [[ "${dashboard_changed}" == true ]] && as_user systemctl --user is-active --quiet agent-browser.service; then
+        as_user systemctl --user restart agent-browser.service
+      fi
+      as_user systemctl --user enable --now agent-browser.service
     fi
     if [[ -f etc/systemd/user/dsh.service ]]; then
       if [[ "${dsh_changed}" == true ]] && as_user systemctl --user is-active --quiet dsh.service; then

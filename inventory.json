@@ -415,18 +415,19 @@
       "scheme": "http",
       "url": "http://mars.mbk.excloo.net:8384"
     },
-    "mercury/browserless": {
+    "mercury/agent-browser": {
+      "browser_upstream": "http://127.0.0.1:9222",
       "description": "Browser Automation",
       "dns_record": true,
-      "hostname": "browserless.mercury.mbk.excloo.net",
-      "icon": "sh-browserless",
+      "hostname": "browser.mercury.mbk.excloo.net",
+      "icon": "mdi-web",
       "machine": "mercury",
       "monitoring": false,
-      "name": "Browserless (Mercury)",
+      "name": "Agent Browser (Mercury)",
       "port": 443,
       "scheme": "https",
-      "upstream": "http://127.0.0.1:9222",
-      "url": "https://browserless.mercury.mbk.excloo.net"
+      "upstream": "http://127.0.0.1:4848",
+      "url": "https://browser.mercury.mbk.excloo.net"
     },
     "mercury/dsh": {
       "description": "Coding Agent",

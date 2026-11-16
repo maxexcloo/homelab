@@ -225,15 +225,16 @@ machines:
         acme: delegated
         tunnel: {}
       services:
-        browserless:
+        agent-browser:
+          browser_upstream: http://127.0.0.1:9222
           description: Browser Automation
           dns_record: true
-          hostname: browserless.mercury.mbk.excloo.net
-          icon: sh-browserless
-          name: Browserless (Mercury)
+          hostname: browser.mercury.mbk.excloo.net
+          icon: mdi-web
+          name: Agent Browser (Mercury)
           port: 443
           scheme: https
-          upstream: http://127.0.0.1:9222
+          upstream: http://127.0.0.1:4848
         dsh:
           description: Coding Agent
           dns_record: true

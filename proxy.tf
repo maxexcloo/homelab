@@ -71,7 +71,6 @@ locals {
           CF_DNS_API_TOKEN = { provider = "homelab", value = "${onepassword_item.cloudflare_acme[name].uuid}/password" }
           # ${local.machine_login_titles[name]}
           SYNCTHING_PASSWORD = { provider = "homelab", value = "${onepassword_item.machine_access[name].uuid}/password" }
-          BROWSERLESS_TOKEN = { provider = "automation", value = "Browserless/${name}" }
         TOML
         mode    = "0644"
       }
@@ -104,21 +103,36 @@ locals {
         UNIT
         mode    = "0644"
       }
-      }, can(local.proxy_services[name].browserless) ? {
+      }, can(local.proxy_services[name]["agent-browser"]) ? {
       "/etc/containers/systemd/users/${machine.uid}/browserless.container" = {
         content = templatefile("${path.module}/templates/proxy/browserless.container.tftpl", {
           image = local.versions.images.browserless
-          port  = regex(":([0-9]+)$", local.proxy_services[name].browserless.upstream)[0]
-          url   = local.machine_service_urls["${name}/browserless"]
+          port  = regex(":([0-9]+)$", local.proxy_services[name]["agent-browser"].browser_upstream)[0]
         })
         mode = "0644"
       }
-      "/etc/homelab/proxy/browserless.json" = {
-        content = jsonencode({ upstream = local.proxy_services[name].browserless.upstream })
+      "/etc/homelab/proxy/agent-browser.json" = {
+        content = jsonencode({ cdp = "${replace(local.proxy_services[name]["agent-browser"].browser_upstream, "http://", "ws://")}/chromium" })
         mode    = "0644"
       }
-      "/etc/homelab/proxy/prepare_browserless.py" = {
-        content = file("${path.module}/templates/proxy/prepare_browserless.py")
+      "/etc/systemd/user/agent-browser.service" = {
+        content = <<-UNIT
+          [Unit]
+          Description=Agent Browser Console
+
+          [Service]
+          Type=forking
+          Environment=PATH=%h/.local/share/mise/shims:/usr/local/bin:/usr/bin
+          PIDFile=%t/agent-browser/dashboard.pid
+          ExecStart=%h/.local/share/mise/shims/agent-browser dashboard start --port ${regex(":([0-9]+)$", local.proxy_services[name]["agent-browser"].upstream)[0]} --allowed-origins ${local.machine_service_urls["${name}/agent-browser"]}
+          ExecStop=%h/.local/share/mise/shims/agent-browser dashboard stop
+          Restart=on-failure
+          StandardOutput=null
+          UMask=0077
+
+          [Install]
+          WantedBy=default.target
+        UNIT
         mode    = "0644"
       }
       } : {}, can(local.proxy_services[name].dsh) ? {
