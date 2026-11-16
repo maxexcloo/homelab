@@ -75,11 +75,11 @@ locals {
         mode    = "0644"
       }
       "/etc/homelab/proxy/create-secret.sh" = {
-        content = file("${path.module}/templates/proxy/create-secret.sh")
+        content = file("${path.module}/data/hosts/common/create-secret.sh")
         mode    = "0755"
       }
       "/etc/containers/systemd/users/${machine.uid}/traefik.container" = {
-        content = templatefile("${path.module}/templates/proxy/traefik.container.tftpl", {
+        content = templatefile("${path.module}/data/hosts/common/traefik.container.tftpl", {
           image  = local.versions.images.traefik
           dsh    = can(local.proxy_services[name].dsh)
           dsh_ca = local.proxy_dsh_ca_path
@@ -87,25 +87,12 @@ locals {
         mode = "0644"
       }
       "/etc/systemd/system/homelab-proxy.service" = {
-        content = <<-UNIT
-          [Unit]
-          After=tailscaled.service
-          Requires=tailscaled.service
-
-          [Service]
-          Type=oneshot
-          ExecStart=/usr/bin/tailscale serve --bg --tcp=443 tcp://127.0.0.1:8443
-          ExecStop=/usr/bin/tailscale serve --tcp=443 off
-          RemainAfterExit=yes
-
-          [Install]
-          WantedBy=multi-user.target
-        UNIT
+        content = file("${path.module}/data/hosts/common/homelab-proxy.service")
         mode    = "0644"
       }
       }, can(local.proxy_services[name]["agent-browser"]) ? {
       "/etc/containers/systemd/users/${machine.uid}/browserless.container" = {
-        content = templatefile("${path.module}/templates/proxy/browserless.container.tftpl", {
+        content = templatefile("${path.module}/data/hosts/common/browserless.container.tftpl", {
           image = local.versions.images.browserless
           port  = regex(":([0-9]+)$", local.proxy_services[name]["agent-browser"].browser_upstream)[0]
         })
@@ -116,65 +103,34 @@ locals {
         mode    = "0644"
       }
       "/etc/systemd/user/agent-browser.service" = {
-        content = <<-UNIT
-          [Unit]
-          Description=Agent Browser Console
-
-          [Service]
-          Type=forking
-          Environment=PATH=%h/.local/share/mise/shims:/usr/local/bin:/usr/bin
-          PIDFile=%t/agent-browser/dashboard.pid
-          ExecStart=%h/.local/share/mise/shims/agent-browser dashboard start --port ${regex(":([0-9]+)$", local.proxy_services[name]["agent-browser"].upstream)[0]} --allowed-origins ${local.machine_service_urls["${name}/agent-browser"]}
-          ExecStop=%h/.local/share/mise/shims/agent-browser dashboard stop
-          Restart=on-failure
-          StandardOutput=null
-          UMask=0077
-
-          [Install]
-          WantedBy=default.target
-        UNIT
-        mode    = "0644"
+        content = templatefile("${path.module}/data/hosts/common/agent-browser.service.tftpl", {
+          port = regex(":([0-9]+)$", local.proxy_services[name]["agent-browser"].upstream)[0]
+          url  = local.machine_service_urls["${name}/agent-browser"]
+        })
+        mode = "0644"
       }
       } : {}, can(local.proxy_services[name].dsh) ? {
       "/etc/homelab/proxy/dsh-tls.sh" = {
-        content = file("${path.module}/templates/proxy/dsh-tls.sh")
+        content = file("${path.module}/data/hosts/common/dsh-tls.sh")
         mode    = "0755"
       }
       "/etc/systemd/user/dsh.service" = {
-        content = <<-UNIT
-          [Unit]
-          Description=DeepSeek Harness
-
-          [Service]
-          Environment=PATH=%h/.local/share/mise/shims:/usr/local/bin:/usr/bin
-          ExecStartPre=/etc/homelab/proxy/dsh-tls.sh
-          ExecStart=/usr/bin/mise run dsh:serve -- --host 127.0.0.1 --port ${regex(":([0-9]+)$", local.proxy_services[name].dsh.upstream)[0]} --public-url ${local.machine_service_urls["${name}/dsh"]}/ --trusted-host ${local.proxy_services[name].dsh.hostname} --tls-cert %S/dsh/server.crt --tls-key %S/dsh/server.key
-          Restart=on-failure
-          RuntimeDirectory=dsh
-          RuntimeDirectoryMode=0700
-          StandardOutput=truncate:%t/dsh/launch-output
-          StandardError=inherit
-          StateDirectory=dsh
-          StateDirectoryMode=0700
-          UMask=0077
-          WorkingDirectory=%h
-
-          [Install]
-          WantedBy=default.target
-        UNIT
-        mode    = "0644"
+        content = templatefile("${path.module}/data/hosts/common/dsh.service.tftpl", {
+          hostname = local.proxy_services[name].dsh.hostname
+          port     = regex(":([0-9]+)$", local.proxy_services[name].dsh.upstream)[0]
+          url      = local.machine_service_urls["${name}/dsh"]
+        })
+        mode = "0644"
       }
       } : {}, can(local.proxy_services[name].syncthing) ? {
       "/etc/systemd/system/syncthing@${machine.username}.service.d/authentication.conf" = {
-        content = <<-UNIT
-          [Service]
-          Environment=PATH=/var/home/${machine.username}/.local/share/mise/shims:/usr/local/bin:/usr/bin
-          ExecStartPre=/var/home/${machine.username}/.local/share/mise/shims/fnox exec --config /etc/homelab/proxy/fnox.toml --only SYNCTHING_PASSWORD -- /etc/homelab/proxy/syncthing-auth.sh ${machine.username}
-        UNIT
-        mode    = "0644"
+        content = templatefile("${path.module}/data/hosts/common/syncthing-authentication.conf.tftpl", {
+          username = machine.username
+        })
+        mode = "0644"
       }
       "/etc/homelab/proxy/syncthing-auth.sh" = {
-        content = file("${path.module}/templates/proxy/syncthing-auth.sh")
+        content = file("${path.module}/data/hosts/common/syncthing-auth.sh")
         mode    = "0755"
       }
     } : {})

@@ -1,0 +1,19 @@
+[Unit]
+Description=DeepSeek Harness
+
+[Service]
+Environment=PATH=%h/.local/share/mise/shims:/usr/local/bin:/usr/bin
+ExecStartPre=/etc/homelab/proxy/dsh-tls.sh
+ExecStart=/usr/bin/mise run dsh:serve -- --host 127.0.0.1 --port ${port} --public-url ${url}/ --trusted-host ${hostname} --tls-cert %S/dsh/server.crt --tls-key %S/dsh/server.key
+Restart=on-failure
+RuntimeDirectory=dsh
+RuntimeDirectoryMode=0700
+StandardOutput=truncate:%t/dsh/launch-output
+StandardError=inherit
+StateDirectory=dsh
+StateDirectoryMode=0700
+UMask=0077
+WorkingDirectory=%h
+
+[Install]
+WantedBy=default.target

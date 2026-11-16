@@ -1,0 +1,12 @@
+[Unit]
+After=tailscaled.service
+Requires=tailscaled.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/tailscale serve --bg --tcp=443 tcp://127.0.0.1:8443
+ExecStop=/usr/bin/tailscale serve --tcp=443 off
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
