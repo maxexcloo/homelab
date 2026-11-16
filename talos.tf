@@ -207,6 +207,22 @@ locals {
           forwardKubeDNSToHost = true
         }, node.configuration_delivery == "container" ? {} : { resolveMemberNames = true })
       },
+      # Tailscale advertises Cilium's addresses as endpoints, and a peer that picks one
+      # routes Tailscale through Cilium's tunnel, which runs over Tailscale. Refusing
+      # Tailscale's port from the pod subnet keeps those paths from ever working.
+      {
+        apiVersion = "v1alpha1"
+        kind       = "NetworkRuleConfig"
+        name       = "tailscale"
+        portSelector = {
+          ports    = [local.talos_tailscale_port]
+          protocol = "udp"
+        }
+        ingress = [
+          { subnet = "0.0.0.0/0", except = local.clusters[node.cluster].pod_subnet },
+          { subnet = "::/0" },
+        ]
+      },
       # Cilium writes pod identities into the packet mark, and identities with
       # id % 256 == 8 set Tailscale's bypass mark (0x80000/0xff0000). Its rules
       # from 5210 then send that pod's VXLAN to peer nodes out the LAN instead
