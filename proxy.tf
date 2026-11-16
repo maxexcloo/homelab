@@ -6,23 +6,12 @@ locals {
   })
 
   proxy_files = {
-    "/etc/containers/systemd/users/${local.proxy_machine.uid}/browserless.container" = {
-      content = templatefile("${path.module}/templates/hosts/mercury/browserless.container.tftpl", {
-        image = local.versions.images.browserless
-        port  = regex(":([0-9]+)$", local.proxy_services["agent-browser"].browser_upstream)[0]
-      })
-      mode = "0644"
-    }
     "/etc/containers/systemd/users/${local.proxy_machine.uid}/traefik.container" = {
       content = templatefile("${path.module}/templates/hosts/mercury/traefik.container.tftpl", {
         image  = local.versions.images.traefik
         dsh_ca = local.proxy_dsh_ca_path
       })
       mode = "0644"
-    }
-    "/etc/homelab/proxy/agent-browser.json" = {
-      content = jsonencode({ cdp = "${replace(local.proxy_services["agent-browser"].browser_upstream, "http://", "ws://")}/chromium" })
-      mode    = "0644"
     }
     "/etc/homelab/proxy/fnox.toml" = {
       # fnox uses op:// references, which cannot express ':' in item titles.
@@ -42,21 +31,6 @@ locals {
     "/etc/systemd/system/syncthing@${local.proxy_machine.username}.service.d/authentication.conf" = {
       content = templatefile("${path.module}/templates/hosts/mercury/syncthing-authentication.conf.tftpl", {
         username = local.proxy_machine.username
-      })
-      mode = "0644"
-    }
-    "/etc/systemd/user/agent-browser.service" = {
-      content = templatefile("${path.module}/templates/hosts/mercury/agent-browser.service.tftpl", {
-        port = regex(":([0-9]+)$", local.proxy_services["agent-browser"].upstream)[0]
-        url  = local.machine_service_urls["mercury/agent-browser"]
-      })
-      mode = "0644"
-    }
-    "/etc/systemd/user/dsh.service" = {
-      content = templatefile("${path.module}/templates/hosts/mercury/dsh.service.tftpl", {
-        hostname = local.proxy_services.dsh.hostname
-        port     = regex(":([0-9]+)$", local.proxy_services.dsh.upstream)[0]
-        url      = local.machine_service_urls["mercury/dsh"]
       })
       mode = "0644"
     }

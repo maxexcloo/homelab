@@ -4,8 +4,6 @@ kubernetes: v1.37.2
 # renovate: datasource=github-tags depName=talos packageName=siderolabs/talos
 talos: v1.14.6
 images:
-  # renovate: datasource=docker depName=ghcr.io/browserless/chromium
-  browserless: ghcr.io/browserless/chromium:v2.63.1
   # renovate: datasource=docker depName=tailscale/tailscale
   tailscale: docker.io/tailscale/tailscale:v1.104.7
   # renovate: datasource=docker depName=traefik

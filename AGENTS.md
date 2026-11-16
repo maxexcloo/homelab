@@ -6,12 +6,13 @@ This repository owns homelab infrastructure and Kubernetes cluster substrate.
 The separate `kubelab` repository owns Kubernetes API resources reconciled by
 Flux.
 
-Keep host provisioning focused on OS, hardware, access and service boot settings.
-Workstation Compose definitions belong to `dotfiles`; other host services are
-Podman Quadlets. Coding agents that need the host's tools and repositories use
-native user services. Host-specific files live in `data/hosts/`; shared and
-rendered provisioning templates live in `templates/hosts/`. Other application
-runtime configuration belongs to its owning repository.
+Keep host provisioning focused on OS, hardware, access, system service boot
+settings and shared ingress. Bluemax owns OS packages and common image defaults;
+Dotfiles owns the user environment and personal application configuration and
+services. Host workloads use Podman Quadlets, including rootless infrastructure
+containers. Host-specific files live in `data/hosts/`; shared and rendered
+provisioning templates live in `templates/hosts/`. Other application runtime
+configuration belongs to its owning repository.
 
 Host sync installs files and boot settings and reloads systemd. Service activation
 and restarts are explicit deployment operations.
