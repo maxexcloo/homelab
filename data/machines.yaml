@@ -235,13 +235,13 @@ machines:
         dsh:
           description: Coding Agent
           dns_record: true
-          hostname: dsh.mercury.mbk.excloo.net
+          hostname: code.excloo.com
           icon: mdi-code-braces
           name: DeepSeek Harness
           port: 443
           scheme: https
           aliases:
-            - code.excloo.com
+            - dsh.mercury.mbk.excloo.net
         syncthing:
           description: File Synchronisation
           dns_record: true

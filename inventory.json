@@ -442,18 +442,18 @@
       "url": "https://agent-browser.mercury.mbk.excloo.net"
     },
     "mercury/dsh": {
-      "aliases": ["code.excloo.com"],
+      "aliases": ["dsh.mercury.mbk.excloo.net"],
       "description": "Coding Agent",
       "dns_record": true,
-      "hostname": "dsh.mercury.mbk.excloo.net",
-      "hostnames": ["dsh.mercury.mbk.excloo.net", "code.excloo.com"],
+      "hostname": "code.excloo.com",
+      "hostnames": ["code.excloo.com", "dsh.mercury.mbk.excloo.net"],
       "icon": "mdi-code-braces",
       "machine": "mercury",
       "monitoring": false,
       "name": "DeepSeek Harness",
       "port": 443,
       "scheme": "https",
-      "url": "https://dsh.mercury.mbk.excloo.net"
+      "url": "https://code.excloo.com"
     },
     "mercury/syncthing": {
       "description": "File Synchronisation",
