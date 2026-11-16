@@ -78,15 +78,13 @@ locals {
   machine_interface_assignments = flatten([
     for machine_name, machine in local.machines : [
       for interface_index, interface in try(machine.interfaces, []) : {
-        # client_mac: a bridge answers for its address with its own MAC, not its member's.
-        address    = try(interface.address, null)
-        bridge     = try(interface.bridge, null)
-        client_mac = lower(try(interface.bridge, null) == null ? interface.mac_address : interface.bridge_mac_address)
-        mac        = lower(interface.mac_address)
-        machine    = machine_name
-        name       = try(interface.name, null)
-        network    = machine.network
-        primary    = interface_index == 0
+        address = try(interface.address, null)
+        bridge  = try(interface.bridge, null)
+        mac     = lower(interface.mac_address)
+        machine = machine_name
+        name    = try(interface.name, null)
+        network = machine.network
+        primary = interface_index == 0
         subnet = try(one([
           for subnet_name, subnet in try(local.networks[machine.network].subnets, {}) : subnet_name
           if try(interface.address, null) != null && cidrcontains(subnet.cidr, interface.address)

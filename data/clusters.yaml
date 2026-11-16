@@ -32,7 +32,7 @@ clusters:
         time_servers:
           - 169.254.169.254
       saturn:
-        address: 10.4.0.7
+        address: 10.0.0.7
         bootstrap: true
         configuration_delivery: container
         machine_type: controlplane
@@ -62,6 +62,11 @@ clusters:
         install_disk_selector: 'disk.transport == "nvme" && disk.model.matches(".*OM8PGP42048N-A0.*")'
         machine_type: worker
         configuration:
+          # Stays cabled but down, so venus keeps one LAN address on its 2.5 Gbit link.
+          - apiVersion: v1alpha1
+            kind: LinkConfig
+            name: enp12s0
+            up: false
           - apiVersion: v1alpha1
             kind: UserVolumeConfig
             name: datasets
