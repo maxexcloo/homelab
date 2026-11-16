@@ -147,11 +147,6 @@ locals {
         name       = "tailscale"
         environment = [
           "TS_AUTHKEY=${tailscale_tailnet_key.server[name].key}",
-          # Local addresses include Cilium's; peers that pick one route Tailscale through itself and stall.
-          "TS_DEBUG_OMIT_LOCAL_ADDRS=true",
-          # The router does not hairpin to the NATed endpoint and saturn's container has no IPv6, so
-          # same-site peers need the LAN addresses advertised explicitly or they relay through DERP.
-          "TS_DEBUG_PRETENDPOINT=${join(",", local.talos_node_tailscale_endpoints[name])}",
           "TS_HOSTNAME=${local.machine_tailscale_names[name]}",
           "TS_EXTRA_ARGS=--accept-routes=true --advertise-exit-node --reset",
           "TS_SERVE_CONFIG=${local.talos_tailscale_serve_config_path}",
@@ -235,13 +230,6 @@ locals {
   talos_node_images = {
     for name, node in local.talos_nodes_installed : name => node
     if can(node.image)
-  }
-
-  talos_node_tailscale_endpoints = {
-    for name, node in local.talos_nodes : name => [
-      for interface in try(local.machines[name].interfaces, []) : "${interface.address}:${local.talos_tailscale_port}"
-      if can(interface.address)
-    ]
   }
 
   talos_nodes = merge([
