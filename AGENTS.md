@@ -7,9 +7,9 @@ The separate `kubelab` repository owns Kubernetes API resources reconciled by
 Flux.
 
 Keep host provisioning focused on OS, hardware, access and service boot settings.
-Workstation Compose definitions belong to `dotfiles`; other host services are
-Podman Quadlets, except coding agents that need the host's tools and repositories
-use native user services. Host files live in `data/hosts/`. Other application runtime configuration belongs
+Workstation Compose definitions belong to `dotfiles`; other containerised host
+services are Podman Quadlets. OS-installed services and coding agents that need
+the host's tools use native systemd units. Host files live in `data/hosts/`. Other application runtime configuration belongs
 to its owning repository.
 
 ## Conventions

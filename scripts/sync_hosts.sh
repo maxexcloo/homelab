@@ -6,19 +6,13 @@ set -euo pipefail
 # Runs as root on the host from the uploaded staging directory.
 install_files() {
   local changed=false cloudflared_changed=false proxy_changed=false proxy_restart=false syncthing_changed=false dsh_changed=false path
-  local username="" uid="" image=""
+  local username="" uid=""
 
   cd "$(dirname "${BASH_SOURCE[0]}")"
   if [[ -s user ]]; then
     IFS=$'\t' read -r username uid <user
-    image="$(awk -F= '$1 == "ImageTag" { print $2 }' "root/etc/containers/systemd/users/${uid}/caddy.build")"
-    if ! cmp -s root/etc/homelab/proxy/Containerfile /etc/homelab/proxy/Containerfile ||
-      ! as_user podman image exists "${image}"; then
-      as_user podman build --quiet --tag "${image}" --file "$PWD/root/etc/homelab/proxy/Containerfile" "$PWD/root/etc/homelab/proxy"
-    fi
-    as_user podman run --rm --network none --env CLOUDFLARE_API_TOKEN=0000000000000000000000000000000000000000 \
-      --volume "$PWD/root/etc/homelab/proxy/Caddyfile:/etc/caddy/Caddyfile:ro,Z" \
-      "${image}" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+    as_user env CLOUDFLARE_API_TOKEN=0000000000000000000000000000000000000000 \
+      /usr/bin/caddy validate --config "$PWD/root/etc/homelab/proxy/Caddyfile" --adapter caddyfile
   fi
 
   cd root
@@ -31,7 +25,7 @@ install_files() {
       case "${path}" in
         /etc/cloudflared/config.yml | /etc/cloudflared/credentials.json) cloudflared_changed=true ;;
         /etc/homelab/proxy/Caddyfile) proxy_changed=true ;;
-        /etc/homelab/proxy/* | /etc/containers/systemd/users/*/caddy.*) proxy_restart=true ;;
+        /etc/homelab/proxy/* | /etc/systemd/user/caddy.service) proxy_restart=true ;;
         /etc/systemd/system/syncthing@*.service.d/authentication.conf) syncthing_changed=true ;;
         /etc/systemd/user/dsh.service) dsh_changed=true ;;
       esac
@@ -56,7 +50,7 @@ install_files() {
         as_user systemctl --user reload caddy.service
       fi
     else
-      as_user systemctl --user start caddy.service
+      as_user systemctl --user enable --now caddy.service
     fi
     if [[ "${syncthing_changed}" == true ]]; then
       systemctl restart "syncthing@${username}.service"

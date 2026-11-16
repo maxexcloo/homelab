@@ -15,13 +15,6 @@ locals {
         })
         mode = "0644"
       }
-      "/etc/homelab/proxy/Containerfile" = {
-        content = templatefile("${path.module}/templates/proxy/Containerfile.tftpl", {
-          caddy      = local.versions.caddy
-          cloudflare = local.versions.caddy_cloudflare
-        })
-        mode = "0644"
-      }
       "/etc/homelab/proxy/fnox.toml" = {
         # fnox uses op:// references, which cannot express ':' in item titles.
         content = <<-TOML
@@ -33,24 +26,8 @@ locals {
         TOML
         mode    = "0644"
       }
-      "/etc/homelab/proxy/create-secret.sh" = {
-        content = file("${path.module}/templates/proxy/create-secret.sh")
-        mode    = "0755"
-      }
-      "/etc/containers/systemd/users/${machine.uid}/caddy.build" = {
-        content = <<-UNIT
-          [Build]
-          File=/etc/homelab/proxy/Containerfile
-          ImageTag=localhost/homelab-caddy:${local.versions.caddy}
-          SetWorkingDirectory=/etc/homelab/proxy
-
-          [Service]
-          TimeoutStartSec=900
-        UNIT
-        mode    = "0644"
-      }
-      "/etc/containers/systemd/users/${machine.uid}/caddy.container" = {
-        content = file("${path.module}/templates/proxy/caddy.container")
+      "/etc/systemd/user/caddy.service" = {
+        content = file("${path.module}/templates/proxy/caddy.service")
         mode    = "0644"
       }
       "/etc/systemd/system/homelab-proxy.service" = {

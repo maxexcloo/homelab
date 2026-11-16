@@ -1,24 +1,24 @@
 {
-  admin 127.0.0.1:2019
-  auto_https disable_redirects
-  https_port 8443
+	admin 127.0.0.1:2019
+	auto_https disable_redirects
+	https_port 8443
 }
 %{ for name, service in services ~}
 
 https://${service.hostname} {
-  bind 127.0.0.1
-  tls {
-    dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-    dns_challenge_override_domain ${challenge_hostname}
-    resolvers 1.1.1.1 1.0.0.1
-  }
-  reverse_proxy ${service.upstream} {
+	bind 127.0.0.1
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+		dns_challenge_override_domain ${challenge_hostname}
+		resolvers 1.1.1.1 1.0.0.1
+	}
+	reverse_proxy ${service.upstream} {
 %{ if name == "dsh" ~}
-    header_down Set-Cookie "^(.*)$" "$1; Secure"
+		header_down Set-Cookie "^(.*)$" "$1; Secure"
 %{ endif ~}
 %{ if name == "syncthing" ~}
-    header_up Host {upstream_hostport}
+		header_up Host {upstream_hostport}
 %{ endif ~}
-  }
+	}
 }
 %{ endfor ~}

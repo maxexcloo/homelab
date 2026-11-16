@@ -1,5 +1,0 @@
-FROM docker.io/library/caddy:${caddy}-builder AS builder
-RUN xcaddy build v${caddy} --with github.com/caddy-dns/cloudflare@${cloudflare}
-
-FROM docker.io/library/caddy:${caddy}-alpine
-COPY --from=builder /usr/bin/caddy /usr/bin/caddy
