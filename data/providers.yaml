@@ -116,7 +116,7 @@ providers:
         source:
           matching_target: ANY
           zone: internal
-      iot_haos:
+      iot_luna:
         action: ALLOW
         destination:
           ips:
@@ -124,7 +124,7 @@ providers:
           matching_target: IP
           zone: internal
         enabled: true
-        name: Allow IoT Traffic to HAOS
+        name: Allow IoT Traffic to Luna
         source:
           matching_target: ANY
           zone: iot
