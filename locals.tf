@@ -45,12 +45,16 @@ locals {
     }
     services = merge([
       for machine_name, machine in local.machines : {
-        for service_name, service in machine.services : "${machine_name}/${service_name}" => merge(service, {
-          hostnames  = concat([try(service.hostname, local.machine_fqdns[machine_name])], try(service.aliases, []))
-          machine    = machine_name
-          monitoring = try(service.monitoring, false)
-          url        = local.machine_service_urls["${machine_name}/${service_name}"]
-        })
+        for service_name, service in machine.services : "${machine_name}/${service_name}" => merge(
+          service,
+          {
+            hostnames  = local.machine_service_hostnames["${machine_name}/${service_name}"]
+            machine    = machine_name
+            monitoring = try(service.monitoring, false)
+            url        = local.machine_service_urls["${machine_name}/${service_name}"]
+          },
+          try(service.dns_record, false) ? { hostname = local.machine_service_hostnames["${machine_name}/${service_name}"][0] } : {},
+        )
       }
     ]...)
   }
@@ -108,10 +112,19 @@ locals {
     if try(machine.public_ipv4, null) != null || try(machine.public_ipv6, null) != null || try(machine.oci.assign_public_ip, false)
   }
 
+  machine_service_hostnames = merge([
+    for machine_name, machine in local.machines : {
+      for service_name, service in machine.services : "${machine_name}/${service_name}" => distinct(concat(
+        [try(service.hostname, try(service.dns_record, false) ? "${service_name}.${local.machine_fqdns[machine_name]}" : local.machine_fqdns[machine_name])],
+        try(service.aliases, try(service.dns_record, false) ? ["${service_name}.${local.machine_fqdns[machine_name]}"] : []),
+      ))
+    }
+  ]...)
+
   machine_service_urls = merge([
     for machine_name, machine in local.machines : {
       for service_name, service in machine.services :
-      "${machine_name}/${service_name}" => "${service.scheme}://${try(service.hostname, local.machine_fqdns[machine_name])}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+      "${machine_name}/${service_name}" => "${service.scheme}://${local.machine_service_hostnames["${machine_name}/${service_name}"][0]}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
     }
   ]...)
 

@@ -1,17 +1,15 @@
 locals {
   dns_machine_services = merge([
-    for machine_name, machine in local.machines : merge([
-      for service_name, service in machine.services : {
-        for hostname in concat([service.hostname], try(service.aliases, [])) : "${machine_name}/${service_name}${hostname == service.hostname ? "" : "/${hostname}"}" => {
-          content  = try(service.dns_lan, false) ? local.machine_private_ipv4_addresses[machine_name] : local.machine_fqdns[machine_name]
-          hostname = hostname
-          machine  = machine_name
-          type     = try(service.dns_lan, false) ? "A" : "CNAME"
-          zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${hostname}", ".${zone}")])
-        }
+    for service_key, service in local.inventory.services : {
+      for hostname in service.hostnames : "${service_key}${hostname == service.hostname ? "" : "/${hostname}"}" => {
+        content  = try(service.dns_lan, false) ? local.machine_private_ipv4_addresses[service.machine] : local.machine_fqdns[service.machine]
+        hostname = hostname
+        machine  = service.machine
+        type     = try(service.dns_lan, false) ? "A" : "CNAME"
+        zone     = one([for zone in local.cloudflare_zones : zone if endswith(".${hostname}", ".${zone}")])
       }
-      if try(service.dns_record, false)
-    ]...)
+    }
+    if try(service.dns_record, false)
   ]...)
 
   dns_records = {
