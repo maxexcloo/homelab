@@ -46,6 +46,7 @@ locals {
     services = merge([
       for machine_name, machine in local.machines : {
         for service_name, service in machine.services : "${machine_name}/${service_name}" => merge(service, {
+          hostnames  = concat([try(service.hostname, local.machine_fqdns[machine_name])], try(service.aliases, []))
           machine    = machine_name
           monitoring = try(service.monitoring, false)
           url        = local.machine_service_urls["${machine_name}/${service_name}"]

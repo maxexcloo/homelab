@@ -203,6 +203,7 @@ machines:
           scheme: http
     mercury:
       beszel: true
+      login_service: syncthing
       monitoring: false
       platform: ucore
       smtp: resend
@@ -226,7 +227,7 @@ machines:
         agent-browser:
           description: Browser Automation
           dns_record: true
-          hostname: browser.mercury.mbk.excloo.net
+          hostname: agent-browser.mercury.mbk.excloo.net
           icon: mdi-web
           name: Agent Browser (Mercury)
           port: 443
@@ -234,11 +235,13 @@ machines:
         dsh:
           description: Coding Agent
           dns_record: true
-          hostname: code.excloo.com
+          hostname: dsh.mercury.mbk.excloo.net
           icon: mdi-code-braces
           name: DeepSeek Harness
           port: 443
           scheme: https
+          aliases:
+            - code.excloo.com
         syncthing:
           description: File Synchronisation
           dns_record: true
