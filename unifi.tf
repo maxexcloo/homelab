@@ -27,7 +27,6 @@ locals {
       "${network}/${subnet}" => {
         name   = subnet_config.name
         subnet = subnet_config.cidr
-        vlan   = try(subnet_config.vlan, null)
       }
     }
   ]...)
@@ -41,7 +40,6 @@ resource "unifi_client" "host" {
   local_dns_record       = each.value.hostname != null ? each.value.hostname : ""
   mac                    = each.value.mac
   name                   = each.value.name
-  network_id             = try(local.unifi_networks[each.value.network_key].vlan, null) != null ? data.unifi_network.configured[each.value.network_key].id : null
   note                   = local.managed_comment
   skip_forget_on_destroy = false
 
@@ -58,7 +56,6 @@ resource "unifi_client" "talos_container" {
   local_dns_record = "${each.value.device_name}.${local.machines[each.key].network}.${local.domains.infrastructure}"
   mac              = each.value.mac
   name             = each.value.device_name
-  network_id       = local.unifi_networks[each.value.network_key].vlan != null ? data.unifi_network.configured[each.value.network_key].id : null
   note             = local.managed_comment
 }
 

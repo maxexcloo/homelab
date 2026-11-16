@@ -62,6 +62,10 @@ clusters:
         install_disk_selector: 'disk.transport == "nvme" && disk.model.matches(".*OM8PGP42048N-A0.*")'
         machine_type: worker
         configuration:
+          # Declaring any link stops Talos's default DHCP, so name the one venus uses.
+          - apiVersion: v1alpha1
+            kind: DHCPv4Config
+            name: enp13s0
           # Stays cabled but down, so venus keeps one LAN address on its 2.5 Gbit link.
           - apiVersion: v1alpha1
             kind: LinkConfig
