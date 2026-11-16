@@ -128,6 +128,8 @@ machines:
           path: /admin
           port: 555
           scheme: https
+          # The native certificate does not cover a service-name alias.
+          aliases: []
           credentials:
             username: max@excloo.com
         scrypted:
@@ -227,7 +229,6 @@ machines:
         agent-browser:
           description: Browser Automation
           dns_record: true
-          hostname: agent-browser.mercury.mbk.excloo.net
           icon: mdi-web
           name: Agent Browser (Mercury)
           port: 443
@@ -240,12 +241,9 @@ machines:
           name: DeepSeek Harness
           port: 443
           scheme: https
-          aliases:
-            - dsh.mercury.mbk.excloo.net
         syncthing:
           description: File Synchronisation
           dns_record: true
-          hostname: syncthing.mercury.mbk.excloo.net
           icon: sh-syncthing
           name: Syncthing (Mercury)
           port: 443

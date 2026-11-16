@@ -331,6 +331,7 @@
       "url": "https://luna.mbk.excloo.net/app/core_piper"
     },
     "luna/roborock": {
+      "aliases": [],
       "credentials": {
         "username": "max@excloo.com"
       },
@@ -442,7 +443,6 @@
       "url": "https://agent-browser.mercury.mbk.excloo.net"
     },
     "mercury/dsh": {
-      "aliases": ["dsh.mercury.mbk.excloo.net"],
       "description": "Coding Agent",
       "dns_record": true,
       "hostname": "code.excloo.com",
