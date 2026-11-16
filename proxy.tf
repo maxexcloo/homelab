@@ -138,6 +138,8 @@ locals {
           Restart=on-failure
           RuntimeDirectory=dsh
           RuntimeDirectoryMode=0700
+          StandardOutput=truncate:%t/dsh/launch-output
+          StandardError=inherit
           StateDirectory=dsh
           StateDirectoryMode=0700
           UMask=0077
