@@ -120,22 +120,6 @@ locals {
     for name, container in local.truenas_talos_containers : name => truenas_dataset.root["${name}/${container.dataset}"].mount_point
   }
 
-  # TrueNAS containers use a Tailscale sidecar in the Talos network namespace, so Talos firewall rules cover it.
-  truenas_talos_container_tailscale_environment = {
-    for name, container in local.truenas_talos_containers : name => {
-      TS_AUTH_ONCE             = "true"
-      TS_AUTHKEY               = tailscale_tailnet_key.talos_container[name].key
-      TS_DEBUG_PRETENDPOINT    = "${container.address}:${local.talos_tailscale_port}"
-      TS_HOSTNAME              = container.device_name
-      TS_SERVE_CONFIG          = local.talos_tailscale_serve_config_path
-      TS_STATE_DIR             = local.truenas_talos_container_tailscale_state_directory
-      TS_TAILSCALED_EXTRA_ARGS = "--port=${local.talos_tailscale_port}"
-      TS_USERSPACE             = "false"
-    }
-  }
-
-  truenas_talos_container_tailscale_state_directory = "/var/lib/tailscale"
-
   truenas_talos_containers = {
     for name, node in local.talos_nodes : name => merge(node, node.container, {
       device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
@@ -164,33 +148,7 @@ resource "truenas_app" "talos_container" {
   remove_images = false
 
   custom_compose = yamlencode({
-    configs = {
-      tailscale-serve = {
-        content = local.tailscale_cluster_serve_configs[each.value.cluster]
-      }
-    }
     services = {
-      tailscale = {
-        cap_add = ["NET_ADMIN", "NET_RAW"]
-        configs = [{
-          source = "tailscale-serve"
-          target = local.talos_tailscale_serve_config_path
-        }]
-        depends_on   = ["talos"]
-        devices      = ["/dev/net/tun:/dev/net/tun"]
-        image        = local.versions.images.tailscale
-        network_mode = "service:talos"
-        restart      = "unless-stopped"
-        environment  = local.truenas_talos_container_tailscale_environment[each.key]
-        volumes = [{
-          source = "${local.truenas_talos_container_storage_paths[each.key]}/tailscale"
-          target = local.truenas_talos_container_tailscale_state_directory
-          type   = "bind"
-          bind = {
-            create_host_path = true
-          }
-        }]
-      }
       talos = {
         cgroup       = "private"
         dns          = local.truenas_talos_container_dns_servers
@@ -219,6 +177,7 @@ resource "truenas_app" "talos_container" {
               { directory = "controlplane/opt", target = "/opt" },
               { directory = "controlplane/state", target = "/system/state" },
               { directory = "controlplane/var", target = "/var" },
+              { directory = "tailscale", target = local.talos_container_tailscale_state_directory },
               ] : {
               source = "${local.truenas_talos_container_storage_paths[each.key]}/${volume.directory}"
               target = volume.target
