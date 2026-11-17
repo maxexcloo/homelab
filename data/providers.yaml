@@ -87,7 +87,7 @@ providers:
     url: https://github.com/maxexcloo
   oracle_cloud:
     description: Cloud VMs
-    icon: si-oracle-#ffffff
+    icon: sh-oracle
     name: Oracle Cloud
     url: https://cloud.oracle.com
   resend:
@@ -142,6 +142,6 @@ providers:
       internal: Internal
       iot: IoT
       vpn: Vpn
-    icon: si-ubiquiti-#ffffff
+    icon: sh-ubiquiti-unifi
     name: UniFi
     url: https://unifi.ui.com
