@@ -83,12 +83,7 @@ locals {
         mac     = lower(interface.mac_address)
         machine = machine_name
         name    = try(interface.name, null)
-        network = machine.network
         primary = interface_index == 0
-        subnet = try(one([
-          for subnet_name, subnet in try(local.networks[machine.network].subnets, {}) : subnet_name
-          if try(interface.address, null) != null && cidrcontains(subnet.cidr, interface.address)
-        ]), null)
       }
     ]
   ])

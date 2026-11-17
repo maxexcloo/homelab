@@ -5,6 +5,12 @@ data "truenas_system_info" "container_host" {
 }
 
 locals {
+  # A bridge without a host address gives the Talos container its own port.
+  truenas_container_bridges = {
+    for interface in local.machine_interface_assignments : interface.machine => interface
+    if can(local.truenas_hosts[interface.machine]) && interface.bridge != null
+  }
+
   truenas_cronjobs = merge([
     for target, host in local.truenas_hosts : {
       for name, job in try(host.cronjobs, {}) : "${target}/${name}" => merge(job, { target = target })
@@ -35,12 +41,6 @@ locals {
   truenas_hosts = {
     for name, machine in local.machines : name => machine
     if machine.platform == "truenas"
-  }
-
-  # A bridge without a host address gives the Talos container its own port.
-  truenas_container_bridges = {
-    for interface in local.machine_interface_assignments : interface.machine => interface
-    if can(local.truenas_hosts[interface.machine]) && interface.bridge != null
   }
 
   truenas_init_scripts = merge([
@@ -250,11 +250,6 @@ resource "truenas_app" "talos_container" {
       }
     }
     networks = {
-      # macvlan cannot reach the host; this bridge gives Tailscale a local peer path.
-      local = {
-        driver   = "bridge"
-        internal = true
-      }
       lan = {
         driver = "macvlan"
         driver_opts = {
@@ -266,6 +261,11 @@ resource "truenas_app" "talos_container" {
             subnet  = cidrsubnet(local.unifi_networks[each.value.network_key].subnet, 0, 0)
           }]
         }
+      }
+      # macvlan cannot reach the host; this bridge gives Tailscale a local peer path.
+      local = {
+        driver   = "bridge"
+        internal = true
       }
     }
   })
