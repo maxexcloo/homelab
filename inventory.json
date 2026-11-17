@@ -212,7 +212,7 @@
     },
     "oracle_cloud": {
       "description": "Cloud VMs",
-      "icon": "sh-oracle",
+      "icon": "sh-oracle-light",
       "monitoring": true,
       "name": "Oracle Cloud",
       "url": "https://cloud.oracle.com"
