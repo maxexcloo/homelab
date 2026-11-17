@@ -55,7 +55,11 @@ data "talos_machine_configuration" "container" {
       yamlencode({ apiVersion = "v1alpha1", kind = "KubeletConfig", "$patch" = "delete" }),
       yamlencode(local.truenas_talos_container_kubelet_configurations[each.key]),
     ],
-    [for document in concat(local.talos_machine_configuration_documents_common[each.key], each.value.configuration) : yamlencode(document)],
+    [for document in concat(
+      local.talos_machine_configuration_documents_common[each.key],
+      local.talos_container_tailscale_documents[each.key],
+      each.value.configuration,
+    ) : yamlencode(document)],
   )
 }
 
@@ -126,6 +130,75 @@ locals {
   talos_tailscale_port = 41641
 
   talos_tailscale_serve_config_path = "/etc/tailscale/serve.json"
+
+  talos_container_tailscale_state_directory = "/var/lib/tailscale"
+
+  talos_container_tailscale_documents = {
+    for name, container in local.truenas_talos_containers : name => [
+      {
+        apiVersion = "v1alpha1"
+        kind       = "EtcFileConfig"
+        name       = trimprefix(local.talos_tailscale_serve_config_path, "/etc/")
+        mode       = parseint("600", 8)
+        contents   = local.tailscale_cluster_serve_configs[container.cluster]
+      },
+      {
+        apiVersion = "v1alpha1"
+        kind       = "ContainerConfig"
+        name       = "tailscale"
+        image      = local.versions.images.tailscale
+        environment = [
+          for key, value in local.talos_container_tailscale_environment[name] : "${key}=${value}"
+        ]
+        dependsOn = {
+          networks = ["addresses", "etcfiles"]
+          paths    = ["/dev/net/tun", local.talos_tailscale_serve_config_path, local.talos_container_tailscale_state_directory]
+        }
+        mounts = [
+          {
+            hostPath = {
+              source      = "/dev/net/tun"
+              destination = "/dev/net/tun"
+            }
+          },
+          {
+            hostPath = {
+              source      = dirname(local.talos_tailscale_serve_config_path)
+              destination = dirname(local.talos_tailscale_serve_config_path)
+              options     = ["ro"]
+            }
+          },
+          {
+            hostPath = {
+              source      = local.talos_container_tailscale_state_directory
+              destination = local.talos_container_tailscale_state_directory
+            }
+          },
+        ]
+        network = { mode = "host" }
+        security = {
+          profile = "privileged"
+          capabilities = {
+            add  = ["NET_ADMIN", "NET_RAW"]
+            drop = ["ALL"]
+          }
+        }
+      },
+    ]
+  }
+
+  talos_container_tailscale_environment = {
+    for name, container in local.truenas_talos_containers : name => {
+      TS_AUTH_ONCE             = "true"
+      TS_AUTHKEY               = tailscale_tailnet_key.talos_container[name].key
+      TS_DEBUG_PRETENDPOINT    = "${container.address}:${local.talos_tailscale_port}"
+      TS_HOSTNAME              = container.device_name
+      TS_SERVE_CONFIG          = local.talos_tailscale_serve_config_path
+      TS_STATE_DIR             = local.talos_container_tailscale_state_directory
+      TS_TAILSCALED_EXTRA_ARGS = "--port=${local.talos_tailscale_port}"
+      TS_USERSPACE             = "false"
+    }
+  }
 
   talos_machine_bootstrap_nodes = {
     for name, node in local.talos_nodes : name => node
