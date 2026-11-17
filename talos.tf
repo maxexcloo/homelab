@@ -177,7 +177,7 @@ locals {
   }
 
   talos_machine_configuration_documents_common = {
-    for name, node in local.talos_nodes : name => concat([
+    for name, node in local.talos_nodes : name => [
       {
         apiVersion = "v1alpha1"
         kind       = "KubeFlannelCNIConfig"
@@ -243,14 +243,7 @@ locals {
         auto       = "off"
         hostname   = local.machine_hostnames[name]
       },
-      ], node.machine_type == "controlplane" ? [
-      # Kubelab's Cilium replaces kube-proxy.
-      {
-        apiVersion = "v1alpha1"
-        kind       = "KubeProxyConfig"
-        enabled    = false
-      },
-    ] : [])
+    ]
   }
 
   talos_node_images = {
