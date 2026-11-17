@@ -143,14 +143,14 @@
   "providers": {
     "1password": {
       "description": "Passwords & Secrets",
-      "icon": "1password",
+      "icon": "si-1password-#ffffff",
       "monitoring": true,
       "name": "1Password",
       "url": "https://my.1password.com"
     },
     "backblaze": {
       "description": "Object Storage",
-      "icon": "sh-backblaze",
+      "icon": "si-backblaze-#ffffff",
       "monitoring": true,
       "name": "Backblaze",
       "url": "https://backblaze.com"
@@ -163,7 +163,7 @@
         "query-type": "A",
         "url": "1.1.1.1"
       },
-      "icon": "sh-cloudflare",
+      "icon": "si-cloudflare-#ffffff",
       "monitoring": true,
       "name": "Cloudflare",
       "url": "https://dash.cloudflare.com",
@@ -187,7 +187,7 @@
     },
     "fly": {
       "description": "App Platform",
-      "icon": "fly-io",
+      "icon": "si-flydotio-#ffffff",
       "monitoring": true,
       "name": "Fly.io",
       "url": "https://fly.io/dashboard"
@@ -195,7 +195,7 @@
     "gatus": {
       "description": "Health Monitoring & Status Page • fly",
       "group": "Operations",
-      "icon": "sh-gatus",
+      "icon": "sh-gatus-light",
       "monitoring": false,
       "name": "Gatus",
       "url": "https://status.excloo.com",
@@ -237,7 +237,7 @@
     },
     "unifi": {
       "description": "Network",
-      "icon": "sh-ubiquiti-unifi",
+      "icon": "sh-ubiquiti-unifi-light",
       "monitoring": true,
       "name": "UniFi",
       "url": "https://unifi.ui.com"
