@@ -92,7 +92,7 @@ scope to smallest as `provider_resource_qualifier`.
   labels. Keep resource identity separate from presentation.
 - Use full ZFS paths for TrueNAS dataset keys. Configure only deviations from
   defaults and leave factory-default resources native.
-- Keep the existing white icon palette in `data/providers.yaml`.
+- Keep the existing white palette for provider status cards.
 - Keep consumer settings beside their owner in shared data. Avoid app-name
   wrappers such as `homepage` and `gatus`; nest only distinct endpoints or fields
   required by a native schema.
