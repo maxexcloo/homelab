@@ -32,10 +32,6 @@ locals {
     hosts = {
       for name, machine in local.machines : name => try(coalesce(
         can(local.dns_records_derived_specs["machine/${name}/a"]) || can(local.dns_records_derived_specs["machine/${name}/aaaa"]) ? local.machine_fqdns[name] : null,
-        try(format("%s.%s",
-          local.machine_hostnames[name],
-          data.unifi_network.configured[local.unifi_clients[lower(machine.interfaces[0].mac_address)].network_key].domain_name,
-        ), null),
         local.machine_private_ipv4_addresses[name],
         try(machine.public_ipv4, null),
       ), null)

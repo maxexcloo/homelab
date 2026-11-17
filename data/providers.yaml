@@ -119,8 +119,8 @@ providers:
       iot_luna:
         action: ALLOW
         destination:
-          ips:
-            - 10.0.0.2
+          machines:
+            - luna
           matching_target: IP
           zone: internal
         enabled: true
