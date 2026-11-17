@@ -87,7 +87,7 @@ providers:
     url: https://github.com/maxexcloo
   oracle_cloud:
     description: Cloud VMs
-    icon: sh-oracle
+    icon: sh-oracle-light
     name: Oracle Cloud
     url: https://cloud.oracle.com
   resend:
