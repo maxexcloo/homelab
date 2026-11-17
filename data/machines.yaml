@@ -91,7 +91,7 @@ machines:
         matter-hub:
           description: Matter Bridge
           group: Smart Home
-          icon: sh-home-assistant-matter-hub-light
+          icon: sh-home-assistant-matter-hub
           name: Home Assistant Matter Hub
           path: /app/3fd9e6b0_hamh
           port: 443
@@ -152,7 +152,7 @@ machines:
         vscode:
           description: Browser IDE
           group: Smart Home
-          icon: sh-visual-studio-code-light
+          icon: sh-visual-studio-code
           name: Studio Code Server
           path: /app/a0d7b954_vscode
           port: 443
@@ -234,7 +234,7 @@ machines:
           description: Coding Agent
           dns_record: true
           hostname: code.excloo.com
-          icon: sh-deepseek-light
+          icon: sh-deepseek
           name: DeepSeek Harness
           port: 443
           scheme: https
@@ -328,7 +328,7 @@ machines:
         management:
           description: Storage Appliance
           group: Infrastructure
-          icon: sh-truenas-scale-light
+          icon: sh-truenas-scale
           monitoring: true
           name: TrueNAS
           port: 443
@@ -400,7 +400,7 @@ machines:
         management:
           description: Zigbee Ethernet Adapter
           group: Smart Home
-          icon: sh-smlight-light
+          icon: sh-smlight
           name: SLZB-06M
           port: 80
           scheme: http
@@ -420,7 +420,7 @@ machines:
         management:
           description: Network Controller
           group: Infrastructure
-          icon: sh-ubiquiti-unifi-light
+          icon: sh-ubiquiti-unifi
           monitoring: true
           name: UniFi
           port: 443

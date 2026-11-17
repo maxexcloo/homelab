@@ -143,14 +143,14 @@
   "providers": {
     "1password": {
       "description": "Passwords & Secrets",
-      "icon": "si-1password-#ffffff",
+      "icon": "1password",
       "monitoring": true,
       "name": "1Password",
       "url": "https://my.1password.com"
     },
     "backblaze": {
       "description": "Object Storage",
-      "icon": "si-backblaze-#ffffff",
+      "icon": "sh-backblaze",
       "monitoring": true,
       "name": "Backblaze",
       "url": "https://backblaze.com"
@@ -163,7 +163,7 @@
         "query-type": "A",
         "url": "1.1.1.1"
       },
-      "icon": "si-cloudflare-#ffffff",
+      "icon": "sh-cloudflare",
       "monitoring": true,
       "name": "Cloudflare",
       "url": "https://dash.cloudflare.com",
@@ -187,7 +187,7 @@
     },
     "fly": {
       "description": "App Platform",
-      "icon": "si-flydotio-#ffffff",
+      "icon": "fly-io",
       "monitoring": true,
       "name": "Fly.io",
       "url": "https://fly.io/dashboard"
@@ -195,7 +195,7 @@
     "gatus": {
       "description": "Health Monitoring & Status Page • fly",
       "group": "Operations",
-      "icon": "sh-gatus-light",
+      "icon": "sh-gatus",
       "monitoring": false,
       "name": "Gatus",
       "url": "https://status.excloo.com",
@@ -237,7 +237,7 @@
     },
     "unifi": {
       "description": "Network",
-      "icon": "sh-ubiquiti-unifi-light",
+      "icon": "sh-ubiquiti-unifi",
       "monitoring": true,
       "name": "UniFi",
       "url": "https://unifi.ui.com"
@@ -292,7 +292,7 @@
       "description": "Matter Bridge",
       "group": "Smart Home",
       "hostnames": ["luna.mbk.excloo.net"],
-      "icon": "sh-home-assistant-matter-hub-light",
+      "icon": "sh-home-assistant-matter-hub",
       "machine": "luna",
       "monitoring": false,
       "name": "Home Assistant Matter Hub",
@@ -383,7 +383,7 @@
       "description": "Browser IDE",
       "group": "Smart Home",
       "hostnames": ["luna.mbk.excloo.net"],
-      "icon": "sh-visual-studio-code-light",
+      "icon": "sh-visual-studio-code",
       "machine": "luna",
       "monitoring": false,
       "name": "Studio Code Server",
@@ -447,7 +447,7 @@
       "dns_record": true,
       "hostname": "code.excloo.com",
       "hostnames": ["code.excloo.com", "dsh.mercury.mbk.excloo.net"],
-      "icon": "sh-deepseek-light",
+      "icon": "sh-deepseek",
       "machine": "mercury",
       "monitoring": false,
       "name": "DeepSeek Harness",
@@ -484,7 +484,7 @@
       "description": "Storage Appliance",
       "group": "Infrastructure",
       "hostnames": ["saturn.mbk.excloo.net"],
-      "icon": "sh-truenas-scale-light",
+      "icon": "sh-truenas-scale",
       "machine": "saturn",
       "monitoring": true,
       "name": "TrueNAS",
@@ -525,7 +525,7 @@
       "description": "Zigbee Ethernet Adapter",
       "group": "Smart Home",
       "hostnames": ["slzb-06m.mbk.excloo.net"],
-      "icon": "sh-smlight-light",
+      "icon": "sh-smlight",
       "machine": "slzb-06m",
       "monitoring": false,
       "name": "SLZB-06M",
@@ -538,7 +538,7 @@
       "description": "Network Controller",
       "group": "Infrastructure",
       "hostnames": ["sol.mbk.excloo.net"],
-      "icon": "sh-ubiquiti-unifi-light",
+      "icon": "sh-ubiquiti-unifi",
       "machine": "sol",
       "monitoring": true,
       "name": "UniFi",

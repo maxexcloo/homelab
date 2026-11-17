@@ -27,19 +27,19 @@ dns:
 providers:
   1password:
     description: Passwords & Secrets
-    icon: si-1password-#ffffff
+    icon: 1password
     name: 1Password
     url: https://my.1password.com
   backblaze:
     description: Object Storage
     endpoint: https://s3.us-east-005.backblazeb2.com
-    icon: si-backblaze-#ffffff
+    icon: sh-backblaze
     name: Backblaze
     url: https://backblaze.com
   cloudflare:
     account_name: excloo
     description: DNS & Zero Trust
-    icon: si-cloudflare-#ffffff
+    icon: sh-cloudflare
     name: Cloudflare
     url: https://dash.cloudflare.com
     dns:
@@ -68,13 +68,13 @@ providers:
       url: 76.76.2.0
   fly:
     description: App Platform
-    icon: si-flydotio-#ffffff
+    icon: fly-io
     name: Fly.io
     url: https://fly.io/dashboard
   gatus:
     description: Health Monitoring & Status Page • fly
     group: Operations
-    icon: sh-gatus-light
+    icon: sh-gatus
     monitoring: false
     name: Gatus
     url: https://status.excloo.com
@@ -142,6 +142,6 @@ providers:
       internal: Internal
       iot: IoT
       vpn: Vpn
-    icon: sh-ubiquiti-unifi-light
+    icon: sh-ubiquiti-unifi
     name: UniFi
     url: https://unifi.ui.com
