@@ -183,6 +183,12 @@ locals {
         kind       = "KubeFlannelCNIConfig"
         "$patch"   = "delete"
       },
+      # Kubelab's Cilium replaces kube-proxy.
+      {
+        apiVersion = "v1alpha1"
+        kind       = "KubeProxyConfig"
+        enabled    = false
+      },
       {
         apiVersion     = "v1alpha1"
         kind           = "KubeNetworkConfig"
