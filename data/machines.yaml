@@ -71,7 +71,7 @@ machines:
         espresense-companion:
           description: Room Presence
           group: Smart Home
-          icon: espressif
+          icon: https://raw.githubusercontent.com/ESPresense/ESPresense-companion/main/src/ui/static/favicon.png
           name: ESPresense Companion
           path: /app/f32ea98b_espresense-companion
           port: 443
@@ -109,7 +109,7 @@ machines:
         piper:
           description: Local Text-to-Speech
           group: Smart Home
-          icon: mdi-account-voice
+          icon: sh-piper-tts
           name: Piper
           path: /app/core_piper
           port: 443
@@ -143,7 +143,7 @@ machines:
         ssh:
           description: SSH & Web Terminal
           group: Smart Home
-          icon: mdi-console
+          icon: https://raw.githubusercontent.com/hassio-addons/addon-ssh/main/ssh/icon.png
           name: Advanced SSH & Web Terminal
           path: /app/a0d7b954_ssh
           port: 443
@@ -191,7 +191,7 @@ machines:
       services:
         polaris:
           description: Game Streaming Host
-          icon: sh-sunshine
+          icon: sh-polaris-game-streaming
           name: Polaris
           port: 47990
           scheme: https
@@ -226,7 +226,7 @@ machines:
         agent-browser:
           description: Browser Automation
           dns_record: true
-          icon: mdi-web
+          icon: https://raw.githubusercontent.com/vercel-labs/agent-browser/main/docs/src/app/favicon.ico
           name: Agent Browser (Mercury)
           port: 443
           scheme: https
@@ -234,7 +234,7 @@ machines:
           description: Coding Agent
           dns_record: true
           hostname: code.excloo.com
-          icon: mdi-code-braces
+          icon: sh-deepseek
           name: DeepSeek Harness
           port: 443
           scheme: https
@@ -400,7 +400,7 @@ machines:
         management:
           description: Zigbee Ethernet Adapter
           group: Smart Home
-          icon: sh-zigbee
+          icon: sh-smlight
           name: SLZB-06M
           port: 80
           scheme: http
