@@ -4,12 +4,6 @@ data "unifi_firewall_zone" "configured" {
   name = each.value
 }
 
-data "unifi_network" "configured" {
-  for_each = local.unifi_networks
-
-  name = each.value.name
-}
-
 locals {
   unifi_clients = {
     for interface in local.machine_interface_assignments : interface.mac => {
@@ -24,7 +18,6 @@ locals {
     for network, site in local.networks : {
       for subnet, subnet_config in try(site.subnets, {}) :
       "${network}/${subnet}" => {
-        name   = subnet_config.name
         subnet = subnet_config.cidr
       }
     }
@@ -75,7 +68,7 @@ resource "unifi_firewall_policy" "configured" {
       matching_target = each.value.destination.matching_target
       zone_id         = data.unifi_firewall_zone.configured[each.value.destination.zone].id
     },
-    try({ ips = each.value.destination.ips }, {}),
+    can(each.value.destination.machines) ? { ips = [for machine in each.value.destination.machines : local.machine_private_ipv4_addresses[machine]] } : {},
   )
 
   lifecycle {
