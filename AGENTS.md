@@ -12,6 +12,8 @@ image defaults; Dotfiles owns application runtime definitions, image versions an
 user configuration, including rootless ingress. Homelab supplies shared inventory
 and protected configuration and credentials rather than installing or supervising
 applications.
+Mars does not use Dotfiles; its RomM streaming Quadlet remains in
+`data/hosts/mars/` as an explicit exception.
 Host-specific infrastructure files live in `data/hosts/`; provisioning templates
 live in `templates/hosts/`. Other application runtime configuration belongs to its
 owning repository.
