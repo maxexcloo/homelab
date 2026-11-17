@@ -195,7 +195,7 @@
     "gatus": {
       "description": "Health Monitoring & Status Page • fly",
       "group": "Operations",
-      "icon": "sh-gatus-light",
+      "icon": "sh-gatus",
       "monitoring": false,
       "name": "Gatus",
       "url": "https://status.excloo.com",
