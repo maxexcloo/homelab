@@ -51,9 +51,8 @@ machines:
                 no_tls_verify: true
             - hostname: home-assistant.excloo.com
               mtls: true
+              origin_machine_fqdn: true
               service: https://homeassistant
-              origin_request:
-                origin_server_name: luna.mbk.excloo.net
       interfaces:
         - address: 10.0.0.2
           mac_address: 84:47:09:67:c8:33

@@ -6,7 +6,6 @@ networks:
     subnets:
       default:
         cidr: 10.0.0.1/22
-        name: Default
   syd:
     name: Sydney
     oci:

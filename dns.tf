@@ -1,6 +1,6 @@
 locals {
   dns_machine_services = merge([
-    for service_key, service in local.inventory.services : {
+    for service_key, service in local.machine_services : {
       for hostname in service.hostnames : "${service_key}${hostname == service.hostname ? "" : "/${hostname}"}" => {
         content  = try(service.dns_lan, false) ? local.machine_private_ipv4_addresses[service.machine] : local.machine_fqdns[service.machine]
         hostname = hostname

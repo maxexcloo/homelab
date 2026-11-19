@@ -75,16 +75,14 @@ locals {
     special = false
   }
 
-  onepassword_service_access = merge([
-    for machine_name, machine in local.machines : {
-      for service_name, service in machine.services : "${machine_name}/${service_name}" => {
-        name     = service.name
-        url      = local.machine_service_urls["${machine_name}/${service_name}"]
-        username = service.credentials.username
-      }
-      if can(service.credentials)
+  onepassword_service_access = {
+    for service_key, service in local.machine_services : service_key => {
+      name     = service.name
+      url      = service.url
+      username = service.credentials.username
     }
-  ]...)
+    if can(service.credentials)
+  }
 
   onepassword_vaults = merge(
     local.access.onepassword.vaults,
