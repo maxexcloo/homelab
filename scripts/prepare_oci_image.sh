@@ -18,7 +18,7 @@ else
   fi
 fi
 
-read -r image_hash _ < <(printf '%s' "${image_url}" | shasum -a 256)
+read -r image_hash _ < <(printf '%s' "${image_url}" | openssl dgst -sha256 -r)
 image_directory="${cache_dir}/images/${image_hash}"
 image_path="${image_directory}/$(basename "${image_url%%[?#]*}")"
 mkdir -p "${image_directory}"

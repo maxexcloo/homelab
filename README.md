@@ -73,8 +73,9 @@ Upgrade one cluster at a time, after reading the upstream
    container nodes change image when you apply; their volumes and bind mounts
    carry over.
 3. Upgrade Kubernetes, checking node health after each step.
-4. For OCI clusters, run `mise run oci:image <cluster>` and export the
-   printed `TF_VAR_oci_talos_image_path` so rebuilds boot the new version.
+4. For OCI clusters, run `mise run oci:image <image-factory-qcow2-url>` with the
+   cluster's schematic and target Talos release. Export the printed
+   `TF_VAR_oci_talos_image_path` so rebuilds boot the new version.
 5. Review and apply the reconciliation plan.
 
 Single-node clusters have an outage while they upgrade. Configuration applies use
