@@ -40,7 +40,7 @@ cd "$kubelab_directory"
 mkdir -p output
 HOMELAB_INFRASTRUCTURE_FILE=tests/fixtures/homepage/infrastructure.json \
   HOMEPAGE_BESZEL_ROUTES=tests/fixtures/homepage/beszel-routes.json \
-  sh apps/base/homepage/render_services.sh output/services.yaml "$MISE_PROJECT_ROOT"
+  sh apps/base/homepage/render_services.sh output/services.yaml "$MISE_PROJECT_ROOT/inventory.json"
 '''
 
 [tasks.fmt]

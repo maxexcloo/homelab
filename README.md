@@ -24,7 +24,7 @@ name, with the `api_key` and `url` of each TrueNAS API.
 | Task                                        | Purpose                                       |
 | ------------------------------------------- | --------------------------------------------- |
 | `mise run apply`                            | Apply reviewed changes                        |
-| `mise run check`                            | Run all repository checks                     |
+| `mise run check`                            | Validate Homelab configuration                |
 | `mise run fmt`                              | Format repository files                       |
 | `mise run hosts:ignition [host...]`         | Render host installation files                |
 | `mise run init`                             | Initialise providers & the remote backend     |
@@ -39,8 +39,10 @@ name, with the `api_key` and `url` of each TrueNAS API.
 Plans and applies run locally; review each plan before applying it.
 
 Run `mise run init:offline` before `mise run check` on a fresh checkout to validate
-without credentials. After a provider update, run `mise run init` and refresh the
-lock file's checksums:
+without credentials. Run `mise run check:kubelab` to check the inventory against
+Kubelab's Homepage renderer.
+
+After a provider update, run `mise run init` and refresh the lock file's checksums:
 
 ```shell
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
