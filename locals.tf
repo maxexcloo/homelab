@@ -43,20 +43,7 @@ locals {
         can(provider.dns) ? { dns = merge({ name = "${provider.name} DNS", "query-name" = local.domains.infrastructure }, provider.dns) } : {},
       )
     }
-    services = merge([
-      for machine_name, machine in local.machines : {
-        for service_name, service in machine.services : "${machine_name}/${service_name}" => merge(
-          service,
-          {
-            hostnames  = local.machine_service_hostnames["${machine_name}/${service_name}"]
-            machine    = machine_name
-            monitoring = try(service.monitoring, false)
-            url        = local.machine_service_urls["${machine_name}/${service_name}"]
-          },
-          try(service.dns_record, false) ? { hostname = local.machine_service_hostnames["${machine_name}/${service_name}"][0] } : {},
-        )
-      }
-    ]...)
+    services = local.machine_services
   }
 
   machine_clusters = merge([
@@ -114,10 +101,18 @@ locals {
     }
   ]...)
 
-  machine_service_urls = merge([
+  machine_services = merge([
     for machine_name, machine in local.machines : {
-      for service_name, service in machine.services :
-      "${machine_name}/${service_name}" => "${service.scheme}://${local.machine_service_hostnames["${machine_name}/${service_name}"][0]}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+      for service_name, service in machine.services : "${machine_name}/${service_name}" => merge(
+        service,
+        {
+          hostnames  = local.machine_service_hostnames["${machine_name}/${service_name}"]
+          machine    = machine_name
+          monitoring = try(service.monitoring, false)
+          url        = "${service.scheme}://${local.machine_service_hostnames["${machine_name}/${service_name}"][0]}${contains(["http:80", "https:443"], "${service.scheme}:${service.port}") ? "" : ":${service.port}"}${try(service.path, "")}"
+        },
+        try(service.dns_record, false) ? { hostname = local.machine_service_hostnames["${machine_name}/${service_name}"][0] } : {},
+      )
     }
   ]...)
 

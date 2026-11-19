@@ -13,15 +13,6 @@ locals {
       name     = local.machine_hostnames[interface.machine]
     }
   }
-
-  unifi_networks = merge([
-    for network, site in local.networks : {
-      for subnet, subnet_config in try(site.subnets, {}) :
-      "${network}/${subnet}" => {
-        subnet = subnet_config.cidr
-      }
-    }
-  ]...)
 }
 
 resource "unifi_client" "host" {

@@ -1,11 +1,6 @@
 data "tailscale_devices" "all" {}
 
 locals {
-  tailscale_address_ranges = {
-    ipv4 = "100.64.0.0/10"
-    ipv6 = "fd7a:115c:a1e0::/48"
-  }
-
   tailscale_cluster_addresses = {
     for name, cluster in local.clusters : name => {
       ipv4 = one([for address in tailscale_service.cluster_ingress[name].addrs : address if can(cidrnetmask("${address}/32"))])
@@ -54,6 +49,8 @@ locals {
     for device in data.tailscale_devices.all.devices :
     regex("^[^.]+", device.name) => device...
   }
+
+  tailscale_ipv4_cidr = "100.64.0.0/10"
 
   tailscale_key_machines = {
     for name, machine in local.machines : name => machine

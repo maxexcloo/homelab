@@ -88,9 +88,12 @@ locals {
     for name, consumer in local.cloudflare_consumers : name => {
       ingress = concat(
         [
-          for route in try(consumer.tunnel.ingress, []) : {
-            for key, value in route : key => value if key != "mtls"
-          }
+          for route in try(consumer.tunnel.ingress, []) : merge(
+            { for key, value in route : key => value if !contains(["mtls", "origin_machine_fqdn"], key) },
+            try(route.origin_machine_fqdn, false) ? {
+              origin_request = merge(try(route.origin_request, {}), { origin_server_name = local.machine_fqdns[name] })
+            } : {},
+          )
         ],
         [
           {

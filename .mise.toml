@@ -40,7 +40,7 @@ cd "$kubelab_directory"
 mkdir -p output
 HOMELAB_INFRASTRUCTURE_FILE=tests/fixtures/homepage/infrastructure.json \
   HOMEPAGE_BESZEL_ROUTES=tests/fixtures/homepage/beszel-routes.json \
-  sh apps/base/homepage/render_services.sh output/services.yaml "$MISE_PROJECT_ROOT"
+  sh apps/base/homepage/render_services.sh output/services.yaml "$MISE_PROJECT_ROOT/inventory.json"
 '''
 
 [tasks.fmt]
@@ -50,7 +50,7 @@ run = "tofu fmt -recursive"
 # Scripts
 [tasks."hosts:ignition"]
 description = "Render Host Installation Files"
-run = 'fnox exec -- scripts/render_hosts.sh "${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"'
+run = 'fnox exec --only OP_CONNECT_TOKEN -- scripts/render_hosts.sh "${IGNITION_OUTPUT_DIRECTORY:-${XDG_CACHE_HOME:-${HOME}/.cache}/homelab/ignition}"'
 
 [tasks."oci:image"]
 description = "Download A Cluster Installation Image"
@@ -58,7 +58,7 @@ run = "scripts/prepare_oci_image.sh"
 
 [tasks."sync:clusters"]
 description = "Sync Workstation Kubeconfig & Talosconfig From 1Password"
-run = "fnox exec -- scripts/sync_client_configs.sh"
+run = "fnox exec --only OP_CONNECT_TOKEN -- scripts/sync_client_configs.sh"
 
 [tasks."sync:hosts"]
 description = "Sync Generated Host Files"
@@ -87,4 +87,4 @@ run = [
 
 [tasks."setup:credentials"]
 description = "Create Missing OpenTofu 1Password Fields"
-run = "fnox exec -- scripts/setup_opentofu_item.sh"
+run = "fnox exec --only OP_CONNECT_TOKEN -- scripts/setup_opentofu_item.sh"

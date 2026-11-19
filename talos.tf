@@ -271,7 +271,7 @@ locals {
           node.dedicated != null ? { "node.${local.domains.services}/dedicated" = node.dedicated } : {},
         )
         nodeIP = {
-          validSubnets = [try("${node.tailscale_address}/32", local.tailscale_address_ranges.ipv4)]
+          validSubnets = [try("${node.tailscale_address}/32", local.tailscale_ipv4_cidr)]
         }
         taints = node.dedicated != null ? { "node.${local.domains.services}/dedicated" = "${node.dedicated}:NoSchedule" } : { "$patch" = "delete" }
       },
@@ -307,7 +307,7 @@ locals {
         apiVersion = "v1alpha1"
         kind       = "RoutingRuleConfig"
         name       = "5200"
-        dst        = local.tailscale_address_ranges.ipv4
+        dst        = local.tailscale_ipv4_cidr
         table      = "52"
       },
       {

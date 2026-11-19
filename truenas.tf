@@ -125,9 +125,9 @@ locals {
       device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
       image       = "ghcr.io/siderolabs/talos:${local.clusters[node.cluster].talos_version}"
       name        = local.machine_hostnames[name]
-      network_key = one([
-        for key, network in local.unifi_networks : key
-        if startswith(key, "${local.machines[name].network}/") && cidrcontains(network.subnet, node.address)
+      subnet_cidr = one([
+        for subnet in try(local.networks[local.machines[name].network].subnets, {}) : subnet.cidr
+        if cidrcontains(subnet.cidr, node.address)
       ])
     })
     if node.configuration_delivery == "container"
@@ -216,8 +216,8 @@ resource "truenas_app" "talos_container" {
         }
         ipam = {
           config = [{
-            gateway = cidrhost(local.unifi_networks[each.value.network_key].subnet, 1)
-            subnet  = cidrsubnet(local.unifi_networks[each.value.network_key].subnet, 0, 0)
+            gateway = cidrhost(each.value.subnet_cidr, 1)
+            subnet  = cidrsubnet(each.value.subnet_cidr, 0, 0)
           }]
         }
       }

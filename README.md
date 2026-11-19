@@ -24,7 +24,7 @@ name, with the `api_key` and `url` of each TrueNAS API.
 | Task                                        | Purpose                                       |
 | ------------------------------------------- | --------------------------------------------- |
 | `mise run apply`                            | Apply reviewed changes                        |
-| `mise run check`                            | Run all repository checks                     |
+| `mise run check`                            | Validate Homelab configuration                |
 | `mise run fmt`                              | Format repository files                       |
 | `mise run hosts:ignition [host...]`         | Render host installation files                |
 | `mise run init`                             | Initialise providers & the remote backend     |
@@ -39,8 +39,10 @@ name, with the `api_key` and `url` of each TrueNAS API.
 Plans and applies run locally; review each plan before applying it.
 
 Run `mise run init:offline` before `mise run check` on a fresh checkout to validate
-without credentials. After a provider update, run `mise run init` and refresh the
-lock file's checksums:
+without credentials. Run `mise run check:kubelab` to check the inventory against
+Kubelab's Homepage renderer.
+
+After a provider update, run `mise run init` and refresh the lock file's checksums:
 
 ```shell
 mise exec -- tofu providers lock -platform=darwin_arm64 -platform=linux_amd64
@@ -71,8 +73,9 @@ Upgrade one cluster at a time, after reading the upstream
    container nodes change image when you apply; their volumes and bind mounts
    carry over.
 3. Upgrade Kubernetes, checking node health after each step.
-4. For OCI clusters, run `mise run oci:image <cluster>` and export the
-   printed `TF_VAR_oci_talos_image_path` so rebuilds boot the new version.
+4. For OCI clusters, run `mise run oci:image <image-factory-qcow2-url>` with the
+   cluster's schematic and target Talos release. Export the printed
+   `TF_VAR_oci_talos_image_path` so rebuilds boot the new version.
 5. Review and apply the reconciliation plan.
 
 Single-node clusters have an outage while they upgrade. Configuration applies use
