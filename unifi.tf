@@ -12,6 +12,7 @@ locals {
       mac      = interface.mac
       name     = local.machine_hostnames[interface.machine]
     }
+    if local.machines[interface.machine].network == local.machines.sol.network
   }
 }
 

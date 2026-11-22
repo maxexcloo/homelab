@@ -246,7 +246,18 @@ locals {
             match = node.install_disk_selector
           }
         }
-    }] : [], node.configuration)
+      }] : [], [
+      # Declaring a link disables implicit DHCP, so configure the active port too.
+      for interface in try(local.machines[name].interfaces, []) : merge(
+        {
+          apiVersion = "v1alpha1"
+          kind       = try(interface.disabled, false) ? "LinkConfig" : "DHCPv4Config"
+          name       = interface.name
+        },
+        try(interface.disabled, false) ? { up = false } : {},
+      )
+      if node.configuration_delivery == "direct"
+    ], node.configuration)
   }
 
   talos_machine_configuration_documents_common = {

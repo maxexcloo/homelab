@@ -65,7 +65,7 @@ locals {
   machine_interface_assignments = flatten([
     for machine_name, machine in local.machines : [
       for interface_index, interface in try(machine.interfaces, []) : {
-        address   = try(interface.address, null)
+        address   = try(interface.disabled, false) ? null : try(interface.address, null)
         bridge    = try(interface.bridge, null)
         local_dns = try(interface.local_dns, true)
         mac       = lower(interface.mac_address)
