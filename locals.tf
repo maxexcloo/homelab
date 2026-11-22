@@ -28,7 +28,7 @@ locals {
         acme        = try(machine.cloudflare.acme, null)
         beszel      = try(machine.beszel, false)
         fqdn        = local.machine_fqdns[name]
-        location    = "${machine.network}-${local.machine_hostnames[name]}"
+        location    = local.machine_locations[name]
         monitoring  = try(machine.monitoring, true)
         name        = machine.name
         network     = machine.network
@@ -77,6 +77,11 @@ locals {
     ]
   ])
 
+  machine_locations = {
+    for name, machine in local.machines :
+    name => "${machine.network}-${local.machine_hostnames[name]}"
+  }
+
   machine_login_titles = {
     for name, machine in local.machines :
     name => "${title(machine.type)}: ${local.machine_fqdns[name]}"
@@ -120,7 +125,7 @@ locals {
 
   machine_tailscale_names = {
     for name, machine in local.machines :
-    name => "${machine.network}-${local.machine_hostnames[name]}"
+    name => local.machine_locations[name]
     if try(machine.tailscale.enabled, true)
   }
 
