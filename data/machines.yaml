@@ -29,6 +29,9 @@ machines:
             uid: 1001
       cloudflare:
         tunnel: {}
+      interfaces:
+        - name: enp1s0
+          mac_address: 44:65:8a:e1:40:ed
   mbk:
     luna:
       beszel: true
@@ -54,9 +57,12 @@ machines:
               origin_machine_fqdn: true
               service: https://homeassistant
       interfaces:
-        - address: 10.0.0.2
+        - name: enp3s0
+          address: 10.0.0.2
           mac_address: 84:47:09:67:c8:33
-        - mac_address: 84:47:09:67:c8:36
+        - name: enp2s0
+          disabled: true
+          mac_address: 84:47:09:67:c8:36
       services:
         esphome:
           description: ESP Device Builder
@@ -186,6 +192,7 @@ machines:
           address: 10.0.3.204
           mac_address: c8:ff:bf:0f:9f:d0
         - name: enp5s0
+          disabled: true
           mac_address: c8:ff:bf:0f:9f:d1
       services:
         polaris:
@@ -227,6 +234,7 @@ machines:
           local_dns: false
           mac_address: 84:47:09:5a:6b:bf
         - name: enp3s0
+          disabled: true
           mac_address: 84:47:09:5a:6b:bc
       services:
         agent-browser:
@@ -453,6 +461,7 @@ machines:
           address: 10.0.0.5
           mac_address: 9c:6b:00:d7:e9:40
         - name: enp12s0
+          disabled: true
           mac_address: 9c:6b:00:d7:e9:63
   syd:
     neptune:

@@ -36,6 +36,19 @@ storage:
       contents:
         inline: |
           ${machine.hostname}
+%{ if length([for interface in try(machine.interfaces, []) : interface if try(interface.disabled, false)]) > 0 ~}
+    - mode: 0644
+      path: /etc/NetworkManager/conf.d/90-disabled-interfaces.conf
+      contents:
+        inline: |
+%{ for interface in try(machine.interfaces, []) ~}
+%{ if try(interface.disabled, false) ~}
+          [device-${interface.name}]
+          match-device=mac:${interface.mac_address}
+          managed=0
+%{ endif ~}
+%{ endfor ~}
+%{ endif ~}
 %{ for path, file in files ~}
     - mode: ${file.mode}
       path: ${path}
