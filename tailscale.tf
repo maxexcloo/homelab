@@ -83,7 +83,11 @@ locals {
     }])
     groups    = local.access.tailscale.groups
     tagOwners = local.tailscale_tag_owners
-    hosts = merge([
+    hosts = merge({
+      luna         = "${local.tailscale_device_addresses[local.machine_tailscale_names.luna].ipv4}/32"
+      mercury      = "${local.tailscale_device_addresses[local.machine_tailscale_names.mercury].ipv4}/32"
+      mercury-ipv6 = "${local.tailscale_device_addresses[local.machine_tailscale_names.mercury].ipv6}/128"
+      }, [
       for name in keys(local.clusters) : {
         (name)           = "${local.tailscale_cluster_addresses[name].ipv4}/32"
         ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"

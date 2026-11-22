@@ -74,6 +74,20 @@ tailscale:
       src:
         - tag:monitoring
     - dst:
+        - luna
+      ip:
+        - tcp:555
+      src:
+        - tag:monitoring
+    - dst:
+        - mercury
+        - mercury-ipv6
+      ip:
+        - icmp:*
+        - tcp:443
+      src:
+        - tag:monitoring
+    - dst:
         - "*"
         - autogroup:internet
       ip:
