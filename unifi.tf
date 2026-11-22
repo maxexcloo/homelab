@@ -46,9 +46,11 @@ resource "unifi_client" "talos_container" {
 resource "unifi_firewall_policy" "configured" {
   for_each = local.provider_settings.providers.unifi.firewall_policies
 
-  action  = each.value.action
-  enabled = each.value.enabled
-  name    = each.value.name
+  action               = each.value.action
+  create_allow_respond = each.value.create_allow_respond
+  enabled              = each.value.enabled
+  ip_version           = each.value.ip_version
+  name                 = each.value.name
 
   source = {
     matching_target = each.value.source.matching_target

@@ -108,32 +108,38 @@ providers:
     firewall_policies:
       internal_iot:
         action: ALLOW
+        create_allow_respond: true
         destination:
           matching_target: ANY
           zone: iot
         enabled: true
+        ip_version: BOTH
         name: Allow Internal Traffic to IoT
         source:
           matching_target: ANY
           zone: internal
       iot_luna:
         action: ALLOW
+        create_allow_respond: true
         destination:
           machines:
             - luna
           matching_target: IP
           zone: internal
         enabled: true
+        ip_version: IPV4
         name: Allow IoT Traffic to Luna
         source:
           matching_target: ANY
           zone: iot
       vpn_iot:
         action: ALLOW
+        create_allow_respond: true
         destination:
           matching_target: ANY
           zone: iot
         enabled: true
+        ip_version: BOTH
         name: Allow VPN Traffic to IoT
         source:
           matching_target: ANY
