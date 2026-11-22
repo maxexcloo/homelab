@@ -359,6 +359,9 @@ machines:
           port: 9000
           scheme: https
           username: syd-backups
+          probe:
+            expected_body: "*<Code>AccessDenied</Code>*"
+            expected_status: 403
       smb:
         aapl_extensions: true
       # Crucial X9 USB SSDs do not expose usable SMART self-tests.
