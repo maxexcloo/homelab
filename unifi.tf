@@ -10,7 +10,7 @@ locals {
       fixed_ip = interface.address != null ? interface.address : ""
       hostname = interface.primary && interface.local_dns ? local.machine_fqdns[interface.machine] : null
       mac      = interface.mac
-      name     = local.machines[interface.machine].name
+      name     = local.machine_locations[interface.machine]
     }
     if local.machines[interface.machine].network == local.machines.sol.network
   }
