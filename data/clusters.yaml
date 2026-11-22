@@ -4,6 +4,7 @@ clusters:
     backblaze: true
     pod_subnet: 10.100.0.0/22
     public_node: neptune
+    pushover: Kubelab
     service_subnet: 10.100.4.0/22
     # Kubelab pins Traefik's private Service to this address; every internal node's Tailscale forwards
     # the cluster's Tailscale Service to it.

@@ -229,6 +229,13 @@
       "name": "Oracle Cloud",
       "url": "https://cloud.oracle.com"
     },
+    "pushover": {
+      "description": "Push Notifications",
+      "icon": "mdi-bell-ring-#ffffff",
+      "monitoring": true,
+      "name": "Pushover",
+      "url": "https://pushover.net"
+    },
     "resend": {
       "description": "Email API",
       "icon": "si-resend-#ffffff",

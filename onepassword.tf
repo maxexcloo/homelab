@@ -75,6 +75,11 @@ locals {
     special = false
   }
 
+  onepassword_pushover_clusters = {
+    for name, cluster in local.clusters : name => cluster.pushover
+    if can(cluster.pushover)
+  }
+
   onepassword_service_access = {
     for service_key, service in local.machine_services : service_key => {
       name     = service.name
@@ -262,6 +267,30 @@ resource "onepassword_item" "machine_access" {
   url                 = each.value.url
   username            = each.value.username
   vault               = data.onepassword_vault.configured["homelab"].uuid
+}
+
+resource "onepassword_item" "pushover" {
+  for_each = local.onepassword_pushover_clusters
+
+  category = "secure_note"
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "${local.provider_settings.providers.pushover.name}: ${each.value}"
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+
+  section_map = {
+    credentials = {
+      field_map = {
+        app-token = {
+          type  = "CONCEALED"
+          value = var.pushover_app_tokens[each.value]
+        }
+        user-key = {
+          type  = "CONCEALED"
+          value = var.pushover_user_key
+        }
+      }
+    }
+  }
 }
 
 resource "onepassword_item" "resend" {

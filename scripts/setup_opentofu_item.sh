@@ -15,6 +15,8 @@ set -- \
   "oci_private_key_base64[password]=" \
   "oci_tenancy_ocid[text]=" \
   "oci_user_ocid[text]=" \
+  "pushover_app_tokens[password]=" \
+  "pushover_user_key[password]=" \
   "resend_api_key[password]=" \
   "tailscale_oauth_client_id[text]=" \
   "tailscale_oauth_client_secret[password]=" \

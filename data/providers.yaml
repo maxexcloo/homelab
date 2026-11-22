@@ -90,6 +90,11 @@ providers:
     icon: sh-oracle-light
     name: Oracle Cloud
     url: https://cloud.oracle.com
+  pushover:
+    description: Push Notifications
+    icon: mdi-bell-ring-#ffffff
+    name: Pushover
+    url: https://pushover.net
   resend:
     description: Email API
     icon: si-resend-#ffffff

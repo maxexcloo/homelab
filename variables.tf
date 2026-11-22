@@ -22,6 +22,18 @@ variable "oci_tenancy_ocid" {
   type        = string
 }
 
+variable "pushover_app_tokens" {
+  description = "Pushover tokens keyed by their registered application name."
+  sensitive   = true
+  type        = map(string)
+}
+
+variable "pushover_user_key" {
+  description = "Pushover user key that receives Homelab notifications."
+  sensitive   = true
+  type        = string
+}
+
 variable "truenas_connections" {
   description = "TrueNAS API connections keyed by machine name, supplied by 1Password."
   sensitive   = true
