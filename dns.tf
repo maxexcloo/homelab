@@ -139,6 +139,17 @@ locals {
       if try(local.tailscale_device_addresses[tailscale_name].ipv6, null) != null
     },
     {
+      for type, address in {
+        A    = one([for address in tailscale_service.slzb_06m.addrs : address if can(cidrnetmask("${address}/32"))])
+        AAAA = one([for address in tailscale_service.slzb_06m.addrs : address if startswith(address, "fd7a:")])
+        } : "machine/slzb-06m/${lower(type)}" => {
+        content = address
+        name    = local.machine_fqdns["slzb-06m"]
+        type    = type
+        zone    = local.domains.infrastructure
+      }
+    },
+    {
       for name, machine in local.machines : "machine/${name}/public-a" => {
         content = try(machine.public_ipv4, oci_core_instance.node[name].public_ip)
         name    = local.machine_public_fqdns[name]

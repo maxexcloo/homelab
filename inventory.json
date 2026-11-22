@@ -517,6 +517,10 @@
       "monitoring": false,
       "name": "Object Storage",
       "port": 9000,
+      "probe": {
+        "expected_body": "*<Code>AccessDenied</Code>*",
+        "expected_status": 403
+      },
       "scheme": "https",
       "url": "https://saturn.mbk.excloo.net:9000",
       "username": "syd-backups"
