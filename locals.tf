@@ -30,6 +30,7 @@ locals {
         fqdn        = local.machine_fqdns[name]
         location    = "${machine.network}-${local.machine_hostnames[name]}"
         monitoring  = try(machine.monitoring, true)
+        name        = machine.name
         network     = machine.network
         public_fqdn = try(local.machine_public_fqdns[name], null)
         tailscale   = can(local.machine_tailscale_names[name])
@@ -125,7 +126,7 @@ locals {
 
   machines = merge([
     for network, machines in local.machines_by_network : {
-      for name, machine in machines : name => merge({ services = {}, type = null }, machine, { network = network }, can(local.machine_clusters[name]) ? { cluster = local.machine_clusters[name] } : {})
+      for name, machine in machines : name => merge({ name = title(name), services = {}, type = null }, machine, { network = network }, can(local.machine_clusters[name]) ? { cluster = local.machine_clusters[name] } : {})
     }
   ]...)
 

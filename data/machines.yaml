@@ -401,6 +401,7 @@ machines:
         remotehost: study-homelab-ups.internal
         shutdown: LOWBATT
     macbook-pro:
+      name: MacBook Pro
       platform: macos
       username: max.schaefer
       interfaces:
@@ -446,6 +447,7 @@ machines:
             key: "{{HOMEPAGE_VAR_UNIFI_API_KEY}}"
             type: unifi
     steam-deck:
+      name: Steam Deck
       platform: steamos
       username: deck
       interfaces:
