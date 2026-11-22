@@ -316,13 +316,20 @@ locals {
         auto       = "off"
         hostname   = local.machine_hostnames[name]
       },
-      ], node.machine_type == "controlplane" ? [
-      {
+      ],
+      # Map both DNS families to the IPv4 gateway so AAAA cannot fall back to the public issuer.
+      [for prefix in ["", "::ffff:"] : {
+        apiVersion = "v1alpha1"
+        kind       = "StaticHostConfig"
+        name       = "${prefix}${local.clusters[node.cluster].tailscale_ingress_target}"
+        hostnames  = [trimprefix(local.access.oidc_issuer_url, "https://")]
+      }],
+      node.machine_type == "controlplane" ? [{
         apiVersion = "v1alpha1"
         kind       = "KubeProxyConfig"
         enabled    = false
-      },
-    ] : [])
+      }] : [],
+    )
   }
 
   talos_node_images = {
