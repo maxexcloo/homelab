@@ -11,13 +11,21 @@ locals {
   # Each internal node's Tailscale serves the cluster's ingress Service and forwards it to Traefik.
   tailscale_cluster_serve_configs = {
     for name, cluster in local.clusters : name => jsonencode({
-      Services = {
+      Services = merge({
         "svc:${cluster.tailscale_ingress_service}" = {
           TCP = {
             for port in [80, 443] : tostring(port) => { TCPForward = "${cluster.tailscale_ingress_target}:${port}" }
           }
         }
-      }
+        }, name == local.tailscale_slzb_06m_cluster ? {
+        (tailscale_service.slzb_06m.name) = {
+          TCP = {
+            (tostring(local.tailscale_slzb_06m_port)) = {
+              TCPForward = "${local.machine_private_ipv4_addresses["slzb-06m"]}:${local.tailscale_slzb_06m_port}"
+            }
+          }
+        }
+      } : {})
     })
   }
 
@@ -68,7 +76,11 @@ locals {
       }
     }
 
-    grants    = local.access.tailscale.grants
+    grants = concat(local.access.tailscale.grants, [{
+      dst = [tailscale_service.slzb_06m.name]
+      ip  = ["tcp:${local.tailscale_slzb_06m_port}"]
+      src = ["tag:monitoring"]
+    }])
     groups    = local.access.tailscale.groups
     tagOwners = local.tailscale_tag_owners
     hosts = merge([
@@ -78,6 +90,9 @@ locals {
       }
     ]...)
   }
+
+  tailscale_slzb_06m_cluster = "syd"
+  tailscale_slzb_06m_port    = local.machine_services["slzb-06m/management"].port
 
   tailscale_tag_owners = merge(
     {
@@ -120,6 +135,12 @@ resource "tailscale_service" "cluster_ingress" {
   name  = "svc:${each.value.tailscale_ingress_service}"
   ports = ["tcp:80", "tcp:443"]
   tags  = ["tag:cluster-${each.key}"]
+}
+
+resource "tailscale_service" "slzb_06m" {
+  name  = "svc:${local.machine_hostnames["slzb-06m"]}"
+  ports = ["tcp:${local.tailscale_slzb_06m_port}"]
+  tags  = ["tag:cluster-${local.tailscale_slzb_06m_cluster}"]
 }
 
 resource "tailscale_tailnet_key" "server" {
