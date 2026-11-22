@@ -227,7 +227,6 @@ machines:
           local_dns: false
           mac_address: 84:47:09:5a:6b:bf
         - name: enp3s0
-          address: 10.0.2.124
           mac_address: 84:47:09:5a:6b:bc
       services:
         agent-browser:
