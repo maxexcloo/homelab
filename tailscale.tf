@@ -58,6 +58,8 @@ locals {
     regex("^[^.]+", device.name) => device...
   }
 
+  tailscale_host_grants = [for grant in local.access.tailscale.grants : grant if can(grant.machine)]
+
   tailscale_ipv4_cidr = "100.64.0.0/10"
 
   tailscale_key_machines = {
@@ -76,23 +78,37 @@ locals {
       }
     }
 
-    grants = concat(local.access.tailscale.grants, [{
-      dst = [tailscale_service.slzb_06m.name]
-      ip  = ["tcp:${local.tailscale_slzb_06m_port}"]
-      src = ["tag:monitoring"]
+    grants = concat([
+      for grant in local.access.tailscale.grants : merge(
+        { for key, value in grant : key => value if !contains(["ipv6", "machine", "services"], key) },
+        can(grant.machine) ? {
+          dst = concat([grant.machine], try(grant.ipv6, false) ? ["${grant.machine}-ipv6"] : [])
+          ip = distinct(concat(try(grant.ip, []), [
+            for service in grant.services : "tcp:${local.machine_services["${grant.machine}/${service}"].port}"
+          ]))
+        } : {},
+      )
+      ], [{
+        dst = [tailscale_service.slzb_06m.name]
+        ip  = ["tcp:${local.tailscale_slzb_06m_port}"]
+        src = ["tag:monitoring"]
     }])
     groups    = local.access.tailscale.groups
     tagOwners = local.tailscale_tag_owners
-    hosts = merge({
-      luna         = "${local.tailscale_device_addresses[local.machine_tailscale_names.luna].ipv4}/32"
-      mercury      = "${local.tailscale_device_addresses[local.machine_tailscale_names.mercury].ipv4}/32"
-      mercury-ipv6 = "${local.tailscale_device_addresses[local.machine_tailscale_names.mercury].ipv6}/128"
-      }, [
-      for name in keys(local.clusters) : {
+    hosts = merge(
+      {
+        for name in toset([for grant in local.tailscale_host_grants : grant.machine]) :
+        name => "${local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv4}/32"
+      },
+      {
+        for name in toset([for grant in local.tailscale_host_grants : grant.machine if try(grant.ipv6, false)]) :
+        "${name}-ipv6" => "${local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv6}/128"
+      },
+      [for name in keys(local.clusters) : {
         (name)           = "${local.tailscale_cluster_addresses[name].ipv4}/32"
         ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
-      }
-    ]...)
+      }]...
+    )
   }
 
   tailscale_slzb_06m_cluster = "syd"
