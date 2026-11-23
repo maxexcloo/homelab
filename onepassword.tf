@@ -75,14 +75,17 @@ locals {
     special = false
   }
 
-  onepassword_service_access = {
-    for service_key, service in local.machine_services : service_key => {
-      name     = service.name
-      url      = service.url
-      username = service.credentials.username
-    }
-    if can(service.credentials)
-  }
+  onepassword_service_access = merge(
+    {
+      for service_key, service in local.machine_services : service_key => {
+        name     = service.name
+        url      = service.url
+        username = service.credentials.username
+      }
+      if can(service.credentials)
+    },
+    local.access.onepassword.logins,
+  )
 
   onepassword_vaults = merge(
     local.access.onepassword.vaults,
