@@ -79,7 +79,7 @@ locals {
 
   machine_locations = {
     for name, machine in local.machines :
-    name => "${machine.network}-${local.machine_hostnames[name]}"
+    name => machine.type == null ? local.machine_hostnames[name] : "${machine.network}-${local.machine_hostnames[name]}"
   }
 
   machine_login_titles = {
