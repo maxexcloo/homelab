@@ -73,18 +73,19 @@ tailscale:
         - tcp:31010
       src:
         - tag:monitoring
-    - dst:
-        - luna
-      ip:
-        - tcp:555
+    - machine: luna
+      services:
+        - roborock
       src:
         - tag:monitoring
-    - dst:
-        - mercury
-        - mercury-ipv6
+    - ipv6: true
+      machine: mercury
       ip:
         - icmp:*
-        - tcp:443
+      services:
+        - agent-browser
+        - dsh
+        - syncthing
       src:
         - tag:monitoring
     - dst:
