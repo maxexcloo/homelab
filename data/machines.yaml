@@ -61,7 +61,7 @@ machines:
           address: 10.0.0.2
           mac_address: 84:47:09:67:c8:33
         - name: enp2s0
-          disabled: true
+          address: 10.3.0.2
           mac_address: 84:47:09:67:c8:36
       services:
         esphome:
