@@ -3,10 +3,13 @@ set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 output_directory="${1:?usage: render_cluster_settings.sh OUTPUT_DIRECTORY}"
+clusters="$(jq -r '.clusters | keys[]' "${repo_dir}/inventory.json")"
+if [[ -z "${clusters}" ]]; then
+  exit 0
+fi
 
 while IFS= read -r cluster; do
-  mkdir -p "${output_directory}/${cluster}/settings"
-  jq --arg cluster "${cluster}" '{
+  settings="$(jq --arg cluster "${cluster}" '{
     apiVersion: "kustomize.config.k8s.io/v1alpha1",
     kind: "Component",
     patches: [{
@@ -22,5 +25,7 @@ while IFS= read -r cluster; do
       } | tojson),
       target: {group: "kustomize.toolkit.fluxcd.io", kind: "Kustomization", name: "(apps|automation|platform)"}
     }]
-  }' "${repo_dir}/inventory.json" | yq -P '(.patches[].patch |= (from_json | (... style="") | to_yaml)) | .patches[].patch style="literal"' >"${output_directory}/${cluster}/settings/kustomization.yaml"
-done < <(jq -r '.clusters | keys[]' "${repo_dir}/inventory.json")
+  }' "${repo_dir}/inventory.json" | yq -P '(.patches[].patch |= (from_json | (... style="") | to_yaml)) | .patches[].patch style="literal"')"
+  mkdir -p "${output_directory}/${cluster}/settings"
+  printf '%s\n' "${settings}" >"${output_directory}/${cluster}/settings/kustomization.yaml"
+done <<<"${clusters}"
