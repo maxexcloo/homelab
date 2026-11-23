@@ -413,7 +413,7 @@ machines:
       type: appliance
       interfaces:
         - address: 10.0.0.6
-          mac_address: 94:54:c5:eb:3f:90
+          mac_address: 94:54:c5:eb:3f:93
       services:
         management:
           description: Zigbee Ethernet Adapter
