@@ -8,11 +8,6 @@ kubernetes:
 onepassword:
   cluster_vault_prefix: "Kubelab "
   ownership_tag: Homelab
-  logins:
-    mercury/macos:
-      name: macOS on Mercury
-      url: vnc://mercury-macos
-      username: max.schaefer
   vaults:
     flylab: Flylab
     homelab: Homelab

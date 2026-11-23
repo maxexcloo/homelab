@@ -84,7 +84,13 @@ locals {
       }
       if can(service.credentials)
     },
-    local.access.onepassword.logins,
+    {
+      "mercury/macos" = {
+        name     = "macOS on Mercury"
+        url      = null
+        username = "max.schaefer"
+      }
+    },
   )
 
   onepassword_vaults = merge(
