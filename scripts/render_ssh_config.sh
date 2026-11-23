@@ -5,8 +5,9 @@ output_path="${1:-}"
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 inventory="$("${repo_dir}/scripts/read_inventory.sh")"
 machine_entries="$(jq -r '
+  .inventory.machines as $inventory_machines |
   .machines | to_entries | map(select(.value.username != null)) |
-  map(.value | .alias = if .type == null then .hostname else "\(.network)-\(.hostname)" end) |
+  map(.value + {alias: $inventory_machines[.key].location}) |
   sort_by(.type == null, .alias) | .[] |
   [.alias, ([.alias, .hostname, .fqdn] | unique | join(",")), .username, .fqdn] | @tsv
 ' <<<"${inventory}")"
