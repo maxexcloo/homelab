@@ -9,9 +9,16 @@ patches:
       spec:
         postBuild:
           substitute:
+            backup_bucket: syd-backups
+            backup_endpoint: https://saturn.mbk.excloo.net:9000
             control_d_profile: 653224sydwhf
+            dataset_root: /var/mnt/datasets
+            home_assistant_host: luna.mbk.excloo.net
             pod_subnet: 10.100.0.0/22
+            public_node_private_ipv4: 10.20.0.4
+            storage_node: saturn
             tailscale_ingress_target: 10.100.5.189
+            unifi_host: sol.mbk.excloo.net
     target:
       group: kustomize.toolkit.fluxcd.io
       kind: Kustomization
