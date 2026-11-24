@@ -32,7 +32,7 @@
       "type": null
     },
     "mars": {
-      "acme": null,
+      "acme": "delegated",
       "beszel": true,
       "fqdn": "mars.mbk.excloo.net",
       "location": "mbk-mars",
@@ -421,14 +421,16 @@
     },
     "mars/polaris": {
       "description": "Game Streaming Host",
-      "hostnames": ["mars.mbk.excloo.net"],
+      "dns_record": true,
+      "hostname": "polaris.mars.mbk.excloo.net",
+      "hostnames": ["polaris.mars.mbk.excloo.net"],
       "icon": "sh-polaris-game-streaming",
       "machine": "mars",
       "monitoring": false,
       "name": "Polaris",
-      "port": 47990,
+      "port": 443,
       "scheme": "https",
-      "url": "https://mars.mbk.excloo.net:47990"
+      "url": "https://polaris.mars.mbk.excloo.net"
     },
     "mars/syncthing": {
       "description": "File Synchronisation",

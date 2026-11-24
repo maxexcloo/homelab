@@ -186,6 +186,7 @@ machines:
           - local: data/hosts/mars/var
             path: /var
       cloudflare:
+        acme: delegated
         tunnel: {}
       interfaces:
         - name: eno1
@@ -197,9 +198,10 @@ machines:
       services:
         polaris:
           description: Game Streaming Host
+          dns_record: true
           icon: sh-polaris-game-streaming
           name: Polaris
-          port: 47990
+          port: 443
           scheme: https
         syncthing:
           description: File Synchronisation
