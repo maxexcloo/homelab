@@ -93,11 +93,11 @@ restarts it.
 
 ## TrueNAS
 
-These stay native because the pinned provider can't represent them:
+These TrueNAS settings stay under native management:
 
 - Saturn's `truenas-nvme` pool topology and `autotrim=on`.
 - Saturn's replication tasks to Pluto.
-- S3 HTTPS, buckets and access keys.
+- S3 HTTPS, buckets and the original Kubelab backup access key.
 - Saturn's Beszel app device access: a read-only `/dev:/dev` bind, the
   `/dev/zfs` mapping and device cgroup rules `b 8:* rw`, `b 259:* rw` and
   `c 242:* rw`. Avoid per-disk mappings, which stop the app starting when a
