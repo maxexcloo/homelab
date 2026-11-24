@@ -202,6 +202,17 @@ resource "onepassword_item" "cloudflare_tunnel" {
   vault    = data.onepassword_vault.configured[can(local.machines[each.key]) ? "homelab" : "cluster/${each.key}"].uuid
 }
 
+resource "onepassword_item" "cloudflare_tunnel_monitoring" {
+  for_each = local.clusters
+
+  category = "login"
+  password = cloudflare_account_token.tunnel_monitoring[each.key].value
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "Cloudflare Tunnel Monitoring"
+  url      = local.cloudflare.url
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
 resource "onepassword_item" "cloudflare_waf" {
   for_each = local.cloudflare_consumers_waf
 
@@ -399,4 +410,18 @@ resource "onepassword_item" "talosconfig" {
   tags       = [local.access.onepassword.ownership_tag]
   title      = "Talos Client Configuration"
   vault      = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
+resource "onepassword_item" "truenas_monitoring" {
+  for_each = {
+    for name in keys(local.clusters) : name => one(values(local.truenas_monitoring_hosts))
+  }
+
+  category = "login"
+  password = truenas_api_key.monitoring[each.value.machine].key
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "TrueNAS Monitoring"
+  url      = each.value.url
+  username = truenas_user.monitoring[each.value.machine].username
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
