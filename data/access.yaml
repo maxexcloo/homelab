@@ -78,6 +78,14 @@ tailscale:
         - roborock
       src:
         - tag:monitoring
+    - machine: mars
+      ip:
+        - icmp:*
+      services:
+        - polaris
+        - syncthing
+      src:
+        - tag:monitoring
     - ipv6: true
       machine: mercury
       ip:
