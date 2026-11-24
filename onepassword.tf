@@ -336,7 +336,7 @@ resource "onepassword_item" "s3_backups" {
         for label, field in data.onepassword_item.s3_backups[each.key].section_map.backup.field_map : label => {
           type  = field.type
           value = field.value
-        }
+        } if label == "restic-password"
       }
     }
   }
