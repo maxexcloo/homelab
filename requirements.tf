@@ -56,11 +56,6 @@ terraform {
       version = "~> 1.9.3"
     }
 
-    truenas-legacy = {
-      source  = "PjSalty/truenas"
-      version = "~> 3.1"
-    }
-
     unifi = {
       source  = "ubiquiti-community/unifi"
       version = "~> 0.65.0"

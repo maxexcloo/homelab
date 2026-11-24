@@ -224,7 +224,6 @@ resource "truenas_app" "controlplane" {
   })
 
   lifecycle {
-    ignore_changes  = [custom_compose_config_string]
     prevent_destroy = true
   }
 }
@@ -299,14 +298,16 @@ resource "truenas_mail" "host" {
     if contains(local.resend_hosts, name)
   }
 
-  fromemail      = "${each.value.network}-${local.machine_hostnames[each.key]}@${local.domains.infrastructure}"
-  fromname       = "${each.value.network}-${local.machine_hostnames[each.key]}"
-  outgoingserver = "smtp.resend.com"
-  port           = 587
-  provider       = truenas.hosts[each.key]
-  security       = "TLS"
-  smtp           = true
-  user           = "resend"
+  fromemail       = "${each.value.network}-${local.machine_hostnames[each.key]}@${local.domains.infrastructure}"
+  fromname        = "${each.value.network}-${local.machine_hostnames[each.key]}"
+  outgoingserver  = "smtp.resend.com"
+  pass            = resend_api_key.host[each.key].token
+  pass_wo_version = parseint(substr(sha256(resend_api_key.host[each.key].id), 0, 12), 16)
+  port            = 587
+  provider        = truenas.hosts[each.key]
+  security        = "TLS"
+  smtp            = true
+  user            = "resend"
 }
 
 resource "truenas_network_config" "global" {

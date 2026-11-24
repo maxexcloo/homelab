@@ -19,12 +19,3 @@ provider "truenas" {
   api_key  = var.truenas_connections[each.key].api_key
   endpoint = "${replace(trimsuffix(var.truenas_connections[each.key].url, "/"), "https://", "wss://")}/api/current"
 }
-
-provider "truenas-legacy" {
-  for_each = local.truenas_hosts
-
-  alias              = "hosts"
-  api_key            = var.truenas_connections[each.key].api_key
-  destroy_protection = true
-  url                = var.truenas_connections[each.key].url
-}
