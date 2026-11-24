@@ -1,3 +1,10 @@
+data "truenas_group" "monitoring" {
+  for_each = local.truenas_monitoring_hosts
+
+  name     = "truenas_readonly_administrators"
+  provider = truenas.hosts[each.key]
+}
+
 locals {
   # A bridge without a host address gives the Talos container its own port.
   truenas_container_bridges = {
@@ -42,6 +49,11 @@ locals {
       for name, script in try(host.init_scripts, {}) : "${target}/${name}" => merge(script, { target = target })
     }
   ]...)
+
+  truenas_monitoring_hosts = {
+    for service in values(local.machine_services) : service.machine => service
+    if can(local.truenas_hosts[service.machine]) && try(service.widget.type, null) == "truenas"
+  }
 
   truenas_services = merge([
     for target, host in local.truenas_hosts : {
@@ -132,6 +144,14 @@ locals {
       for name, tunable in try(host.tunables, {}) : "${target}/${name}" => merge(tunable, { target = target, var = name })
     }
   ]...)
+}
+
+resource "truenas_api_key" "monitoring" {
+  for_each = local.truenas_monitoring_hosts
+
+  name     = "Homepage"
+  provider = truenas.hosts[each.key]
+  username = truenas_user.monitoring[each.key].username
 }
 
 resource "truenas_app" "controlplane" {
@@ -483,4 +503,16 @@ resource "truenas_user" "backup_storage" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+resource "truenas_user" "monitoring" {
+  for_each = local.truenas_monitoring_hosts
+
+  full_name         = "Homepage Monitoring"
+  group             = data.truenas_group.monitoring[each.key].id
+  password_disabled = true
+  provider          = truenas.hosts[each.key]
+  shell             = "/usr/sbin/nologin"
+  smb               = false
+  username          = "homepage"
 }
