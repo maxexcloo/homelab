@@ -99,9 +99,9 @@ locals {
         kubelet = {
           image = "ghcr.io/siderolabs/kubelet:${local.clusters[container.cluster].kubernetes_version}"
           extraMounts = [{
-            destination = "/var/mnt/datasets"
+            destination = local.talos_dataset_root
             options     = ["rbind", "rslave", "rw"]
-            source      = "/var/mnt/datasets"
+            source      = local.talos_dataset_root
             type        = "bind"
           }]
           extraConfig = {
@@ -215,7 +215,7 @@ resource "truenas_app" "controlplane" {
           [
             for dataset in each.value.datasets : {
               source    = truenas_dataset.top_level["${each.key}/${dataset.name}"].mountpoint
-              target    = "/var/mnt/datasets/${truenas_dataset.top_level["${each.key}/${dataset.name}"].id}"
+              target    = "${local.talos_dataset_root}/${truenas_dataset.top_level["${each.key}/${dataset.name}"].id}"
               type      = "bind"
               read_only = try(dataset.read_only, false)
               bind = {

@@ -16,10 +16,17 @@ locals {
 
   # Published as inventory.json, so consumers read derived values instead of data/.
   inventory = {
-    control_d_profile = local.provider_settings.providers.control_d.tailscale_profile
+    control_d_profile   = local.provider_settings.providers.control_d.tailscale_profile
+    home_assistant_host = one([for name, machine in local.machines : local.machine_fqdns[name] if machine.platform == "haos"])
+    unifi_host          = one([for name, machine in local.machines : local.machine_fqdns[name] if machine.platform == "unifi"])
     clusters = {
       for name, cluster in local.clusters : name => {
+        backup_bucket            = one([for node in keys(cluster.nodes) : local.machines[node].services.s3.bucket if can(local.machines[node].services.s3.bucket)])
+        backup_endpoint          = one([for node in keys(cluster.nodes) : local.machine_services["${node}/s3"].url if can(local.machines[node].services.s3.bucket)])
+        dataset_root             = local.talos_dataset_root
         pod_subnet               = cluster.pod_subnet
+        public_node_private_ipv4 = local.machine_private_ipv4_addresses[cluster.public_node]
+        storage_node             = one([for node_name, node in cluster.nodes : node_name if can(node.container.datasets)])
         tailscale_ingress_target = cluster.tailscale_ingress_target
       }
     }
@@ -136,4 +143,7 @@ locals {
   ]...)
 
   managed_comment = "Homelab OpenTofu Managed"
+
+  # Talos mounts host datasets and the `datasets` user volume here.
+  talos_dataset_root = "/var/mnt/datasets"
 }

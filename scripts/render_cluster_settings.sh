@@ -18,9 +18,16 @@ while IFS= read -r cluster; do
         kind: "Kustomization",
         metadata: {name: "_"},
         spec: {postBuild: {substitute: {
+          backup_bucket: .clusters[$cluster].backup_bucket,
+          backup_endpoint: .clusters[$cluster].backup_endpoint,
           control_d_profile: .control_d_profile,
+          dataset_root: .clusters[$cluster].dataset_root,
+          home_assistant_host: .home_assistant_host,
           pod_subnet: .clusters[$cluster].pod_subnet,
-          tailscale_ingress_target: .clusters[$cluster].tailscale_ingress_target
+          public_node_private_ipv4: .clusters[$cluster].public_node_private_ipv4,
+          storage_node: .clusters[$cluster].storage_node,
+          tailscale_ingress_target: .clusters[$cluster].tailscale_ingress_target,
+          unifi_host: .unifi_host
         }}}
       } | tojson),
       target: {group: "kustomize.toolkit.fluxcd.io", kind: "Kustomization", name: "(apps|automation|platform)"}
