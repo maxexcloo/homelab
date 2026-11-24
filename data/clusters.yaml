@@ -54,6 +54,7 @@ clusters:
             - name: truenas/games
             - name: truenas/icloud-photos
               read_only: true
+            - name: truenas/music
             - name: truenas/projects
             - name: truenas/scratch
       venus:
