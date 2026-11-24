@@ -1,4 +1,11 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>maxexcloo/dotfiles//renovate/default.json5"],
+  packageRules: [
+    {
+      description: "RomM streaming tags prefix the RomM version and add the LinuxServer build",
+      matchPackageNames: ["lscr.io/linuxserver/webstation"],
+      versioning: "regex:^romm-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-ls(?<build>\\d+)$",
+    },
+  ],
 }
