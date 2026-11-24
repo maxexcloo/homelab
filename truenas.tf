@@ -51,8 +51,8 @@ locals {
   ]...)
 
   truenas_monitoring_hosts = {
-    for name, host in local.truenas_hosts : name => host
-    if try(host.services.management.widget.type, null) == "truenas"
+    for service in values(local.machine_services) : service.machine => service
+    if can(local.truenas_hosts[service.machine]) && try(service.widget.type, null) == "truenas"
   }
 
   truenas_services = merge([

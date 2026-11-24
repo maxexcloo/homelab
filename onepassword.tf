@@ -402,15 +402,14 @@ resource "onepassword_item" "talosconfig" {
 
 resource "onepassword_item" "truenas_monitoring" {
   for_each = {
-    for name, cluster in local.clusters : name => cluster.api_node
-    if can(local.truenas_monitoring_hosts[cluster.api_node])
+    for name in keys(local.clusters) : name => one(values(local.truenas_monitoring_hosts))
   }
 
   category = "login"
-  password = truenas_api_key.monitoring[each.value].key
+  password = truenas_api_key.monitoring[each.value.machine].key
   tags     = [local.access.onepassword.ownership_tag]
   title    = "TrueNAS Monitoring"
-  url      = local.machine_services["${each.value}/management"].url
-  username = truenas_user.monitoring[each.value].username
+  url      = each.value.url
+  username = truenas_user.monitoring[each.value.machine].username
   vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 }
