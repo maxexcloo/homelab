@@ -3,7 +3,7 @@ Description=RomM Emulator Streaming
 AssertPathIsDirectory=%h/.local/share/webstation/.config
 
 [Container]
-Image=lscr.io/linuxserver/webstation:romm-v0.15.3-ls45
+Image=lscr.io/linuxserver/webstation:romm-v0.15.3-ls50
 AddDevice=/dev/dri/renderD128
 Environment=PGID=%G
 Environment=PUID=%U
