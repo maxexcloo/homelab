@@ -149,7 +149,7 @@ locals {
 resource "truenas_api_key" "monitoring" {
   for_each = local.truenas_monitoring_hosts
 
-  name     = "Homepage"
+  name     = "Homepage Monitoring"
   provider = truenas.hosts[each.key]
   username = truenas_user.monitoring[each.key].username
 }
