@@ -52,6 +52,11 @@ terraform {
     }
 
     truenas = {
+      source  = "truenas/truenas"
+      version = "~> 1.9.3"
+    }
+
+    truenas-legacy = {
       source  = "PjSalty/truenas"
       version = "~> 3.1"
     }

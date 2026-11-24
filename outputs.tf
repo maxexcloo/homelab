@@ -66,6 +66,6 @@ output "machines" {
 output "storage" {
   description = "TrueNAS persistent dataset mount points."
   value = {
-    for name, dataset in merge(truenas_dataset.child, truenas_dataset.root) : name => dataset.mount_point
+    for name, dataset in merge(truenas_dataset.nested, truenas_dataset.top_level) : name => dataset.mountpoint
   }
 }

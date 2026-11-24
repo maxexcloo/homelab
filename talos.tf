@@ -456,7 +456,7 @@ resource "talos_machine_configuration_apply" "container" {
     reset    = false
   }
 
-  depends_on = [truenas_app.talos_container]
+  depends_on = [truenas_app.controlplane]
 
   lifecycle {
     precondition {
