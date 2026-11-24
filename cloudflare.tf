@@ -6,11 +6,12 @@ data "cloudflare_account" "default" {
 
 data "cloudflare_account_api_token_permission_groups_list" "configured" {
   for_each = {
-    "Access: Apps Write"    = "com.cloudflare.api.account"
-    "Access: Policies Read" = "com.cloudflare.api.account"
-    "DNS Write"             = "com.cloudflare.api.account.zone"
-    "Zone Read"             = "com.cloudflare.api.account.zone"
-    "Zone WAF Write"        = "com.cloudflare.api.account.zone"
+    "Access: Apps Write"     = "com.cloudflare.api.account"
+    "Access: Policies Read"  = "com.cloudflare.api.account"
+    "Cloudflare Tunnel Read" = "com.cloudflare.api.account"
+    "DNS Write"              = "com.cloudflare.api.account.zone"
+    "Zone Read"              = "com.cloudflare.api.account.zone"
+    "Zone WAF Write"         = "com.cloudflare.api.account.zone"
   }
 
   account_id = data.cloudflare_account.default.id
@@ -263,6 +264,29 @@ resource "cloudflare_account_token" "external_dns" {
       resources = jsonencode({
         for zone in each.value.zones :
         "com.cloudflare.api.account.zone.${data.cloudflare_zone.configured[zone].zone_id}" => "*"
+      })
+    },
+  ]
+}
+
+resource "cloudflare_account_token" "tunnel_monitoring" {
+  for_each = local.clusters
+
+  account_id = data.cloudflare_account.default.id
+  name       = "Cloudflare Tunnel Monitoring: ${each.key}"
+
+  policies = [
+    {
+      effect = "allow"
+
+      permission_groups = [
+        {
+          id = local.cloudflare_permission_group_ids["Cloudflare Tunnel Read"]
+        },
+      ]
+
+      resources = jsonencode({
+        "com.cloudflare.api.account.${data.cloudflare_account.default.id}" = "*"
       })
     },
   ]
