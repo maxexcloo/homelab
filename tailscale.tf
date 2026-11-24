@@ -58,7 +58,25 @@ locals {
     regex("^[^.]+", device.name) => device...
   }
 
-  tailscale_host_grants = [for grant in local.access.tailscale.grants : grant if can(grant.machine)]
+  tailscale_grants = concat(local.access.tailscale.grants, [
+    for name, machine in local.machines : {
+      ipv6    = true
+      ip      = ["icmp:*"]
+      machine = name
+      services = [
+        for key, service in local.machine_services : trimprefix(key, "${name}/")
+        if service.machine == name && (
+          service.hostnames[0] == local.machine_fqdns[name] ||
+          try(service.dns_tailscale, false) ||
+          (try(service.dns_record, false) && !try(service.dns_lan, false))
+        )
+      ]
+      src = ["tag:monitoring"]
+    }
+    if machine.type == "workstation" && can(local.machine_tailscale_names[name])
+  ])
+
+  tailscale_host_grants = [for grant in local.tailscale_grants : grant if can(grant.machine)]
 
   tailscale_ipv4_cidr = "100.64.0.0/10"
 
@@ -79,7 +97,7 @@ locals {
     }
 
     grants = concat([
-      for grant in local.access.tailscale.grants : merge(
+      for grant in local.tailscale_grants : merge(
         { for key, value in grant : key => value if !contains(["ipv6", "machine", "services"], key) },
         can(grant.machine) ? {
           dst = concat([grant.machine], try(grant.ipv6, false) ? ["${grant.machine}-ipv6"] : [])
