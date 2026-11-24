@@ -4,7 +4,7 @@ data "onepassword_item" "fly" {
   vault = data.onepassword_vault.configured["homelab"].uuid
 }
 
-# Kept by hand: TrueNAS issues the S3 key and Restic owns its repository password.
+# Restic owns its existing repository password.
 data "onepassword_item" "s3_backups" {
   for_each = local.clusters
 
@@ -311,11 +311,12 @@ resource "onepassword_item" "s3_backup_access_key" {
 resource "onepassword_item" "s3_backups" {
   for_each = local.clusters
 
+  # An explicit empty password disables automatic password generation.
   category = "login"
-  password = data.onepassword_item.s3_backups[each.key].password
+  password = ""
   tags     = [local.access.onepassword.ownership_tag]
   title    = "S3 Backups"
-  username = data.onepassword_item.s3_backups[each.key].username
+  username = ""
   vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
 
   section_map = {
