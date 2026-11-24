@@ -297,6 +297,17 @@ resource "onepassword_item" "resend_host" {
   vault    = data.onepassword_vault.configured["homelab"].uuid
 }
 
+resource "onepassword_item" "s3_backup_access_key" {
+  for_each = local.truenas_s3_backup_hosts
+
+  category = "login"
+  password = truenas_s3_access_key.backups[each.key].secret
+  tags     = [local.access.onepassword.ownership_tag]
+  title    = "S3 Backup Access Key"
+  username = truenas_s3_access_key.backups[each.key].access_key
+  vault    = data.onepassword_vault.configured["cluster/${each.key}"].uuid
+}
+
 resource "onepassword_item" "s3_backups" {
   for_each = local.clusters
 

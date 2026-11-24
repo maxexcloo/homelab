@@ -43,6 +43,16 @@ locals {
     }
   ]...)
 
+  truenas_s3_backup_hosts = {
+    for name in keys(local.truenas_s3_hosts) : local.machine_clusters[name] => name
+    if can(local.machine_clusters[name])
+  }
+
+  truenas_s3_hosts = {
+    for name, host in local.truenas_hosts : name => host.services.s3
+    if can(host.services.s3.username)
+  }
+
   truenas_services = merge([
     for target, host in local.truenas_hosts : {
       for service, enabled in try(host.service_settings, {}) : "${target}/${service}" => {
@@ -379,6 +389,18 @@ resource "truenas_periodic_snapshot_task" "pool" {
   }
 }
 
+resource "truenas_s3_access_key" "backups" {
+  for_each = local.truenas_s3_backup_hosts
+
+  name     = "Kubelab ${upper(each.key)} Backups"
+  provider = truenas.hosts[each.value]
+  username = truenas_user.backup_storage[each.value].username
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "truenas_service" "backup_storage" {
   for_each = {
     for name, host in local.truenas_hosts : name => host
@@ -467,10 +489,7 @@ resource "truenas_ups_config" "global" {
 }
 
 resource "truenas_user" "backup_storage" {
-  for_each = {
-    for name, host in local.truenas_hosts : name => host
-    if can(host.services.s3.username)
-  }
+  for_each = local.truenas_s3_hosts
 
   full_name         = "Kubernetes Backups"
   group_create      = true
@@ -478,7 +497,7 @@ resource "truenas_user" "backup_storage" {
   provider          = truenas.hosts[each.key]
   shell             = "/usr/sbin/nologin"
   smb               = false
-  username          = each.value.services.s3.username
+  username          = each.value.username
 
   lifecycle {
     prevent_destroy = true
