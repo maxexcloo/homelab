@@ -280,6 +280,7 @@ machines:
           scheme: https
     saturn:
       beszel: true
+      memory_bytes: 66814214144
       platform: truenas
       smtp: resend
       type: server
