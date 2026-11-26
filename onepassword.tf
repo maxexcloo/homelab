@@ -38,7 +38,10 @@ locals {
     }
     tailscale = {
       for name, device_name in local.machine_tailscale_names :
-      name => local.tailscale_devices[device_name].node_id
+      name => {
+        id   = local.tailscale_devices[device_name].node_id
+        ipv4 = local.tailscale_device_addresses[device_name].ipv4
+      }
       if can(local.tailscale_devices[device_name])
     }
   }
