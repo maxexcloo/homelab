@@ -139,13 +139,18 @@ locals {
       if try(local.tailscale_device_addresses[tailscale_name].ipv6, null) != null
     },
     {
-      for type, address in {
-        A    = one([for address in tailscale_service.slzb_06m.addrs : address if can(cidrnetmask("${address}/32"))])
-        AAAA = one([for address in tailscale_service.slzb_06m.addrs : address if startswith(address, "fd7a:")])
-        } : "machine/slzb-06m/${lower(type)}" => {
-        content = address
-        name    = local.machine_fqdns["slzb-06m"]
-        type    = type
+      for name in keys(local.tailscale_machine_services) : "machine/${name}/a" => {
+        content = local.tailscale_machine_service_addresses[name].ipv4
+        name    = local.machine_fqdns[name]
+        type    = "A"
+        zone    = local.domains.infrastructure
+      }
+    },
+    {
+      for name in keys(local.tailscale_machine_services) : "machine/${name}/aaaa" => {
+        content = local.tailscale_machine_service_addresses[name].ipv6
+        name    = local.machine_fqdns[name]
+        type    = "AAAA"
         zone    = local.domains.infrastructure
       }
     },

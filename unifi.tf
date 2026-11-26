@@ -12,8 +12,10 @@ locals {
       mac      = interface.mac
       name     = local.machines[interface.machine].name
     }
-    if local.machines[interface.machine].network == local.machines.sol.network
+    if local.machines[interface.machine].network == local.unifi_network
   }
+
+  unifi_network = one([for machine in values(local.machines) : machine.network if machine.platform == "unifi"])
 }
 
 resource "unifi_client" "host" {
@@ -37,7 +39,7 @@ resource "unifi_client" "talos_container" {
 
   allow_existing   = true
   fixed_ip         = each.value.address
-  local_dns_record = "${each.value.device_name}.${local.machines[each.key].network}.${local.domains.infrastructure}"
+  local_dns_record = "${each.value.name}-talos.${local.machines[each.key].network}.${local.domains.infrastructure}"
   mac              = each.value.mac
   name             = "${local.machines[each.key].name} (Talos)"
   note             = local.managed_comment

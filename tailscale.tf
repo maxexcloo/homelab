@@ -8,24 +8,29 @@ locals {
     }
   }
 
-  # Each internal node's Tailscale serves the cluster's ingress Service and forwards it to Traefik.
+  # Each internal node's Tailscale serves the cluster's ingress Service and any machine Services assigned to it.
   tailscale_cluster_serve_configs = {
     for name, cluster in local.clusters : name => jsonencode({
-      Services = merge({
-        "svc:${cluster.tailscale_ingress_service}" = {
-          TCP = {
-            for port in [80, 443] : tostring(port) => { TCPForward = "${cluster.tailscale_ingress_target}:${port}" }
-          }
-        }
-        }, name == local.tailscale_slzb_06m_cluster ? {
-        (tailscale_service.slzb_06m.name) = {
-          TCP = {
-            (tostring(local.tailscale_slzb_06m_port)) = {
-              TCPForward = "${local.machine_private_ipv4_addresses["slzb-06m"]}:${local.tailscale_slzb_06m_port}"
+      Services = merge(
+        {
+          "svc:${cluster.tailscale_ingress_service}" = {
+            TCP = {
+              for port in [80, 443] : tostring(port) => { TCPForward = "${cluster.tailscale_ingress_target}:${port}" }
             }
           }
-        }
-      } : {})
+        },
+        {
+          for machine_name, service in local.tailscale_machine_services :
+          tailscale_service.machine[machine_name].name => {
+            TCP = {
+              for port in service.ports : tostring(port) => {
+                TCPForward = "${local.machine_private_ipv4_addresses[machine_name]}:${port}"
+              }
+            }
+          }
+          if service.cluster == name
+        },
+      )
     })
   }
 
@@ -58,25 +63,10 @@ locals {
     regex("^[^.]+", device.name) => device...
   }
 
-  tailscale_grants = concat(local.access.tailscale.grants, [
-    for name, machine in local.machines : {
-      ipv6    = true
-      ip      = ["icmp:*"]
-      machine = name
-      services = [
-        for key, service in local.machine_services : trimprefix(key, "${name}/")
-        if service.machine == name && (
-          service.hostnames[0] == local.machine_fqdns[name] ||
-          try(service.dns_tailscale, false) ||
-          (try(service.dns_record, false) && !try(service.dns_lan, false))
-        )
-      ]
-      src = ["tag:monitoring"]
-    }
-    if machine.type == "workstation" && can(local.machine_tailscale_names[name])
+  tailscale_ipset_machines = toset([
+    for name in keys(local.tailscale_monitoring_machine_ports) : name
+    if local.machines[name].type == "workstation"
   ])
-
-  tailscale_host_grants = [for grant in local.tailscale_grants : grant if can(grant.machine)]
 
   tailscale_ipv4_cidr = "100.64.0.0/10"
 
@@ -84,6 +74,41 @@ locals {
     for name, machine in local.machines : name => machine
     if can(local.machine_tailscale_names[name]) && machine.type != null
   }
+
+  tailscale_machine_service_addresses = {
+    for name in keys(local.tailscale_machine_services) : name => {
+      ipv4 = one([for address in tailscale_service.machine[name].addrs : address if can(cidrnetmask("${address}/32"))])
+      ipv6 = one([for address in tailscale_service.machine[name].addrs : address if startswith(address, "fd7a:")])
+    }
+  }
+
+  tailscale_machine_services = {
+    for name, machine in local.machines : name => {
+      cluster = machine.tailscale.service_cluster
+      ports   = [for port in sort(distinct([for service in values(machine.services) : format("%05d", service.port)])) : tonumber(port)]
+    }
+    if can(machine.tailscale.service_cluster)
+  }
+
+  # Gatus pings managed machines and probes their monitored or certificate-bearing services.
+  tailscale_monitoring_machine_ports = {
+    for name, machine in local.machines : name => [
+      for port in sort(distinct([
+        for service in values(local.machine_services) : format("%05d", service.port)
+        if service.machine == name && (
+          service.hostnames[0] == local.machine_fqdns[name] ||
+          try(service.dns_tailscale, false) ||
+          (try(service.dns_record, false) && !try(service.dns_lan, false))
+        )
+      ])) : tonumber(port)
+    ]
+    if machine.type != null && can(local.machine_tailscale_names[name])
+  }
+
+  tailscale_monitoring_types = toset([
+    for name in keys(local.tailscale_monitoring_machine_ports) : local.machines[name].type
+    if local.machines[name].type != "workstation"
+  ])
 
   tailscale_policy = {
     autoApprovers = {
@@ -96,41 +121,57 @@ locals {
       }
     }
 
-    grants = concat([
-      for grant in local.tailscale_grants : merge(
-        { for key, value in grant : key => value if !contains(["ipv6", "machine", "services"], key) },
-        can(grant.machine) ? {
-          dst = concat([grant.machine], try(grant.ipv6, false) ? ["${grant.machine}-ipv6"] : [])
-          ip = distinct(concat(try(grant.ip, []), [
-            for service in grant.services : "tcp:${local.machine_services["${grant.machine}/${service}"].port}"
-          ]))
-        } : {},
-      )
-      ], [{
-        dst = [tailscale_service.slzb_06m.name]
-        ip  = ["tcp:${local.tailscale_slzb_06m_port}"]
-        src = ["tag:monitoring"]
-    }])
-    groups    = local.access.tailscale.groups
-    tagOwners = local.tailscale_tag_owners
-    hosts = merge(
-      {
-        for name in toset([for grant in local.tailscale_host_grants : grant.machine]) :
-        name => "${local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv4}/32"
-      },
-      {
-        for name in toset([for grant in local.tailscale_host_grants : grant.machine if try(grant.ipv6, false)]) :
-        "${name}-ipv6" => "${local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv6}/128"
-      },
-      [for name in keys(local.clusters) : {
-        (name)           = "${local.tailscale_cluster_addresses[name].ipv4}/32"
-        ("${name}-ipv6") = "${local.tailscale_cluster_addresses[name].ipv6}/128"
-      }]...
+    grants = concat(
+      [
+        for grant in local.access.tailscale.grants : merge(
+          { for key, value in grant : key => value if key != "cluster" },
+          can(grant.cluster) ? {
+            dst = [tailscale_service.cluster_ingress[grant.cluster].name]
+          } : {},
+        )
+      ],
+      [
+        for type in sort(tolist(local.tailscale_monitoring_types)) : {
+          dst = ["tag:${type}"]
+          ip = concat(["icmp:*"], [
+            for port in sort(distinct(flatten([
+              for name, ports in local.tailscale_monitoring_machine_ports :
+              [for port in ports : format("%05d", port)]
+              if local.machines[name].type == type
+            ]))) : "tcp:${tonumber(port)}"
+          ])
+          src = ["tag:monitoring"]
+        }
+      ],
+      [
+        for name in sort(tolist(local.tailscale_ipset_machines)) : {
+          dst = ["ipset:${name}"]
+          ip  = concat(["icmp:*"], [for port in local.tailscale_monitoring_machine_ports[name] : "tcp:${port}"])
+          src = ["tag:monitoring"]
+        }
+      ],
+      [
+        for name, service in local.tailscale_machine_services : {
+          dst = [tailscale_service.machine[name].name]
+          ip  = [for port in service.ports : "tcp:${port}"]
+          src = ["tag:monitoring"]
+        }
+        if try(local.machines[name].monitoring, true)
+      ],
     )
+    groups = local.access.tailscale.groups
+    ipsets = {
+      for name in local.tailscale_ipset_machines : "ipset:${name}" => compact([
+        try(local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv4, null) != null ? (
+          "add ${local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv4}/32"
+        ) : null,
+        try(local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv6, null) != null ? (
+          "add ${local.tailscale_device_addresses[local.machine_tailscale_names[name]].ipv6}/128"
+        ) : null,
+      ])
+    }
+    tagOwners = local.tailscale_tag_owners
   }
-
-  tailscale_slzb_06m_cluster = "syd"
-  tailscale_slzb_06m_port    = local.machine_services["slzb-06m/management"].port
 
   tailscale_tag_owners = merge(
     {
@@ -149,11 +190,11 @@ resource "tailscale_acl" "default" {
 }
 
 resource "tailscale_federated_identity" "github" {
-  description = "GitHub Actions"
-  issuer      = "https://token.actions.githubusercontent.com"
-  scopes      = ["auth_keys"]
-  subject     = "repo:maxexcloo@927210/signtools-builder@1419923484:ref:refs/heads/main"
-  tags        = ["tag:ci"]
+  description = local.access.tailscale.github_identity.description
+  issuer      = local.access.tailscale.github_identity.issuer
+  scopes      = local.access.tailscale.github_identity.scopes
+  subject     = local.access.tailscale.github_identity.subject
+  tags        = local.access.tailscale.github_identity.tags
 
   depends_on = [tailscale_acl.default]
 }
@@ -175,10 +216,12 @@ resource "tailscale_service" "cluster_ingress" {
   tags  = ["tag:cluster-${each.key}"]
 }
 
-resource "tailscale_service" "slzb_06m" {
-  name  = "svc:${local.machine_hostnames["slzb-06m"]}"
-  ports = ["tcp:${local.tailscale_slzb_06m_port}"]
-  tags  = ["tag:cluster-${local.tailscale_slzb_06m_cluster}"]
+resource "tailscale_service" "machine" {
+  for_each = local.tailscale_machine_services
+
+  name  = "svc:${local.machine_hostnames[each.key]}"
+  ports = [for port in each.value.ports : "tcp:${port}"]
+  tags  = ["tag:cluster-${each.value.cluster}"]
 }
 
 resource "tailscale_tailnet_key" "server" {

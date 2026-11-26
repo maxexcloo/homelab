@@ -446,6 +446,7 @@ machines:
           siteMonitor: ""
       tailscale:
         enabled: false
+        service_cluster: syd
     sol:
       beszel: true
       name: Sol

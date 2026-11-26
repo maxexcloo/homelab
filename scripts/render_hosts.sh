@@ -53,7 +53,7 @@ for name in "${names[@]}"; do
 
   variables="${temporary_directory}/${name}.json"
   jq --arg name "${name}" --rawfile password_hash "${password_hash}" --slurpfile hosts "${hosts_file}" \
-    '{ files: ($hosts[0][$name].files // {}), machine: .machines[$name], password_hash: ($password_hash | rtrimstr("\n")), ssh_authorized_keys: .access.ssh.authorized_keys }' \
+    '{ files: ($hosts[0][$name].files // {}), machine: .machines[$name], password_hash: ($password_hash | rtrimstr("\n")), ssh_authorized_keys: .access.ssh.authorized_keys, ucore_image: .versions.images.ucore }' \
     "${inventory_file}" >"${variables}"
   config="${temporary_directory}/${name}.bu"
   # Base64 carries the rendered YAML through the console's HCL string output intact.
