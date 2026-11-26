@@ -13,6 +13,18 @@
   "control_d_profile": "653224sydwhf",
   "home_assistant_host": "luna.mbk.excloo.net",
   "machines": {
+    "glkvm": {
+      "acme": "delegated",
+      "beszel": false,
+      "fqdn": "glkvm.mbk.excloo.net",
+      "location": "mbk-glkvm",
+      "monitoring": true,
+      "name": "GLKVM",
+      "network": "mbk",
+      "public_fqdn": null,
+      "tailscale": true,
+      "type": "appliance"
+    },
     "luna": {
       "acme": "delegated",
       "beszel": true,
@@ -262,6 +274,18 @@
     }
   },
   "services": {
+    "glkvm/management": {
+      "description": "Remote Console & Power Control",
+      "group": "Infrastructure",
+      "hostnames": ["glkvm.mbk.excloo.net"],
+      "icon": "sh-gl-inet",
+      "machine": "glkvm",
+      "monitoring": false,
+      "name": "GLKVM",
+      "port": 443,
+      "scheme": "https",
+      "url": "https://glkvm.mbk.excloo.net"
+    },
     "luna/esphome": {
       "description": "ESP Device Builder",
       "group": "Smart Home",
