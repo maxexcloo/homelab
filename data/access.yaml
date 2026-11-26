@@ -3,6 +3,7 @@ cloudflare_access:
   cluster: syd
   name: Excloo ID
   oidc_client_id: cloudflare-access-excloo_id
+  policy_key: excloo_id
 kubernetes:
   oidc_client_id: headlamp
 onepassword:
@@ -27,6 +28,14 @@ tailscale:
     routes: {}
   default_tag_owners:
     - group:admin
+  github_identity:
+    description: GitHub Actions
+    issuer: https://token.actions.githubusercontent.com
+    scopes:
+      - auth_keys
+    subject: repo:maxexcloo@927210/signtools-builder@1419923484:ref:refs/heads/main
+    tags:
+      - tag:ci
   grants:
     - dst: &trusted_tags
         - tag:appliance
@@ -39,44 +48,11 @@ tailscale:
       ip:
         - "*"
       src: *trusted_tags
-    - dst:
-        - syd
-        - syd-ipv6
+    - cluster: syd
       ip:
         - tcp:443
       src:
         - tag:ci
-        - tag:monitoring
-    # Gatus pings monitored machines and probes their monitored or certificate-bearing services.
-    - dst:
-        - tag:appliance
-        - tag:backup
-        - tag:router
-        - tag:server
-        - tag:vm
-      ip:
-        - icmp:*
-      src:
-        - tag:monitoring
-    - dst:
-        - tag:appliance
-        - tag:router
-        - tag:server
-      ip:
-        - tcp:443
-      src:
-        - tag:monitoring
-    - dst:
-        - tag:server
-      ip:
-        - tcp:9000
-        - tcp:31010
-      src:
-        - tag:monitoring
-    - machine: luna
-      services:
-        - roborock
-      src:
         - tag:monitoring
     - dst:
         - "*"
