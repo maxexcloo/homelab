@@ -138,7 +138,7 @@ locals {
 
   truenas_talos_containers = {
     for name, node in local.talos_nodes : name => merge(node, node.container, {
-      device_name = "${node.cluster}-${local.machine_hostnames[name]}-talos"
+      device_name = "${local.machine_hostnames[name]}-talos"
       image       = "ghcr.io/siderolabs/talos:${local.clusters[node.cluster].talos_version}"
       name        = local.machine_hostnames[name]
       subnet_cidr = one([

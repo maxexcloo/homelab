@@ -39,7 +39,7 @@ resource "unifi_client" "talos_container" {
   fixed_ip         = each.value.address
   local_dns_record = "${each.value.device_name}.${local.machines[each.key].network}.${local.domains.infrastructure}"
   mac              = each.value.mac
-  name             = each.value.device_name
+  name             = "${local.machines[each.key].name} (Talos)"
   note             = local.managed_comment
 }
 

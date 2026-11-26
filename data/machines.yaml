@@ -33,6 +33,24 @@ machines:
         - name: enp1s0
           mac_address: 44:65:8a:e1:40:ed
   mbk:
+    glkvm:
+      name: GLKVM
+      platform: glkvm
+      type: appliance
+      username: root
+      cloudflare:
+        acme: delegated
+      interfaces:
+        - address: 10.0.0.129
+          mac_address: 94:83:c4:ac:5f:fc
+      services:
+        management:
+          description: Remote Console & Power Control
+          group: Infrastructure
+          icon: sh-gl-inet
+          name: GLKVM
+          port: 443
+          scheme: https
     luna:
       beszel: true
       name: Luna

@@ -6,6 +6,10 @@ networks:
     subnets:
       default:
         cidr: 10.0.0.1/22
+      guest:
+        cidr: 10.2.0.1/22
+      iot:
+        cidr: 10.3.0.1/22
   syd:
     name: Sydney
     oci:
