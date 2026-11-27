@@ -421,6 +421,19 @@
       "siteMonitor": "",
       "url": "https://luna.mbk.excloo.net/app/a0d7b954_ssh"
     },
+    "luna/syncthing": {
+      "description": "File Synchronisation",
+      "hostnames": ["luna.mbk.excloo.net"],
+      "icon": "sh-syncthing",
+      "machine": "luna",
+      "monitoring": false,
+      "name": "Syncthing (Luna)",
+      "path": "/app/a0d7b954_syncthing",
+      "port": 443,
+      "scheme": "https",
+      "siteMonitor": "",
+      "url": "https://luna.mbk.excloo.net/app/a0d7b954_syncthing"
+    },
     "luna/vscode": {
       "description": "Browser IDE",
       "group": "Smart Home",

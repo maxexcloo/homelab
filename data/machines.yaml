@@ -172,6 +172,14 @@ machines:
           port: 443
           scheme: https
           siteMonitor: ""
+        syncthing:
+          description: File Synchronisation
+          icon: sh-syncthing
+          name: Syncthing (Luna)
+          path: /app/a0d7b954_syncthing
+          port: 443
+          scheme: https
+          siteMonitor: ""
         vscode:
           description: Browser IDE
           group: Smart Home
